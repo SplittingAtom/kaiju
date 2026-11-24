@@ -85,6 +85,29 @@ k3s nodes use many inotify instances. If `scripts/dev-cluster.sh` warns about
 `fs.inotify.max_user_instances`, raise it on the Docker host:
 `sudo sysctl -w fs.inotify.max_user_instances=512`.
 
+### Building images by hand
+
+Build every image from the repository root (`scripts/check-images.sh` builds them all and checks
+each runs as non-root). The web image and the Node services take the build they report as build
+args (KOBE-837): the guide shows it beside its title, and without them it reads "Development build".
+
+```bash
+docker build -f apps/web/Dockerfile \
+  --build-arg KAIJU_BUILD_SHA="$(git rev-parse HEAD)" \
+  --build-arg KAIJU_BUILD_DATE="$(git log -1 --format=%cI)" \
+  -t kaiju-web:local .
+docker build -f services/Dockerfile --build-arg SERVICE=server \
+  --build-arg KAIJU_BUILD_SHA="$(git rev-parse HEAD)" \
+  --build-arg KAIJU_BUILD_DATE="$(git log -1 --format=%cI)" \
+  -t kaiju-server:local .
+```
+
+`KAIJU_BUILD_SHA` is the commit (hex, shown as its first 12 characters), `KAIJU_BUILD_DATE` an
+ISO 8601 time with an offset (shown in UTC), and the optional `KAIJU_BUILD_VERSION` a release
+version such as `1.4.0`. They become runtime environment variables in the image, read by the
+server per request, so they never change the build's cached layers above them. The publish
+workflow passes the commit and its commit time.
+
 ## Tests
 
 ```bash

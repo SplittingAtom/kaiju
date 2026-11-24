@@ -40,6 +40,13 @@ WORKDIR /app
 COPY --from=build /out ./
 # Kaiju's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
 COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kaiju/
+# KOBE-837: the build the image reports, as in apps/web/Dockerfile (the commit, its ISO 8601 date,
+# an optional release version), for a later Site console or API view; nothing reads it yet.
+# Declared last so a new commit only rebuilds this layer.
+ARG KAIJU_BUILD_SHA=""
+ARG KAIJU_BUILD_DATE=""
+ARG KAIJU_BUILD_VERSION=""
+ENV KAIJU_BUILD_SHA=${KAIJU_BUILD_SHA} KAIJU_BUILD_DATE=${KAIJU_BUILD_DATE} KAIJU_BUILD_VERSION=${KAIJU_BUILD_VERSION}
 # Files stay root-owned (read-only to the app); numeric non-root user so runAsNonRoot can verify it.
 USER 1000:1000
 EXPOSE 8080

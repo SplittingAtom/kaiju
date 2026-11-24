@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { groupBySection, prevNext } from "../../lib/docs/guide";
 import type { GuidePage } from "../../lib/docs/guide";
+import { type BuildInfo, DEVELOPMENT_BUILD } from "../../lib/build/build-info";
 import { Markdown } from "../chat/markdown";
+import { BuildLine } from "./build-line";
 import { CopyUrl } from "./copy-url";
 import { DocsNav, type DocsNavGroup } from "./docs-nav";
 
@@ -17,10 +19,13 @@ function navGroups(): DocsNavGroup[] {
   }));
 }
 
-function Home({ appName }: { readonly appName: string }) {
+function Home({ appName, build }: { readonly appName: string; readonly build: BuildInfo }) {
   return (
     <article className="min-w-0 flex-1">
-      <h1 className="mt-0 mb-2 text-2xl font-semibold tracking-tight">{appName} guide</h1>
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 className="m-0 text-2xl font-semibold tracking-tight">{appName} guide</h1>
+        <BuildLine build={build} className="m-0" />
+      </div>
       <p className="text-muted-foreground mt-0 mb-6">
         How to use {appName}: conversations, files, agents, skills and the admin consoles.
       </p>
@@ -64,11 +69,14 @@ function Home({ appName }: { readonly appName: string }) {
   );
 }
 
-function PageView({ page }: { readonly page: GuidePage }) {
+function PageView({ page, build }: { readonly page: GuidePage; readonly build: BuildInfo }) {
   const { prev, next } = prevNext(page.slug);
   return (
     <article className="min-w-0 flex-1">
-      <p className="text-muted-foreground mt-0 mb-1 text-sm">{page.section}</p>
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="text-muted-foreground m-0 text-sm">{page.section}</p>
+        <BuildLine build={build} className="m-0" />
+      </div>
       <h1 className="mt-0 mb-2 text-2xl font-semibold tracking-tight">{page.title}</h1>
       <p className="text-muted-foreground mt-0 mb-4">{page.summary}</p>
       <p className="mt-0 mb-6 text-sm">
@@ -103,19 +111,27 @@ function PageView({ page }: { readonly page: GuidePage }) {
 /**
  * The guide's nav and one page (KOBE-616): the home (`page` null: sections and pages, the
  * llms.txt links) or a guide page. Rendered by /docs in the Docs panel over the workspace; every
- * guide link is a client-side step to another /docs address, so it stays in the panel.
+ * guide link is a client-side step to another /docs address, so it stays in the panel. `build` is
+ * the running image's build (KOBE-837, `currentBuildInfo()` on the server), shown by the title;
+ * without it the line reads "Development build".
  */
 export function GuideView({
   page,
   appName,
+  build = DEVELOPMENT_BUILD,
 }: {
   readonly page: GuidePage | null;
   readonly appName: string;
+  readonly build?: BuildInfo;
 }) {
   return (
     <div className="flex flex-col gap-6 md:flex-row md:gap-10">
       <DocsNav groups={navGroups()} current={page?.slug ?? null} />
-      {page === null ? <Home appName={appName} /> : <PageView page={page} />}
+      {page === null ? (
+        <Home appName={appName} build={build} />
+      ) : (
+        <PageView page={page} build={build} />
+      )}
     </div>
   );
 }
