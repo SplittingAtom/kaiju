@@ -45,7 +45,7 @@ jobs:
           # entry then holds one commit's build output instead of growing run after run.
           turbo-cache: ${{ github.ref == 'refs/heads/main' && 'none' || 'restore' }}
       # The chart's lint script runs `helm lint`.
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
           version: v3.22.0
       - name: No infrastructure details in tracked files (public repo)
@@ -79,7 +79,7 @@ jobs:
         with:
           turbo-cache: restore
       # The chart's tests render templates with helm.
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
           version: v3.22.0
       # The pinned Pi (sandbox image lockfile) for kobe-sandbox-agent's real-Pi integration test.
