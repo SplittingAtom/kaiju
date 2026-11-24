@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fake.fetch);
 });
 
-const SKILL_PATH = `/run/kobe-skills/store/sk-${"b".repeat(64)}/SKILL.md`;
+const SKILL_PATH = `/run/kaiju-skills/store/sk-${"b".repeat(64)}/SKILL.md`;
 
 function thread() {
   const t = fake.addThread("Tools");

@@ -15,7 +15,7 @@ import {
   isRecord,
   parseEnvelope,
   type ExecRequest,
-} from "../../kobe-exec/protocol.js";
+} from "../../kaiju-exec/protocol.js";
 
 /** Longest timeout Node's timers take, in seconds (Pi's bash tool has the same limit). */
 const MAX_TIMEOUT_S = 2_147_483.647;

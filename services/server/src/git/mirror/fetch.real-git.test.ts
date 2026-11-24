@@ -18,7 +18,7 @@ import { fetchBranch, MirrorError, remoteHead } from "./fetch.js";
  * (symlinks left out), the newest commits as plain text, and refuses an object over the size cap
  * from the pack headers before inflating it.
  */
-const CREDS = { username: "kobe-bot", token: "mirror-test-token" };
+const CREDS = { username: "kaiju-bot", token: "mirror-test-token" };
 let server: GitServer;
 let work: string;
 let origin: string;

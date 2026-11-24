@@ -7,14 +7,14 @@ const PAIR = generateSessionKeyPair();
 const ENV = {
   KAIJU_SESSION_VERIFY_KEY_MCP_PROXY: PAIR.publicPem,
   KAIJU_MCP_INTERNAL_KEY: "i".repeat(32),
-  KAIJU_MCP_SERVER_URL: "http://kobe-server:8082/",
+  KAIJU_MCP_SERVER_URL: "http://kaiju-server:8082/",
 };
 
 describe("loadConfig", () => {
   it("applies defaults: port 8080, HTTPS on 443 only, nothing internal", () => {
     const config = loadConfig(ENV);
     expect(config.port).toBe(8080);
-    expect(config.serverUrl).toBe("http://kobe-server:8082");
+    expect(config.serverUrl).toBe("http://kaiju-server:8082");
     expect(config.upstream).toEqual({
       allowInsecureHttp: false,
       allowedPorts: [443],
@@ -129,7 +129,7 @@ describe("old KOBE_* names for one release (KOBE-748)", () => {
   it("starts with only the old names and warns once, naming them without values", () => {
     const warn = vi.fn();
     const config = loadConfig(toLegacyEnv(ENV), warn);
-    expect(config.serverUrl).toBe("http://kobe-server:8082");
+    expect(config.serverUrl).toBe("http://kaiju-server:8082");
     expect(config.internalKey).toBe("i".repeat(32));
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[1]).toEqual({
@@ -146,7 +146,7 @@ describe("old KOBE_* names for one release (KOBE-748)", () => {
   it("the new name wins when both are set, and the warning names the conflict", () => {
     const warn = vi.fn();
     const config = loadConfig({ ...ENV, KOBE_MCP_SERVER_URL: "http://old-server:8082/" }, warn);
-    expect(config.serverUrl).toBe("http://kobe-server:8082");
+    expect(config.serverUrl).toBe("http://kaiju-server:8082");
     expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_MCP_SERVER_URL"] });
     expect(warn.mock.calls[0]?.[0]).toContain("KOBE_MCP_SERVER_URL (KAIJU_MCP_SERVER_URL is used)");
   });

@@ -10,7 +10,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-CLUSTER="${KAIJU_CLUSTER:-kobe}"
+CLUSTER="${KAIJU_CLUSTER:-kaiju}"
 K3S_IMAGE="${K3S_IMAGE:-rancher/k3s:v1.34.6-k3s1}"
 # Single node by default (k3d nodes are inotify-hungry); set KAIJU_AGENTS=1 to add an agent.
 AGENTS="${KAIJU_AGENTS:-0}"
@@ -127,7 +127,7 @@ if [[ "${NO_GVISOR:-0}" != "1" ]]; then
   else
     echo "==> gVisor already installed on every node"
   fi
-  $KUBECTL apply -f charts/kobe/runtimeclass-gvisor.yaml >/dev/null
+  $KUBECTL apply -f charts/kaiju/runtimeclass-gvisor.yaml >/dev/null
 
   echo "==> smoke-testing gVisor"
   smoke="gvisor-smoke-$RANDOM"

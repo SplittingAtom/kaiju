@@ -9,12 +9,12 @@ import { PICKS_HEADER, headerForms } from "../memory/semantic-context.js";
 import { VIEWING_HEADER } from "../memory/viewing-context.js";
 import { CONFLICTS_HEADER } from "../memory/conflict-context.js";
 
-/** kobe-tools' picks note (KOBE-658, kobe-tools/memory-hooks.ts `MEMORY_PICKS_TYPE`). */
+/** kaiju-tools' picks note (KOBE-658, kaiju-tools/memory-hooks.ts `MEMORY_PICKS_TYPE`). */
 const PICKS_NOTE_TYPE = "kobe-memory-picks";
 const PICKS_LABEL = "What Kaiju knows for this message";
 
 /**
- * A model call's context as ordered sections (KOBE-470, CV3). Takes what kobe-models captured
+ * A model call's context as ordered sections (KOBE-470, CV3). Takes what kaiju-models captured
  * (pi-ai `Context` `{systemPrompt?, messages, tools?}` or a transcript whose system messages carry
  * the prompt and tools) or messages rebuilt from the session (Pi `AgentMessage`s, whose summaries
  * and custom messages are not yet converted). Text is kept as the model got it, except image data
@@ -93,7 +93,7 @@ function systemSections(message: Rec, leading: boolean, parts?: KaijuPromptParts
   return out;
 }
 
-/** kobe-tools' per-message note (KOBE-658): labelled by the part it starts with. */
+/** kaiju-tools' per-message note (KOBE-658): labelled by the part it starts with. */
 function noteSection(text: string): RawSection | undefined {
   if (headerForms(PICKS_HEADER).some((h) => text.startsWith(`${h}\n`))) {
     return { kind: "memory", label: PICKS_LABEL, text };
@@ -115,7 +115,7 @@ function userSection(content: unknown): RawSection {
   if (text.startsWith(BRANCH_SUMMARY_PREFIX)) {
     return { kind: "other", label: "Branch summary", text, ...counted };
   }
-  // KOBE-658: the picks note kobe-tools puts before a user message reaches the model as one.
+  // KOBE-658: the picks note kaiju-tools puts before a user message reaches the model as one.
   const note = noteSection(text);
   if (note !== undefined) return { ...note, ...counted };
   return { kind: "user_message", label: "User", text, ...counted };

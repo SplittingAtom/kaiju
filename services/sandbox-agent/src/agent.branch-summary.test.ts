@@ -5,7 +5,7 @@ import { RUN_2, THREAD, runStart, startHarness, type Harness } from "./testing/h
 
 /**
  * `thread.branch_summary` (KOBE-548) with the scripted Pi: the capability, and the refusals that
- * never reach Pi. The command itself runs in real Pi (kobe-models.branch-summary.real-pi.test.ts).
+ * never reach Pi. The command itself runs in real Pi (kaiju-models.branch-summary.real-pi.test.ts).
  */
 const TOKEN = "model-token-one-".padEnd(40, "1");
 const MODEL = {
@@ -18,8 +18,8 @@ const GRANT = { token: "krt1.summary-run-token.mac", expires_at: "2099-01-01T00:
 type Result = Extract<SandboxToServerFrame, { type: "thread.branch_summary_result" }>;
 
 const models: ModelWiring = {
-  gatewayUrl: "http://model-gateway.kobe.internal:80",
-  extension: "/opt/kobe/pi-extensions/kobe-models/index.js",
+  gatewayUrl: "http://model-gateway.kaiju.internal:80",
+  extension: "/opt/kaiju/pi-extensions/kaiju-models/index.js",
   tokens: { current: async () => TOKEN, onChange: () => () => undefined },
 };
 

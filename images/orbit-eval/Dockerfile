@@ -10,7 +10,7 @@ ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/opt/kobe/orbit-eval \
+    PYTHONPATH=/opt/kaiju/orbit-eval \
     HOME=/tmp/home \
     XDG_CACHE_HOME=/tmp/home/.cache \
     PYTHON_DOTENV_DISABLED=1
@@ -27,8 +27,8 @@ RUN pip install --require-hashes --no-deps -r /tmp/requirements.txt \
  && pip uninstall -y pip setuptools wheel
 
 # The runner and the default scenario pack: root-owned and read-only.
-COPY images/orbit-eval/kobe_orbit_eval /opt/kobe/orbit-eval/kobe_orbit_eval
-COPY images/orbit-eval/scenarios /opt/kobe/orbit-eval/scenarios
+COPY images/orbit-eval/kaiju_orbit_eval /opt/kaiju/orbit-eval/kaiju_orbit_eval
+COPY images/orbit-eval/scenarios /opt/kaiju/orbit-eval/scenarios
 
 # User 1000:1000 (numeric, for runAsNonRoot). /input holds the exported YAML (and an optional
 # pack), /output is where the Job mounts a volume for result.json. No setuid/setgid bits.
@@ -45,18 +45,18 @@ RUN apt-get update \
  && useradd --uid 1000 --gid 1000 --no-create-home --home-dir /tmp/home --shell /usr/sbin/nologin kobe \
  && mkdir -p /input /output \
  && chown 1000:1000 /output \
- && chown -R 0:0 /opt/kobe \
- && chmod -R a-w,a+rX /opt/kobe \
- && python -m compileall -q /opt/kobe/orbit-eval \
+ && chown -R 0:0 /opt/kaiju \
+ && chmod -R a-w,a+rX /opt/kaiju \
+ && python -m compileall -q /opt/kaiju/orbit-eval \
  && find / -xdev -perm /6000 -type f -exec chmod a-s {} + \
  && rm -rf /usr/bin/apt* /usr/bin/dpkg* /usr/sbin/dpkg* /usr/lib/apt /var/cache/apt /var/lib/apt
 # The package managers are removed (nothing installs at runtime). /var/lib/dpkg/status stays on
 # purpose: Trivy reads it to scan the Debian packages, and deleting it would blind the CVE gate.
 
 # Kaiju's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
-COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kobe/
+COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kaiju/
 USER 1000:1000
 WORKDIR /tmp
 # Model access: KAIJU_MODEL_GATEWAY_URL + KAIJU_MODEL_SESSION_TOKEN (set by the Job), never a key.
-ENTRYPOINT ["python", "-m", "kobe_orbit_eval"]
+ENTRYPOINT ["python", "-m", "kaiju_orbit_eval"]
 CMD ["--orbit-yaml", "/input/agent.yaml", "--output", "/output/result.json"]

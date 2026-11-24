@@ -12,7 +12,7 @@ import { SkillDraftBroker } from "../tools/skill-draft-broker.js";
 import type { Capabilities } from "./capabilities.js";
 import type { AgentDeps } from "./deps.js";
 
-/** The agent's kobe-tools brokers, one per tool family (`tools/*-broker.ts`). */
+/** The agent's kaiju-tools brokers, one per tool family (`tools/*-broker.ts`). */
 export interface ToolBrokers {
   readonly artifacts: ArtifactBroker;
   readonly shares: FileShareBroker;
@@ -68,7 +68,7 @@ export function createToolBrokers(deps: AgentDeps, wiring: ToolBrokerWiring): To
   return { artifacts, shares, commits, skillDrafts, fileEdits, fileOpens, notebooks, memory };
 }
 
-/** One kobe-tools request to the broker of its op, or `not_allowed` when this agent lacks it. */
+/** One kaiju-tools request to the broker of its op, or `not_allowed` when this agent lacks it. */
 export function routeToolsRequest(
   tools: ToolBrokers,
   caps: Capabilities,

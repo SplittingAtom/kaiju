@@ -30,9 +30,9 @@ import {
 
 /**
  * Gate 2 end to end across the process boundary (KOBE-58 + KOBE-37): "a sandbox with a tampered
- * kobe-policy extension still cannot execute an MCP write without a signed approval".
+ * kaiju-policy extension still cannot execute an MCP write without a signed approval".
  *
- * The client here is a tampered sandbox: it never sends `policy.check` (kobe-policy bypassed) and
+ * The client here is a tampered sandbox: it never sends `policy.check` (kaiju-policy bypassed) and
  * calls the **real MCP proxy app** directly with its session token. The proxy talks HTTP to the
  * **real server internal listener** (policy engine, KOBE-37 verifier over the `approvals` table,
  * audit) on a real Postgres, and forwards only allowed calls to a fake remote MCP server, which
@@ -177,7 +177,7 @@ const auditActions = async (team: string) => {
   return rows;
 };
 
-describe("Gate 2 through the real MCP proxy, kobe-policy bypassed", () => {
+describe("Gate 2 through the real MCP proxy, kaiju-policy bypassed", () => {
   const input = { title: "Disk full on db-1", priority: "p1" };
 
   it("refuses an MCP write without a signed approval; the remote server never sees it", async () => {

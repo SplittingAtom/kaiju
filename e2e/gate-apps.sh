@@ -19,15 +19,15 @@ cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KAIJU_GATEAPPS_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATEAPPS_RELEASE:-kobe}"
-CHART="${KAIJU_GATEAPPS_CHART:-charts/kobe}"
+NS="${KAIJU_GATEAPPS_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATEAPPS_RELEASE:-kaiju}"
+CHART="${KAIJU_GATEAPPS_CHART:-charts/kaiju}"
 OWNER_EMAIL="${KAIJU_GATEAPPS_OWNER_EMAIL:-owner@e2e.test}"
 OWNER_PASSWORD="${KAIJU_GATEAPPS_OWNER_PASSWORD:-e2e owner password}"
 MODEL_ALIAS="${KAIJU_GATEAPPS_MODEL:-fast}"
 BROWSER="${KAIJU_GATEAPPS_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
 TEAM_SLUG=gate-apps-a
-INFRA_NS=kobe-gate-apps-infra
+INFRA_NS=kaiju-gate-apps-infra
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
 NONCE="$(date +%s)"
@@ -110,7 +110,7 @@ AGENT_FIELD="\"agentId\":\"$KAIJU_AGENT\""
 # ---- the fake MCP Apps server and the proxies' allow-list ---------------------------------------------
 part_begin "setup: the fake MCP server serves ui://e2e/explorer; the connectors are pinned and enabled"
 SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-SANDBOX_IMAGE="${KAIJU_GATEAPPS_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
+SANDBOX_IMAGE="${KAIJU_GATEAPPS_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kobe-sandbox}}"
 $KUBECTL create namespace "$INFRA_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
 $KUBECTL -n "$INFRA_NS" delete pod fake-mcp --ignore-not-found >/dev/null
 $KUBECTL -n "$INFRA_NS" run fake-mcp --restart=Never --image="$SANDBOX_IMAGE" --image-pull-policy=IfNotPresent \

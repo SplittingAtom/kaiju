@@ -5,13 +5,13 @@ import { replacingPatch } from "./merge-patch.js";
 describe("replacingPatch", () => {
   const current = {
     runtimeClassName: "gvisor-old",
-    hostAliases: [{ ip: "10.0.0.1", hostnames: ["server.kobe.internal"] }],
+    hostAliases: [{ ip: "10.0.0.1", hostnames: ["server.kaiju.internal"] }],
     securityContext: { runAsUser: 1000, fsGroup: 1000, legacy: true },
     removedField: "x",
   };
   const next = {
     runtimeClassName: "gvisor",
-    hostAliases: [{ ip: "10.0.0.2", hostnames: ["server.kobe.internal"] }],
+    hostAliases: [{ ip: "10.0.0.2", hostnames: ["server.kaiju.internal"] }],
     securityContext: { runAsUser: 1000, fsGroup: 1000 },
     dnsPolicy: "None",
   };

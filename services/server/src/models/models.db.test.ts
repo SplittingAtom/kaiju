@@ -726,13 +726,13 @@ describe("gateway sync", () => {
       fingerprintSecret: PROVIDER_SECRET,
       logger,
       intervalMs: 3_600_000,
-      localEmbedding: { url: "http://kobe-embeddings:8080", model: "nomic-embed-text" },
+      localEmbedding: { url: "http://kaiju-embeddings:8080", model: "nomic-embed-text" },
     });
     expect((await withLocal.runOnce()).errors).toEqual([]);
     expect(bifrost.providers.get("kobe-local")).toMatchObject({
       custom: true,
       keyless: true,
-      baseUrl: "http://kobe-embeddings:8080",
+      baseUrl: "http://kaiju-embeddings:8080",
       allowPrivateNetwork: true,
     });
     // The Site console's providers are pushed as before.

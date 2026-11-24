@@ -7,8 +7,8 @@ import type { PiLaunch } from "../pi/pi-launch.js";
 import { piCommand } from "../pi/pi-command.js";
 import { shareOnVolume } from "../workspace/volume.js";
 import { ensureSessionDir } from "../pi/session-files.js";
-import { MODEL_FILE_ENV } from "../kobe-models/protocol.js";
-import { CONTEXT_FILE_ENV, CONTEXT_FILE_NAME } from "../kobe-models/context-capture.js";
+import { MODEL_FILE_ENV } from "../kaiju-models/protocol.js";
+import { CONTEXT_FILE_ENV, CONTEXT_FILE_NAME } from "../kaiju-models/context-capture.js";
 import {
   SYSTEM_PROMPT_FILE_NAME,
   SystemPromptFile,
@@ -31,7 +31,7 @@ import {
   removeRuntimeDir,
 } from "../models/runtime-dir.js";
 import type { RunModel } from "../models/types.js";
-import { TOOL_HOME_ENV } from "../kobe-exec/protocol.js";
+import { TOOL_HOME_ENV } from "../kaiju-exec/protocol.js";
 import type { ExecRelay } from "../exec/relay.js";
 import { assertPaired, openRelay, preparePiPrivateDirs, prepareToolDir } from "./exec-wiring.js";
 import { EGRESS_TOKEN_FILE_NAME, EgressTokenFile, egressEnv } from "../egress/egress-wiring.js";
@@ -85,7 +85,7 @@ export async function spawnPi(
   await ensureRuntimeRoot(threadEnv.runtimeDir, identities !== undefined);
   const exec = launch.execChannel ? threadEnv.exec : undefined;
   if (launch.execChannel && exec === undefined) {
-    throw new Error("the launch asks for kobe-exec but this agent has no tool executor");
+    throw new Error("the launch asks for kaiju-exec but this agent has no tool executor");
   }
   if (exec !== undefined) assertPaired(identities);
   const identity = await identities?.acquire();
@@ -152,7 +152,7 @@ export async function spawnPi(
     env.HOME = priv.home;
     env.TMPDIR = priv.tmp;
     if (exec !== undefined) {
-      // `~` in the file tools is resolved by Pi: tell kobe-exec where the tools' home is.
+      // `~` in the file tools is resolved by Pi: tell kaiju-exec where the tools' home is.
       if (toolEnvBase.HOME !== undefined) env[TOOL_HOME_ENV] = toolEnvBase.HOME;
     } else {
       if (toolEnvBase.HOME !== undefined) env.KAIJU_TOOL_HOME = toolEnvBase.HOME;
@@ -176,7 +176,7 @@ export async function spawnPi(
       );
       await modelFile.create();
       env[MODEL_FILE_ENV] = modelFile.path;
-      // The context viewer's capture (KOBE-470): written by kobe-models in the dir Pi writes.
+      // The context viewer's capture (KOBE-470): written by kaiju-models in the dir Pi writes.
       contextFile = path.join(agentDir, CONTEXT_FILE_NAME);
       env[CONTEXT_FILE_ENV] = contextFile;
     }

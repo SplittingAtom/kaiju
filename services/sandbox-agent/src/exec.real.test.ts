@@ -4,13 +4,13 @@ import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { ExecRelay } from "./exec/relay.js";
 import { executorEnv, startExecutor } from "./exec/spawn-executor.js";
-import { ExecClient } from "./kobe-exec/client.js";
+import { ExecClient } from "./kaiju-exec/client.js";
 import {
   bashOperations,
   editOperations,
   readOperations,
   writeOperations,
-} from "./kobe-exec/remote-ops.js";
+} from "./kaiju-exec/remote-ops.js";
 import { writeGuardedConfig } from "./models/agent-config.js";
 import {
   loadPiIdentities,
@@ -24,7 +24,7 @@ import { prepareToolDir } from "./threads/exec-wiring.js";
 
 /**
  * The tool executor under the REAL helper (KOBE-167): the same relay, client and Pi tool
- * operations the product uses, with the executor started through `kobe-runas` as the partner uid
+ * operations the product uses, with the executor started through `kaiju-runas` as the partner uid
  * of a Pi identity and the directory layout the agent builds. Same setup and skip rule as
  * identities.real.test.ts (services/sandbox-agent/scripts/test-identities.sh). What the partner
  * uid can and cannot do on its own is identities.partner.real.test.ts; this proves the executor
@@ -69,7 +69,7 @@ describe.runIf(HELPER !== undefined && EXECUTOR_BUILT)(
     beforeAll(async () => {
       umask = process.umask(0o077);
       identities = await loadPiIdentities(HELPER as string, 2);
-      scratch = await mkdtemp(path.join("/dev/shm", "kobe-exec-"));
+      scratch = await mkdtemp(path.join("/dev/shm", "kaiju-exec-"));
       await chmod(scratch, 0o755);
     });
     afterAll(async () => {

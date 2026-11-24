@@ -12,7 +12,7 @@ import {
 
 /**
  * `run.start.memory.semantic` (KOBE-377; spec SM23, SM24): the semantic memory items the server
- * picked for this run, which kobe-sandbox-agent renders as the "What Kaiju knows" block (KOBE-383)
+ * picked for this run, which kaiju-sandbox-agent renders as the "What Kaiju knows" block (KOBE-383)
  * above Notes. Additive: absent on an old server, for an agent without
  * {@link CAPABILITY_SEMANTIC_MEMORY}, for an agent version whose memory setting is `notes_only`
  * or `off` (KOBE-646), and for evals and test chats. The server records each item version given

@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * The kernel bridge's variables snapshot (KOBE-803; KOBE-816: STATIC_SOURCE's `variables`, what
- * the kernel's inspect handler answers, images/sandbox/kernel/kobe-kernel-bridge.py) on plain
+ * the kernel's inspect handler answers, images/sandbox/kernel/kaiju-kernel-bridge.py) on plain
  * Python (testing/inspect-harness.py): what is left out, the caps, and that no code of the
  * member's runs: values only of exact built-ins (subclasses through the built-in's methods),
  * numpy and pandas; anything else is `not_read`, its repr/str/len/iter never called. The real
@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
  * images/sandbox/test-image.sh and transport.e2e.test.ts.
  */
 const BRIDGE = fileURLToPath(
-  new URL("../../../../images/sandbox/kernel/kobe-kernel-bridge.py", import.meta.url),
+  new URL("../../../../images/sandbox/kernel/kaiju-kernel-bridge.py", import.meta.url),
 );
 const HARNESS = fileURLToPath(new URL("./testing/inspect-harness.py", import.meta.url));
 const hasPython = spawnSync("python3", ["--version"]).status === 0;

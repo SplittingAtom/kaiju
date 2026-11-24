@@ -20,33 +20,33 @@ const podLabels = (component: string) => ({
 });
 
 export const SETTINGS: SandboxSettings = {
-  image: "ghcr.io/splittingatom/kobe-sandbox:0.1.0",
+  image: "ghcr.io/splittingatom/kaiju-sandbox:0.1.0",
   imagePullPolicy: "IfNotPresent",
   imagePullSecrets: [],
   releaseNamespace: "kaiju",
-  serverServiceAccount: "kobe-server",
+  serverServiceAccount: "kaiju-server",
   managerClusterRole: "kaiju-abc-sandbox-manager",
   endpoints: {
     server: {
-      service: "kobe-server",
+      service: "kaiju-server",
       port: 8081,
       targetPort: 8081,
       podLabels: podLabels("server"),
     },
     modelGateway: {
-      service: "kobe-bifrost",
+      service: "kaiju-bifrost",
       port: 8080,
       targetPort: 8080,
       podLabels: podLabels("bifrost"),
     },
     mcpProxy: {
-      service: "kobe-mcp-proxy",
+      service: "kaiju-mcp-proxy",
       port: 80,
       targetPort: 8080,
       podLabels: podLabels("mcp-proxy"),
     },
     egressProxy: {
-      service: "kobe-egress-proxy",
+      service: "kaiju-egress-proxy",
       port: 80,
       targetPort: 8080,
       podLabels: podLabels("egress-proxy"),
@@ -116,10 +116,10 @@ export const VERIFY_KEYS: SessionVerifyKeySets = {
 };
 
 export const CLUSTER_IPS = {
-  "kobe-server": "10.43.0.10",
-  "kobe-bifrost": "10.43.0.11",
-  "kobe-mcp-proxy": "10.43.0.12",
-  "kobe-egress-proxy": "10.43.0.13",
+  "kaiju-server": "10.43.0.10",
+  "kaiju-bifrost": "10.43.0.11",
+  "kaiju-mcp-proxy": "10.43.0.12",
+  "kaiju-egress-proxy": "10.43.0.13",
 } as const;
 
 /** RuntimeClasses and the release's Services, as a real cluster has them. */

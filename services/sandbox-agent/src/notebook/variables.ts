@@ -11,7 +11,7 @@ import {
 import type { InspectLimits, InspectResult } from "./session.js";
 
 /**
- * Variables snapshots (KOBE-803; the kernel side is `inspect` in kobe-kernel-bridge.py): the caps
+ * Variables snapshots (KOBE-803; the kernel side is `inspect` in kaiju-kernel-bridge.py): the caps
  * the bridge is given, and the bridge's answer turned into the wire's result. The bridge's object
  * comes from the member's own kernel, so it is validated against the contract like any other
  * input; anything off (or no answer) is `unavailable`.

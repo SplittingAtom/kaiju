@@ -310,7 +310,7 @@ describe("Agent builder: Orbit eval gate (KOBE-93)", () => {
             finished_at: "2026-10-02T09:05:00Z",
             report: {
               schema_version: 1,
-              pack: { id: "kobe-default", version: 1 },
+              pack: { id: "kaiju-default", version: 1 },
               scenarios: [
                 {
                   id: "<img src=x onerror=alert(1)>",
@@ -332,7 +332,7 @@ describe("Agent builder: Orbit eval gate (KOBE-93)", () => {
     expect(screen.getByText("<b>exfiltration</b>")).toBeTruthy();
     expect(container.querySelector("img, b")).toBeNull();
     expect(screen.getByText("20% (1 of 5); limit 20%")).toBeTruthy();
-    expect(screen.getByText(/kobe-default v1/)).toBeTruthy();
+    expect(screen.getByText(/kaiju-default v1/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Back to the agent" }).getAttribute("href")).toBe(
       "/admin/team/agents/a-1",
     );

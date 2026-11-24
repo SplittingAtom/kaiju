@@ -27,14 +27,14 @@ describe("loadS3Settings", () => {
     expect(
       loadS3Settings({
         KAIJU_S3_BUCKET: "kaiju",
-        KAIJU_S3_ENDPOINT: "http://s3.kobe-deps:8333",
+        KAIJU_S3_ENDPOINT: "http://s3.kaiju-deps:8333",
         KAIJU_S3_FORCE_PATH_STYLE: "true",
         KAIJU_S3_ACCESS_KEY_ID: "id",
         KAIJU_S3_SECRET_ACCESS_KEY: "secret",
       }),
     ).toEqual({
       bucket: "kaiju",
-      endpoint: "http://s3.kobe-deps:8333",
+      endpoint: "http://s3.kaiju-deps:8333",
       region: "us-east-1",
       forcePathStyle: true,
       prefix: "",

@@ -42,7 +42,7 @@ most 150 words that states their token use.
 | `services/server/src/routes/`                      | One route module per area, mounted with one line in `app.ts`.                                                                                                                         |
 | `packages/protocol`                                | Contracts are agreed before dependants start; change a published contract only in its own PR, never inside a feature PR.                                                              |
 | Queries on `threads` / `thread_entries`            | Always state `team_id` explicitly, even inside `withTeam()` (break-glass policy; see `packages/db/README.md`). Enforced by `services/server` tests `team-filter` and `threads-plans`. |
-| `charts/kobe/values.yaml`                          | Add values under your component's key; don't reorder or reformat other sections.                                                                                                      |
+| `charts/kaiju/values.yaml`                          | Add values under your component's key; don't reorder or reformat other sections.                                                                                                      |
 | `docs/audit-log.md` event table                    | Generated (KOBE-815): add an event's row to `audit/events/<area>.doc.ts` in name order, run `pnpm --filter @kaiju/db audit:doc`; never edit the table.                                |
 | `services/server/openapi.json`                     | Not committed (KOBE-815): `pnpm --filter @kaiju/server openapi` writes it; routes show in review in the route-inventory snapshot.                                                     |
 
@@ -190,14 +190,14 @@ hand-written migration too; how to write one is in
     `KAIJU_TEST_DATABASE_URL` server, up to 100 throwaway databases (`kobe_test_<hex>[_<lane>]`,
     `kobe_up_<hex>[_<lane>]`, any lane) created more than a day ago with no session connected (a
     plain `DROP DATABASE`, which Postgres refuses while anyone connects), and removes
-    `kobe-upgrade-*` temp dirs older than an hour (KOBE-743). Leftover roles are not swept.
+    `kaiju-upgrade-*` temp dirs older than an hour (KOBE-743). Leftover roles are not swept.
 - **Tilt against the real cluster:** each agent uses its own namespace and port-forward:
 
   ```bash
-  KAIJU_DEV_NAMESPACE=kobe-dev-<N> KAIJU_DEV_WEB_PORT=30<NN> tilt up --port 103<NN> ...
+  KAIJU_DEV_NAMESPACE=kaiju-dev-<N> KAIJU_DEV_WEB_PORT=30<NN> tilt up --port 103<NN> ...
   ```
 
-  The namespace must be `kobe-dev` or start with `kobe-dev-`. k3d dev stays on `kobe-dev`.
+  The namespace must be `kaiju-dev` or start with `kaiju-dev-`. k3d dev stays on `kaiju-dev`.
 
 - **k3d end-to-end on the remote Docker host:** one cluster at a time (inotify limits). Prefer CI's `e2e` job;
   run `e2e/run.sh` locally only when the coordinator says the cluster is free.

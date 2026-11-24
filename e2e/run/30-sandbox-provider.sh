@@ -5,7 +5,7 @@
 # quota, warm pool) and a (user, team) sandbox under gVisor; admission policies pin isolation.
 echo "==> sandbox provider (KOBE-22)"
 ensure_sandbox() { # [team-id slug user-id]: defaults to the e2e team and sandbox user
-  $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node dist/cli/sandbox.js ensure \
+  $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node dist/cli/sandbox.js ensure \
     --team-id "${1:-$E2E_TEAM_ID}" --team-slug "${2:-e2e}" --user-id "${3:-$E2E_USER_ID}" 2>&1
 }
 json_field() { # field, single-line JSON object with string values → value (no node/jq on runners)
@@ -106,7 +106,7 @@ contains "admission refuses SETUID on any container but the sandbox's own (KOBE-
   "$(admission "{\"spec\":{\"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",\"securityContext\":{\"allowPrivilegeEscalation\":false,\"capabilities\":{\"drop\":[\"ALL\"],\"add\":[\"SETUID\"]}}}]}}")"
 contains "admission refuses privilege escalation on any container but the sandbox's own (KOBE-71)" "only the sandbox container 'agent'" \
   "$(admission "{\"spec\":{\"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",\"securityContext\":{\"allowPrivilegeEscalation\":true,\"capabilities\":{\"drop\":[\"ALL\"]}}}]}}")"
-server_sa="system:serviceaccount:$NS:kobe-server"
+server_sa="system:serviceaccount:$NS:kaiju-server"
 contains "the server's ServiceAccount cannot create namespaces outside kobe-team-*" 'only manage kobe-team-\* namespaces' \
   "$($KUBECTL create namespace kaiju-e2e-evil --as="$server_sa" --dry-run=server 2>&1 || true)"
 contains "the server's ServiceAccount cannot read Secrets in team namespaces" 'forbidden' \
@@ -125,7 +125,7 @@ team_pod() { # namespace, name, shell command → a sandbox-like pod (gVisor, bo
     \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kobe-sandbox\",$SEC_POD,
     \"containers\":[{\"name\":\"$2\",\"image\":\"busybox:1.37\",\"command\":[\"sh\",\"-c\",\"$3\"],$SEC_CTR,
       \"resources\":{\"requests\":{\"cpu\":\"50m\",\"memory\":\"32Mi\"},\"limits\":{\"cpu\":\"200m\",\"memory\":\"64Mi\"}},
-      \"volumeMounts\":[{\"name\":\"kobe-bootstrap\",\"mountPath\":\"/var/run/secrets/kobe\"}]}],
+      \"volumeMounts\":[{\"name\":\"kobe-bootstrap\",\"mountPath\":\"/var/run/secrets/kaiju\"}]}],
     \"volumes\":[{\"name\":\"kobe-bootstrap\",\"projected\":{\"sources\":[{\"serviceAccountToken\":{
       \"audience\":\"kobe.sandbox-bootstrap\",\"expirationSeconds\":3600,\"path\":\"bootstrap-token\"}}]}}]}}" >/dev/null
 }
@@ -154,8 +154,8 @@ other_listener=$(start_listener "$TEAM2_NS")
 other_ip=$($KUBECTL -n "$TEAM2_NS" get pod "$other_listener" -o jsonpath='{.status.podIP}' 2>/dev/null || true)
 
 svc_ip() { $KUBECTL -n "$NS" get svc "$1" -o jsonpath='{.spec.clusterIP}'; }
-server_ip=$(svc_ip kobe-server || true); web_ip=$(svc_ip kobe-web || true); bifrost_ip=$(svc_ip kobe-bifrost || true)
-mg_ip=$(svc_ip kobe-model-gateway || true)
+server_ip=$(svc_ip kaiju-server || true); web_ip=$(svc_ip kaiju-web || true); bifrost_ip=$(svc_ip kaiju-bifrost || true)
+mg_ip=$(svc_ip kaiju-model-gateway || true)
 dns_ip=$($KUBECTL -n kube-system get svc kube-dns -o jsonpath='{.spec.clusterIP}' || true)
 api_ip=$($KUBECTL -n default get svc kubernetes -o jsonpath='{.spec.clusterIP}' || true)
 node_ip=$($KUBECTL get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' || true)
@@ -173,7 +173,7 @@ diag_ip=$($KUBECTL -n "$NS" get pod diag-listener -o jsonpath='{.status.podIP}' 
 web_pod_ip=$($KUBECTL -n "$NS" get pods -l app.kubernetes.io/component=web -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || true)
 # Controls first: the destinations the sandbox must not reach are up and reachable from the
 # release namespace, so BLOCKED below is the sandbox policy, not a dead target.
-wait_endpoints "$NS" kobe-server kobe-web kobe-bifrost kobe-model-gateway
+wait_endpoints "$NS" kaiju-server kaiju-web kaiju-bifrost kaiju-model-gateway
 controls=$(probe "$NS" "$(retry "$(answers http://$server_ip/healthz)"); \
   $(retry "nc -w 3 $api_ip 443 </dev/null"); $(retry "nc -w 3 $node_ip 10250 </dev/null"); \
   $(tcp api "$api_ip" 443) $(tcp kubelet "$node_ip" 10250) \
@@ -204,7 +204,7 @@ egress=$(team_probe "$(sandbox_port_gate egress) \
   $targets \
   nslookup kubernetes.default.svc.cluster.local $dns_ip >/dev/null 2>&1 && echo dns=REACHED || echo dns=BLOCKED; \
   wget -qO- -T 5 http://1.1.1.1/ >/dev/null 2>&1 && echo internet=REACHED || echo internet=BLOCKED; \
-  wget -qO- -T 5 -S --post-data= --header \\\"Authorization: Bearer \$(cat /var/run/secrets/kobe/bootstrap-token)\\\" \
+  wget -qO- -T 5 -S --post-data= --header \\\"Authorization: Bearer \$(cat /var/run/secrets/kaiju/bootstrap-token)\\\" \
     http://$server_ip:8081/v1/sandbox/session 2>&1 | grep -o 'HTTP/1.1 [0-9]*' | sed 's/^/bootstrap=/'; \
   wget -qO- -T 5 -S --post-data= --header 'Authorization: Bearer forged.token.value-xxxxxxxxxx' \
     http://$server_ip:8081/v1/sandbox/session 2>&1 | grep -o 'HTTP/1.1 [0-9]*' | sed 's/^/forged=/'")

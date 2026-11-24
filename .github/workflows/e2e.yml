@@ -153,7 +153,7 @@ jobs:
           platforms: linux/amd64
           provenance: false
           sbom: false
-          tags: ghcr.io/splittingatom/kobe-${{ matrix.name }}:${{ env.KAIJU_IMAGE_TAG }}
+          tags: ghcr.io/splittingatom/kaiju-${{ matrix.name }}:${{ env.KAIJU_IMAGE_TAG }}
           outputs: type=docker,dest=${{ runner.temp }}/${{ matrix.archive || 'e2e-image' }}-${{ matrix.name }}.tar
           # Read-only: publish.yml writes these scopes on every push to main, which every pull
           # request and merge-queue run may read; PR runs don't spend the repository's cache quota.
@@ -165,12 +165,12 @@ jobs:
         if: matrix.name != 'sandbox'
         run: |
           docker load --input "${RUNNER_TEMP}/${{ matrix.archive || 'e2e-image' }}-${{ matrix.name }}.tar"
-          scripts/assert-image-nonroot.sh "ghcr.io/splittingatom/kobe-${{ matrix.name }}:${KAIJU_IMAGE_TAG}"
+          scripts/assert-image-nonroot.sh "ghcr.io/splittingatom/kaiju-${{ matrix.name }}:${KAIJU_IMAGE_TAG}"
       # KOBE-375: every image ships LICENSE, NOTICE and THIRD_PARTY_LICENSES.md (the sandbox image
       # is checked in sandbox-image.yml).
       - name: Assert ${{ matrix.name }} ships the license files
         if: matrix.name != 'sandbox'
-        run: scripts/assert-image-licenses.sh "ghcr.io/splittingatom/kobe-${{ matrix.name }}:${KAIJU_IMAGE_TAG}"
+        run: scripts/assert-image-licenses.sh "ghcr.io/splittingatom/kaiju-${{ matrix.name }}:${KAIJU_IMAGE_TAG}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           # archive: false uploads the file as is (its layers are compressed already); the
@@ -325,12 +325,12 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           ls -lh "${KAIJU_IMAGE_ARCHIVES}"
-          e2e/load-images.sh kobe "${KAIJU_IMAGE_TAG}"
+          e2e/load-images.sh kaiju "${KAIJU_IMAGE_TAG}"
           # The node now has its own copies (the restore shard loads them again into its second cluster).
           if [ "${SHARD}" != restore ]; then rm -rf "${KAIJU_IMAGE_ARCHIVES}"; fi
       - name: Run the ${{ matrix.shard }} shard
         env:
-          KAIJU_SANDBOX_IMAGE: ghcr.io/splittingatom/kobe-sandbox:${{ env.KAIJU_IMAGE_TAG }}
+          KAIJU_SANDBOX_IMAGE: ghcr.io/splittingatom/kaiju-sandbox:${{ env.KAIJU_IMAGE_TAG }}
           SHARD: ${{ matrix.shard }}
           # The nightly and manual runs also exercise the real ClamAV image (KOBE-146): its image and
           # signature download add minutes and ~1 GiB of memory, so pull requests leave it out.
@@ -354,7 +354,7 @@ jobs:
             # cold-start trials (docs/gates/gate-1.md).
             gate1) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate1.sh 2>&1 | tee "${logs}/gate1.log" ;;
             # Gate 2 (KOBE-2) on its own cluster, in parallel with the other shards: budget stop,
-            # request access, tampered kobe-policy, break-glass, secret scan (docs/gates/gate-2.md).
+            # request access, tampered kaiju-policy, break-glass, secret scan (docs/gates/gate-2.md).
             gate2) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate2.sh 2>&1 | tee "${logs}/gate2.log" ;;
             # Gate 3 (KOBE-3, KOBE-231) on its own cluster: agent versions, skills review and
             # blocklist, projects, memory with Undo and approvals, CSV to chart under CSP and the
@@ -407,9 +407,9 @@ jobs:
         if: failure()
         run: |
           kubectl get pods -A -o wide
-          kubectl -n kobe-dev describe pods | tail -200 || true
+          kubectl -n kaiju-dev describe pods | tail -200 || true
           kubectl get events -A --sort-by=.lastTimestamp | tail -80 || true
-          kubectl -n kobe-dev logs --all-containers --prefix --tail=50 -l app.kubernetes.io/name=kobe || true
+          kubectl -n kaiju-dev logs --all-containers --prefix --tail=50 -l app.kubernetes.io/name=kobe || true
           kubectl get sandboxes,sandboxclaims,sandboxwarmpools,networkpolicies -A || true
           kubectl -n kobe-team-e2e describe pods | tail -120 || true
           for t in a b; do kubectl -n kobe-team-gate1-$t describe pods | tail -60 || true; done
@@ -423,11 +423,11 @@ jobs:
           for ns in kobe-team-gate5-a kobe-team-gate7-a kobe-team-gate7-b kobe-team-gate3-a kobe-team-gate4-a; do
             kubectl -n "$ns" logs -l agents.x-k8s.io/claim-uid --all-containers --prefix --tail=-1 2>/dev/null | grep -v '"level":30' | tail -200 || true
           done
-          kubectl -n kobe-dev logs -l app.kubernetes.io/component=server -c server --tail=-1 2>/dev/null \
+          kubectl -n kaiju-dev logs -l app.kubernetes.io/component=server -c server --tail=-1 2>/dev/null \
             | grep -E 'pi_rejected|pi_start|could not|run failed|"level":(40|50)' | tail -60 || true
-          kubectl -n kobe-gate4-infra get pods -o wide || true
-          kubectl -n kobe-gate2-infra get pods -o wide || true
-          kubectl -n kobe-sso-infra logs mock-entra --tail=80 || true
+          kubectl -n kaiju-gate4-infra get pods -o wide || true
+          kubectl -n kaiju-gate2-infra get pods -o wide || true
+          kubectl -n kaiju-sso-infra logs mock-entra --tail=80 || true
           df -h /
           scripts/ci-docker-diagnostics.sh
 

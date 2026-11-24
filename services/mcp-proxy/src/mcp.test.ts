@@ -423,7 +423,7 @@ describe("initialize, ping, tools/list", () => {
     expect(res.json?.result).toEqual({
       protocolVersion: "2025-06-18",
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "kobe-mcp-proxy", version: "1.0.0" },
+      serverInfo: { name: "kaiju-mcp-proxy", version: "1.0.0" },
     });
     // A constant id only: no state behind it (KOBE-111, see the session test).
     expect(res.headers.get("mcp-session-id")).toBe("kaiju-stateless");
@@ -623,7 +623,7 @@ describe("tools/call", () => {
     ]);
   });
 
-  it("runs nothing upstream when the server denies (tampered kobe-policy, no approval)", async () => {
+  it("runs nothing upstream when the server denies (tampered kaiju-policy, no approval)", async () => {
     server.next = () => ({
       ok: true,
       value: {

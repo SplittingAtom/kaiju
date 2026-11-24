@@ -1,6 +1,6 @@
 import { constants as FS } from "node:fs";
 import { access, mkdir, open, readdir, stat } from "node:fs/promises";
-import { CHUNK_BYTES, type ExecError } from "../../kobe-exec/protocol.js";
+import { CHUNK_BYTES, type ExecError } from "../../kaiju-exec/protocol.js";
 
 /** The executor's file operations. All run as the executor's uid: that is the point. */
 

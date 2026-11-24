@@ -19,7 +19,7 @@ import {
 /**
  * The MCP proxy's policy re-check on the server (KOBE-58) against a real Postgres: sandbox
  * authentication, exposure, run binding, the policy engine at `enforcement_point: mcp_proxy`,
- * signed approvals (Gate 2: a tampered kobe-policy cannot execute an MCP write without a valid
+ * signed approvals (Gate 2: a tampered kaiju-policy cannot execute an MCP write without a valid
  * signed approval) and the `mcp.tool_call` audit.
  */
 export const fx = new EventStreamFixture();

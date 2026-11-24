@@ -1,6 +1,6 @@
 /**
  * Entry sequences as the real Pi 1.0.0 writes them (KOBE-280), copied from the real-Pi suite
- * `services/sandbox-agent/src/kobe-models.model-change.real-pi.test.ts`, which pins each order.
+ * `services/sandbox-agent/src/kaiju-models.model-change.real-pi.test.ts`, which pins each order.
  * Each line is a Pi session entry without its timestamp; ids are short stand-ins.
  */
 import type { ThreadEntry } from "../types";

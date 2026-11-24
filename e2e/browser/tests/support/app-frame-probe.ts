@@ -9,7 +9,7 @@
  * spec also requires a CSP violation per attempt, so a plain network failure does not pass.
  */
 export const REMOTE = "https://example.com";
-export const PROBE_MESSAGE = "kobe-app-frame-probe";
+export const PROBE_MESSAGE = "kaiju-app-frame-probe";
 
 export const PROBE_HTML = `<!doctype html>
 <html><head><meta charset="utf-8"><title>probe</title>
@@ -18,7 +18,7 @@ export const PROBE_HTML = `<!doctype html>
 <script>
 (async () => {
   const REMOTE = ${JSON.stringify(REMOTE)};
-  const kobe = new URL(document.URL).origin;
+  const kaiju = new URL(document.URL).origin;
   const violations = [];
   document.addEventListener("securitypolicyviolation", (e) => {
     violations.push({ directive: e.effectiveDirective, blocked: String(e.blockedURI) });
@@ -38,7 +38,7 @@ export const PROBE_HTML = `<!doctype html>
     try { results[name] = await fn(); } catch (e) { results[name] = "threw:" + e.name; }
   };
   await attempt("fetch_remote", async () => { await fetch(REMOTE + "/fetch"); return "reached"; });
-  await attempt("fetch_kaiju", async () => { await fetch(kobe + "/v1/team/apps"); return "reached"; });
+  await attempt("fetch_kaiju", async () => { await fetch(kaiju + "/v1/team/apps"); return "reached"; });
   await attempt("xhr", () => settle((done) => {
     const x = new XMLHttpRequest();
     x.onload = () => done("reached");

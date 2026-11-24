@@ -162,7 +162,7 @@ export class TraceRecorder {
     if (run) run.stopped = true;
   }
 
-  /** kobe-policy's answer for a call (a denied call's tool span ends `blocked`). */
+  /** kaiju-policy's answer for a call (a denied call's tool span ends `blocked`). */
   noteDecision(runId: string, toolCallId: string, decision: "allow" | "deny"): void {
     const run = this.#live(runId);
     if (run && decision === "deny" && run.denied.size < 4096) run.denied.add(toolCallId);

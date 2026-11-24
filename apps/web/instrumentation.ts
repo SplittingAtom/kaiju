@@ -15,6 +15,6 @@ export async function register(): Promise<void> {
   // before any request reads process.env (the proxy's HSTS header reads KAIJU_PUBLIC_URL there).
   const { adoptLegacyEnv } = await import("@kaiju/protocol/legacy-env");
   adoptLegacyEnv(process.env);
-  if (config.problem !== null) console.warn(`[kobe-web] ${config.problem}`);
-  else console.info(`[kobe-web] site branding from ${config.serverUrl}`);
+  if (config.problem !== null) console.warn(`[kaiju-web] ${config.problem}`);
+  else console.info(`[kaiju-web] site branding from ${config.serverUrl}`);
 }

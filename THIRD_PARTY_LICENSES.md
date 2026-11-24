@@ -1307,7 +1307,7 @@ Documented exceptions (`images/sandbox/license-exceptions.json`):
 
 ## Orbit eval image: Python packages
 
-What the same script finds in the Orbit eval image (`kobe-orbit-eval`, KOBE-92): Orbit v1.0.3 and Inspect AI with their dependencies (`ci/orbit/requirements.txt`, `images/orbit-eval/orbit-requirements.txt`). The committed report is `images/orbit-eval/third-party-licenses.json`; CI `orbit-eval-image` compares it with the built image.
+What the same script finds in the Orbit eval image (`kaiju-orbit-eval`, KOBE-92): Orbit v1.0.3 and Inspect AI with their dependencies (`ci/orbit/requirements.txt`, `images/orbit-eval/orbit-requirements.txt`). The committed report is `images/orbit-eval/third-party-licenses.json`; CI `orbit-eval-image` compares it with the built image.
 
 88 packages, 88 of them shipped in an image.
 
@@ -1547,7 +1547,7 @@ Base images of Kaiju's own images (every Dockerfile FROM) and what they bring al
 
 ## Chart and cluster components
 
-What the Helm chart deploys or needs on the cluster, and the services it talks to. None of these are linked into Kaiju's code. S3-compatible storage, SMTP, the audit SIEM and the OpenTelemetry backend are services the site operates (chart values `s3`, `smtp`, `auditForwarding`, `telemetry`); Kaiju ships none of them. Every top-level key of charts/kobe/values.yaml is classified in `chartValues` in tools/license-check/inventory.yaml.
+What the Helm chart deploys or needs on the cluster, and the services it talks to. None of these are linked into Kaiju's code. S3-compatible storage, SMTP, the audit SIEM and the OpenTelemetry backend are services the site operates (chart values `s3`, `smtp`, `auditForwarding`, `telemetry`); Kaiju ships none of them. Every top-level key of charts/kaiju/values.yaml is classified in `chartValues` in tools/license-check/inventory.yaml.
 
 | Component | Version | License (SPDX) | How used | Where | License text | Notes |
 | --- | --- | --- | --- | --- | --- | --- |

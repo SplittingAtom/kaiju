@@ -144,16 +144,16 @@ Restore each with a new name and point the fresh install's values key at it (see
 Secret that is not the one the data was written with says so at start, one error line per kind of
 sealed value, naming the Secret to put back (`... were sealed with a key this server does not
 hold, so they cannot be opened ...`); nothing is decrypted, and the values stay as they were until
-the right Secret is back. `charts/kobe/tests/backup-secrets.test.ts` fails when the chart
+the right Secret is back. `charts/kaiju/tests/backup-secrets.test.ts` fails when the chart
 generates a Secret this table does not list.
 
 Export them to your secret store, never to a file in shell history or the backup bucket, for
-example (release `kobe` in namespace `kobe`):
+example (release `kaiju` in namespace `kaiju`):
 
 ```bash
 umask 077
 for s in auth envelope-key model-keys egress-headers sandbox-session-keys mcp-proxy-internal egress-proxy-internal; do
-  kubectl -n kobe get secret "kobe-$s" -o json > "/secure/kobe-$s.json"
+  kubectl -n kaiju get secret "kaiju-$s" -o json > "/secure/kaiju-$s.json"
 done
 ```
 
@@ -252,7 +252,7 @@ in a Kubernetes Secret or your secret store, not in shell history: the `\passwor
 avoids typing it on a command line.
 
 ```bash
-kubectl -n kobe exec -it kobe-pg-1 -c postgres -- psql -d kobe   # CloudNativePG primary
+kubectl -n kaiju exec -it kaiju-pg-1 -c postgres -- psql -d kobe   # CloudNativePG primary
 ```
 
 ```sql
@@ -271,11 +271,11 @@ does not connect within 5 s or stays silent for 60 s.
 ## Back up
 
 ```bash
-kubectl -n kobe port-forward svc/kobe-pg-rw 5432:5432 &   # CloudNativePG; or reach your Postgres
+kubectl -n kaiju port-forward svc/kaiju-pg-rw 5432:5432 &   # CloudNativePG; or reach your Postgres
 
 export KAIJU_BACKUP_KEY_FILE=/secure/kaiju-backup.key
-export KAIJU_BACKUP_DATABASE_URL="postgres://kobe_backup:$(cat /secure/kobe-backup-db-password)@localhost:5432/kobe"
-export KAIJU_S3_ENDPOINT=https://s3.example.com KAIJU_S3_BUCKET=kobe KAIJU_S3_REGION=us-east-1
+export KAIJU_BACKUP_DATABASE_URL="postgres://kobe_backup:$(cat /secure/kaiju-backup-db-password)@localhost:5432/kobe"
+export KAIJU_S3_ENDPOINT=https://s3.example.com KAIJU_S3_BUCKET=kaiju KAIJU_S3_REGION=us-east-1
 export KAIJU_S3_ACCESS_KEY_ID=... KAIJU_S3_SECRET_ACCESS_KEY=...   # read-only (List) is enough
 
 kaiju backup --out /backups/kaiju-$(date -u +%Y%m%dT%H%M%SZ)
@@ -323,8 +323,8 @@ target someone has already configured is not a fresh install.
 
    ```bash
    for s in auth envelope-key model-keys egress-headers sandbox-session-keys mcp-proxy-internal egress-proxy-internal; do
-     jq --arg n "kobe-$s-restored" 'del(.metadata) | .metadata.name = $n' "/secure/kobe-$s.json" \
-       | kubectl -n kobe apply -f -
+     jq --arg n "kaiju-$s-restored" 'del(.metadata) | .metadata.name = $n' "/secure/kaiju-$s.json" \
+       | kubectl -n kaiju apply -f -
    done
    ```
 
@@ -332,21 +332,21 @@ target someone has already configured is not a fresh install.
    gateway of a release with KOBE-521 does not start without one (`CreateContainerConfigError`).
    Before installing or upgrading to such a release, add a fresh one (at least 32 bytes; only
    span-id linkage across the change is lost):
-   `kubectl -n kobe patch secret kobe-sandbox-session-keys-restored --type merge -p "{\"stringData\":{\"trace-span\":\"$(openssl rand -base64 36)\"}}"`.
+   `kubectl -n kaiju patch secret kaiju-sandbox-session-keys-restored --type merge -p "{\"stringData\":{\"trace-span\":\"$(openssl rand -base64 36)\"}}"`.
 
 2. Install the Kaiju version the backup was taken with (see [install.md](install.md)), and:
    - point each values key of the [Secrets](#secrets) table at its restored Secret (and
      `postgres.cnpg.existingAppSecret` with CNPG):
 
      ```bash
-     --set auth.existingSecret=kobe-auth-restored \
-     --set envelope.keySecret=kobe-envelope-key-restored \
-     --set bifrost.keysSecret=kobe-model-keys-restored \
-     --set egressProxy.headerSecret=kobe-egress-headers-restored \
-     --set sandbox.sessionKeysSecret=kobe-sandbox-session-keys-restored \
-     --set sandbox.sessionVerifyKeysConfigMap=kobe-sandbox-session-verify-keys-restored \
-     --set mcpProxy.internalKeySecret=kobe-mcp-proxy-internal-restored \
-     --set egressProxy.git.internalKeySecret=kobe-egress-proxy-internal-restored
+     --set auth.existingSecret=kaiju-auth-restored \
+     --set envelope.keySecret=kaiju-envelope-key-restored \
+     --set bifrost.keysSecret=kaiju-model-keys-restored \
+     --set egressProxy.headerSecret=kaiju-egress-headers-restored \
+     --set sandbox.sessionKeysSecret=kaiju-sandbox-session-keys-restored \
+     --set sandbox.sessionVerifyKeysConfigMap=kaiju-sandbox-session-verify-keys-restored \
+     --set mcpProxy.internalKeySecret=kaiju-mcp-proxy-internal-restored \
+     --set egressProxy.git.internalKeySecret=kaiju-egress-proxy-internal-restored
      ```
 
      The session tokens' public keys (KOBE-513) are a ConfigMap made from the restored session
@@ -356,9 +356,9 @@ target someone has already configured is not a fresh install.
      args=()
      for a in sandbox-wire model-gateway mcp-proxy egress-proxy; do
        args+=(--from-literal="$a=$(jq -r --arg k "$a.pub" '.data[$k] | @base64d' \
-         /secure/kobe-sandbox-session-keys.json)")
+         /secure/kaiju-sandbox-session-keys.json)")
      done
-     kubectl -n kobe create configmap kobe-sandbox-session-verify-keys-restored "${args[@]}"
+     kubectl -n kaiju create configmap kaiju-sandbox-session-verify-keys-restored "${args[@]}"
      ```
 
    - use the same S3 bucket, or one that holds a copy of its objects;
@@ -366,14 +366,14 @@ target someone has already configured is not a fresh install.
 
    Don't run first-run setup: a restore refuses a database that already has users.
 
-3. Stop the writers: `kubectl -n kobe scale deploy/kobe-server deploy/kobe-scheduler --replicas=0`.
+3. Stop the writers: `kubectl -n kaiju scale deploy/kaiju-server deploy/kaiju-scheduler --replicas=0`.
 4. Restore as the owner role:
 
    ```bash
-   kubectl -n kobe port-forward svc/kobe-pg-rw 5432:5432 &
-   # CloudNativePG owner credentials: secret kobe-pg-app (username, password)
+   kubectl -n kaiju port-forward svc/kaiju-pg-rw 5432:5432 &
+   # CloudNativePG owner credentials: secret kaiju-pg-app (username, password)
    export KAIJU_BACKUP_KEY_FILE=/secure/kaiju-backup.key
-   export KAIJU_DB_MIGRATE_URL="postgres://kobe_owner:$(kubectl -n kobe get secret kobe-pg-app -o jsonpath='{.data.password}' | base64 -d)@localhost:5432/kobe"
+   export KAIJU_DB_MIGRATE_URL="postgres://kobe_owner:$(kubectl -n kaiju get secret kaiju-pg-app -o jsonpath='{.data.password}' | base64 -d)@localhost:5432/kobe"
    export KAIJU_S3_ENDPOINT=... KAIJU_S3_BUCKET=... KAIJU_S3_ACCESS_KEY_ID=... KAIJU_S3_SECRET_ACCESS_KEY=...
    export KAIJU_TMPDIR=/dev/shm          # memory-backed; the decrypted dump never touches disk
    kaiju restore --from /backups/kaiju-20261002T120000Z

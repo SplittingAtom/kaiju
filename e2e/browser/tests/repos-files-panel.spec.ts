@@ -60,7 +60,7 @@ const connection = {
   display_name: "acme-e2e on GitHub",
   access_level: "read_write",
   status: "ok",
-  repo_name_prefix: "kobe-",
+  repo_name_prefix: "kaiju-",
 };
 
 async function fakeRepos(page: Page): Promise<{ started: string[] }> {

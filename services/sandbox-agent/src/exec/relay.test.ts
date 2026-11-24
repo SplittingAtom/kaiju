@@ -1,6 +1,6 @@
 import { PassThrough, type Duplex } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { MAX_PENDING_REQUESTS, MAX_REQUEST_LINE_BYTES } from "../kobe-exec/protocol.js";
+import { MAX_PENDING_REQUESTS, MAX_REQUEST_LINE_BYTES } from "../kaiju-exec/protocol.js";
 import { socketPair } from "../testing/socket-pair.js";
 import { ExecRelay, type ExecutorHandle } from "./relay.js";
 

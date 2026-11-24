@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Sourced by e2e/run.sh (KOBE-728 split of the former single script); not run on its own.
 # KOBE-58: MCP calls go only through the MCP proxy, which asks the server about every call. Gate 2:
-# a sandbox with a tampered kobe-policy (here: a client calling the proxy directly, never asking
+# a sandbox with a tampered kaiju-policy (here: a client calling the proxy directly, never asking
 # policy.check) still cannot execute an MCP write without a signed approval. Runs from the same
 # sandbox-like client pod as the egress checks, against a fake remote MCP server in the cluster.
 echo "==> MCP proxy (KOBE-58)"
@@ -21,9 +21,9 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   # idle hibernation (sandbox.hibernation.idleMinutes) would put it to sleep during the upgrade below,
   # and a sleeping sandbox never reconnects. Waking it (a no-op when awake) records fresh activity.
   contains "the e2e sandbox is awake with fresh activity before the upgrade" '"woken":true' "$(lifecycle wake)"
-  mcp_upgrade_at=$(psql_kobe "SELECT clock_timestamp()")
-  server_gen_before=$($KUBECTL -n "$NS" get deploy/kobe-server -o jsonpath='{.metadata.generation}' 2>/dev/null || true)
-  if out=$($HELM upgrade kobe charts/kobe -n "$NS" --reuse-values --wait --timeout 5m \
+  mcp_upgrade_at=$(psql_kaiju "SELECT clock_timestamp()")
+  server_gen_before=$($KUBECTL -n "$NS" get deploy/kaiju-server -o jsonpath='{.metadata.generation}' 2>/dev/null || true)
+  if out=$($HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --wait --timeout 5m \
       --set mcpProxy.allowInsecureHttp=true --set-json 'mcpProxy.allowedPorts=[80]' \
       --set-json "mcpProxy.allowedInternalCidrs=[\"$fake_mcp_ip/32\"]" \
       --set-json "mcpProxy.networkPolicy.extraEgress=$mcp_rule" 2>&1); then ok "MCP proxy reconfigured with the fake MCP server"
@@ -43,23 +43,23 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   # an arbitrary moment. Its hello lists no run for this fixture lease, so the server interrupts it
   # (D14, not_resumed) and the proxy rightly answers "No active run of this thread". Lease the run
   # only once the sandbox has reconnected to the rolled server, so no hello can still follow.
-  server_gen_after=$($KUBECTL -n "$NS" get deploy/kobe-server -o jsonpath='{.metadata.generation}' 2>/dev/null || true)
+  server_gen_after=$($KUBECTL -n "$NS" get deploy/kaiju-server -o jsonpath='{.metadata.generation}' 2>/dev/null || true)
   if [[ "$server_gen_after" != "$server_gen_before" ]]; then
     reconnected=0
     for _ in $(seq 1 120); do
-      if [[ "$(psql_kobe "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID'
+      if [[ "$(psql_kaiju "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID'
           AND user_id = '$E2E_USER_ID' AND closed_at IS NULL AND connected_at > '$mcp_upgrade_at'")" == 1 ]]; then
         reconnected=1; break
       fi
       sleep 1
     done
     if [[ "$reconnected" != 1 ]]; then # diagnostics on their own line, only on failure
-      printf '     e2e sandbox: %s\n' "$(psql_kobe "SELECT 'state=' || state || ' idle_s=' || round(extract(epoch FROM now() - last_active_at))
+      printf '     e2e sandbox: %s\n' "$(psql_kaiju "SELECT 'state=' || state || ' idle_s=' || round(extract(epoch FROM now() - last_active_at))
         FROM sandboxes WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$E2E_USER_ID'")"
     fi
     contains "the e2e sandbox reconnected to the rolled server before the MCP run is leased" '^reconnected=1$' "reconnected=$reconnected"
   fi
-  psql_kobe "INSERT INTO connectors (id, name, url, tools_snapshot) VALUES ('$MCP_CONNECTOR', 'e2e-fake', 'http://$fake_mcp_ip/mcp', '$snapshot'::jsonb)
+  psql_kaiju "INSERT INTO connectors (id, name, url, tools_snapshot) VALUES ('$MCP_CONNECTOR', 'e2e-fake', 'http://$fake_mcp_ip/mcp', '$snapshot'::jsonb)
       ON CONFLICT (id) DO UPDATE SET url = EXCLUDED.url, tools_snapshot = EXCLUDED.tools_snapshot;
     INSERT INTO team_connectors (team_id, connector_id, exposure, enabled_by) VALUES ('$E2E_TEAM_ID', '$MCP_CONNECTOR', 'all', '$E2E_USER_ID') ON CONFLICT DO NOTHING;
     INSERT INTO threads (team_id, id, owner_user_id, status) VALUES ('$E2E_TEAM_ID', '$MCP_THREAD', '$E2E_USER_ID', 'running') ON CONFLICT DO NOTHING;
@@ -67,7 +67,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
     INSERT INTO sandbox_run_leases (team_id, run_id, user_id, thread_id, sandbox_id) VALUES ('$E2E_TEAM_ID', '$MCP_RUN', '$E2E_USER_ID', '$MCP_THREAD', '$sandbox_id') ON CONFLICT DO NOTHING;" >/dev/null
   mcp_token=$(mint kobe.mcp-proxy)
   contains "an mcp-proxy session token for the sandbox was minted" '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$' "$mcp_token"
-  mcp_proxy_ip=$(svc_ip kobe-mcp-proxy || true)
+  mcp_proxy_ip=$(svc_ip kaiju-mcp-proxy || true)
   mcp_rpc() { # token json-body → the answer body, then "status=<http status>"
     in_sandbox "curl -s -m 30 -w '\nstatus=%{http_code}\n' -H 'authorization: Bearer $1' -H 'content-type: application/json' \
       -H 'accept: application/json, text/event-stream' -H 'kaiju-thread-id: $MCP_THREAD' --data-raw '$2' \
@@ -92,16 +92,16 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   expect "Gate 2: the remote server never received the unapproved write" '^(CALL get_thing .*)?$' "$(printf '%s\n' "$fake_log" | grep '^CALL' || true)"
   contains "the sandbox's session token never reaches the remote server" '^0$' "$(printf '%s\n' "$fake_log" | grep -c AUTH-HEADER-PRESENT || true)"
   contains "every MCP decision is in the audit log (mcp.tool_call: allowed and denied)" '^allowed,denied$' \
-    "$(psql_kobe "SELECT string_agg(DISTINCT target->>'decision', ',' ORDER BY target->>'decision') FROM audit_log
+    "$(psql_kaiju "SELECT string_agg(DISTINCT target->>'decision', ',' ORDER BY target->>'decision') FROM audit_log
       WHERE team_id = '$E2E_TEAM_ID' AND action = 'mcp.tool_call'")"
   contains "the denied write is audited with why its approval was missing" '^risk_write\|no_approval$' \
-    "$(psql_kobe "SELECT (target->>'reason') || '|' || (target->>'approvalFailure') FROM audit_log
+    "$(psql_kaiju "SELECT (target->>'reason') || '|' || (target->>'approvalFailure') FROM audit_log
       WHERE team_id = '$E2E_TEAM_ID' AND action = 'mcp.tool_call' AND target->>'decision' = 'denied' ORDER BY seq DESC LIMIT 1")"
   # The user approves the write (KOBE-37 stores and signs it with the site key in the server;
   # here the same row is written directly, signed in the server pod with the real key). The same
   # direct call then runs exactly once.
   approve() { # tool-call-id input-json → kid|expires_at|mac|canonical input
-    $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
+    $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "
       const { approvalKeyring } = await import('/app/dist/approvals/keys.js');
       const { signApproval } = await import('/app/node_modules/@kaiju/protocol/dist/node/index.js');
       const { canonicalJson } = await import('/app/node_modules/@kaiju/protocol/dist/index.js');
@@ -115,7 +115,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   }
   signed=$(approve toolu_e2e_1 '{"title":"x"}')
   IFS='|' read -r a_kid a_exp a_mac a_input <<<"$signed"
-  psql_kobe "INSERT INTO approvals (team_id, id, run_id, thread_id, connection_id, user_id, tool_call_id, tool, input_canonical,
+  psql_kaiju "INSERT INTO approvals (team_id, id, run_id, thread_id, connection_id, user_id, tool_call_id, tool, input_canonical,
       risk, reasons, status, cause, decided_by, decided_at, expires_at, token_kid, token_expires_at, input_hmac)
     VALUES ('$E2E_TEAM_ID', '6f214253-8d7e-4f90-b1a2-2d3e4f506172', '$MCP_RUN', '$MCP_THREAD', gen_random_uuid(), '$E2E_USER_ID',
       'toolu_e2e_1', 'mcp__e2e_fake__create_thing', '$a_input', 'write', '[]'::jsonb, 'allowed', 'user',
@@ -127,7 +127,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   contains "Gate 2: the remote server received the approved write exactly once" '^1$' \
     "$($KUBECTL -n "$MCP_NS" logs fake-mcp 2>&1 | grep -c '^CALL create_thing ' || true)"
   contains "the approval was consumed and audited (approval.consumed)" '^[1-9][0-9]*$' \
-    "$(psql_kobe "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'approval.consumed'")"
+    "$(psql_kaiju "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'approval.consumed'")"
   # KOBE-303: a connector with a site-wide API key. The Owner registers it through the registry API
   # (the fake serves no tools/list, so its tools are pinned here like the fixture above), enables it
   # and sets the key once; two members (the e2e user and the workspace-sync user, each with their own
@@ -143,7 +143,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   SITE_THREAD2=9c4e5f60-7182-493a-bc4d-5e6f708192a3
   SITE_RUN2=ad5f6071-8293-4a4b-8d5e-6f708192a3b4
   sync_sandbox=$(sync_uid)
-  psql_kobe "UPDATE connectors SET tools_snapshot = '$site_snapshot'::jsonb WHERE id = '$SITE_CONNECTOR';
+  psql_kaiju "UPDATE connectors SET tools_snapshot = '$site_snapshot'::jsonb WHERE id = '$SITE_CONNECTOR';
     INSERT INTO team_connectors (team_id, connector_id, exposure, enabled_by) VALUES ('$E2E_TEAM_ID', '$SITE_CONNECTOR', 'all', '$E2E_USER_ID') ON CONFLICT DO NOTHING;
     INSERT INTO threads (team_id, id, owner_user_id, status) VALUES ('$E2E_TEAM_ID', '$SITE_THREAD', '$E2E_USER_ID', 'running'), ('$E2E_TEAM_ID', '$SITE_THREAD2', '$SYNC_USER_ID', 'running') ON CONFLICT DO NOTHING;
     INSERT INTO runs (team_id, id, thread_id, trigger, status, started_at) VALUES ('$E2E_TEAM_ID', '$SITE_RUN', '$SITE_THREAD', 'user', 'running', now()), ('$E2E_TEAM_ID', '$SITE_RUN2', '$SITE_THREAD2', 'user', 'running', now()) ON CONFLICT DO NOTHING;
@@ -167,7 +167,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   contains "KOBE-303: the fake server saw the site key on both calls" '^[2-9]$' \
     "$(printf '%s\n' "$site_log" | grep -cxF "AUTH Bearer $SITE_KEY" || true)"
   contains "KOBE-303: every call is audited with the member who made it" '^2$' \
-    "$(psql_kobe "SELECT count(DISTINCT target->>'userId') FROM audit_log WHERE team_id = '$E2E_TEAM_ID'
+    "$(psql_kaiju "SELECT count(DISTINCT target->>'userId') FROM audit_log WHERE team_id = '$E2E_TEAM_ID'
       AND action = 'mcp.tool_call' AND target->>'connectorId' = '$SITE_CONNECTOR' AND target->>'decision' = 'allowed'")"
   site_env=$($KUBECTL -n "$TEAM_NS" exec "$($KUBECTL -n "$TEAM_NS" get pods -l "agents.x-k8s.io/claim-uid=$sandbox_id" -o name | head -1)" \
     -c agent -- env 2>/dev/null || true)
@@ -176,9 +176,9 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   contains "KOBE-303: no SandboxTemplate in the team namespace holds it" '^0$' \
     "$($KUBECTL -n "$TEAM_NS" get sandboxtemplates.extensions.agents.x-k8s.io -o yaml 2>/dev/null | grep -c -- "$SITE_KEY" || true)"
   contains "KOBE-303: no audit row holds it" '^0$' \
-    "$(psql_kobe "SELECT count(*) FROM audit_log WHERE target::text LIKE '%$SITE_KEY%'")"
+    "$(psql_kaiju "SELECT count(*) FROM audit_log WHERE target::text LIKE '%$SITE_KEY%'")"
   contains "KOBE-303: it is stored sealed (never in clear)" '^0$' \
-    "$(psql_kobe "SELECT count(*) FROM connector_site_keys WHERE sealed LIKE '%$SITE_KEY%'")"
+    "$(psql_kaiju "SELECT count(*) FROM connector_site_keys WHERE sealed LIKE '%$SITE_KEY%'")"
   contains "KOBE-303: no server log line holds it" '^0$' \
     "$(for pod in $($KUBECTL -n "$NS" get pods -l app.kubernetes.io/component=server -o name); do
         $KUBECTL -n "$NS" logs "$pod" -c server 2>/dev/null || true; done | grep -c -- "$SITE_KEY" || true)"
@@ -189,7 +189,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
     echo "SKIP KOBE-449 site-key run (runs in the suite shard only)"
   elif [[ "$(type -t chat_run)" == function && -n "${owner_id:-}" ]]; then
     SITE_AGENT=5e6f7081-92a3-4b4c-9d6e-7f8091a2b3c5
-    psql_kobe "DELETE FROM site_agents WHERE id = '$SITE_AGENT' AND current_version IS NULL;
+    psql_kaiju "DELETE FROM site_agents WHERE id = '$SITE_AGENT' AND current_version IS NULL;
       INSERT INTO site_agents (id, scope, owner_user_id, slug, frontmatter, prompt)
         SELECT '$SITE_AGENT', 'personal', '$owner_id', 'e2e-site-key',
           (a.frontmatter - 'tools') || '{\"name\":\"E2E site key\",\"connectors\":[\"e2e-site\"]}'::jsonb, a.prompt
@@ -201,7 +201,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
         FROM site_agents a WHERE a.id = '$SITE_AGENT' ON CONFLICT DO NOTHING;
       UPDATE site_agents SET current_version = 1 WHERE id = '$SITE_AGENT';" >/dev/null
     contains "KOBE-449: the Owner holds no key of their own for the site-key connector" '^0$' \
-      "$(psql_kobe "SELECT count(*) FROM connector_grants WHERE connector_id = '$SITE_CONNECTOR'")"
+      "$(psql_kaiju "SELECT count(*) FROM connector_grants WHERE connector_id = '$SITE_CONNECTOR'")"
     site_tools=$(chat_run "tools?" 240000 "" "$SITE_AGENT")
     contains "KOBE-449: the run's model is offered the site-key connector's tool" '^text=.*mcp__e2e_site__get_thing' "$site_tools"
     site_steps='[{"name":"mcp__e2e_site__get_thing","args":{"id":"site-run"}}]'
@@ -225,8 +225,8 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   contains "control: the sandbox-like client reaches the server's sandbox port" '^control=REACHED$' "$internal"
   contains "sandboxes cannot reach the server's internal port (MCP re-check)" '^internal=BLOCKED$' "$internal"
   # Receiving side: only team namespaces may connect to the proxy (release namespace is refused).
-  wait_endpoints "$NS" kobe-server kobe-mcp-proxy
-  mcp_recv=$(probe "$NS" "$(gated http://kobe-server/healthz mcp http://kobe-mcp-proxy/healthz)")
+  wait_endpoints "$NS" kaiju-server kaiju-mcp-proxy
+  mcp_recv=$(probe "$NS" "$(gated http://kaiju-server/healthz mcp http://kaiju-mcp-proxy/healthz)")
   contains "control: the release-namespace probe reaches the server" '^control=REACHED$' "$mcp_recv"
   contains "the MCP proxy admits nothing but sandboxes (probe from the release namespace)" '^mcp=BLOCKED$' "$mcp_recv"
 elif [[ "${CI:-}" == "true" ]]; then

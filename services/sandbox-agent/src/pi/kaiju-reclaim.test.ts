@@ -7,19 +7,19 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 /**
- * kobe-reclaim (images/sandbox/runas) run as the current user on a scratch tree (KOBE-196): the
+ * kaiju-reclaim (images/sandbox/runas) run as the current user on a scratch tree (KOBE-196): the
  * code caches Pi trusts are deleted instead of being opened to the workspace group. GNU find/stat
  * are needed, so Linux only (CI); the real-helper suite runs it as a Pi identity.
  */
 const SCRIPT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../../../images/sandbox/runas/kobe-reclaim.sh",
+  "../../../../images/sandbox/runas/kaiju-reclaim.sh",
 );
 const gid = process.getgid?.() ?? 0;
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-reclaim-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-reclaim-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
@@ -27,10 +27,10 @@ afterEach(async () => {
 
 const reclaim = () => spawnSync("sh", [SCRIPT, String(gid), dir], { encoding: "utf8" });
 
-describe.skipIf(process.platform !== "linux")("kobe-reclaim code caches (KOBE-196)", () => {
+describe.skipIf(process.platform !== "linux")("kaiju-reclaim code caches (KOBE-196)", () => {
   it("deletes jiti/ and node-compile-cache/ the uid owns, and opens the rest to the group", async () => {
     await mkdir(path.join(dir, "jiti"), { mode: 0o700 });
-    await writeFile(path.join(dir, "jiti", "kobe-exec-index.abc.mjs"), "x", { mode: 0o600 });
+    await writeFile(path.join(dir, "jiti", "kaiju-exec-index.abc.mjs"), "x", { mode: 0o600 });
     await mkdir(path.join(dir, "node-compile-cache", "v22"), { recursive: true, mode: 0o700 });
     await writeFile(path.join(dir, "scratch.txt"), "y", { mode: 0o600 });
     const result = reclaim();

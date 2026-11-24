@@ -56,7 +56,7 @@ describe("upstream MCP client (Streamable HTTP)", () => {
     const [init, , toolCall] = fake.received;
     expect(init?.message.params).toMatchObject({
       protocolVersion: "2025-11-25",
-      clientInfo: { name: "kobe-mcp-proxy" },
+      clientInfo: { name: "kaiju-mcp-proxy" },
     });
     expect(init?.headers.accept).toBe("application/json, text/event-stream");
     expect(toolCall?.headers["mcp-protocol-version"]).toBe("2025-11-25");

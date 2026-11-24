@@ -137,7 +137,7 @@ export function createBrandingLoader(options: BrandingLoaderOptions): BrandingLo
         inlineLogo = { url, markup };
       } catch (error) {
         rateLog(
-          () => `[kobe-web] inline logo unavailable (${reasonOf(error)}); showing it as an image`,
+          () => `[kaiju-web] inline logo unavailable (${reasonOf(error)}); showing it as an image`,
         );
         return withoutInline(b);
       }
@@ -154,7 +154,7 @@ export function createBrandingLoader(options: BrandingLoaderOptions): BrandingLo
       } catch (error) {
         rateLog(() => {
           const serving = good === undefined ? "the Kaiju defaults" : "the last known branding";
-          return `[kobe-web] site branding unavailable (${reasonOf(error)}); serving ${serving}`;
+          return `[kaiju-web] site branding unavailable (${reasonOf(error)}); serving ${serving}`;
         });
       } finally {
         inflight = undefined;

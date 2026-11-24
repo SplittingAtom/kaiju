@@ -36,7 +36,7 @@ beforeEach(async () => {
     res.writeHead(200, { "content-length": bytes.length }).end(bytes);
   });
   await new Promise<void>((resolve) => http.listen(0, "127.0.0.1", resolve));
-  skillsRoot = path.join(await mkdtemp(path.join(tmpdir(), "kobe-skills-e2e-")), "skills");
+  skillsRoot = path.join(await mkdtemp(path.join(tmpdir(), "kaiju-skills-e2e-")), "skills");
 });
 afterEach(async () => {
   expect(h?.server.violations ?? []).toEqual([]);

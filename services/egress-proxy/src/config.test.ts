@@ -91,31 +91,31 @@ describe("loadConfig", () => {
     const key = "k".repeat(40);
     const c = loadConfig({
       ...base,
-      KAIJU_EGRESS_SERVER_URL: "http://kobe-server:8082",
+      KAIJU_EGRESS_SERVER_URL: "http://kaiju-server:8082",
       KAIJU_EGRESS_INTERNAL_KEY: key,
     });
     expect(c.git).toMatchObject({
-      serverUrl: "http://kobe-server:8082",
+      serverUrl: "http://kaiju-server:8082",
       internalKey: key,
       maxResponseBytes: 4 * 1024 * 1024 * 1024,
       timeoutMs: 1_800_000,
       concurrentPerSandbox: 8,
     });
     expect(() =>
-      loadConfig({ ...base, KAIJU_EGRESS_SERVER_URL: "http://kobe-server:8082" }),
+      loadConfig({ ...base, KAIJU_EGRESS_SERVER_URL: "http://kaiju-server:8082" }),
     ).toThrow(/go together/);
     expect(() => loadConfig({ ...base, KAIJU_EGRESS_INTERNAL_KEY: key })).toThrow(/go together/);
     expect(() =>
       loadConfig({
         ...base,
-        KAIJU_EGRESS_SERVER_URL: "http://user:pw@kobe-server:8082/x",
+        KAIJU_EGRESS_SERVER_URL: "http://user:pw@kaiju-server:8082/x",
         KAIJU_EGRESS_INTERNAL_KEY: key,
       }),
     ).toThrow(/KAIJU_EGRESS_SERVER_URL/);
     expect(() =>
       loadConfig({
         ...base,
-        KAIJU_EGRESS_SERVER_URL: "http://kobe-server:8082",
+        KAIJU_EGRESS_SERVER_URL: "http://kaiju-server:8082",
         KAIJU_EGRESS_INTERNAL_KEY: "short",
       }),
     ).toThrow(/KAIJU_EGRESS_INTERNAL_KEY/);

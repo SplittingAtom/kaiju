@@ -13,7 +13,7 @@ function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
 }
 
 /**
- * Sandbox -> server: the `propose_file_edit` call kobe-policy let through. Nothing is pushed
+ * Sandbox -> server: the `propose_file_edit` call kaiju-policy let through. Nothing is pushed
  * first: the proposal is the input itself, and its base is the server's synced copy. Answered by
  * `file.edit_propose_result` for the same `request_id`.
  */

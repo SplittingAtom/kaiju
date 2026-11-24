@@ -32,7 +32,7 @@ Chromium reach the site's host through a port-forward. `KAIJU_BROWSER_RESULTS` m
 cd e2e/browser
 npm ci
 npx playwright install chromium   # once, unless you use the Playwright container below
-KAIJU_BASE_URL=https://kobe.example.org KAIJU_USER=member@example.org KAIJU_PW='…' npx playwright test
+KAIJU_BASE_URL=https://kaiju.example.org KAIJU_USER=member@example.org KAIJU_PW='…' npx playwright test
 ```
 
 | Variable         | Meaning                                                                                                                                                 |
@@ -263,7 +263,7 @@ accounts (Kaiju never deletes users).
 
 | Variable                       | Meaning                                                                                 |
 | ------------------------------ | --------------------------------------------------------------------------------------- |
-| `KAIJU_SSO_MOCK_ISSUER`        | The mock's issuer (`https://mock-idp.kobe-sso-mock.svc.cluster.local/<tenant>/v2.0`).   |
+| `KAIJU_SSO_MOCK_ISSUER`        | The mock's issuer (`https://mock-idp.kaiju-sso-mock.svc.cluster.local/<tenant>/v2.0`).   |
 | `KAIJU_SSO_MOCK_CLIENT_ID`     | Its client ID (only to register the provider).                                          |
 | `KAIJU_SSO_MOCK_CLIENT_SECRET` | Its client secret (only to register the provider); from the `mock-idp-client` Secret.   |
 | `KAIJU_SSO_MOCK_MAP`           | `ip:port` of the cluster's ingress: Chromium reaches the mock's name there.             |

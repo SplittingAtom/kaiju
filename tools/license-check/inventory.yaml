@@ -23,7 +23,7 @@ npm:
   intro: >-
     Every package in pnpm-lock.yaml (production and development, all platforms). "linked, bundled"
     packages are in the production dependencies of a deployable and ship in its image (the
-    services via `pnpm deploy --prod`, web via the Next.js standalone output, kobe-sandbox-agent
+    services via `pnpm deploy --prod`, web via the Next.js standalone output, kaiju-sandbox-agent
     in the sandbox image); "dev-only" packages build, lint and test Kaiju and are never shipped.
     Checked by `pnpm license:check` (CI `checks`).
   exceptions: tools/license-check/license-exceptions.json
@@ -84,7 +84,7 @@ imageReports:
     intro: >-
       What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sandbox`): the
       Python data stack (`images/sandbox/requirements.txt`), Pi and its dependencies
-      (`images/sandbox/pi/package-lock.json`), kobe-sandbox-agent's production dependencies and
+      (`images/sandbox/pi/package-lock.json`), kaiju-sandbox-agent's production dependencies and
       the npm CLI. The committed report is `images/sandbox/third-party-licenses.json`; CI
       `sandbox-image` compares it with the built image and runs the policy check on it.
     image: sandbox
@@ -93,12 +93,12 @@ imageReports:
     locations:
       python: Python site-packages
       /opt/pi: Pi (/opt/pi)
-      /opt/kobe/sandbox-agent: kobe-sandbox-agent
+      /opt/kaiju/sandbox-agent: kaiju-sandbox-agent
       /usr/local/lib: npm CLI (/usr/local/lib/node_modules)
   - id: orbit-eval
     title: "Orbit eval image: Python packages"
     intro: >-
-      What the same script finds in the Orbit eval image (`kobe-orbit-eval`, KOBE-92): Orbit
+      What the same script finds in the Orbit eval image (`kaiju-orbit-eval`, KOBE-92): Orbit
       v1.0.3 and Inspect AI with their dependencies (`ci/orbit/requirements.txt`,
       `images/orbit-eval/orbit-requirements.txt`). The committed report is
       `images/orbit-eval/third-party-licenses.json`; CI `orbit-eval-image` compares it with the
@@ -222,15 +222,15 @@ sections:
         link: https://github.com/krallin/tini/blob/master/LICENSE
         images: []
       - id: musl-static
-        component: musl libc, statically linked into kobe-runas
+        component: musl libc, statically linked into kaiju-runas
         version: 1.2.5 (Debian trixie musl-dev, build stage)
         license: MIT
-        use: linked (static) into kobe-runas
-        where: sandbox image (/opt/kobe/bin/kobe-runas)
+        use: linked (static) into kaiju-runas
+        where: sandbox image (/opt/kaiju/bin/kaiju-runas)
         link: https://git.musl-libc.org/cgit/musl/tree/COPYRIGHT
         images: []
         reason: >-
-          kobe-runas is built -static-pie with musl-gcc against musl's start files and libc.a only
+          kaiju-runas is built -static-pie with musl-gcc against musl's start files and libc.a only
           (no glibc, no GCC crtbegin/crtend or libgcc; images/sandbox/Dockerfile), so the binary
           holds Kaiju's code (Apache-2.0) and musl (MIT). Chose musl over glibc (LGPL-2.1):
           Chris, 2026-10-17.
@@ -269,13 +269,13 @@ sections:
       these are linked into Kaiju's code. S3-compatible storage, SMTP, the audit SIEM and the
       OpenTelemetry backend are services the site operates (chart values `s3`, `smtp`,
       `auditForwarding`, `telemetry`); Kaiju ships none of them. Every top-level key of
-      charts/kobe/values.yaml is classified in `chartValues` in tools/license-check/inventory.yaml.
+      charts/kaiju/values.yaml is classified in `chartValues` in tools/license-check/inventory.yaml.
     rows:
       - id: pi
         component: Pi coding agent (`@earendil-works/pi-coding-agent`)
         version: 1.4.0 (pinned in images/sandbox/pi/package-lock.json)
         license: MIT
-        use: bundled (separate process, RPC mode under kobe-sandbox-agent)
+        use: bundled (separate process, RPC mode under kaiju-sandbox-agent)
         where: sandbox image (/opt/pi); dependencies in the sandbox table
         link: https://github.com/earendil-works/pi/blob/v1.4.0/LICENSE
         images: []
@@ -692,7 +692,7 @@ sections:
         link: https://github.com/assistant-ui/assistant-ui/blob/208cc81de222d85b8c3877445187828cff09feeb/LICENSE
         images: []
 
-# Every top-level key of charts/kobe/values.yaml: "first-party" (Kaiju's own components),
+# Every top-level key of charts/kaiju/values.yaml: "first-party" (Kaiju's own components),
 # "site-provided" (a service the site operates; Kaiju ships nothing) or the inventory rows it
 # brings in. A new key fails the check until it is classified here.
 chartValues:

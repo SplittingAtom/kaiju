@@ -4,7 +4,7 @@
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
 TAG="${KAIJU_IMAGE_TAG:?set KAIJU_IMAGE_TAG (use a per-run tag so stale images cannot pass)}"
-NS=kobe-dev
+NS=kaiju-dev
 SANDBOX_NS=kaiju-e2e-sandbox
 TEAM_NS=kobe-team-e2e # KOBE-22: created by the server, not by this script
 TEAM2_NS=kobe-team-e2e2

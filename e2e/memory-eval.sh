@@ -23,7 +23,7 @@
 #     running Kaiju (real model through the gateway) and prints the cache-read share from the
 #     thread's gateway usage (all turns, and turns 2-20). Environment (from the operator's shell,
 #     never committed):
-#       KAIJU_EVAL_URL       the install's public URL, e.g. https://kobe.example.com (required)
+#       KAIJU_EVAL_URL       the install's public URL, e.g. https://kaiju.example.com (required)
 #       KAIJU_EVAL_EMAIL / KAIJU_EVAL_PASSWORD   a member's password sign-in, or
 #       KAIJU_EVAL_COOKIE    a signed-in browser's Cookie header value (SSO-only installs)
 #       KAIJU_EVAL_TEAM_ID   the Workspace to use (default: the member's active one)

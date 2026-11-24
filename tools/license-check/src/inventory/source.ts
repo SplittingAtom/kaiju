@@ -86,7 +86,7 @@ export interface Inventory {
   readonly npmLockfiles: readonly NpmLockfileSource[];
   readonly sections: readonly HandSection[];
   /**
-   * Every top-level key of charts/kobe/values.yaml: "first-party" (Kaiju's own components),
+   * Every top-level key of charts/kaiju/values.yaml: "first-party" (Kaiju's own components),
    * "site-provided" (a service the site operates, Kaiju ships nothing) or the row ids it brings in.
    */
   readonly chartValues: Readonly<Record<string, ChartValueClass>>;

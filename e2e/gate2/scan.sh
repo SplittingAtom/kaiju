@@ -81,7 +81,7 @@ PROC_DUMP='for p in /proc/[0-9]*; do
 done'
 
 # The files of the sandbox that sandbox code can write or that are mounted into it: workspace,
-# tmp, home, run, var, etc, /opt/kobe, every other mount point from /proc/self/mountinfo.
+# tmp, home, run, var, etc, /opt/kaiju, every other mount point from /proc/self/mountinfo.
 FS_DUMP='roots="/workspace /tmp /home /run /var /etc /root /srv /mnt /opt/kobe"
 for m in $(awk "{print \$5}" /proc/self/mountinfo); do
   case "$m" in /|/proc|/proc/*|/sys|/sys/*|/dev|/dev/*) ;; *) roots="$roots $m" ;; esac
@@ -93,19 +93,19 @@ find $roots -xdev -type f -size -2048k -not -path "/var/lib/apt/*" -not -path "/
 #   is judged by jwt_class, so these shapes add nothing here. The egress token reaches Pi's tools
 #   as HTTPS_PROXY=http://<thread id>:<token>@<proxy> (KOBE-39; "egress token visible in env
 #   output" is accepted LOW in docs/ledger/KOBE-39.md).
-# - /opt/kobe/egress-env.sh itself: the root-owned script that builds that URL from variables
+# - /opt/kaiju/egress-env.sh itself: the root-owned script that builds that URL from variables
 #   (`http://${user}:${token}@${host}`), a template without a value.
 # - Library documentation and tests inside the image, by exact path (seen in the first CI runs):
 #   pino's docs/transports.md (an example URL), zod's test files (example URLs and the jwt.io sample
 #   token for "John Doe"). Nothing else under node_modules is excluded.
-FIXTURE_RE='fs/tmp/node-compile-cache/[^:]*:|fs/opt/kobe/sandbox-agent/node_modules/\.pnpm/(pino@[0-9.]+/node_modules/pino/docs/transports\.md|zod@[0-9.]+/node_modules/zod/src/[a-z0-9/]*tests/[a-z-]+\.test\.ts):'
+FIXTURE_RE='fs/tmp/node-compile-cache/[^:]*:|fs/opt/kaiju/sandbox-agent/node_modules/\.pnpm/(pino@[0-9.]+/node_modules/pino/docs/transports\.md|zod@[0-9.]+/node_modules/zod/src/[a-z0-9/]*tests/[a-z-]+\.test\.ts):'
 generic_unexpected() { # pattern name; "file:match" lines on stdin → those not allowed above
   grep -a -v -E "$FIXTURE_RE" | generic_unexpected_by_kind "$1"
 }
 generic_unexpected_by_kind() {
   case "$1" in
     bearer-credential) grep -a -v -E 'Bearer eyJ' || true ;;
-    basic-url-credential) grep -a -v -E '^[^:]*fs/opt/kobe/egress-env\.sh:|://[^:/]+:eyJ' || true ;;
+    basic-url-credential) grep -a -v -E '^[^:]*fs/opt/kaiju/egress-env\.sh:|://[^:/]+:eyJ' || true ;;
     # The skills store's directories are `sk-<sha256>` (sandbox-agent skills/store.ts): since
     # Kaiju's catalog skills (KOBE-317) every run's prompt, so Pi's session files, names them. A
     # provider key is never 64 lowercase hex digits, and the real keys are matched by value above.
@@ -167,7 +167,7 @@ run_secret_scan() {
   fi
 
   # 1. What is to be looked for.
-  local deps=(kobe-deps "$NS-deps" ${KAIJU_GATE2_DEPS_NS:-})
+  local deps=(kaiju-deps "$NS-deps" ${KAIJU_GATE2_DEPS_NS:-})
   collect_k8s_secrets "$dir" "$NS" "${deps[@]}"
   collect_provider_keys "$dir"
   if [[ -n "${KAIJU_GATE2_EXTRA_SECRETS_FILE:-}" ]]; then

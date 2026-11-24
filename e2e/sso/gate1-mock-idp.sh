@@ -8,15 +8,15 @@
 # Idempotent: reruns keep the CA, the client secret and the tenant/client ids (a provider's issuer
 # can't change once someone signed in with it), and restart the mock only when its code changed.
 # Afterwards it prints the Helm values to add (the CA bundle and the mock's address) and the
-# variables the spec needs. Remove: `$KUBECTL delete namespace kobe-sso-mock` and the
-# `kobe-sso-mock-ca` ConfigMap in the release namespace, then drop the values again.
+# variables the spec needs. Remove: `$KUBECTL delete namespace kaiju-sso-mock` and the
+# `kaiju-sso-mock-ca` ConfigMap in the release namespace, then drop the values again.
 set -euo pipefail
 cd "$(dirname "$0")"
 
 KUBECTL="${KUBECTL:-kubectl}"
 KAIJU_NS="${KAIJU_NS:?KAIJU_NS (the Kaiju release namespace) is required}"
-RELEASE="${KAIJU_RELEASE:-kobe}"
-NS=kobe-sso-mock
+RELEASE="${KAIJU_RELEASE:-kaiju}"
+NS=kaiju-sso-mock
 HOST="mock-idp.$NS.svc.cluster.local"
 # Fixed ids: the mock is a test provider; nothing about them is secret.
 TENANT=6f0b2a41-1c1e-4c43-9d5e-0a5f3a1b2c34
@@ -64,7 +64,7 @@ sed -e "s|__SERVER_IMAGE__|$SERVER_IMAGE|g" -e "s|__TENANT__|$TENANT|g" \
 k -n "$NS" rollout status deploy/mock-idp --timeout=180s >/dev/null
 
 # The CA for the server's extra bundle, in the release namespace.
-k -n "$KAIJU_NS" create configmap kobe-sso-mock-ca --from-file=ca.crt="$WORK/ca.crt" \
+k -n "$KAIJU_NS" create configmap kaiju-sso-mock-ca --from-file=ca.crt="$WORK/ca.crt" \
   --dry-run=client -o yaml | k apply -f - >/dev/null
 
 MOCK_IP=$(k -n "$NS" get svc mock-idp -o jsonpath='{.spec.clusterIP}')
@@ -74,7 +74,7 @@ Mock IdP ready in namespace $NS (image $SERVER_IMAGE, code $CODE_HASH).
 
 Helm values to add (helm get values -o yaml, edit, upgrade with -f ... --reset-values):
   auth.sso.allowedInternalCidrs: add "$MOCK_IP/32" (keep any existing entries)
-  server.extraCaBundle: { configMapName: kobe-sso-mock-ca, key: ca.crt }
+  server.extraCaBundle: { configMapName: kaiju-sso-mock-ca, key: ca.crt }
     (if the release already has an extra CA bundle, append this CA to that bundle instead)
 
 Spec variables (e2e/browser/README.md, "Single sign-on"):

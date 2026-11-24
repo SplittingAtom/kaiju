@@ -1,0 +1,34 @@
+import {
+  anthropicMessagesApi,
+  createAssistantMessageEventStream,
+  createProvider,
+  googleGenerativeAIApi,
+  openAICompletionsApi,
+} from "@earendil-works/pi-ai";
+import { registerKaijuModels, type ExtensionApiLike } from "./register.js";
+import { readModelState } from "./state-file.js";
+
+/**
+ * kaiju-models: the Pi 1.0.x extension that gives Pi the run's model through the Kaiju model
+ * gateway (spec D30; KOBE-41). kaiju-sandbox-agent loads it with `--extension <root-owned path>`
+ * (before kaiju-policy) into every `pi --mode rpc` it starts with a model, together with
+ * `--model kobe/<gateway model>` and the model file (`KAIJU_MODEL_FILE`, see protocol.ts).
+ *
+ * Self-contained by design: node builtins, `@earendil-works/pi-ai` (Pi's own copy, aliased by
+ * its extension loader) and files in this directory, because the image ships it on its own
+ * (root-owned, read-only, `/opt/kaiju/pi-extensions/kaiju-models`).
+ */
+export default function kaijuModels(api: ExtensionApiLike): Promise<void> {
+  return registerKaijuModels(api, {
+    env: process.env,
+    readState: readModelState,
+    pi: { createProvider, createAssistantMessageEventStream },
+    apis: {
+      "openai-completions": openAICompletionsApi(),
+      "anthropic-messages": anthropicMessagesApi(),
+      "google-generative-ai": googleGenerativeAIApi(),
+    },
+    // stderr only: stdout is Pi's RPC stream.
+    warn: (message) => process.stderr.write(`${message}\n`),
+  });
+}

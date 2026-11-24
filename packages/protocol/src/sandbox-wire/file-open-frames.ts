@@ -9,7 +9,7 @@ function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
 }
 
 /**
- * Sandbox -> server: the `open_file` call kobe-policy let through, sent after the agent pushed the
+ * Sandbox -> server: the `open_file` call kaiju-policy let through, sent after the agent pushed the
  * file through workspace sync. Answered by `file.open_result` for the same `request_id`.
  */
 export const fileOpenFrameSchema = frame("file.open", {

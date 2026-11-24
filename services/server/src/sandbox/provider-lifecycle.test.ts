@@ -220,24 +220,24 @@ describe("wakeSandbox (D14, KOBE-9)", () => {
     ctx.kube.seed({
       apiVersion: "v1",
       kind: "Service",
-      metadata: { name: "kobe-server", namespace: "kaiju" },
+      metadata: { name: "kaiju-server", namespace: "kaiju" },
       spec: { clusterIP: "10.43.9.9" },
     });
-    const upgraded = ctx.make({ ...SETTINGS, image: "ghcr.io/splittingatom/kobe-sandbox:0.2.0" });
+    const upgraded = ctx.make({ ...SETTINGS, image: "ghcr.io/splittingatom/kaiju-sandbox:0.2.0" });
     await upgraded.wakeSandbox(TEAM, USER);
     const spec = podSpec(ctx.kube, name) as {
       containers: { image: string }[];
       hostAliases: { ip: string; hostnames: string[] }[];
       staleField?: unknown;
     };
-    expect(spec.containers[0]?.image).toBe("ghcr.io/splittingatom/kobe-sandbox:0.2.0");
+    expect(spec.containers[0]?.image).toBe("ghcr.io/splittingatom/kaiju-sandbox:0.2.0");
     expect(spec.hostAliases).toContainEqual({
       ip: "10.43.9.9",
-      hostnames: ["server.kobe.internal"],
+      hostnames: ["server.kaiju.internal"],
     });
     expect(spec.staleField).toBeUndefined();
     expect(podOf(ctx.kube, name)?.spec).toMatchObject({
-      containers: [{ image: "ghcr.io/splittingatom/kobe-sandbox:0.2.0" }],
+      containers: [{ image: "ghcr.io/splittingatom/kaiju-sandbox:0.2.0" }],
     });
   });
 

@@ -207,7 +207,7 @@ describe("connect (G2, G4, G8; ac-1)", () => {
     expect(res.json.test).toMatchObject({
       ok: true,
       provider: "forgejo",
-      actor: { login: "kobe-bot" },
+      actor: { login: "kaiju-bot" },
     });
 
     const [row] = await stored(w.team);

@@ -22,8 +22,8 @@ describe("upload settings", () => {
 
   it("turns scanning on only when the chart gives a clamd host", () => {
     expect(loadUploadSettings({}).clamav).toBeUndefined();
-    expect(loadUploadSettings({ KAIJU_CLAMAV_HOST: "kobe-clamav" }).clamav).toEqual({
-      host: "kobe-clamav",
+    expect(loadUploadSettings({ KAIJU_CLAMAV_HOST: "kaiju-clamav" }).clamav).toEqual({
+      host: "kaiju-clamav",
       port: 3310,
       timeoutMs: 60_000,
     });

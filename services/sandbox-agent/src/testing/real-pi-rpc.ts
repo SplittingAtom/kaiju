@@ -7,14 +7,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { ExecRelay } from "../exec/relay.js";
 import { executorEnv, startExecutor } from "../exec/spawn-executor.js";
-import { EXEC_FD_ENV } from "../kobe-exec/protocol.js";
+import { EXEC_FD_ENV } from "../kaiju-exec/protocol.js";
 import type { PiIdentities, PiIdentity } from "../pi/identities.js";
 import { preparePiPrivateDirs } from "../threads/exec-wiring.js";
 import { EXEC_CHANNEL_FD, PI_LOCKDOWN_ARGS } from "../pi/pi-launch.js";
 
 /**
  * A bare driver for the REAL pinned Pi 1.0.0 in RPC mode, started the way the agent starts it
- * (lockdown flags, a private agent dir, kobe-models then kobe-policy, the policy channel on fd 3,
+ * (lockdown flags, a private agent dir, kaiju-models then kaiju-policy, the policy channel on fd 3,
  * the model file named by KAIJU_MODEL_FILE) but without the agent in between: no tripwire, no
  * model-file bookkeeping. Tests that ask what Pi itself does with a planted `agent/` directory
  * need exactly that (KOBE-165). Answers Pi's `kaiju.run_token` dialog like the agent does.
@@ -98,7 +98,7 @@ export interface PiRpcOptions {
   /** Runs on the fresh agent dir before Pi starts (KOBE-169: the agent's guarded files). */
   readonly prepareAgentDir?: (agentDir: string) => Promise<void>;
   /**
-   * Run Pi's built-in tools in an executor (KOBE-167): kobe-exec loaded right before kobe-policy,
+   * Run Pi's built-in tools in an executor (KOBE-167): kaiju-exec loaded right before kaiju-policy,
    * fd 5 relayed by the agent's own `ExecRelay`. With `pair`, the way the agent does it under Pi
    * identities: Pi runs as the identity, the executor as its partner uid, and the directories get
    * the agent's layout (runtime dir in the Pi's group, `agent/` sticky); the real helper is needed.
@@ -262,7 +262,7 @@ export class PiRpc {
     const child = spawn(file, argv, {
       cwd: workspace,
       env: piEnv,
-      // fd 3 policy, fd 4 (unused here), fd 5 kobe-exec.
+      // fd 3 policy, fd 4 (unused here), fd 5 kaiju-exec.
       stdio:
         exec === undefined
           ? ["pipe", "pipe", "inherit", "pipe"]
@@ -364,7 +364,7 @@ export class PiRpc {
   }
 
   #waitReady(): Promise<void> {
-    return this.#wait((m) => m.type === "channel.ready", 30_000, "kobe-policy ready").then(
+    return this.#wait((m) => m.type === "channel.ready", 30_000, "kaiju-policy ready").then(
       () => undefined,
     );
   }

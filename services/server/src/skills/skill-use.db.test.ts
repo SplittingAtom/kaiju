@@ -134,7 +134,7 @@ async function skillsUsed(team: string, runId: string) {
   return must(rows[0], "run");
 }
 
-const storePath = (hash: string) => `/run/kobe-skills/store/sk-${hash}/SKILL.md`;
+const storePath = (hash: string) => `/run/kaiju-skills/store/sk-${hash}/SKILL.md`;
 
 describe("ac-1: the server records a skill use from the run's own SKILL.md read", () => {
   it("counts the run's skill, not a forged hash, a workspace SKILL.md or a failed read", async () => {

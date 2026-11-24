@@ -24,7 +24,7 @@ import { finishRequest, newRequestState, type RequestState } from "./gateway/usa
 export type { GatewayOptions } from "./gateway/options.js";
 
 /** Where an Orbit eval Job reads its shared cases (KOBE-276); never forwarded to Bifrost. */
-export const EVAL_CASES_PATH = "/kobe/eval-cases";
+export const EVAL_CASES_PATH = "/kaiju/eval-cases";
 
 /** One gateway: its options and its Bifrost connection. */
 interface Gateway {

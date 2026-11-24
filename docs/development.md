@@ -46,13 +46,13 @@ Prerequisites: Docker (local, or remote via `DOCKER_HOST=ssh://user@host`), k3d,
 Tilt, Node 24 and pnpm 12.
 
 ```bash
-scripts/dev-cluster.sh   # k3d cluster "kobe": gVisor, agent-sandbox, local registry on :5005
+scripts/dev-cluster.sh   # k3d cluster "kaiju": gVisor, agent-sandbox, local registry on :5005
 tilt up                  # builds web/server/mcp-proxy/egress-proxy, deploys the chart + a dev Postgres
 ```
 
 Tilt rebuilds an image when its sources change and redeploys it; the web app is port-forwarded to
 http://localhost:3000. `tilt ci` does the same non-interactively and exits once every workload is
-healthy (or fails). `tilt down` removes the deployment; `k3d cluster delete kobe` removes the
+healthy (or fails). `tilt down` removes the deployment; `k3d cluster delete kaiju` removes the
 cluster.
 
 The dev deployment uses `dev/values.yaml` and `dev/postgres.yaml`: a throwaway Postgres with the
@@ -69,7 +69,7 @@ KAIJU_DEV_CONTEXT=<kube-context> KAIJU_DEV_REGISTRY=<registry the cluster can pu
   KAIJU_DEV_VALUES=<values.yaml> tilt up
 ```
 
-The dev release lives in namespace `kobe-dev` (or `kobe-dev-<suffix>` via `KAIJU_DEV_NAMESPACE`, with `KAIJU_DEV_WEB_PORT` for the port-forward; see [parallel-work.md](parallel-work.md)), never `kaiju`.
+The dev release lives in namespace `kaiju-dev` (or `kaiju-dev-<suffix>` via `KAIJU_DEV_NAMESPACE`, with `KAIJU_DEV_WEB_PORT` for the port-forward; see [parallel-work.md](parallel-work.md)), never `kaiju`.
 
 The cluster must already meet the prerequisites in [install.md](install.md#isolation).
 

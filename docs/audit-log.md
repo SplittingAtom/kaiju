@@ -734,7 +734,7 @@ Secret). Both carry the same fields as the site export, including the chain hash
   trust store: the public CAs, plus a private CA from `server.extraCaBundle`. Name one Secret
   (`secretName`) or one ConfigMap (`configMapName`, e.g. one filled by trust-manager) and the `key`
   holding the PEM certificates (default `ca.crt`); the chart mounts that key read-only at
-  `/etc/kobe/extra-ca/ca-bundle.pem` on the server and sets `NODE_EXTRA_CA_CERTS` to it, so the
+  `/etc/kaiju/extra-ca/ca-bundle.pem` on the server and sets `NODE_EXTRA_CA_CERTS` to it, so the
   private CA is trusted in addition to the public ones (OTLP, OIDC and S3 over TLS benefit too).
   Node reads the bundle only at start: restart the server (`kubectl rollout restart`) after
   rotating it.

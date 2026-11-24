@@ -45,14 +45,14 @@ jobs:
           sudo systemctl restart docker
           docker info --format 'mirrors: {{.RegistryConfig.Mirrors}}'
       - name: Build
-        run: docker build -f images/orbit-eval/Dockerfile -t kobe-orbit-eval:ci . || { scripts/ci-docker-diagnostics.sh; exit 1; }
+        run: docker build -f images/orbit-eval/Dockerfile -t kaiju-orbit-eval:ci . || { scripts/ci-docker-diagnostics.sh; exit 1; }
       - name: Acceptance checks (hardened run, scenario pack against a fake model endpoint)
-        run: images/orbit-eval/test-image.sh kobe-orbit-eval:ci
+        run: images/orbit-eval/test-image.sh kaiju-orbit-eval:ci
       - uses: ./.github/actions/setup-kobe
       - name: License audit of bundled Python packages
         run: |
           pnpm --filter @kaiju/license-check build
-          images/sandbox/collect-licenses.sh kobe-orbit-eval:ci > "$RUNNER_TEMP/orbit-eval-licenses.json"
+          images/sandbox/collect-licenses.sh kaiju-orbit-eval:ci > "$RUNNER_TEMP/orbit-eval-licenses.json"
           LICENSE_REPORT="$RUNNER_TEMP/orbit-eval-licenses.json" \
           LICENSE_EXCEPTIONS="$PWD/images/orbit-eval/license-exceptions.json" \
             node tools/license-check/dist/cli.js
@@ -70,11 +70,11 @@ jobs:
           path: ${{ runner.temp }}/orbit-eval-licenses.json
           retention-days: 7
       - name: The image ships LICENSE, NOTICE and THIRD_PARTY_LICENSES.md
-        run: scripts/assert-image-licenses.sh kobe-orbit-eval:ci
+        run: scripts/assert-image-licenses.sh kaiju-orbit-eval:ci
       - name: Vulnerability report (HIGH and CRITICAL with fixes available)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: kobe-orbit-eval:ci
+          image-ref: kaiju-orbit-eval:ci
           scanners: vuln
           severity: HIGH,CRITICAL
           ignore-unfixed: true
@@ -83,7 +83,7 @@ jobs:
       - name: Vulnerability gate (fail on any fixable CRITICAL)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: kobe-orbit-eval:ci
+          image-ref: kaiju-orbit-eval:ci
           scanners: vuln
           severity: CRITICAL
           ignore-unfixed: true

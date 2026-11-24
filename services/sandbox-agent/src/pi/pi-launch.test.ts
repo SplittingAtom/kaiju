@@ -10,27 +10,27 @@ import {
 const parentEnv = {
   PATH: "/usr/bin",
   LANG: "C.UTF-8",
-  KAIJU_SANDBOX_TOKEN_FILE: "/var/run/kobe/sandbox-wire/token",
+  KAIJU_SANDBOX_TOKEN_FILE: "/var/run/kaiju/sandbox-wire/token",
   KAIJU_SERVER_URL: "wss://kaiju",
   ANTHROPIC_API_KEY: "sk-should-never-be-here",
   AWS_SECRET_ACCESS_KEY: "nope",
   NODE_OPTIONS: "--inspect=0.0.0.0:9229",
 };
-const POLICY = "/opt/kobe/pi-extensions/kobe-policy/index.js";
-const MODELS = "/opt/kobe/pi-extensions/kobe-models/index.js";
-const TOOLS = "/opt/kobe/pi-extensions/kobe-tools/index.js";
-const EXEC = "/opt/kobe/pi-extensions/kobe-exec/index.js";
+const POLICY = "/opt/kaiju/pi-extensions/kaiju-policy/index.js";
+const MODELS = "/opt/kaiju/pi-extensions/kaiju-models/index.js";
+const TOOLS = "/opt/kaiju/pi-extensions/kaiju-tools/index.js";
+const EXEC = "/opt/kaiju/pi-extensions/kaiju-exec/index.js";
 const base = {
   sessionFile: "/s/t.jsonl",
   home: "/home/kobe",
   policyExtension: POLICY,
 };
 
-describe("buildPiLaunch kobe-tools (KOBE-128)", () => {
+describe("buildPiLaunch kaiju-tools (KOBE-128)", () => {
   const extensionsOf = (args: readonly string[]) =>
     args.flatMap((a, i) => (a === "--extension" ? [args[i + 1]] : []));
 
-  it("loads kobe-tools right after kobe-models and before kobe-policy, once, with fd 4", () => {
+  it("loads kaiju-tools right after kaiju-models and before kaiju-policy, once, with fd 4", () => {
     const launch = buildPiLaunch({
       ...base,
       parentEnv,
@@ -44,7 +44,7 @@ describe("buildPiLaunch kobe-tools (KOBE-128)", () => {
     expect(launch.toolsChannel).toBe(true);
   });
 
-  it("passes the run's hidden built-ins to kobe-policy, and keys the process on them (KOBE-776)", () => {
+  it("passes the run's hidden built-ins to kaiju-policy, and keys the process on them (KOBE-776)", () => {
     const hidden = buildPiLaunch({
       ...base,
       parentEnv,
@@ -135,11 +135,11 @@ describe("buildPiLaunch kobe-tools (KOBE-128)", () => {
   });
 });
 
-describe("buildPiLaunch kobe-exec (KOBE-167)", () => {
+describe("buildPiLaunch kaiju-exec (KOBE-167)", () => {
   const extensionsOf = (args: readonly string[]) =>
     args.flatMap((a, i) => (a === "--extension" ? [args[i + 1]] : []));
 
-  it("loads kobe-exec after kobe-tools and before kobe-policy (still last), once, with fd 5", () => {
+  it("loads kaiju-exec after kaiju-tools and before kaiju-policy (still last), once, with fd 5", () => {
     const launch = buildPiLaunch({
       ...base,
       parentEnv,
@@ -186,30 +186,30 @@ describe("buildPiLaunch", () => {
     expect(PI_LOCKDOWN_ARGS).toContain("--no-extensions");
   });
 
-  it("always loads kobe-policy, as the last extension (KOBE-36)", () => {
+  it("always loads kaiju-policy, as the last extension (KOBE-36)", () => {
     const launch = buildPiLaunch({
       ...base,
       parentEnv,
       extensions: [
         "builtin:mcp",
         POLICY,
-        "/opt/kobe/pi-extensions/other.js",
-        "/opt/kobe/pi-extensions/./kobe-policy/index.js",
+        "/opt/kaiju/pi-extensions/other.js",
+        "/opt/kaiju/pi-extensions/./kaiju-policy/index.js",
       ],
       config: { thinking_level: "high" },
     });
     const extensions = launch.args.flatMap((a, i) =>
       a === "--extension" ? [launch.args[i + 1]] : [],
     );
-    expect(extensions).toEqual(["builtin:mcp", "/opt/kobe/pi-extensions/other.js", POLICY]);
+    expect(extensions).toEqual(["builtin:mcp", "/opt/kaiju/pi-extensions/other.js", POLICY]);
   });
 
-  it("loads kobe-models right before kobe-policy when models are wired (KOBE-41), once", () => {
+  it("loads kaiju-models right before kaiju-policy when models are wired (KOBE-41), once", () => {
     const launch = buildPiLaunch({
       ...base,
       parentEnv,
       modelsExtension: MODELS,
-      extensions: ["builtin:mcp", "/opt/kobe/pi-extensions/./kobe-models/index.js"],
+      extensions: ["builtin:mcp", "/opt/kaiju/pi-extensions/./kaiju-models/index.js"],
     });
     const extensions = launch.args.flatMap((a, i) =>
       a === "--extension" ? [launch.args[i + 1]] : [],
@@ -223,10 +223,10 @@ describe("buildPiLaunch", () => {
     const launch = buildPiLaunch({
       ...base,
       parentEnv,
-      skillDirs: ["/run/kobe-skills/sk-aa", "/run/kobe-skills/sk-bb"],
+      skillDirs: ["/run/kaiju-skills/sk-aa", "/run/kaiju-skills/sk-bb"],
     });
     const skills = launch.args.flatMap((a, i) => (a === "--skill" ? [launch.args[i + 1]] : []));
-    expect(skills).toEqual(["/run/kobe-skills/sk-aa", "/run/kobe-skills/sk-bb"]);
+    expect(skills).toEqual(["/run/kaiju-skills/sk-aa", "/run/kaiju-skills/sk-bb"]);
     // Explicit paths only: discovery stays off.
     expect(launch.args).toContain("--no-skills");
     expect(buildPiLaunch({ ...base, parentEnv }).args).not.toContain("--skill");
@@ -276,7 +276,7 @@ describe("buildPiLaunch", () => {
     expect(a.env.PATH).toBe("/usr/local/bin:/usr/bin:/bin");
   });
 
-  it("starts Pi on the run's model with kobe-models, outside the launch key (KOBE-279)", () => {
+  it("starts Pi on the run's model with kaiju-models, outside the launch key (KOBE-279)", () => {
     const on = (gatewayModel: string | null) =>
       buildPiLaunch({
         ...base,
@@ -290,7 +290,7 @@ describe("buildPiLaunch", () => {
     expect(a.args.slice(a.args.indexOf("--model"))).toEqual(["--model", "kobe/openai/gpt-fake"]);
     expect(none.args).not.toContain("--model");
     expect(new Set([a.key, b.key, none.key]).size).toBe(1);
-    // Without kobe-models there is no kaiju provider to start on.
+    // Without kaiju-models there is no kaiju provider to start on.
     const bare = buildPiLaunch({
       ...base,
       parentEnv: {},
@@ -331,7 +331,7 @@ describe("buildPiLaunch per-session MCP (KOBE-111)", () => {
     ],
   };
 
-  it("loads builtin:mcp first (before kobe-policy) only when connectors are effective", () => {
+  it("loads builtin:mcp first (before kaiju-policy) only when connectors are effective", () => {
     const withMcp = buildPiLaunch({ ...base, parentEnv, modelsExtension: MODELS, mcp });
     expect(extensionsOf(withMcp.args)).toEqual(["builtin:mcp", MODELS, POLICY]);
     expect(withMcp.mcp).toEqual(mcp);

@@ -38,7 +38,7 @@ import type { UpstreamClient, UpstreamFailure } from "./upstream.js";
 
 /** Versions the proxy answers to Pi (`pi-mcp` speaks 2025-11-25), newest first. */
 export const SUPPORTED_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
-export const SERVER_INFO = { name: "kobe-mcp-proxy", version: "1.0.0" } as const;
+export const SERVER_INFO = { name: "kaiju-mcp-proxy", version: "1.0.0" } as const;
 export const THREAD_HEADER = "kaiju-thread-id";
 export const TOOL_CALL_ID_META_KEY = "kobe.dev/tool_call_id";
 
@@ -131,7 +131,7 @@ async function handlePost(deps: McpRouteDeps, c: Context): Promise<Response> {
     return c.json(rpcError(null, JSONRPC_ERRORS.invalidRequest, "Session expired."), 404);
   }
   if (!token || !claims) {
-    c.header("WWW-Authenticate", 'Bearer realm="kobe-mcp-proxy"');
+    c.header("WWW-Authenticate", 'Bearer realm="kaiju-mcp-proxy"');
     return c.json(rpcError(null, JSONRPC_ERRORS.invalidRequest, "Unauthorized."), 401);
   }
   if (!deps.limiter.takeRequest(claims.sub)) {

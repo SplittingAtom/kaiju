@@ -12,10 +12,10 @@ import {
   MSG_READY,
   MSG_REFUSED,
   MAX_REQUEST_LINE_BYTES,
-} from "../kobe-policy/protocol.js";
+} from "../kaiju-policy/protocol.js";
 
 /**
- * Sandbox-local channel between the kobe-policy Pi extension (KOBE-36) and kobe-sandbox-agent.
+ * Sandbox-local channel between the kaiju-policy Pi extension (KOBE-36) and kaiju-sandbox-agent.
  *
  * Transport: fd 3 of each `pi --mode rpc` process (`KAIJU_POLICY_FD=3` in Pi's env) is one end of a
  * socket pair the agent created when it spawned Pi. Nothing listens. Pi spawns its tools with
@@ -27,13 +27,13 @@ import {
  * LF-split.
  *
  * Handshake: the agent's first line is `{"type":"channel.hello","nonce"}` (random per spawn);
- * kobe-policy reads it at load, before any tool can run, and puts `nonce` in every request. A request
+ * kaiju-policy reads it at load, before any tool can run, and puts `nonce` in every request. A request
  * with a wrong or missing nonce closes the channel (all pending checks of the thread are denied).
- * Once loaded and self-checked (last extension, `--no-extensions`), kobe-policy answers
- * `{"type":"channel.ready","nonce","extension":"kobe-policy","version":1}` — the agent starts no
- * run on a Pi that has not (KOBE-36), so a Pi without a working kobe-policy never runs a prompt — or
+ * Once loaded and self-checked (last extension, `--no-extensions`), kaiju-policy answers
+ * `{"type":"channel.ready","nonce","extension":"kaiju-policy","version":1}` — the agent starts no
+ * run on a Pi that has not (KOBE-36), so a Pi without a working kaiju-policy never runs a prompt — or
  * `{"type":"channel.refused","nonce","reason"}`, which closes the channel. Message shapes and limits
- * shared with the extension live in `kobe-policy/protocol.ts`.
+ * shared with the extension live in `kaiju-policy/protocol.ts`.
  *
  * extension → agent: `{"type":"policy.check","nonce","request_id","tool_call_id",
  *   "parent_tool_call_id"?,"tool","input"}` — the agent adds `run_id` / `thread_id` itself (the
@@ -135,7 +135,7 @@ export class PolicyChannel {
   }
 
   /**
-   * Resolves once kobe-policy reported `channel.ready`; rejects when it refused, the channel closed,
+   * Resolves once kaiju-policy reported `channel.ready`; rejects when it refused, the channel closed,
    * or `timeoutMs` passed first.
    */
   waitReady(timeoutMs: number): Promise<void> {
@@ -154,7 +154,7 @@ export class PolicyChannel {
       };
       const timer = setTimeout(() => {
         this.#readyWaiters.delete(waiter);
-        reject(new Error("kobe-policy extension did not report ready"));
+        reject(new Error("kaiju-policy extension did not report ready"));
       }, timeoutMs);
       this.#readyWaiters.add(waiter);
     });
@@ -225,7 +225,7 @@ export class PolicyChannel {
       return;
     }
     if (!this.#ready) {
-      if (requestId !== undefined) this.reply(localDeny(requestId, "kobe-policy is not ready"));
+      if (requestId !== undefined) this.reply(localDeny(requestId, "kaiju-policy is not ready"));
       return;
     }
     if (!this.#takeToken()) {
@@ -245,7 +245,7 @@ export class PolicyChannel {
   #onLifecycle(value: unknown): void {
     const refused = refusedSchema.safeParse(value);
     if (refused.success) {
-      this.close(`kobe-policy refused to start: ${refused.data.reason}`);
+      this.close(`kaiju-policy refused to start: ${refused.data.reason}`);
       return;
     }
     if (this.#ready || !readySchema.safeParse(value).success) {

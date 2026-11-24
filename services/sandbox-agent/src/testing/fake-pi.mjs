@@ -6,7 +6,7 @@
 //   "status-hang"  as "hang", but on abort first emits a setStatus UI request (a late frame, KOBE-483)
 //   "steps"        emit turn_end every 50 ms until aborted
 //   "late-steps"   answer the prompt, emit agent_start only 200 ms later, then as "steps"
-//   "tool:<name>"  ask kobe-policy over fd 3 and report the decision as a custom event
+//   "tool:<name>"  ask kaiju-policy over fd 3 and report the decision as a custom event
 //   "dialog"       open a confirm dialog and report the answer
 //   "crash"        write to stderr and exit 3
 //   "big"          emit one event larger than the wire frame cap
@@ -15,17 +15,17 @@
 //   "grandchild"   spawn a tool the way Pi's bash tool does and report what it can see of fds 3 and 4
 //   "orphan"       spawn a detached long-running tool (its own process group), report its pid, hang
 //   "handled"      answer the prompt with disposition "handled"
-//   "drop-policy"  close its end of the policy channel (as a broken kobe-policy would), then settle
+//   "drop-policy"  close its end of the policy channel (as a broken kaiju-policy would), then settle
 //   "sh:<command>" run `/bin/sh -c <command>` the way Pi's bash tool does (detached) and report its
 //                  exit code, stdout and stderr as a kaiju_test_shell event (KOBE-71 identity tests)
 // `compact` (KOBE-213) is chosen by its customInstructions: "hang" waits for abort, "nothing" and
-// "fail" answer success:false ("fail-late-token" then asks for the run token anyway), "token" first asks for the run token as kobe-models does on
+// "fail" answer success:false ("fail-late-token" then asks for the run token anyway), "token" first asks for the run token as kaiju-models does on
 // session_before_compact (the answer goes into the summary); anything else appends a compaction
 // entry whose summary names the focus. `get_state` reports the selected model; `set_model` selects
-// only the model the model file named when this process started (what kobe-models registered).
+// only the model the model file named when this process started (what kaiju-models registered).
 // Every command received is appended to <session file>.commands.jsonl for assertions; the model
 // file as read when a prompt arrives, to <session file>.model-at-prompt.jsonl.
-// It also plays kobe-policy's side of the fd-3 handshake: on channel.hello it answers channel.ready,
+// It also plays kaiju-policy's side of the fd-3 handshake: on channel.hello it answers channel.ready,
 // unless the last --extension path contains "refuse" (channel.refused) or "silent" (no answer).
 import { spawn } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -122,7 +122,7 @@ let policySocket;
 let policyNonce;
 let nextPolicy = 1;
 
-// KOBE-128: the kobe-tools socket (fd 4) when the agent passed one; a tool must not inherit it.
+// KOBE-128: the kaiju-tools socket (fd 4) when the agent passed one; a tool must not inherit it.
 let toolsFdIno = null;
 if (process.env.KAIJU_TOOLS_FD) {
   toolsFdIno = (await import("node:fs")).fstatSync(Number(process.env.KAIJU_TOOLS_FD)).ino;
@@ -161,7 +161,7 @@ function answerHello() {
   if (policyPath.includes("silent")) return;
   const message = policyPath.includes("refuse")
     ? { type: "channel.refused", nonce: policyNonce, reason: "fake refusal" }
-    : { type: "channel.ready", nonce: policyNonce, extension: "kobe-policy", version: 1 };
+    : { type: "channel.ready", nonce: policyNonce, extension: "kaiju-policy", version: 1 };
   // "slow": a start that takes a while (Pi under gVisor), so a Stop can arrive meanwhile.
   const delayMs = policyPath.includes("slow") ? 1500 : 0;
   setTimeout(() => policySocket.write(`${JSON.stringify(message)}\n`), delayMs);
@@ -220,7 +220,7 @@ function runPrompt(message) {
       `${JSON.stringify({ type: "policy.check", nonce: policyNonce, request_id: requestId, tool_call_id: "call_1", tool: message.slice(5), input: { command: "ls" } })}\n`,
     );
   } else if (message === "run-token") {
-    // KOBE-118: what kobe-models does on `input`: asks the agent for the run's token over RPC.
+    // KOBE-118: what kaiju-models does on `input`: asks the agent for the run's token over RPC.
     start();
     dialogs.set("tok-1", (answer) => {
       out({ type: "kaiju_test_run_token_answer", answer });

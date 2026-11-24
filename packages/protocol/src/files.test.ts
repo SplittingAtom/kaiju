@@ -132,7 +132,7 @@ describe("share_file input", () => {
   });
 });
 
-describe("kobe-tools file.share", () => {
+describe("kaiju-tools file.share", () => {
   const request = {
     id: "r1",
     op: "file.share",

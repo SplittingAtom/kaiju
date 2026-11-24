@@ -14,7 +14,7 @@ import { RUN, RUN_2, runStart, startHarness, type Harness } from "./testing/harn
 import { PI_AVAILABLE, PI_BIN, REAL_POLICY_EXTENSION } from "./testing/real-pi.js";
 
 /**
- * KOBE-260 ac-3 end to end: kobe-sandbox-agent → the REAL pinned Pi 1.0.0 → the REAL model
+ * KOBE-260 ac-3 end to end: kaiju-sandbox-agent → the REAL pinned Pi 1.0.0 → the REAL model
  * gateway → the fake provider, which reasons (`reasoning_content`, like glm-5.3 on Ollama) unless
  * the request says `reasoning_effort: "none"`. The run's level comes from the server's record
  * (the gateway's `runThinking` seam); whatever Pi sends, the gateway writes that level, clamped.
@@ -22,10 +22,10 @@ import { PI_AVAILABLE, PI_BIN, REAL_POLICY_EXTENSION } from "./testing/real-pi.j
 const PACKAGE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REAL_MODELS_EXTENSION =
   process.env.CI === undefined
-    ? path.join(PACKAGE, "src/kobe-models/index.ts")
-    : path.join(PACKAGE, "dist/kobe-models/index.js");
+    ? path.join(PACKAGE, "src/kaiju-models/index.ts")
+    : path.join(PACKAGE, "dist/kaiju-models/index.js");
 if (process.env.CI !== undefined && !existsSync(REAL_MODELS_EXTENSION)) {
-  throw new Error(`kobe-models is not built: ${REAL_MODELS_EXTENSION} (run pnpm build first)`);
+  throw new Error(`kaiju-models is not built: ${REAL_MODELS_EXTENSION} (run pnpm build first)`);
 }
 
 const MODEL = {

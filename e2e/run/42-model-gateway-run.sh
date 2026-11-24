@@ -1,8 +1,8 @@
 # shellcheck shell=bash
 # Sourced by e2e/run.sh (KOBE-728 split of the former single script); not run on its own.
     # KOBE-41: the working path. The Owner (a team member with a real sandbox, suspended since
-    # the interrupted-run story) sends a message: the sandbox wakes, kobe-sandbox-agent trades its
-    # bootstrap token, Pi starts with kobe-models, calls the team's default model through the
+    # the interrupted-run story) sends a message: the sandbox wakes, kaiju-sandbox-agent trades its
+    # bootstrap token, Pi starts with kaiju-models, calls the team's default model through the
     # model-gateway shim with the sandbox's session token and the run id, Bifrost attaches the
     # provider key, and the fake model's answer streams back to the API as text.delta events.
     echo "==> Pi model wiring (KOBE-41)"
@@ -10,7 +10,7 @@
     # The scripted agents above held the Owner's sandbox identity; the message below must reach
     # the Owner's REAL sandbox (woken by the router), so wait until their connections are gone.
     $KUBECTL -n "$TEAM_NS" delete pod e2e-agent e2e-approver --ignore-not-found --wait=true >/dev/null 2>&1 || true
-    owner_closed() { [[ "$(psql_kobe "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND closed_at IS NULL")" == 0 ]]; }
+    owner_closed() { [[ "$(psql_kaiju "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND closed_at IS NULL")" == 0 ]]; }
     if until_ok 180 owner_closed; then ok "no scripted agent holds the Owner's sandbox identity any more"
     else fail "no scripted agent holds the Owner's sandbox identity any more"; fi
     read -r -d '' CHAT_JS <<'JS' || true
@@ -106,7 +106,7 @@ out("error_message", errorMessage);
 out("text", text);
 JS
     chat_run() { # content timeout-ms [model] [agent-id] [thread-id] [approve-all] [file-ids] → the CHAT_JS output (not `chat`: KOBE-40's helper above)
-      $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$CHAT_JS" "$E2E_TEAM_ID" "$1" "$2" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${CHAT_PROJECT:-}" "${CHAT_MENTIONS:-}" 2>&1 | tail -17
+      $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "$CHAT_JS" "$E2E_TEAM_ID" "$1" "$2" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${CHAT_PROJECT:-}" "${CHAT_MENTIONS:-}" 2>&1 | tail -17
     }
     chat_out=$(chat_run "hello-pi-$RANDOM" 300000)
     printf '     chat: %s\n' "$(printf '%s' "$chat_out" | grep -v '^text=' | tr '\n' ' ')"
@@ -119,7 +119,7 @@ JS
     contains "the shim attributed the model call to the run (x-kaiju-run-id from Pi)" "\"runId\":\"$chat_run\"" \
       "$($KUBECTL -n "$NS" logs -l app.kubernetes.io/component=model-gateway --tail=-1 --since=15m 2>/dev/null | grep -F "\"runId\":\"${chat_run:-none}\"" | head -1)"
     # KOBE-43: the shim wrote the call to the run_usage ledger from the upstream's usage report.
-    usage_row() { psql_kobe "SELECT status || '|' || usage_source || '|' || input_tokens || '|' || output_tokens FROM run_usage WHERE team_id = '$E2E_TEAM_ID' AND run_id = '${chat_run:-00000000-0000-4000-8000-000000000000}' ORDER BY at LIMIT 1"; }
+    usage_row() { psql_kaiju "SELECT status || '|' || usage_source || '|' || input_tokens || '|' || output_tokens FROM run_usage WHERE team_id = '$E2E_TEAM_ID' AND run_id = '${chat_run:-00000000-0000-4000-8000-000000000000}' ORDER BY at LIMIT 1"; }
     contains "the model call is in the run_usage ledger with the provider's reported tokens" \
       '^200\|reported\|[1-9][0-9]*\|[1-9][0-9]*$' "$(wait_for 30 '^200\|' usage_row)"
     contains "the team usage dashboard counts it" '^200 .*"calls":[1-9]' "$(as_owner "GET /v1/team/usage")"
@@ -162,7 +162,7 @@ out("emails", JSON.stringify(spans).includes("@e2e.test") ? 1 : 0);
 out("names", /"(E2E owner|Owner)"/i.test(JSON.stringify(spans)) ? 1 : 0);
 JS
     chat_thread=$(printf '%s\n' "$chat_out" | sed -n 's/^thread_id=//p')
-    traces=$($KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$TRACE_JS" \
+    traces=$($KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "$TRACE_JS" \
       "$OTEL_SINK" "${chat_run:-00000000-0000-4000-8000-000000000000}" "${chat_thread:-none}" "${owner_id:-none}" 120000 2>&1 | tail -14)
     printf '     traces: %s\n' "$(printf '%s' "$traces" | tr '\n' ' ')"
     contains "the run is one trace across server, sandbox agent and model gateway" \
@@ -195,19 +195,19 @@ JS
     # KOBE-71: the Owner's sandbox just ran Pi for that message, under gVisor. Pi runs under a Pi
     # identity, not as the agent; another identity can neither write nor read that Pi's runtime
     # directory, nor read the bootstrap token, nor signal the agent or that Pi. (`kubectl exec`
-    # runs with the agent's uid and groups, so it can use kobe-runas as the agent does; 2015 is an
+    # runs with the agent's uid and groups, so it can use kaiju-runas as the agent does; 2015 is an
     # identity no Pi uses while a single thread runs.)
     echo "==> sandbox privilege separation (KOBE-71)"
     read -r -d '' PRIVSEP_SH <<'SH' || true
-R=/opt/kobe/bin/kobe-runas
+R=/opt/kaiju/bin/kaiju-runas
 agent=$(pgrep -f '^node .*sandbox-agent/dist/index.js' | head -1)
 pi=$(ps -eo pid=,uid= | awk '$2 >= 2000 && $2 <= 2063 { print $1; exit }')  # Pi sets its own process title
-dir=$(ls -d /run/kobe-pi/pi-* 2>/dev/null | head -1)
+dir=$(ls -d /run/kaiju-pi/pi-* 2>/dev/null | head -1)
 echo "agent=$(stat -c %u /proc/$agent) caps=$(awk '/^CapEff/ {print $2}' /proc/$agent/status)"
 echo "pi_uid=$(stat -c %u /proc/$pi) dir=$(stat -c '%U:%G %a' $dir)"
 echo "plant=$($R 2015 sh -c "echo {} > $dir/agent/settings.json" 2>&1 | grep -c 'Permission denied')"
 echo "read_model=$($R 2015 cat "$dir/model.json" 2>&1 | grep -c 'Permission denied')"
-echo "read_token=$($R 2015 cat /run/kobe-agent/bootstrap/bootstrap-token 2>&1 | grep -c 'Permission denied')"
+echo "read_token=$($R 2015 cat /run/kaiju-agent/bootstrap/bootstrap-token 2>&1 | grep -c 'Permission denied')"
 echo "signal=$($R 2015 sh -c "kill -0 $agent; kill -0 $pi" 2>&1 | grep -c 'not permitted')"
 # As a tool of that Pi (its own uid): no ptrace/memory of an ancestor, no inspector through
 # SIGUSR1, no way back into Pi's stdin/stdout (sockets: /proc/<pi>/fd/N cannot be reopened).

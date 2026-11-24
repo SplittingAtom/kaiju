@@ -10,7 +10,7 @@ import { EVAL_EPOCHS, EXPECTED_PACK } from "./pack.js";
  * is published, and the person may retry (a retry is a new eval).
  */
 
-/** The fields of result.json (schema_version 1, images/orbit-eval/kobe_orbit_eval/report.py) we use. */
+/** The fields of result.json (schema_version 1, images/orbit-eval/kaiju_orbit_eval/report.py) we use. */
 export const evalResultSchema = z.looseObject({
   schema_version: z.literal(1),
   attack_success_rate: z.number().min(0).max(1).nullable(),

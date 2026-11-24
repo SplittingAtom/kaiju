@@ -19,7 +19,7 @@ import { createFakeLlm, type SeenRequest } from "./fake-llm.js";
 
 /**
  * The real model-gateway shim in front of the fake LLM upstream (standing in for Bifrost and the
- * provider), for integration tests of model clients (KOBE-41: Pi with kobe-models). One sandbox
+ * provider), for integration tests of model clients (KOBE-41: Pi with kaiju-models). One sandbox
  * identity with a virtual key; tokens are minted with the gateway's own session key, so the test
  * can also mint expired or foreign ones. Everything listens on 127.0.0.1 only.
  */

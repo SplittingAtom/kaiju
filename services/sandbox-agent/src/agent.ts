@@ -67,10 +67,10 @@ const DRAIN_ON_FATAL_MS = 5000;
 type PiExitedFrameT = Extract<SandboxToServerFrame, { type: "pi.exited" }>;
 
 /**
- * kobe-sandbox-agent: glues the outbound wire (WireClient), per-run delivery (Outbox), the Pi
- * supervisor (ThreadManager) and the kobe-policy relay (PolicyBroker) together, implementing the
+ * kaiju-sandbox-agent: glues the outbound wire (WireClient), per-run delivery (Outbox), the Pi
+ * supervisor (ThreadManager) and the kaiju-policy relay (PolicyBroker) together, implementing the
  * sandbox side of packages/protocol `sandbox-wire/connection.ts`. Its deps are in `agent/deps.ts`,
- * the capabilities it offers in `agent/capabilities.ts`, the kobe-tools brokers in `agent/wiring.ts`.
+ * the capabilities it offers in `agent/capabilities.ts`, the kaiju-tools brokers in `agent/wiring.ts`.
  */
 export class Agent {
   readonly #deps: AgentDeps;

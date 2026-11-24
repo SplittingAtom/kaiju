@@ -14,7 +14,7 @@ import type { PiIdentities, PiIdentity } from "./identities.js";
 /**
  * One `pi --mode rpc` child process (verified Pi 1.0.0 RPC semantics, packages/protocol pi-rpc.ts):
  * JSONL on stdin/stdout split on LF only, responses correlated by the `id` the agent assigns, session
- * events and `extension_ui_request` records uncorrelated. fd 3 is a socket pair for the kobe-policy
+ * events and `extension_ui_request` records uncorrelated. fd 3 is a socket pair for the kaiju-policy
  * extension (see policy/channel.ts for what tools can and cannot reach); nothing listens anywhere.
  *
  * The child runs in its own process group. Pi starts its tools in their own groups too, so a stop
@@ -49,9 +49,9 @@ export interface PiProcessOptions {
    * another uid, so stopping goes through the helper too.
    */
   readonly runAs?: { readonly identities: PiIdentities; readonly identity: PiIdentity };
-  /** Also give Pi a fifth pipe as fd 4: the kobe-tools channel (KOBE-128). */
+  /** Also give Pi a fifth pipe as fd 4: the kaiju-tools channel (KOBE-128). */
   readonly toolsChannel?: boolean;
-  /** Also give Pi a sixth pipe as fd 5: the kobe-exec channel (KOBE-167). */
+  /** Also give Pi a sixth pipe as fd 5: the kaiju-exec channel (KOBE-167). */
   readonly execChannel?: boolean;
 }
 
@@ -92,7 +92,7 @@ export class PiProcess {
     this.#child = spawn(file, args, {
       cwd: options.cwd,
       env: { ...options.env },
-      // fd 3 policy, fd 4 kobe-tools, fd 5 kobe-exec; a channel in use needs the ones before it.
+      // fd 3 policy, fd 4 kaiju-tools, fd 5 kaiju-exec; a channel in use needs the ones before it.
       stdio:
         options.execChannel === true
           ? ["pipe", "pipe", "pipe", "pipe", "pipe", "pipe"]
@@ -144,18 +144,18 @@ export class PiProcess {
     return this.#exit !== undefined;
   }
 
-  /** fd 3 of the child: the kobe-policy channel. */
+  /** fd 3 of the child: the kaiju-policy channel. */
   get control(): Duplex | undefined {
     return (this.#child.stdio[3] as Duplex | null | undefined) ?? undefined;
   }
 
-  /** fd 4 of the child: the kobe-tools channel (only with `toolsChannel`). */
+  /** fd 4 of the child: the kaiju-tools channel (only with `toolsChannel`). */
   get toolsControl(): Duplex | undefined {
     if (this.#options.toolsChannel !== true) return undefined;
     return (this.#child.stdio[4] as Duplex | null | undefined) ?? undefined;
   }
 
-  /** fd 5 of the child: the kobe-exec channel (only with `execChannel`). */
+  /** fd 5 of the child: the kaiju-exec channel (only with `execChannel`). */
   get execControl(): Duplex | undefined {
     if (this.#options.execChannel !== true) return undefined;
     return (

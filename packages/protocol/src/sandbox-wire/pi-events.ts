@@ -106,7 +106,7 @@ export function parseTranslatedPiEvent(event: { readonly type: string }): Transl
 }
 
 /**
- * Placeholder kobe-sandbox-agent sends **in place of** a Pi event it cannot put on the wire (the
+ * Placeholder kaiju-sandbox-agent sends **in place of** a Pi event it cannot put on the wire (the
  * frame would exceed the frame cap or fail the server's decoder: too deep, not serialisable). It
  * keeps the event's outbound `seq`, so seqs stay gapless and the server never loops on `resend`
  * for an event that can never arrive. Not a Pi type (the `kobe.` prefix cannot collide with one)
@@ -134,7 +134,7 @@ export const piGetEntriesDataSchema = z.strictObject({
 export type PiGetEntriesData = z.infer<typeof piGetEntriesDataSchema>;
 
 /**
- * How the kobe-models Pi extension (KOBE-41) reports a model-gateway failure: the assistant
+ * How the kaiju-models Pi extension (KOBE-41) reports a model-gateway failure: the assistant
  * message's `errorMessage` (Pi `message_end`, `stopReason: "error"`) starts with this prefix and
  * one of {@link MODEL_RUN_ERROR_CODES}, then `: ` and a detail the server never shows (sandbox
  * text is untrusted; the server has its own message per code). A run whose last assistant message
@@ -173,12 +173,12 @@ const MODEL_ERROR_RE = new RegExp(
 );
 const MODEL_ERROR_CODE_SET: ReadonlySet<string> = new Set(MODEL_RUN_ERROR_CODES);
 
-/** The message kobe-models puts in `errorMessage` (`detail` is for logs, never for users). */
+/** The message kaiju-models puts in `errorMessage` (`detail` is for logs, never for users). */
 export function kaijuModelErrorMessage(code: ModelRunErrorCode, detail: string): string {
   return `${KAIJU_MODEL_ERROR_PREFIX}${code}: ${detail}`;
 }
 
-/** The code in a kobe-models error message; undefined for any other (untrusted) text. */
+/** The code in a kaiju-models error message; undefined for any other (untrusted) text. */
 export function parseKaijuModelError(errorMessage: unknown): ModelRunErrorCode | undefined {
   if (typeof errorMessage !== "string") return undefined;
   const match = MODEL_ERROR_RE.exec(errorMessage);

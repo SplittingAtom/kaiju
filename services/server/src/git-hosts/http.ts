@@ -31,7 +31,7 @@ export const GIT_HOST_TIMEOUT_MS = 15_000;
 /** A page of 100 repositories from GitHub is about 600 KB. */
 export const GIT_HOST_MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 const MAX_SAME_ORIGIN_HOPS = 3;
-const USER_AGENT = "kobe-server";
+const USER_AGENT = "kaiju-server";
 
 export interface HostResponse {
   readonly status: number;

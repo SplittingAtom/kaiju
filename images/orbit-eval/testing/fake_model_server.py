@@ -100,7 +100,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
-        if self.path == "/kobe/eval-cases":
+        if self.path == "/kaiju/eval-cases":
             # Shared cases (KOBE-276), as the Kaiju gateway serves them to a running eval.
             import base64
             import os

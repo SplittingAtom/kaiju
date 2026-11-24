@@ -20,7 +20,7 @@ export const sandbox: SandboxSettings = {
   ...SETTINGS,
   modelGatewayAccess: true,
   orbitEval: {
-    image: "ghcr.io/splittingatom/kobe-orbit-eval:0.1.0",
+    image: "ghcr.io/splittingatom/kaiju-orbit-eval:0.1.0",
     deadlineSeconds: 600,
     resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { cpu: "1", memory: "2Gi" } },
   },
@@ -55,7 +55,7 @@ export const report = (over: Record<string, unknown> = {}) =>
       attempts: 5,
       attack_successes: 0,
       errors: 0,
-      pack: { id: "kobe-default", version: 1 },
+      pack: { id: "kaiju-default", version: 1 },
       ...over,
     },
     null,

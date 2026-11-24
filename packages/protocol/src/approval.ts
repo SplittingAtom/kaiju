@@ -20,8 +20,8 @@ import { idSchema, uuidSchema } from "./common.js";
  *   bytes equal signed bytes. Verifiers recompute the bytes from the input they are about to run.
  * - Neither the key nor the token ever enters a sandbox. Sign: server (KOBE-37). Verify + consume:
  *   the enforcement point that executes the call — the MCP proxy for MCP tools (KOBE-58), which
- *   finds the approval by (run_id, tool_call_id) server-side. kobe-sandbox-agent strips any
- *   `approval` from `policy.result` before kobe-policy sees it (KOBE-23), so it never reaches Pi or
+ *   finds the approval by (run_id, tool_call_id) server-side. kaiju-sandbox-agent strips any
+ *   `approval` from `policy.result` before kaiju-policy sees it (KOBE-23), so it never reaches Pi or
  *   a tool. For Pi built-ins and kobe tools the server's `policy.result` is itself the
  *   authorisation.
  *
@@ -85,7 +85,7 @@ export function approvalSigningBytes(binding: ApprovalBinding, input: unknown): 
 
 /**
  * A signed approval, held by the server and the enforcement point that verifies it (MCP proxy). It
- * may appear in the wire's `policy.result` (frames.ts), where kobe-sandbox-agent drops it. `kid`
+ * may appear in the wire's `policy.result` (frames.ts), where kaiju-sandbox-agent drops it. `kid`
  * selects the key (rotation) and `approval_id` locates the row; neither is signed (both are checked
  * against state). Everything else except `mac` is in the signed tuple.
  */

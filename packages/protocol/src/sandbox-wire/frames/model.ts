@@ -19,7 +19,7 @@ export type PiModelApi = z.infer<typeof piModelApiSchema>;
 /**
  * `<gateway provider>/<model>` as the model gateway names models (KOBE-40 `gateway_model`): a
  * provider of at most 64 characters and a model of at most 191. The one limit for the wire and the
- * kobe-models model file, which ships on its own and pins a copy (KOBE-280), so a `run.start` the
+ * kaiju-models model file, which ships on its own and pins a copy (KOBE-280), so a `run.start` the
  * agent accepts never starts Pi on a model its model file refuses.
  */
 export const GATEWAY_MODEL_PATTERN =

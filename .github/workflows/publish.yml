@@ -89,11 +89,11 @@ jobs:
           provenance: false
           sbom: false
           cache-from: type=gha,scope=${{ matrix.name }}
-          tags: kobe-${{ matrix.name }}:scan
+          tags: kaiju-${{ matrix.name }}:scan
       - name: Vulnerability report (HIGH and CRITICAL with fixes available)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: kobe-${{ matrix.name }}:scan
+          image-ref: kaiju-${{ matrix.name }}:scan
           scanners: vuln
           severity: HIGH,CRITICAL
           ignore-unfixed: true
@@ -102,7 +102,7 @@ jobs:
       - name: Vulnerability gate (fail on any fixable ${{ matrix.gate }})
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: kobe-${{ matrix.name }}:scan
+          image-ref: kaiju-${{ matrix.name }}:scan
           scanners: vuln
           severity: ${{ matrix.gate }}
           ignore-unfixed: true
@@ -120,7 +120,7 @@ jobs:
           sbom: true
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
-          tags: ghcr.io/splittingatom/kobe-${{ matrix.name }}:${{ steps.tag.outputs.short }}
+          tags: ghcr.io/splittingatom/kaiju-${{ matrix.name }}:${{ steps.tag.outputs.short }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -145,11 +145,11 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          base=$(grep '^version:' charts/kobe/Chart.yaml | awk '{print $2}')
+          base=$(grep '^version:' charts/kaiju/Chart.yaml | awk '{print $2}')
           version="${base}-main.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
-          helm package charts/kobe --version "$version" --app-version "sha-${GITHUB_SHA::12}" -d dist
+          helm package charts/kaiju --version "$version" --app-version "sha-${GITHUB_SHA::12}" -d dist
           echo "$GHCR_TOKEN" | helm registry login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          helm push "dist/kobe-${version}.tgz" oci://ghcr.io/splittingatom/charts
+          helm push "dist/kaiju-${version}.tgz" oci://ghcr.io/splittingatom/charts
 
   promote-main:
     needs: chart
@@ -184,6 +184,6 @@ jobs:
         if: steps.head.outputs.current == 'true'
         run: |
           for name in web server mcp-proxy egress-proxy model-gateway sandbox; do
-            docker buildx imagetools create -t "ghcr.io/splittingatom/kobe-${name}:main" \
-              "ghcr.io/splittingatom/kobe-${name}:sha-${GITHUB_SHA::12}"
+            docker buildx imagetools create -t "ghcr.io/splittingatom/kaiju-${name}:main" \
+              "ghcr.io/splittingatom/kaiju-${name}:sha-${GITHUB_SHA::12}"
           done

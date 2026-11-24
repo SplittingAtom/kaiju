@@ -55,7 +55,7 @@ export interface FakeGithubOptions {
   renamed?: Record<string, string>;
   /** The organization is a user account (`/orgs/:o` 404, `/users/:o` 200; `/user/repos`). */
   userNamespace?: boolean;
-  /** The PAT's own login (`/user`); default `kobe-bot-test`. */
+  /** The PAT's own login (`/user`); default `kaiju-bot-test`. */
   patLogin?: string;
   /** The token account's `permissions` on repositories (default pull and push). */
   repoPermissions?: { pull: boolean; push: boolean };
@@ -202,7 +202,7 @@ export class FakeGithub implements GitHostContractFake {
       draft: false,
       head: { ref: p.head, repo: { owner: { login: owner } } },
       base: { ref: p.base },
-      user: { login: "kobe-bot-test" },
+      user: { login: "kaiju-bot-test" },
       html_url: `${this.base}/${owner}/${name}/pull/${p.number}`,
       created_at: "2026-11-01T00:00:00Z",
       updated_at: "2026-11-01T00:00:00Z",
@@ -217,7 +217,7 @@ export class FakeGithub implements GitHostContractFake {
       title: i.title,
       body: i.body,
       state: "open",
-      user: { login: "kobe-bot-test" },
+      user: { login: "kaiju-bot-test" },
       comments: this.comments.filter((c) => c.repository === name && c.number === i.number).length,
       html_url: `${this.base}/${owner}/${name}/issues/${i.number}`,
       created_at: "2026-11-01T00:00:00Z",
@@ -588,7 +588,7 @@ export class FakeGithub implements GitHostContractFake {
 
     if (path === "/user" && method === "GET") {
       if (who !== "pat") return reply(403, { message: "Resource not accessible by integration" });
-      return reply(200, { login: o.patLogin ?? "kobe-bot-test", id: 77 });
+      return reply(200, { login: o.patLogin ?? "kaiju-bot-test", id: 77 });
     }
     const orgM = /^\/(orgs|users)\/([^/]+)$/.exec(path);
     if (orgM && method === "GET") {
@@ -605,7 +605,7 @@ export class FakeGithub implements GitHostContractFake {
     }
     // A user namespace: the PAT's own repositories (GitHub creates in the token owner's account).
     if (path === "/user/repos" && who === "pat") {
-      const login = o.patLogin ?? "kobe-bot-test";
+      const login = o.patLogin ?? "kaiju-bot-test";
       if (method === "POST") {
         const body = await this.body(req);
         const name = String(body.name);

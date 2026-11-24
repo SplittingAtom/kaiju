@@ -137,7 +137,7 @@ describe("policy contract", () => {
 });
 
 describe("server-side tool registry", () => {
-  it("covers the Pi 1.0.0 built-ins and kobe-tools", () => {
+  it("covers the Pi 1.0.0 built-ins and kaiju-tools", () => {
     expect(Object.keys(BUILTIN_TOOLS).sort()).toEqual(
       [
         "bash",

@@ -59,7 +59,7 @@ describe("shared LISTEN connection (KOBE-704)", () => {
           WHERE datname = current_database() AND application_name LIKE 'kaiju-%'
             AND application_name NOT IN ('kaiju-server', 'kaiju-server-listen', 'kaiju-event-stream')`,
       );
-      // No other dedicated LISTEN session (the pre-KOBE-704 kaiju-event-hub, kobe-sandbox-bus).
+      // No other dedicated LISTEN session (the pre-KOBE-704 kaiju-event-hub, kaiju-sandbox-bus).
       expect(listed.rows[0]?.n).toBe(0);
     } finally {
       unsubscribe();

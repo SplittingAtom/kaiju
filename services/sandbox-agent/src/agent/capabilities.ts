@@ -33,7 +33,7 @@ import type { AgentDeps } from "./deps.js";
 
 /**
  * Which optional tools and features this agent offers, from its deps alone. Every predicate
- * reduces to two inputs: the kobe-tools extension (the fd-4 channel) and what workspace sync
+ * reduces to two inputs: the kaiju-tools extension (the fd-4 channel) and what workspace sync
  * provides (plus kernels for notebooks).
  */
 export interface Capabilities {
@@ -96,7 +96,7 @@ function skillDraftsEnabled(deps: AgentDeps): boolean {
   return filesEnabled(deps);
 }
 
-/** Conflict reports (KOBE-492) need sync to see them and kobe-tools to tell the model. */
+/** Conflict reports (KOBE-492) need sync to see them and kaiju-tools to tell the model. */
 function syncConflictsEnabled(deps: AgentDeps): boolean {
   return deps.workspace?.onConflict !== undefined && deps.toolsExtension !== undefined;
 }
@@ -143,7 +143,7 @@ export function helloCapabilities(deps: AgentDeps): string[] {
     CAPABILITY_APP_CARDS,
     // Compaction (KOBE-213) summarizes through the gateway with the run's token: same condition.
     ...(deps.models === undefined ? [] : [CAPABILITY_THREAD_COMPACT]),
-    // Branch summaries (KOBE-548) go through kobe-models the same way.
+    // Branch summaries (KOBE-548) go through kaiju-models the same way.
     ...(deps.models === undefined ? [] : [CAPABILITY_THREAD_BRANCH_SUMMARY]),
     // Run spans over this wire (KOBE-274); sent only for runs the server gave a trace context.
     CAPABILITY_TRACE_SPANS,

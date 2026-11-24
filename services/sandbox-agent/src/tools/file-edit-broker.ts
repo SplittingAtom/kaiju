@@ -7,7 +7,7 @@ import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 
 /**
- * Routes `propose_file_edit` kobe-tools requests to the server and its answers back (KOBE-462,
+ * Routes `propose_file_edit` kaiju-tools requests to the server and its answers back (KOBE-462,
  * file-edit-frames.ts `file.edit_propose`, `file.edit_propose_result`). Nothing is pushed first:
  * the proposal is the call's input and its base is the server's synced copy. Same rules as
  * {@link ArtifactBroker}: wire ids are minted here, the frame carries the run and thread the agent

@@ -7,7 +7,7 @@ import { resolveSharePath, SharePathError } from "./share-path.js";
 
 /**
  * The agent side of `share_file` (KOBE-149; contract: packages/protocol `files.ts`, push-then-share).
- * One `file.share` kobe-tools request becomes, in this order and only if each step succeeds:
+ * One `file.share` kaiju-tools request becomes, in this order and only if each step succeeds:
  * confine the path (`share-path.ts`), push that one file through workspace sync, send the
  * `file.share` frame naming the pushed `{path, rev, sha256, size}`, and relay the server's
  * `file.share_result` as the tool result. Nothing is sent before the push succeeded; any failure

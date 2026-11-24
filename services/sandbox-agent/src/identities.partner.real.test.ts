@@ -39,7 +39,7 @@ interface Result {
   readonly stderr: string;
 }
 
-/** `kobe-runas <args>` to completion; `stdio` extras are passed as fds 3.. (default none). */
+/** `kaiju-runas <args>` to completion; `stdio` extras are passed as fds 3.. (default none). */
 function helper(args: readonly string[], extraFds = 0): Promise<Result> {
   return new Promise((resolve) => {
     const stdio: ("ignore" | "pipe")[] = ["ignore", "pipe", "pipe"];

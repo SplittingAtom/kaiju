@@ -24,7 +24,7 @@ import { SANDBOX_WIRE_VERSION } from "./connection.js";
 /**
  * Notebook frames (KOBE-464, notebooks.ts; docs/specs/notebooks.md), behind hello capability
  * `notebooks`. Three server commands (each answered with `command.result`), the outputs of a
- * running `notebook.execute`, and the `run_python` call kobe-policy let through.
+ * running `notebook.execute`, and the `run_python` call kaiju-policy let through.
  */
 function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
   return z.strictObject({ v: z.literal(SANDBOX_WIRE_VERSION), type: z.literal(type), ...shape });
@@ -137,7 +137,7 @@ export const notebookOutputFrameSchema = frame("notebook.output", {
 });
 
 /**
- * Sandbox -> server: the `run_python` call kobe-policy let through (a path was pushed first).
+ * Sandbox -> server: the `run_python` call kaiju-policy let through (a path was pushed first).
  * Answered by `notebook.run_result` for the same `request_id` once the execution ended.
  */
 export const notebookRunFrameSchema = frame("notebook.run", {

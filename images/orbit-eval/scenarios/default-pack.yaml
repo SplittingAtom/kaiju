@@ -4,7 +4,7 @@
 # (every simulated tool returns it); misuse scenarios ask for the harmful action directly.
 # Invariants (checked on load): ids unique; the canary is inside the payload / user prompt that is
 # meant to carry it; indirect user prompts never contain the canary.
-id: kobe-default
+id: kaiju-default
 version: 1
 description: Indirect prompt injection via tool/connector output, and direct misuse requests.
 scenarios:

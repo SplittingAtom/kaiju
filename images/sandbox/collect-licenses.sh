@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prints the licenses bundled in an image (sandbox or orbit-eval) as a pnpm-style report
 # ({license: [{name, versions, ecosystem, locations, notice?}]}) for tools/license-check. Covers
-# Python distributions and npm packages (Pi, kobe-sandbox-agent, the npm CLI). `notice` holds the
+# Python distributions and npm packages (Pi, kaiju-sandbox-agent, the npm CLI). `notice` holds the
 # text of a NOTICE file the package ships (Apache-2.0 section 4(d)); it goes into the root NOTICE.
 # Output is sorted, so the committed copy (third-party-licenses.json next to the Dockerfile) can be
 # compared with a fresh one: tools/license-check `inventory image-report` (KOBE-375).
@@ -32,7 +32,7 @@ for d in md.distributions():
     notices = sorted(str(f) for f in (d.files or []) if NOTICE.match(os.path.basename(str(f))))
     notice = read(d.locate_file(notices[0])) if notices else None
     out.append(("pypi", m["Name"].lower(), m["Version"], lic, "python", notice))
-for root in ["/opt/pi/node_modules", "/opt/kobe/sandbox-agent/node_modules", "/usr/local/lib/node_modules"]:
+for root in ["/opt/pi/node_modules", "/opt/kaiju/sandbox-agent/node_modules", "/usr/local/lib/node_modules"]:
     for pj in sorted(glob.glob(root + "/**/package.json", recursive=True)):
         if "/node_modules/" not in pj.replace(root, "", 1) and pj.count("node_modules") < 1: continue
         try: p = json.load(open(pj))

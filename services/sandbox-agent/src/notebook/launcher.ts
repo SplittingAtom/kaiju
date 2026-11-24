@@ -16,7 +16,7 @@ import type { BridgeLauncher, BridgeProcess } from "./session.js";
 /**
  * Starting a thread kernel's bridge (docs/specs/notebooks.md NB10). Under Pi identities each kernel
  * takes an identity of its own from the pool and runs as its partner (tool) uid through
- * `kobe-runas`, stdio only, like the tool executor; on stop every process of the pair is killed,
+ * `kaiju-runas`, stdio only, like the tool executor; on stop every process of the pair is killed,
  * what the uid left in the shared trees is reclaimed for the workspace group, and only then is the
  * identity released (a failed reclaim keeps it out of use). Without identities (development,
  * tests) it is a plain child in its own process group.

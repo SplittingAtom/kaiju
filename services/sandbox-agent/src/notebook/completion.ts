@@ -8,7 +8,7 @@ import type { NotebookCompletionFrame } from "@kaiju/protocol/sandbox-wire";
 import type { CompleteRequest, KernelSession } from "./session.js";
 
 /**
- * Kernel completion (KOBE-808; the kernel side is `complete` / `doc` in kobe-kernel-bridge.py):
+ * Kernel completion (KOBE-808; the kernel side is `complete` / `doc` in kaiju-kernel-bridge.py):
  * the frame turned into the bridge's request, and the bridge's answer into the wire's result. The
  * answer comes from the member's own kernel, so it is validated against the contract; anything
  * off, late or failed is `unavailable`. The code and the name are never logged.

@@ -33,7 +33,7 @@ interface LearnStateWire {
 
 declare global {
   interface Window {
-    __kobeNudgePulses?: number;
+    __kaijuNudgePulses?: number;
   }
 }
 
@@ -51,13 +51,13 @@ async function shoot(page: Page, name: string, target: Locator): Promise<void> {
 /** Counts every pulse start in the page (the attribute appearing), from the first paint. */
 async function recordPulses(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    window.__kobeNudgePulses = 0;
+    window.__kaijuNudgePulses = 0;
     const seen = new WeakSet<Element>();
     const count = () => {
       document.querySelectorAll('[data-kaiju-learn-nudge="pulse"]').forEach((el) => {
         if (seen.has(el)) return;
         seen.add(el);
-        window.__kobeNudgePulses = (window.__kobeNudgePulses ?? 0) + 1;
+        window.__kaijuNudgePulses = (window.__kaijuNudgePulses ?? 0) + 1;
       });
     };
     new MutationObserver(count).observe(document, {
@@ -91,7 +91,7 @@ async function settledState(page: Page, threadId: string): Promise<LearnStateWir
   return last as unknown as LearnStateWire;
 }
 
-const pulses = (page: Page) => page.evaluate(() => window.__kobeNudgePulses ?? 0);
+const pulses = (page: Page) => page.evaluate(() => window.__kaijuNudgePulses ?? 0);
 
 test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs down, no pass", async ({
   chat,

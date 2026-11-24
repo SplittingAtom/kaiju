@@ -3,7 +3,7 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
-import { parseModelFile } from "./kobe-models/protocol.js";
+import { parseModelFile } from "./kaiju-models/protocol.js";
 import type { ModelWiring } from "./models/types.js";
 import { RUN_2, THREAD, runStart, startHarness, until, type Harness } from "./testing/harness.js";
 
@@ -27,8 +27,8 @@ const GRANT = { token: "krt1.compaction-run-token.mac", expires_at: "2099-01-01T
 type Result = Extract<SandboxToServerFrame, { type: "thread.compact_result" }>;
 
 const models: ModelWiring = {
-  gatewayUrl: "http://model-gateway.kobe.internal:80",
-  extension: "/opt/kobe/pi-extensions/kobe-models/index.js",
+  gatewayUrl: "http://model-gateway.kaiju.internal:80",
+  extension: "/opt/kaiju/pi-extensions/kaiju-models/index.js",
   tokens: { current: async () => TOKEN, onChange: () => () => undefined },
 };
 
@@ -104,7 +104,7 @@ describe("thread.compact (KOBE-213)", () => {
     expect((await piCommands("compact"))[1]).not.toHaveProperty("customInstructions");
   });
 
-  it("hands the compaction run's token to kobe-models when Pi asks, from memory", async () => {
+  it("hands the compaction run's token to kaiju-models when Pi asks, from memory", async () => {
     h = await startHarness({ models });
     expect(await compact({ focus: "token" })).toMatchObject({
       ok: true,

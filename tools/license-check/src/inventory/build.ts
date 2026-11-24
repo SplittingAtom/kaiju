@@ -68,16 +68,16 @@ function coverageProblems(inventory: Inventory, files: RepoFiles): string[] {
     (r) => `image ${r.ref} (${r.at}) has no inventory row: add one with images: [${r.repository}]`,
   );
   const drift = chartValueDrift(
-    chartValueKeys(files.read("charts/kobe/values.yaml")),
+    chartValueKeys(files.read("charts/kaiju/values.yaml")),
     inventory.chartValues,
   );
   return [
     ...uncovered,
     ...drift.missing.map(
       (k) =>
-        `charts/kobe/values.yaml key "${k}" is not in chartValues (first-party, site-provided or row ids)`,
+        `charts/kaiju/values.yaml key "${k}" is not in chartValues (first-party, site-provided or row ids)`,
     ),
-    ...drift.stale.map((k) => `chartValues.${k} names a key charts/kobe/values.yaml no longer has`),
+    ...drift.stale.map((k) => `chartValues.${k} names a key charts/kaiju/values.yaml no longer has`),
   ];
 }
 

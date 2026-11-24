@@ -5,7 +5,7 @@
     MODEL_SANDBOX=5c4d3e2f-1a0b-4c9d-8e7f-6a5b4c3d2e1f
     model_token=$(mint kobe.model-gateway "$MODEL_SANDBOX" "$MODEL_USER_ID")
     egress_aud_token=$(mint kobe.egress-proxy "$MODEL_SANDBOX" "$MODEL_USER_ID")
-    MG=http://model-gateway.kobe.internal:80
+    MG=http://model-gateway.kaiju.internal:80
     # → the body, then "code=<status>".
     model_call() { # path json [header…]
       local path="$1" body="$2"
@@ -60,7 +60,7 @@
     # Bifrost itself, bypassing the shim (which also refuses disabled models on its own): from a
     # server pod, with the model user's virtual key as the sync stored it → "code=<status>".
     bifrost_direct() { # model
-      $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
+      $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "
         const db = await import('/app/node_modules/@kaiju/db/dist/index.js');
         const d = db.createDb(process.env.KAIJU_DATABASE_URL);
         try {
@@ -68,7 +68,7 @@
             .where(db.eq(db.modelGatewayKeys.userId, '$MODEL_USER_ID')));
           const box = new db.SecretBox([process.env.KAIJU_MODELS_VIRTUAL_KEY_SECRET], db.VIRTUAL_KEY_PURPOSE);
           const vk = box.open(rows[0].vkValueEnc, db.virtualKeyContext('$E2E_TEAM_ID', '$MODEL_USER_ID'));
-          const r = await fetch('http://kobe-bifrost:8080/v1/chat/completions', { method: 'POST',
+          const r = await fetch('http://kaiju-bifrost:8080/v1/chat/completions', { method: 'POST',
             headers: { 'content-type': 'application/json', 'x-bf-vk': vk }, signal: AbortSignal.timeout(15000),
             body: JSON.stringify({ model: process.argv[1], messages: [{ role: 'user', content: 'hi' }] }) });
           console.log('code=' + r.status);

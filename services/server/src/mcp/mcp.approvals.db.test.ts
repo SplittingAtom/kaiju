@@ -37,7 +37,7 @@ describe("Gate 2: an MCP write runs only with a valid signed approval", () => {
     w = await world();
   });
 
-  it("refuses an unsigned call (a tampered kobe-policy skipped the approval)", async () => {
+  it("refuses an unsigned call (a tampered kaiju-policy skipped the approval)", async () => {
     const res = await write();
     expect(res.json).toMatchObject({
       decision: "deny",

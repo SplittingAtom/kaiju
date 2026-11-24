@@ -1,9 +1,9 @@
 import type { PolicyCheckFrame } from "@kaiju/protocol/sandbox-wire";
-import { MAX_PENDING_CHECKS } from "../kobe-policy/protocol.js";
+import { MAX_PENDING_CHECKS } from "../kaiju-policy/protocol.js";
 import { localDeny, type PolicyChannelCheck, type PolicyChannelReply } from "./channel.js";
 
 /**
- * Routes kobe-policy checks to the server and the answers back (frames.ts `policy.check`,
+ * Routes kaiju-policy checks to the server and the answers back (frames.ts `policy.check`,
  * `policy.pending`, `policy.result`). Wire `request_id`s are minted here, so two threads' extensions
  * can never collide or answer each other's checks. Every pending check is answered exactly once;
  * anything that prevents an answer from the server is a deny (fail closed).

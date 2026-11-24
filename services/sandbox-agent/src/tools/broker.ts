@@ -4,7 +4,7 @@ import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 
 /**
- * Routes kobe-tools requests to the server and its answers back (frames.ts `artifact.put`,
+ * Routes kaiju-tools requests to the server and its answers back (frames.ts `artifact.put`,
  * `artifact.result`). Wire `request_id`s are minted here, so two threads' extensions can never
  * collide or answer each other's requests; the frame carries the run and thread the agent knows,
  * never ones the extension names. Every pending request is answered exactly once; anything that

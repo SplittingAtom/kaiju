@@ -56,7 +56,7 @@ describe("runtime directory tripwire", () => {
     expect(await unexpectedEntries(runtime)).toEqual(["egress-token (dir)"]);
   });
 
-  it("accepts kobe-models' context capture and its temp file in agent/ (KOBE-470), as files only", async () => {
+  it("accepts kaiju-models' context capture and its temp file in agent/ (KOBE-470), as files only", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir);
     await writeFile(path.join(runtime, "agent", "kobe-context.json"), "{}");

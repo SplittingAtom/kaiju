@@ -19,7 +19,7 @@ const configSchema = z.object({
    * File holding the `kobe.sandbox-wire` session token (a projected/mounted secret). Re-read on every
    * dial so a rotated token is picked up. A file, not an env var, so it is never inherited by Pi.
    */
-  KAIJU_SANDBOX_TOKEN_FILE: z.string().startsWith("/").default("/var/run/kobe/sandbox-wire/token"),
+  KAIJU_SANDBOX_TOKEN_FILE: z.string().startsWith("/").default("/var/run/kaiju/sandbox-wire/token"),
   /**
    * Kaiju's sandbox pods (KOBE-22): the projected bootstrap token, traded at the server for the
    * sandbox id and its session tokens (session/exchange.ts). Takes precedence over the two above.
@@ -34,7 +34,7 @@ const configSchema = z.object({
    * 1.0.0 must be able to write, and its model file): created fresh per process, removed when it
    * exits. On the emptyDir that hibernation wipes (D12).
    */
-  KAIJU_PI_RUNTIME_DIR: z.string().startsWith("/").default("/tmp/kobe-pi"),
+  KAIJU_PI_RUNTIME_DIR: z.string().startsWith("/").default("/tmp/kaiju-pi"),
   /**
    * Where the run's effective skills are materialized (KOBE-82): a directory only the agent
    * writes, readable by the Pi uids. Kaiju's pod spec mounts a memory-backed volume (sticky root,
@@ -75,25 +75,25 @@ const configSchema = z.object({
     }, "KAIJU_MCP_PROXY_URL must be a plain origin without credentials")
     .optional(),
   /** The root-owned BASH_ENV script that exports the proxy variables from the token file. */
-  KAIJU_EGRESS_ENV_SCRIPT: z.string().startsWith("/").default("/opt/kobe/egress-env.sh"),
+  KAIJU_EGRESS_ENV_SCRIPT: z.string().startsWith("/").default("/opt/kaiju/egress-env.sh"),
   /** Hosts tools reach without the proxy (the pod's NO_PROXY); passed to Pi with the proxy. */
   NO_PROXY: z
     .string()
     .max(2048)
     .regex(/^[A-Za-z0-9.,:*_-]*$/, "NO_PROXY must be a list of host names")
     .default("localhost,127.0.0.1"),
-  /** kobe-models (KOBE-41): root-owned, read-only, loaded before kobe-policy when models are wired. */
+  /** kaiju-models (KOBE-41): root-owned, read-only, loaded before kaiju-policy when models are wired. */
   KAIJU_MODELS_EXTENSION: z
     .string()
     .startsWith("/")
-    .default("/opt/kobe/pi-extensions/kobe-models/index.js"),
+    .default("/opt/kaiju/pi-extensions/kaiju-models/index.js"),
   /**
-   * kobe-tools (KOBE-128): root-owned, read-only, loaded before kobe-policy. Optional: unset, Pi
+   * kaiju-tools (KOBE-128): root-owned, read-only, loaded before kaiju-policy. Optional: unset, Pi
    * gets no fd 4 and the agent does not announce the `artifacts` capability (the image sets it).
    */
   KAIJU_TOOLS_EXTENSION: z.string().startsWith("/").optional(),
   /**
-   * kobe-exec (KOBE-167): root-owned, read-only, loaded before kobe-policy. Optional: unset, Pi runs
+   * kaiju-exec (KOBE-167): root-owned, read-only, loaded before kaiju-policy. Optional: unset, Pi runs
    * its own tools (development and tests outside the image; the image sets it).
    */
   KAIJU_EXEC_EXTENSION: z.string().startsWith("/").optional(),
@@ -107,13 +107,13 @@ const configSchema = z.object({
   KAIJU_TOOL_EXECUTOR: z
     .enum(["true", "1", "false", "0"], { error: "KAIJU_TOOL_EXECUTOR must be true or false" })
     .optional(),
-  /** kobe-policy (KOBE-36): root-owned, read-only, loaded last into every Pi. No way to omit it. */
+  /** kaiju-policy (KOBE-36): root-owned, read-only, loaded last into every Pi. No way to omit it. */
   KAIJU_POLICY_EXTENSION: z
     .string()
     .startsWith("/")
-    .default("/opt/kobe/pi-extensions/kobe-policy/index.js"),
+    .default("/opt/kaiju/pi-extensions/kaiju-policy/index.js"),
   /**
-   * KOBE-71: the image's `kobe-runas` helper. Set (by Kaiju's pod spec), every Pi process runs as
+   * KOBE-71: the image's `kaiju-runas` helper. Set (by Kaiju's pod spec), every Pi process runs as
    * a Pi identity of its own (the agent's supplementary groups 2000-2063), and the agent refuses
    * to start when it cannot do that. Unset (development, tests): Pi runs as the agent's uid.
    */
@@ -165,9 +165,9 @@ export interface Config {
   readonly mcpProxyUrl?: string;
   readonly noProxy: string;
   readonly policyExtension: string;
-  /** kobe-tools (KOBE-128); undefined = no artifact tools. */
+  /** kaiju-tools (KOBE-128); undefined = no artifact tools. */
   readonly toolsExtension?: string;
-  /** kobe-exec (KOBE-167); undefined = Pi runs its own tools. */
+  /** kaiju-exec (KOBE-167); undefined = Pi runs its own tools. */
   readonly execExtension?: string;
   /** KOBE-167: route the tools to the partner-uid executor (needs `execExtension`). */
   readonly toolExecutor: boolean;

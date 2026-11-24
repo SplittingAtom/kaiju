@@ -189,7 +189,7 @@ export function evalJobManifest(input: EvalJobInput): KubeObject {
       activeDeadlineSeconds: input.eval.deadlineSeconds,
       ttlSecondsAfterFinished: EVAL_TTL_SECONDS,
       template: {
-        metadata: { labels: { ...meta, "app.kubernetes.io/name": "kobe-orbit-eval" } },
+        metadata: { labels: { ...meta, "app.kubernetes.io/name": "kaiju-orbit-eval" } },
         spec: evalPodSpec(input),
       },
     },

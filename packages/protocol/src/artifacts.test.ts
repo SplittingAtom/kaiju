@@ -149,7 +149,7 @@ describe("artifact.put / artifact.result frames", () => {
   });
 });
 
-describe("kobe-tools channel", () => {
+describe("kaiju-tools channel", () => {
   it("uses fd 4", () => expect(KAIJU_TOOLS_FD).toBe(4));
   const req = {
     id: "k1",
@@ -217,7 +217,7 @@ describe("API types", () => {
   });
 });
 
-describe("kobe-tools memory ops (KOBE-157)", () => {
+describe("kaiju-tools memory ops (KOBE-157)", () => {
   it("accepts memory.put / memory.read requests and their answers, nothing else", () => {
     const put = {
       id: "kt_1",

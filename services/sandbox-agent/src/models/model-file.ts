@@ -4,11 +4,11 @@ import {
   MODEL_FILE_VERSION,
   type ModelFileModel,
   type ModelFileState,
-} from "../kobe-models/protocol.js";
+} from "../kaiju-models/protocol.js";
 import type { RunModel } from "./types.js";
 
 /**
- * The agent's side of the model file (kobe-models/protocol.ts): one per Pi process, in that
+ * The agent's side of the model file (kaiju-models/protocol.ts): one per Pi process, in that
  * process's private runtime directory, rewritten atomically (a fresh random temp file opened `wx`
  * — no symlink or FIFO at the temp path is followed — then renamed, so Pi never reads a torn file)
  * on token rotation and run start/end. Writes are serialised so the last state asked for is the

@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # KOBE-181 (65f of KOBE-65): scheduled runs end to end. Sourced by e2e/run.sh after the model setup
-# (KOBE-40/41) and the gallery agent Kobe (KOBE-89, KOBE-254); uses its helpers (psql_kobe, probe, retry, answers,
+# (KOBE-40/41) and the gallery agent Kobe (KOBE-89, KOBE-254); uses its helpers (psql_kaiju, probe, retry, answers,
 # contains, wait_for) and the Owner's real sandbox with the fake model.
 #
 # No real interval is waited for (the minimum is 15 min): schedules are created through the API with
@@ -18,10 +18,10 @@
 SCHED_USER_ID=7e2e0000-0000-4000-8000-000000000181
 SCHED_EMAIL=sched@e2e.test
 SCHED_NONE=00000000-0000-4000-8000-000000000000
-MAILPIT_API=http://mailpit.kobe-deps:8025/api/v1
+MAILPIT_API=http://mailpit.kaiju-deps:8025/api/v1
 
 sched_as() { # email "METHOD /path [json]"... → "<status> <body>" per request, as that user in the e2e team
-  $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
+  $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "
     const base = 'http://127.0.0.1:8080', origin = process.env.KAIJU_PUBLIC_URL;
     const h = { origin, 'content-type': 'application/json', 'x-kaiju-team': '$E2E_TEAM_ID' };
     let login;
@@ -47,14 +47,14 @@ sched_id_of() { sed -n 's/.*"schedule_id":"\([0-9a-f-]*\)".*/\1/p' | head -1; } 
 sched_body() { # agent-id prompt at → a create body (daily, UTC, email on)
   printf '{"agent_id":"%s","prompt":"%s","recurrence":{"kind":"daily","at":"%s"},"tz":"UTC","notify_email":true}' "$1" "$2" "$3"
 }
-sched_pull_due() { psql_kobe "UPDATE schedules SET next_due_at = date_trunc('second', now()) - interval '1 second' WHERE id = '$1'" >/dev/null; }
-sched_threads() { psql_kobe "SELECT count(*) FROM threads WHERE schedule_id = '${1:-$SCHED_NONE}'"; }
-sched_fires() { psql_kobe "SELECT count(*) FROM events WHERE kind = 'schedule.fire' AND ref->>'schedule_id' = '${1:-$SCHED_NONE}'"; }
-sched_run() { psql_kobe "SELECT coalesce(last_run_id::text, '') FROM schedules WHERE id = '${1:-$SCHED_NONE}'"; }
-sched_skips() { psql_kobe "SELECT count(*) FROM events WHERE kind = 'schedule.skip' AND ref->>'schedule_id' = '${1:-$SCHED_NONE}' AND ref->>'reason' = '$2'"; }
-sched_status() { psql_kobe "SELECT status FROM runs WHERE id = '${1:-$SCHED_NONE}'"; }
-sched_note() { psql_kobe "SELECT kind || ':' || coalesce(skipped_count::text, '-') FROM notifications WHERE run_id = '${1:-$SCHED_NONE}'"; }
-sched_mail() { psql_kobe "SELECT e.status FROM notification_emails e JOIN notifications n ON n.team_id = e.team_id AND n.id = e.notification_id WHERE n.run_id = '${1:-$SCHED_NONE}'"; }
+sched_pull_due() { psql_kaiju "UPDATE schedules SET next_due_at = date_trunc('second', now()) - interval '1 second' WHERE id = '$1'" >/dev/null; }
+sched_threads() { psql_kaiju "SELECT count(*) FROM threads WHERE schedule_id = '${1:-$SCHED_NONE}'"; }
+sched_fires() { psql_kaiju "SELECT count(*) FROM events WHERE kind = 'schedule.fire' AND ref->>'schedule_id' = '${1:-$SCHED_NONE}'"; }
+sched_run() { psql_kaiju "SELECT coalesce(last_run_id::text, '') FROM schedules WHERE id = '${1:-$SCHED_NONE}'"; }
+sched_skips() { psql_kaiju "SELECT count(*) FROM events WHERE kind = 'schedule.skip' AND ref->>'schedule_id' = '${1:-$SCHED_NONE}' AND ref->>'reason' = '$2'"; }
+sched_status() { psql_kaiju "SELECT status FROM runs WHERE id = '${1:-$SCHED_NONE}'"; }
+sched_note() { psql_kaiju "SELECT kind || ':' || coalesce(skipped_count::text, '-') FROM notifications WHERE run_id = '${1:-$SCHED_NONE}'"; }
+sched_mail() { psql_kaiju "SELECT e.status FROM notification_emails e JOIN notifications n ON n.team_id = e.team_id AND n.id = e.notification_id WHERE n.run_id = '${1:-$SCHED_NONE}'"; }
 
 sched_fire() { # label schedule-id seconds → pulls it due, waits for its thread and the run's end, checks one thread
   local run
@@ -67,9 +67,9 @@ sched_fire() { # label schedule-id seconds → pulls it due, waits for its threa
 
 scheduled_run_checks() {
   local t0=$SECONDS agent at s1 s2 s3 out run1 run2 run3 thread1 note1
-  agent=$(psql_kobe "SELECT id FROM site_agents WHERE scope = 'gallery' AND gallery_key = 'kobe' AND archived_at IS NULL")
+  agent=$(psql_kaiju "SELECT id FROM site_agents WHERE scope = 'gallery' AND gallery_key = 'kobe' AND archived_at IS NULL")
   at=$(printf '%02d:00' $(((10#$(date -u +%H) + 12) % 24)))
-  psql_kobe "INSERT INTO users (id, name, email, email_verified) VALUES ('$SCHED_USER_ID', 'E2E scheduler', '$SCHED_EMAIL', true) ON CONFLICT DO NOTHING;
+  psql_kaiju "INSERT INTO users (id, name, email, email_verified) VALUES ('$SCHED_USER_ID', 'E2E scheduler', '$SCHED_EMAIL', true) ON CONFLICT DO NOTHING;
     INSERT INTO accounts (user_id, account_id, provider_id, password)
       SELECT '$SCHED_USER_ID', '$SCHED_USER_ID', 'credential', password FROM accounts
       WHERE provider_id = 'credential' AND user_id = '$owner_id'
@@ -88,16 +88,16 @@ scheduled_run_checks() {
 
   sched_fire "skipped write" "$s1" 300
   run1=$(sched_run "$s1")
-  thread1=$(psql_kobe "SELECT id FROM threads WHERE schedule_id = '${s1:-$SCHED_NONE}'")
+  thread1=$(psql_kaiju "SELECT id FROM threads WHERE schedule_id = '${s1:-$SCHED_NONE}'")
   contains "skipped write: a scheduled run (trigger schedule) completed" '^schedule:completed$' \
-    "$(psql_kobe "SELECT trigger::text || ':' || status::text FROM runs WHERE id = '${run1:-$SCHED_NONE}'")"
+    "$(psql_kaiju "SELECT trigger::text || ':' || status::text FROM runs WHERE id = '${run1:-$SCHED_NONE}'")"
   contains "skipped write: the bash call that would ask was skipped, not run (scheduled_run_no_prompt)" \
     '^bash:scheduled_run_no_prompt$' \
-    "$(psql_kobe "SELECT tool || ':' || reason FROM run_skipped_actions WHERE run_id = '${run1:-$SCHED_NONE}'")"
+    "$(psql_kaiju "SELECT tool || ':' || reason FROM run_skipped_actions WHERE run_id = '${run1:-$SCHED_NONE}'")"
   contains "skipped write: run.completed reports the skipped action" '^1$' \
-    "$(psql_kobe "SELECT count(*) FROM run_events WHERE run_id = '${run1:-$SCHED_NONE}' AND type = 'run.completed' AND payload->'skipped_actions'->0->>'tool' = 'bash'")"
+    "$(psql_kaiju "SELECT count(*) FROM run_events WHERE run_id = '${run1:-$SCHED_NONE}' AND type = 'run.completed' AND payload->'skipped_actions'->0->>'tool' = 'bash'")"
   contains "skipped write: the thread holds the skipped-actions summary, off the leaf" '^1:true$' \
-    "$(psql_kobe "SELECT count(*) || ':' || bool_and(t.leaf_entry_id IS DISTINCT FROM e.entry_id)::text FROM thread_entries e JOIN threads t ON t.team_id = e.team_id AND t.id = e.thread_id
+    "$(psql_kaiju "SELECT count(*) || ':' || bool_and(t.leaf_entry_id IS DISTINCT FROM e.entry_id)::text FROM thread_entries e JOIN threads t ON t.team_id = e.team_id AND t.id = e.thread_id
       WHERE e.thread_id = '${thread1:-$SCHED_NONE}' AND e.type = 'custom_message' AND e.payload->>'customType' = 'kobe.skipped_actions'")"
   contains "skipped write: the in-app notification says so, with the count" '^schedule.run.skipped_actions:1$' \
     "$(wait_for 30 '^schedule' sched_note "$run1")"
@@ -106,14 +106,14 @@ scheduled_run_checks() {
   sched_fire "success" "$s2" 180
   run2=$(sched_run "$s2")
   contains "success: the run completed with nothing skipped" '^completed:0$' \
-    "$(psql_kobe "SELECT r.status::text || ':' || (SELECT count(*) FROM run_skipped_actions s WHERE s.run_id = r.id) FROM runs r WHERE r.id = '${run2:-$SCHED_NONE}'")"
+    "$(psql_kaiju "SELECT r.status::text || ':' || (SELECT count(*) FROM run_skipped_actions s WHERE s.run_id = r.id) FROM runs r WHERE r.id = '${run2:-$SCHED_NONE}'")"
   contains "success: the in-app notification says it succeeded" '^schedule.run.succeeded:-$' \
     "$(wait_for 30 '^schedule' sched_note "$run2")"
   contains "success: its email was sent" '^sent$' "$(wait_for 120 '^(sent|failed|skipped)$' sched_mail "$run2")"
   contains "each schedule fired exactly once, one thread each (the next run is 12 h away)" '^1:1:1:1$' \
     "$(sched_fires "$s1"):$(sched_threads "$s1"):$(sched_fires "$s2"):$(sched_threads "$s2")"
 
-  note1=$(psql_kobe "SELECT id FROM notifications WHERE run_id = '${run1:-$SCHED_NONE}'")
+  note1=$(psql_kaiju "SELECT id FROM notifications WHERE run_id = '${run1:-$SCHED_NONE}'")
   out=$(sched_as owner@e2e.test "GET /v1/notifications?unread=true&limit=10" \
     "POST /v1/notifications/read {\"notification_ids\":[\"${note1:-$SCHED_NONE}\"]}" \
     "POST /v1/notifications/read {\"all\":true}" "GET /v1/notifications?unread=true")
@@ -130,7 +130,7 @@ scheduled_run_checks() {
   sched_fire "failure" "$s3" 60
   run3=$(sched_run "$s3")
   contains "failure: the budget blocked the run at fire time (failed)" '^failed:budget_blocked$' \
-    "$(psql_kobe "SELECT r.status::text || ':' || coalesce(e.ref->>'outcome', '-') FROM runs r JOIN events e ON e.kind = 'schedule.fire' AND e.ref->>'run_id' = r.id::text WHERE r.id = '${run3:-$SCHED_NONE}'")"
+    "$(psql_kaiju "SELECT r.status::text || ':' || coalesce(e.ref->>'outcome', '-') FROM runs r JOIN events e ON e.kind = 'schedule.fire' AND e.ref->>'run_id' = r.id::text WHERE r.id = '${run3:-$SCHED_NONE}'")"
   contains "failure: the in-app notification says it failed" '^schedule.run.failed:-$' "$(wait_for 30 '^schedule' sched_note "$run3")"
   contains "failure: its email was sent (before the member is deactivated)" '^sent$' \
     "$(wait_for 120 '^(sent|failed|skipped)$' sched_mail "$run3")"
@@ -141,19 +141,19 @@ scheduled_run_checks() {
   out=$(sched_as owner@e2e.test "POST /v1/site/users/$SCHED_USER_ID/deactivate" "POST /v1/schedules/$s3/resume")
   contains "the Owner deactivates the member" '^200 .*"deactivated":true' "$(printf '%s\n' "$out" | sed -n 1p)"
   contains "deactivation paused the member's schedule" '^false:deactivation:true$' \
-    "$(psql_kobe "SELECT active::text || ':' || coalesce(paused_by, '-') || ':' || (next_due_at IS NULL)::text FROM schedules WHERE id = '${s3:-$SCHED_NONE}'")"
+    "$(psql_kaiju "SELECT active::text || ':' || coalesce(paused_by, '-') || ':' || (next_due_at IS NULL)::text FROM schedules WHERE id = '${s3:-$SCHED_NONE}'")"
   contains "a team admin cannot resume it (only admin-paused schedules: 404)" '^404 ' "$(printf '%s\n' "$out" | sed -n 2p)"
   # Due again while paused: the runner never picks it up (three ticks).
   sched_pull_due "$s3"
   sleep 15
   contains "the paused schedule does not fire even when due" '^1:1$' "$(sched_fires "$s3"):$(sched_threads "$s3")"
   # As if the pause had been lost (an old row, a failed hook): the fire-time check skips it.
-  psql_kobe "UPDATE schedules SET active = true, paused_by = NULL, next_due_at = date_trunc('second', now()) - interval '1 second' WHERE id = '${s3:-$SCHED_NONE}'" >/dev/null
+  psql_kaiju "UPDATE schedules SET active = true, paused_by = NULL, next_due_at = date_trunc('second', now()) - interval '1 second' WHERE id = '${s3:-$SCHED_NONE}'" >/dev/null
   contains "an active schedule of a deactivated owner is skipped at fire time (user_inactive)" '^1$' \
     "$(wait_for 30 '^1$' sched_skips "$s3" user_inactive)"
   contains "the deactivated member's schedule never fired again, nor notified" '^1:1:1$' \
-    "$(sched_fires "$s3"):$(sched_threads "$s3"):$(psql_kobe "SELECT count(*) FROM notifications WHERE user_id = '$SCHED_USER_ID'")"
-  psql_kobe "UPDATE schedules SET active = false, paused_by = 'deactivation', next_due_at = NULL WHERE id = '${s3:-$SCHED_NONE}'" >/dev/null
+    "$(sched_fires "$s3"):$(sched_threads "$s3"):$(psql_kaiju "SELECT count(*) FROM notifications WHERE user_id = '$SCHED_USER_ID'")"
+  psql_kaiju "UPDATE schedules SET active = false, paused_by = 'deactivation', next_due_at = NULL WHERE id = '${s3:-$SCHED_NONE}'" >/dev/null
 
   # --- Mailpit: what each owner received ------------------------------------------------------------
   local owner_q="'$MAILPIT_API/search?query=to%3Aowner%40e2e.test%20subject%3Ascheduled&limit=50'"

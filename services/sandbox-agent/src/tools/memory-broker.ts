@@ -9,11 +9,11 @@ import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 
 /**
- * Routes `remember` / `recall` / `show_memory_item` kobe-tools requests (`memory.put`,
+ * Routes `remember` / `recall` / `show_memory_item` kaiju-tools requests (`memory.put`,
  * `memory.read`, `memory.show` since KOBE-399) to the server and
  * its `memory.result` back (KOBE-157, memory.ts). Same rules as the other brokers: wire ids
  * are minted here, the frame carries the run and thread the agent knows (never ones the extension
- * names) plus the `tool_call_id` kobe-policy allowed, every pending request is answered exactly
+ * names) plus the `tool_call_id` kaiju-policy allowed, every pending request is answered exactly
  * once, and anything that prevents an answer is an error (fail closed). No retry.
  */
 export const MAX_PENDING_MEMORY = 32;

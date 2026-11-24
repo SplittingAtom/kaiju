@@ -16,15 +16,15 @@
     contains "follow-ups: a team admin turns the team switch on" '^200 \{"followups_enabled":true\}$' "$at_setup"
     at_thread=$(sed -n 's/^201 .*"thread_id":"\([0-9a-f-]*\)".*/\1/p' <<<"$at_setup")
     at_sql="'${at_thread:-00000000-0000-4000-8000-000000000000}'"
-    at_title() { psql_kobe "SELECT coalesce(title, '-') || '|' || title_locked FROM threads WHERE id = $at_sql"; }
+    at_title() { psql_kaiju "SELECT coalesce(title, '-') || '|' || title_locked FROM threads WHERE id = $at_sql"; }
     at_epilogue() { # run-id → "title:followups" as announced by its run.completed (true/false each)
-      psql_kobe "SELECT coalesce(payload->'epilogue' ? 'title', false)::text || ':' || coalesce(payload->'epilogue' ? 'followups', false)::text FROM run_events WHERE run_id = '$1' AND type = 'run.completed'"
+      psql_kaiju "SELECT coalesce(payload->'epilogue' ? 'title', false)::text || ':' || coalesce(payload->'epilogue' ? 'followups', false)::text FROM run_events WHERE run_id = '$1' AND type = 'run.completed'"
     }
     at_after() { # run-id → the epilogue events of the run (a leaf-only thread.updated, KOBE-543, is not one)
-      psql_kobe "SELECT coalesce(string_agg(type, ',' ORDER BY type), '-') FROM run_events WHERE run_id = '$1' AND type IN ('thread.updated', 'thread.suggestions') AND NOT (type = 'thread.updated' AND NOT payload ? 'title')"
+      psql_kaiju "SELECT coalesce(string_agg(type, ',' ORDER BY type), '-') FROM run_events WHERE run_id = '$1' AND type IN ('thread.updated', 'thread.suggestions') AND NOT (type = 'thread.updated' AND NOT payload ? 'title')"
     }
     at_usage() { # run-id → the run's server-call usage rows as kind:status:no-sandbox
-      psql_kobe "SELECT coalesce(string_agg(kind || ':' || status || ':' || (sandbox_id IS NULL), ',' ORDER BY kind), '-') FROM run_usage WHERE team_id = '$E2E_TEAM_ID' AND run_id = '$1' AND kind <> 'run'"
+      psql_kaiju "SELECT coalesce(string_agg(kind || ':' || status || ':' || (sandbox_id IS NULL), ',' ORDER BY kind), '-') FROM run_usage WHERE team_id = '$E2E_TEAM_ID' AND run_id = '$1' AND kind <> 'run'"
     }
     contains "auto-titles: a thread created without a title starts untitled" '^-\|false$' "$(at_title)"
     at_chat=$(chat_run "$at_prompt" 300000 "" "" "${at_thread:-00000000-0000-4000-8000-000000000000}")
@@ -37,12 +37,12 @@
     contains "auto-titles: thread.updated and thread.suggestions follow run.completed" \
       '^thread.suggestions,thread.updated$' "$(wait_for 30 '^thread.suggestions,thread.updated$' at_after "$at_run")"
     contains "auto-titles: the title event carries the saved title" '^fake-openai: First message$' \
-      "$(psql_kobe "SELECT payload->>'title' FROM run_events WHERE run_id = '$at_run' AND type = 'thread.updated' AND payload ? 'title'")"
+      "$(psql_kaiju "SELECT payload->>'title' FROM run_events WHERE run_id = '$at_run' AND type = 'thread.updated' AND payload ? 'title'")"
     contains "auto-titles: the calls are the run's title and followups usage rows, without a sandbox" \
       '^followups:200:true,title:200:true$' "$(wait_for 30 '^followups:200:true,title:200:true$' at_usage "$at_run")"
     contains "follow-ups: the chips are the fake model's suggestions for the last exchange" \
       "^\[\"$at_prompt\", \"fake-openai: $at_prompt\"\]\$" \
-      "$(psql_kobe "SELECT payload->'suggestions' FROM run_events WHERE run_id = '$at_run' AND type = 'thread.suggestions'")"
+      "$(psql_kaiju "SELECT payload->'suggestions' FROM run_events WHERE run_id = '$at_run' AND type = 'thread.suggestions'")"
     contains "auto-titles: the owner renames the thread (200)" '^200 ' \
       "$(as_owner "PATCH /v1/threads/${at_thread:-00000000-0000-4000-8000-000000000000} {\"title\":\"$at_renamed\"}")"
     contains "auto-titles: a rename locks the title" "^$at_renamed\|true\$" "$(at_title)"
@@ -179,7 +179,7 @@ out("admin_shared", adminSees.status + ":read_only=" + adminSees.json.read_only)
 out("admin_shared_list", (await has(owner, "/v1/threads/shared", shared.json.thread_id)) + ":" + (await has(owner, "/v1/threads/shared", hidden.json.thread_id)));
 out("admin_post", code(await owner("POST", "/v1/threads/" + shared.json.thread_id + "/messages", { content: "admin? " + marker })));
 JS
-    org_out=$($KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$ORG_JS" \
+    org_out=$($KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "$ORG_JS" \
       "$E2E_TEAM_ID" reader@e2e.test "$READER_ID" "${at_thread:-00000000-0000-4000-8000-000000000000}" "$at_id" 2>&1 | tail -40)
     printf '     organize: %s\n' "$(tr '\n' ' ' <<<"$org_out" | cut -c1-1200)"
     contains "organize: both users signed in" '^signin=200:200$' "$org_out"
@@ -200,7 +200,7 @@ JS
     contains "organize: moved out of the project, the thread is private again" '^move_out=200:null:private:false$' "$org_out"
     contains "organize: the move ended the project share: the member gets 404" '^reader_after_move=404:thread_not_found$' "$org_out"
     contains "organize: both moves are audited" '^2$' \
-      "$(psql_kobe "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'thread.moved' AND target->>'threadId' = '${at_thread:-none}'")"
+      "$(psql_kaiju "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'thread.moved' AND target->>'threadId' = '${at_thread:-none}'")"
     contains "organize: a message starts a run the fake model holds back" '^busy_message=201$' "$org_out"
     contains "organize: moving a thread with an active run is refused (409 thread_busy)" '^busy_move=409:thread_busy$' "$org_out"
     contains "organize: ...the run is stopped" '^busy_cancel=cancelled$' "$org_out"
@@ -217,9 +217,9 @@ JS
     contains "share: after the revoke the member gets 404 and no longer lists it" \
       '^reader_after_revoke=404:thread_not_found:false$' "$org_out"
     contains "share: the team share and revoke are audited" '^1:1$' \
-      "$(psql_kobe "SELECT count(*) FILTER (WHERE target->>'visibility' = 'team') || ':' || count(*) FILTER (WHERE target->>'from' = 'team' AND target->>'visibility' = 'private') FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'thread.sharing_changed' AND target->>'threadId' = '${at_thread:-none}'")"
+      "$(psql_kaiju "SELECT count(*) FILTER (WHERE target->>'visibility' = 'team') || ':' || count(*) FILTER (WHERE target->>'from' = 'team' AND target->>'visibility' = 'private') FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'thread.sharing_changed' AND target->>'threadId' = '${at_thread:-none}'")"
     contains "share: the Owner is a team admin of the team" '^team_admin$' \
-      "$(psql_kobe "SELECT role FROM team_members WHERE team_id = '$E2E_TEAM_ID' AND user_id = '${owner_id:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT role FROM team_members WHERE team_id = '$E2E_TEAM_ID' AND user_id = '${owner_id:-00000000-0000-4000-8000-000000000000}'")"
     contains "share: the member starts a private and a team-shared thread" '^member_threads=201:201:team$' "$org_out"
     contains "share: the team admin can't open the member's private thread (404)" '^admin_private=404:thread_not_found$' "$org_out"
     contains "share: the team admin reads the shared one read-only" '^admin_shared=200:read_only=true$' "$org_out"

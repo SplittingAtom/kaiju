@@ -7,7 +7,7 @@ import {
   BRANCH_SUMMARY_COMMAND,
   type BranchSummaryOutcome,
   type BranchSummaryRequest,
-} from "../kobe-models/branch-summary-protocol.js";
+} from "../kaiju-models/branch-summary-protocol.js";
 
 type ResultOk = Extract<ThreadBranchSummaryResultFrame, { ok: true }>;
 type ResultErr = Extract<ThreadBranchSummaryResultFrame, { ok: false }>;
@@ -35,7 +35,7 @@ export const branchSummaryFailure = (code: BranchSummaryErrorCode): BranchSummar
   error: { code, message: FIXED[code] },
 });
 
-/** The armed request for kobe-models (ids and focus only; never the prompt's text). */
+/** The armed request for kaiju-models (ids and focus only; never the prompt's text). */
 export const branchSummaryRequestOf = (frame: ThreadBranchSummaryFrame): BranchSummaryRequest => ({
   from: frame.from_leaf_entry_id,
   to: frame.to_entry_id,
@@ -48,7 +48,7 @@ export const branchSummaryPrompt = () => ({
   message: `/${BRANCH_SUMMARY_COMMAND}`,
 });
 
-/** kobe-models' outcome as the wire reply (undefined: the command reported none). */
+/** kaiju-models' outcome as the wire reply (undefined: the command reported none). */
 export function branchSummaryReplyOf(
   outcome: BranchSummaryOutcome | undefined,
 ): BranchSummaryReply {

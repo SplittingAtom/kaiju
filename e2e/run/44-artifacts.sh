@@ -18,7 +18,7 @@
     # as_owner prints the status and the first 400 bytes only; the header and content checks use a
     # dedicated fetch through the server pod.
     art_fetch() { # path → status, then the headers and body (JSON lines) of an owner-authenticated GET
-      $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
+      $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "
         const base = 'http://127.0.0.1:8080', origin = process.env.KAIJU_PUBLIC_URL;
         const h = { origin, 'content-type': 'application/json', 'x-kaiju-team': '$E2E_TEAM_ID' };
         let login;
@@ -62,14 +62,14 @@
     # copy (deleted from the browser API, which is audited).
     echo "==> share_file (KOBE-152)"
     READER_ID=7e2e0000-0000-4000-8000-0000000000f1
-    psql_kobe "INSERT INTO users (id, name, email, email_verified) VALUES ('$READER_ID', 'E2E reader', 'reader@e2e.test', true) ON CONFLICT DO NOTHING;
+    psql_kaiju "INSERT INTO users (id, name, email, email_verified) VALUES ('$READER_ID', 'E2E reader', 'reader@e2e.test', true) ON CONFLICT DO NOTHING;
       INSERT INTO accounts (user_id, account_id, provider_id, password)
         SELECT '$READER_ID', '$READER_ID', 'credential', password FROM accounts
         WHERE provider_id = 'credential' AND user_id = '$owner_id'
           AND NOT EXISTS (SELECT 1 FROM accounts WHERE user_id = '$READER_ID');
       INSERT INTO team_members (team_id, user_id, role) VALUES ('$E2E_TEAM_ID', '$READER_ID', 'member') ON CONFLICT DO NOTHING;" >/dev/null
     file_fetch() { # email path [method] → status, then the headers and body (JSON lines) of that user's request
-      $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
+      $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "
         const base = 'http://127.0.0.1:8080', origin = process.env.KAIJU_PUBLIC_URL;
         const h = { origin, 'content-type': 'application/json', 'x-kaiju-team': '$E2E_TEAM_ID' };
         let login;
@@ -98,7 +98,7 @@
       # KOBE-242/266: no file.shared. Say why: the run's policy decisions and approvals, its audit
       # rows, the server's errors and Postgres's own report of any deadlock.
       echo "     share_file: no file.shared; run $sf_run (events, approvals, audit):"
-      psql_kobe "SELECT * FROM (
+      psql_kaiju "SELECT * FROM (
           SELECT 'event ' || seq || ' ' || type || ' ' || left(payload::text, 300) FROM run_events
            WHERE team_id = '$E2E_TEAM_ID' AND run_id = '${sf_run:-00000000-0000-4000-8000-000000000000}'
              AND type NOT LIKE '%.delta' ORDER BY seq) e
@@ -110,7 +110,7 @@
       $KUBECTL -n "$NS" logs -l app.kubernetes.io/component=server -c server --since=3m --tail=-1 2>&1 \
         | grep -E '"level":(40|50)' | grep -E "policy|lock|approval|deadlock|share" | tail -n 20 \
         | cut -c1-600 | sed 's/^/     server: /' || true
-      $KUBECTL -n kobe-deps logs deploy/pg --since=3m 2>&1 | grep -A8 "deadlock detected" | head -n 20 \
+      $KUBECTL -n kaiju-deps logs deploy/pg --since=3m 2>&1 | grep -A8 "deadlock detected" | head -n 20 \
         | cut -c1-300 | sed 's/^/     postgres: /' || true
     fi
     if printf '%s' "$sf_out" | grep -q "Policy could not be evaluated"; then
@@ -121,7 +121,7 @@
       "^file_events=[0-9a-f-]{36}:shared-report.txt:$((${#share_text} + 1))\$" "$sf_out"
     sf_id=$(printf '%s\n' "$sf_out" | sed -n 's/^file_events=\([0-9a-f-]*\):.*/\1/p')
     contains "share_file: the file has a row (kind shared, in the thread)" "^shared\\|$sf_thread\$" \
-      "$(psql_kobe "SELECT kind || '|' || thread_id FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${sf_id:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT kind || '|' || thread_id FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${sf_id:-00000000-0000-4000-8000-000000000000}'")"
     sf_dl=$(file_fetch owner@e2e.test "/v1/files/$sf_id/content")
     contains "share_file: the thread's reader downloads the bytes (200)" '^status=200$' "$sf_dl"
     contains "share_file: the body is the file written in the sandbox" "^body=$share_text( |\$)" "$sf_dl"
@@ -133,7 +133,7 @@
     contains "share_file: the browser API deletes the workspace copy (2xx)" '^status=20[0-9]$' \
       "$(file_fetch owner@e2e.test '/v1/workspace/files?path=shared-report.txt' DELETE)"
     contains "share_file: deleting from the browser is audited" '^1$' \
-      "$(psql_kobe "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'workspace.file_deleted'" | awk '$1 >= 1 {print 1; exit} {print 0}')"
+      "$(psql_kaiju "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'workspace.file_deleted'" | awk '$1 >= 1 {print 1; exit} {print 0}')"
     contains "share_file: the shared file survives losing its workspace copy (still 200)" '^status=200$' \
       "$(file_fetch owner@e2e.test "/v1/files/$sf_id/content")"
 

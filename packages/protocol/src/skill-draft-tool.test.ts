@@ -90,7 +90,7 @@ describe("save_skill_draft contract (KOBE-442)", () => {
     expect(serverToSandboxFrameSchema.safeParse(failed).success).toBe(true);
   });
 
-  it("is a kobe-tools op with its own answer", () => {
+  it("is a kaiju-tools op with its own answer", () => {
     expect(
       kaijuToolsRequestSchema.safeParse({
         id: "1",

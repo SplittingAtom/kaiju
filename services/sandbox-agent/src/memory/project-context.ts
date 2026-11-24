@@ -1,6 +1,6 @@
 import type { RunProjectContext } from "@kaiju/protocol";
 import { REPO_WORKING_COPY_DIR, type RunGitRepo } from "@kaiju/protocol/sandbox-wire";
-import { capBytes, sanitizeUntrusted } from "../kobe-tools/memory-fence.js";
+import { capBytes, sanitizeUntrusted } from "../kaiju-tools/memory-fence.js";
 
 /**
  * Project instructions in the model's context (KOBE-245, `run.start.project`). They ride the same

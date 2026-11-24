@@ -4,9 +4,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { installMemoryHooks, type MemoryHooksApi } from "../kobe-tools/memory-hooks.js";
+import { installMemoryHooks, type MemoryHooksApi } from "../kaiju-tools/memory-hooks.js";
 import { MemoryContextFile } from "./context-file.js";
-import { MARKER_BEGIN, MARKER_END, sanitizeForStorage } from "../kobe-tools/memory-fence.js";
+import { MARKER_BEGIN, MARKER_END, sanitizeForStorage } from "../kaiju-tools/memory-fence.js";
 import {
   INDEX_MAX_BYTES,
   memoryContextText,

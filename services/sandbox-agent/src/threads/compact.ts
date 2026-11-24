@@ -3,11 +3,11 @@ import {
   type ThreadCompactFrame,
   type ThreadCompactResultFrame,
 } from "@kaiju/protocol/sandbox-wire";
-import { gatewayBaseUrl } from "../kobe-models/protocol.js";
+import { gatewayBaseUrl } from "../kaiju-models/protocol.js";
 import { PiProcessError } from "../pi/pi-process.js";
 import type { RunModel } from "../models/types.js";
 
-/** The Pi provider id kobe-models registers (kobe-models/protocol.ts `KAIJU_PROVIDER_ID`). */
+/** The Pi provider id kaiju-models registers (kaiju-models/protocol.ts `KAIJU_PROVIDER_ID`). */
 const KAIJU_PROVIDER = "kobe";
 
 type ResultOk = Extract<ThreadCompactResultFrame, { ok: true }>;

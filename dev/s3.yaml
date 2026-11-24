@@ -1,24 +1,24 @@
 # Dev/e2e only, k3d only (Tilt and e2e/run.sh refuse other contexts): an S3-compatible object store
 # standing in for "external S3" (spec D4), for workspace sync (KOBE-27) and later uploads and
 # artifacts. SeaweedFS (Apache-2.0) — not MinIO, which is AGPL. Never part of the chart. Data is
-# an emptyDir: thrown away with the pod. Applied after dev/postgres.yaml (kobe-deps namespace; the
-# kobe-dev-s3 Secret there holds the matching dev credentials).
+# an emptyDir: thrown away with the pod. Applied after dev/postgres.yaml (kaiju-deps namespace; the
+# kaiju-dev-s3 Secret there holds the matching dev credentials).
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: s3-config
-  namespace: kobe-deps
+  namespace: kaiju-deps
 data:
-  # Throwaway dev credentials (dev/postgres.yaml: kobe-dev-s3).
+  # Throwaway dev credentials (dev/postgres.yaml: kaiju-dev-s3).
   s3.json: |
-    {"identities":[{"name":"kobe","credentials":[{"accessKey":"dev","secretKey":"dev"}],
+    {"identities":[{"name":"kaiju","credentials":[{"accessKey":"dev","secretKey":"dev"}],
       "actions":["Admin","Read","Write","List","Tagging"]}]}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: s3
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   selector:
     matchLabels: { app: s3 }
@@ -35,9 +35,9 @@ spec:
             - sh
             - -c
             - |
-              /entrypoint.sh server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/kobe-s3/s3.json &
+              /entrypoint.sh server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/kaiju-s3/s3.json &
               server=$!
-              until echo "s3.bucket.create -name kobe" | weed shell -master=localhost:9333 2>&1 \
+              until echo "s3.bucket.create -name kaiju" | weed shell -master=localhost:9333 2>&1 \
                 | grep -q "created bucket"; do sleep 1; done
               touch /tmp/bucket-ready
               wait "$server"
@@ -48,7 +48,7 @@ spec:
             periodSeconds: 2
           volumeMounts:
             - { name: data, mountPath: /data }
-            - { name: config, mountPath: /etc/kobe-s3 }
+            - { name: config, mountPath: /etc/kaiju-s3 }
       volumes:
         - name: data
           emptyDir: {}
@@ -59,7 +59,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: s3
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   selector: { app: s3 }
   ports:
@@ -71,7 +71,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: s3
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   podSelector:
     matchLabels: { app: s3 }
@@ -79,5 +79,5 @@ spec:
   ingress:
     - from:
         - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: kobe-dev }
+            matchLabels: { kubernetes.io/metadata.name: kaiju-dev }
         - podSelector: {}

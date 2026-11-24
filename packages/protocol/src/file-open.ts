@@ -31,7 +31,7 @@ export const FILE_OPEN_ERROR_CODES = [
   "storage_failed",
 ] as const;
 
-/** Success answer (frame and kobe-tools response, flat): the owner's client opens `path`. */
+/** Success answer (frame and kaiju-tools response, flat): the owner's client opens `path`. */
 export const fileOpenOkFields = {
   ok: z.literal(true),
   op: z.literal("file_open"),
@@ -48,7 +48,7 @@ export const fileOpenCallShape = {
   input: openFileInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
+/** kaiju-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
 export const fileOpenToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("file.open"),

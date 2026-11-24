@@ -3,13 +3,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kobe-deps
+  name: kaiju-deps
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: pg-init
-  namespace: kobe-deps
+  namespace: kaiju-deps
 data:
   init.sql: |
     CREATE ROLE kobe_owner LOGIN PASSWORD 'owner-dev-only' NOSUPERUSER NOBYPASSRLS;
@@ -20,7 +20,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pg
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   selector:
     matchLabels: { app: pg }
@@ -47,7 +47,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: pg
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   selector: { app: pg }
   ports:
@@ -58,7 +58,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: pg
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   podSelector:
     matchLabels: { app: pg }
@@ -66,28 +66,28 @@ spec:
   ingress:
     - from:
         - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: kobe-dev }
+            matchLabels: { kubernetes.io/metadata.name: kaiju-dev }
         - podSelector: {}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kobe-dev
+  name: kaiju-dev
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: kobe-dev-db
-  namespace: kobe-dev
+  name: kaiju-dev-db
+  namespace: kaiju-dev
 stringData:
-  app-url: postgres://kobe_app:app-dev-only@pg.kobe-deps:5432/kobe
-  migrate-url: postgres://kobe_owner:owner-dev-only@pg.kobe-deps:5432/kobe
+  app-url: postgres://kobe_app:app-dev-only@pg.kaiju-deps:5432/kobe
+  migrate-url: postgres://kobe_owner:owner-dev-only@pg.kaiju-deps:5432/kobe
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: kobe-dev-s3
-  namespace: kobe-dev
+  name: kaiju-dev-s3
+  namespace: kaiju-dev
 stringData:
   access-key-id: dev
   secret-access-key: dev

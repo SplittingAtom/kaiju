@@ -6,9 +6,9 @@ import { PendingRequests } from "./pending-requests.js";
 
 /**
  * The agent side of `commit_project` (KOBE-580, spec CM6; contract: packages/protocol
- * `project-commits.ts` and `sandbox-wire/project-frames.ts`). kobe-policy has already let the
+ * `project-commits.ts` and `sandbox-wire/project-frames.ts`). kaiju-policy has already let the
  * call through (a project write: a policy rule or a signed approval). One `project.commit`
- * kobe-tools request becomes, in this order and only if each step succeeds: push the whole
+ * kaiju-tools request becomes, in this order and only if each step succeeds: push the whole
  * working copy through workspace sync (the server diffs the manifest, so it must hold every
  * edit), send the `project.commit` frame, and relay the server's `project.commit_result` as the
  * tool result (`committed`, `commit_conflict`, `nothing_to_commit`, `pending_approval`, or a
@@ -26,7 +26,7 @@ export interface ProjectCommitBrokerDeps {
   /** Push every local change now (WorkspaceSync.pushAll). */
   readonly push: () => Promise<unknown>;
   /**
-   * Whether the run's `run.start.project.access` was `write` (defence in depth: kobe-tools lists
+   * Whether the run's `run.start.project.access` was `write` (defence in depth: kaiju-tools lists
    * the tool only then, and the server decides anyway).
    */
   readonly canCommit: (runId: string) => boolean;

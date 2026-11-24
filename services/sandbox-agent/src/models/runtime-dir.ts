@@ -8,7 +8,7 @@ import { GIT_CONFIG_FILE_NAME, isGitConfigTemp } from "../git/git-config.js";
 import { MEMORY_FILE_NAME, isMemoryTemp } from "../memory/context-file.js";
 import { SYSTEM_PROMPT_FILE_NAME } from "../pi/system-prompt-file.js";
 import type { PiIdentities } from "../pi/identities.js";
-import { CONTEXT_FILE_NAME, isContextTemp } from "../kobe-models/context-capture.js";
+import { CONTEXT_FILE_NAME, isContextTemp } from "../kaiju-models/context-capture.js";
 
 /**
  * The per-process runtime directories (threads/thread.ts): `<runtimeDir>/pi-XXXXXX/` with `agent/`
@@ -96,7 +96,7 @@ export async function unexpectedEntries(
       ? "dir"
       : PI_OWN_FILES.has(name) ||
           name in GUARDED_CONFIG ||
-          // kobe-models' record of the latest model call (KOBE-470), written by Pi itself.
+          // kaiju-models' record of the latest model call (KOBE-470), written by Pi itself.
           name === CONTEXT_FILE_NAME ||
           isContextTemp(name) ||
           extraAgentFiles.has(name) ||
@@ -183,7 +183,7 @@ export async function sweepRuntimeDir(
  * may rename it or anything above it: renaming a directory needs only write access to its parent
  * (no sticky bit), and a swapped path would hand a thread's Pi config to another thread. So the
  * root is either the agent's own (0711: reach, never list) or a root-owned sticky directory (a
- * memory-backed emptyDir, the pod's `/run/kobe-pi`; the sticky bit protects the agent's entries),
+ * memory-backed emptyDir, the pod's `/run/kaiju-pi`; the sticky bit protects the agent's entries),
  * and every directory above it is sticky or writable by its owner only. A root that is neither,
  * or not a real directory, is refused.
  */
@@ -206,7 +206,7 @@ export async function ensureRuntimeRoot(runtimeDir: string, identities: boolean)
     if (!above.isDirectory() || shared) {
       throw new Error(
         `Pi runtime directory ${runtimeDir}: ${dir} lets other users rename what is in it ` +
-          "(use a directory on a sticky volume, such as the pod's /run/kobe-pi)",
+          "(use a directory on a sticky volume, such as the pod's /run/kaiju-pi)",
       );
     }
     if (dir === path.dirname(dir)) break;

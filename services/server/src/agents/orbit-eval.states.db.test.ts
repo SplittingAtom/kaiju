@@ -57,7 +57,7 @@ describe("eval state machine", () => {
       attempts: 5,
       attack_successes: 0,
       errors: 0,
-      pack: { id: "kobe-default", version: 1 },
+      pack: { id: "kaiju-default", version: 1 },
     },
   } as const;
 

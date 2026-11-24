@@ -180,7 +180,7 @@ columns. In practice the upgrade is one-way:
 ### Log identity (caller email and client IP)
 
 v2.5.0 adds `user_email` and `client_ip` columns to LLM, MCP and relay logs. Kaiju's config
-(`kobe.bifrostConfig` in `charts/kobe/templates/_models.tpl`) records neither:
+(`kaiju.bifrostConfig` in `charts/kaiju/templates/_models.tpl`) records neither:
 
 - `logs_store.enabled: false` and `client.enable_logging: false`: no log rows are written at all,
   so neither column is ever filled.
@@ -203,9 +203,9 @@ written on both versions, the decoder is unchanged, and the only body difference
 passed through) affects only models without a thinking control and is the documented fix. In the
 bump PR:
 
-- update `images/bifrost/Dockerfile`, `charts/kobe/values.yaml` and the `_models.tpl` default to
+- update `images/bifrost/Dockerfile`, `charts/kaiju/values.yaml` and the `_models.tpl` default to
   `v2.5.1@sha256:5ec9873acaf1687556b6e4dd854b92b539d9debf87a5a683b66338648b84d3c8`
-  (`charts/kobe/tests/models.test.ts` checks they agree) and check the licence (docs/licensing.md);
+  (`charts/kaiju/tests/models.test.ts` checks they agree) and check the licence (docs/licensing.md);
 - run `bifrost.int.test.ts` against v2.5.1 and re-run `tools/bifrost-capture` (expect only the
   Ollama `xhigh` rows to differ);
 - deploy: back up the Bifrost PVC first; keep Bifrost's MCP gateway, MCP Apps, A2A, relays and

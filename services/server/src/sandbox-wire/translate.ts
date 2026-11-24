@@ -17,7 +17,7 @@ import type { NewRunEvent } from "../event-stream/append.js";
 import { TOOL_INPUT_MAX_BYTES, TOOL_PREVIEW_MAX_CHARS } from "./constants.js";
 
 /**
- * Why a run fails at settle: a kobe-models code (KOBE-41), or `model_output_limit` when the last
+ * Why a run fails at settle: a kaiju-models code (KOBE-41), or `model_output_limit` when the last
  * assistant message stopped at the model's output limit (`stopReason: "length"`, KOBE-258): the
  * reply is incomplete, so the run must not look completed.
  */
@@ -54,7 +54,7 @@ export interface Translation {
   /**
    * With `settled`: the run's last assistant message ended with `stopReason: "error"` (KOBE-41):
    * the model call failed for good (Pi's own retries included), so the run fails with this code —
-   * kobe-models' (`parseKaijuModelError`) or `model_error` for any other error text, which is
+   * kaiju-models' (`parseKaijuModelError`) or `model_error` for any other error text, which is
    * untrusted and never shown. `model_output_limit` when it stopped at the output limit.
    */
   readonly failure?: RunFailureCode;

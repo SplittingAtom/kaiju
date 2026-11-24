@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
  */
 const PYTHON = process.env.KAIJU_TEST_KERNEL_PYTHON;
 const BRIDGE = fileURLToPath(
-  new URL("../../../../images/sandbox/kernel/kobe-kernel-bridge.py", import.meta.url),
+  new URL("../../../../images/sandbox/kernel/kaiju-kernel-bridge.py", import.meta.url),
 );
 const PROBE = fileURLToPath(
   new URL("../../../../images/sandbox/kernel-transport-probe.py", import.meta.url),

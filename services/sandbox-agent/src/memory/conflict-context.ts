@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { SyncConflict } from "@kaiju/protocol";
-import { sanitizeUntrusted } from "../kobe-tools/memory-fence.js";
+import { sanitizeUntrusted } from "../kaiju-tools/memory-fence.js";
 
 /**
  * Workspace sync conflicts in the model's context (KOBE-492, sync-conflicts.ts): the member saved
@@ -9,7 +9,7 @@ import { sanitizeUntrusted } from "../kobe-tools/memory-fence.js";
  *
  * Delivery: at a run's start (`run.start.sync_conflicts`) the note rides the per-run memory file
  * into that run's system prompt only, like the viewed file. Mid-run (`workspace.conflict_note`)
- * kobe-tools adds it as a Pi custom message before each later model call of that run: it is not
+ * kaiju-tools adds it as a Pi custom message before each later model call of that run: it is not
  * stored in the session, but Pi sends custom messages to the provider in **user role**, so the
  * text says plainly that it is a Kaiju notice and not the user's message.
  *

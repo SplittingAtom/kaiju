@@ -38,7 +38,7 @@ for pair in web:apps/web/Dockerfile server:services/Dockerfile \
   mcp-proxy:services/Dockerfile egress-proxy:services/Dockerfile \
   model-gateway:services/Dockerfile \
   sandbox:images/sandbox/Dockerfile ${KAIJU_E2E_EXTRA_IMAGES:+$(for x in ${KAIJU_E2E_EXTRA_IMAGES}; do printf '%s:images/%s/Dockerfile ' "$x" "$x"; done)}; do
-  image="${registry}/kobe-${pair%%:*}:${tag}"
+  image="${registry}/kaiju-${pair%%:*}:${tag}"
   [ -n "${archives}" ] || build "${pair#*:}" "${image}" "${pair%%:*}"
   images+=("${image}")
 done

@@ -11,8 +11,8 @@ const quiet = { info: () => undefined, warn: () => undefined, debug: () => undef
 function session() {
   let trades = 0;
   const client = new SessionClient({
-    serverUrl: "ws://server.kobe.internal:8081",
-    bootstrapTokenFile: "/var/run/secrets/kobe/bootstrap-token",
+    serverUrl: "ws://server.kaiju.internal:8081",
+    bootstrapTokenFile: "/var/run/secrets/kaiju/bootstrap-token",
     readFile: async () => "bootstrap",
     fetch: (async () => {
       trades += 1;

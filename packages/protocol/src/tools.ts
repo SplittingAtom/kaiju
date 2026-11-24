@@ -5,7 +5,7 @@ import { riskClassSchema, uuidSchema, type RiskClass } from "./common.js";
  * Tool identity and risk. **The server derives every `ToolDescriptor` from its own registry; nothing
  * the sandbox says about a tool (source, annotations, risk) is used for a decision.** `policy.check`
  * carries only the tool name and input. Resolution (KOBE-35, KOBE-58/59):
- *   1. `BUILTIN_TOOLS[name]` — Pi 1.0.0 built-ins and kobe-tools, fixed below;
+ *   1. `BUILTIN_TOOLS[name]` — Pi 1.0.0 built-ins and kaiju-tools, fixed below;
  *   2. `mcp__<server>__<tool>` — the site's pinned `tools/list` snapshot for that connector
  *      (D27, SHA-256 pinned; a drifted tool is disabled), annotations from the snapshot;
  *   3. anything else → unknown: the engine **denies** with reason `unknown_tool` (fail closed).
@@ -20,7 +20,7 @@ export const toolAnnotationsSchema = z.strictObject({
 });
 export type ToolAnnotations = z.infer<typeof toolAnnotationsSchema>;
 
-/** `pi` = Pi built-ins; `kobe` = kobe-tools extension; `mcp` = connector tool via the MCP proxy. */
+/** `pi` = Pi built-ins; `kobe` = kaiju-tools extension; `mcp` = connector tool via the MCP proxy. */
 export const toolSourceSchema = z.enum(["pi", "kobe", "mcp"]);
 export type ToolSource = z.infer<typeof toolSourceSchema>;
 
@@ -62,7 +62,7 @@ export interface BuiltinTool {
 
 /**
  * Built-in risk table. Pi names VERIFIED in `@earendil-works/pi-coding-agent@1.0.0`
- * (dist/core/tools, docs/mcp.md, docs/codemode.md). kobe-tools names from spec D13; their risk is
+ * (dist/core/tools, docs/mcp.md, docs/codemode.md). kaiju-tools names from spec D13; their risk is
  * SPECULATIVE until KOBE-55/56 (D24: personal `remember` needs no approval — that is an engine
  * allow rule, not a lower risk class).
  */

@@ -1,4 +1,4 @@
-name: kobe-fixture-agent-v1
+name: kaiju-fixture-agent-v1
 description: Fixture with tool names Orbit reserves (bash) next to ordinary and MCP names
 setup:
   agents:

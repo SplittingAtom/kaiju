@@ -71,7 +71,7 @@ export class FakeGitea implements GitHostContractFake {
   private server!: Server;
   port = 0;
   readonly organization = "acme";
-  readonly login = "kobe-bot";
+  readonly login = "kaiju-bot";
   readonly token = FAKE_GITEA_TOKEN;
   version: string;
   scopes = new Set(ALL_SCOPES);

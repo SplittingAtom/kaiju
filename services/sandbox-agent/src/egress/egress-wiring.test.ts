@@ -14,8 +14,8 @@ const THREAD = "9a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
 const TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln-_";
 
 const wiring = (): EgressWiring => ({
-  proxyUrl: "http://egress-proxy.kobe.internal:80",
-  noProxy: "server.kobe.internal,localhost",
+  proxyUrl: "http://egress-proxy.kaiju.internal:80",
+  noProxy: "server.kaiju.internal,localhost",
   envScript: SCRIPT,
   tokens: { current: async () => TOKEN, onChange: () => () => undefined },
 });
@@ -53,7 +53,7 @@ function tracedShell(env: Record<string, string>, command: string): string {
 }
 
 describe("the tools' own HOME and TMPDIR (KOBE-228)", () => {
-  const base = { BASH_ENV: SCRIPT, HOME: "/tmp/kobe-pi-x/home", TMPDIR: "/tmp/kobe-pi-x/tmp" };
+  const base = { BASH_ENV: SCRIPT, HOME: "/tmp/kaiju-pi-x/home", TMPDIR: "/tmp/kaiju-pi-x/tmp" };
   const show = 'printf "%s|%s" "$HOME" "$TMPDIR"';
 
   it("a bash tool call gets the shared HOME and TMPDIR instead of Pi's private ones", () => {
@@ -62,22 +62,22 @@ describe("the tools' own HOME and TMPDIR (KOBE-228)", () => {
   });
 
   it("keeps Pi's values when the variables are absent, relative or carry a newline", () => {
-    expect(toolShell(base, show)).toBe("/tmp/kobe-pi-x/home|/tmp/kobe-pi-x/tmp");
+    expect(toolShell(base, show)).toBe("/tmp/kaiju-pi-x/home|/tmp/kaiju-pi-x/tmp");
     const relative = { ...base, KAIJU_TOOL_HOME: "home", KAIJU_TOOL_TMPDIR: "/tmp\nx" };
-    expect(toolShell(relative, show)).toBe("/tmp/kobe-pi-x/home|/tmp/kobe-pi-x/tmp");
+    expect(toolShell(relative, show)).toBe("/tmp/kaiju-pi-x/home|/tmp/kaiju-pi-x/tmp");
   });
 });
 
 describe("egress env for Pi's tools", () => {
   it("names the script, the token file, the proxy and the thread; never the token itself", () => {
-    const env = egressEnv(wiring(), "/tmp/kobe-pi/pi-x/egress-token", THREAD);
+    const env = egressEnv(wiring(), "/tmp/kaiju-pi/pi-x/egress-token", THREAD);
     expect(env).toEqual({
       BASH_ENV: SCRIPT,
-      KAIJU_EGRESS_TOKEN_FILE: "/tmp/kobe-pi/pi-x/egress-token",
-      KAIJU_EGRESS_PROXY: "http://egress-proxy.kobe.internal:80",
+      KAIJU_EGRESS_TOKEN_FILE: "/tmp/kaiju-pi/pi-x/egress-token",
+      KAIJU_EGRESS_PROXY: "http://egress-proxy.kaiju.internal:80",
       KAIJU_THREAD_ID: THREAD,
-      NO_PROXY: "server.kobe.internal,localhost",
-      no_proxy: "server.kobe.internal,localhost",
+      NO_PROXY: "server.kaiju.internal,localhost",
+      no_proxy: "server.kaiju.internal,localhost",
     });
     expect(JSON.stringify(env)).not.toContain(TOKEN);
     expect(egressEnv(wiring(), "/f", "not-a-uuid").KAIJU_THREAD_ID).toBeUndefined();
@@ -88,12 +88,12 @@ describe("egress env for Pi's tools", () => {
     await file.write(TOKEN);
     const env = egressEnv(wiring(), file.path, THREAD);
     const out = toolShell(env, 'printf "%s\\n%s\\n" "$HTTPS_PROXY" "$http_proxy"');
-    const url = `http://${THREAD}:${TOKEN}@egress-proxy.kobe.internal:80`;
+    const url = `http://${THREAD}:${TOKEN}@egress-proxy.kaiju.internal:80`;
     expect(out).toBe(`${url}\n${url}\n`);
     // Rotation: the next shell has the new token, without restarting anything.
     await file.write("rotated.token.value");
     expect(toolShell(env, 'printf "%s" "$HTTPS_PROXY"')).toBe(
-      `http://${THREAD}:rotated.token.value@egress-proxy.kobe.internal:80`,
+      `http://${THREAD}:rotated.token.value@egress-proxy.kaiju.internal:80`,
     );
     // Child processes inherit it (pip, git, python run from the command).
     expect(toolShell(env, 'sh -c \'printf "%s" "$https_proxy"\'')).toContain("rotated.token.value");
@@ -109,7 +109,7 @@ describe("egress env for Pi's tools", () => {
     expect(missing.stdout).toBe("[]");
     // Not silent: one line on stderr says why the internet will be unreachable.
     expect(missing.stderr).toBe(
-      "kobe: the sandbox's egress token is not readable; internet access through the egress proxy is unavailable\n",
+      "kaiju: the sandbox's egress token is not readable; internet access through the egress proxy is unavailable\n",
     );
     await writeFile(tokenFile, "abc$(touch pwned)@evil:1\n");
     const malformed = toolShellFull(env, 'printf "[%s]" "${HTTPS_PROXY:-}"');

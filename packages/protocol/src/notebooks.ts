@@ -376,7 +376,7 @@ export const notebookCallShape = {
   input: runPythonInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
+/** kaiju-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
 export const notebookToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("notebook.run"),
@@ -385,7 +385,7 @@ export const notebookToolsRequestSchema = z.strictObject({
 });
 export type NotebookToolsRequest = z.infer<typeof notebookToolsRequestSchema>;
 
-/** Success answer (frame and kobe-tools response, flat): the execution ran; `status` says how. */
+/** Success answer (frame and kaiju-tools response, flat): the execution ran; `status` says how. */
 export const notebookRunOkFields = {
   ok: z.literal(true),
   op: z.literal("notebook_run"),

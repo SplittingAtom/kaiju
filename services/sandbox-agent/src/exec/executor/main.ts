@@ -2,7 +2,7 @@ import { serveExecutor } from "./server.js";
 
 /**
  * The tool executor program (KOBE-167): `node dist/exec/executor/main.js`, started by the sandbox
- * agent through `kobe-runas` as the partner uid of a Pi identity. Its stdin/stdout are the channel
+ * agent through `kaiju-runas` as the partner uid of a Pi identity. Its stdin/stdout are the channel
  * the agent's relay speaks (exec/relay.ts); stderr is a diagnostic tail the agent logs. Its
  * environment is the allow-list the agent built; every command it runs inherits exactly that.
  */

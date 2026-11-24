@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Sourced by e2e/run.sh (KOBE-728 split of the former single script); not run on its own.
 # KOBE-25: hibernate → wake (D14) with the real sandbox agent, and the cold-start harness (Pi ready).
-# The e2e sandbox (KOBE-22) runs kobe-sandbox-agent; with the database rows above it trades its
+# The e2e sandbox (KOBE-22) runs kaiju-sandbox-agent; with the database rows above it trades its
 # bootstrap token for session tokens and connects. Waits are bounded and end on a positive
 # condition (never a fixed sleep before an assertion).
 echo "==> hibernate and wake (KOBE-25)"
@@ -13,7 +13,7 @@ until_ok() { # seconds command... → succeeds as soon as the command does, fail
     sleep 1
   done
 }
-wire_open() { [[ "$(psql_kobe "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$E2E_USER_ID' AND closed_at IS NULL")" == 1 ]]; }
+wire_open() { [[ "$(psql_kaiju "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$E2E_USER_ID' AND closed_at IS NULL")" == 1 ]]; }
 sandbox_pod_name() { # the pod of the e2e sandbox (by its claim uid), if it has one
   $KUBECTL -n "$TEAM_NS" get pods -l "agents.x-k8s.io/claim-uid=${sandbox_id:-none}" \
     -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | head -1
@@ -25,7 +25,7 @@ in_sandbox() { # shell command → its output inside the sandbox's agent contain
   $KUBECTL -n "$TEAM_NS" exec "$(sandbox_pod_name)" -c agent -- sh -c "$1" 2>&1 || true
 }
 lifecycle() { # hibernate|wake → the CLI's answer (same path, lock and audit as the server)
-  $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node dist/cli/lifecycle.js "$1" \
+  $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node dist/cli/lifecycle.js "$1" \
     --team-id "$E2E_TEAM_ID" --user-id "$E2E_USER_ID" 2>&1 | grep -E '^\{"(hibernated|woken)"' || true
 }
 claim_sandbox=$($KUBECTL -n "$TEAM_NS" get sandboxclaim "u-$E2E_USER_ID" -o jsonpath='{.status.sandbox.name}' 2>/dev/null || true)
@@ -48,10 +48,10 @@ contains "the agent can write its workspace and /tmp" '^written$' \
 trials=0
 if [[ "$SHARD" != suite ]]; then
 COLD_USER_ID=9b4c3d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
-psql_kobe "INSERT INTO users (id, name, email, email_verified) VALUES ('$COLD_USER_ID', 'E2E cold-start user', 'cold-start@e2e.test', true) ON CONFLICT DO NOTHING;
+psql_kaiju "INSERT INTO users (id, name, email, email_verified) VALUES ('$COLD_USER_ID', 'E2E cold-start user', 'cold-start@e2e.test', true) ON CONFLICT DO NOTHING;
   INSERT INTO team_members (team_id, user_id, role) VALUES ('$E2E_TEAM_ID', '$COLD_USER_ID', 'member') ON CONFLICT DO NOTHING;" >/dev/null
 cold_start() { # label trials spacing-ms → harness output (one JSON line per trial + summary)
-  $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node dist/cli/cold-start.js \
+  $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node dist/cli/cold-start.js \
     --team-id "$E2E_TEAM_ID" --user-id "$COLD_USER_ID" --probe pi --label "$1" --trials "$2" \
     --spacing-ms "$3" --p95-max-ms "${KAIJU_COLD_START_P95_MS:-20000}" \
     ${KAIJU_COLD_START_P50_MS:+--p50-max-ms "$KAIJU_COLD_START_P50_MS"} 2>&1 || true
@@ -76,7 +76,7 @@ cold_pod=$($KUBECTL -n "$TEAM_NS" get pods -l "kobe.splittingatom.io/user-id=$CO
 $KUBECTL -n "$TEAM_NS" logs "$cold_pod" -c agent 2>/dev/null \
   | grep -E 'sandbox-agent starting|sandbox session (acquired|retry)|sandbox wire ready' | head -6 | sed 's/^/     agent: /' || true
 contains "the harness cleaned up its thread" '^0$' \
-  "$(psql_kobe "SELECT count(*) FROM threads WHERE team_id = '$E2E_TEAM_ID' AND owner_user_id = '$COLD_USER_ID'")"
+  "$(psql_kaiju "SELECT count(*) FROM threads WHERE team_id = '$E2E_TEAM_ID' AND owner_user_id = '$COLD_USER_ID'")"
 fi # cold-start trials
 
 contains "an idle sandbox can be hibernated" '"hibernated":true' "$(lifecycle hibernate)"
@@ -86,7 +86,7 @@ if until_ok 120 pod_gone; then ok "a hibernated sandbox has no pod"; else fail "
 contains "its /workspace volume is kept" '^Bound$' \
   "$($KUBECTL -n "$TEAM_NS" get pvc "workspace-${claim_sandbox:-none}" -o jsonpath='{.status.phase}' 2>&1)"
 contains "the server records it hibernated and closed its connection" '^hibernated\|0$' \
-  "$(psql_kobe "SELECT s.state || '|' || (SELECT count(*) FROM sandbox_connections c WHERE c.team_id = s.team_id AND c.user_id = s.user_id AND c.closed_at IS NULL) FROM sandboxes s WHERE s.team_id = '$E2E_TEAM_ID' AND s.user_id = '$E2E_USER_ID'")"
+  "$(psql_kaiju "SELECT s.state || '|' || (SELECT count(*) FROM sandbox_connections c WHERE c.team_id = s.team_id AND c.user_id = s.user_id AND c.closed_at IS NULL) FROM sandboxes s WHERE s.team_id = '$E2E_TEAM_ID' AND s.user_id = '$E2E_USER_ID'")"
 contains "a hibernated sandbox can be woken" '"woken":true' "$(lifecycle wake)"
 if until_ok 120 pod_running; then ok "waking starts a new pod"; else fail "waking starts a new pod"; fi
 contains "the woken pod runs under gVisor" '^gvisor$' \
@@ -94,7 +94,7 @@ contains "the woken pod runs under gVisor" '^gvisor$' \
 if until_ok 120 wire_open; then ok "the woken sandbox reconnects"; else fail "the woken sandbox reconnects"; fi
 contains "its /workspace survived hibernation" '^kobe-25$' "$(in_sandbox 'cat /workspace/kobe-25-marker')"
 contains "its /tmp was wiped by hibernation" '^gone$' "$(in_sandbox 'test -e /tmp/kobe-25-marker && echo kept || echo gone')"
-audit_counts=$(psql_kobe "SELECT (SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'sandbox.hibernated' AND target->>'trigger' = 'operator') >= $((trials + 1)) AND (SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'sandbox.woken') >= $((trials + 1))")
+audit_counts=$(psql_kaiju "SELECT (SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'sandbox.hibernated' AND target->>'trigger' = 'operator') >= $((trials + 1)) AND (SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'sandbox.woken') >= $((trials + 1))")
 contains "every hibernation and wake is audited" '^t$' "$audit_counts"
 if [[ "$SHARD" == cold-start ]]; then exit "$failed"; fi
 

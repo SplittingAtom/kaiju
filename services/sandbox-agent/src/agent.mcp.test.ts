@@ -17,7 +17,7 @@ import {
  * thread's private config dir (never the workspace), the session token as its only credential,
  * its rotation, and that a run without connectors gets no MCP extension.
  */
-const PROXY = "http://mcp-proxy.kobe.internal:80";
+const PROXY = "http://mcp-proxy.kaiju.internal:80";
 const TOKEN_1 = "mcp-token-one-".padEnd(40, "1");
 const TOKEN_2 = "mcp-token-two-".padEnd(40, "2");
 const ID = "11111111-1111-4111-8111-111111111111";

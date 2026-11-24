@@ -98,19 +98,19 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     ]);
     const env = Object.fromEntries(must(spec.containers[0]).env.map((e) => [e.name, e.value]));
     expect(env).toMatchObject({
-      KAIJU_SERVER_URL: "ws://server.kobe.internal:8081",
-      KAIJU_MODEL_GATEWAY_URL: "http://model-gateway.kobe.internal:8080",
-      KAIJU_MCP_PROXY_URL: "http://mcp-proxy.kobe.internal",
+      KAIJU_SERVER_URL: "ws://server.kaiju.internal:8081",
+      KAIJU_MODEL_GATEWAY_URL: "http://model-gateway.kaiju.internal:8080",
+      KAIJU_MCP_PROXY_URL: "http://mcp-proxy.kaiju.internal",
       // Proxy URLs always carry the port: curl (and git, through libcurl) assume 1080 otherwise.
-      HTTPS_PROXY: "http://egress-proxy.kobe.internal:80",
-      HTTP_PROXY: "http://egress-proxy.kobe.internal:80",
-      https_proxy: "http://egress-proxy.kobe.internal:80",
-      http_proxy: "http://egress-proxy.kobe.internal:80",
-      KAIJU_EGRESS_PROXY_URL: "http://egress-proxy.kobe.internal:80",
-      KAIJU_BOOTSTRAP_TOKEN_FILE: "/run/kobe-agent/bootstrap/bootstrap-token",
-      KAIJU_PI_RUNAS: "/opt/kobe/bin/kobe-runas",
-      KAIJU_PI_RUNTIME_DIR: "/run/kobe-pi",
-      KAIJU_SKILLS_DIR: "/run/kobe-skills",
+      HTTPS_PROXY: "http://egress-proxy.kaiju.internal:80",
+      HTTP_PROXY: "http://egress-proxy.kaiju.internal:80",
+      https_proxy: "http://egress-proxy.kaiju.internal:80",
+      http_proxy: "http://egress-proxy.kaiju.internal:80",
+      KAIJU_EGRESS_PROXY_URL: "http://egress-proxy.kaiju.internal:80",
+      KAIJU_BOOTSTRAP_TOKEN_FILE: "/run/kaiju-agent/bootstrap/bootstrap-token",
+      KAIJU_PI_RUNAS: "/opt/kaiju/bin/kaiju-runas",
+      KAIJU_PI_RUNTIME_DIR: "/run/kaiju-pi",
+      KAIJU_SKILLS_DIR: "/run/kaiju-skills",
     });
   });
 
@@ -177,7 +177,7 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     // The bootstrap token sits under the image's agent-only directory.
     expect(must(spec.containers[0]).volumeMounts).toContainEqual({
       name: "kobe-bootstrap",
-      mountPath: "/run/kobe-agent/bootstrap",
+      mountPath: "/run/kaiju-agent/bootstrap",
       readOnly: true,
     });
     expect(must(spec.containers[0]).resources).toEqual({
@@ -192,7 +192,7 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     });
     expect(must(spec.containers[0]).volumeMounts).toContainEqual({
       name: "pi-runtime",
-      mountPath: "/run/kobe-pi",
+      mountPath: "/run/kaiju-pi",
     });
     // Effective skills (KOBE-82) on a sticky memory volume of their own, the agent's to write.
     expect(spec.volumes).toContainEqual({
@@ -201,7 +201,7 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     });
     expect(must(spec.containers[0]).volumeMounts).toContainEqual({
       name: "pi-skills",
-      mountPath: "/run/kobe-skills",
+      mountPath: "/run/kaiju-skills",
     });
   });
 });

@@ -15,7 +15,7 @@ elif [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n
   ROT_AGENT=6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
   rot_t0=$SECONDS
   # A published personal agent of the owner: Kaiju's definition with only the e2e-fake connector.
-  psql_kobe "DELETE FROM site_agents WHERE id = '$ROT_AGENT' AND current_version IS NULL;
+  psql_kaiju "DELETE FROM site_agents WHERE id = '$ROT_AGENT' AND current_version IS NULL;
     INSERT INTO site_agents (id, scope, owner_user_id, slug, frontmatter, prompt)
       SELECT '$ROT_AGENT', 'personal', '$owner_id', 'e2e-mcp-rotation',
         (a.frontmatter - 'tools') || '{\"name\":\"E2E MCP rotation\",\"connectors\":[\"e2e-fake\"]}'::jsonb, a.prompt
@@ -27,15 +27,15 @@ elif [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n
       FROM site_agents a WHERE a.id = '$ROT_AGENT' ON CONFLICT DO NOTHING;
     UPDATE site_agents SET current_version = 1 WHERE id = '$ROT_AGENT';" >/dev/null
   contains "the owner has a published agent with the e2e-fake connector" '^1$' \
-    "$(psql_kobe "SELECT current_version FROM site_agents WHERE id = '$ROT_AGENT'")"
+    "$(psql_kaiju "SELECT current_version FROM site_agents WHERE id = '$ROT_AGENT'")"
   owner_lifecycle() { # hibernate|wake for the owner's sandbox
-    $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node dist/cli/lifecycle.js "$1" \
+    $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node dist/cli/lifecycle.js "$1" \
       --team-id "$E2E_TEAM_ID" --user-id "$owner_id" 2>&1 | grep -E '^\{"(hibernated|woken)"' || true
   }
   # Must really hibernate (KOBE-563): an awake sandbox keeps its 900 s tokens and never sees a 404.
   if owner_hibernate "token rotation"; then ok "the owner's sandbox is hibernated before the TTL change"
   else fail "the owner's sandbox is hibernated before the TTL change"; fi
-  if out=$($HELM upgrade kobe charts/kobe -n "$NS" --reuse-values --wait --timeout 5m \
+  if out=$($HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --wait --timeout 5m \
       --set "server.sessionTokenTtlSeconds=$ROT_TTL" 2>&1); then ok "session tokens now live $ROT_TTL s (test install)"
   else fail "session tokens now live $ROT_TTL s (test install): $out"; fi
   rot_calls() { $KUBECTL -n "$MCP_NS" logs fake-mcp 2>&1 | grep -c "^CALL get_thing .*\"id\":\"$1\"" || true; }

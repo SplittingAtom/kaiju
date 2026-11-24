@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { constants as osConstants } from "node:os";
 import { constants as FS } from "node:fs";
-import type { ExecRequest, ExecError } from "../../kobe-exec/protocol.js";
+import type { ExecRequest, ExecError } from "../../kaiju-exec/protocol.js";
 
 /**
  * Runs one `exec` request the way Pi's own bash tool runs a command (verified Pi 1.0.0

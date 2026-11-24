@@ -9,7 +9,7 @@ Records what Bifrost forwards upstream for the request bodies Kaiju's model gate
 - `make-cases.mjs`: Pi-style bodies run through the gateway's own rewrite (`applyThinking`, then
   `withStreamUsage`, in `gateway.ts` order) for every thinking level and output limit, plus raw
   duplicate-key bodies and bodies for models without a thinking control.
-- `bifrost-config.json`: Kaiju's `client` settings (`charts/kobe/templates/_models.tpl`) with four
+- `bifrost-config.json`: Kaiju's `client` settings (`charts/kaiju/templates/_models.tpl`) with four
   providers (Anthropic, OpenAI, Ollama, an OpenAI-compatible custom provider) pointed at the
   capture server. Inference auth is off (no virtual keys); governance does not touch bodies.
 - `drive.mjs`: sends every case to Bifrost and pairs it with what the capture server received.

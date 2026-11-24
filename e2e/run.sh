@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Kaiju k3d end-to-end suite (KOBE-7). Expects a cluster from scripts/dev-cluster.sh and the Kaiju
-# images available to it under ghcr.io/splittingatom/kobe-*:${KAIJU_IMAGE_TAG} (e.g. via
+# images available to it under ghcr.io/splittingatom/kaiju-*:${KAIJU_IMAGE_TAG} (e.g. via
 # `k3d image import`). Starts from clean state each run (dev Postgres, release, namespaces), installs
 # the chart with dev/values.yaml, then checks platform invariants. Later tickets add their stories.
 # Refuses to run against anything but a k3d context (or KAIJU_E2E_CONTEXT, named explicitly).

@@ -6,7 +6,7 @@
 # policy.check frames; the owner allows the first call and denies the second over the API. The
 # 1 h TTL expiry is covered by services/server/src/approvals/approvals.lifecycle.db.test.ts (an e2e run can't wait it).
 echo "==> approvals (KOBE-37)"
-psql_kobe "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';
+psql_kaiju "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';
   INSERT INTO tool_rules (team_id, scope, effect, tool_glob, created_by)
   VALUES ('$E2E_TEAM_ID', 'team', 'ask', 'bash', '$owner_id');" >/dev/null
 # Retry above woke the owner's real sandbox (KOBE-25 waker); its agent would replace the scripted
@@ -16,7 +16,7 @@ if [[ -n "$owner_sbx" ]]; then
   $KUBECTL -n "$TEAM_NS" patch sandbox "$owner_sbx" --type merge -p '{"spec":{"operatingMode":"Suspended"}}' >/dev/null 2>&1 || true
 fi
 owner_pod_gone() { [[ -z "$($KUBECTL -n "$TEAM_NS" get pods -l "agents.x-k8s.io/claim-uid=${owner_sandbox:-none}" -o name 2>/dev/null)" ]]; }
-owner_wire_closed() { [[ "$(psql_kobe "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND closed_at IS NULL")" == 0 ]]; }
+owner_wire_closed() { [[ "$(psql_kaiju "SELECT count(*) FROM sandbox_connections WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND closed_at IS NULL")" == 0 ]]; }
 if until_ok 180 owner_pod_gone && until_ok 60 owner_wire_closed; then
   ok "the owner's real sandbox is down (only the scripted agent holds its identity)"
 else
@@ -82,7 +82,7 @@ spec:
   securityContext: { runAsNonRoot: true, runAsUser: 1000, seccompProfile: { type: RuntimeDefault } }
   containers:
     - name: agent
-      image: ghcr.io/splittingatom/kobe-server:$TAG
+      image: ghcr.io/splittingatom/kaiju-server:$TAG
       imagePullPolicy: IfNotPresent
       securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
       resources: { requests: { cpu: 50m, memory: 64Mi }, limits: { cpu: 500m, memory: 256Mi } }
@@ -140,7 +140,7 @@ contains "the owner allows it through the API" '^allow=allowed$' "$approve_out"
 contains "the allowed call runs; the signed token never reaches the sandbox" '^result=tc-allow:allow$' \
   "$(wait_for 60 '^result=tc-allow:' approver_logs)"
 contains "the approval is signed server-side" '^[A-Za-z0-9_-]{43}$' \
-  "$(psql_kobe "SELECT input_hmac FROM approvals WHERE run_id = $a_run_sql AND tool_call_id = 'tc-allow'")"
+  "$(psql_kaiju "SELECT input_hmac FROM approvals WHERE run_id = $a_run_sql AND tool_call_id = 'tc-allow'")"
 contains "the next call waits too" '^second=tc-deny$' "$approve_out"
 contains "the owner denies it through the API" '^deny=denied$' "$approve_out"
 contains "the denied call ends as denied" '^result=tc-deny:deny$' "$(wait_for 60 '^result=tc-deny:' approver_logs)"
@@ -149,9 +149,9 @@ contains "the run continues after the denial" '^after=running$' "$approve_out"
 contains "Stop ends the run" '^cancel=cancelled$' "$approve_out"
 contains "approval events are on the run's stream" \
   '^approval.requested,approval.resolved,approval.requested,approval.resolved,policy.denied$' \
-  "$(psql_kobe "SELECT string_agg(type, ',' ORDER BY seq) FROM run_events WHERE run_id = $a_run_sql AND (type LIKE 'approval.%' OR type = 'policy.denied')")"
+  "$(psql_kaiju "SELECT string_agg(type, ',' ORDER BY seq) FROM run_events WHERE run_id = $a_run_sql AND (type LIKE 'approval.%' OR type = 'policy.denied')")"
 contains "every request and decision is audited" '^approval.decided:2,approval.requested:2$' \
-  "$(psql_kobe "SELECT string_agg(action || ':' || n, ',' ORDER BY action) FROM (SELECT action, count(*) AS n FROM audit_log WHERE target->>'runId' = '${a_run:-none}' AND action LIKE 'approval.%' GROUP BY action) a")"
+  "$(psql_kaiju "SELECT string_agg(action || ':' || n, ',' ORDER BY action) FROM (SELECT action, count(*) AS n FROM audit_log WHERE target->>'runId' = '${a_run:-none}' AND action LIKE 'approval.%' GROUP BY action) a")"
 $KUBECTL -n "$TEAM_NS" delete pod e2e-approver --grace-period=1 --wait=false >/dev/null 2>&1 || true
-psql_kobe "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team' AND tool_glob = 'bash';" >/dev/null
+psql_kaiju "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team' AND tool_glob = 'bash';" >/dev/null
 

@@ -12,7 +12,7 @@ import { withTeam } from "../with-team.js";
  * its result can't cover a case it never got, and the publisher retries).
  */
 
-/** `images/orbit-eval/kobe_orbit_eval/cases.py` SUITE_ID and SCHEMA_VERSION. */
+/** `images/orbit-eval/kaiju_orbit_eval/cases.py` SUITE_ID and SCHEMA_VERSION. */
 export const EVAL_CASE_SUITE = { id: "shared-cases", schemaVersion: 1 } as const;
 
 export interface EvalCaseFileEntry {

@@ -46,7 +46,7 @@ describe("mirrorHttpClient (KOBE-343)", () => {
     });
     const files = new Map([["SKILL.md", enc("---\nname: p\ndescription: d\n---\n")]]);
     const s = await MirrorSession.open(
-      { url, branch: "main", http, author: { name: "Kaiju", email: "k@kobe.invalid" } },
+      { url, branch: "main", http, author: { name: "Kaiju", email: "k@kaiju.invalid" } },
       dir,
     );
     const r = await s.mirror({

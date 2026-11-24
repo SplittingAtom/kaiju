@@ -21,13 +21,13 @@ describe("executorEnv", () => {
         HOME: "/home/kobe",
         TMPDIR: "/tmp",
         LANG: "C",
-        PI_CODING_AGENT_DIR: "/run/kobe-pi/pi-x/agent",
-        KAIJU_MODEL_FILE: "/run/kobe-pi/pi-x/model.json",
+        PI_CODING_AGENT_DIR: "/run/kaiju-pi/pi-x/agent",
+        KAIJU_MODEL_FILE: "/run/kaiju-pi/pi-x/model.json",
         KAIJU_POLICY_FD: "3",
         KAIJU_EXEC_FD: "5",
         PI_OFFLINE: "1",
       },
-      { BASH_ENV: "/opt/kobe/egress-env.sh", KAIJU_EGRESS_PROXY: "http://egress:80" },
+      { BASH_ENV: "/opt/kaiju/egress-env.sh", KAIJU_EGRESS_PROXY: "http://egress:80" },
     );
     expect(env).toEqual({
       PATH: "/usr/bin",
@@ -35,7 +35,7 @@ describe("executorEnv", () => {
       TMPDIR: "/tmp",
       LANG: "C",
       NODE_OPTIONS: "--disable-sigusr1",
-      BASH_ENV: "/opt/kobe/egress-env.sh",
+      BASH_ENV: "/opt/kaiju/egress-env.sh",
       KAIJU_EGRESS_PROXY: "http://egress:80",
     });
   });

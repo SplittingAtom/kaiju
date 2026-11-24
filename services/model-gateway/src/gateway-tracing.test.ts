@@ -124,7 +124,7 @@ describe("tracing (KOBE-10)", () => {
 
 describe("shared eval cases for an Orbit eval Job (KOBE-276)", () => {
   const get = (headers: Record<string, string>) =>
-    call("/kobe/eval-cases", { method: "GET", headers });
+    call("/kaiju/eval-cases", { method: "GET", headers });
 
   it("serves the running eval's cases with its own token, from the store, never via Bifrost", async () => {
     caseFiles.set(sandbox, '{"cases":[]}\n');
@@ -140,7 +140,7 @@ describe("shared eval cases for an Orbit eval Job (KOBE-276)", () => {
     caseFiles.set(sandbox, "{}");
     expect((await get({})).status).toBe(401);
     expect((await get(bearer(token({ key: OTHER.signing })))).status).toBe(401);
-    expect((await call("/kobe/eval-cases", { headers: bearer() })).status).toBe(404);
+    expect((await call("/kaiju/eval-cases", { headers: bearer() })).status).toBe(404);
     expect((await get(bearer(token({ sub: randomUUID() })))).status).toBe(404);
     setPrincipal({ ...principal, sandbox: "revoked" });
     expect((await get(bearer())).status).toBe(403);

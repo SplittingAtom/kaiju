@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseModelFile } from "../kobe-models/protocol.js";
+import { parseModelFile } from "../kaiju-models/protocol.js";
 import { ModelFile } from "./model-file.js";
 
 const RUN = "3e4f5a6b-7c8d-4e9f-8a1b-2c3d4e5f6072";
@@ -15,7 +15,7 @@ describe("ModelFile (agent side)", () => {
   it("writes a file the extension parses, private to the user, with no temp file left", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-model-file-"));
     const file = new ModelFile(path.join(dir, "model.json"), {
-      gatewayUrl: "http://model-gateway.kobe.internal:80",
+      gatewayUrl: "http://model-gateway.kaiju.internal:80",
       model: { gatewayModel: "openai/gpt-fake", api: "openai-completions" },
       token: "t".repeat(40),
       runId: null,
@@ -24,7 +24,7 @@ describe("ModelFile (agent side)", () => {
     const parsed = parseModelFile(await readFile(file.path, "utf8"));
     expect(parsed).toEqual({
       v: 1,
-      gateway_url: "http://model-gateway.kobe.internal:80",
+      gateway_url: "http://model-gateway.kaiju.internal:80",
       model: { gateway_model: "openai/gpt-fake", api: "openai-completions" },
       token: "t".repeat(40),
       run_id: null,

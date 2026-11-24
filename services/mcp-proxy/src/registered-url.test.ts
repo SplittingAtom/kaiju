@@ -37,14 +37,14 @@ describe("createRegisteredUrlLookup", () => {
         : new Response("{}", { status: 404 });
     }) as typeof fetch;
     const lookup = createRegisteredUrlLookup({
-      baseUrl: "http://kobe-server:8082",
+      baseUrl: "http://kaiju-server:8082",
       internalKey: KEY,
       timeoutMs: 1000,
       fetch: fetchFn,
     });
     expect(await lookup(ID)).toBe("https://mcp.example.com/mcp");
     expect(seen[0]).toEqual({
-      url: `http://kobe-server:8082/internal/v1/mcp/connectors/${ID}/endpoint`,
+      url: `http://kaiju-server:8082/internal/v1/mcp/connectors/${ID}/endpoint`,
       auth: `Bearer ${KEY}`,
     });
     expect(await lookup("22222222-2222-4222-8222-222222222222")).toBeUndefined();
@@ -52,7 +52,7 @@ describe("createRegisteredUrlLookup", () => {
 
   it("rejects on any other answer", async () => {
     const lookup = createRegisteredUrlLookup({
-      baseUrl: "http://kobe-server:8082",
+      baseUrl: "http://kaiju-server:8082",
       internalKey: KEY,
       timeoutMs: 1000,
       fetch: (async () => new Response("no", { status: 401 })) as typeof fetch,

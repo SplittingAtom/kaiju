@@ -93,7 +93,7 @@ echo "ac-5 with failing controls (the sandbox yields nothing)"
 FAKE_SBX=ready failed=0
 WORK="$T/work"
 mkdir -p "$WORK"
-NS=kobe-dev BASE=http://server TEAM=33333333-3333-3333-3333-333333333333 MODELS=0 MODEL_ALIAS=fast
+NS=kaiju-dev BASE=http://server TEAM=33333333-3333-3333-3333-333333333333 MODELS=0 MODEL_ALIAS=fast
 sbx_pod() { echo sbx-abc; }
 in_sbx() { :; }
 client() { :; }

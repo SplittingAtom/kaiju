@@ -8,7 +8,7 @@ import { extractFiles, SKILL_DIR_MODE } from "./extract.js";
 
 /**
  * Where a run's effective skills live in the sandbox (KOBE-82, D22), and the only code that puts
- * them there. The directory belongs to the agent (kobe-sandbox-agent, not a Pi identity): skills
+ * them there. The directory belongs to the agent (kaiju-sandbox-agent, not a Pi identity): skills
  * are written with modes the Pi uids can read but not change (extract.ts), under a root no Pi uid
  * can rename (`ensureRuntimeRoot`, the same rule as the Pi runtime directories, KOBE-71), so a
  * tool can never alter a skill for a later session.

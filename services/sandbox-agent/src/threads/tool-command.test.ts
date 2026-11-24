@@ -13,7 +13,7 @@ import { TIMEOUT_BIN, toolCommandRunner } from "./tool-command.js";
  */
 const root = mkdtempSync(path.join(tmpdir(), "kaiju-tool-command-"));
 const log = path.join(root, "helper.log");
-const helper = path.join(root, "kobe-runas");
+const helper = path.join(root, "kaiju-runas");
 writeFileSync(helper, `#!/bin/sh\nprintf '%s\\n' "$*" >> '${log}'\nshift\nexec "$@"\n`);
 chmodSync(helper, 0o755);
 afterAll(() => rmSync(root, { recursive: true, force: true }));

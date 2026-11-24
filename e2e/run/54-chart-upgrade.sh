@@ -19,12 +19,12 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" ]]; then
     done | grep '"msg":"team namespaces reconciled"' | grep '"policyChanged":[1-9]' | tail -n 1 || true
   }
   upgrade_gateway_access() { # true|false → sets the flag; prints the helm output
-    $HELM upgrade kobe charts/kobe -n "$NS" --reuse-values --wait --timeout 5m \
+    $HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --wait --timeout 5m \
       --set "sandbox.modelGatewayAccess=$1" --set server.sessionTokenTtlSeconds=900 2>&1
   }
 
-  mg_url="http://$(svc_ip kobe-model-gateway)/healthz"
-  server_url="http://$(svc_ip kobe-server):8081/healthz"
+  mg_url="http://$(svc_ip kaiju-model-gateway)/healthz"
+  server_url="http://$(svc_ip kaiju-server):8081/healthz"
   # The sandbox is awake and connected when the section starts (hibernation is off the path here).
   if ! pod_running; then lifecycle wake >/dev/null; fi
   until_ok 120 pod_running || true

@@ -194,7 +194,7 @@ describe.skipIf(backend === undefined)(
       await configFile.write(gitConfigText(context));
       const wiring: EgressWiring = {
         proxyUrl: `http://127.0.0.1:${port}`,
-        noProxy: "server.kobe.internal,localhost",
+        noProxy: "server.kaiju.internal,localhost",
         envScript: SCRIPT,
         tokens: { current: async () => TOKEN, onChange: () => () => undefined },
       };

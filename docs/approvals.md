@@ -58,7 +58,7 @@ write. Kaiju seeds no rules.
 
 ## The flow
 
-1. kobe-policy (the Pi extension) sends `policy.check`. The server builds the decision from its own
+1. kaiju-policy (the Pi extension) sends `policy.check`. The server builds the decision from its own
    state and gets `require_approval`.
 2. The broker stores a pending `approvals` row. It moves the run to `waiting_approval`, appends
    `approval.requested` (the card: tool, the exact input, risk, reasons, `expires_at`), audits
@@ -241,7 +241,7 @@ mac = base64url(HMAC-SHA256(KAIJU_APPROVAL_KEY,
 
 ## The MCP proxy seam (KOBE-58; Gate 2)
 
-A tampered kobe-policy could skip `policy.check`, change the input after approval, reuse a tool
+A tampered kaiju-policy could skip `policy.check`, change the input after approval, reuse a tool
 call id, borrow another run's approval, or wait out the token. The MCP proxy therefore never takes
 an approval from the sandbox. For every MCP `tools/call` it:
 

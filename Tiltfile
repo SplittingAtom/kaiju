@@ -15,14 +15,14 @@ if not local and current != dev_context:
 dev_registry = os.getenv("KAIJU_DEV_REGISTRY", "")
 if dev_registry:
     default_registry(dev_registry)
-# Parallel agents each take their own namespace (kobe-dev-<ticket>) and web port; the default
-# stays kobe-dev on :3000. Never the production namespace `kobe`.
-NAMESPACE = os.getenv("KAIJU_DEV_NAMESPACE", "kobe-dev")
-if NAMESPACE != "kobe-dev" and not NAMESPACE.startswith("kobe-dev-"):
-    fail("KAIJU_DEV_NAMESPACE must be kobe-dev or kobe-dev-<suffix>, got %r" % NAMESPACE)
-if local and NAMESPACE != "kobe-dev":
-    # dev/postgres.yaml and dev/values.yaml are written for kobe-dev.
-    fail("KAIJU_DEV_NAMESPACE is for shared real clusters; k3d dev uses kobe-dev")
+# Parallel agents each take their own namespace (kaiju-dev-<ticket>) and web port; the default
+# stays kaiju-dev on :3000. Never the production namespace `kaiju`.
+NAMESPACE = os.getenv("KAIJU_DEV_NAMESPACE", "kaiju-dev")
+if NAMESPACE != "kaiju-dev" and not NAMESPACE.startswith("kaiju-dev-"):
+    fail("KAIJU_DEV_NAMESPACE must be kaiju-dev or kaiju-dev-<suffix>, got %r" % NAMESPACE)
+if local and NAMESPACE != "kaiju-dev":
+    # dev/postgres.yaml and dev/values.yaml are written for kaiju-dev.
+    fail("KAIJU_DEV_NAMESPACE is for shared real clusters; k3d dev uses kaiju-dev")
 WEB_PORT = os.getenv("KAIJU_DEV_WEB_PORT", "3000")
 
 update_settings(max_parallel_updates=2, k8s_upsert_timeout_secs=300)
@@ -38,13 +38,13 @@ MANIFESTS = [
     "services/egress-proxy/package.json",
     "services/model-gateway/package.json",
     "tools/license-check/package.json",
-    "charts/kobe/package.json",
+    "charts/kaiju/package.json",
 ]
 COMMON = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".pnpmfile.cjs", "turbo.json", "tsconfig.base.json", "packages"] + MANIFESTS
 
-def kobe_image(name, dockerfile, sources, build_args={}):
+def kaiju_image(name, dockerfile, sources, build_args={}):
     docker_build(
-        "%s/kobe-%s" % (REGISTRY, name),
+        "%s/kaiju-%s" % (REGISTRY, name),
         context=".",
         dockerfile=dockerfile,
         build_args=build_args,
@@ -52,12 +52,12 @@ def kobe_image(name, dockerfile, sources, build_args={}):
         ignore=["**/node_modules", "**/dist", "**/.next", "**/*.test.ts"],
     )
 
-kobe_image("web", "apps/web/Dockerfile", ["apps/web"])
+kaiju_image("web", "apps/web/Dockerfile", ["apps/web"])
 # The Node services share services/Dockerfile (KOBE-723).
-kobe_image("server", "services/Dockerfile", ["services/server"], {"SERVICE": "server"})
-kobe_image("mcp-proxy", "services/Dockerfile", ["services/mcp-proxy"], {"SERVICE": "mcp-proxy"})
-kobe_image("egress-proxy", "services/Dockerfile", ["services/egress-proxy"], {"SERVICE": "egress-proxy"})
-kobe_image("model-gateway", "services/Dockerfile", ["services/model-gateway"], {"SERVICE": "model-gateway"})
+kaiju_image("server", "services/Dockerfile", ["services/server"], {"SERVICE": "server"})
+kaiju_image("mcp-proxy", "services/Dockerfile", ["services/mcp-proxy"], {"SERVICE": "mcp-proxy"})
+kaiju_image("egress-proxy", "services/Dockerfile", ["services/egress-proxy"], {"SERVICE": "egress-proxy"})
+kaiju_image("model-gateway", "services/Dockerfile", ["services/model-gateway"], {"SERVICE": "model-gateway"})
 
 if local:
     # Throwaway Postgres with public dev credentials: k3d only.
@@ -79,10 +79,10 @@ else:
     values = [values_file]
     deps = []
 
-k8s_yaml(helm("charts/kobe", name="kobe", namespace=NAMESPACE, values=values))
+k8s_yaml(helm("charts/kobe", name="kaiju", namespace=NAMESPACE, values=values))
 
 for name in ["web", "server", "scheduler", "mcp-proxy", "egress-proxy", "model-gateway", "bifrost"]:
-    k8s_resource(workload="kobe-" + name, labels=["kobe"], resource_deps=deps if name in ["server", "scheduler"] else [])
-k8s_resource(workload="kobe-migrate", labels=["kobe"], resource_deps=deps)
-k8s_resource(workload="kobe-isolation-preflight", labels=["kobe"])
-k8s_resource(workload="kobe-web", port_forwards=["%s:8080" % WEB_PORT])
+    k8s_resource(workload="kaiju-" + name, labels=["kaiju"], resource_deps=deps if name in ["server", "scheduler"] else [])
+k8s_resource(workload="kaiju-migrate", labels=["kaiju"], resource_deps=deps)
+k8s_resource(workload="kaiju-isolation-preflight", labels=["kaiju"])
+k8s_resource(workload="kaiju-web", port_forwards=["%s:8080" % WEB_PORT])

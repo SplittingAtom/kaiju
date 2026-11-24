@@ -51,7 +51,7 @@ PARTS=(
   "U3|gate3|browser:|ac-5 browser"
   "U4|gate1|concurrency with streamed answers|"
   "U5|gate4|U5:|"
-  "U6|gate2|ac-3: tampered kobe-policy|"
+  "U6|gate2|ac-3: tampered kaiju-policy|"
   "U6|gate4|U6:|"
   "U7|gate4|U7:|"
   "U8|gate3|ac-1: v2 published|"
@@ -104,7 +104,7 @@ run_gate() { # log steps → runs that gate into $OUT/<log>.log (its exit status
   fi
   echo "==> running $log${steps:+ (steps: $steps)} → $OUT/$log.log"
   local env=(
-    "KAIJU_GATE${n}_NS=${KAIJU_GATE4_NS:-kobe-dev}" "KAIJU_GATE${n}_RELEASE=${KAIJU_GATE4_RELEASE:-kobe}"
+    "KAIJU_GATE${n}_NS=${KAIJU_GATE4_NS:-kaiju-dev}" "KAIJU_GATE${n}_RELEASE=${KAIJU_GATE4_RELEASE:-kaiju}"
     "KAIJU_GATE${n}_MODEL=${KAIJU_GATE4_MODEL:-fast}"
     "KAIJU_GATE${n}_OWNER_EMAIL=${KAIJU_GATE4_OWNER_EMAIL:-owner@e2e.test}"
     "KAIJU_GATE${n}_OWNER_PASSWORD=${KAIJU_GATE4_OWNER_PASSWORD:-e2e owner password}"

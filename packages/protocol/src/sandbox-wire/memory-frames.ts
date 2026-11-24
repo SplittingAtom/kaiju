@@ -16,7 +16,7 @@ function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
   return z.strictObject({ v: z.literal(SANDBOX_WIRE_VERSION), type: z.literal(type), ...shape });
 }
 
-/** Sandbox -> server: the `remember` call kobe-policy let through. Answered by `memory.result`. */
+/** Sandbox -> server: the `remember` call kaiju-policy let through. Answered by `memory.result`. */
 export const memoryPutFrameSchema = frame("memory.put", {
   request_id: idSchema,
   run_id: uuidSchema,
@@ -30,7 +30,7 @@ export const memoryReadFrameSchema = frame("memory.read", {
   request_id: idSchema,
   run_id: uuidSchema,
   thread_id: uuidSchema,
-  /** The `recall` call kobe-policy let through: the server only reads for an allowed call (D-3). */
+  /** The `recall` call kaiju-policy let through: the server only reads for an allowed call (D-3). */
   tool_call_id: idSchema,
   input: recallInputSchema,
 });
@@ -40,7 +40,7 @@ export const memoryShowFrameSchema = frame("memory.show", {
   request_id: idSchema,
   run_id: uuidSchema,
   thread_id: uuidSchema,
-  /** The call kobe-policy let through (D-3), like `memory.read`. */
+  /** The call kaiju-policy let through (D-3), like `memory.read`. */
   tool_call_id: idSchema,
   input: showMemoryItemInputSchema,
 });

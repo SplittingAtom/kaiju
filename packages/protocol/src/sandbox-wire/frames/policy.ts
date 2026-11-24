@@ -15,17 +15,17 @@ export const wirePolicyReasonSchema = z.looseObject({
 export type WirePolicyReason = z.infer<typeof wirePolicyReasonSchema>;
 
 /**
- * kobe-policy (Pi `tool_call` handler, verified in Pi 1.0.0: it may block with `{block, reason}`)
+ * kaiju-policy (Pi `tool_call` handler, verified in Pi 1.0.0: it may block with `{block, reason}`)
  * asks the server about one call. The extension blocks the call until `policy.result` arrives; a
  * lost connection or any error means block (fail closed). Parallel tool calls each get their own
- * `request_id`. `input` is the input as it will execute: kobe-policy must run after every handler
+ * `request_id`. `input` is the input as it will execute: kaiju-policy must run after every handler
  * that mutates `event.input` (Pi lets `tool_call` handlers mutate input in place). It checks the
  * executed object as is — plain JSON only, so what it sends is what the tool reads — and
  * deep-freezes that object before asking, so the executed input is exactly the decided one. It
  * does not replace `event.input` (a re-parsed copy would be a no-op in Pi 1.0.0; KOBE-36).
  * Size: at most {@link SANDBOX_FRAME_MAX_BYTES_BY_TYPE}`["policy.check"]` (1 MiB) per frame — it
  * carries a `write`'s content as executed; a larger check closes the connection, so the sandbox
- * blocks such a call locally instead of sending it (kobe-policy caps the line it hands the agent at
+ * blocks such a call locally instead of sending it (kaiju-policy caps the line it hands the agent at
  * 1 MiB − 4 KiB, leaving room for the frame envelope the agent adds; KOBE-36).
  */
 export const policyCheckFrameSchema = frame("policy.check", {
@@ -55,8 +55,8 @@ export const policyPendingFrameSchema = frame("policy.pending", {
 /**
  * The server's decision. Only `allow` / `deny` reach the sandbox (`require_approval` is resolved
  * server-side first). `message` becomes Pi's block reason. `approval` (optional, present when the
- * allow came from a human approval) stops at kobe-sandbox-agent: the agent strips it before the
- * decision reaches kobe-policy (KOBE-23), so the token never enters Pi or a tool. For Pi built-ins
+ * allow came from a human approval) stops at kaiju-sandbox-agent: the agent strips it before the
+ * decision reaches kaiju-policy (KOBE-23), so the token never enters Pi or a tool. For Pi built-ins
  * and kobe tools this frame is itself the authorisation; the MCP proxy finds the approval by
  * (run_id, tool_call_id) server-side (KOBE-58), not through the sandbox.
  */

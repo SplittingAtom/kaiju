@@ -1,6 +1,6 @@
 """Runs the kernel bridge's variables snapshot (KOBE-803/816) on plain Python, without IPython.
 
-Usage: python3 inspect-harness.py <kobe-kernel-bridge.py> <scenario>. Prints the snapshot JSON
+Usage: python3 inspect-harness.py <kaiju-kernel-bridge.py> <scenario>. Prints the snapshot JSON
 with `ran` (every hook of the member's objects that ran: zero allowed) and `lock_locked`.
 The snapshot is STATIC_SOURCE's `variables` (what the kernel's inspect handler calls) on the
 scenario's namespace. numpy and pandas are used when importable, and otherwise simulated by small
@@ -511,7 +511,7 @@ def scenario(name):
 
 def secret_names(bridge, path):
     """The bridge's credential-name rule over the shared table: which names it masks."""
-    g = {"__name__": "kobe_static"}
+    g = {"__name__": "kaiju_static"}
     exec(bridge.STATIC_SOURCE, g)
     with open(path, encoding="utf-8") as f:
         cases = json.load(f)
@@ -528,7 +528,7 @@ def main():
     limits = {"max_vars": 200, "max_bytes": 65536, "repr_chars": 200, "per_var_ms": 200, "budget_ms": 2000}
     if sys.argv[2] == "budget":
         limits["budget_ms"] = 0
-    g = {"__name__": "kobe_static"}
+    g = {"__name__": "kaiju_static"}
     exec(bridge.STATIC_SOURCE, g)
     RAN.clear()  # building the namespace (dict keys) may have hashed; only the snapshot counts
     safe = {k: v for k, v in limits.items() if k in bridge.INSPECT_LIMIT_KEYS}

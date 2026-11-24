@@ -4,7 +4,7 @@
 # only to domains their team enabled within the site ceiling; never internal addresses.
 echo "==> egress proxy (KOBE-38)"
 UPSTREAM_HOST="upstream.$UPSTREAM_NS.svc.cluster.local"
-INTERNAL_HOST="kobe-server.$NS.svc.cluster.local"
+INTERNAL_HOST="kaiju-server.$NS.svc.cluster.local"
 if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   # The "internet": a TLS server (self-signed, s_server -www) behind a Service on 443. It has a
   # private ClusterIP, so the proxy may reach it only because this test allows exactly that IP.
@@ -19,26 +19,26 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   # Allow exactly that Service IP as an internal target (proxy check) and its pods (proxy policy);
   # flush the connection audit every 5 s instead of 60.
   up_rule=$(printf '[{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"%s"}}}]},%s]' "$UPSTREAM_NS" "$OTEL_RULE")
-  if out=$($HELM upgrade kobe charts/kobe -n "$NS" --reuse-values --wait --timeout 5m \
+  if out=$($HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --wait --timeout 5m \
       --set-json "egressProxy.allowedInternalCidrs=[\"$up_ip/32\"]" --set-json "egressProxy.networkPolicy.extraEgress=$up_rule" \
       --set egressProxy.auditFlushSeconds=5 2>&1); then ok "egress proxy reconfigured with the test upstream"
   else fail "egress proxy reconfigured with the test upstream: $out"; fi
   # The sandbox's team and user (the proxy checks active membership, D7); the KOBE-24 section
   # above created them too.
-  psql_kobe "INSERT INTO users (id, name, email) VALUES ('$E2E_USER_ID', 'E2E', 'e2e-sandbox@e2e.test') ON CONFLICT DO NOTHING;
+  psql_kaiju "INSERT INTO users (id, name, email) VALUES ('$E2E_USER_ID', 'E2E', 'e2e-sandbox@e2e.test') ON CONFLICT DO NOTHING;
     INSERT INTO teams (id, slug, name) VALUES ('$E2E_TEAM_ID', 'e2e', 'E2E') ON CONFLICT DO NOTHING;
     INSERT INTO team_members (team_id, user_id, role) VALUES ('$E2E_TEAM_ID', '$E2E_USER_ID', 'member') ON CONFLICT DO NOTHING;" >/dev/null
   # Client: a sandbox-like pod in the team namespace (same NetworkPolicy, gVisor, the sandbox image
-  # for curl/openssl, the proxy at egress-proxy.kobe.internal like real sandboxes) with an
+  # for curl/openssl, the proxy at egress-proxy.kaiju.internal like real sandboxes) with an
   # egress-audience session token for this (user, team) sandbox minted with the real key. It does
   # not depend on the sandbox agent process (the agent's own bootstrap trade is KOBE-25's e2e).
-  proxy_ip=$(svc_ip kobe-egress-proxy || true)
+  proxy_ip=$(svc_ip kaiju-egress-proxy || true)
   EGRESS_CLIENT="egress-client-$RANDOM"
   PODS+=("-n $TEAM_NS $EGRESS_CLIENT")
   $KUBECTL -n "$TEAM_NS" run "$EGRESS_CLIENT" --restart=Never --image="$KAIJU_SANDBOX_IMAGE" --overrides="{\"spec\":{
     \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kobe-sandbox\",$SEC_POD,
     \"dnsPolicy\":\"None\",\"dnsConfig\":{\"nameservers\":[\"127.0.0.1\"]},
-    \"hostAliases\":[{\"ip\":\"${proxy_ip:-0.0.0.0}\",\"hostnames\":[\"egress-proxy.kobe.internal\"]}],
+    \"hostAliases\":[{\"ip\":\"${proxy_ip:-0.0.0.0}\",\"hostnames\":[\"egress-proxy.kaiju.internal\"]}],
     \"containers\":[{\"name\":\"client\",\"image\":\"$KAIJU_SANDBOX_IMAGE\",\"command\":[\"sleep\",\"3600\"],$SEC_CTR,
       \"resources\":{\"requests\":{\"cpu\":\"50m\",\"memory\":\"64Mi\"},\"limits\":{\"cpu\":\"500m\",\"memory\":\"256Mi\"}},
       \"volumeMounts\":[{\"name\":\"tmp\",\"mountPath\":\"/tmp\"}]}],
@@ -60,7 +60,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   # → "connect=<CONNECT status> code=<origin status>" then the body; waits out a new proxy pod's
   # CNI warm-up (until the proxy answers the CONNECT at all) instead of failing on it.
   # The port is explicit: curl assumes 1080 for a proxy URL without one.
-  proxy_url="http://kobe:$egress_token@egress-proxy.kobe.internal:80"
+  proxy_url="http://kaiju:$egress_token@egress-proxy.kaiju.internal:80"
   # One answer from the proxy for this pod (any CONNECT status but 000) = positive control; it
   # also waits out a new proxy pod's CNI warm-up (receiving-side policy) before the checks.
   proxy_up=$(in_sandbox "if $(retry "curl -s -o /dev/null -m 5 -w %{http_connect} -x $proxy_url https://$UPSTREAM_HOST/ | grep -q '[1-9]'" 120); \
@@ -80,13 +80,13 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
     done
     printf '%s\n' "$out"
   }
-  notify_egress() { psql_kobe "SELECT pg_notify('kobe_egress', 'ceiling'); SELECT pg_notify('kobe_egress', '$E2E_TEAM_ID');" >/dev/null; }
+  notify_egress() { psql_kaiju "SELECT pg_notify('kobe_egress', 'ceiling'); SELECT pg_notify('kobe_egress', '$E2E_TEAM_ID');" >/dev/null; }
 
   if [[ "$client_ready" == 1 ]]; then
   fresh=$(via_proxy "https://$UPSTREAM_HOST/")
   contains "fresh install: a sandbox reaches nothing through the proxy (not in the ceiling)" '^connect=403 ' "$fresh"
   contains "fresh install: package registries are in the ceiling but not enabled for teams" '^connect=403 ' "$(via_proxy https://pypi.org/)"
-  contains "the proxy refuses requests without the sandbox's token (407)" '^connect=407 ' "$(via_proxy "https://$UPSTREAM_HOST/" 'http://kobe:forged@egress-proxy.kobe.internal:80')"
+  contains "the proxy refuses requests without the sandbox's token (407)" '^connect=407 ' "$(via_proxy "https://$UPSTREAM_HOST/" 'http://kaiju:forged@egress-proxy.kaiju.internal:80')"
   contains "the proxy refuses plain HTTP (HTTPS only)" '^connect=000 code=403' "$(via_proxy "http://$UPSTREAM_HOST/")"
   # Negative checks only after a positive control from the same pod: the proxy answered it above.
   if [[ "$proxy_up" == *proxy=ANSWERS* ]]; then
@@ -99,7 +99,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   contains "direct egress to the internet (bypassing the proxy) is blocked by NetworkPolicy" '^internet=BLOCKED$' "$direct"
 
   # A site admin adds the domains to the ceiling; the team admin enables them (D28).
-  psql_kobe "INSERT INTO egress_domains (domain, in_ceiling) VALUES ('$UPSTREAM_HOST', true), ('$INTERNAL_HOST', true) ON CONFLICT DO NOTHING;
+  psql_kaiju "INSERT INTO egress_domains (domain, in_ceiling) VALUES ('$UPSTREAM_HOST', true), ('$INTERNAL_HOST', true) ON CONFLICT DO NOTHING;
     INSERT INTO team_egress (team_id, domain, enabled_by) VALUES ('$E2E_TEAM_ID', '$UPSTREAM_HOST', '$E2E_USER_ID'),
       ('$E2E_TEAM_ID', '$INTERNAL_HOST', '$E2E_USER_ID') ON CONFLICT DO NOTHING;" >/dev/null
   notify_egress
@@ -111,7 +111,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   # SNI must equal the CONNECT host: the same tunnel with another TLS server name is cut.
   # "New, TLSv1.x, Cipher is …" only after a completed handshake ("New, (NONE)" otherwise; the
   # "SSL handshake has read" line is printed either way).
-  s_client="openssl s_client -proxy egress-proxy.kobe.internal:80 -proxy_user kobe -proxy_pass 'pass:$egress_token' -connect $UPSTREAM_HOST:443"
+  s_client="openssl s_client -proxy egress-proxy.kaiju.internal:80 -proxy_user kaiju -proxy_pass 'pass:$egress_token' -connect $UPSTREAM_HOST:443"
   contains "control: a TLS handshake with the matching server name completes through the proxy" '^1$' \
     "$(in_sandbox "echo | $s_client -servername $UPSTREAM_HOST 2>&1 | grep -c '^New, TLS'")"
   contains "a TLS server name that differs from the CONNECT host is cut (SNI mismatch)" '^0$' \
@@ -122,7 +122,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
     >/dev/null 2>&1; echo CLOSED >> /tmp/kaiju-e2e-tunnel.log)\" >/dev/null 2>&1 & sleep 5; echo started" >/dev/null
   contains "an open tunnel to an enabled domain stays up" '^OPEN$' \
     "$(in_sandbox 'grep -q CLOSED /tmp/kaiju-e2e-tunnel.log 2>/dev/null && echo CLOSED || echo OPEN')"
-  psql_kobe "DELETE FROM team_egress WHERE team_id = '$E2E_TEAM_ID' AND domain = '$UPSTREAM_HOST';" >/dev/null
+  psql_kaiju "DELETE FROM team_egress WHERE team_id = '$E2E_TEAM_ID' AND domain = '$UPSTREAM_HOST';" >/dev/null
   notify_egress
   contains "disabling the domain closes the already-open tunnel" '^CLOSED$' \
     "$(in_sandbox 'for i in $(seq 1 20); do grep -q CLOSED /tmp/kaiju-e2e-tunnel.log 2>/dev/null && break; sleep 1; done; \
@@ -131,22 +131,22 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
     "$(until_proxy "https://$UPSTREAM_HOST/" '^connect=403 ')"
 
   contains "blocked attempts are recorded as egress.blocked events for the run" '^[1-9][0-9]*$' \
-    "$(psql_kobe "SELECT count(*) FROM events WHERE team_id = '$E2E_TEAM_ID' AND kind = 'egress.blocked'")"
+    "$(psql_kaiju "SELECT count(*) FROM events WHERE team_id = '$E2E_TEAM_ID' AND kind = 'egress.blocked'")"
   conn_audit=""
   for _ in $(seq 1 20); do
-    conn_audit=$(psql_kobe "SELECT string_agg(DISTINCT target->>'outcome', ',' ORDER BY target->>'outcome') FROM audit_log
+    conn_audit=$(psql_kaiju "SELECT string_agg(DISTINCT target->>'outcome', ',' ORDER BY target->>'outcome') FROM audit_log
       WHERE team_id = '$E2E_TEAM_ID' AND action = 'egress.connection'")
     [[ "$conn_audit" == *allowed* && "$conn_audit" == *blocked* ]] && break
     sleep 2
   done
   contains "every connection is in the audit log (egress.connection: allowed and blocked)" '^allowed,blocked' "$conn_audit"
   contains "connection audit records bytes for allowed tunnels" '^[1-9][0-9]*$' \
-    "$(psql_kobe "SELECT max((target->>'bytesDown')::bigint) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'egress.connection' AND target->>'outcome' = 'allowed'")"
+    "$(psql_kaiju "SELECT max((target->>'bytesDown')::bigint) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'egress.connection' AND target->>'outcome' = 'allowed'")"
   fi # client_ready
   # Receiving side: only team namespaces may connect to the proxy (release namespace is refused),
   # checked only after the same probe pod reached the server (positive control).
-  wait_endpoints "$NS" kobe-server kobe-egress-proxy
-  recv=$(probe "$NS" "$(gated http://kobe-server/healthz proxy http://kobe-egress-proxy/healthz)")
+  wait_endpoints "$NS" kaiju-server kaiju-egress-proxy
+  recv=$(probe "$NS" "$(gated http://kaiju-server/healthz proxy http://kaiju-egress-proxy/healthz)")
   contains "control: the release-namespace probe reaches the server" '^control=REACHED$' "$recv"
   contains "the egress proxy admits nothing but sandboxes (probe from the release namespace)" '^proxy=BLOCKED$' "$recv"
 elif [[ "${CI:-}" == "true" ]]; then

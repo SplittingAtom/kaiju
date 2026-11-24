@@ -103,7 +103,7 @@ spec:
   securityContext: { runAsNonRoot: true, runAsUser: 1000, seccompProfile: { type: RuntimeDefault } }
   containers:
     - name: agent
-      image: ghcr.io/splittingatom/kobe-server:$TAG
+      image: ghcr.io/splittingatom/kaiju-server:$TAG
       imagePullPolicy: IfNotPresent
       securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
       resources: { requests: { cpu: 50m, memory: 64Mi }, limits: { cpu: 500m, memory: 256Mi } }
@@ -155,7 +155,7 @@ JS
 api() { # script [args...] → key=value lines from the owner's API calls inside the server pod
   local script="$1"
   shift
-  $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$API_JS
+  $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "$API_JS
 $script" "$E2E_TEAM_ID" "$@" 2>&1 | grep -E '^[a-z_]+=' || true
 }
 start_out=$(api "$START_JS")
@@ -165,11 +165,11 @@ contains "a message starts a run on the owner's sandbox" '^message=201:false$' "
 contains "the sandbox receives run.start and streams partial progress" "^acked=${i_run:-none}$" \
   "$(wait_for 120 "^(acked=${i_run:-none}|closed=.*)$" agent_logs)"
 entries_sql="SELECT string_agg(entry_id, ',' ORDER BY seq) FROM thread_entries WHERE thread_id = '${i_thread:-00000000-0000-4000-8000-000000000000}'"
-mirrored() { psql_kobe "SELECT count(*) FROM thread_entries WHERE thread_id = '${i_thread:-00000000-0000-4000-8000-000000000000}'"; }
+mirrored() { psql_kaiju "SELECT count(*) FROM thread_entries WHERE thread_id = '${i_thread:-00000000-0000-4000-8000-000000000000}'"; }
 contains "the partial answer is mirrored into thread_entries (root, prompt, answer)" '^3$' "$(wait_for 60 '^3$' mirrored)"
-entries_before=$(psql_kobe "$entries_sql")
+entries_before=$(psql_kaiju "$entries_sql")
 root_entry=$(agent_logs | sed -n 's/^root=//p' | head -1)
-run_status() { psql_kobe "SELECT status FROM runs WHERE id = '${i_run:-00000000-0000-4000-8000-000000000000}'"; }
+run_status() { psql_kaiju "SELECT status FROM runs WHERE id = '${i_run:-00000000-0000-4000-8000-000000000000}'"; }
 contains "the run is running before the kill" '^running$' "$(run_status)"
 # Kill the sandbox mid-run: its pod is deleted (SIGTERM, then SIGKILL after 1 s).
 killed_at=$SECONDS
@@ -179,9 +179,9 @@ status_after=$(wait_for 240 '^(interrupted|completed|failed|cancelled)$' run_sta
 printf '     interrupted after %ss\n' "$((SECONDS - killed_at))"
 contains "killing the sandbox mid-run interrupts the run" '^interrupted$' "$status_after"
 contains "the thread is interrupted (its queue is held)" '^interrupted$' \
-  "$(psql_kobe "SELECT status FROM threads WHERE id = '${i_thread:-00000000-0000-4000-8000-000000000000}'")"
+  "$(psql_kaiju "SELECT status FROM threads WHERE id = '${i_thread:-00000000-0000-4000-8000-000000000000}'")"
 contains "the interruption is audited (sandbox gone)" '^sandbox_gone$' \
-  "$(psql_kobe "SELECT target->>'cause' FROM audit_log WHERE action = 'run.interrupted' AND target->>'runId' = '${i_run:-none}'")"
+  "$(psql_kaiju "SELECT target->>'cause' FROM audit_log WHERE action = 'run.interrupted' AND target->>'runId' = '${i_run:-none}'")"
 read -r -d '' RETRY_JS <<'JS' || true
 const [threadId, runId] = args;
 const before = await entryIds(threadId);
@@ -215,7 +215,7 @@ contains "the retry run links the interrupted run" '^retry_run=running:true$' "$
 contains "history survives the kill and the retry" '^history=intact$' "$retry_out"
 retry_id=$(printf '%s\n' "$retry_out" | sed -n 's/^retry_id=//p')
 contains "the retry branches beside the interrupted prompt (from the root entry)" "^${root_entry:-none}$" \
-  "$(psql_kobe "SELECT parent_entry_id FROM runs WHERE id = '${retry_id:-00000000-0000-4000-8000-000000000000}'")"
-contains "every entry from before the kill is still in Postgres" "^${entries_before:-none}" "$(psql_kobe "$entries_sql")"
+  "$(psql_kaiju "SELECT parent_entry_id FROM runs WHERE id = '${retry_id:-00000000-0000-4000-8000-000000000000}'")"
+contains "every entry from before the kill is still in Postgres" "^${entries_before:-none}" "$(psql_kaiju "$entries_sql")"
 contains "the retry can still be stopped" '^cancel_retry=cancelled$' "$retry_out"
 

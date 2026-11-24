@@ -3,7 +3,7 @@ import { MARKER_BEGIN, MARKER_END, fenceMemory, memoryNotice, newNonce } from ".
 
 /**
  * Saved memory text in admin tool results (KOBE-650 review L1): fenced as untrusted data with the
- * sandbox's own markers (`sandbox-agent/src/kobe-tools/memory-fence.ts`, KOBE-157) and a nonce.
+ * sandbox's own markers (`sandbox-agent/src/kaiju-tools/memory-fence.ts`, KOBE-157) and a nonce.
  */
 describe("fenceMemory", () => {
   it("wraps the text between markers carrying the call's nonce", () => {

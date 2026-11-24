@@ -1,11 +1,11 @@
 # Dev/e2e only, k3d only (Tilt and e2e/run.sh refuse other contexts): Mailpit (MIT) catches every
 # email Kaiju sends (invitations, password resets) so they can be read in its web UI (port 8025) or
-# API. Applied after dev/postgres.yaml, which creates the kobe-deps namespace.
+# API. Applied after dev/postgres.yaml, which creates the kaiju-deps namespace.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mailpit
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   selector:
     matchLabels: { app: mailpit }
@@ -31,7 +31,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mailpit
-  namespace: kobe-deps
+  namespace: kaiju-deps
 spec:
   selector: { app: mailpit }
   ports:

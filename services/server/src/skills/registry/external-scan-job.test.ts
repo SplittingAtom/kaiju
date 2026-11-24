@@ -15,7 +15,7 @@ const versionId = "00000000-0000-4000-8000-000000000341";
 const teamId = "00000000-0000-4000-8000-0000000000aa";
 const isolation = { runtimeClassName: "gvisor", handler: "runsc" } as unknown as VerifiedIsolation;
 const scan = {
-  image: "ghcr.io/splittingatom/kobe-skill-scan:0.1.0",
+  image: "ghcr.io/splittingatom/kaiju-skill-scan:0.1.0",
   deadlineSeconds: 300,
   resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { cpu: "1", memory: "2Gi" } },
 };

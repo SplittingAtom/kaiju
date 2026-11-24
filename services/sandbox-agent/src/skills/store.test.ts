@@ -11,7 +11,7 @@ let served: Map<string, Uint8Array>;
 let fetched: string[];
 
 beforeEach(async () => {
-  root = path.join(await mkdtemp(path.join(tmpdir(), "kobe-skills-")), "skills");
+  root = path.join(await mkdtemp(path.join(tmpdir(), "kaiju-skills-")), "skills");
   served = new Map();
   fetched = [];
 });

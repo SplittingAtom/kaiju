@@ -81,7 +81,7 @@ describe.skipIf(!BIN)("against a real Bifrost", () => {
     upstream = fakeUpstream(seen);
     await new Promise<void>((r) => upstream.listen(0, "127.0.0.1", r));
     up = `http://127.0.0.1:${(upstream.address() as AddressInfo).port}`;
-    dir = mkdtempSync(join(tmpdir(), "kobe-bifrost-"));
+    dir = mkdtempSync(join(tmpdir(), "kaiju-bifrost-"));
     const port = 18000 + Math.floor(Math.random() * 1000);
     base = `http://127.0.0.1:${port}`;
     writeFileSync(

@@ -2,7 +2,7 @@ import { PassThrough } from "node:stream";
 import type { BridgeLauncher, BridgeProcess } from "../session.js";
 
 /**
- * An in-memory `kobe-kernel-bridge.py` for tests. Code is a tiny script language:
+ * An in-memory `kaiju-kernel-bridge.py` for tests. Code is a tiny script language:
  *   `print:<text>`  a stdout stream output, then done ok
  *   `result:<text>` an execute_result with text/plain, then done ok
  *   `sleep`         runs until interrupted (KeyboardInterrupt, done interrupted)

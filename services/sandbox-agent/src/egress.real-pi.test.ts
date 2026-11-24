@@ -36,7 +36,7 @@ afterEach(async () => {
 describe.skipIf(!PI_AVAILABLE)("egress for tools with the real Pi (KOBE-39)", () => {
   it("a bash tool call Pi runs sees HTTPS_PROXY with the sandbox's current token", async () => {
     const egress: EgressWiring = {
-      proxyUrl: "http://egress-proxy.kobe.internal:80",
+      proxyUrl: "http://egress-proxy.kaiju.internal:80",
       noProxy: "localhost",
       envScript: SCRIPT,
       tokens: { current: async () => TOKEN, onChange: () => () => undefined },
@@ -77,7 +77,7 @@ describe.skipIf(!PI_AVAILABLE)("egress for tools with the real Pi (KOBE-39)", ()
       result: { content: { text: string }[] };
     };
     expect(end.result.content.map((c) => c.text).join("")).toContain(
-      `proxy=http://${THREAD}:${TOKEN}@egress-proxy.kobe.internal:80`,
+      `proxy=http://${THREAD}:${TOKEN}@egress-proxy.kaiju.internal:80`,
     );
   }, 60_000);
 });

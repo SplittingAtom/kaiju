@@ -76,7 +76,7 @@ describe("Pi process lifecycle", () => {
   });
 });
 
-describe("kobe-policy channel (fd 3)", () => {
+describe("kaiju-policy channel (fd 3)", () => {
   it("relays the checks of a run started again under an ended run's id (KOBE-483)", async () => {
     h = await startHarness();
     await h.server.command(runStart("say:hi"));
@@ -136,25 +136,25 @@ describe("kobe-policy channel (fd 3)", () => {
     expect(h.server.frames("error")).toEqual([]);
   });
 
-  it("starts no run when kobe-policy refuses to start (fail closed)", async () => {
+  it("starts no run when kaiju-policy refuses to start (fail closed)", async () => {
     h = await startHarness({
-      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kaiju/pi-extensions/refuse/index.js" },
     });
     const result = await h.server.command(runStart("say:hi"));
     expect(result).toMatchObject({
       ok: false,
       error: {
         code: "pi_unavailable",
-        message: "kobe-policy did not start: kobe-policy refused to start: fake refusal",
+        message: "kaiju-policy did not start: kaiju-policy refused to start: fake refusal",
       },
     });
     const prompts = (await h.commandsLog()).filter((c) => c.type === "prompt");
     expect(prompts).toEqual([]);
   });
 
-  it("starts no run when kobe-policy never reports ready (fail closed)", async () => {
+  it("starts no run when kaiju-policy never reports ready (fail closed)", async () => {
     h = await startHarness({
-      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/silent/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kaiju/pi-extensions/silent/index.js" },
       policyReadyTimeoutMs: 200,
     });
     const result = await h.server.command(runStart("say:hi"));
@@ -177,9 +177,9 @@ describe("kobe-policy channel (fd 3)", () => {
     expect(await launches()).toBe(2);
   });
 
-  it("gates pi.command on kobe-policy being ready", async () => {
+  it("gates pi.command on kaiju-policy being ready", async () => {
     h = await startHarness({
-      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kaiju/pi-extensions/refuse/index.js" },
     });
     const result = await h.server.command({
       type: "pi.command",
@@ -188,7 +188,7 @@ describe("kobe-policy channel (fd 3)", () => {
     });
     expect(result).toMatchObject({
       ok: false,
-      error: { code: "pi_unavailable", message: expect.stringMatching(/kobe-policy/) },
+      error: { code: "pi_unavailable", message: expect.stringMatching(/kaiju-policy/) },
     });
     expect((await h.commandsLog()).filter((c) => c.type === "get_state")).toEqual([]);
   });
@@ -226,8 +226,8 @@ describe("what a tool started by Pi can reach", () => {
     await h.server.waitFor((f) => f.type === "policy.check");
   });
 
-  it("does not inherit the kobe-tools channel (fd 4) either (KOBE-128)", async () => {
-    h = await startHarness({ toolsExtension: "/opt/kobe/pi-extensions/kobe-tools/index.js" });
+  it("does not inherit the kaiju-tools channel (fd 4) either (KOBE-128)", async () => {
+    h = await startHarness({ toolsExtension: "/opt/kaiju/pi-extensions/kaiju-tools/index.js" });
     await h.server.command(runStart("grandchild"));
     const probe = await h.server.waitFor(
       (f) => f.type === "pi.event" && f.event.type === "kaiju_test_grandchild",
@@ -371,15 +371,15 @@ describe("session.restore and branching (D13, D15)", () => {
     ...extra,
   });
 
-  it("gates the Pi started after a restore on kobe-policy being ready", async () => {
+  it("gates the Pi started after a restore on kaiju-policy being ready", async () => {
     h = await startHarness({
-      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kaiju/pi-extensions/refuse/index.js" },
     });
     // The restore itself only writes the session file (no Pi) ...
     expect(await h.server.command(restore(0, true, [entry("a1", null)], { header }))).toMatchObject(
       { ok: true },
     );
-    // ... and the Pi that reads it is refused when its kobe-policy does not start.
+    // ... and the Pi that reads it is refused when its kaiju-policy does not start.
     const result = await h.server.command({
       type: "pi.command",
       thread_id: THREAD,
@@ -387,7 +387,7 @@ describe("session.restore and branching (D13, D15)", () => {
     });
     expect(result).toMatchObject({
       ok: false,
-      error: { code: "pi_unavailable", message: expect.stringMatching(/kobe-policy/) },
+      error: { code: "pi_unavailable", message: expect.stringMatching(/kaiju-policy/) },
     });
     expect((await h.commandsLog()).filter((c) => c.type === "get_entries")).toEqual([]);
   });
