@@ -16,6 +16,7 @@ import {
   audit,
   selects,
   splitValues,
+  stepProgress,
   swapUnit,
   globToRegExp,
   loadAllowlist,
@@ -324,10 +325,23 @@ test("a path rename whose references belong to a later step is refused (review H
   assert.equal(status(dir), "");
 });
 
+test("step progress: a step with no allowlist groups is done, and done steps come first", () => {
+  const groups = (...steps) => steps.map((step) => ({ step, reason: "r" }));
+  const open = STEPS.slice(1);
+  assert.deepEqual(stepProgress(groups("permanent", ...STEPS)), { done: [], outOfOrder: [] });
+  assert.deepEqual(stepProgress(groups("permanent", ...open)), { done: ["RN-2"], outOfOrder: [] });
+  assert.deepEqual(stepProgress(groups("permanent")).outOfOrder, []);
+  // RN-3 done while RN-2 still has groups: out of order.
+  const skipped = stepProgress(groups("RN-2", ...STEPS.slice(2)));
+  assert.deepEqual(skipped, { done: ["RN-3"], outOfOrder: ["RN-3"] });
+});
+
 test("the repository's lists parse, each step file holds only its own step", () => {
   const allowlist = loadAllowlist(REPO);
   assert.ok(allowlist.groups.every((g) => g.reason.length > 10));
-  for (const step of STEPS) {
+  const { done, outOfOrder } = stepProgress(allowlist.groups);
+  assert.deepEqual(outOfOrder, [], "done steps form a prefix of the step order");
+  for (const step of STEPS.filter((s) => !done.includes(s))) {
     const list = loadStep(REPO, step);
     assert.ok(list.groups.every((g) => g.step === step));
     for (const g of list.groups) {
