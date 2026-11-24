@@ -9,6 +9,13 @@ import { z } from "zod";
  * decision: nothing here ever sets it.
  */
 export const SCAN_MARKER = "KAIJU_EXTERNAL_SCAN ";
+/**
+ * The marker a skill-scan image built before the rename prints (KOBE-748): accepted for one
+ * release so a pinned older scanner image keeps working; removed with the fallbacks in KOBE-754.
+ */
+export const LEGACY_SCAN_MARKER = "KOBE_EXTERNAL_SCAN ";
+const markerOf = (l: string): string | undefined =>
+  [SCAN_MARKER, LEGACY_SCAN_MARKER].find((m) => l.startsWith(m));
 /** External rules are named apart from Kaiju's own (`cisco:<rule id>`). */
 export const EXTERNAL_RULE_PREFIX = "cisco:";
 const RAISING = new Set(["medium", "high", "critical"]);
@@ -69,11 +76,14 @@ export function parseScanLog(
   const line = log
     .split("\n")
     .reverse()
-    .find((l) => l.startsWith(SCAN_MARKER));
-  if (!line) return { status: "failed", reason: "no_result", finishedAt: at.finishedAt };
+    .find((l) => markerOf(l) !== undefined);
+  const marker = line === undefined ? undefined : markerOf(line);
+  if (line === undefined || marker === undefined) {
+    return { status: "failed", reason: "no_result", finishedAt: at.finishedAt };
+  }
   let parsed: z.infer<typeof resultSchema>;
   try {
-    const result = resultSchema.safeParse(JSON.parse(line.slice(SCAN_MARKER.length)));
+    const result = resultSchema.safeParse(JSON.parse(line.slice(marker.length)));
     if (!result.success)
       return { status: "failed", reason: "bad_result", finishedAt: at.finishedAt };
     parsed = result.data;

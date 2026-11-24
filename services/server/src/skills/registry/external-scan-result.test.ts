@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   externalCautionFindings,
+  LEGACY_SCAN_MARKER,
   parseScanLog,
   raisedVerdict,
   SCAN_MARKER,
@@ -87,5 +88,28 @@ describe("the verdict (ac-3)", () => {
       }),
     ]);
     expect(externalCautionFindings({ external: { status: "queued", queuedAt: "" } })).toEqual([]);
+  });
+});
+
+describe("the marker of a scanner image built before the rename (KOBE-748)", () => {
+  const result = { v: 1, scanner: "cisco-ai-skill-scanner", version: "2.2.1", findings: [] };
+
+  it("reads the old marker as well as the new one, for one release", () => {
+    expect(SCAN_MARKER).toBe("KAIJU_EXTERNAL_SCAN ");
+    for (const marker of [SCAN_MARKER, LEGACY_SCAN_MARKER]) {
+      expect(parseScanLog(`noise\n${marker}${JSON.stringify(result)}\n`, at)).toMatchObject({
+        status: "done",
+        version: "2.2.1",
+      });
+    }
+    expect(parseScanLog(`${LEGACY_SCAN_MARKER}{not json`, at)).toMatchObject({
+      reason: "bad_result",
+    });
+  });
+
+  it("the last result line wins, whichever marker it has", () => {
+    const old = { ...result, version: "2.2.0" };
+    const log = `${SCAN_MARKER}${JSON.stringify(old)}\n${LEGACY_SCAN_MARKER}${JSON.stringify(result)}\n`;
+    expect(parseScanLog(log, at)).toMatchObject({ version: "2.2.1" });
   });
 });

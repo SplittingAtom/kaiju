@@ -76,6 +76,24 @@
 - Gate runbooks under `docs/gates/` and earlier specs keep the old names (history group, RN-1);
   their commands now need `KAIJU_*`.
 
+## Review round 1 (merge, four LOWs): what changed
+
+- **LOW-1:** the skill-scan result marker on the scanner Job's stdout is a wire marker, not an env
+  var: `parseScanLog` accepts `KOBE_EXTERNAL_SCAN ` as well as `KAIJU_EXTERNAL_SCAN ` for one
+  release (a pinned pre-rename skill-scan image keeps working; tests for both and for the last
+  line winning); allowlisted in the fallback group, removed with KOBE-754.
+- **LOW-2:** an empty new name no longer beats a non-empty old one (the chart renders
+  `KAIJU_S3_PREFIX`, the CIDR lists and others as `""`; a hand-set `KOBE_S3_PREFIX` would have
+  silently moved workspace sync to the bucket root). Chose the helper over omitting empty chart
+  values: it covers every variable, including ones operators set empty on purpose under the new
+  name only (then no old name exists and nothing changes). The report lists such names in
+  `emptyNew` and the warning says `KAIJU_X is set but empty, so KOBE_X is used`. Both empty: the
+  new name, reported as a conflict.
+- **LOW-3:** the install guide's mixed-rollout paragraph now matches the ledger (old templates
+  carry old images, which read old names themselves; the fallback is for new images under old
+  names) and describes the empty-value rule and the skill-scan exception.
+- **LOW-4** (coordinator's browser script outside the repo): not in this branch.
+
 ## Doc evaluation
 
 User guide: changed only where it quotes a variable an admin sets (`docs/guide/admin/single-sign-on.md`

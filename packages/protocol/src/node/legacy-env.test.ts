@@ -29,8 +29,30 @@ describe("legacy KOBE_* environment fallback (KOBE-748)", () => {
     expect(report).toEqual({ renamed: [], conflicts: ["KOBE_X"] });
   });
 
-  it("an empty new name still counts as set (it wins)", () => {
-    expect(resolveLegacyEnv({ KOBE_X: "old", KAIJU_X: "" }).env).toEqual({ KAIJU_X: "" });
+  it("an empty new name does not hide a non-empty old one, and the warning says so", () => {
+    // The chart renders KAIJU_S3_PREFIX="" by default; a hand-set KOBE_S3_PREFIX must survive.
+    const { env, report } = resolveLegacyEnv({ KOBE_S3_PREFIX: "team-a/", KAIJU_S3_PREFIX: "" });
+    expect(env).toEqual({ KAIJU_S3_PREFIX: "team-a/" });
+    expect(report).toEqual({
+      renamed: ["KOBE_S3_PREFIX"],
+      conflicts: [],
+      emptyNew: ["KOBE_S3_PREFIX"],
+    });
+    expect(legacyEnvMessage(report)).toContain(
+      "KOBE_S3_PREFIX → KAIJU_S3_PREFIX (KAIJU_S3_PREFIX is set but empty, so KOBE_S3_PREFIX is used)",
+    );
+    const adopted: Record<string, string | undefined> = {
+      KOBE_S3_PREFIX: "team-a/",
+      KAIJU_S3_PREFIX: "",
+    };
+    adoptLegacyEnv(adopted);
+    expect(adopted).toEqual({ KAIJU_S3_PREFIX: "team-a/" });
+  });
+
+  it("both empty: the new name is used, reported as a conflict", () => {
+    const { env, report } = resolveLegacyEnv({ KOBE_X: "", KAIJU_X: "" });
+    expect(env).toEqual({ KAIJU_X: "" });
+    expect(report).toEqual({ renamed: [], conflicts: ["KOBE_X"] });
   });
 
   it("the warning names the variables, never their values", () => {

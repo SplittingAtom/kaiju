@@ -1,7 +1,9 @@
 /**
  * One-release fallback for the old environment variable names (rename step RN-4, KOBE-748; spec
  * docs/specs/rename-kaiju.md §3 change 5). Every service reads `KAIJU_X`; for this release a
- * `KOBE_X` stands in for an unset `KAIJU_X`. When both are set, `KAIJU_X` wins. Either way the
+ * `KOBE_X` stands in for an unset or empty `KAIJU_X` (the chart renders some optional settings as
+ * empty strings, which must not hide a value an operator set by hand under the old name). When
+ * both are set and the new one is not empty, `KAIJU_X` wins. Either way the
  * service logs one warning that names the variables to rename (never their values: many are
  * secrets). RN-10 (KOBE-754) removes this module.
  *
@@ -17,8 +19,10 @@ type Env = Record<string, string | undefined>;
 
 /** Old names, never values. */
 export interface LegacyEnvReport {
-  /** Old names that stood in for an unset new name. */
+  /** Old names that stood in for an unset or empty new name. */
   readonly renamed: readonly string[];
+  /** Of `renamed`, those whose new name was set but empty (absent when none). */
+  readonly emptyNew?: readonly string[];
   /** Old names ignored because the new name is set too (the new one wins). */
   readonly conflicts: readonly string[];
 }
@@ -44,17 +48,25 @@ function legacyNames(env: Readonly<Env>): string[] {
     .sort();
 }
 
+const union = (a: readonly string[] = [], b: readonly string[] = []): string[] =>
+  [...new Set([...a, ...b])].sort();
+
+function report(renamed: string[], conflicts: string[], emptyNew: string[]): LegacyEnvReport {
+  return emptyNew.length > 0 ? { renamed, conflicts, emptyNew } : { renamed, conflicts };
+}
+
 function merge(a: LegacyEnvReport, b: LegacyEnvReport): LegacyEnvReport {
-  return {
-    renamed: [...new Set([...a.renamed, ...b.renamed])].sort(),
-    conflicts: [...new Set([...a.conflicts, ...b.conflicts])].sort(),
-  };
+  return report(
+    union(a.renamed, b.renamed),
+    union(a.conflicts, b.conflicts),
+    union(a.emptyNew, b.emptyNew),
+  );
 }
 
 /**
  * The environment as the services read it: a new object holding every variable except the old
- * names, with each old name's value under its new name where that is unset. The input is not
- * changed.
+ * names, with each old name's value under its new name where that is unset, or empty while the
+ * old value is not. The input is not changed.
  */
 export function resolveLegacyEnv(env: Readonly<Env>): { env: Env; report: LegacyEnvReport } {
   const out: Env = {};
@@ -63,16 +75,19 @@ export function resolveLegacyEnv(env: Readonly<Env>): { env: Env; report: Legacy
   }
   const renamed: string[] = [];
   const conflicts: string[] = [];
+  const emptyNew: string[] = [];
   for (const old of legacyNames(env)) {
     const name = newEnvName(old);
-    if (env[name] === undefined) {
+    const current = env[name];
+    if (current === undefined || (current === "" && env[old] !== "")) {
       out[name] = env[old];
       renamed.push(old);
+      if (current === "") emptyNew.push(old);
     } else {
       conflicts.push(old);
     }
   }
-  return { env: out, report: { renamed, conflicts } };
+  return { env: out, report: report(renamed, conflicts, emptyNew) };
 }
 
 /**
@@ -82,26 +97,31 @@ export function resolveLegacyEnv(env: Readonly<Env>): { env: Env; report: Legacy
  * a later {@link legacyEnv} on the same object still warns about it.
  */
 export function adoptLegacyEnv(env: Env): LegacyEnvReport {
-  const { report } = resolveLegacyEnv(env);
-  for (const old of report.renamed) env[newEnvName(old)] = env[old];
-  for (const old of [...report.renamed, ...report.conflicts]) Reflect.deleteProperty(env, old);
-  adopted.set(env, merge(adopted.get(env) ?? EMPTY, report));
-  return report;
+  const found = resolveLegacyEnv(env).report;
+  for (const old of found.renamed) env[newEnvName(old)] = env[old];
+  for (const old of [...found.renamed, ...found.conflicts]) Reflect.deleteProperty(env, old);
+  adopted.set(env, merge(adopted.get(env) ?? EMPTY, found));
+  return found;
 }
 
 /** The warning text for a report, or undefined when nothing needs renaming. */
-export function legacyEnvMessage(report: LegacyEnvReport): string | undefined {
-  if (report.renamed.length === 0 && report.conflicts.length === 0) return undefined;
+export function legacyEnvMessage(found: LegacyEnvReport): string | undefined {
+  if (found.renamed.length === 0 && found.conflicts.length === 0) return undefined;
+  const empty = new Set(found.emptyNew ?? []);
   const parts = [
     `environment variables with the old ${LEGACY_ENV_PREFIX} prefix: rename them to ${ENV_PREFIX}… ` +
       `(the old names stop working in the next release)`,
   ];
-  if (report.renamed.length > 0) {
-    parts.push(`used for now: ${report.renamed.map((n) => `${n} → ${newEnvName(n)}`).join(", ")}`);
+  if (found.renamed.length > 0) {
+    const used = found.renamed.map(
+      (n) =>
+        `${n} → ${newEnvName(n)}${empty.has(n) ? ` (${newEnvName(n)} is set but empty, so ${n} is used)` : ""}`,
+    );
+    parts.push(`used for now: ${used.join(", ")}`);
   }
-  if (report.conflicts.length > 0) {
+  if (found.conflicts.length > 0) {
     parts.push(
-      `ignored because the new name is set too and wins: ${report.conflicts
+      `ignored because the new name is set too and wins: ${found.conflicts
         .map((n) => `${n} (${newEnvName(n)} is used)`)
         .join(", ")}`,
     );
@@ -116,11 +136,11 @@ export function legacyEnvMessage(report: LegacyEnvReport): string | undefined {
  */
 export function legacyEnv(env: Readonly<Env>, warn: LegacyEnvWarn): Env {
   const resolved = resolveLegacyEnv(env);
-  const report = merge(adopted.get(env) ?? EMPTY, resolved.report);
-  const message = legacyEnvMessage(report);
+  const found = merge(adopted.get(env) ?? EMPTY, resolved.report);
+  const message = legacyEnvMessage(found);
   if (message !== undefined && !warned.has(env)) {
     warned.add(env);
-    warn(message, report);
+    warn(message, found);
   }
   return resolved.env;
 }

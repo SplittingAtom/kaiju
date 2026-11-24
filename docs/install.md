@@ -1737,7 +1737,7 @@ variable whose new name is unset:
 
 - **Only the old name set:** it is used, and the process logs one warning at startup naming each
   old variable and its new name (`... used for now: KOBE_X → KAIJU_X`). Values are never logged.
-- **Both names set:** the new name wins, the old one is ignored, and the warning says so
+- **Both names set:** the new name wins unless it is empty, the old one is ignored, and the warning says so
   (`... ignored because the new name is set too and wins: KOBE_X (KAIJU_X is used)`).
 
 Rename what you set yourself before the next release removes the old names: variables added to the
@@ -1748,11 +1748,21 @@ of scripts that run the `kaiju` CLI (`KAIJU_BACKUP_KEY`, `KAIJU_BACKUP_DATABASE_
 roles (`kobe.team_id`, `kobe_app`), Secret names and keys and every stored value keep their
 names; nothing in the database changes.
 
-During the upgrade, pods of both versions run side by side, each with the names its own chart
-version set. Sandboxes keep the environment of the SandboxTemplate they started from until the
-server's team reconcile (every 300 s) writes the new image and the new names together; a
-sandbox started from a template the old server wrote reads its old names through the fallback.
-Rolling back to the release before the rename restores the old names with the old chart.
+During the upgrade, pods of both versions run side by side, each with the image and the names
+its own chart version set, so neither side needs the fallback. Sandboxes keep the SandboxTemplate
+they started from until the server's team reconcile (every 300 s) writes the new image and the new
+names together; a template the old server wrote carries the old image, which reads the old names
+itself. The fallback is for a new image under old names: a chart rolled back without its images,
+a values file that pins the new images under the old chart, or variables you set by hand. An image
+from before the rename does not read the new names, so do not run older images under this chart.
+The skill-scan image is the exception for this release: the server also accepts the result line of
+a scanner image built before the rename (rebuild it before the next release).
+
+An empty value under the new name does not hide a value under the old one: the chart renders some
+optional settings as empty strings (`KAIJU_S3_PREFIX`, the CIDR lists), so a `KOBE_S3_PREFIX` you
+added by hand is still used, and the warning says so (`KOBE_S3_PREFIX → KAIJU_S3_PREFIX
+(KAIJU_S3_PREFIX is set but empty, so KOBE_S3_PREFIX is used)`). Once you rename it, set the chart
+value (`s3.prefix`) instead where there is one.
 
 ### Upgrade notes
 
