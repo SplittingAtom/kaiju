@@ -27,6 +27,9 @@ docs/install.md /(?<=\(`)kobe(?=: … |: dropped team approval floor)/
 == permanent: The rename tooling and its spec name the old name on purpose
 scripts/rename/** docs/specs/rename-kaiju.md /kobe/i
 
+== permanent: The site-wording check keeps catching scope wording that names the old product, so it cannot come back (KOBE-746)
+scripts/check-site-wording.mjs /\(\?:k\(\?:obe\|aiju\) \)|this Kobe install/
+
 == permanent: Postgres settings and advisory-lock keys (spec §3 stays 2, RN3)
 ** /\bkobe\.(?:team_id|break_glass_grant|break_glass_actor|run_usage_retention|restore(?:\.\w+)?|legal_hold|audit\.pii_sweep)\b/
 
@@ -68,6 +71,9 @@ services/server/src/models/** docs/guide/memory.md /\bkobe-(?:mac-mini|ollama[\w
 
 == permanent: Frozen memory relevance set (KOBE-387: nothing changed after its first recorded run, results in docs/gates/gate-7a.md); fictional company data no member or agent reads (KOBE-746)
 e2e/fixtures/memory-relevance/items.json /\bKobe\b/
+
+== permanent: Headers as written before the rename, read back from notes and prompts captured before the upgrade (the context viewer accepts both); removed with the one-release fallbacks in KOBE-754
+services/sandbox-agent/src/memory/semantic-context.ts services/sandbox-agent/src/context/sections.test.ts /## What Kobe knows\b/
 
 # ---------------------------------------------------------------------------------------------
 # Provisional: persisted or agent-visible names the spec does not list. Kept (never touched by a step) until the
@@ -132,10 +138,12 @@ services/server/builtin-skills/** /kobe/i
 services/server/src/memory/learn/prompt/v*/prompt.ts services/server/src/memory/learn/prompt/v*/fixtures/** /^(?!\s*(?:import|export)\b[^\n]*\bfrom\b)[^\n]*kobe[^\n]*$/i
 services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
 
-== provisional: (Q13) The gallery agent's name "Kobe": its definition (name and prompt) is pinned by its generation, and raising the generation re-publishes the agent on every existing install (a change to stored rows); the definition, the tests that read the seeded name and the text that names the agent move together once the owner answers (KOBE-746)
+== provisional: (Q13) The gallery agent's name "Kobe": its definition (name and prompt) is pinned by its generation, and raising the generation re-publishes the agent on every existing install (a change to stored rows); the definition, the tests that read the seeded name and the text that names the agent move together in KOBE-831 (owner decision 2026-11-24)
 services/server/src/gallery/** services/server/src/apps/app-launch-agent.db.test.ts e2e/browser/tests/site-gallery-edit.spec.ts /\bKobe\b/
 ** /(?<!older )\bKobe agent\b|\bagent,? Kobe\b|site default \(Kobe\)|\bgallery Kobe\b/
 docs/install.md /\(key `kobe`\)/
+apps/web/components/admin/site/gallery-agent-editor.test.tsx apps/web/components/admin/skill-reach.test.tsx apps/web/components/admin/team-default-agent-page.test.tsx apps/web/components/agents/agents-admin.test.tsx apps/web/components/agents/agents-fork-lineage.test.tsx apps/web/components/agents/agents-page.test.tsx apps/web/components/chat/agent-picker.test.tsx apps/web/components/chat/default-agent.test.tsx apps/web/components/chat/plus-menu.test.tsx apps/web/components/chat/suggestions.test.tsx apps/web/components/chat/thread-agent.test.tsx apps/web/components/skills/test-pane.test.tsx apps/web/lib/chat/agent-origin.ts apps/web/lib/chat/testing/pi-sequences.ts apps/web/lib/skills/from-conversation.test.ts e2e/browser/tests/my-shared-cases.spec.ts e2e/browser/tests/skill-creator-workbench.spec.ts packages/cli/src/testing/fixtures.ts packages/protocol/src/team-default-agent.test.ts services/server/src/agents/agent-roster-views.db.test.ts /\bKobe\b/
+
 
 # ---------------------------------------------------------------------------------------------
 # To rename. Specific steps sit above the generic ones (the RN-3 tails last), so the

@@ -198,9 +198,9 @@ export async function serverStarted(url: string, agentId = randomUUID()): Promis
   await sql(
     url,
     `INSERT INTO site_agents (id, scope, slug, frontmatter, prompt, gallery_key, gallery_generation)
-       VALUES ('${agentId}', 'gallery', 'kobe', '{"name":"Kaiju"}', 'You are Kaiju.', 'kobe', 1);
+       VALUES ('${agentId}', 'gallery', 'kobe', '{"name":"Kobe"}', 'You are Kobe.', 'kobe', 1);
      INSERT INTO site_agent_versions (agent_id, version, frontmatter, prompt, tool_manifest, draft_revision)
-       VALUES ('${agentId}', 1, '{"name":"Kaiju"}', 'You are Kaiju.', '{}', 1);
+       VALUES ('${agentId}', 1, '{"name":"Kobe"}', 'You are Kobe.', '{}', 1);
      UPDATE site_agents SET current_version = 1 WHERE id = '${agentId}';
      INSERT INTO audit_log (actor_kind, action, target) VALUES
        ('system', 'agent.created', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kobe', 'source', 'seed')),

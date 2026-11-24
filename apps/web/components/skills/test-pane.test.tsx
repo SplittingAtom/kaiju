@@ -7,7 +7,7 @@ import { groupThreads, placementCustom } from "../../lib/chat/thread-groups";
 import { must } from "../../lib/testing/must";
 import { SkillTestPane } from "./test-pane";
 
-/** The Workbench test pane (KOBE-323): a Kaiju-agent chat on this draft alone, as it is now. */
+/** The Workbench test pane (KOBE-323): a Kobe-agent chat on this draft alone, as it is now. */
 const DRAFT = "22222222-2222-4222-8222-222222222222";
 
 beforeEach(() => {

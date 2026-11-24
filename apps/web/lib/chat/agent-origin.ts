@@ -1,7 +1,7 @@
 import type { RunnableAgent } from "./types";
 
 /**
- * Where an agent comes from (KOBE-297), so two agents with the same name (the gallery's Kaiju and a
+ * Where an agent comes from (KOBE-297), so two agents with the same name (the gallery's Kobe and a
  * team's fork of it) are told apart in the composer's picker: Built-in (the site gallery), Team
  * or Personal. Equal names with the same origin also show the agent's slug, which is unique there.
  */
@@ -40,7 +40,7 @@ export function agentLabels(agents: readonly RunnableAgent[]): ReadonlyMap<strin
 const details = (label: AgentLabel) =>
   [label.origin, ...(label.slug === undefined ? [] : [label.slug])].join(", ");
 
-/** The radio's accessible name: "Kaiju, Built-in", or "Kaiju, Team, kobe-ops". */
+/** The radio's accessible name: "Kobe, Built-in", or "Kobe, Team, kobe-ops". */
 export function agentChoiceName(agent: RunnableAgent, label: AgentLabel | undefined): string {
   return label ? `${agent.name}, ${details(label)}` : agent.name;
 }

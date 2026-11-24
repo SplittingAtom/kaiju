@@ -108,7 +108,7 @@ const ORPHAN = row({
 const GALLERY_ROW = row({
   agentId: "g-1",
   kind: "gallery",
-  name: "Kaiju",
+  name: "Kobe",
   slug: "kobe",
   ownerUserId: null,
   ownerName: null,
@@ -137,7 +137,7 @@ const GALLERY_ADMIN_LIST = [
         id: "g-1",
         scope: "gallery",
         slug: "kobe",
-        name: "Kaiju",
+        name: "Kobe",
         status: "active",
         ownerUserId: null,
         currentVersion: 2,
@@ -226,7 +226,7 @@ describe("Members see none of the admin columns or actions (ac-1)", () => {
     expect(screen.queryByRole("button", { name: /^Proposed/ })).toBeNull();
     expect(await rowActions("Triage")).toEqual([]);
     await userEvent.click(screen.getByRole("tab", { name: "Site" }));
-    expect(await rowActions("Kaiju")).toEqual(["Fork to Personal…"]);
+    expect(await rowActions("Kobe")).toEqual(["Fork to Personal…"]);
     expect(screen.queryByText("Customized")).toBeNull();
     expect(summary(calls)).not.toContain("GET /v1/site/gallery/agents");
   });
@@ -260,29 +260,29 @@ describe("Site tab as a site admin: the Gallery page's actions (ac-1)", () => {
       ],
     });
     renderTeam(<Page search="tab=site" />, SITE_ADMIN);
-    const kobe = await rowOf("Kaiju");
+    const kobe = await rowOf("Kobe");
     expect(await within(kobe).findByText("Customized")).toBeTruthy();
     expect(
       within(kobe)
-        .getByRole("link", { name: /Edit\s+Kaiju/ })
+        .getByRole("link", { name: /Edit\s+Kobe/ })
         .getAttribute("href"),
     ).toBe("/admin/site/gallery/g-1");
     expect(within(kobe).getByText("Not evaluated")).toBeTruthy();
-    expect(screen.getByText(/A newer repository version of Kaiju is available/)).toBeTruthy();
+    expect(screen.getByText(/A newer repository version of Kobe is available/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: /^Compare/ }));
     expect(await screen.findByText("repository file")).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Reset to repository/ })).toBeTruthy();
 
-    expect(await rowActions("Kaiju")).toEqual(["Run eval…", "Export file", "Fork to Personal…"]);
+    expect(await rowActions("Kobe")).toEqual(["Run eval…", "Export file", "Fork to Personal…"]);
     // The Gallery page's team picker: the active team first, any team of the admin's.
-    await rowAction("Kaiju", "Run eval…");
-    const dialog = await screen.findByRole("dialog", { name: "Run an eval of Kaiju" });
+    await rowAction("Kobe", "Run eval…");
+    const dialog = await screen.findByRole("dialog", { name: "Run an eval of Kobe" });
     const team = (await within(dialog).findByLabelText("Run in team")) as HTMLSelectElement;
     expect(team.value).toBe("t-1");
     await userEvent.selectOptions(team, "Ops");
     await userEvent.click(within(dialog).getByRole("button", { name: "Run eval" }));
     expect(
-      await screen.findByText("Evaluating Kaiju in Ops. The score appears here when it finishes."),
+      await screen.findByText("Evaluating Kobe in Ops. The score appears here when it finishes."),
     ).toBeTruthy();
     expect(bodyOf(calls, "POST", "/v1/site/gallery/agents/g-1/eval")).toEqual({ teamId: "t-2" });
   });
@@ -299,12 +299,12 @@ describe("Site tab as a site admin: the Gallery page's actions (ac-1)", () => {
       "GET /v1/site/gallery/agents": [200, { agents: [GALLERY_ADMIN_LIST[1].agents[0], other] }],
     });
     renderTeam(<Page search="tab=site" />, SITE_ADMIN);
-    await within(await rowOf("Kaiju")).findByText("Customized");
-    expect(screen.getByText(/A newer repository version of Kaiju/)).toBeTruthy();
+    await within(await rowOf("Kobe")).findByText("Customized");
+    expect(screen.getByText(/A newer repository version of Kobe/)).toBeTruthy();
     // "Other" is in the gallery list but not on the tab (archived, filtered): no notice.
     expect(screen.queryByText(/A newer repository version of Other/)).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: /^Proposed/ }));
-    expect(screen.queryByText(/A newer repository version of Kaiju/)).toBeNull();
+    expect(screen.queryByText(/A newer repository version of Kobe/)).toBeNull();
   });
 
   it("resets a customized agent to the repository after asking, then refreshes the tab", async () => {
@@ -327,9 +327,9 @@ describe("Site tab as a site admin: the Gallery page's actions (ac-1)", () => {
       "POST /v1/site/gallery/agents/g-1/reset": [200, { agent: { id: "g-1" } }],
     });
     renderTeam(<Page search="tab=site" />, SITE_ADMIN);
-    expect(await within(await rowOf("Kaiju")).findByText("Customized")).toBeTruthy();
+    expect(await within(await rowOf("Kobe")).findByText("Customized")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: /^Reset to repository/ }));
-    await answerConfirm("Reset Kaiju to the repository definition?", "Reset to repository");
+    await answerConfirm("Reset Kobe to the repository definition?", "Reset to repository");
     await waitFor(() => expect(screen.queryByText("Customized")).toBeNull());
     expect(summary(calls)).toContain("POST /v1/site/gallery/agents/g-1/reset");
     expect(calls.filter((c) => c.url === "/v1/agents/roster?tab=site")).toHaveLength(2);
@@ -347,8 +347,8 @@ describe("Site tab as a site admin: the Gallery page's actions (ac-1)", () => {
       clicked.push({ href: this.getAttribute("href") ?? "", download: this.download });
     });
     renderTeam(<Page search="tab=site" />, SITE_ADMIN);
-    await within(await rowOf("Kaiju")).findByText("Customized");
-    await rowAction("Kaiju", "Export file");
+    await within(await rowOf("Kobe")).findByText("Customized");
+    await rowAction("Kobe", "Export file");
     await waitFor(() =>
       expect(clicked).toEqual([
         { href: "/v1/site/gallery/agents/g-1/export", download: "kobe.md" },

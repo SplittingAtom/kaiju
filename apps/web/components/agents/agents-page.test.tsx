@@ -63,7 +63,7 @@ const LENT = row({
 const GALLERY = row({
   agentId: "g-1",
   kind: "gallery",
-  name: "Kaiju",
+  name: "Kobe",
   ownerUserId: null,
   ownerName: null,
   actions: { viewDefinition: true, fork: true },
@@ -114,14 +114,14 @@ describe("Agents page as a member (ac-1)", () => {
   it("views and forks a gallery agent from the Site tab", async () => {
     stubApi({ [ROSTER("site")]: [200, page("site", [GALLERY])] });
     renderTeam(<Page search="tab=site" />, MEMBER);
-    const kobe = await rowOf("Kaiju");
+    const kobe = await rowOf("Kobe");
     expect(within(kobe).getByText("Kaiju gallery")).toBeTruthy();
     expect(
       within(kobe)
-        .getByRole("link", { name: /View\s+Kaiju/ })
+        .getByRole("link", { name: /View\s+Kobe/ })
         .getAttribute("href"),
     ).toBe("/agents/g-1");
-    expect(await rowActions("Kaiju")).toEqual(["Fork to Personal…"]);
+    expect(await rowActions("Kobe")).toEqual(["Fork to Personal…"]);
   });
 });
 
@@ -256,8 +256,8 @@ describe("Agents page as a site admin (ac-1)", () => {
     expect(await rowActions("Notes")).toEqual(["Propose to Finance", "Assign to the site"]);
     await userEvent.click(screen.getByRole("tab", { name: "Site" }));
     expect(
-      within(await rowOf("Kaiju"))
-        .getByRole("link", { name: /Edit\s+Kaiju/ })
+      within(await rowOf("Kobe"))
+        .getByRole("link", { name: /Edit\s+Kobe/ })
         .getAttribute("href"),
     ).toBe("/admin/site/gallery/g-1");
     expect(await rowActions("Writer")).toEqual([
@@ -452,10 +452,10 @@ describe("Agents page flows (ac-2)", () => {
       "PUT /v1/site/agent-roster/s-2": [200, { entry: entry({ agentId: "s-2", target: "site" }) }],
     });
     renderTeam(<Page search="tab=site" />, { ...TEAM_ADMIN, siteAdmin: true });
-    await rowAction("Kaiju", "Suspend here");
-    const ask = await screen.findByRole("alertdialog", { name: "Suspend Kaiju for Finance?" });
+    await rowAction("Kobe", "Suspend here");
+    const ask = await screen.findByRole("alertdialog", { name: "Suspend Kobe for Finance?" });
     await userEvent.click(within(ask).getByRole("button", { name: "Suspend" }));
-    expect(await screen.findByText("Suspended Kaiju for Finance.")).toBeTruthy();
+    expect(await screen.findByText("Suspended Kobe for Finance.")).toBeTruthy();
     expect(bodyOf(calls, "PUT", "/v1/team/agent-roster/g-1")).toEqual({ state: "suspended" });
     await rowAction("Scout", "Resume site-wide");
     expect(await screen.findByText("Resumed Scout for every team.")).toBeTruthy();
@@ -546,7 +546,7 @@ describe("Agents page tab memory (ac-3)", () => {
     });
     renderTeam(<Page />, MEMBER);
     expect(screen.getByRole("tab", { name: "Site" }).getAttribute("aria-selected")).toBe("true");
-    await rowOf("Kaiju");
+    await rowOf("Kobe");
     await userEvent.click(screen.getByRole("tab", { name: "Team" }));
     expect(await screen.findByText("Nothing is on this team's roster yet.")).toBeTruthy();
     expect(localStorage.getItem("kobe.agents.tab")).toBe("team");

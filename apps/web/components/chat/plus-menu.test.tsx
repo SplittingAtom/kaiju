@@ -332,14 +332,14 @@ describe("Apps (ac-7)", { timeout: 30_000 }, () => {
       scope: "gallery",
       galleryKey: "kobe",
       default: true,
-      name: "Kaiju",
+      name: "Kobe",
       model: null,
     });
     openApp(fake);
     const user = userEvent.setup();
     await waitFor(async () =>
       expect(
-        (within(await agentChoices()).getByRole("radio", { name: /Kaiju/ }) as HTMLInputElement)
+        (within(await agentChoices()).getByRole("radio", { name: /Kobe/ }) as HTMLInputElement)
           .checked,
       ).toBe(true),
     );
