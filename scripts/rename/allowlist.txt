@@ -15,8 +15,9 @@ CLAUDE.md /(?<=project `)kobe(?=`)/
 == permanent: Past ledgers, gate documents, release notes and reviews keep the name they were written under (spec §3 stays 6)
 docs/ledger/** docs/gates/** docs/releases/** docs/RUN-LEDGER.md docs/review-*.md docs/perf-baseline-*.md /kobe/i
 
-== permanent: The guide's rename note names the old name on purpose, like the line at the top of docs/releases/ (spec §8.1)
+== permanent: The guide's rename note and the operators' upgrade note name the old names on purpose, like the line at the top of docs/releases/ (spec §8.1)
 docs/guide/whats-new.md /^## Kobe is now Kaiju$/
+docs/install.md /(?<=\(before: `)kobe-migrate(?=`)|(?<=`kobe-migrate`, `)kobe-db-wait(?=`\))/
 
 == permanent: Applied migrations (contents and file names, which the journal names) and their snapshots are never edited; database objects and the Drizzle properties that map to their columns keep their names (spec §3 stays 2, §5 no migration)
 packages/db/drizzle/** /kobe/i
@@ -57,6 +58,7 @@ services/server/src/sso/state.ts /(?<=authSecret, )"kobe"/
 packages/session-token/src/keys.ts /\^kobe\\\./
 ** /\bkobe\.project_notes\.(?:add|suggestion)\b/
 ** /\bkobe_scim_/
+** /\bkobe\/(?:run-token|server-call-token)\/v1\b/
 
 == permanent: Advisory-lock names and derived-hash labels: old and new pods must lock the same key during a rolling upgrade (spec §3 stays 2)
 ** /\bkobe\.(?:agents\.(?:gallery|personal|team)|audit-forwarding|audit\.(?:runtime_tampered|seal)(?![\w-])|audit_log|break_glass\.requests|connector-refresh|egress-request\.(?:user|pattern)|eval_cases|git_connections|git-health|git-mirror|git-tools|memory-[\w-]+|offboarding-sweep|retention(?![.\w-])|schedules|site_branding|site_break_glass\.requests|site_tool_rules|skill_blocklist|skill_drafts|skill-eval(?=:)|skill-eval\.reaper|skill-mirror|skill_offer|skills\.[\w-]+|sso\.(?:helm_seed|required)|storage(?=:)|team-namespace-reconcile|thread_folders|tool_rules\.(?:team|user))\b/
@@ -65,6 +67,9 @@ packages/session-token/src/keys.ts /\^kobe\\\./
 ** /\bkobe-memory-fence:/
 packages/db/src/migrate.ts /(?<=0x6b6f6265; \/\/ )"kobe"/
 services/server/src/models/sync.ts /\("kobe" \+ 40\)/
+
+== permanent: Forgery tests send the pre-rename header spelling on purpose, next to the current one (KOBE-747 review)
+services/server/src/k{obe,aiju}-mcp/** /(?<=")kobe-delegation(?=": claim)/
 
 == permanent: Rate-limit keys in `kobe_rate_limits` start with `kobe:`; old and new pods count in the same rows during a rolling upgrade, like the lock names (KOBE-747)
 ** /\bkobe:(?=\$\{|["'`]|unknown-client-ip\b)/
@@ -150,6 +155,7 @@ docs/skill-evals.md packages/protocol/src/skill-evals/outputs.test.ts /\?kobe\/\
 packages/protocol/src/sandbox-wire/workspace-sync.test.ts /(?<=")\.kobex(?=")/
 docs/design/paired-tool-uid.md /`kobe` provider/
 ** /\bkobe-moved\b|\/?kobe-branch-summary\b|\bkobe\.branch_summary(?:_result)?\b|\bkobe-context(?:\\?\.json)?\b|\bkobe-(?:memory-picks|sync-conflict)\b|\.kobe-sync-|`kobe\.` prefix/
+apps/web/components/chat/markers.test.tsx /\bkobe(?=\/(?:fast|deep)\b)/
 ** /(?<=["'])kobe(?=\/openai\/gpt-fake")|(?<='\{")kobe(?=":\{"models")|(?<=provider !== )"kobe"|(?<=defaultProvider: )"kobe"|(?<=models\.json"\), "utf8"\)\)\.toContain\()"kobe"/
 ** /(?<=K(?:OBE|AIJU)_PROVIDER(?:_ID)? = )"kobe"|(?<=`)kobe(?=` (?:Pi )?provider)|(?<=the )kobe(?= (?:Pi )?provider)|\bproviders\.kobe\.models\b|\bkobe (?=model(?: of| a tool))|(?<=only the )kobe(?= provider)/
 
@@ -192,7 +198,7 @@ apps/web/components/admin/site/catalog-k{obe,aiju}-panel.tsx apps/web/components
 ** /\bkobe\.splittingatom\.io\b(?:\/[\w-]*)?/
 
 == provisional: (Q10) Workspace git branch prefix `kobe/<member>/...` pushed to members' repositories
-** /\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")|(?<=\/\^)kobe(?=\\\/\[a-z0-9-\]\+\\\/)/
+** /\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")|(?<=")kobe(?=\/(?:probe|x|one|feature)")|(?<=\/\^)kobe(?=\\\/\[a-z0-9-\]\+\\\/)/
 
 == provisional: (Q11) Agent file (orbit) export section `kobe:`, read back from files outside the database
 services/server/src/agents/orbit/** /^\s*kobe:/
@@ -309,7 +315,7 @@ docs/install.md /(?<=IN DATABASE )kobe\b/
 == RN-5: HTTP headers (`x-kobe-team` accepted for one release)
 ** /\bx-kobe-[\w-]+/i
 ** /\bKobe-Thread-Id\b/i
-** /\bkobe-sandbox-token\b/
+** /\bkobe-sandbox-token\b/i
 ** /\bx-kobe-(?=["'`])|(?<=realm=\\?")kobe-(?:egress|scim)\b/
 
 == RN-5: Cookies and browser storage keys (members are signed out once)

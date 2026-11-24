@@ -358,7 +358,7 @@ describe("the Docs panel (KOBE-616)", () => {
     expect(markdown.getAttribute("href")).toBe("/docs/getting-started.md");
     expect(markdown.getAttribute("target")).toBe("_blank");
     const bodyLink = must(
-      panel.querySelector<HTMLAnchorElement>('[data-kobe-guide-body] a[href^="/docs/"]'),
+      panel.querySelector<HTMLAnchorElement>('[data-kaiju-guide-body] a[href^="/docs/"]'),
     );
     const target = must(bodyLink.getAttribute("href")).split("#")[0] as string;
     await user.click(bodyLink);

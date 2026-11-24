@@ -43,7 +43,7 @@ describe("Kaiju admin approval card (KOBE-623)", () => {
     const card = await kaijuAdminApprovalCard(
       db,
       TEAM,
-      "mcp__kaiju_builtin__team_connectors_disable",
+      "mcp__kobe_builtin__team_connectors_disable",
       { connector_id: CONN, from_exposure: "all" },
     );
     expect(card?.summary).toBe(`Connector ${CONN}: exposure all → off`);

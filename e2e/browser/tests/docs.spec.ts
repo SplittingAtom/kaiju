@@ -36,7 +36,7 @@ test("Docs opens the guide in a panel from the bar, and agents read it without a
     "href",
     "/docs/getting-started.md",
   );
-  const bodyLink = panel.locator('[data-kobe-guide-body] a[href^="/docs/"]').first();
+  const bodyLink = panel.locator('[data-kaiju-guide-body] a[href^="/docs/"]').first();
   const target = (await bodyLink.getAttribute("href")) ?? "";
   expect(target).toMatch(/^\/docs\/[a-z0-9/-]+(#.*)?$/);
   await bodyLink.click();

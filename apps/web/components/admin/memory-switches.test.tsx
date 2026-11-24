@@ -374,7 +374,7 @@ const VEC_READY = {
   model_state: "ok",
   server_calls: true,
   local_model: "kobe-local/nomic-embed-text",
-  providers: ["kobe-local", "kaiju-mac-mini"],
+  providers: ["kobe-local", "kobe-mac-mini"],
   coverage: { embedded: 3, total: 10 },
   job: null,
 };

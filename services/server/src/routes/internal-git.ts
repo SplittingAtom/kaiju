@@ -13,7 +13,7 @@ import { invalidRequest, notFound, readJson } from "../http/request.js";
  * workspace-git G11/G12). Only the egress proxy's pods reach the port (NetworkPolicy) and every
  * request carries the egress proxy's own internal key (a different key from the MCP proxy's, so
  * neither proxy can call the other's routes). The caller is the sandbox's own `kobe.egress-proxy`
- * session token (`Kaiju-Sandbox-Token`), verified here with liveness and membership: the proxy
+ * session token (`Kobe-Sandbox-Token`), verified here with liveness and membership: the proxy
  * cannot ask for a sandbox whose token it has not seen.
  *
  * POST /internal/v1/git/transport `{host, prefix, owner, repository, service}`

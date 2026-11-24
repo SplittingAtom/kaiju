@@ -21,6 +21,7 @@ import {
 } from "./testing/real-pi-rpc.js";
 import {
   ANTHROPIC,
+  LEAKING_PROVIDER_MODELS,
   OPENAI,
   RUN_IDS,
   RUN_TOKEN,
@@ -75,7 +76,7 @@ if (process.env.CI !== undefined && !existsSync(MODELS_EXTENSION)) {
 }
 
 /** The planted models.json carries a model entry with its own baseUrl. */
-const LEAKING = ["models.json: provider kaiju models with their own baseUrl", "everything at once"];
+const LEAKING = [LEAKING_PROVIDER_MODELS, "everything at once"];
 
 let gateway: LocalGateway | undefined;
 let tap: Listener | undefined;

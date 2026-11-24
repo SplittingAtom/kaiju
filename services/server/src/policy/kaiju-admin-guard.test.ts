@@ -111,7 +111,7 @@ describe("guardKaijuAdmin", () => {
     const allowed = allow("dangerous_mode");
     expect(guardKaijuAdmin(allowed, g({ tool: other }))).toBe(allowed);
     expect(isKaijuTool(other)).toBe(false);
-    expect(kaijuToolName("mcp__kaiju_builtin__team_members_list")).toBe("team_members_list");
+    expect(kaijuToolName("mcp__kobe_builtin__team_members_list")).toBe("team_members_list");
   });
 
   it("leaves the docs tools to the ordinary policy: scheduled runs, evals and auto too (KOBE-620)", () => {

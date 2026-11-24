@@ -107,6 +107,32 @@ message. Developer and operator docs (`CLAUDE.md` commands, `docs/backup-restore
 `docs/install.md`, `docs/theming.md`, `docs/audit-log.md`, package READMEs) name `@kaiju/*`,
 the `kaiju` CLI and `kaiju-*` application names. Environment variables still read `KOBE_*` (RN-4).
 
+## Review round 1 (merge after fixes): what changed
+
+- **H1:** the Pi redirect plants (`testing/redirect-plants.ts`) planted provider `kaiju` while Pi's
+  provider id stays `kobe` (KOBE-827): the control test failed with Pi installed and the "refused"
+  cases passed vacuously. The plants, the variant names and the agent test's `set_model` now take
+  the id from `KAIJU_PROVIDER_ID`, so they cannot drift again. Real-Pi tests run here now (below).
+- **M1:** back to the kept values: `mcp__kobe_builtin__…` (fallback connector segment), model ids
+  `kobe/fast`/`kobe/deep`, `kobe-mac-mini`, and the git branch names in host-contract, probe and
+  policy tests (`kobe/feature`, …); each has an explicit allowlist entry in its group.
+- **L1:** HMAC-era token fixtures derive with the historical `kobe/run-token/v1` and
+  `kobe/server-call-token/v1` again (permanent: signed labels of retired tokens).
+- **L2:** comments name `Kobe-Sandbox-Token` until RN-5 (the RN-5 header entry is now
+  case-insensitive); the delegation forgery tests send both `kobe-delegation` and
+  `kaiju-delegation` (permanent group for forgery tests).
+- **L3:** the `service` and `application_name` changes and the CLI name are in the install guide's
+  Upgrade notes, linked from the rename line in `docs/releases/README.md`.
+- **L4:** `data-kobe-builtin-connector`, `data-kobe-git-change`, `data-kobe-guide-body`,
+  `data-kobe-sync-conflict`, `--kobe-threads-col` and `#kobe-threads-file-rail` (held only by
+  unrelated kept entries) are renamed with their unit-test and e2e selectors.
+- Checks after the fixes: guard ok, self-test 23/23, build, typecheck, lint, format:check,
+  `db:check` ok. With the pinned Pi installed: sandbox-agent 1,427 passed, 2 failed (the known
+  `runtime-dir.test.ts` pair), 58 skipped; the real-Pi files alone: 118 passed, 0 failed, 7
+  skipped (the partner-uid cases need the sudo test identities), the redirect control included.
+  server 4,565 (8 skipped), web 4,288, protocol 1,373, db 1,106, session-token 24, model-gateway
+  260, egress-proxy 180; DB: probe 927, the two touched server DB files 24.
+
 ## Evidence
 
 Final run on `4ddd07c81` (the ledger commit changes only this file):

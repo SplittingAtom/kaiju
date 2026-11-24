@@ -1736,6 +1736,14 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Renamed log and connection names (Kaiju rename, KOBE-747).** The migrate Job and the
+  database wait init container log `"service":"kaiju-migrate"` and `"service":"kaiju-db-wait"`
+  (before: `kobe-migrate`, `kobe-db-wait`), and every connection's `application_name` in
+  `pg_stat_activity` starts with `kaiju-` (`kaiju-server`, `kaiju-scheduler`, `kaiju-gateway`,
+  `kaiju-egress-proxy`, their `-listen` connections, `kaiju-migrate`, `kaiju-cli`; full list in
+  [Postgres connections](#postgres-connections)). Update log filters, alerts and `pg_stat_activity`
+  queries that match the old names. The operator CLI is now called `kaiju`. Nothing in the
+  database changes.
 - **Git through the egress proxy (KOBE-763).** The chart generates one more Secret,
   `<release>-egress-proxy-internal` (or name your own with `egressProxy.git.internalKeySecret`;
   offline renders need it), and lets the egress proxy reach the server's internal port 8082.

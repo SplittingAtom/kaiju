@@ -187,7 +187,7 @@ test("hover a thread: solid line to the written file, dashed to the read one; pi
     // The workspace rail resizes from its divider (KOBE-614): Right narrows it (Left widens it only
     // while the thread column has room to give, so the spec narrows), Enter resets.
     const handle = panelOf(page).getByRole("separator", { name: "Resize the workspace files" });
-    const railColumn = panelOf(page).locator("#kobe-threads-file-rail");
+    const railColumn = panelOf(page).locator("#kaiju-threads-file-rail");
     const before = (await railColumn.boundingBox())?.width ?? 0;
     await handle.focus();
     await page.keyboard.press("ArrowRight");
@@ -200,7 +200,7 @@ test("hover a thread: solid line to the written file, dashed to the read one; pi
     await expect
       .poll(() =>
         bodyOf(page).evaluate((el) =>
-          (el as HTMLElement).style.getPropertyValue("--kobe-threads-col"),
+          (el as HTMLElement).style.getPropertyValue("--kaiju-threads-col"),
         ),
       )
       .toBe("fit-content(28rem)");

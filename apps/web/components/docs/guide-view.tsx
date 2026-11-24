@@ -76,7 +76,7 @@ function PageView({ page }: { readonly page: GuidePage }) {
           View as Markdown
         </a>
       </p>
-      <div data-kobe-guide-body="">
+      <div data-kaiju-guide-body="">
         <Markdown text={page.body} variant="guide" />
       </div>
       <nav

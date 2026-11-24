@@ -54,7 +54,7 @@ function recordedThread() {
     fake.addEntry(thread, parent, message);
   const m0 = fake.addSystemEntry(thread, null, "model_change", {
     provider: "kobe",
-    modelId: "kaiju/fast",
+    modelId: "kobe/fast",
   });
   const u1 = add(m0, ask("Plan the launch"));
   const a1 = add(u1, call("tc1", "bash"));
@@ -71,7 +71,7 @@ function recordedThread() {
   });
   const m1 = fake.addSystemEntry(thread, c1, "model_change", {
     provider: "kobe",
-    modelId: "kaiju/deep",
+    modelId: "kobe/deep",
   });
   const u3 = add(m1, ask("Final?"));
   const a5 = add(u3, say("Final."));
@@ -145,12 +145,12 @@ describe("inline markers on a recorded thread (ac-1, ac-3)", () => {
     await screen.findByText("Final version.");
     await waitFor(() => expect(markers().map(([kind]) => kind)).toContain("budget"));
     expect(markers()).toEqual([
-      ["model", "Model: kaiju/fast"],
+      ["model", "Model: kobe/fast"],
       ["approval", "Approval granted"],
       ["approval", "Approval denied"],
       ["run", "Run interrupted"],
       ["compaction", "Context compacted"],
-      ["model", "Model changed to kaiju/deep"],
+      ["model", "Model changed to kobe/deep"],
       ["fork", expect.stringMatching(/^Forked here · 2 branches/)],
       ["budget", "Run stopped by the budget"],
     ]);

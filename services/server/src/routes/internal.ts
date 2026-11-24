@@ -20,7 +20,7 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  * user app (ingress) nor the sandbox listener (8081, which sandboxes reach): the release
  * NetworkPolicy admits only the MCP proxy's pods to this port, and every request must carry the
  * proxy's internal key. The caller's identity is the sandbox's own `kobe.mcp-proxy` session token
- * (`Kaiju-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
+ * (`Kobe-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
  * whose token it has not seen.
  *
  * POST /internal/v1/mcp/connectors/{id}/tools → 200 `{connector, tools}` (pinned + exposed)

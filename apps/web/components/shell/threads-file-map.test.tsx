@@ -343,8 +343,8 @@ describe("KOBE-614: the pin on the row, the rail's handle", () => {
     const { user, dialog } = await openPanel();
     await within(dialog).findByRole("treeitem", { name: "report.md" }, WAIT);
     const handle = within(dialog).getByRole("separator", { name: "Resize the workspace files" });
-    expect(handle.getAttribute("aria-controls")).toBe("kobe-threads-file-rail");
-    const railColumn = must(dialog.querySelector<HTMLElement>("#kobe-threads-file-rail"));
+    expect(handle.getAttribute("aria-controls")).toBe("kaiju-threads-file-rail");
+    const railColumn = must(dialog.querySelector<HTMLElement>("#kaiju-threads-file-rail"));
     const box = (width: number, right: number) =>
       ({
         width,
@@ -359,18 +359,18 @@ describe("KOBE-614: the pin on the row, the rail's handle", () => {
     vi.spyOn(body(dialog), "getBoundingClientRect").mockReturnValue(box(1200, 1200));
     vi.spyOn(railColumn, "getBoundingClientRect").mockReturnValue(box(400, 1200));
     // By default the thread column fits its titles and the rail takes the rest.
-    expect(body(dialog).style.getPropertyValue("--kobe-threads-col")).toBe("fit-content(28rem)");
+    expect(body(dialog).style.getPropertyValue("--kaiju-threads-col")).toBe("fit-content(28rem)");
     handle.focus();
     await user.keyboard("{ArrowLeft}");
     await waitFor(() => expect(fake.preferences["threads_file_rail_width"]).toBe(424), WAIT);
     expect(body(dialog).style.getPropertyValue("--kaiju-file-rail-col")).toBe(
       "minmax(240px,424px)",
     );
-    expect(body(dialog).style.getPropertyValue("--kobe-threads-col")).toBe("minmax(12rem,1fr)");
+    expect(body(dialog).style.getPropertyValue("--kaiju-threads-col")).toBe("minmax(12rem,1fr)");
     // Enter: back to the default.
     await user.keyboard("{Enter}");
     await waitFor(() => expect(fake.preferences["threads_file_rail_width"]).toBeNull(), WAIT);
-    expect(body(dialog).style.getPropertyValue("--kobe-threads-col")).toBe("fit-content(28rem)");
+    expect(body(dialog).style.getPropertyValue("--kaiju-threads-col")).toBe("fit-content(28rem)");
   });
 
   it("a saved width is applied when the panel opens", async () => {

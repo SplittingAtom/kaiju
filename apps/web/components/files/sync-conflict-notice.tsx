@@ -109,7 +109,7 @@ export function ConflictNotice({
     <div
       role="status"
       className="flex items-start gap-2 rounded-lg border px-3 py-2 text-sm"
-      data-kobe-sync-conflict={conflict.path}
+      data-kaiju-sync-conflict={conflict.path}
     >
       <GitCompareIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
       <div className="flex flex-1 flex-col gap-1">

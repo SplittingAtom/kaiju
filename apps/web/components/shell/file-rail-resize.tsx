@@ -17,8 +17,8 @@ import { useSplitter, type SplitterRange } from "./use-splitter";
  * rail takes the rest, so no empty band sits right of the names. A dragged width gives the rail
  * that width (as the window allows) and the thread column the rest.
  */
-export const FILE_RAIL_ID = "kobe-threads-file-rail";
-const THREADS_VAR = "--kobe-threads-col";
+export const FILE_RAIL_ID = "kaiju-threads-file-rail";
+const THREADS_VAR = "--kaiju-threads-col";
 const RAIL_VAR = "--kaiju-file-rail-col";
 const RAIL_MIN_PX = THREADS_FILE_RAIL_WIDTH_BOUNDS.min;
 /** The folder column (200 px), the two 1 px dividers and the four 12 px gaps. */
@@ -29,7 +29,7 @@ const STEP_PX = 24;
 
 /** The body's grid: its thread and rail columns come from two custom properties. */
 export const THREE_RAIL_COLUMNS =
-  "grid-cols-[200px_1px_var(--kobe-threads-col)_1px_var(--kaiju-file-rail-col)]";
+  "grid-cols-[200px_1px_var(--kaiju-threads-col)_1px_var(--kaiju-file-rail-col)]";
 
 /** The two columns for a width (null: the default). */
 export function railColumns(width: number | null): { threads: string; rail: string } {

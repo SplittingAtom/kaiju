@@ -82,6 +82,7 @@ describe("no header or route on the public listener accepts a delegation (ac-6)"
             "content-type": "application/json",
             "x-kobe-team": w.team,
             "kaiju-delegation": claim,
+            "kobe-delegation": claim,
             "x-kobe-delegation": claim,
             "kobe-sandbox-token": mcpToken({
               sandboxId: randomUUID(),

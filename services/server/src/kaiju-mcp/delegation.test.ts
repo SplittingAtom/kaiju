@@ -34,7 +34,11 @@ describe("delegation", () => {
     expect(
       await seen(undefined, {
         method: "POST",
-        headers: { "kaiju-delegation": claim, "x-kobe-delegation": claim },
+        headers: {
+          "kaiju-delegation": claim,
+          "kobe-delegation": claim,
+          "x-kobe-delegation": claim,
+        },
         body: claim,
       }),
     ).toBeNull();

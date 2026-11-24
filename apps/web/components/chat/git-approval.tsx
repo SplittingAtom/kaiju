@@ -74,7 +74,7 @@ export function GitChange({ git }: { readonly git: GitApproval }) {
   }
   if (git.title !== undefined) rows.push(["Title", git.title]);
   return (
-    <div data-kobe-git-change="">
+    <div data-kaiju-git-change="">
       <p className={styles.who}>
         <strong>{ACTION[git.action]}</strong> on {PROVIDER[git.provider]}{" "}
         <strong>{visible(git.host)}</strong>, organization{" "}

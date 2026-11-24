@@ -265,10 +265,10 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
       expect(main?.commitSha).toMatch(/^[0-9a-f]{40}$/);
       const made = await a.createBranch({
         repository: "docs",
-        name: "kaiju/feature",
+        name: "kobe/feature",
         from: "main",
       });
-      expect(made).toMatchObject({ name: "kaiju/feature", commitSha: main?.commitSha });
+      expect(made).toMatchObject({ name: "kobe/feature", commitSha: main?.commitSha });
       const bySha = await a.createBranch({
         repository: "docs",
         name: "from-sha",
@@ -276,9 +276,9 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
       });
       expect(bySha.commitSha).toBe(main?.commitSha);
       const names = (await a.listBranches("docs")).items.map((b) => b.name);
-      expect(names).toEqual(expect.arrayContaining(["main", "kaiju/feature", "from-sha"]));
+      expect(names).toEqual(expect.arrayContaining(["main", "kobe/feature", "from-sha"]));
       const again = await caught(
-        a.createBranch({ repository: "docs", name: "kaiju/feature", from: "main" }),
+        a.createBranch({ repository: "docs", name: "kobe/feature", from: "main" }),
       );
       expect(again.code).toBe("conflict");
     });

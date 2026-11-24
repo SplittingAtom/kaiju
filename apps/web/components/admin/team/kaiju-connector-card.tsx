@@ -80,7 +80,7 @@ function KaijuCard({
   return (
     <article
       aria-label="Kaiju"
-      data-kobe-builtin-connector=""
+      data-kaiju-builtin-connector=""
       className="box-border rounded-lg border border-console-border bg-console-bg p-4"
     >
       <h2 className="m-0 text-lg font-semibold">Kaiju</h2>
