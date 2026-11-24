@@ -20,6 +20,8 @@ docs/guide/whats-new.md /^## Kobe is now Kaiju$/
 docs/install.md /(?<=\(before: `)kobe-migrate(?=`)|(?<=`kobe-migrate`, `)kobe-db-wait(?=`\))/
 docs/guide/whats-new.md /(?<=The old `)X-Kobe-Team(?=` still works)/
 docs/install.md /(?<=accepts `)X-Kobe-Team(?=` for)|(?<=and `)X-Kobe-Sha256(?=`\.)|(?<=with `kaiju` instead of `)kobe(?=`)/
+docs/install.md /(?<=the old `)kobe-(?=\*` repositories)|(?<=app\.kubernetes\.io\/name: )kobe(?=`)|(?<=database name `)kobe(?=`)|(?<=\(`)\/kobe\/eval-cases(?=`\))|(?<=\(pack `)kobe-default(?=`\))/
+docs/development.md /(?<=is called `)kobe(?=`)|(?<=KAIJU_CLUSTER=)kobe\b|(?<=namespace `)kobe-dev(?=` to)/
 docs/tracing.md /(?<=renamed )Kobe(?= to Kaiju \(KOBE-749\))|(?<=instead of `)kobe\.(?=`)|(?<=\(each was `)kobe-(?=\*`\))|(?<=reads their `)kobe\.(?=\*` span)/
 
 == permanent: Applied migrations (contents and file names, which the journal names) and their snapshots are never edited; database objects and the Drizzle properties that map to their columns keep their names (spec §3 stays 2, §5 no migration)
@@ -63,6 +65,7 @@ packages/session-token/src/keys.ts /\^kobe\\\./
 ** /\bkobe\.project_notes\.(?:add|suggestion)\b/
 ** /\bkobe_scim_/
 ** /\bkobe\/(?:run-token|server-call-token)\/v1\b/
+charts/k{obe,aiju}/** /`kobe\.\$\{a\}`|(?<=printf ")kobe(?=\.%s session tokens")/
 
 == permanent: Advisory-lock names and derived-hash labels: old and new pods must lock the same key during a rolling upgrade (spec §3 stays 2)
 ** /\bkobe\.(?:agents\.(?:gallery|personal|team)|audit-forwarding|audit\.(?:runtime_tampered|seal)(?![\w-])|audit_log|break_glass\.requests|connector-refresh|egress-request\.(?:user|pattern)|eval_cases|git_connections|git-health|git-mirror|git-tools|memory-[\w-]+|offboarding-sweep|retention(?![.\w-])|schedules|site_branding|site_break_glass\.requests|site_tool_rules|skill_blocklist|skill_drafts|skill-eval(?=:)|skill-eval\.reaper|skill-mirror|skill_offer|skills\.[\w-]+|sso\.(?:helm_seed|required)|storage(?=:)|team-namespace-reconcile|thread_folders|tool_rules\.(?:team|user))\b/
@@ -108,9 +111,10 @@ services/server/src/models/** docs/guide/memory.md apps/web/components/admin/mem
 charts/k{obe,aiju}/templates/_helpers.tpl /(?<=define "k(?:obe|aiju)\.appName" -}})kobe(?={{)|(?<=It stays `)kobe(?=` after the rename)/
 charts/k{obe,aiju}/tests/** /(?<="app\.kubernetes\.io\/name": ")kobe(?=")/
 .github/workflows/e2e.yml /(?<=-l app\.kubernetes\.io\/name=)kobe\b/
+charts/k{obe,aiju}/tests/fixtures/pre-rename-upgrade.json charts/k{obe,aiju}/tests/upgrade-selectors.test.ts /\bkobe\b/
 
 == permanent: The Postgres database name `kobe` (KOBE-750): the CloudNativePG cluster's bootstrap database of existing installs and the URLs the chart builds for it, like the `kobe_app` role (spec §3 stays 2); the dev and e2e databases and the operator docs use the same name
-charts/** dev/** e2e/** docs/** /(?<=:5432\/)kobe\b(?![\w-])|(?<=\bdatabase: )kobe\b|(?<=CREATE DATABASE )kobe\b|(?<=IN DATABASE )kobe\b|(?<=datname = ')kobe(?=')|(?<=psql (?:-U postgres )?-d )kobe\b|(?<=-- -d )kobe\b|(?<=(?:SRC|TGT)_DB=)kobe\b|(?<=the new )kobe(?= database)/
+charts/** dev/** e2e/** docs/** /(?<=:5432\/)kobe\b(?![\w-])|(?<=\bdatabase: "?)kobe\b|(?<=CREATE DATABASE )kobe\b|(?<=IN DATABASE )kobe\b|(?<=datname = ')kobe(?=')|(?<=psql (?:-U postgres )?-d )kobe\b|(?<=-- -d )kobe\b|(?<=(?:SRC|TGT)_DB=)kobe\b|(?<=the new )kobe(?= database)/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations
 ** /\bkobe:(?:hand-written|no-transaction)\b/
@@ -125,20 +129,24 @@ services/sandbox-agent/src/memory/semantic-context.ts services/sandbox-agent/src
 packages/protocol/src/node/legacy-env.ts packages/protocol/src/node/legacy-env.test.ts /\bKOBE_(?:\*|[A-Z0-9_]*)/
 services/*/src/config.ts services/*/src/index.ts services/server/src/cli/legacy-env.ts apps/web/lib/config.ts apps/web/instrumentation.ts packages/cli/src/config.ts packages/db/src/cli/env.ts /\bKOBE_\*/
 services/*/src/config.test.ts services/server/src/core/config.test.ts services/server/src/cli/legacy-env.test.ts apps/web/lib/config.test.ts packages/cli/src/config.test.ts packages/db/src/cli/env.test.ts /\bKOBE_(?:\*|[A-Z0-9_]*)/
-charts/kobe/tests/env-names.test.ts packages/protocol/src/testing/legacy-env.ts /KOBE\w*/
+charts/k{obe,aiju}/tests/env-names.test.ts packages/protocol/src/testing/legacy-env.ts /KOBE\w*/
 services/server/src/skills/registry/external-scan-result.ts /(?<=")KOBE_EXTERNAL_SCAN(?= ")/
 packages/db/src/test-support/database.ts scripts/check-test-db-env.sh package.json /\bKOBE_TEST_DATABASE_URL\b/
 docs/install.md docs/releases/** /\bKOBE_[A-Z0-9_*]*/
 
 == permanent: Old header names, the span attribute prefix and a session-storage key read for one release and sent next to the new ones (KOBE-749, spec §3 changes 6 and 8): the shared header map, its readers and senders, the egress rules' reserved prefix, the skill export's and the workspace file's old response headers, the trace frames' attribute prefix of older sandbox agents, the reload-draft stash of the last build before the rename, and the tests that send them; removed with the one-release fallbacks in KOBE-754
 packages/protocol/src/legacy-headers.ts packages/protocol/src/legacy-headers.test.ts /\b(?:x-)?kobe-[a-z-]+|(?<=")kobe(?="\))/
-services/server/src/authz/middleware.ts services/server/src/mcp/principal.ts services/mcp-proxy/src/mcp.ts services/model-gateway/src/gateway.ts apps/web/lib/teams.ts services/sandbox-agent/src/kobe-models/protocol.ts services/server/src/teams/teams.db.test.ts services/server/src/mcp/mcp.calls.db.test.ts services/mcp-proxy/src/mcp.test.ts services/model-gateway/src/gateway-runs.test.ts services/model-gateway/src/server-call.test.ts apps/web/lib/api/client.test.ts apps/web/lib/teams.test.ts services/egress-proxy/src/git/decisions.test.ts services/mcp-proxy/src/credentials.test.ts services/sandbox-agent/src/kobe-models/provider.test.ts services/sandbox-agent/src/mcp/pi-mcp-config.test.ts services/server/src/models/embedding-client.test.ts services/server/src/models/gateway-client.test.ts /\bx-kobe-(?:team|run-id|run-token|server-call)\b|\bX-Kobe-(?:Team|Run-Token)\b|\bkobe-sandbox-token\b|\b[Kk]obe-[Tt]hread-[Ii]d\b/
+services/server/src/authz/middleware.ts services/server/src/mcp/principal.ts services/mcp-proxy/src/mcp.ts services/model-gateway/src/gateway.ts apps/web/lib/teams.ts services/sandbox-agent/src/k{obe,aiju}-models/protocol.ts services/server/src/teams/teams.db.test.ts services/server/src/mcp/mcp.calls.db.test.ts services/mcp-proxy/src/mcp.test.ts services/model-gateway/src/gateway-runs.test.ts services/model-gateway/src/server-call.test.ts apps/web/lib/api/client.test.ts apps/web/lib/teams.test.ts services/egress-proxy/src/git/decisions.test.ts services/mcp-proxy/src/credentials.test.ts services/sandbox-agent/src/k{obe,aiju}-models/provider.test.ts services/sandbox-agent/src/mcp/pi-mcp-config.test.ts services/server/src/models/embedding-client.test.ts services/server/src/models/gateway-client.test.ts /\bx-kobe-(?:team|run-id|run-token|server-call)\b|\bX-Kobe-(?:Team|Run-Token)\b|\bkobe-sandbox-token\b|\b[Kk]obe-[Tt]hread-[Ii]d\b/
 packages/db/src/egress/header-rules.ts packages/db/src/egress/header-rules.test.ts /\bx-kobe-|\bX-Kobe-Team\b/
 services/server/src/skills/export.ts services/server/src/skills/skill-export.db.test.ts /\bx-kobe-sha256\b/
 services/server/src/workspace-sync/workspace-sync.db.test.ts services/sandbox-agent/src/testing/fake-sync-server.ts /\bx-kobe-workspace-entry\b/
 packages/protocol/src/sandbox-wire/trace-frames.ts /(?<=")kobe\.(?=")|`kobe\.\*`/
 packages/protocol/src/sandbox-wire/trace-frames.test.ts /(?<=")kobe\.tool\.(?:call_id|outcome|nope)\b/
 apps/web/lib/build/reload-draft.ts apps/web/lib/build/reload-draft.test.ts /\bkobe\.reload-drafts\b/
+
+== permanent: Pre-rename names served or accepted for one release across the image rename (KOBE-750): the model gateway's old eval-cases route and the eval image's fallback to it, and the eval pack's old id in results of eval Jobs that run across the upgrade; removed with the one-release fallbacks in KOBE-754
+services/model-gateway/src/gateway.ts services/model-gateway/src/gateway-tracing.test.ts images/orbit-eval/kaiju_orbit_eval/cases.py /(?<=")\/kobe\/eval-cases(?=")/
+services/server/src/agents/eval/pack.ts services/server/src/agents/eval/judge.test.ts /(?<=")kobe-default(?=")/
 
 # ---------------------------------------------------------------------------------------------
 # Provisional: persisted or agent-visible names the spec does not list. Kept (never touched by a step) until the
@@ -161,7 +169,7 @@ packages/protocol/src/skill-package/manifest.ts /^\s*kobe(?=: z\.)/
 ** /\bkobe_(?:reads_per_minute|writes_per_hour|admin_write|admin_not_allowed|admin_rate_limited|omitted)\b/
 ** /\bkobe-builtin\b/
 ** /\/connectors\/kobe\b/
-** /(?<=[\w}"'`])\/kobe(?=["'`]|\/(?:compare|reset)\b)/
+** /(?<=[\w}"'`])(?<!charts|opt)\/kobe(?=["'`]|\/(?:compare|reset)\b)/
 docs/** **/*.md /\*\*kobe\*\*|\bkobe connector|the-kobe-connector|\bmcp__kobe_(?:builtin|git)__\w*|(?<=name `)kobe(?=` was taken)/
 ** /\bkobe(?:McpMode|ReadsPerMinute|WritesPerHour)\b/
 ** /\bkobe-git(?:-builtin)?\b/
@@ -267,14 +275,6 @@ apps/web/components/admin/site/gallery-agent-editor.test.tsx apps/web/components
 # order of work reads bottom-up.
 # ---------------------------------------------------------------------------------------------
 
-== RN-6: Generated: image paths and binaries in the licence inventories; `pnpm licenses:update` and the images' third-party-licenses.json refresh rewrite them (not in the step's pattern list)
-THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b|\bkobe-(?:sandbox-agent|runas|reclaim)\b/
-
-== RN-6: Paired values: names the chart, images or e2e harness and the code or its tests must agree on, renamed together (Services, Secrets, file and path names, the skill mirror's commit author and e-mail domain, dev host)
-** /\bkobe-(?:bifrost|skills|sso-gate\.override|isolation-preflight|mcp-proxy-internal|model-keys|bot)\b/
-** /\bkobe\.(?:image|invalid|localtest\.me)\b/
-** /\bkobe_(?:static|gate4_backup)\b/
-
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
 
@@ -291,8 +291,8 @@ docs/agent-prompt.md docs/parallel-work.md /\bkobe-(?=<N>-<slug>)|leading `kobe`
 ** /\bsetup-kobe\b/
 path .github/actions/setup-kobe/** /kobe/
 
-== RN-8: Contributor instructions (CLAUDE.md) name the product
-CLAUDE.md /\bKobe\b/
+== RN-8: Contributor instructions (CLAUDE.md) name the product, the chart directory and the sandbox agent binary (changed only with the repository rename)
+CLAUDE.md /\bKobe\b|`kobe-sandbox-agent`|`charts\/kobe`/
 
 == RN-8: Root package name
 package.json /"name": "kobe"/
@@ -311,48 +311,7 @@ services/server/src/sandbox/constants.ts services/server/src/sandbox/kube.ts /(?
 ** /(?<![\w.-])(?<!splittingatom\/)kobe-(?:sandbox(?:-isolation|-defaults)?|orbit-eval-isolation|skill-scan|team-(?:member-)?quota|skill-eval(?:-quota)?|bootstrap)(?![\w-]|:[\w$])/
 ** /\bkobe-admission-probe\b/
 
-== RN-6: Chart directory, chart name and Helm template helpers
-** /\bcharts\/kobe\b/
-path charts/kobe/** /charts\/kobe/
-charts/** /\bkobe\.[a-zA-Z]\w*/
-charts/**/Chart.yaml /^name: kobe$/
-
-== RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries
-** /\/kobe\/eval-cases\b|\/var\/run\/secrets\/kobe\b|\/var\/run\/kobe\b|\/etc\/kobe\b|\/usr\/share\/doc\/kobe\b/
-** /\bghcr\.io\/splittingatom\/kobe-[\w-]+/
-** /(?<![\w.-])kobe-(?:server|web|sandbox|sandbox-agent|mcp-proxy|egress-proxy|model-gateway|orbit-eval|skill-scan|bifrost)(?::[\w.${}-]+)?(?![\w-])/
-** /\/opt\/kobe\b/
-** /\/run\/kobe-[\w-]*/
-** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
-# The runas helper's compile-time macros and their -D flags: not environment variables (RN-4 leaves them).
-services/sandbox-agent/scripts/test-identities.sh /(?<=-D)KOBE_(?:AGENT_UID|WORKSPACE_GID)\b/
-images/sandbox/runas/kobe-runas.c /\bKOBE_[A-Z0-9_]+\b/
-** /\/tmp\/kobe-pi\b[\w-]*|(?<=PI_PRIVATE_PREFIX = )"kobe-pi-"/
-scripts/check-images.sh /(?:ghcr\.io\/splittingatom\/|:-)kobe-/
-services/sandbox-agent/src/egress/egress-wiring.test.ts /(?<=")kobe(?=: the sandbox's egress token)/
-path images/** /kobe/i
-
-== RN-6: Pi extensions installed in the sandbox image (`/opt/kobe/pi-extensions/kobe-*`), with their source directories, so the image and its references move in one step
-** /\bkobe-(?:policy|tools|models|exec)\b/
-path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
-
-== RN-6: Python packages inside the eval and skill-scan images
-** /\bkobe_(?:orbit_eval|skill_scan)\b/
-
-== RN-6: Kubernetes object names in the release namespace and the e2e clusters (Services, Secrets, Deployments ...)
-** /\bkobe-sandbox-(?!token\b)[\w-]+/
-** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|default)(?![\w-])/
-** /\bdeploy\/kobe\b/
-** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/
-charts/** Tiltfile /\bkobe-migrate(?:-initial)?\b/
-scripts/dev-cluster.sh /(?<=KAIJU_CLUSTER:-)kobe\b/
-scripts/site-identifiers.mjs /(?<=helm install )kobe\b/
-
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
 # triages them: narrows the pattern, renames, or moves an entry to another group.
 # ---------------------------------------------------------------------------------------------
-
-== RN-6: Triage: Lower-case names in the chart, e2e harness, CI workflows and images (release name `kobe`, resource names)
-charts/** e2e/** .github/** images/** dev/** ci/** Tiltfile /[\w.@$:-]*kobe[\w.@$:-]*/
-docs/** **/*.md /(?:-n |namespace `|release `|cluster (?:delete )?"?|-d |datname = '|bucket[ =]|svc\/|deploy\/|install |upgrade |create namespace |BUCKET=)kobe\b[\w$-]*|\bkobe-[\w$-]*(?:restored|keys|auth|smtp|s3|db|pg[\w-]*|skill-mirror|sso-contoso|\$s)\b|\bkobe-dev-|\bkobe\.bifrostConfig\b|\bkobe\.example\.com\b|\bkobe:(?=\$KAIJU_BIFROST)|\bkobe-erasure\b|`kobe\/`|charts\/kobe\b/

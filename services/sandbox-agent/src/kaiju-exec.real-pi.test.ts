@@ -115,127 +115,132 @@ async function run(t: Harness, steps: Record<string, unknown>[]) {
 
 const bash = (id: string, command: string) => ({ tool: "bash", id, args: { command } });
 
-describe.skipIf(!PI_AVAILABLE || !EXECUTOR_BUILT)("kaiju-exec in real Pi, through the agent", () => {
-  it("runs Pi's bash tool in the executor process, not in Pi", async () => {
-    const t = await start();
-    allowAll(t);
-    await run(t, [bash("b1", "ps -o command= -p $PPID")]);
-    const end = await toolEnd(t, "b1");
-    expect(end.isError).toBe(false);
-    // bash's parent is the executor program, not Pi.
-    expect(end.text).toContain("exec/executor/main.js");
-    expect(end.text).not.toMatch(/pi-coding-agent|bin\/pi\b/);
-  }, 90_000);
+describe.skipIf(!PI_AVAILABLE || !EXECUTOR_BUILT)(
+  "kaiju-exec in real Pi, through the agent",
+  () => {
+    it("runs Pi's bash tool in the executor process, not in Pi", async () => {
+      const t = await start();
+      allowAll(t);
+      await run(t, [bash("b1", "ps -o command= -p $PPID")]);
+      const end = await toolEnd(t, "b1");
+      expect(end.isError).toBe(false);
+      // bash's parent is the executor program, not Pi.
+      expect(end.text).toContain("exec/executor/main.js");
+      expect(end.text).not.toMatch(/pi-coding-agent|bin\/pi\b/);
+    }, 90_000);
 
-  it("gives the tools none of Pi's environment", async () => {
-    const t = await start();
-    allowAll(t);
-    await run(t, [bash("b1", "env")]);
-    const end = await toolEnd(t, "b1");
-    for (const name of [
-      "KAIJU_POLICY_FD",
-      "KAIJU_EXEC_FD",
-      "KAIJU_TOOLS_FD",
-      "KAIJU_MODEL_FILE",
-      "PI_CODING_AGENT_DIR",
-      "PI_OFFLINE",
-      "SECRET_IN_AGENT_ENV",
-    ]) {
-      expect(end.text, name).not.toContain(`${name}=`);
-    }
-    // What the model is told it can inspect (Pi's guideline) still arrives.
-    expect(end.text).toContain("PI_PROVIDER=kaiju-faux");
-    expect(end.text).toContain("PI_MODEL=scripted");
-  }, 90_000);
+    it("gives the tools none of Pi's environment", async () => {
+      const t = await start();
+      allowAll(t);
+      await run(t, [bash("b1", "env")]);
+      const end = await toolEnd(t, "b1");
+      for (const name of [
+        "KAIJU_POLICY_FD",
+        "KAIJU_EXEC_FD",
+        "KAIJU_TOOLS_FD",
+        "KAIJU_MODEL_FILE",
+        "PI_CODING_AGENT_DIR",
+        "PI_OFFLINE",
+        "SECRET_IN_AGENT_ENV",
+      ]) {
+        expect(end.text, name).not.toContain(`${name}=`);
+      }
+      // What the model is told it can inspect (Pi's guideline) still arrives.
+      expect(end.text).toContain("PI_PROVIDER=kaiju-faux");
+      expect(end.text).toContain("PI_MODEL=scripted");
+    }, 90_000);
 
-  it("gives the tools the egress proxy and the current token, through the executor's environment (KOBE-39)", async () => {
-    const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl";
-    const script = fileURLToPath(new URL("../../../images/sandbox/egress-env.sh", import.meta.url));
-    const t = await start(EXECUTOR_ENTRY, true, {
-      proxyUrl: "http://egress-proxy.kaiju.internal:80",
-      noProxy: "localhost",
-      envScript: script,
-      tokens: { current: async () => token, onChange: () => () => undefined },
-    });
-    allowAll(t);
-    await run(t, [bash("b1", 'printf "proxy=%s|bashenv=%s" "$HTTPS_PROXY" "$BASH_ENV"')]);
-    const end = await toolEnd(t, "b1");
-    expect(end.text).toContain(`proxy=http://${THREAD}:${token}@egress-proxy.kaiju.internal:80`);
-    expect(end.text).toContain(`bashenv=${script}`);
-  }, 90_000);
+    it("gives the tools the egress proxy and the current token, through the executor's environment (KOBE-39)", async () => {
+      const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl";
+      const script = fileURLToPath(
+        new URL("../../../images/sandbox/egress-env.sh", import.meta.url),
+      );
+      const t = await start(EXECUTOR_ENTRY, true, {
+        proxyUrl: "http://egress-proxy.kaiju.internal:80",
+        noProxy: "localhost",
+        envScript: script,
+        tokens: { current: async () => token, onChange: () => () => undefined },
+      });
+      allowAll(t);
+      await run(t, [bash("b1", 'printf "proxy=%s|bashenv=%s" "$HTTPS_PROXY" "$BASH_ENV"')]);
+      const end = await toolEnd(t, "b1");
+      expect(end.text).toContain(`proxy=http://${THREAD}:${token}@egress-proxy.kaiju.internal:80`);
+      expect(end.text).toContain(`bashenv=${script}`);
+    }, 90_000);
 
-  it("keeps every tool call behind kaiju-policy: a denied call never reaches the executor", async () => {
-    const t = await start();
-    await run(t, [bash("b1", "echo ran > ran.txt")]);
-    await until(() => checks(t).length > 0, 30_000);
-    answer(t, checks(t)[0] as CheckFrame, "deny");
-    expect(await toolEnd(t, "b1")).toMatchObject({ isError: true });
-    await new Promise((r) => setTimeout(r, 300));
-    expect(existsSync(path.join(t.workspace, "ran.txt"))).toBe(false);
-  }, 90_000);
+    it("keeps every tool call behind kaiju-policy: a denied call never reaches the executor", async () => {
+      const t = await start();
+      await run(t, [bash("b1", "echo ran > ran.txt")]);
+      await until(() => checks(t).length > 0, 30_000);
+      answer(t, checks(t)[0] as CheckFrame, "deny");
+      expect(await toolEnd(t, "b1")).toMatchObject({ isError: true });
+      await new Promise((r) => setTimeout(r, 300));
+      expect(existsSync(path.join(t.workspace, "ran.txt"))).toBe(false);
+    }, 90_000);
 
-  it("writes, reads and edits files through the executor (ls, grep, find stay inactive, as in Pi)", async () => {
-    const t = await start();
-    allowAll(t);
-    await mkdir(path.join(t.workspace, "d"), { recursive: true });
-    await writeFile(path.join(t.workspace, "d/seed.txt"), "seed\n");
-    await run(t, [
-      { tool: "write", id: "w1", args: { path: "notes.txt", content: "alpha\nbeta\n" } },
-      { tool: "read", id: "r1", args: { path: "notes.txt" } },
-      {
-        tool: "edit",
-        id: "e1",
-        args: { path: "notes.txt", edits: [{ oldText: "beta", newText: "BETA" }] },
-      },
-    ]);
-    expect(await toolEnd(t, "w1")).toEqual({
-      isError: false,
-      text: "Successfully wrote to notes.txt",
-    });
-    expect(await toolEnd(t, "r1")).toEqual({ isError: false, text: "alpha\nbeta\n" });
-    expect(await toolEnd(t, "e1")).toMatchObject({ isError: false });
-    expect(await readFile(path.join(t.workspace, "notes.txt"), "utf8")).toBe("alpha\nBETA\n");
-  }, 120_000);
+    it("writes, reads and edits files through the executor (ls, grep, find stay inactive, as in Pi)", async () => {
+      const t = await start();
+      allowAll(t);
+      await mkdir(path.join(t.workspace, "d"), { recursive: true });
+      await writeFile(path.join(t.workspace, "d/seed.txt"), "seed\n");
+      await run(t, [
+        { tool: "write", id: "w1", args: { path: "notes.txt", content: "alpha\nbeta\n" } },
+        { tool: "read", id: "r1", args: { path: "notes.txt" } },
+        {
+          tool: "edit",
+          id: "e1",
+          args: { path: "notes.txt", edits: [{ oldText: "beta", newText: "BETA" }] },
+        },
+      ]);
+      expect(await toolEnd(t, "w1")).toEqual({
+        isError: false,
+        text: "Successfully wrote to notes.txt",
+      });
+      expect(await toolEnd(t, "r1")).toEqual({ isError: false, text: "alpha\nbeta\n" });
+      expect(await toolEnd(t, "e1")).toMatchObject({ isError: false });
+      expect(await readFile(path.join(t.workspace, "notes.txt"), "utf8")).toBe("alpha\nBETA\n");
+    }, 120_000);
 
-  it("fails the call, never runs it in Pi, when the executor dies; the next call gets a new one", async () => {
-    const t = await start();
-    allowAll(t);
-    // The tool kills its own executor (its parent), as a hostile tool might.
-    await run(t, [
-      bash("k1", "echo started > started.txt; kill -9 $PPID; sleep 5; echo after > after.txt"),
-    ]);
-    const end = await toolEnd(t, "k1");
-    expect(end.isError).toBe(true);
-    expect(end.text).toMatch(/tool executor is unavailable/);
-    await settled(t, 1);
-    expect(existsSync(path.join(t.workspace, "after.txt"))).toBe(false);
-    await run(t, [bash("k2", "ps -o command= -p $PPID")]);
-    const again = await toolEnd(t, "k2");
-    expect(again).toMatchObject({ isError: false });
-    expect(again.text).toContain("exec/executor/main.js");
-  }, 120_000);
+    it("fails the call, never runs it in Pi, when the executor dies; the next call gets a new one", async () => {
+      const t = await start();
+      allowAll(t);
+      // The tool kills its own executor (its parent), as a hostile tool might.
+      await run(t, [
+        bash("k1", "echo started > started.txt; kill -9 $PPID; sleep 5; echo after > after.txt"),
+      ]);
+      const end = await toolEnd(t, "k1");
+      expect(end.isError).toBe(true);
+      expect(end.text).toMatch(/tool executor is unavailable/);
+      await settled(t, 1);
+      expect(existsSync(path.join(t.workspace, "after.txt"))).toBe(false);
+      await run(t, [bash("k2", "ps -o command= -p $PPID")]);
+      const again = await toolEnd(t, "k2");
+      expect(again).toMatchObject({ isError: false });
+      expect(again.text).toContain("exec/executor/main.js");
+    }, 120_000);
 
-  it("fails closed when there is no executor to start: no tool runs in Pi instead", async () => {
-    const t = await start("/nonexistent/kaiju-no-such-executor.js");
-    allowAll(t);
-    await run(t, [bash("b1", "echo ran > ran.txt")]);
-    const end = await toolEnd(t, "b1");
-    expect(end.isError).toBe(true);
-    expect(end.text).toMatch(/tool executor is unavailable/);
-    await settled(t, 1);
-    await run(t, [{ tool: "write", id: "w1", args: { path: "w.txt", content: "x" } }]);
-    expect((await toolEnd(t, "w1")).isError).toBe(true);
-    expect(existsSync(path.join(t.workspace, "ran.txt"))).toBe(false);
-    expect(existsSync(path.join(t.workspace, "w.txt"))).toBe(false);
-  }, 120_000);
+    it("fails closed when there is no executor to start: no tool runs in Pi instead", async () => {
+      const t = await start("/nonexistent/kaiju-no-such-executor.js");
+      allowAll(t);
+      await run(t, [bash("b1", "echo ran > ran.txt")]);
+      const end = await toolEnd(t, "b1");
+      expect(end.isError).toBe(true);
+      expect(end.text).toMatch(/tool executor is unavailable/);
+      await settled(t, 1);
+      await run(t, [{ tool: "write", id: "w1", args: { path: "w.txt", content: "x" } }]);
+      expect((await toolEnd(t, "w1")).isError).toBe(true);
+      expect(existsSync(path.join(t.workspace, "ran.txt"))).toBe(false);
+      expect(existsSync(path.join(t.workspace, "w.txt"))).toBe(false);
+    }, 120_000);
 
-  it("leaves Pi running its own tools when the agent has no tool executor (flag off)", async () => {
-    const t = await start(EXECUTOR_ENTRY, false);
-    allowAll(t);
-    await run(t, [bash("b1", "ps -o command= -p $PPID")]);
-    const end = await toolEnd(t, "b1");
-    expect(end.isError).toBe(false);
-    expect(end.text.trim()).toBe("pi");
-    expect(end.text).not.toContain("executor/main.js");
-  }, 90_000);
-});
+    it("leaves Pi running its own tools when the agent has no tool executor (flag off)", async () => {
+      const t = await start(EXECUTOR_ENTRY, false);
+      allowAll(t);
+      await run(t, [bash("b1", "ps -o command= -p $PPID")]);
+      const end = await toolEnd(t, "b1");
+      expect(end.isError).toBe(false);
+      expect(end.text.trim()).toBe("pi");
+      expect(end.text).not.toContain("executor/main.js");
+    }, 90_000);
+  },
+);

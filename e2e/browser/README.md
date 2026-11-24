@@ -263,7 +263,7 @@ accounts (Kaiju never deletes users).
 
 | Variable                       | Meaning                                                                                 |
 | ------------------------------ | --------------------------------------------------------------------------------------- |
-| `KAIJU_SSO_MOCK_ISSUER`        | The mock's issuer (`https://mock-idp.kaiju-sso-mock.svc.cluster.local/<tenant>/v2.0`).   |
+| `KAIJU_SSO_MOCK_ISSUER`        | The mock's issuer (`https://mock-idp.kaiju-sso-mock.svc.cluster.local/<tenant>/v2.0`).  |
 | `KAIJU_SSO_MOCK_CLIENT_ID`     | Its client ID (only to register the provider).                                          |
 | `KAIJU_SSO_MOCK_CLIENT_SECRET` | Its client secret (only to register the provider); from the `mock-idp-client` Secret.   |
 | `KAIJU_SSO_MOCK_MAP`           | `ip:port` of the cluster's ingress: Chromium reaches the mock's name there.             |

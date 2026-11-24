@@ -317,7 +317,12 @@ describe("header injection secret (KOBE-39)", () => {
     ];
     expect(headerVars(envOf("Deployment", "kaiju-egress-proxy"))).toEqual(expected);
     expect(headerVars(envOf("Deployment", "kaiju-server"))).toEqual(expected);
-    for (const other of ["kaiju-scheduler", "kaiju-mcp-proxy", "kaiju-model-gateway", "kaiju-web"]) {
+    for (const other of [
+      "kaiju-scheduler",
+      "kaiju-mcp-proxy",
+      "kaiju-model-gateway",
+      "kaiju-web",
+    ]) {
       expect(headerVars(envOf("Deployment", other)), other).toEqual([]);
     }
     // Sandboxes never get it: the sandbox settings the server renders pods from hold no secret refs.
@@ -375,7 +380,12 @@ describe("git smart-HTTP for connected organizations (KOBE-763)", () => {
     expect(
       envOf("kaiju-server").find((e) => e.name === "KAIJU_EGRESS_PROXY_INTERNAL_KEY")?.valueFrom,
     ).toEqual(ref);
-    for (const other of ["kaiju-scheduler", "kaiju-mcp-proxy", "kaiju-model-gateway", "kaiju-web"]) {
+    for (const other of [
+      "kaiju-scheduler",
+      "kaiju-mcp-proxy",
+      "kaiju-model-gateway",
+      "kaiju-web",
+    ]) {
       expect(JSON.stringify(envOf(other)), other).not.toContain("kaiju-egress-proxy-internal");
     }
     expect(JSON.stringify(ms.filter((m) => m.kind === "ConfigMap"))).not.toContain(

@@ -165,7 +165,7 @@ settings:
 overrides:
   undici@<8.12.2: '>=8.12.2 <9'
 
-pnpmfileChecksum: sha256-AATbb87NhZlks+RdSIDPAwgd5AiHXw6wCKb7rTSJ74E=
+pnpmfileChecksum: sha256-AZB7hRmhPM2EWbVAXdXqTM7dkRb122wTeIBy4iA0gCc=
 
 importers:
 

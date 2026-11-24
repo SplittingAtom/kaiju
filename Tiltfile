@@ -79,7 +79,7 @@ else:
     values = [values_file]
     deps = []
 
-k8s_yaml(helm("charts/kobe", name="kaiju", namespace=NAMESPACE, values=values))
+k8s_yaml(helm("charts/kaiju", name="kaiju", namespace=NAMESPACE, values=values))
 
 for name in ["web", "server", "scheduler", "mcp-proxy", "egress-proxy", "model-gateway", "bifrost"]:
     k8s_resource(workload="kaiju-" + name, labels=["kaiju"], resource_deps=deps if name in ["server", "scheduler"] else [])

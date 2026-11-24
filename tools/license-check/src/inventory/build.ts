@@ -77,7 +77,9 @@ function coverageProblems(inventory: Inventory, files: RepoFiles): string[] {
       (k) =>
         `charts/kaiju/values.yaml key "${k}" is not in chartValues (first-party, site-provided or row ids)`,
     ),
-    ...drift.stale.map((k) => `chartValues.${k} names a key charts/kaiju/values.yaml no longer has`),
+    ...drift.stale.map(
+      (k) => `chartValues.${k} names a key charts/kaiju/values.yaml no longer has`,
+    ),
   ];
 }
 

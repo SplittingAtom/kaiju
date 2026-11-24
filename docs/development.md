@@ -53,7 +53,9 @@ tilt up                  # builds web/server/mcp-proxy/egress-proxy, deploys the
 Tilt rebuilds an image when its sources change and redeploys it; the web app is port-forwarded to
 http://localhost:3000. `tilt ci` does the same non-interactively and exits once every workload is
 healthy (or fails). `tilt down` removes the deployment; `k3d cluster delete kaiju` removes the
-cluster.
+cluster. A dev cluster created before the rename is called `kobe`: keep using it with
+`KAIJU_CLUSTER=kobe scripts/dev-cluster.sh`, or delete it and create the new one (the dev release
+moved from namespace `kobe-dev` to `kaiju-dev`, so `tilt up` deploys it afresh).
 
 The dev deployment uses `dev/values.yaml` and `dev/postgres.yaml`: a throwaway Postgres with the
 production role split (`kobe_owner` migrates, `kobe_app` is the app login) and placeholder S3

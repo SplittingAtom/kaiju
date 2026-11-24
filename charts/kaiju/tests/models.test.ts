@@ -295,7 +295,9 @@ describe("network policies", () => {
       to: [{ podSelector: { matchLabels: component("bifrost") } }],
       ports: [{ protocol: "TCP", port: 8080 }],
     });
-    expect(shim?.egress[2].to[0].podSelector.matchLabels).toEqual({ "cnpg.io/cluster": "kaiju-pg" });
+    expect(shim?.egress[2].to[0].podSelector.matchLabels).toEqual({
+      "cnpg.io/cluster": "kaiju-pg",
+    });
     expect(shim?.egress).toHaveLength(3);
   });
 

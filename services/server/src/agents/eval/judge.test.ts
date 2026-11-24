@@ -74,6 +74,15 @@ describe("judge (fail closed)", () => {
     }
   });
 
+  it("accepts the pack's pre-rename id for one release (an eval Job of the old image, KOBE-750)", () => {
+    const v = judge({
+      outcome: ok,
+      log: logOf(report({ pack: { id: "kobe-default", version: 1 } })),
+      threshold: 1,
+    });
+    expect(v.status).not.toBe("errored");
+  });
+
   it("errors when nothing was scored", () => {
     const empty = report({ attack_success_rate: null, attempts: 0, attack_successes: 0 });
     expect(judge({ outcome: ok, log: logOf(empty), threshold: 1 }).status).toBe("errored");

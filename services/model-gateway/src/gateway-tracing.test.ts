@@ -136,6 +136,14 @@ describe("shared eval cases for an Orbit eval Job (KOBE-276)", () => {
     expect(hits).toEqual([]);
   });
 
+  it("also serves the route's pre-rename name for one release (an eval Job of the old image, KOBE-750)", async () => {
+    caseFiles.set(sandbox, '{"cases":[]}\n');
+    const res = await call("/kobe/eval-cases", { method: "GET", headers: bearer() });
+    expect(res.status).toBe(200);
+    expect(res.text).toBe('{"cases":[]}\n');
+    expect(hits).toEqual([]);
+  });
+
   it("refuses without a valid token, for a revoked principal, another method, or no cases", async () => {
     caseFiles.set(sandbox, "{}");
     expect((await get({})).status).toBe(401);

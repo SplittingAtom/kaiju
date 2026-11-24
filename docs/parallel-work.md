@@ -42,7 +42,7 @@ most 150 words that states their token use.
 | `services/server/src/routes/`                      | One route module per area, mounted with one line in `app.ts`.                                                                                                                         |
 | `packages/protocol`                                | Contracts are agreed before dependants start; change a published contract only in its own PR, never inside a feature PR.                                                              |
 | Queries on `threads` / `thread_entries`            | Always state `team_id` explicitly, even inside `withTeam()` (break-glass policy; see `packages/db/README.md`). Enforced by `services/server` tests `team-filter` and `threads-plans`. |
-| `charts/kaiju/values.yaml`                          | Add values under your component's key; don't reorder or reformat other sections.                                                                                                      |
+| `charts/kaiju/values.yaml`                         | Add values under your component's key; don't reorder or reformat other sections.                                                                                                      |
 | `docs/audit-log.md` event table                    | Generated (KOBE-815): add an event's row to `audit/events/<area>.doc.ts` in name order, run `pnpm --filter @kaiju/db audit:doc`; never edit the table.                                |
 | `services/server/openapi.json`                     | Not committed (KOBE-815): `pnpm --filter @kaiju/server openapi` writes it; routes show in review in the route-inventory snapshot.                                                     |
 

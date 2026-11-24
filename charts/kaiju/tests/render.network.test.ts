@@ -242,7 +242,9 @@ describe("network policies", () => {
       "clamav.networkPolicy.extraEgress[0].ports[0].protocol": "TCP",
       "clamav.networkPolicy.extraEgress[0].ports[0].port": "8080",
     });
-    expect(find(withMirror, "NetworkPolicy", "kaiju-clamav-egress")?.spec.egress[2]).toEqual(mirror);
+    expect(find(withMirror, "NetworkPolicy", "kaiju-clamav-egress")?.spec.egress[2]).toEqual(
+      mirror,
+    );
     expect(find(render(), "NetworkPolicy", "kaiju-clamav-egress")).toBeUndefined();
   });
 });

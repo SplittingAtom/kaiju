@@ -60,7 +60,7 @@ this repository is public, so infrastructure details never go into tracked files
   `apps/web` uses `Bundler` resolution.
 - **Config is validated with zod at startup** (`src/config.ts` per service); invalid env fails fast.
 - **Sandbox image:** `images/sandbox/Dockerfile` (Python 3.12 slim + Node 22 + Pi pinned 1.4.0 +
-  `kaiju-sandbox-agent` + data stack from `images/sandbox/requirements.txt`); checks in
+  `kobe-sandbox-agent` + data stack from `images/sandbox/requirements.txt`); checks in
   `images/sandbox/test-image.sh <image>`; built, tested and Trivy-scanned by
   `.github/workflows/sandbox-image.yml` (fails on fixable CRITICAL).
 - **Images:** one multi-stage Dockerfile per image, built from the repo root; the four Node services
@@ -110,7 +110,7 @@ this repository is public, so infrastructure details never go into tracked files
   pass would hide a violation planted outside `packages/db`. Do not re-enable its cache.
 - Server decides every tool call; approvals are HMAC-signed over (run_id, tool_call_id, canonical input).
   No approval bypass.
-- Pi `1.4.x` in RPC mode behind `kaiju-sandbox-agent`, which dials out over WSS; sandboxes accept no
+- Pi `1.4.x` in RPC mode behind `kobe-sandbox-agent`, which dials out over WSS; sandboxes accept no
   inbound connections. `pi-server` is not used in v1.
 - No Redis: Postgres `LISTEN/NOTIFY` for fan-out hints; Postgres is always the durable record.
 - Dependencies MIT/Apache/BSD/MPL only; exceptions documented in

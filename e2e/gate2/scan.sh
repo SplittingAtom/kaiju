@@ -82,7 +82,7 @@ done'
 
 # The files of the sandbox that sandbox code can write or that are mounted into it: workspace,
 # tmp, home, run, var, etc, /opt/kaiju, every other mount point from /proc/self/mountinfo.
-FS_DUMP='roots="/workspace /tmp /home /run /var /etc /root /srv /mnt /opt/kobe"
+FS_DUMP='roots="/workspace /tmp /home /run /var /etc /root /srv /mnt /opt/kaiju"
 for m in $(awk "{print \$5}" /proc/self/mountinfo); do
   case "$m" in /|/proc|/proc/*|/sys|/sys/*|/dev|/dev/*) ;; *) roots="$roots $m" ;; esac
 done

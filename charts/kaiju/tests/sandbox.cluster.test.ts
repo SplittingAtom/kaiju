@@ -76,7 +76,7 @@ describe("session keys Secret", () => {
     >;
     const now = Math.floor(Date.now() / 1000);
     for (const a of AUDIENCES) {
-      const aud = `kaiju.${a}` as const;
+      const aud = `kobe.${a}` as const;
       const token = signSessionToken(
         {
           iss: "kobe-server",
@@ -134,7 +134,7 @@ describe("session keys Secret", () => {
       ...resolved,
     });
     for (const a of AUDIENCES) {
-      const keys = config?.sessionVerifyKeys[`kaiju.${a}`];
+      const keys = config?.sessionVerifyKeys[`kobe.${a}`];
       expect(keys?.has(intruder.signing.kid), a).toBe(false);
       expect(keys?.size, a).toBe(1);
     }
@@ -356,7 +356,12 @@ describe("sandbox RBAC (least privilege; D11)", () => {
         apiGroups: [""],
         resources: ["services"],
         verbs: ["get"],
-        resourceNames: ["kaiju-server", "kaiju-model-gateway", "kaiju-mcp-proxy", "kaiju-egress-proxy"],
+        resourceNames: [
+          "kaiju-server",
+          "kaiju-model-gateway",
+          "kaiju-mcp-proxy",
+          "kaiju-egress-proxy",
+        ],
       },
       { apiGroups: [""], resources: ["secrets"], verbs: ["get"], resourceNames: ["ghcr-pull"] },
     ]);

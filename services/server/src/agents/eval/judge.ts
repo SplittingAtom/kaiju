@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CASE_SUITE } from "./cases.js";
-import { EVAL_EPOCHS, EXPECTED_PACK } from "./pack.js";
+import { EVAL_EPOCHS, EXPECTED_PACK, LEGACY_PACK_IDS } from "./pack.js";
 
 /**
  * Reads the eval image's result and decides (KOBE-93). Exit semantics are fail closed: the image
@@ -106,7 +106,7 @@ export function judge(input: {
   if (!report)
     return errored("The eval finished without a readable result. Nothing was published.");
   if (
-    report.pack.id !== EXPECTED_PACK.id ||
+    (report.pack.id !== EXPECTED_PACK.id && !LEGACY_PACK_IDS.includes(report.pack.id)) ||
     String(report.pack.version) !== String(EXPECTED_PACK.version) ||
     report.attempts + report.errors !== EXPECTED_PACK.scenarios * EVAL_EPOCHS
   ) {

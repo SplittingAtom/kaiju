@@ -10,9 +10,9 @@ describe("parseWebConfig", () => {
       problem: null,
       publicUrl: null,
     });
-    expect(parseWebConfig({ KAIJU_SERVER_URL: "https://kaiju-server.ns.svc:8443/" }).serverUrl).toBe(
-      "https://kaiju-server.ns.svc:8443",
-    );
+    expect(
+      parseWebConfig({ KAIJU_SERVER_URL: "https://kaiju-server.ns.svc:8443/" }).serverUrl,
+    ).toBe("https://kaiju-server.ns.svc:8443");
   });
 
   it("reports a missing value instead of throwing", () => {

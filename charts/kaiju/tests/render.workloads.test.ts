@@ -320,7 +320,7 @@ describe("Postgres modes (ac-1)", () => {
   it("cnpg: bundles a CloudNativePG Cluster with a separate non-owner app role", () => {
     const ms = render({ "postgres.mode": "cnpg" });
     const cluster = find(ms, "Cluster", "kaiju-pg");
-    expect(cluster?.spec.bootstrap.initdb).toMatchObject({ database: "kaiju", owner: "kobe_owner" });
+    expect(cluster?.spec.bootstrap.initdb).toMatchObject({ database: "kobe", owner: "kobe_owner" });
     expect(cluster?.spec.managed.roles).toEqual([
       expect.objectContaining({
         name: "kobe_app",

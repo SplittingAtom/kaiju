@@ -108,6 +108,10 @@ def load_cases(path: Path) -> CaseFile:
     return parse_cases(raw_bytes, str(path))
 
 
+EVAL_CASES_PATH = "/kaiju/eval-cases"
+LEGACY_EVAL_CASES_PATH = "/kobe/eval-cases"
+
+
 class CasesUnavailable(RuntimeError):
     """The gateway didn't hand over the eval's shared cases (the eval errors, fail closed)."""
 
@@ -117,15 +121,22 @@ def fetch_cases(gateway_url: str, session_token: str, timeout: float = 30.0) -> 
     import urllib.error
     import urllib.request
 
-    url = f"{gateway_url.rstrip('/')}/kaiju/eval-cases"
-    request = urllib.request.Request(url, headers={"Authorization": f"Bearer {session_token}"})
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 - gateway URL from settings
-            body = response.read(MAX_CASES_BYTES + 1)
-    except urllib.error.HTTPError as exc:
-        raise CasesUnavailable(f"the gateway answered {exc.code} for the shared cases") from None
-    except (urllib.error.URLError, OSError) as exc:
-        raise CasesUnavailable(f"the shared cases could not be fetched: {type(exc).__name__}") from None
+    base = gateway_url.rstrip("/")
+    body = b""
+    # The route's pre-rename name is asked only when the gateway does not know the new one (a
+    # gateway pod of the previous release during the upgrade, KOBE-750; removed in KOBE-754).
+    for path in (EVAL_CASES_PATH, LEGACY_EVAL_CASES_PATH):
+        request = urllib.request.Request(base + path, headers={"Authorization": f"Bearer {session_token}"})
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 - gateway URL from settings
+                body = response.read(MAX_CASES_BYTES + 1)
+            break
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404 and path == EVAL_CASES_PATH:
+                continue
+            raise CasesUnavailable(f"the gateway answered {exc.code} for the shared cases") from None
+        except (urllib.error.URLError, OSError) as exc:
+            raise CasesUnavailable(f"the shared cases could not be fetched: {type(exc).__name__}") from None
     return parse_cases(body, "from the gateway")
 
 

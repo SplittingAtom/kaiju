@@ -14,7 +14,7 @@
 {{- $_ := set $pairs $aud (dict "key" (index $data $k | b64dec) "pub" (index $data $p | b64dec)) -}}
 {{- else }}
 {{- $priv := genPrivateKey "ed25519" -}}
-{{- $cert := genSelfSignedCertWithKey (printf "kaiju.%s session tokens" $aud) nil nil 36500 $priv -}}
+{{- $cert := genSelfSignedCertWithKey (printf "kobe.%s session tokens" $aud) nil nil 36500 $priv -}}
 {{- $_ := set $pairs $aud (dict "key" $priv "pub" $cert.Cert) -}}
 {{- end }}
 {{- end }}

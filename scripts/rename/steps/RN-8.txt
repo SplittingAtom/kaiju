@@ -13,13 +13,13 @@
 ** /\.\.\/Kobe\b/
 
 == RN-8: CI: runner scale set, its GitHub App, the runner variable and the shared setup action
-** /\bkobe-(?:k3s|ci-runners|arc-runners)\b/
+** /\bkobe-(?:k3s|ci-runners|arc-runners|arc-github-app)\b|\b90-kobe-ci-inotify\b/
 ** /\bKOBE_RUNNER\b/
 ** /\bsetup-kobe\b/
 path .github/actions/setup-kobe/** /kobe/
 
-== RN-8: Contributor instructions (CLAUDE.md) name the product
-CLAUDE.md /\bKobe\b/
+== RN-8: Contributor instructions (CLAUDE.md) name the product, the chart directory and the sandbox agent binary (changed only with the repository rename)
+CLAUDE.md /\bKobe\b|`kobe-sandbox-agent`|`charts\/kobe`/
 
 == RN-8: Root package name
 package.json /"name": "kobe"/

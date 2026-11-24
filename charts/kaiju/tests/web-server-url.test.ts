@@ -57,7 +57,12 @@ describe("web.serverUrl -> KAIJU_SERVER_URL", () => {
   });
 
   it("is set on the web only", () => {
-    for (const name of ["kaiju-server", "kaiju-scheduler", "kaiju-mcp-proxy", "kaiju-egress-proxy"]) {
+    for (const name of [
+      "kaiju-server",
+      "kaiju-scheduler",
+      "kaiju-mcp-proxy",
+      "kaiju-egress-proxy",
+    ]) {
       expect(serverUrl(envOf(name)), name).toBeUndefined();
     }
   });

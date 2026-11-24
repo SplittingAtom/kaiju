@@ -25,6 +25,13 @@ export type { GatewayOptions } from "./gateway/options.js";
 
 /** Where an Orbit eval Job reads its shared cases (KOBE-276); never forwarded to Bifrost. */
 export const EVAL_CASES_PATH = "/kaiju/eval-cases";
+/**
+ * The route's name before the rename to Kaiju (KOBE-750), served for one release: an eval Job of
+ * the previous image that runs across the upgrade still asks for it. Removed in KOBE-754.
+ */
+export const LEGACY_EVAL_CASES_PATH = "/kobe/eval-cases";
+const isEvalCasesPath = (path: string): boolean =>
+  path === EVAL_CASES_PATH || path === LEGACY_EVAL_CASES_PATH;
 
 /** One gateway: its options and its Bifrost connection. */
 interface Gateway {
@@ -96,7 +103,7 @@ async function handle(
   const kind = route?.kind ?? "openai";
   // Route templates only (KOBE-525): the per-route latency query groups by them.
   if (route) span.setAttributes({ "http.route": routeTemplate(route) });
-  else if (url.pathname === EVAL_CASES_PATH) span.setAttributes({ "http.route": EVAL_CASES_PATH });
+  else if (isEvalCasesPath(url.pathname)) span.setAttributes({ "http.route": EVAL_CASES_PATH });
 
   // 1. The caller: a server call's token (KOBE-234), else the sandbox's session token (any SDK's
   // API-key header). No route detail before authentication.
@@ -105,7 +112,7 @@ async function handle(
     sendError(res, kind, caller.status, caller.code, caller.message);
     return;
   }
-  if (url.pathname === EVAL_CASES_PATH && !caller.serverCall) {
+  if (isEvalCasesPath(url.pathname) && !caller.serverCall) {
     await serveEvalCases(options, req, res, caller.identity);
     return;
   }

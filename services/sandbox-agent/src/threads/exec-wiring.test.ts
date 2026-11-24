@@ -107,7 +107,12 @@ describe("mapHome (KOBE-196)", () => {
   it("rewrites a path or cwd under Pi's private home to the tools' home, nothing else", async () => {
     const { seen, transport } = recorder();
     const mapped = mapHome(transport, homes);
-    await mapped.request({ op: "read", path: "/tmp/kaiju-pi-x/home/.bashrc", offset: 0, length: 1 });
+    await mapped.request({
+      op: "read",
+      path: "/tmp/kaiju-pi-x/home/.bashrc",
+      offset: 0,
+      length: 1,
+    });
     await mapped.request({ op: "exec", cwd: "/tmp/kaiju-pi-x/home", command: "ls" });
     await mapped.request({ op: "stat", path: "/tmp/kaiju-pi-x/homework" });
     await mapped.request({ op: "stat", path: "/workspace/a" });

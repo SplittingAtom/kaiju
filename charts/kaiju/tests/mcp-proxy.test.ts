@@ -164,9 +164,9 @@ describe("server internal listener", () => {
       port: 8082,
       targetPort: "internal",
     });
-    expect(envOf(ms, "kaiju-scheduler").some((e) => e.name === "KAIJU_MCP_PROXY_INTERNAL_KEY")).toBe(
-      false,
-    );
+    expect(
+      envOf(ms, "kaiju-scheduler").some((e) => e.name === "KAIJU_MCP_PROXY_INTERNAL_KEY"),
+    ).toBe(false);
   });
 });
 

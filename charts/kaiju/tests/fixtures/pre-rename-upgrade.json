@@ -1,0 +1,460 @@
+{
+  "_note": "What an in-place helm upgrade of an existing release needs unchanged, rendered from the chart before the rename to Kaiju (charts/kobe at b7ef9886e, release and namespace kobe; KOBE-750): object names that hold state or are looked up by name, and the immutable selectors. Never regenerate from the current chart; upgrade-selectors.test.ts compares the current chart against it.",
+  "defaults": {
+    "ConfigMap/kobe-bifrost": {},
+    "ConfigMap/kobe-sandbox-session-verify-keys": {},
+    "Deployment/kobe-bifrost": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "bifrost"
+        }
+      }
+    },
+    "Deployment/kobe-egress-proxy": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "egress-proxy"
+        }
+      }
+    },
+    "Deployment/kobe-embeddings": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "embeddings"
+        }
+      }
+    },
+    "Deployment/kobe-mcp-proxy": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "mcp-proxy"
+        }
+      }
+    },
+    "Deployment/kobe-model-gateway": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "model-gateway"
+        }
+      }
+    },
+    "Deployment/kobe-scheduler": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "scheduler"
+        }
+      }
+    },
+    "Deployment/kobe-server": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "server"
+        }
+      }
+    },
+    "Deployment/kobe-web": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "web"
+        }
+      }
+    },
+    "Job/kobe-isolation-preflight": {},
+    "Job/kobe-migrate": {},
+    "PersistentVolumeClaim/kobe-bifrost": {},
+    "PersistentVolumeClaim/kobe-embeddings": {},
+    "Secret/kobe-auth": {},
+    "Secret/kobe-egress-headers": {},
+    "Secret/kobe-egress-proxy-internal": {},
+    "Secret/kobe-envelope-key": {},
+    "Secret/kobe-mcp-proxy-internal": {},
+    "Secret/kobe-model-keys": {},
+    "Secret/kobe-sandbox-session-keys": {},
+    "Service/kobe-bifrost": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "bifrost"
+      }
+    },
+    "Service/kobe-egress-proxy": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "egress-proxy"
+      }
+    },
+    "Service/kobe-embeddings": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "embeddings"
+      }
+    },
+    "Service/kobe-mcp-proxy": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "mcp-proxy"
+      }
+    },
+    "Service/kobe-model-gateway": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "model-gateway"
+      }
+    },
+    "Service/kobe-scheduler": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "scheduler"
+      }
+    },
+    "Service/kobe-server": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "server"
+      }
+    },
+    "Service/kobe-web": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "web"
+      }
+    },
+    "ServiceAccount/kobe-isolation-preflight": {},
+    "ServiceAccount/kobe-server": {},
+    "ServiceAccount/kobe-workload": {}
+  },
+  "cnpg": {
+    "Cluster/kobe-pg": {},
+    "ConfigMap/kobe-bifrost": {},
+    "ConfigMap/kobe-sandbox-session-verify-keys": {},
+    "Deployment/kobe-bifrost": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "bifrost"
+        }
+      }
+    },
+    "Deployment/kobe-egress-proxy": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "egress-proxy"
+        }
+      }
+    },
+    "Deployment/kobe-embeddings": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "embeddings"
+        }
+      }
+    },
+    "Deployment/kobe-mcp-proxy": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "mcp-proxy"
+        }
+      }
+    },
+    "Deployment/kobe-model-gateway": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "model-gateway"
+        }
+      }
+    },
+    "Deployment/kobe-scheduler": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "scheduler"
+        }
+      }
+    },
+    "Deployment/kobe-server": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "server"
+        }
+      }
+    },
+    "Deployment/kobe-web": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "web"
+        }
+      }
+    },
+    "Job/kobe-isolation-preflight": {},
+    "Job/kobe-migrate": {},
+    "PersistentVolumeClaim/kobe-bifrost": {},
+    "PersistentVolumeClaim/kobe-embeddings": {},
+    "Secret/kobe-auth": {},
+    "Secret/kobe-db-app": {},
+    "Secret/kobe-egress-headers": {},
+    "Secret/kobe-egress-proxy-internal": {},
+    "Secret/kobe-envelope-key": {},
+    "Secret/kobe-mcp-proxy-internal": {},
+    "Secret/kobe-model-keys": {},
+    "Secret/kobe-sandbox-session-keys": {},
+    "Service/kobe-bifrost": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "bifrost"
+      }
+    },
+    "Service/kobe-egress-proxy": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "egress-proxy"
+      }
+    },
+    "Service/kobe-embeddings": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "embeddings"
+      }
+    },
+    "Service/kobe-mcp-proxy": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "mcp-proxy"
+      }
+    },
+    "Service/kobe-model-gateway": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "model-gateway"
+      }
+    },
+    "Service/kobe-scheduler": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "scheduler"
+      }
+    },
+    "Service/kobe-server": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "server"
+      }
+    },
+    "Service/kobe-web": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "web"
+      }
+    },
+    "ServiceAccount/kobe-isolation-preflight": {},
+    "ServiceAccount/kobe-server": {},
+    "ServiceAccount/kobe-workload": {}
+  },
+  "everything": {
+    "ConfigMap/kobe-bifrost": {},
+    "ConfigMap/kobe-clamav": {},
+    "ConfigMap/kobe-sandbox-session-verify-keys": {},
+    "Deployment/kobe-bifrost": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "bifrost"
+        }
+      }
+    },
+    "Deployment/kobe-clamav": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "clamav"
+        }
+      }
+    },
+    "Deployment/kobe-egress-proxy": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "egress-proxy"
+        }
+      }
+    },
+    "Deployment/kobe-embeddings": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "embeddings"
+        }
+      }
+    },
+    "Deployment/kobe-mcp-proxy": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "mcp-proxy"
+        }
+      }
+    },
+    "Deployment/kobe-model-gateway": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "model-gateway"
+        }
+      }
+    },
+    "Deployment/kobe-scheduler": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "scheduler"
+        }
+      }
+    },
+    "Deployment/kobe-server": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "server"
+        }
+      }
+    },
+    "Deployment/kobe-web": {
+      "selector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "kobe",
+          "app.kubernetes.io/instance": "kobe",
+          "app.kubernetes.io/component": "web"
+        }
+      }
+    },
+    "Job/kobe-isolation-preflight": {},
+    "Job/kobe-migrate": {},
+    "PersistentVolumeClaim/kobe-bifrost": {},
+    "PersistentVolumeClaim/kobe-embeddings": {},
+    "Secret/kobe-auth": {},
+    "Secret/kobe-egress-headers": {},
+    "Secret/kobe-egress-proxy-internal": {},
+    "Secret/kobe-envelope-key": {},
+    "Secret/kobe-mcp-proxy-internal": {},
+    "Secret/kobe-model-keys": {},
+    "Secret/kobe-sandbox-session-keys": {},
+    "Service/kobe-bifrost": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "bifrost"
+      }
+    },
+    "Service/kobe-clamav": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "clamav"
+      }
+    },
+    "Service/kobe-egress-proxy": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "egress-proxy"
+      }
+    },
+    "Service/kobe-embeddings": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "embeddings"
+      }
+    },
+    "Service/kobe-mcp-proxy": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "mcp-proxy"
+      }
+    },
+    "Service/kobe-model-gateway": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "model-gateway"
+      }
+    },
+    "Service/kobe-scheduler": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "scheduler"
+      }
+    },
+    "Service/kobe-server": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "server"
+      }
+    },
+    "Service/kobe-web": {
+      "selector": {
+        "app.kubernetes.io/name": "kobe",
+        "app.kubernetes.io/instance": "kobe",
+        "app.kubernetes.io/component": "web"
+      }
+    },
+    "ServiceAccount/kobe-isolation-preflight": {},
+    "ServiceAccount/kobe-server": {},
+    "ServiceAccount/kobe-workload": {}
+  }
+}

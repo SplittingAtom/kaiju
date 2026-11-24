@@ -62,7 +62,7 @@ created by hand. Every team namespace gets:
   outbound only to the Kaiju server's **sandbox port** (8081, a separate listener with no user API),
   the model-gateway shim (models; `sandbox.modelGatewayAccess`, default on), the MCP proxy and the
   egress proxy — never Bifrost itself. Sandboxes get no DNS: Kaiju's services
-  resolve through `/etc/hosts` (`*.kobe.internal` → the Services' ClusterIPs), so DNS cannot be
+  resolve through `/etc/hosts` (`*.kaiju.internal` → the Services' ClusterIPs), so DNS cannot be
   used to leak data past the egress proxy;
 - a **ResourceQuota** (`sandbox.teamQuota`: requests and limits for CPU, memory and ephemeral
   storage, pods, PVCs and requested storage) and a LimitRange with per-container defaults. **Size
@@ -1389,7 +1389,7 @@ reach another thread's Pi (which also closes KOBE-228: with the flag on a Pi's H
 and that the workspace and KOBE-27 sync still work for both uids. To turn it on:
 
 ```bash
-helm upgrade kaiju charts/kaiju -n <namespace> -f <your values> --reset-values --set sandbox.toolExecutor.enabled=true
+helm upgrade <release> charts/kaiju -n <namespace> -f <your values> --reset-values --set sandbox.toolExecutor.enabled=true
 ```
 
 Running sandboxes keep the old setting until they restart (hibernate and wake them, or wait for
@@ -1777,6 +1777,25 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Chart `charts/kaiju` and images `ghcr.io/splittingatom/kaiju-*` (Kaiju rename, KOBE-750).**
+  The chart directory and its name are `kaiju` (published as `oci://ghcr.io/splittingatom/charts/kaiju`,
+  version 0.2.0), and every image is `kaiju-<name>` under `global.imageRegistry` (`kaiju-server`,
+  `kaiju-web`, `kaiju-sandbox`, ...; the old `kobe-*` repositories get no new builds). Upgrade in place with your release name and your values unchanged:
+  `helm upgrade <release> charts/kaiju -n <namespace> -f <your values> --reset-values`. No values
+  key changed; if you mirror the images, mirror the new repositories first. Object names still come
+  from your release name, so nothing is recreated, and the pods keep the label
+  `app.kubernetes.io/name: kobe` (Deployment selectors cannot change in place, and the team
+  network policies select the chart's pods by it); label keys `kobe.splittingatom.io/*`, the
+  database name `kobe` and the role `kobe_app` stay too. Paths inside the images moved with them
+  (`/opt/kaiju`, `/run/kaiju-agent`, `/run/kaiju-pi`, `/run/kaiju-skills`, the `kaiju-runas` helper
+  and the `kaiju-*` Pi extensions, `/usr/share/doc/kaiju`, `/etc/kaiju/extra-ca` for
+  `server.extraCaBundle`): the server writes them into a team's SandboxTemplate together with the
+  new sandbox image at its next team reconcile (every 300 s), so a sandbox started from the old
+  template keeps the old image and the old paths until it restarts and nothing mixes. An agent
+  in a conversation that started before the upgrade may still see the old paths in earlier
+  messages; the next run uses the new ones. For this release the model gateway also serves an
+  Orbit eval Job of the old image (`/kobe/eval-cases`) and the server accepts its result
+  (pack `kobe-default`); evals report pack `kaiju-default` from now on.
 - **Environment variables are `KAIJU_*` (Kaiju rename, KOBE-748).** The chart sets the new
   names; the old `KOBE_*` names still work for this release, with a startup warning that names
   them. Rename any you set yourself ([Environment variable names](#environment-variable-names-kaiju_)).

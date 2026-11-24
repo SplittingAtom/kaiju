@@ -51,7 +51,7 @@ describe("bundled CloudNativePG Cluster (KOBE-737)", () => {
     expect(sql[0]).toContain("CREATE EXTENSION IF NOT EXISTS vector SCHEMA public");
     expect(sql[0]).toContain("FROM pg_available_extensions WHERE name = 'vector'");
     expect(cluster()?.spec.bootstrap.initdb).toMatchObject({
-      database: "kaiju",
+      database: "kobe",
       owner: "kobe_owner",
     });
   });
