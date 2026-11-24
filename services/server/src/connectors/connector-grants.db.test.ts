@@ -149,8 +149,11 @@ describe("adding, replacing and removing a key", () => {
       "expires_at",
       "hint",
       "kind",
+      "refreshable",
       "updated_at",
     ]);
+    // An API key is never "refreshable" (KOBE-835).
+    expect(grants[0]?.refreshable).toBe(false);
   });
 
   it("keeps only the envelope in Postgres, never the key", async () => {

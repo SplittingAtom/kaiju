@@ -47,10 +47,10 @@ export function RefreshSkipped({ connector: c }: { readonly connector: Connector
       </Badge>{" "}
       {auth
         ? oauth
-          ? "Kaiju checks it with the connected account (OAuth) of the site admin who last pinned or approved its tools. Connect your own account for it at My connectors, then pin or approve its tools."
+          ? "Kaiju checks it with the connected account (OAuth) of the site admin who last pinned or approved its tools. Open its details, press Connect your account, then Re-probe."
           : c.credentialSource === "site"
             ? "Kaiju checks it with its site-wide key, which is not set or must be re-entered. Set the site-wide key."
-            : "Kaiju checks it with the own key of the site admin who last pinned or approved its tools. Add your key for it at My connector keys, then pin or approve its tools."
+            : "Kaiju checks it with the own key of the site admin who last pinned or approved its tools. Add your key for it at My connectors, then pin or approve its tools."
         : `The server could not be checked (${c.refreshSkipped.replaceAll("_", " ")}).`}
       {c.refreshedAt ? (
         <>

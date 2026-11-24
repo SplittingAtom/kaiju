@@ -39,7 +39,7 @@ beforeEach(() => {
       problem: {
         code: "no_key",
         message: "Add your API key for this server.",
-        fix: { href: "/me/connectors", label: "My connector keys" },
+        fix: { href: "/me/connectors", label: "My connectors" },
       },
     },
   );
@@ -143,7 +143,7 @@ describe("Connectors (ac-2, ac-3, ac-6)", { timeout: 30_000 }, () => {
     expect(on.getAttribute("aria-checked")).toBe("true");
     const broken = within(sub).getByRole("menuitem", { name: /github/ });
     expect(broken.textContent).toContain("Add your API key for this server.");
-    expect(broken.textContent).toContain("My connector keys");
+    expect(broken.textContent).toContain("My connectors");
     expect(within(broken).getByLabelText("Not working")).toBeTruthy();
     expect(within(sub).queryByRole("menuitemcheckbox", { name: /github/ })).toBeNull();
     await user.click(on);

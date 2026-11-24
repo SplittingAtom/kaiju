@@ -36,7 +36,7 @@ export interface RailApps {
   readonly needsKey: readonly MissingKeyApp[];
 }
 
-/** Where a member adds their own connector keys (KOBE-105). */
+/** My connectors: a member's own connector keys (KOBE-105) and connected accounts (KOBE-835). */
 export const MY_CONNECTOR_KEYS = "/me/connectors";
 
 export type LaunchResult =

@@ -43,7 +43,10 @@ export function ToolColumns<T>({
   isReadOnly,
   toolName,
   renderTool,
+  long = false,
 }: {
+  /** A long list (KOBE-835): each column scrolls inside itself instead of growing the page. */
+  readonly long?: boolean;
   readonly connectorName: string;
   readonly tools: readonly T[];
   readonly isReadOnly: (tool: T) => boolean;
@@ -69,7 +72,10 @@ export function ToolColumns<T>({
             {list.length === 0 ? (
               <p className="m-0 text-sm text-console-muted">{col.empty}</p>
             ) : (
-              <ul aria-label={`${col.title} tools`} className="m-0 grid list-none gap-1 p-0">
+              <ul
+                aria-label={`${col.title} tools`}
+                className={`m-0 grid list-none gap-1 p-0${long ? " max-h-[60vh] overflow-y-auto" : ""}`}
+              >
                 {list.map((t) => (
                   <li
                     key={toolName(t)}

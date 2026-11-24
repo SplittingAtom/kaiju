@@ -75,6 +75,8 @@ const SHOWN_5XX_CODES: ReadonlySet<string> = new Set([
   "header_injection_unavailable",
   // Connector API keys (KOBE-108): the site has no envelope key to store them with.
   "credentials_unavailable",
+  // OAuth connect (KOBE-109/835): the authorization server could not be reached (fixed text).
+  "oauth_unreachable",
   // Model admin (KOBE-40/44): fixed server messages naming the way out.
   "models_not_configured",
   "gateway_unavailable",

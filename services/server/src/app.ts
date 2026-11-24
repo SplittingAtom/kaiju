@@ -56,7 +56,11 @@ import { siteWideLegalHoldRoutes } from "./routes/site-wide-legal-hold.js";
 import { sitePolicyRoutes } from "./routes/site-policy.js";
 import { siteRetentionRoutes } from "./routes/site-retention.js";
 import { connectorGrantRoutes } from "./routes/connector-grants.js";
-import { connectorOauthRoutes } from "./routes/connector-oauth.js";
+import {
+  OAUTH_CALLBACK_PATH,
+  connectorOauthRoutes,
+  oauthCallbackRefusals,
+} from "./routes/connector-oauth.js";
 import { clientMetadataDocument, kobeOrigin } from "./connectors/oauth/client.js";
 import { siteConnectorsRoutes } from "./routes/site-connectors.js";
 import { siteSkillBlocklistRoutes } from "./routes/site-skill-blocklist.js";
@@ -226,6 +230,9 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
     c.header("Cache-Control", "public, max-age=3600");
     return c.json(clientMetadataDocument(kobeOrigin(deps.publicUrl)));
   });
+
+  // The OAuth callback's refusals become pages a browser can use (KOBE-835); wraps the route below.
+  app.use(OAUTH_CALLBACK_PATH, oauthCallbackRefusals(deps));
 
   // SCIM provisioning (KOBE-631): bearer-token only, outside the session API (no cookies, no CSRF).
   app.route("/v1/scim/v2", scimRoutes(deps));

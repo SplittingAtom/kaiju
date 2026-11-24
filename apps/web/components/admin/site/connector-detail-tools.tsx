@@ -8,6 +8,7 @@ import type {
 import type { ToolApp } from "../../../lib/admin/api/team/connectors";
 import { Badge } from "../../ui/console";
 import { McpUiBadge, ToolColumns } from "../connector-tools";
+import { ToolFilterField, useToolFilter } from "../tool-filter";
 
 /**
  * Every tool of a connector in the site detail panel (KOBE-641): Read only and Write columns, each
@@ -147,14 +148,27 @@ export function ConnectorDetailTools({
   readonly tools: readonly ToolReview[];
   readonly templates: readonly TemplateReview[] | null;
 }) {
+  const filter = useToolFilter(tools, (t) => [
+    t.name,
+    definitionOf(t)?.title,
+    definitionOf(t)?.description,
+  ]);
   if (tools.length === 0) return <p className="m-0 text-sm">No tools are pinned yet.</p>;
   return (
-    <ToolColumns
-      connectorName={connectorName}
-      tools={tools}
-      isReadOnly={toolIsReadOnly}
-      toolName={(t) => t.name}
-      renderTool={(t) => <ToolItem tool={t} templates={templates} />}
-    />
+    <>
+      <ToolFilterField
+        filter={filter}
+        total={tools.length}
+        label={`Filter tools of ${connectorName}`}
+      />
+      <ToolColumns
+        connectorName={connectorName}
+        tools={filter.shown}
+        long={filter.offered}
+        isReadOnly={toolIsReadOnly}
+        toolName={(t) => t.name}
+        renderTool={(t) => <ToolItem tool={t} templates={templates} />}
+      />
+    </>
   );
 }

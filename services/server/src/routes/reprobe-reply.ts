@@ -15,9 +15,9 @@ export interface ReprobeReply {
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 const REPROBE_AUTH =
-  "The server asked for credentials. Kaiju re-probes with the connector's site-wide key, else your own key for it, else the key of the admin who last pinned or approved it (add one at My connector keys); never a member's. Its tools stay as they were.";
+  "The server asked for credentials. Kaiju re-probes with the connector's site-wide key, else your own key for it, else the key of the admin who last pinned or approved it (add one at My connectors); never a member's. Its tools stay as they were.";
 const REPROBE_OAUTH =
-  "The server asked for credentials. Kaiju re-probes an OAuth connector with your own connected account, else that of the admin who last pinned or approved it: connect your own account for it first (My connectors, in a team that enabled it); never a member's. Its tools stay as they were.";
+  "The server asked for credentials. Kaiju re-probes an OAuth connector with your own connected account, else that of the admin who last pinned or approved it: connect your own account first (Connect your account in the connector's details, or My connectors, in a workspace that enabled it), then Re-probe; never a member's. Its tools stay as they were.";
 const REPROBE_SITE_AUTH =
   "The server asked for credentials: set (or re-enter) this connector's site-wide key. Its tools stay as they were.";
 const REPROBE_FAILURES: Readonly<Record<string, string>> = {

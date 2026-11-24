@@ -14,7 +14,7 @@ import styles from "./rail.module.css";
  * Pickers section (KOBE-460, `rail-pickers.tsx`), which runs one picker app live, and nothing
  * else since KOBE-559 (Chris, 2026-11-07): the list of every app that stood under it is gone; apps
  * are launched from the composer's + menu (KOBE-451). No tab when the member has no app. An app
- * missing only the member's own key still shows "Add your key", linking to My connector keys.
+ * missing only the member's own key still shows "Add your key", linking to My connectors.
  */
 export const APPS_SECTION_ID = RAIL_TAB_IDS.apps.panel;
 

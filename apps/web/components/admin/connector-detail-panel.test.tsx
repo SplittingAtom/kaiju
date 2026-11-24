@@ -204,3 +204,35 @@ describe("connector detail panel (KOBE-641)", () => {
     ).toBeTruthy();
   });
 });
+
+describe("a connector with many tools (KOBE-835)", () => {
+  it("filters the pinned tools by name or description and keeps each column scrolling", async () => {
+    const many = Array.from({ length: 60 }, (_, i) => ({
+      name: `tool_${i}`,
+      status: "pinned",
+      change: null,
+      approved: {
+        description: i === 42 ? "Fetches aggregates (bars) for a ticker." : "Something else.",
+        inputSchema: { type: "object" },
+        annotations: { readOnlyHint: i % 2 === 0 },
+      },
+    }));
+    stubApi({
+      ...routes(),
+      [`GET ${BASE}`]: [200, { connectors: [connector({ toolCount: 60, driftedCount: 0 })] }],
+      [`GET ${BASE}/c-1/tools`]: [200, { tools: many }],
+    });
+    const { panel } = await openPanel();
+    const tools = within(await panel.findByRole("region", { name: "Tools of catalyst" }));
+    expect(await tools.findByText("60 tools")).toBeTruthy();
+    const list = tools.getAllByRole("list", { name: /tools$/ });
+    expect(list.every((l) => l.className.includes("overflow-y-auto"))).toBe(true);
+    await userEvent.type(
+      tools.getByRole("searchbox", { name: "Filter tools of catalyst" }),
+      "aggregates",
+    );
+    expect(tools.getByText("1 of 60 tools")).toBeTruthy();
+    expect(tools.getByRole("listitem", { name: "tool_42 tool" })).toBeTruthy();
+    expect(tools.queryByRole("listitem", { name: "tool_1 tool" })).toBeNull();
+  });
+});

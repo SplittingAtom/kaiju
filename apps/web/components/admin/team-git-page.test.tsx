@@ -355,7 +355,7 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
   });
 });
 
-describe("members' read-only view on My connector keys (KOBE-761)", () => {
+describe("members' read-only view on My connectors (KOBE-761)", () => {
   it("lists which organizations the Workspace reaches, with no settings", async () => {
     stubApi({
       [`GET ${GIT_BASE}`]: [

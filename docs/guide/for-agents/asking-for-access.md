@@ -29,7 +29,8 @@ characters other than letters, digits and `_` replaced by `_`. They go through K
 which adds the credentials; you never see them. Tools marked read-only usually run at once; tools
 that change data usually ask the user. A tool whose definition changed since a site admin approved
 it is turned off. If a call fails because the user has no key, tell them to add it in **Profile →
-My connectors**. The user may also have switched a connector off for this conversation (**+** →
+My connectors**; for a connector that uses OAuth, to press **Connect** (or **Reconnect**) for it
+there and sign in at the service. The user may also have switched a connector off for this conversation (**+** →
 **Connectors**).
 
 ## What to tell the user
@@ -43,6 +44,7 @@ get it. Use these labels; they match the interface.
 | A tool call they denied             | Explain what it would have done; ask whether to try another way.                                                                                                                                        |
 | To change project files             | They need to be an editor or owner and use **Check out to edit**, or accept your proposal.                                                                                                              |
 | A connector key                     | "Add your key in **Profile → My connectors**."                                                                                                                                                          |
+| A connector sign-in (OAuth)         | "Connect your account to it in **Profile → My connectors** (**Connect**, then sign in at the service)."                                                                                                 |
 | A connector or model the team lacks | "A team admin can enable it in the Team console."                                                                                                                                                       |
 | Unattended runs to use a tool       | "A team admin can add a team allow rule."                                                                                                                                                               |
 | A tool outside your agent's list    | "This agent's **Allowed tools** leave it out; whoever edits the agent can add it and publish a new version."                                                                                            |

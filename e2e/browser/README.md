@@ -293,6 +293,14 @@ against a real host and is skipped unless `KOBE_GIT_PROVIDER` (`github`, `gitea`
 `KOBE_GIT_BASE_URL` are set (pass the token from a secret store). No tokens:
 `npx playwright test git-section`.
 
+## OAuth connect (`connector-oauth.spec.ts`, KOBE-835)
+
+Connect, the result notice and Disconnect on My connectors against a real authorization server.
+Set `KOBE_OAUTH_CONNECTOR` to an OAuth connector enabled for `KOBE_USER`'s active workspace whose
+authorization server consents without a login page (the e2e fake `e2e/lib/fake-oauth-mcp.js`,
+reachable from both the browser and the cluster); without it the spec skips. No tokens:
+`npx playwright test connector-oauth`.
+
 ## Writing specs
 
 - Select by role and accessible name, labels and `data-kobe-*` attributes (`data-kobe-steering`,

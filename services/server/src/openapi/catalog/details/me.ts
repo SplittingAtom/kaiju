@@ -13,6 +13,7 @@ import {
   uploadResponseSchema,
 } from "@kobe/protocol";
 import { putGrantSchema } from "../../../connectors/grants.js";
+import { oauthStartBodySchema } from "../../../routes/connector-oauth.js";
 import { timeZoneBodySchema } from "../../../routes/me.js";
 import { setupSchema } from "../../../routes/setup.js";
 import { activeTeamSchema } from "../../../teams/schemas.js";
@@ -202,12 +203,22 @@ const grantSummary = obj({
   created_at: dateTime,
   updated_at: dateTime,
 });
+/** The list adds whether Kaiju renews an OAuth grant by itself (KOBE-835). */
+const listedGrant = obj({
+  connector_id: uuid,
+  hint: str,
+  kind: oneOfStrings(...CONNECTOR_GRANT_KIND_VALUES),
+  expires_at: nullable(dateTime),
+  refreshable: bool,
+  created_at: dateTime,
+  updated_at: dateTime,
+});
 
 const ConnectorGrantEnvelope = untyped("ConnectorGrantEnvelope", obj({ grant: grantSummary }));
 
 export const connectorGrantsDetails: Readonly<Record<string, CatalogDetail>> = {
   "get /v1/connector-grants": {
-    response: untyped("ConnectorGrantList", obj({ grants: arr(grantSummary) })),
+    response: untyped("ConnectorGrantList", obj({ grants: arr(listedGrant) })),
   },
   "delete /v1/connector-grants/{connectorId}": { status: 204, errors: ["404"] },
   "put /v1/connector-grants/{connectorId}": {
@@ -218,10 +229,11 @@ export const connectorGrantsDetails: Readonly<Record<string, CatalogDetail>> = {
     errors: ["404", "409", "422", "503"],
   },
   "post /v1/connector-grants/{connectorId}/oauth/start": {
-    body: null,
+    body: named("ConnectorOauthStartBody", oauthStartBodySchema),
     response: untyped("ConnectorOauthStart", obj({ authorization_url: str })),
-    responseDescription: "Send the browser to `authorization_url`.",
-    errors: ["404", "422", "429", "502", "503"],
+    responseDescription:
+      "Send the browser to `authorization_url`. The callback brings it back to My connectors, or (`return_to: site`, site admins) to the Site console's connector registry.",
+    errors: ["400", "404", "422", "429", "502", "503"],
   },
 };
 

@@ -29,6 +29,8 @@ const payloadSchema = z.object({
   tokenEndpoint: z.string(),
   clientId: z.string(),
   clientSecret: z.string().optional(),
+  /** Where the browser goes after the callback (KOBE-835); a fixed name, never a URL. */
+  ret: z.enum(["me", "site"]).optional(),
 });
 export type FlowPayload = z.infer<typeof payloadSchema>;
 
