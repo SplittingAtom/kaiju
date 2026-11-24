@@ -8,7 +8,7 @@ import { webConfig } from "../config";
 /**
  * The sign-in page's identity providers for the server render (KOBE-755), so the page's first HTML
  * already holds the provider buttons and nothing moves when they would otherwise arrive: the
- * server's public `GET ${KOBE_SERVER_URL}/api/auth/sso/providers` (the same list the browser
+ * server's public `GET ${KAIJU_SERVER_URL}/api/auth/sso/providers` (the same list the browser
  * reads, enabled providers in the server's order, and whether the Site requires single sign-on,
  * KOBE-774), with a short timeout. A 404 means single sign-on is off: none, not required. Any other failure, or no server URL, is null: the page then asks the
  * route from the browser as before. Kept per web process for {@link PROVIDERS_CACHE_MS}, so sign-in

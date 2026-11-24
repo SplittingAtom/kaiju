@@ -47,7 +47,7 @@ from the sandbox.
 
 ## Content capture
 
-`telemetry.captureContent: true` (env `KOBE_OTEL_CAPTURE_CONTENT=true`) adds `url.query`,
+`telemetry.captureContent: true` (env `KAIJU_OTEL_CAPTURE_CONTENT=true`) adds `url.query`,
 `kobe.tool.input` / `kobe.tool.output` (MCP calls and the sandbox's tool spans) and `gen_ai.prompt`
 (the model request body),
 each truncated to 4096 characters. The gate is enforced twice: call sites add content only through
@@ -87,7 +87,7 @@ internet.
 ## Sandbox spans
 
 The sandbox holds no collector endpoint and no credential (the sandbox template has no
-`KOBE_OTEL_*` variable; tests assert it). When the server's tracing is on, `run.start` and
+`KAIJU_OTEL_*` variable; tests assert it). When the server's tracing is on, `run.start` and
 `thread.compact` carry a trace context to agents that announce the `trace_spans` capability. The
 agent records spans from Pi's RPC events for those runs only and sends them as `trace.spans` frames
 over its existing WebSocket; Pi's model calls carry the current run or turn span as `traceparent`

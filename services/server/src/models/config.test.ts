@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { loadModelsConfig } from "./config.js";
 
 const full = {
-  KOBE_BIFROST_URL: "http://kobe-bifrost:8080",
-  KOBE_BIFROST_ADMIN_PASSWORD: "p".repeat(40),
-  KOBE_MODELS_PROVIDER_KEY_SECRET: "a".repeat(40),
-  KOBE_MODELS_VIRTUAL_KEY_SECRET: "b".repeat(40),
+  KAIJU_BIFROST_URL: "http://kobe-bifrost:8080",
+  KAIJU_BIFROST_ADMIN_PASSWORD: "p".repeat(40),
+  KAIJU_MODELS_PROVIDER_KEY_SECRET: "a".repeat(40),
+  KAIJU_MODELS_VIRTUAL_KEY_SECRET: "b".repeat(40),
 };
 
 describe("loadModelsConfig", () => {
@@ -26,10 +26,10 @@ describe("loadModelsConfig", () => {
   });
 
   it("fails fast on a partial or weak configuration without echoing secrets", () => {
-    expect(() => loadModelsConfig({ KOBE_BIFROST_URL: full.KOBE_BIFROST_URL })).toThrow(
-      /KOBE_BIFROST_ADMIN_PASSWORD/,
+    expect(() => loadModelsConfig({ KAIJU_BIFROST_URL: full.KAIJU_BIFROST_URL })).toThrow(
+      /KAIJU_BIFROST_ADMIN_PASSWORD/,
     );
-    const weak = { ...full, KOBE_MODELS_VIRTUAL_KEY_SECRET: "short-secret-value" };
+    const weak = { ...full, KAIJU_MODELS_VIRTUAL_KEY_SECRET: "short-secret-value" };
     expect(() => loadModelsConfig(weak)).toThrow(/at least 32/);
     expect(() => loadModelsConfig(weak)).not.toThrow(/short-secret-value/);
   });
@@ -37,19 +37,19 @@ describe("loadModelsConfig", () => {
   it("takes previous secrets for rotation and the operator's unsafe-endpoints switch", () => {
     const c = loadModelsConfig({
       ...full,
-      KOBE_MODELS_PROVIDER_KEY_SECRET_PREVIOUS: "c".repeat(40),
-      KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS: "true",
+      KAIJU_MODELS_PROVIDER_KEY_SECRET_PREVIOUS: "c".repeat(40),
+      KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS: "true",
     });
     expect(c?.providerKeySecrets).toEqual(["a".repeat(40), "c".repeat(40)]);
     expect(c?.allowUnsafeEndpoints).toBe(true);
     expect(() =>
-      loadModelsConfig({ ...full, KOBE_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS: "short" }),
+      loadModelsConfig({ ...full, KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS: "short" }),
     ).toThrow(/PREVIOUS must be at least 32/);
   });
 
   it("refuses one secret for both purposes", () => {
     expect(() =>
-      loadModelsConfig({ ...full, KOBE_MODELS_VIRTUAL_KEY_SECRET: "a".repeat(40) }),
+      loadModelsConfig({ ...full, KAIJU_MODELS_VIRTUAL_KEY_SECRET: "a".repeat(40) }),
     ).toThrow(/must differ/);
   });
 
@@ -57,29 +57,29 @@ describe("loadModelsConfig", () => {
     expect(loadModelsConfig(full)?.localEmbedding).toBeUndefined();
     const c = loadModelsConfig({
       ...full,
-      KOBE_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
-      KOBE_EMBEDDINGS_LOCAL_MODEL: "nomic-embed-text",
+      KAIJU_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
+      KAIJU_EMBEDDINGS_LOCAL_MODEL: "nomic-embed-text",
     });
     expect(c?.localEmbedding).toEqual({
       url: "http://kobe-embeddings:8080",
       model: "nomic-embed-text",
     });
     expect(() =>
-      loadModelsConfig({ ...full, KOBE_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080" }),
-    ).toThrow(/KOBE_EMBEDDINGS_LOCAL_MODEL/);
+      loadModelsConfig({ ...full, KAIJU_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080" }),
+    ).toThrow(/KAIJU_EMBEDDINGS_LOCAL_MODEL/);
     expect(() =>
       loadModelsConfig({
         ...full,
-        KOBE_EMBEDDINGS_LOCAL_URL: "ftp://x",
-        KOBE_EMBEDDINGS_LOCAL_MODEL: "nomic-embed-text",
+        KAIJU_EMBEDDINGS_LOCAL_URL: "ftp://x",
+        KAIJU_EMBEDDINGS_LOCAL_MODEL: "nomic-embed-text",
       }),
-    ).toThrow(/KOBE_EMBEDDINGS_LOCAL_URL/);
+    ).toThrow(/KAIJU_EMBEDDINGS_LOCAL_URL/);
     expect(() =>
       loadModelsConfig({
         ...full,
-        KOBE_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
-        KOBE_EMBEDDINGS_LOCAL_MODEL: "bad model/../x",
+        KAIJU_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
+        KAIJU_EMBEDDINGS_LOCAL_MODEL: "bad model/../x",
       }),
-    ).toThrow(/KOBE_EMBEDDINGS_LOCAL_MODEL/);
+    ).toThrow(/KAIJU_EMBEDDINGS_LOCAL_MODEL/);
   });
 });

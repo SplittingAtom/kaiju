@@ -35,9 +35,9 @@ const HELM_PROVIDER = {
 };
 const helmEnv = (providers: unknown[], enabled = "true"): SsoSettings =>
   loadSsoSettings({
-    KOBE_SSO_ENABLED: enabled,
-    KOBE_SSO_PROVIDERS: JSON.stringify(providers),
-    KOBE_SSO_CLIENT_SECRET_CORP: HELM_SECRET,
+    KAIJU_SSO_ENABLED: enabled,
+    KAIJU_SSO_PROVIDERS: JSON.stringify(providers),
+    KAIJU_SSO_CLIENT_SECRET_CORP: HELM_SECRET,
   });
 
 let h: Harness;
@@ -114,7 +114,7 @@ async function requiredAudit() {
 beforeAll(async () => {
   settings = helmEnv([HELM_PROVIDER]);
   h = await openHarness({
-    envelope: loadEnvelope({ KOBE_ENVELOPE_KEY: "s".repeat(48) }) as Envelope,
+    envelope: loadEnvelope({ KAIJU_ENVELOPE_KEY: "s".repeat(48) }) as Envelope,
     sso: { settings, net: { resolve: resolver() }, request: idp.request },
   });
   await seedHelmProviders(h.deps.database.db, settings);

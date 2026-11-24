@@ -46,7 +46,7 @@ describe("workloads", () => {
     const envOf = (ms2: Manifest[], name: string): { name: string; value?: string }[] =>
       find(ms2, "Deployment", name)?.spec.template.spec.containers[0].env ?? [];
     const value = (ms2: Manifest[], name: string) =>
-      envOf(ms2, name).find((e) => e.name === "KOBE_TEAM_RECONCILE_SECONDS")?.value;
+      envOf(ms2, name).find((e) => e.name === "KAIJU_TEAM_RECONCILE_SECONDS")?.value;
     expect(value(ms, "kobe-server")).toBe("300");
     expect(value(ms, "kobe-scheduler")).toBeUndefined();
     expect(value(render({ "server.teamReconcileSeconds": "0" }), "kobe-server")).toBe("0");
@@ -60,7 +60,7 @@ describe("workloads", () => {
           name: string;
           value?: string;
         }[]
-      ).find((e) => e.name === "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS")?.value;
+      ).find((e) => e.name === "KAIJU_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS")?.value;
     expect(value(ms, "kobe-server")).toBe("24");
     expect(value(ms, "kobe-scheduler")).toBeUndefined();
     expect(value(render({ "server.skillRescanIncompleteSuspendHours": "0" }), "kobe-server")).toBe(
@@ -78,7 +78,7 @@ describe("workloads", () => {
     ): { name: string; value?: string; valueFrom?: any }[] =>
       find(ms2, "Deployment", name)?.spec.template.spec.containers[0].env ?? [];
     const audit = (ms2: Manifest[], name: string) =>
-      envOf(ms2, name).filter((e) => e.name.startsWith("KOBE_AUDIT_"));
+      envOf(ms2, name).filter((e) => e.name.startsWith("KAIJU_AUDIT_"));
     expect(audit(ms, "kobe-server")).toEqual([]);
     const on = render({
       "auditForwarding.syslog.enabled": "true",
@@ -88,11 +88,11 @@ describe("workloads", () => {
       "auditForwarding.otlp.headersSecret": "otlp-auth",
     });
     expect(audit(on, "kobe-server")).toEqual([
-      { name: "KOBE_AUDIT_SYSLOG_URL", value: "tls://siem.example.test:6514" },
-      { name: "KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER", value: "32473" },
-      { name: "KOBE_AUDIT_OTLP_URL", value: "https://otel.example.test:4318/v1/logs" },
+      { name: "KAIJU_AUDIT_SYSLOG_URL", value: "tls://siem.example.test:6514" },
+      { name: "KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER", value: "32473" },
+      { name: "KAIJU_AUDIT_OTLP_URL", value: "https://otel.example.test:4318/v1/logs" },
       {
-        name: "KOBE_AUDIT_OTLP_HEADERS",
+        name: "KAIJU_AUDIT_OTLP_HEADERS",
         valueFrom: { secretKeyRef: { name: "otlp-auth", key: "headers" } },
       },
     ]);
@@ -108,8 +108,8 @@ describe("workloads", () => {
         "kobe-server",
       ),
     ).toEqual([
-      { name: "KOBE_AUDIT_SYSLOG_URL", value: "tcp://h:514" },
-      { name: "KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER", value: "32473" },
+      { name: "KAIJU_AUDIT_SYSLOG_URL", value: "tcp://h:514" },
+      { name: "KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER", value: "32473" },
     ]);
     expect(renderError({ "auditForwarding.syslog.enabled": "true" })).toMatch(/syslog.host/);
     expect(renderError({ "auditForwarding.otlp.enabled": "true" })).toMatch(/otlp.endpoint/);
@@ -119,7 +119,7 @@ describe("workloads", () => {
     const env = (ms2: Manifest[], name: string): { name: string; value?: string }[] =>
       find(ms2, "Deployment", name)?.spec.template.spec.containers[0].env ?? [];
     const value = (ms2: Manifest[], name: string) =>
-      env(ms2, name).find((e) => e.name === "KOBE_CONNECTOR_REFRESH_SECONDS")?.value;
+      env(ms2, name).find((e) => e.name === "KAIJU_CONNECTOR_REFRESH_SECONDS")?.value;
     expect(value(ms, "kobe-server")).toBe("3600");
     expect(value(ms, "kobe-scheduler")).toBeUndefined();
     expect(value(render({ "server.connectorRefreshSeconds": "0" }), "kobe-server")).toBe("0");
@@ -131,7 +131,7 @@ describe("workloads", () => {
   it("passes the session token TTL to the server only, 10..900 s (KOBE-241)", () => {
     const value = (ms2: Manifest[], name: string) =>
       (find(ms2, "Deployment", name)?.spec.template.spec.containers[0].env ?? []).find(
-        (e: { name: string }) => e.name === "KOBE_SESSION_TOKEN_TTL_SECONDS",
+        (e: { name: string }) => e.name === "KAIJU_SESSION_TOKEN_TTL_SECONDS",
       )?.value;
     expect(value(ms, "kobe-server")).toBe("900");
     expect(value(ms, "kobe-scheduler")).toBeUndefined();
@@ -145,7 +145,7 @@ describe("workloads", () => {
   it("runs the scheduler as the server image in scheduler mode", () => {
     const c = find(ms, "Deployment", "kobe-scheduler")?.spec.template.spec.containers[0];
     expect(c.image).toBe("ghcr.io/splittingatom/kobe-server:0.1.0");
-    expect(c.env).toContainEqual({ name: "KOBE_PROCESS", value: "scheduler" });
+    expect(c.env).toContainEqual({ name: "KAIJU_PROCESS", value: "scheduler" });
   });
 
   it("defaults images to the private registry and the chart appVersion", () => {
@@ -203,7 +203,7 @@ describe("isolation preflight (ac-2)", () => {
     expect(job?.spec.backoffLimit).toBe(0);
     const c = job?.spec.template.spec.containers[0];
     expect(c.command).toEqual(["node", "dist/cli/preflight.js"]);
-    expect(c.env).toContainEqual({ name: "KOBE_RUNTIME_CLASS", value: "gvisor" });
+    expect(c.env).toContainEqual({ name: "KAIJU_RUNTIME_CLASS", value: "gvisor" });
   });
 
   it("creates its least-privilege RBAC before the Job", () => {
@@ -226,7 +226,7 @@ describe("isolation preflight (ac-2)", () => {
       expect.objectContaining({
         name: "isolation-preflight",
         command: ["node", "dist/cli/preflight.js"],
-        env: [{ name: "KOBE_RUNTIME_CLASS", value: "gvisor" }],
+        env: [{ name: "KAIJU_RUNTIME_CLASS", value: "gvisor" }],
       }),
     );
   });
@@ -249,11 +249,11 @@ describe("isolation preflight (ac-2)", () => {
   it("gives the server and scheduler processes the RuntimeClass to verify", () => {
     for (const name of ["kobe-server", "kobe-scheduler"]) {
       const env = find(ms, "Deployment", name)?.spec.template.spec.containers[0].env;
-      expect(env, name).toContainEqual({ name: "KOBE_RUNTIME_CLASS", value: "gvisor" });
+      expect(env, name).toContainEqual({ name: "KAIJU_RUNTIME_CLASS", value: "gvisor" });
     }
     const kata = render({ "isolation.runtimeClassName": "kata" });
     const env = find(kata, "Deployment", "kobe-server")?.spec.template.spec.containers[0].env;
-    expect(env).toContainEqual({ name: "KOBE_RUNTIME_CLASS", value: "kata" });
+    expect(env).toContainEqual({ name: "KAIJU_RUNTIME_CLASS", value: "kata" });
   });
 
   it("uses collision-proof cluster-scoped names per release and namespace", () => {
@@ -311,7 +311,7 @@ describe("Postgres modes (ac-1)", () => {
     const ms = render();
     const env = find(ms, "Deployment", "kobe-server")?.spec.template.spec.containers[0].env;
     expect(env).toContainEqual({
-      name: "KOBE_DATABASE_URL",
+      name: "KAIJU_DATABASE_URL",
       valueFrom: { secretKeyRef: { name: "kobe-db", key: "app-url" } },
     });
     expect(byKind(ms, "Cluster")).toEqual([]);
@@ -336,8 +336,8 @@ describe("Postgres modes (ac-1)", () => {
     expect(cluster?.spec.imagePullSecrets).toEqual([{ name: "ghcr-pull" }]);
     const env = find(ms, "Deployment", "kobe-server")?.spec.template.spec.containers[0].env;
     expect(env).toContainEqual({
-      name: "KOBE_DATABASE_URL",
-      value: "postgres://kobe_app:$(KOBE_DB_PASSWORD)@kobe-pg-rw:5432/kobe",
+      name: "KAIJU_DATABASE_URL",
+      value: "postgres://kobe_app:$(KAIJU_DB_PASSWORD)@kobe-pg-rw:5432/kobe",
     });
     expect(find(ms, "Secret", "kobe-db-app")?.type).toBe("kubernetes.io/basic-auth");
   });

@@ -2,14 +2,14 @@ import { expect, type Page } from "@playwright/test";
 import { SHELL_TIMEOUT_MS } from "./constants.js";
 
 /**
- * KOBE_TEAM (a team slug) pins the team a signed-in page runs in. The active team belongs to the
+ * KAIJU_TEAM (a team slug) pins the team a signed-in page runs in. The active team belongs to the
  * session: a fresh sign-in lands in the user's last active team (else the first working team with
  * a model, KOBE-456), which need not be the team the specs use; pinning also makes it the last. Call it after the chat's first load (the
- * switcher's own activation would otherwise overwrite it); without KOBE_TEAM it does nothing.
+ * switcher's own activation would otherwise overwrite it); without KAIJU_TEAM it does nothing.
  * Every page that signs in on its own (the setup, a second browser) calls it (KOBE-457).
  */
 export async function pinTeam(page: Page): Promise<void> {
-  const slug = process.env["KOBE_TEAM"];
+  const slug = process.env["KAIJU_TEAM"];
   if (!slug) return;
   const teamId = await page.evaluate(async (want) => {
     const res = await fetch("/v1/me/teams");
@@ -25,7 +25,7 @@ export async function pinTeam(page: Page): Promise<void> {
     window.localStorage.setItem("kobe.lastTeamId", id);
     return id;
   }, slug);
-  if (!teamId) throw new Error(`KOBE_TEAM=${slug}: not one of your teams`);
+  if (!teamId) throw new Error(`KAIJU_TEAM=${slug}: not one of your teams`);
   await page.reload();
   await expect
     .poll(

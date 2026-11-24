@@ -104,7 +104,7 @@ export function teamEgressRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariab
       return c.json(
         {
           code: "header_injection_unavailable",
-          message: "Header injection is not configured on this site (KOBE_EGRESS_HEADER_SECRET).",
+          message: "Header injection is not configured on this site (KAIJU_EGRESS_HEADER_SECRET).",
         },
         503,
       );

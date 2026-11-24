@@ -122,7 +122,7 @@ export interface WireContext {
   /** Notebook files (KOBE-464, `run_python`); absent: `notebook.run` is refused. */
   readonly notebooks?: NotebookFiles;
   /**
-   * The Site's host (`KOBE_PUBLIC_URL`) for the git no-reply commit email (KOBE-764, GQ10); absent
+   * The Site's host (`KAIJU_PUBLIC_URL`) for the git no-reply commit email (KOBE-764, GQ10); absent
    * (operator CLI, tests): `run.start` carries no git context.
    */
   readonly gitSiteHost?: string;

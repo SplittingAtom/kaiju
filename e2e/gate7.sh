@@ -8,28 +8,28 @@
 # story's checks and what is proven elsewhere (the relevance and extractor harnesses).
 #
 #   e2e/gate7.sh                      every story (after the gate1-prep install on k3d)
-#   KOBE_GATE7_STORIES="U41 U47" ...  some stories
-#   KOBE_GATE7_BROWSER=0 ...          API checks only; prints the browser command to run elsewhere,
-#                                     whose report KOBE_GATE7_RESULTS=<results.json> then judges
+#   KAIJU_GATE7_STORIES="U41 U47" ...  some stories
+#   KAIJU_GATE7_BROWSER=0 ...          API checks only; prints the browser command to run elsewhere,
+#                                     whose report KAIJU_GATE7_RESULTS=<results.json> then judges
 #
-# A real install: KOBE_GATE7_NS, _RELEASE, _CONTEXT, _MODEL (the fake's `fast` on k3d: the team
+# A real install: KAIJU_GATE7_NS, _RELEASE, _CONTEXT, _MODEL (the fake's `fast` on k3d: the team
 # default and the Site's learning model), _UNENABLED (a catalog alias the gate teams don't enable),
 # _OWNER_EMAIL/_PASSWORD. It creates users gate7-{ad,m2,st,bd,ob}@gate7.test in teams gate7-a and
 # gate7-b, joins the owner to gate7-a as a Team admin, and sets the Site's learning model. The
-# extractor checks need the fake model (KOBE_GATE7_MODEL=fast): a real model is not scripted.
+# extractor checks need the fake model (KAIJU_GATE7_MODEL=fast): a real model is not scripted.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
-NS="${KOBE_GATE7_NS:-kobe-dev}"
-RELEASE="${KOBE_GATE7_RELEASE:-kobe}"
-STORIES="${KOBE_GATE7_STORIES:-U39 U40 U41 U42 U43 U44 U45 U46 U47 U48 U49 U50 U51 U52 U53 U54}"
-MODEL_ALIAS="${KOBE_GATE7_MODEL:-fast}"
-UNENABLED="${KOBE_GATE7_UNENABLED:-gem}"
-FAKE="${KOBE_GATE7_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
-OWNER_EMAIL="${KOBE_GATE7_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATE7_OWNER_PASSWORD:-e2e owner password}"
-BROWSER="${KOBE_GATE7_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
+NS="${KAIJU_GATE7_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATE7_RELEASE:-kobe}"
+STORIES="${KAIJU_GATE7_STORIES:-U39 U40 U41 U42 U43 U44 U45 U46 U47 U48 U49 U50 U51 U52 U53 U54}"
+MODEL_ALIAS="${KAIJU_GATE7_MODEL:-fast}"
+UNENABLED="${KAIJU_GATE7_UNENABLED:-gem}"
+FAKE="${KAIJU_GATE7_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
+OWNER_EMAIL="${KAIJU_GATE7_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATE7_OWNER_PASSWORD:-e2e owner password}"
+BROWSER="${KAIJU_GATE7_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
 NONCE="$(date +%s | tr 0-9 bcdfghjkmn)" # letters: a long number reads as a phone number (personal data)
@@ -37,12 +37,12 @@ USER_PASSWORD="gate1 user password" # the fixtures' password (e2e/gate1/client.m
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATE7_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATE7_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATE7_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATE7_CONTEXT=$context)" >&2
   exit 2
 fi
 if [[ "$FAKE" != 1 ]]; then
-  echo "Gate 7's learning checks script the fake model's extractor: run with KOBE_GATE7_MODEL=fast" >&2
+  echo "Gate 7's learning checks script the fake model's extractor: run with KAIJU_GATE7_MODEL=fast" >&2
   exit 2
 fi
 
@@ -424,7 +424,7 @@ for s in $STORIES; do
     [[ " ${files[*]-} " == *" $f "* ]] || files+=("$f")
   done
 done
-PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KOBE_PUBLIC_URL 2>/dev/null || true)
+PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KAIJU_PUBLIC_URL 2>/dev/null || true)
 FORGET_ID=""
 FORGET_TEXT=""
 if want U54; then
@@ -433,15 +433,15 @@ if want U54; then
   FORGET_TEXT=$(field browser_item_text "$bi")
 fi
 browser_env() { # the variables the specs read, except the passwords
-  printf 'KOBE_BASE_URL=%s KOBE_USER=%s KOBE_USER2=gate7-m2@gate7.test KOBE_USER3=gate7-ad@gate7.test KOBE_TEAM=gate7-a KOBE_FAKE_MODEL=1 KOBE_GATE7_FORGET_ITEM=%s' \
+  printf 'KAIJU_BASE_URL=%s KAIJU_USER=%s KAIJU_USER2=gate7-m2@gate7.test KAIJU_USER3=gate7-ad@gate7.test KAIJU_TEAM=gate7-a KAIJU_FAKE_MODEL=1 KAIJU_GATE7_FORGET_ITEM=%s' \
     "$PUBLIC_URL" "$OWNER_EMAIL" "$FORGET_ID"
 }
-RESULTS="${KOBE_GATE7_RESULTS:-}"
+RESULTS="${KAIJU_GATE7_RESULTS:-}"
 if ((${#files[@]} == 0)); then
   :
 elif [[ "$BROWSER" == 1 ]]; then
   echo "==> browser: ${#files[@]} spec files in Chromium against $PUBLIC_URL"
-  map="${KOBE_GATE7_BROWSER_MAP:-}"
+  map="${KAIJU_GATE7_BROWSER_MAP:-}"
   if [[ -z "$map" && "$context" == k3d-* ]]; then
     # Chromium beside kubectl reaches the ingress through a port-forward, under the site's own origin.
     $KUBECTL -n kube-system port-forward svc/traefik 18080:80 >"$WORK/port-forward.log" 2>&1 &
@@ -453,13 +453,13 @@ elif [[ "$BROWSER" == 1 ]]; then
   fi
   RESULTS="$WORK/results.json"
   # shellcheck disable=SC2046 # browser_env is a list of NAME=value words
-  (cd e2e/browser && env $(browser_env) KOBE_PW="$OWNER_PASSWORD" KOBE_PW2="$USER_PASSWORD" KOBE_PW3="$USER_PASSWORD" \
-    KOBE_GATE7_FORGET_TEXT="$FORGET_TEXT" KOBE_BROWSER_MAP="$map" KOBE_BROWSER_RESULTS="$RESULTS" \
+  (cd e2e/browser && env $(browser_env) KAIJU_PW="$OWNER_PASSWORD" KAIJU_PW2="$USER_PASSWORD" KAIJU_PW3="$USER_PASSWORD" \
+    KAIJU_GATE7_FORGET_TEXT="$FORGET_TEXT" KAIJU_BROWSER_MAP="$map" KAIJU_BROWSER_RESULTS="$RESULTS" \
     npx playwright test "${files[@]}" >"$WORK/playwright.log" 2>&1) || true
   grep -E '✓|✘|-  |passed|failed|skipped|flaky' "$WORK/playwright.log" | tail -60 | sed 's/^/     /' || true
 elif [[ -z "$RESULTS" ]]; then
-  echo "skip browser checks (KOBE_GATE7_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL, then judge with KOBE_GATE7_RESULTS=<results.json>:"
-  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KOBE_GATE7_FORGET_TEXT='$FORGET_TEXT' KOBE_PW=<the owner's password> KOBE_PW2=<the fixtures' password> KOBE_PW3=<same> KOBE_BROWSER_RESULTS=<results.json> npx playwright test ${files[*]}"
+  echo "skip browser checks (KAIJU_GATE7_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL, then judge with KAIJU_GATE7_RESULTS=<results.json>:"
+  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KAIJU_GATE7_FORGET_TEXT='$FORGET_TEXT' KAIJU_PW=<the owner's password> KAIJU_PW2=<the fixtures' password> KAIJU_PW3=<same> KAIJU_BROWSER_RESULTS=<results.json> npx playwright test ${files[*]}"
 fi
 
 # ---- verdict -----------------------------------------------------------------------------------------
@@ -483,7 +483,7 @@ for s in $STORIES; do
   [[ "$API_FAILED" == *" $s "* ]] && verdict=FAIL && echo "       its API checks failed (above)"
   grep -qE '^(FAIL|XPASS|INVALID|NOTRUN) ' <<<"$lines" && verdict=FAIL
   [[ "$verdict" == ok ]] && grep -q '^XFAIL ' <<<"$lines" && verdict=XFAIL
-  [[ "$verdict" == XFAIL && "${KOBE_GATE_STRICT:-0}" == 1 ]] && verdict=FAIL
+  [[ "$verdict" == XFAIL && "${KAIJU_GATE_STRICT:-0}" == 1 ]] && verdict=FAIL
   case "$verdict" in
     ok) echo "PASS $s $(text_of "$s")"; proven=$((proven + 1)) ;;
     XFAIL) echo "XFAIL $s $(text_of "$s")"; xfailed_stories=$((xfailed_stories + 1)) ;;
@@ -499,7 +499,7 @@ if ((failed)); then
   exit 1
 fi
 if ((xfailed_stories)); then
-  verdict "Gate 7: $proven of $n stories proven, $xfailed_stories with expected failures (filed; KOBE_GATE_STRICT=1 fails them)"
+  verdict "Gate 7: $proven of $n stories proven, $xfailed_stories with expected failures (filed; KAIJU_GATE_STRICT=1 fails them)"
 else
   verdict "Gate 7: all $n stories proven"
 fi

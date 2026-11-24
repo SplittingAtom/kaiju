@@ -41,7 +41,7 @@ $KUBECTL -n "$OTEL_NS" wait --for=condition=Ready pod/otlp --timeout=180s >/dev/
 # sink are not public addresses: extraEgress, as docs/install.md tells a site with a LAN S3 or
 # relay. gate1-prep keeps them off: the gates' fake identity and OAuth servers are in-cluster.
 restrict_egress=()
-if [[ "$SHARD" != gate1-prep && "${KOBE_E2E_RESTRICT_EGRESS:-1}" == 1 ]]; then
+if [[ "$SHARD" != gate1-prep && "${KAIJU_E2E_RESTRICT_EGRESS:-1}" == 1 ]]; then
   deps_ns='{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kobe-deps"}}}'
   deps_rule="{\"to\":[$deps_ns]}"
   # The chart requires the API server's and the database's peers with restrictEgress on: the API
@@ -60,5 +60,5 @@ $HELM upgrade --install kobe charts/kobe -n "$NS" -f dev/values.yaml \
   --set-json "egressProxy.networkPolicy.extraEgress=[$OTEL_RULE]" \
   --set-json "modelGateway.networkPolicy.extraEgress=[$OTEL_RULE]" \
   "${restrict_egress[@]}" \
-  ${KOBE_E2E_TOOL_EXECUTOR:+--set sandbox.toolExecutor.enabled=true} --wait --timeout 10m
+  ${KAIJU_E2E_TOOL_EXECUTOR:+--set sandbox.toolExecutor.enabled=true} --wait --timeout 10m
 

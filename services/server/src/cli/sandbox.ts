@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 import { createIsolationGate } from "../isolation/gate.js";
 import { listRuntimeClasses } from "../isolation/kubernetes.js";
 import { createSandboxRuntime } from "../sandbox/runtime.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Operator tool, run inside a server pod (its ServiceAccount and env):
 //   node dist/cli/sandbox.js ensure --team-id <uuid> --team-slug <slug> --user-id <uuid>
@@ -10,6 +11,7 @@ import { createSandboxRuntime } from "../sandbox/runtime.js";
 const USAGE = "usage: sandbox.js ensure --team-id <uuid> --team-slug <slug> --user-id <uuid>";
 
 async function main(): Promise<number> {
+  adoptCliLegacyEnv();
   const { positionals, values } = parseArgs({
     allowPositionals: true,
     options: {
@@ -26,12 +28,12 @@ async function main(): Promise<number> {
     return 2;
   }
   const isolation = createIsolationGate({
-    runtimeClassName: process.env.KOBE_RUNTIME_CLASS?.trim() || undefined,
+    runtimeClassName: process.env.KAIJU_RUNTIME_CLASS?.trim() || undefined,
     listRuntimeClasses,
   });
   const runtime = createSandboxRuntime(process.env, isolation);
   if (!runtime) {
-    console.error("KOBE_SANDBOX_CONFIG is not set: sandboxes are disabled");
+    console.error("KAIJU_SANDBOX_CONFIG is not set: sandboxes are disabled");
     return 1;
   }
   const handle = await runtime.provider.ensureSandbox({ id: teamId, slug }, userId);

@@ -7,28 +7,29 @@ import {
   verifyRunToken,
   verifyServerCallToken,
 } from "@kaiju/session-token";
-import { describe, expect, it } from "vitest";
+import { toLegacyEnv } from "@kaiju/protocol/testing";
+import { describe, expect, it, vi } from "vitest";
 import { loadConfig } from "./config.js";
 import { hmacEraToken } from "./testing/hmac-era.js";
 
 const PAIR = generateSessionKeyPair();
 const env = {
-  KOBE_DATABASE_URL: "postgres://app@db/kobe",
-  KOBE_TRACE_SPAN_KEY: "t".repeat(40),
-  KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY: PAIR.publicPem,
-  KOBE_MODELS_VIRTUAL_KEY_SECRET: "v".repeat(40),
-  KOBE_BIFROST_URL: "http://kobe-bifrost:8080/",
+  KAIJU_DATABASE_URL: "postgres://app@db/kobe",
+  KAIJU_TRACE_SPAN_KEY: "t".repeat(40),
+  KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY: PAIR.publicPem,
+  KAIJU_MODELS_VIRTUAL_KEY_SECRET: "v".repeat(40),
+  KAIJU_BIFROST_URL: "http://kobe-bifrost:8080/",
 };
 
 describe("loadConfig", () => {
   it("reads the query pool size (KOBE-736): default 10, 1..200", () => {
     expect(loadConfig(env).dbPoolMax).toBe(10);
-    expect(loadConfig({ ...env, KOBE_DB_POOL_MAX: "25" }).dbPoolMax).toBe(25);
+    expect(loadConfig({ ...env, KAIJU_DB_POOL_MAX: "25" }).dbPoolMax).toBe(25);
     // The member rate limiter's own pool (KOBE-810).
     expect(loadConfig(env).ratePoolMax).toBe(2);
-    expect(loadConfig({ ...env, KOBE_MODEL_GATEWAY_RATE_POOL_MAX: "4" }).ratePoolMax).toBe(4);
-    expect(() => loadConfig({ ...env, KOBE_MODEL_GATEWAY_RATE_POOL_MAX: "0" })).toThrow();
-    expect(() => loadConfig({ ...env, KOBE_DB_POOL_MAX: "201" })).toThrow(/KOBE_DB_POOL_MAX/);
+    expect(loadConfig({ ...env, KAIJU_MODEL_GATEWAY_RATE_POOL_MAX: "4" }).ratePoolMax).toBe(4);
+    expect(() => loadConfig({ ...env, KAIJU_MODEL_GATEWAY_RATE_POOL_MAX: "0" })).toThrow();
+    expect(() => loadConfig({ ...env, KAIJU_DB_POOL_MAX: "201" })).toThrow(/KAIJU_DB_POOL_MAX/);
   });
 
   it("reads the chart's env with defaults", () => {
@@ -45,35 +46,35 @@ describe("loadConfig", () => {
     });
   });
 
-  it("run token enforcement is off by default and switched by KOBE_MODEL_GATEWAY_REQUIRE_RUN_TOKEN", () => {
+  it("run token enforcement is off by default and switched by KAIJU_MODEL_GATEWAY_REQUIRE_RUN_TOKEN", () => {
     expect(loadConfig(env).requireRunToken).toBe(false);
     expect(
-      loadConfig({ ...env, KOBE_MODEL_GATEWAY_REQUIRE_RUN_TOKEN: "true" }).requireRunToken,
+      loadConfig({ ...env, KAIJU_MODEL_GATEWAY_REQUIRE_RUN_TOKEN: "true" }).requireRunToken,
     ).toBe(true);
-    expect(() => loadConfig({ ...env, KOBE_MODEL_GATEWAY_REQUIRE_RUN_TOKEN: "yes" })).toThrow(
+    expect(() => loadConfig({ ...env, KAIJU_MODEL_GATEWAY_REQUIRE_RUN_TOKEN: "yes" })).toThrow(
       /REQUIRE_RUN_TOKEN/,
     );
   });
 
   it("fails fast on a missing or weak key without echoing it", () => {
-    expect(() => loadConfig({ ...env, KOBE_TRACE_SPAN_KEY: undefined })).toThrow(
-      /KOBE_TRACE_SPAN_KEY is required/,
+    expect(() => loadConfig({ ...env, KAIJU_TRACE_SPAN_KEY: undefined })).toThrow(
+      /KAIJU_TRACE_SPAN_KEY is required/,
     );
-    expect(() => loadConfig({ ...env, KOBE_TRACE_SPAN_KEY: "short" })).toThrow(/at least 32/);
+    expect(() => loadConfig({ ...env, KAIJU_TRACE_SPAN_KEY: "short" })).toThrow(/at least 32/);
     // Session tokens: public key(s) only (KOBE-513); a private key is refused.
-    expect(() => loadConfig({ ...env, KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY: undefined })).toThrow(
-      /KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY is required/,
+    expect(() => loadConfig({ ...env, KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY: undefined })).toThrow(
+      /KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY is required/,
     );
     expect(() =>
-      loadConfig({ ...env, KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY: PAIR.privatePem }),
+      loadConfig({ ...env, KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY: PAIR.privatePem }),
     ).toThrow(/public keys only/);
     expect(loadConfig(env).sessionVerifyKeys.has(PAIR.signing.kid)).toBe(true);
-    const weak = { ...env, KOBE_MODELS_VIRTUAL_KEY_SECRET: "weak-secret-value" };
+    const weak = { ...env, KAIJU_MODELS_VIRTUAL_KEY_SECRET: "weak-secret-value" };
     expect(() => loadConfig(weak)).toThrow(/at least 32/);
     expect(() => loadConfig(weak)).not.toThrow(/weak-secret-value/);
-    expect(() => loadConfig({ ...env, KOBE_BIFROST_URL: "ftp://x" })).toThrow(/KOBE_BIFROST_URL/);
+    expect(() => loadConfig({ ...env, KAIJU_BIFROST_URL: "ftp://x" })).toThrow(/KAIJU_BIFROST_URL/);
     expect(() =>
-      loadConfig({ ...env, KOBE_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX: "1048576" }),
+      loadConfig({ ...env, KAIJU_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX: "1048576" }),
     ).toThrow(/max body/);
   });
 });
@@ -113,9 +114,9 @@ describe("KOBE-521 ac-1: the gateway holds no secret that can mint a credential"
 
   it("refuses the retired master secret and any signing key in its env", () => {
     for (const extra of [
-      { KOBE_SESSION_KEY_MODEL_GATEWAY: "m".repeat(40) },
-      { KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY: PAIR.privatePem },
-      { KOBE_SESSION_SIGNING_KEY_SANDBOX_WIRE: PAIR.privatePem },
+      { KAIJU_SESSION_KEY_MODEL_GATEWAY: "m".repeat(40) },
+      { KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY: PAIR.privatePem },
+      { KAIJU_SESSION_SIGNING_KEY_SANDBOX_WIRE: PAIR.privatePem },
     ]) {
       expect(() => loadConfig({ ...env, ...extra })).toThrow(
         /must not be set on the model gateway/,
@@ -133,7 +134,7 @@ describe("KOBE-521 ac-1: the gateway holds no secret that can mint a credential"
     expect(values.some((v) => v instanceof KeyObject && v.type !== "public")).toBe(false);
     // Every secret string the gateway holds, tried as the old HMAC master secret.
     const secrets = values.filter((v): v is string => typeof v === "string");
-    expect(secrets).toContain(env.KOBE_TRACE_SPAN_KEY);
+    expect(secrets).toContain(env.KAIJU_TRACE_SPAN_KEY);
     for (const secret of secrets) {
       const run = hmacEraToken("run", runClaims, secret);
       const sc = hmacEraToken("server-call", scClaims, secret);
@@ -152,5 +153,41 @@ describe("KOBE-521 ac-1: the gateway holds no secret that can mint a credential"
     expect(
       verifyServerCallToken(config.sessionVerifyKeys, signServerCallToken(own, scClaims), NOW).ok,
     ).toBe(false);
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  it("starts with only the old names and warns once, naming them without values", () => {
+    const warn = vi.fn();
+    const c = loadConfig(toLegacyEnv(env), warn);
+    expect(c.bifrostUrl).toBe("http://kobe-bifrost:8080");
+    expect(c.databaseUrl).toBe("postgres://app@db/kobe");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[1]).toEqual({
+      renamed: [
+        "KOBE_BIFROST_URL",
+        "KOBE_DATABASE_URL",
+        "KOBE_MODELS_VIRTUAL_KEY_SECRET",
+        "KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY",
+        "KOBE_TRACE_SPAN_KEY",
+      ],
+      conflicts: [],
+    });
+    const logged = JSON.stringify(warn.mock.calls);
+    expect(logged).not.toContain("t".repeat(40));
+    expect(logged).not.toContain("v".repeat(40));
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const warn = vi.fn();
+    const c = loadConfig({ ...env, KOBE_BIFROST_URL: "http://old-bifrost:8080/" }, warn);
+    expect(c.bifrostUrl).toBe("http://kobe-bifrost:8080");
+    expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_BIFROST_URL"] });
+  });
+
+  it("an old minting key name is refused like the new one", () => {
+    expect(() =>
+      loadConfig({ ...env, KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY: "x" }, vi.fn()),
+    ).toThrow(/KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY must not be set/);
   });
 });

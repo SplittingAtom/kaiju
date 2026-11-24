@@ -11,7 +11,7 @@ import {
  * `kaiju sso allow-local-sign-in` (KOBE-774): the Site owner's break-glass for "Require single
  * sign-on". When the identity provider is down or misconfigured nobody can sign in through the
  * web, so this turns the setting off from outside it: it needs the owner role's database URL
- * (`KOBE_DB_MIGRATE_URL`), i.e. cluster access. One transaction: the setting goes off and
+ * (`KAIJU_DB_MIGRATE_URL`), i.e. cluster access. One transaction: the setting goes off and
  * `identity.sso.required.disabled` (`reason: break_glass`, the operator) joins the audit chain.
  * Password and passkey sign-in work again at once; nothing else changes.
  */

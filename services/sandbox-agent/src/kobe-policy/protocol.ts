@@ -26,7 +26,7 @@ export const MSG_PENDING = "policy.pending";
 export const MSG_RESULT = "policy.result";
 
 /** Env var naming the inherited channel fd. Read once at load and removed from `process.env`. */
-export const POLICY_FD_ENV = "KOBE_POLICY_FD";
+export const POLICY_FD_ENV = "KAIJU_POLICY_FD";
 
 /**
  * One request line. The Kaiju server closes a sandbox connection on a `policy.check` frame over

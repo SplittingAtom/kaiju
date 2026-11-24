@@ -35,17 +35,17 @@ describe("resolveTestLane", () => {
   const root = workspace("Kobe-wt7");
   const cwd = join(root, "services", "server");
 
-  it("uses KOBE_TEST_DB_LANE when set", () => {
-    expect(resolveTestLane({ KOBE_TEST_DB_LANE: "Lane2" }, cwd)).toBe("lane2");
+  it("uses KAIJU_TEST_DB_LANE when set", () => {
+    expect(resolveTestLane({ KAIJU_TEST_DB_LANE: "Lane2" }, cwd)).toBe("lane2");
   });
 
   it("rejects a lane with characters outside [a-z0-9]", () => {
-    expect(() => resolveTestLane({ KOBE_TEST_DB_LANE: "a_b" }, cwd)).toThrow(/KOBE_TEST_DB_LANE/);
-    expect(() => resolveTestLane({ KOBE_TEST_DB_LANE: "x".repeat(21) }, cwd)).toThrow();
+    expect(() => resolveTestLane({ KAIJU_TEST_DB_LANE: "a_b" }, cwd)).toThrow(/KAIJU_TEST_DB_LANE/);
+    expect(() => resolveTestLane({ KAIJU_TEST_DB_LANE: "x".repeat(21) }, cwd)).toThrow();
   });
 
-  it("treats an empty KOBE_TEST_DB_LANE as no lane", () => {
-    expect(resolveTestLane({ KOBE_TEST_DB_LANE: "" }, cwd)).toBeUndefined();
+  it("treats an empty KAIJU_TEST_DB_LANE as no lane", () => {
+    expect(resolveTestLane({ KAIJU_TEST_DB_LANE: "" }, cwd)).toBeUndefined();
   });
 
   it("derives the lane from the workspace root's directory name", () => {
@@ -54,7 +54,7 @@ describe("resolveTestLane", () => {
 
   it("uses no lane in CI unless one is set explicitly", () => {
     expect(resolveTestLane({ CI: "true" }, cwd)).toBeUndefined();
-    expect(resolveTestLane({ CI: "true", KOBE_TEST_DB_LANE: "ci1" }, cwd)).toBe("ci1");
+    expect(resolveTestLane({ CI: "true", KAIJU_TEST_DB_LANE: "ci1" }, cwd)).toBe("ci1");
   });
 
   it("uses no lane outside a workspace", () => {

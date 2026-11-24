@@ -432,7 +432,7 @@ describe("GET /v1/runs/{id}/events (ac-3)", () => {
     }
     await done;
     const inDb = await fx.seqsInDb(finance, run);
-    expect(seqs(received), `KOBE_TEST_SEED=${random.seed}`).toEqual(inDb);
+    expect(seqs(received), `KAIJU_TEST_SEED=${random.seed}`).toEqual(inDb);
     expect(inDb).toEqual(range(1, inDb.length));
     expect(received.at(-1)?.type).toBe("run.completed");
     expect(reconnects).toBeGreaterThan(3);

@@ -14,7 +14,7 @@ import { bashTurn, pageApi } from "./support/gate5.js";
  *   new file in a project the member has mounted show in the open panel within seconds, and open
  *   folders stay open.
  *
- * Writes `kobe-599-*` folders in My files and one `kobe-599-*` project (KOBE_USER must be allowed
+ * Writes `kobe-599-*` folders in My files and one `kobe-599-*` project (KAIJU_USER must be allowed
  * to create projects, as for the projects specs); deletes them at the end. Two short model turns.
  */
 const TEAM_KEY = "kobe.lastTeamId";

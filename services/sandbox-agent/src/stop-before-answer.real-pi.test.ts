@@ -58,7 +58,7 @@ describe.skipIf(!PI_AVAILABLE)("Stop before Pi's first token in real Pi 1.0.0 (K
   it("keeps the prompt entry with its id; a later sync since it never returns it again", async () => {
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
     });
     const harness = h;

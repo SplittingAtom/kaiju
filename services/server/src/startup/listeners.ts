@@ -121,7 +121,7 @@ function internalListener(
   const internalKey = i.config.mcpProxyInternalKey;
   if (!internalKey) {
     i.log.error(
-      "KOBE_MCP_PROXY_INTERNAL_KEY is not set: MCP calls are refused (install with the chart)",
+      "KAIJU_MCP_PROXY_INTERNAL_KEY is not set: MCP calls are refused (install with the chart)",
     );
     return undefined;
   }

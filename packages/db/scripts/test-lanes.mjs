@@ -2,12 +2,12 @@
 // Lists or drops test database lanes on the dev Postgres (KOBE-482; see docs/parallel-work.md).
 //   pnpm --filter @kaiju/db test:lanes              list lanes with their databases and roles
 //   pnpm --filter @kaiju/db test:lanes drop <lane>  drop a lane that is not running tests
-// Needs KOBE_TEST_DATABASE_URL (the server URL, not a lane database) and a built @kaiju/db.
+// Needs KAIJU_TEST_DATABASE_URL (the server URL, not a lane database) and a built @kaiju/db.
 import { dropTestLane, listTestLanes } from "../dist/test-support/database.js";
 
-const url = process.env.KOBE_TEST_DATABASE_URL;
+const url = process.env.KAIJU_TEST_DATABASE_URL;
 if (!url) {
-  console.error("KOBE_TEST_DATABASE_URL is required");
+  console.error("KAIJU_TEST_DATABASE_URL is required");
   process.exit(2);
 }
 const [command = "list", lane] = process.argv.slice(2);

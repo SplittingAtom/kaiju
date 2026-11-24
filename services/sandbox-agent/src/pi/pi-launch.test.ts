@@ -10,8 +10,8 @@ import {
 const parentEnv = {
   PATH: "/usr/bin",
   LANG: "C.UTF-8",
-  KOBE_SANDBOX_TOKEN_FILE: "/var/run/kobe/sandbox-wire/token",
-  KOBE_SERVER_URL: "wss://kaiju",
+  KAIJU_SANDBOX_TOKEN_FILE: "/var/run/kobe/sandbox-wire/token",
+  KAIJU_SERVER_URL: "wss://kaiju",
   ANTHROPIC_API_KEY: "sk-should-never-be-here",
   AWS_SECRET_ACCESS_KEY: "nope",
   NODE_OPTIONS: "--inspect=0.0.0.0:9229",
@@ -40,7 +40,7 @@ describe("buildPiLaunch kobe-tools (KOBE-128)", () => {
     });
     expect(extensionsOf(launch.args)).toEqual(["builtin:mcp", MODELS, TOOLS, POLICY]);
     expect(TOOLS_CHANNEL_FD).toBe(4);
-    expect(launch.env.KOBE_TOOLS_FD).toBe("4");
+    expect(launch.env.KAIJU_TOOLS_FD).toBe("4");
     expect(launch.toolsChannel).toBe(true);
   });
 
@@ -50,9 +50,9 @@ describe("buildPiLaunch kobe-tools (KOBE-128)", () => {
       parentEnv,
       config: { hidden_tools: ["write", "edit"] },
     });
-    expect(hidden.env.KOBE_HIDDEN_TOOLS).toBe("write,edit");
+    expect(hidden.env.KAIJU_HIDDEN_TOOLS).toBe("write,edit");
     const plain = buildPiLaunch({ ...base, parentEnv });
-    expect(plain.env.KOBE_HIDDEN_TOOLS).toBeUndefined();
+    expect(plain.env.KAIJU_HIDDEN_TOOLS).toBeUndefined();
     expect(hidden.key).not.toBe(plain.key);
     expect(buildPiLaunch({ ...base, parentEnv, config: {} }).key).toBe(plain.key);
   });
@@ -60,72 +60,72 @@ describe("buildPiLaunch kobe-tools (KOBE-128)", () => {
   it("without it there is no fd 4 and no variable", () => {
     const launch = buildPiLaunch({ ...base, parentEnv });
     expect(extensionsOf(launch.args)).toEqual([POLICY]);
-    expect(launch.env.KOBE_TOOLS_FD).toBeUndefined();
+    expect(launch.env.KAIJU_TOOLS_FD).toBeUndefined();
     expect(launch.toolsChannel).toBe(false);
   });
 
   it("tells the extension to register share_file only with the extension and the files flag", () => {
     expect(
       buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS, toolsFiles: true }).env
-        .KOBE_TOOLS_FILES,
+        .KAIJU_TOOLS_FILES,
     ).toBe("1");
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KOBE_TOOLS_FILES,
+      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KAIJU_TOOLS_FILES,
     ).toBeUndefined();
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsFiles: true }).env.KOBE_TOOLS_FILES,
+      buildPiLaunch({ ...base, parentEnv, toolsFiles: true }).env.KAIJU_TOOLS_FILES,
     ).toBeUndefined();
   });
 
   it("tells the extension to register commit_project only with the extension and the projects flag", () => {
     expect(
       buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS, toolsProjects: true }).env
-        .KOBE_TOOLS_PROJECTS,
+        .KAIJU_TOOLS_PROJECTS,
     ).toBe("1");
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KOBE_TOOLS_PROJECTS,
+      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KAIJU_TOOLS_PROJECTS,
     ).toBeUndefined();
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsProjects: true }).env.KOBE_TOOLS_PROJECTS,
+      buildPiLaunch({ ...base, parentEnv, toolsProjects: true }).env.KAIJU_TOOLS_PROJECTS,
     ).toBeUndefined();
   });
 
   it("tells the extension to register save_skill_draft only with the extension and the skill drafts flag (KOBE-442)", () => {
     expect(
       buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS, toolsSkillDrafts: true }).env
-        .KOBE_TOOLS_SKILL_DRAFTS,
+        .KAIJU_TOOLS_SKILL_DRAFTS,
     ).toBe("1");
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KOBE_TOOLS_SKILL_DRAFTS,
+      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KAIJU_TOOLS_SKILL_DRAFTS,
     ).toBeUndefined();
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsSkillDrafts: true }).env.KOBE_TOOLS_SKILL_DRAFTS,
+      buildPiLaunch({ ...base, parentEnv, toolsSkillDrafts: true }).env.KAIJU_TOOLS_SKILL_DRAFTS,
     ).toBeUndefined();
   });
 
   it("tells the extension to register propose_file_edit only with the extension and the file edits flag (KOBE-462)", () => {
     expect(
       buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS, toolsFileEdits: true }).env
-        .KOBE_TOOLS_FILE_EDITS,
+        .KAIJU_TOOLS_FILE_EDITS,
     ).toBe("1");
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KOBE_TOOLS_FILE_EDITS,
+      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KAIJU_TOOLS_FILE_EDITS,
     ).toBeUndefined();
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsFileEdits: true }).env.KOBE_TOOLS_FILE_EDITS,
+      buildPiLaunch({ ...base, parentEnv, toolsFileEdits: true }).env.KAIJU_TOOLS_FILE_EDITS,
     ).toBeUndefined();
   });
 
   it("tells the extension to register run_python only with the extension and the notebooks flag (KOBE-464)", () => {
     expect(
       buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS, toolsNotebooks: true }).env
-        .KOBE_TOOLS_NOTEBOOKS,
+        .KAIJU_TOOLS_NOTEBOOKS,
     ).toBe("1");
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KOBE_TOOLS_NOTEBOOKS,
+      buildPiLaunch({ ...base, parentEnv, toolsExtension: TOOLS }).env.KAIJU_TOOLS_NOTEBOOKS,
     ).toBeUndefined();
     expect(
-      buildPiLaunch({ ...base, parentEnv, toolsNotebooks: true }).env.KOBE_TOOLS_NOTEBOOKS,
+      buildPiLaunch({ ...base, parentEnv, toolsNotebooks: true }).env.KAIJU_TOOLS_NOTEBOOKS,
     ).toBeUndefined();
   });
 
@@ -150,13 +150,13 @@ describe("buildPiLaunch kobe-exec (KOBE-167)", () => {
     });
     expect(extensionsOf(launch.args)).toEqual(["builtin:mcp", MODELS, TOOLS, EXEC, POLICY]);
     expect(EXEC_CHANNEL_FD).toBe(5);
-    expect(launch.env.KOBE_EXEC_FD).toBe("5");
+    expect(launch.env.KAIJU_EXEC_FD).toBe("5");
     expect(launch.execChannel).toBe(true);
   });
 
   it("without it there is no fd 5 and no variable", () => {
     const launch = buildPiLaunch({ ...base, parentEnv });
-    expect(launch.env.KOBE_EXEC_FD).toBeUndefined();
+    expect(launch.env.KAIJU_EXEC_FD).toBeUndefined();
     expect(launch.execChannel).toBe(false);
   });
 
@@ -255,7 +255,7 @@ describe("buildPiLaunch", () => {
       NODE_OPTIONS: "--disable-sigusr1",
       JITI_FS_CACHE: "false",
       NODE_DISABLE_COMPILE_CACHE: "1",
-      KOBE_POLICY_FD: String(POLICY_CHANNEL_FD),
+      KAIJU_POLICY_FD: String(POLICY_CHANNEL_FD),
     });
   });
 
@@ -363,11 +363,11 @@ describe("buildPiLaunch memory (KOBE-157)", () => {
 
   it("registers remember/recall and a per-run memory file only with the extension and the flag", () => {
     const launch = (extra: object) => buildPiLaunch({ ...base, parentEnv, ...extra });
-    expect(launch({ toolsExtension: TOOLS, toolsMemory: true }).env.KOBE_TOOLS_MEMORY).toBe("1");
+    expect(launch({ toolsExtension: TOOLS, toolsMemory: true }).env.KAIJU_TOOLS_MEMORY).toBe("1");
     expect(launch({ toolsExtension: TOOLS, toolsMemory: true }).memoryFile).toBe(true);
-    expect(launch({ toolsExtension: TOOLS }).env.KOBE_TOOLS_MEMORY).toBeUndefined();
+    expect(launch({ toolsExtension: TOOLS }).env.KAIJU_TOOLS_MEMORY).toBeUndefined();
     expect(launch({ toolsExtension: TOOLS }).memoryFile).toBe(false);
-    expect(launch({ toolsMemory: true }).env.KOBE_TOOLS_MEMORY).toBeUndefined();
+    expect(launch({ toolsMemory: true }).env.KAIJU_TOOLS_MEMORY).toBeUndefined();
     expect(launch({ toolsMemory: true }).memoryFile).toBe(false);
   });
 });

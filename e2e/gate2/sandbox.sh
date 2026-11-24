@@ -9,7 +9,7 @@
 # a pod stuck in ContainerCreating gave ~30 unrelated failures).
 
 SBX_DOWN=0          # 1 once the sandbox was found not running: dependent steps are skipped
-SBX_EVENTS="${KOBE_GATE2_SANDBOX_EVENTS:-8}" # how many of the pod's last events to print
+SBX_EVENTS="${KAIJU_GATE2_SANDBOX_EVENTS:-8}" # how many of the pod's last events to print
 
 # One line per pod of t2's claim: name, phase, Ready condition, "container:reason" for every
 # container (init containers first) that is waiting or terminated.

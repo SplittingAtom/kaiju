@@ -57,6 +57,6 @@ RUN apt-get update \
 COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kobe/
 USER 1000:1000
 WORKDIR /tmp
-# Model access: KOBE_MODEL_GATEWAY_URL + KOBE_MODEL_SESSION_TOKEN (set by the Job), never a key.
+# Model access: KAIJU_MODEL_GATEWAY_URL + KAIJU_MODEL_SESSION_TOKEN (set by the Job), never a key.
 ENTRYPOINT ["python", "-m", "kobe_orbit_eval"]
 CMD ["--orbit-yaml", "/input/agent.yaml", "--output", "/output/result.json"]

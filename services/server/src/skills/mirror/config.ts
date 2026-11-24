@@ -9,20 +9,20 @@ import type { MirrorAuthor } from "./git-mirror.js";
  * a URL or a log. Unset token: the mirror can't push and the console says so.
  */
 const schema = z.object({
-  KOBE_SKILL_MIRROR_TOKEN: z
+  KAIJU_SKILL_MIRROR_TOKEN: z
     .string()
     .default("")
     .refine((v) => v === "" || (v.length >= 8 && v.length <= 4096 && !/[\s:]/.test(v)), {
-      message: "KOBE_SKILL_MIRROR_TOKEN must be 8-4096 characters without spaces or colons",
+      message: "KAIJU_SKILL_MIRROR_TOKEN must be 8-4096 characters without spaces or colons",
     }),
   // GitHub accepts any user name with a token; GitHub App tokens need x-access-token. Forgejo
   // takes the token's owner (or any name, depending on version).
-  KOBE_SKILL_MIRROR_USERNAME: z
+  KAIJU_SKILL_MIRROR_USERNAME: z
     .string()
-    .regex(/^[A-Za-z0-9._-]{1,100}$/, "KOBE_SKILL_MIRROR_USERNAME must be a plain user name")
+    .regex(/^[A-Za-z0-9._-]{1,100}$/, "KAIJU_SKILL_MIRROR_USERNAME must be a plain user name")
     .default("x-access-token"),
-  KOBE_SKILL_MIRROR_AUTHOR_NAME: z.string().trim().min(1).max(100).default("Kaiju Registry"),
-  KOBE_SKILL_MIRROR_AUTHOR_EMAIL: z.email().max(200).default("registry@kobe.invalid"),
+  KAIJU_SKILL_MIRROR_AUTHOR_NAME: z.string().trim().min(1).max(100).default("Kaiju Registry"),
+  KAIJU_SKILL_MIRROR_AUTHOR_EMAIL: z.email().max(200).default("registry@kobe.invalid"),
 });
 
 export interface SkillMirrorConfig {
@@ -41,10 +41,10 @@ export function loadSkillMirrorConfig(
   const e = parsed.data;
   return {
     credentials:
-      e.KOBE_SKILL_MIRROR_TOKEN === ""
+      e.KAIJU_SKILL_MIRROR_TOKEN === ""
         ? null
-        : { username: e.KOBE_SKILL_MIRROR_USERNAME, token: e.KOBE_SKILL_MIRROR_TOKEN },
-    author: { name: e.KOBE_SKILL_MIRROR_AUTHOR_NAME, email: e.KOBE_SKILL_MIRROR_AUTHOR_EMAIL },
+        : { username: e.KAIJU_SKILL_MIRROR_USERNAME, token: e.KAIJU_SKILL_MIRROR_TOKEN },
+    author: { name: e.KAIJU_SKILL_MIRROR_AUTHOR_NAME, email: e.KAIJU_SKILL_MIRROR_AUTHOR_EMAIL },
   };
 }
 

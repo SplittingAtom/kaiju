@@ -33,7 +33,7 @@ export const MAX_PENDING_SKILL_SAVES = 4;
 export const MAX_PENDING_SKILL_SAVES_PER_THREAD = 1;
 
 export interface SkillDraftBrokerDeps {
-  /** The workspace root (`KOBE_WORKSPACE_DIR`). */
+  /** The workspace root (`KAIJU_WORKSPACE_DIR`). */
   readonly root: string;
   /** Send a frame now; false when the wire is not ready. */
   readonly send: (frame: SkillDraftSaveFrame) => boolean;

@@ -4,7 +4,7 @@ import { panelOf } from "./support/panel.js";
 import { uniqueWords } from "./support/unique.js";
 
 /**
- * KOBE-385: the console Memory pages for curators. KOBE_USER (the gate1 Owner, a Team admin of its
+ * KOBE-385: the console Memory pages for curators. KAIJU_USER (the gate1 Owner, a Team admin of its
  * active workspace) imports Markdown bullets into Workspace memories: the preview names each
  * row (new, secret, flagged by checks) and only the new row is imported; then on the Site
  * console's Memory page makes a Site memory Policy with the Policy toggle, undoes it, and

@@ -71,7 +71,7 @@ async function setup(): Promise<Harness> {
   };
   h = await startHarness({
     piBin: PI_BIN,
-    env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+    env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
     models,
   });
   // The tool runs (the plant is the model's bash call): allow every policy check.

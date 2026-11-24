@@ -15,7 +15,7 @@
 # docs/gates/gate-2.md records what each check proves and what it does not.
 #
 # Runs after the gate1-prep install in CI (k3d) and against a real cluster's throwaway install:
-#   KOBE_GATE2_NS=<release namespace> KOBE_GATE2_RELEASE=<release> e2e/gate2.sh
+#   KAIJU_GATE2_NS=<release namespace> KAIJU_GATE2_RELEASE=<release> e2e/gate2.sh
 # Non-destructive outside what it creates: users gate2-*@gate2.test, team gate2-a (its
 # kobe-team-gate2-a namespace and the sandbox the server creates), namespace kobe-gate2-infra (a
 # fake MCP server and a TLS upstream), one connector row, break-glass grants (revoked at the end).
@@ -23,20 +23,20 @@
 # the test upstream in the egress ceiling, and (the one that rolls pods) the egress and MCP proxy
 # allow-lists for the two fake servers, restored from the release's saved values unless on k3d.
 # It signs sandbox tokens with the site's keys, so it refuses anything but a k3d context unless
-# KOBE_GATE2_CONTEXT names the context explicitly. Re-runnable: fixtures are reused.
+# KAIJU_GATE2_CONTEXT names the context explicitly. Re-runnable: fixtures are reused.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KOBE_GATE2_NS:-kobe-dev}"
-RELEASE="${KOBE_GATE2_RELEASE:-kobe}"
-CHART="${KOBE_GATE2_CHART:-charts/kobe}"
-STEPS=" ${KOBE_GATE2_STEPS:-budget replicas egress mcp break-glass scan} "
-SBX_WAIT="${KOBE_GATE2_SANDBOX_WAIT:-180}" # seconds t2's sandbox pod may take to be Running and Ready
-MODEL_ALIAS="${KOBE_GATE2_MODEL:-fast}"
-OWNER_EMAIL="${KOBE_GATE2_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATE2_OWNER_PASSWORD:-e2e owner password}"
+NS="${KAIJU_GATE2_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATE2_RELEASE:-kobe}"
+CHART="${KAIJU_GATE2_CHART:-charts/kobe}"
+STEPS=" ${KAIJU_GATE2_STEPS:-budget replicas egress mcp break-glass scan} "
+SBX_WAIT="${KAIJU_GATE2_SANDBOX_WAIT:-180}" # seconds t2's sandbox pod may take to be Running and Ready
+MODEL_ALIAS="${KAIJU_GATE2_MODEL:-fast}"
+OWNER_EMAIL="${KAIJU_GATE2_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATE2_OWNER_PASSWORD:-e2e owner password}"
 INFRA_NS=kobe-gate2-infra
 TEAM_SLUG=gate2-a
 TNS="kobe-team-$TEAM_SLUG"
@@ -47,12 +47,12 @@ NONCE="$(date +%s)"
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATE2_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATE2_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATE2_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATE2_CONTEXT=$context)" >&2
   exit 2
 fi
 # Undo the proxy allow-lists on a real cluster; a k3d cluster is thrown away.
-RESTORE_HELM="${KOBE_GATE2_RESTORE_HELM:-$([[ "$context" == k3d-* ]] && echo 0 || echo 1)}"
+RESTORE_HELM="${KAIJU_GATE2_RESTORE_HELM:-$([[ "$context" == k3d-* ]] && echo 0 || echo 1)}"
 
 # shellcheck source=lib/gate-common.sh
 source e2e/lib/gate-common.sh
@@ -120,7 +120,7 @@ OWNER_JSON=$(printf '{"email":"%s","password":"%s"}' "$OWNER_EMAIL" "$OWNER_PASS
 step() { client "$(printf '{"mode":"%s","base":"%s","owner":%s,%s}' "$1" "$BASE" "$OWNER_JSON" "$2")"; }
 server_now() { $KUBECTL -n "$NS" exec "$SERVER" -c server -- date -u +%Y-%m-%dT%H:%M:%SZ; }
 SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-SANDBOX_IMAGE="${KOBE_GATE2_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
+SANDBOX_IMAGE="${KAIJU_GATE2_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
 
 grant=$(step grant "\"userId\":\"$IA\"")
 contains "ia is a site admin; the site has at least two (Owner + admins)" '^role_status=(200|204)$' "$grant"
@@ -248,12 +248,12 @@ if [[ "$STEPS" == *" budget "* ]] && sbx_need "ac-1 (budget)"; then
     # Above the request's input cost (Pi's prompt, about $100 at the e2e price; KOBE-259: a request
     # whose input exceeds the budget is refused outright); the fake model's tool step reports a
     # 1,000,000-token prompt ($10,000), using it up.
-    BUDGET_USD="${KOBE_GATE2_BUDGET_USD:-1000}"
+    BUDGET_USD="${KAIJU_GATE2_BUDGET_USD:-1000}"
     contains "the team budget is set to \$$BUDGET_USD a month" '^budget_status=200$' \
       "$(step reset "\"admin\":$U_T1,\"budget\":$BUDGET_USD")"
     [[ "$priced" == *price=set* ]] && UNDO+=("client '$(printf '{"mode":"price","base":"%s","owner":%s,"alias":"%s","action":"restore"}' "$BASE" "$OWNER_JSON" "$MODEL_ALIAS")'")
     UNDO+=("client '$(printf '{"mode":"reset","base":"%s","admin":%s,"budget":null}' "$BASE" "$U_T1")'")
-    prompt="${KOBE_GATE2_BUDGET_PROMPT:-kaiju-tool-step budget-$NONCE}"
+    prompt="${KAIJU_GATE2_BUDGET_PROMPT:-kaiju-tool-step budget-$NONCE}"
     b=$(chat "$prompt")
     printf '%s\n' "$b" | grep -v '^text=' | cut -c1-300 | sed 's/^/     /'
     brun=$(field run "$b")
@@ -347,7 +347,7 @@ if [[ "$STEPS" == *" egress "* ]] && sbx_need "ac-2 (egress)"; then
     [[ "$ceil" == *ceiling=added* ]] && UNDO+=("client '$(printf '{"mode":"ceiling","base":"%s","owner":%s,"domain":"%s","action":"remove"}' "$BASE" "$OWNER_JSON" "$UP_HOST")'")
     step reset "\"admin\":$U_T1,\"domain\":\"$UP_HOST\"" >/dev/null
     UNDO+=("client '$(printf '{"mode":"reset","base":"%s","admin":%s,"domain":"%s"}' "$BASE" "$U_T1" "$UP_HOST")'")
-    tool="${KOBE_GATE2_EGRESS_PROMPT:-bash: curl -sSk -m 20 https://$UP_HOST/ 2>&1 | head -c 300}"
+    tool="${KAIJU_GATE2_EGRESS_PROMPT:-bash: curl -sSk -m 20 https://$UP_HOST/ 2>&1 | head -c 300}"
     first=$(chat "$tool" "" true)
     printf '%s\n' "$first" | cut -c1-300 | sed 's/^/     /'
     contains "the run completed (the sandbox's tool ran curl)" '^terminal=run.completed$' "$first"

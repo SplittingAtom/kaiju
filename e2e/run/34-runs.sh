@@ -8,7 +8,7 @@ psql_kobe "INSERT INTO team_members (team_id, user_id, role) VALUES ('$E2E_TEAM_
 read -r -d '' RUNS_JS <<'JS' || true
 const [team] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
 const call = async (method, path, body) => {
   const res = await fetch(base + path, {

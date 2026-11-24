@@ -7,15 +7,15 @@ describe("auth (KOBE-12)", () => {
 
   it("gives the server the public URL derived from the ingress", () => {
     expect(env(render(), "kobe-server")).toContainEqual({
-      name: "KOBE_PUBLIC_URL",
+      name: "KAIJU_PUBLIC_URL",
       value: "https://kobe.example.com",
     });
     expect(env(render({ "ingress.tls.enabled": "false" }), "kobe-server")).toContainEqual({
-      name: "KOBE_PUBLIC_URL",
+      name: "KAIJU_PUBLIC_URL",
       value: "http://kobe.example.com",
     });
     expect(env(render({ publicUrl: "https://chat.example.org" }), "kobe-server")).toContainEqual({
-      name: "KOBE_PUBLIC_URL",
+      name: "KAIJU_PUBLIC_URL",
       value: "https://chat.example.org",
     });
   });
@@ -31,11 +31,11 @@ describe("auth (KOBE-12)", () => {
     expect(secret.stringData["setup-token"]).toMatch(/^[A-Za-z0-9]{32}$/);
     const server = env(ms, "kobe-server");
     expect(server).toContainEqual({
-      name: "KOBE_AUTH_SECRET",
+      name: "KAIJU_AUTH_SECRET",
       valueFrom: { secretKeyRef: { name: "kobe-auth", key: "secret" } },
     });
     expect(server).toContainEqual({
-      name: "KOBE_SETUP_TOKEN",
+      name: "KAIJU_SETUP_TOKEN",
       valueFrom: { secretKeyRef: { name: "kobe-auth", key: "setup-token" } },
     });
     for (const name of [
@@ -51,7 +51,7 @@ describe("auth (KOBE-12)", () => {
 
   it("trusts the k3s pod network's proxies for client IPs by default", () => {
     expect(env(render(), "kobe-server")).toContainEqual({
-      name: "KOBE_TRUSTED_PROXIES",
+      name: "KAIJU_TRUSTED_PROXIES",
       value: "10.42.0.0/16",
     });
     expect(
@@ -62,7 +62,7 @@ describe("auth (KOBE-12)", () => {
         }),
         "kobe-server",
       ),
-    ).toContainEqual({ name: "KOBE_TRUSTED_PROXIES", value: "10.0.0.0/8,192.168.0.0/16" });
+    ).toContainEqual({ name: "KAIJU_TRUSTED_PROXIES", value: "10.0.0.0/8,192.168.0.0/16" });
   });
 
   it("uses a pre-created auth secret when given (GitOps-safe)", () => {
@@ -79,7 +79,7 @@ describe("auth (KOBE-12)", () => {
     });
     expect(find(ms, "Secret", "kobe-auth")).toBeUndefined();
     expect(env(ms, "kobe-server")).toContainEqual({
-      name: "KOBE_AUTH_SECRET",
+      name: "KAIJU_AUTH_SECRET",
       valueFrom: { secretKeyRef: { name: "my-auth", key: "secret" } },
     });
   });
@@ -208,9 +208,9 @@ describe("ClamAV", () => {
   });
 
   it("tells the server where clamd is only when enabled (scanning then fails closed)", () => {
-    expect(serverEnv(render()).map((e) => e.name)).not.toContain("KOBE_CLAMAV_HOST");
-    expect(serverEnv(on)).toContainEqual({ name: "KOBE_CLAMAV_HOST", value: "kobe-clamav" });
-    expect(serverEnv(on)).toContainEqual({ name: "KOBE_CLAMAV_PORT", value: "3310" });
+    expect(serverEnv(render()).map((e) => e.name)).not.toContain("KAIJU_CLAMAV_HOST");
+    expect(serverEnv(on)).toContainEqual({ name: "KAIJU_CLAMAV_HOST", value: "kobe-clamav" });
+    expect(serverEnv(on)).toContainEqual({ name: "KAIJU_CLAMAV_PORT", value: "3310" });
   });
 
   it("runs as the image's non-root user with the unprivileged entrypoint", () => {
@@ -256,13 +256,13 @@ describe("SMTP (KOBE-13)", () => {
   it("gives only the API server the SMTP settings, with STARTTLS on 587 by default", () => {
     const ms = render();
     const server = env(ms, "kobe-server");
-    expect(server).toContainEqual({ name: "KOBE_SMTP_HOST", value: "smtp.example.com" });
-    expect(server).toContainEqual({ name: "KOBE_SMTP_PORT", value: "587" });
-    expect(server).toContainEqual({ name: "KOBE_SMTP_SECURITY", value: "starttls" });
-    expect(server).toContainEqual({ name: "KOBE_SMTP_FROM", value: "Kaiju <kaiju@example.com>" });
-    expect(JSON.stringify(server)).not.toContain("KOBE_SMTP_PASSWORD");
+    expect(server).toContainEqual({ name: "KAIJU_SMTP_HOST", value: "smtp.example.com" });
+    expect(server).toContainEqual({ name: "KAIJU_SMTP_PORT", value: "587" });
+    expect(server).toContainEqual({ name: "KAIJU_SMTP_SECURITY", value: "starttls" });
+    expect(server).toContainEqual({ name: "KAIJU_SMTP_FROM", value: "Kaiju <kaiju@example.com>" });
+    expect(JSON.stringify(server)).not.toContain("KAIJU_SMTP_PASSWORD");
     for (const name of ["kobe-scheduler", "kobe-web", "kobe-mcp-proxy", "kobe-egress-proxy"]) {
-      expect(JSON.stringify(find(ms, "Deployment", name)), name).not.toContain("KOBE_SMTP");
+      expect(JSON.stringify(find(ms, "Deployment", name)), name).not.toContain("KAIJU_SMTP");
     }
   });
 
@@ -272,14 +272,14 @@ describe("SMTP (KOBE-13)", () => {
       "kobe-server",
     );
     expect(server).toContainEqual({
-      name: "KOBE_SMTP_USERNAME",
+      name: "KAIJU_SMTP_USERNAME",
       valueFrom: { secretKeyRef: { name: "kobe-smtp", key: "username" } },
     });
     expect(server).toContainEqual({
-      name: "KOBE_SMTP_PASSWORD",
+      name: "KAIJU_SMTP_PASSWORD",
       valueFrom: { secretKeyRef: { name: "kobe-smtp", key: "password" } },
     });
-    expect(server).toContainEqual({ name: "KOBE_SMTP_PORT", value: "465" });
+    expect(server).toContainEqual({ name: "KAIJU_SMTP_PORT", value: "465" });
   });
 
   it("refuses credentials over unencrypted SMTP", () => {
@@ -287,7 +287,7 @@ describe("SMTP (KOBE-13)", () => {
       /existingSecret/,
     );
     expect(env(render({ "smtp.security": "none" }), "kobe-server")).toContainEqual({
-      name: "KOBE_SMTP_SECURITY",
+      name: "KAIJU_SMTP_SECURITY",
       value: "none",
     });
   });

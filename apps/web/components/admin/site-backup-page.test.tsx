@@ -86,12 +86,12 @@ describe("Site backup and restore (KOBE-291)", () => {
     expect(restore).toMatch(/kaiju restore --from/);
     // The restore compares the bucket with the backup's object listing, so it needs S3 too.
     for (const name of [
-      "KOBE_BACKUP_KEY_FILE",
-      "KOBE_DB_MIGRATE_URL",
-      "KOBE_S3_ENDPOINT",
-      "KOBE_S3_BUCKET",
-      "KOBE_S3_ACCESS_KEY_ID",
-      "KOBE_S3_SECRET_ACCESS_KEY",
+      "KAIJU_BACKUP_KEY_FILE",
+      "KAIJU_DB_MIGRATE_URL",
+      "KAIJU_S3_ENDPOINT",
+      "KAIJU_S3_BUCKET",
+      "KAIJU_S3_ACCESS_KEY_ID",
+      "KAIJU_S3_SECRET_ACCESS_KEY",
     ]) {
       expect(restore).toContain(`${name}=<`);
     }

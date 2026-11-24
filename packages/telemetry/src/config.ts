@@ -7,14 +7,14 @@ import { z } from "zod";
  */
 const configSchema = z.object({
   /** OTLP/HTTP collector base URL, e.g. http://otel-collector:4318 (`/v1/traces` is appended). */
-  KOBE_OTEL_ENDPOINT: z
-    .url({ protocol: /^https?$/, error: "KOBE_OTEL_ENDPOINT must be an http(s) URL" })
+  KAIJU_OTEL_ENDPOINT: z
+    .url({ protocol: /^https?$/, error: "KAIJU_OTEL_ENDPOINT must be an http(s) URL" })
     .optional(),
   /** Exporter headers as `name=value,name=value` (credentials for hosted backends). */
-  KOBE_OTEL_HEADERS: z.string().optional(),
+  KAIJU_OTEL_HEADERS: z.string().optional(),
   /** Opt in to message, prompt, tool input/output and query-string capture on spans. */
-  KOBE_OTEL_CAPTURE_CONTENT: z
-    .enum(["true", "false"], { error: "KOBE_OTEL_CAPTURE_CONTENT must be true or false" })
+  KAIJU_OTEL_CAPTURE_CONTENT: z
+    .enum(["true", "false"], { error: "KAIJU_OTEL_CAPTURE_CONTENT must be true or false" })
     .default("false"),
 });
 
@@ -34,7 +34,7 @@ function parseHeaders(raw: string | undefined): Record<string, string> {
     const eq = trimmed.indexOf("=");
     if (eq < 1) {
       // Never echo the value: it may be a credential.
-      throw new Error("Invalid configuration: KOBE_OTEL_HEADERS must be name=value pairs");
+      throw new Error("Invalid configuration: KAIJU_OTEL_HEADERS must be name=value pairs");
     }
     out[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
   }
@@ -46,22 +46,22 @@ export function loadTelemetryConfig(
   service: string,
 ): TelemetryConfig {
   const parsed = configSchema.safeParse({
-    KOBE_OTEL_ENDPOINT: env.KOBE_OTEL_ENDPOINT?.trim() || undefined,
-    KOBE_OTEL_HEADERS: env.KOBE_OTEL_HEADERS,
-    KOBE_OTEL_CAPTURE_CONTENT: env.KOBE_OTEL_CAPTURE_CONTENT?.trim() || undefined,
+    KAIJU_OTEL_ENDPOINT: env.KAIJU_OTEL_ENDPOINT?.trim() || undefined,
+    KAIJU_OTEL_HEADERS: env.KAIJU_OTEL_HEADERS,
+    KAIJU_OTEL_CAPTURE_CONTENT: env.KAIJU_OTEL_CAPTURE_CONTENT?.trim() || undefined,
   });
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid configuration: ${issues}`);
   }
   const d = parsed.data;
-  const headers = parseHeaders(d.KOBE_OTEL_HEADERS);
-  const endpoint = d.KOBE_OTEL_ENDPOINT?.replace(/\/+$/, "");
+  const headers = parseHeaders(d.KAIJU_OTEL_HEADERS);
+  const endpoint = d.KAIJU_OTEL_ENDPOINT?.replace(/\/+$/, "");
   return {
     enabled: endpoint !== undefined,
     ...(endpoint === undefined ? {} : { endpoint }),
     headers,
-    captureContent: d.KOBE_OTEL_CAPTURE_CONTENT === "true",
+    captureContent: d.KAIJU_OTEL_CAPTURE_CONTENT === "true",
     serviceName: `kobe-${service}`,
   };
 }

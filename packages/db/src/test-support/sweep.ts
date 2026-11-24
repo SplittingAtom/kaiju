@@ -90,7 +90,7 @@ export async function dropIdleTestDatabase(admin: pg.Client, name: string): Prom
 
 /**
  * Drops stale throwaway test databases on the server `serverUrl` points at (the setups pass
- * KOBE_TEST_DATABASE_URL). Never fails the caller: a sweep problem is logged and the run goes on.
+ * KAIJU_TEST_DATABASE_URL). Never fails the caller: a sweep problem is logged and the run goes on.
  */
 export async function sweepStaleTestDatabases(
   serverUrl: string,

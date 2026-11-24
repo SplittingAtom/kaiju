@@ -87,7 +87,7 @@ export class ApprovalService {
       log,
     });
     if (!options.keys && options.decides !== false) {
-      log.error("KOBE_APPROVAL_KEY is not set: tool calls that need approval are denied");
+      log.error("KAIJU_APPROVAL_KEY is not set: tool calls that need approval are denied");
     }
   }
 

@@ -15,8 +15,8 @@ describe("kernel launcher (NB10)", () => {
       {
         PATH: "/usr/bin",
         TZ: "UTC",
-        KOBE_BOOTSTRAP_TOKEN_FILE: "/run/kobe-agent/token",
-        KOBE_SANDBOX_TOKEN: "secret",
+        KAIJU_BOOTSTRAP_TOKEN_FILE: "/run/kobe-agent/token",
+        KAIJU_SANDBOX_TOKEN: "secret",
         HTTPS_PROXY: "http://user:token@proxy",
         NODE_OPTIONS: "--inspect",
       },
@@ -89,12 +89,12 @@ describe("kernel launcher (NB10)", () => {
     await session.execute("e1", "env", (o) => seen.push(o));
     const env = JSON.parse((seen[0] as { text: string }).text) as Record<string, string>;
     expect(env).toMatchObject({
-      KOBE_EGRESS_PROXY: "http://egress-proxy.kobe.internal:80",
-      KOBE_THREAD_ID: threadId,
+      KAIJU_EGRESS_PROXY: "http://egress-proxy.kobe.internal:80",
+      KAIJU_THREAD_ID: threadId,
       NO_PROXY: "kobe-server",
     });
     expect(JSON.stringify(env)).not.toContain("tok.one");
-    const file = env.KOBE_EGRESS_TOKEN_FILE ?? "";
+    const file = env.KAIJU_EGRESS_TOKEN_FILE ?? "";
     expect(file.startsWith(runtimeRoot)).toBe(true);
     expect(await readFile(file, "utf8")).toBe("tok.one\n");
     token = "tok.two";

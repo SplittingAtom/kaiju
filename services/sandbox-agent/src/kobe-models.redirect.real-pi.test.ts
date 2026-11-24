@@ -245,7 +245,7 @@ describe.skipIf(!PI_AVAILABLE)(
  * guarded placeholders in `agent/`). The plant is attempted for real, with the path handed to the
  * tool, and refused by the kernel: nothing leaks, the guarded files are untouched.
  */
-const HELPER = process.env.KOBE_TEST_PI_RUNAS;
+const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
 
 describe.runIf(PI_AVAILABLE && EXECUTOR_BUILT && HELPER !== undefined)(
   "a tool in the paired executor cannot redirect the Kaiju provider through Pi's agent/ dir (KOBE-167)",

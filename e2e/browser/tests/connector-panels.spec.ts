@@ -4,11 +4,11 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-639/640/641 on a real connector (gate1: Catalyst, `catalyst_2`, enabled for Team1, three
- * pinned and approved ui:// templates). `KOBE_USER` is the site Owner and a team admin of the
- * active team; `KOBE_CONNECTOR` names the connector (default `catalyst_2`). Read-only: it changes
+ * pinned and approved ui:// templates). `KAIJU_USER` is the site Owner and a team admin of the
+ * active team; `KAIJU_CONNECTOR` names the connector (default `catalyst_2`). Read-only: it changes
  * nothing and spends no model tokens. Run on gate1: `npx playwright test connector-panels`.
  */
-const NAME = process.env["KOBE_CONNECTOR"] ?? "catalyst_2";
+const NAME = process.env["KAIJU_CONNECTOR"] ?? "catalyst_2";
 const UI_NAME = /^MCP-UI: Opens an app: ui:\/\/\S+ \(/;
 const TEAM_KEYS = ["enabled_tools", "exposure", "id", "name", "slug"];
 

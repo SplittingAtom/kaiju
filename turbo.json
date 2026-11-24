@@ -5,7 +5,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "env": ["KOBE_BUILD_ID"],
+      "env": ["KAIJU_BUILD_ID"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "public/pdfjs/**"]
     },
     "test": {
@@ -33,7 +33,7 @@
     },
     "test:db": {
       "dependsOn": ["^build"],
-      "env": ["KOBE_TEST_DATABASE_URL", "KOBE_DB_TEST_WORKERS", "KOBE_TEST_DB_LANE"],
+      "env": ["KAIJU_TEST_DATABASE_URL", "KAIJU_DB_TEST_WORKERS", "KAIJU_TEST_DB_LANE"],
       "passThroughEnv": ["CI"],
       "cache": false
     }

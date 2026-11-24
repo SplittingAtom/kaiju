@@ -20,7 +20,7 @@ import { sha256HexSchema, workspaceOriginSchema, workspacePathSchema } from "./w
  * Push-then-share (normative). The server only has what the sandbox pushed through workspace sync
  * (sandbox-wire/workspace-sync.ts); it never reads the sandbox's disk for a share. Sequence:
  *  1. `share_file` runs through kobe-policy `policy.check` like any tool (`primary_arg` `/path`).
- *  2. kobe-tools sends `{op:"file.share"}` on fd 4 (`KOBE_TOOLS_FD`, artifacts.ts).
+ *  2. kobe-tools sends `{op:"file.share"}` on fd 4 (`KAIJU_TOOLS_FD`, artifacts.ts).
  *  3. The agent normalizes `input.path` to a workspace path (strip `/workspace/`), refuses paths
  *     outside the workspace, in `.kobe/`, or not a regular file, then **pushes that path**: hash,
  *     blob upload and workspace `commit` (a no-op commit is fine when the server already has the

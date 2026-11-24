@@ -32,25 +32,25 @@ routes (the pinning probe, KOBE-101, and app calls; their own port and key since
 */}}
 {{- define "kobe.serverInternalEnv" -}}
 {{- $m := include "kobe.mcpProxyValues" . | fromJson -}}
-- name: KOBE_MCP_ALLOW_INSECURE_HTTP
+- name: KAIJU_MCP_ALLOW_INSECURE_HTTP
   value: {{ ternary "true" "false" $m.allowInsecureHttp | quote }}
-- name: KOBE_MCP_ALLOWED_PORTS
+- name: KAIJU_MCP_ALLOWED_PORTS
   value: {{ join "," $m.allowedPorts | quote }}
-- name: KOBE_MCP_ALLOWED_INTERNAL_CIDRS
+- name: KAIJU_MCP_ALLOWED_INTERNAL_CIDRS
   value: {{ join "," $m.allowedInternalCidrs | quote }}
-- name: KOBE_MCP_DENIED_CIDRS
+- name: KAIJU_MCP_DENIED_CIDRS
   value: {{ join "," $m.deniedCidrs | quote }}
-- name: KOBE_INTERNAL_PORT
+- name: KAIJU_INTERNAL_PORT
   value: {{ include "kobe.serverInternalPort" . | quote }}
-- name: KOBE_MCP_PROXY_URL
+- name: KAIJU_MCP_PROXY_URL
   value: {{ printf "http://%s-mcp-proxy:%s" (include "kobe.fullname" .) (include "kobe.mcpProxyInternalPort" .) | quote }}
-- name: KOBE_MCP_PROXY_INTERNAL_KEY
+- name: KAIJU_MCP_PROXY_INTERNAL_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.mcpInternalKeySecretName" . }}
       key: key
 {{- /* Optional: an operator's own Secret may predate it; then the one key serves both ways. */}}
-- name: KOBE_MCP_PROXY_ROUTES_KEY
+- name: KAIJU_MCP_PROXY_ROUTES_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.mcpInternalKeySecretName" . }}
@@ -67,41 +67,41 @@ database: the server decides every call.
 {{- define "kobe.mcpProxyEnv" -}}
 {{- $m := include "kobe.mcpProxyValues" . | fromJson -}}
 {{ include "kobe.sessionVerifyKeyEnv" (dict "root" . "env" "MCP_PROXY" "aud" "mcp-proxy") }}
-- name: KOBE_MCP_INTERNAL_KEY
+- name: KAIJU_MCP_INTERNAL_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.mcpInternalKeySecretName" . }}
       key: key
-- name: KOBE_MCP_ROUTES_KEY
+- name: KAIJU_MCP_ROUTES_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.mcpInternalKeySecretName" . }}
       key: routes-key
       optional: true
-- name: KOBE_MCP_INTERNAL_PORT
+- name: KAIJU_MCP_INTERNAL_PORT
   value: {{ include "kobe.mcpProxyInternalPort" . | quote }}
-- name: KOBE_MCP_SERVER_URL
+- name: KAIJU_MCP_SERVER_URL
   value: {{ printf "http://%s-server:%s" (include "kobe.fullname" .) (include "kobe.serverInternalPort" .) | quote }}
-- name: KOBE_MCP_ALLOW_INSECURE_HTTP
+- name: KAIJU_MCP_ALLOW_INSECURE_HTTP
   value: {{ ternary "true" "false" $m.allowInsecureHttp | quote }}
-- name: KOBE_MCP_ALLOWED_PORTS
+- name: KAIJU_MCP_ALLOWED_PORTS
   value: {{ join "," $m.allowedPorts | quote }}
-- name: KOBE_MCP_ALLOWED_INTERNAL_CIDRS
+- name: KAIJU_MCP_ALLOWED_INTERNAL_CIDRS
   value: {{ join "," $m.allowedInternalCidrs | quote }}
-- name: KOBE_MCP_DENIED_CIDRS
+- name: KAIJU_MCP_DENIED_CIDRS
   value: {{ join "," $m.deniedCidrs | quote }}
-- name: KOBE_MCP_MAX_REQUEST_BYTES
+- name: KAIJU_MCP_MAX_REQUEST_BYTES
   value: {{ int $m.limits.maxRequestBytes | quote }}
-- name: KOBE_MCP_MAX_RESPONSE_BYTES
+- name: KAIJU_MCP_MAX_RESPONSE_BYTES
   value: {{ int $m.limits.maxResponseBytes | quote }}
-- name: KOBE_MCP_UPSTREAM_TIMEOUT_MS
+- name: KAIJU_MCP_UPSTREAM_TIMEOUT_MS
   value: {{ mul (int $m.limits.upstreamTimeoutSeconds) 1000 | quote }}
-- name: KOBE_MCP_CALLS_PER_SANDBOX
+- name: KAIJU_MCP_CALLS_PER_SANDBOX
   value: {{ int $m.limits.callsPerSandbox | quote }}
-- name: KOBE_MCP_MAX_CONCURRENT_CALLS
+- name: KAIJU_MCP_MAX_CONCURRENT_CALLS
   value: {{ int $m.limits.concurrentCalls | quote }}
-- name: KOBE_MCP_REQUEST_BURST
+- name: KAIJU_MCP_REQUEST_BURST
   value: {{ int $m.limits.requestBurst | quote }}
-- name: KOBE_MCP_REQUESTS_PER_SECOND
+- name: KAIJU_MCP_REQUESTS_PER_SECOND
   value: {{ int $m.limits.requestsPerSecond | quote }}
 {{- end -}}

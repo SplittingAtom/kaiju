@@ -13,7 +13,7 @@ export const ISOLATION_RECHECK_INTERVAL_MS = 60_000;
 export const ISOLATION_API_TIMEOUT_MS = 10_000;
 
 const UNSET_MESSAGE =
-  "KOBE_RUNTIME_CLASS is not set, so the server cannot verify an isolation runtime; agents are " +
+  "KAIJU_RUNTIME_CLASS is not set, so the server cannot verify an isolation runtime; agents are " +
   "disabled. Set isolation.runtimeClassName in the Helm values (default 'gvisor'). " +
   "See docs/install.md#isolation.";
 
@@ -94,7 +94,7 @@ export class IsolationRuntimeMissingError extends Error {
 }
 
 export interface IsolationGateOptions {
-  /** KOBE_RUNTIME_CLASS: the class sandboxes run under. Undefined ⇒ agents stay disabled. */
+  /** KAIJU_RUNTIME_CLASS: the class sandboxes run under. Undefined ⇒ agents stay disabled. */
   readonly runtimeClassName: string | undefined;
   readonly listRuntimeClasses: () => Promise<readonly RuntimeClassLike[]>;
   /** Called once per state transition (for logging), never for a repeated identical state. */

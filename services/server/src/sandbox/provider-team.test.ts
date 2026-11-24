@@ -107,7 +107,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     });
     expect(JSON.stringify(evalTemplate?.spec)).not.toContain('volumeClaimTemplates":[');
     expect(JSON.stringify(evalTemplate?.spec)).toContain(
-      '{"name":"KOBE_WORKSPACE_SYNC_INTERVAL_MS","value":"0"}',
+      '{"name":"KAIJU_WORKSPACE_SYNC_INTERVAL_MS","value":"0"}',
     );
     expect(objectAt(kube, "SandboxWarmPool", "kobe-skill-eval", NS)?.spec).toMatchObject({
       replicas: 0,

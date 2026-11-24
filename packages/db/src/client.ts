@@ -143,7 +143,7 @@ export function appSessionHook(
   };
 }
 
-/** Default query pool size of a service (KOBE-736: `KOBE_DB_POOL_MAX` overrides it). */
+/** Default query pool size of a service (KOBE-736: `KAIJU_DB_POOL_MAX` overrides it). */
 export const DEFAULT_POOL_MAX = 10;
 
 /** Connects as the app role. Team data is reachable only through `withTeam()`. */

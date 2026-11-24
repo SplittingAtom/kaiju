@@ -26,7 +26,7 @@
   # (one per argument: "METHOD /path [json]") and prints "<status> <body>" per request.
   as_owner() {
     $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
-      const base = 'http://127.0.0.1:8080', origin = process.env.KOBE_PUBLIC_URL;
+      const base = 'http://127.0.0.1:8080', origin = process.env.KAIJU_PUBLIC_URL;
       const h = { origin, 'content-type': 'application/json', 'x-kobe-team': '$E2E_TEAM_ID' };
       // Sign-in is rate limited (3 per 10 s per address): wait out a 429 instead of failing.
       let login;
@@ -84,8 +84,8 @@
     $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
       const { createHttpBifrostAdmin } = await import('/app/dist/models/bifrost-admin.js');
       const { createHash } = await import('node:crypto');
-      const admin = createHttpBifrostAdmin({ baseUrl: process.env.KOBE_BIFROST_URL,
-        username: process.env.KOBE_BIFROST_ADMIN_USERNAME || 'kobe', password: process.env.KOBE_BIFROST_ADMIN_PASSWORD });
+      const admin = createHttpBifrostAdmin({ baseUrl: process.env.KAIJU_BIFROST_URL,
+        username: process.env.KAIJU_BIFROST_ADMIN_USERNAME || 'kobe', password: process.env.KAIJU_BIFROST_ADMIN_PASSWORD });
       if (process.argv[1] === 'legacy') {
         const [site] = await admin.listCustomers();
         await admin.updateCustomer(site.id, 'kobe-install');
@@ -157,11 +157,11 @@
   # model-gateway.kobe.internal as in real sandboxes; a model-gateway token for the model user.
   MODEL_CLIENT="model-client-$RANDOM"
   PODS+=("-n $TEAM_NS $MODEL_CLIENT")
-  $KUBECTL -n "$TEAM_NS" run "$MODEL_CLIENT" --restart=Never --image="$KOBE_SANDBOX_IMAGE" --overrides="{\"spec\":{
+  $KUBECTL -n "$TEAM_NS" run "$MODEL_CLIENT" --restart=Never --image="$KAIJU_SANDBOX_IMAGE" --overrides="{\"spec\":{
     \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kobe-sandbox\",$SEC_POD,
     \"dnsPolicy\":\"None\",\"dnsConfig\":{\"nameservers\":[\"127.0.0.1\"]},
     \"hostAliases\":[{\"ip\":\"${mg_ip:-0.0.0.0}\",\"hostnames\":[\"model-gateway.kobe.internal\"]}],
-    \"containers\":[{\"name\":\"client\",\"image\":\"$KOBE_SANDBOX_IMAGE\",\"command\":[\"sleep\",\"3600\"],$SEC_CTR,
+    \"containers\":[{\"name\":\"client\",\"image\":\"$KAIJU_SANDBOX_IMAGE\",\"command\":[\"sleep\",\"3600\"],$SEC_CTR,
       \"resources\":{\"requests\":{\"cpu\":\"50m\",\"memory\":\"64Mi\"},\"limits\":{\"cpu\":\"500m\",\"memory\":\"256Mi\"}},
       \"volumeMounts\":[{\"name\":\"tmp\",\"mountPath\":\"/tmp\"}]}],
     \"volumes\":[{\"name\":\"tmp\",\"emptyDir\":{}}]}}" >/dev/null 2>&1 || true

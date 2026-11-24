@@ -12,22 +12,22 @@
 # stops firing. Schedules are pulled due in Postgres; the e2e runner ticks every 5 s. Not repeated in
 # the executor shard (nothing here depends on where Pi's tools run).
 echo "==> scheduled runs (KOBE-181)"
-if [[ "${KOBE_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then
+if [[ "${KAIJU_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then
   echo "SKIP scheduled runs (KOBE-181: runs in the suite shard only)"
-elif [[ -n "${KOBE_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n "${owner_id:-}" ]]; then
+elif [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n "${owner_id:-}" ]]; then
   source e2e/scheduled-runs.sh
   scheduled_run_checks
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "the scheduled-run checks need KOBE_SANDBOX_IMAGE and the model setup"
+  fail "the scheduled-run checks need KAIJU_SANDBOX_IMAGE and the model setup"
 else
-  echo "SKIP scheduled runs (KOBE_SANDBOX_IMAGE not set)"
+  echo "SKIP scheduled runs (KAIJU_SANDBOX_IMAGE not set)"
 fi
 
 # KOBE-168: cold start (hibernated → first token, first tool call) with the executor on or off, and
 # KOBE-27 workspace sync with tools under the partner uid. Needs the model setup of the sections above.
-if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function ]]; then
+if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function ]]; then
   source e2e/executor/trials.sh
   executor_first_token_trials
-  if [[ "${KOBE_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then executor_sync_checks; fi
+  if [[ "${KAIJU_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then executor_sync_checks; fi
 fi
 

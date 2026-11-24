@@ -1,8 +1,8 @@
 import { MIN_SECRET_LENGTH } from "../models/secret-box.js";
 import { Envelope, EnvelopeError } from "./envelope.js";
 
-export const ENVELOPE_KEY_ENV = "KOBE_ENVELOPE_KEY";
-export const ENVELOPE_KEY_PREVIOUS_ENV = "KOBE_ENVELOPE_KEY_PREVIOUS";
+export const ENVELOPE_KEY_ENV = "KAIJU_ENVELOPE_KEY";
+export const ENVELOPE_KEY_PREVIOUS_ENV = "KAIJU_ENVELOPE_KEY_PREVIOUS";
 
 interface Logger {
   info(obj: object, msg?: string): void;

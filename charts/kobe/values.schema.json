@@ -797,7 +797,7 @@
             "enabled": { "type": "boolean" },
             "addresses": {
               "type": "array",
-              "description": "Ingress load balancer address(es) as CIDRs (KOBE_EGRESS_INTERNAL_TARGETS).",
+              "description": "Ingress load balancer address(es) as CIDRs (KAIJU_EGRESS_INTERNAL_TARGETS).",
               "items": {
                 "type": "string",
                 "pattern": "^[0-9a-fA-F:.]+(/[0-9]{1,3})?$"

@@ -5,11 +5,11 @@
 echo "==> egress proxy (KOBE-38)"
 UPSTREAM_HOST="upstream.$UPSTREAM_NS.svc.cluster.local"
 INTERNAL_HOST="kobe-server.$NS.svc.cluster.local"
-if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
+if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   # The "internet": a TLS server (self-signed, s_server -www) behind a Service on 443. It has a
   # private ClusterIP, so the proxy may reach it only because this test allows exactly that IP.
   $KUBECTL create namespace "$UPSTREAM_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
-  $KUBECTL -n "$UPSTREAM_NS" run upstream --restart=Never --image="$KOBE_SANDBOX_IMAGE" --labels=app=upstream \
+  $KUBECTL -n "$UPSTREAM_NS" run upstream --restart=Never --image="$KAIJU_SANDBOX_IMAGE" --labels=app=upstream \
     --command -- sh -c 'cd /tmp && openssl req -x509 -newkey rsa:2048 -nodes -keyout k.pem -out c.pem -days 1 \
       -subj /CN=upstream >/dev/null 2>&1 && exec openssl s_server -quiet -accept 8443 -cert c.pem -key k.pem -www' >/dev/null
   $KUBECTL -n "$UPSTREAM_NS" expose pod upstream --port=443 --target-port=8443 --name=upstream >/dev/null
@@ -35,11 +35,11 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   proxy_ip=$(svc_ip kobe-egress-proxy || true)
   EGRESS_CLIENT="egress-client-$RANDOM"
   PODS+=("-n $TEAM_NS $EGRESS_CLIENT")
-  $KUBECTL -n "$TEAM_NS" run "$EGRESS_CLIENT" --restart=Never --image="$KOBE_SANDBOX_IMAGE" --overrides="{\"spec\":{
+  $KUBECTL -n "$TEAM_NS" run "$EGRESS_CLIENT" --restart=Never --image="$KAIJU_SANDBOX_IMAGE" --overrides="{\"spec\":{
     \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kobe-sandbox\",$SEC_POD,
     \"dnsPolicy\":\"None\",\"dnsConfig\":{\"nameservers\":[\"127.0.0.1\"]},
     \"hostAliases\":[{\"ip\":\"${proxy_ip:-0.0.0.0}\",\"hostnames\":[\"egress-proxy.kobe.internal\"]}],
-    \"containers\":[{\"name\":\"client\",\"image\":\"$KOBE_SANDBOX_IMAGE\",\"command\":[\"sleep\",\"3600\"],$SEC_CTR,
+    \"containers\":[{\"name\":\"client\",\"image\":\"$KAIJU_SANDBOX_IMAGE\",\"command\":[\"sleep\",\"3600\"],$SEC_CTR,
       \"resources\":{\"requests\":{\"cpu\":\"50m\",\"memory\":\"64Mi\"},\"limits\":{\"cpu\":\"500m\",\"memory\":\"256Mi\"}},
       \"volumeMounts\":[{\"name\":\"tmp\",\"mountPath\":\"/tmp\"}]}],
     \"volumes\":[{\"name\":\"tmp\",\"emptyDir\":{}}]}}" >/dev/null 2>&1 || true
@@ -150,9 +150,9 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   contains "control: the release-namespace probe reaches the server" '^control=REACHED$' "$recv"
   contains "the egress proxy admits nothing but sandboxes (probe from the release namespace)" '^proxy=BLOCKED$' "$recv"
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "egress checks need KOBE_SANDBOX_IMAGE and a sandbox pod"
+  fail "egress checks need KAIJU_SANDBOX_IMAGE and a sandbox pod"
 else
-  echo "SKIP egress checks (KOBE_SANDBOX_IMAGE not set)"
+  echo "SKIP egress checks (KAIJU_SANDBOX_IMAGE not set)"
 fi
 
 

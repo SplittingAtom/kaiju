@@ -5,9 +5,9 @@ import { embeddingsResponseSchema } from "@kaiju/protocol";
  * `POST <url>/embeddings` (a LAN Ollama's `/v1`, the in-cluster model, a hosted provider), called
  * directly, not through the gateway: the harness measures ranking, not billing. From the
  * operator's shell, never committed:
- *   KOBE_EVAL_EMBED_URL    base URL ending in /v1 (required for the hybrid comparison)
- *   KOBE_EVAL_EMBED_MODEL  the endpoint's model name, e.g. nomic-embed-text
- *   KOBE_EVAL_EMBED_KEY    bearer key, if the endpoint needs one
+ *   KAIJU_EVAL_EMBED_URL    base URL ending in /v1 (required for the hybrid comparison)
+ *   KAIJU_EVAL_EMBED_MODEL  the endpoint's model name, e.g. nomic-embed-text
+ *   KAIJU_EVAL_EMBED_KEY    bearer key, if the endpoint needs one
  */
 export interface EmbedEndpoint {
   readonly url: string;
@@ -20,10 +20,10 @@ export interface EmbedEndpoint {
 export function endpointFromEnv(
   env: Readonly<Record<string, string | undefined>>,
 ): EmbedEndpoint | undefined {
-  const url = env.KOBE_EVAL_EMBED_URL?.replace(/\/+$/, "");
-  const model = env.KOBE_EVAL_EMBED_MODEL;
+  const url = env.KAIJU_EVAL_EMBED_URL?.replace(/\/+$/, "");
+  const model = env.KAIJU_EVAL_EMBED_MODEL;
   if (!url || !model) return undefined;
-  return { url, model, key: env.KOBE_EVAL_EMBED_KEY || undefined, storedModel: `eval/${model}` };
+  return { url, model, key: env.KAIJU_EVAL_EMBED_KEY || undefined, storedModel: `eval/${model}` };
 }
 
 /** One vector per text, in order; batches of 32. */

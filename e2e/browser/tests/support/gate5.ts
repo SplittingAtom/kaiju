@@ -4,12 +4,12 @@ import { pinTeam } from "./team.js";
 
 /**
  * Helpers for the Gate 5 story checks (KOBE-227, `tests/gate5/`) and the specs they reuse. CI's
- * k3d install answers with the scripted fake model (`KOBE_FAKE_MODEL=1`,
+ * k3d install answers with the scripted fake model (`KAIJU_FAKE_MODEL=1`,
  * services/model-gateway/src/testing/fake-llm.ts): it echoes prompts, runs `bash: <command>` and
  * `tool: <name> <json>`, streams `kaiju-long-answer=<n>` slowly and reports `kaiju-prompt-tokens=<n>`.
  * Against a real model the same checks send plain instructions.
  */
-export const FAKE_MODEL = process.env["KOBE_FAKE_MODEL"] === "1";
+export const FAKE_MODEL = process.env["KAIJU_FAKE_MODEL"] === "1";
 
 /** A run that streams for a while (about 25 s with the fake): long enough to scroll, queue, stop. */
 export function longAnswer(real: string): string {
@@ -115,10 +115,10 @@ export async function deleteWorkspacePath(page: Page, path: string): Promise<num
  */
 export async function secondBrowser(
   browser: Browser,
-  user = process.env["KOBE_USER"],
-  password = process.env["KOBE_PW"],
+  user = process.env["KAIJU_USER"],
+  password = process.env["KAIJU_PW"],
 ): Promise<Page> {
-  if (!user || !password) throw new Error("KOBE_USER and KOBE_PW are required");
+  if (!user || !password) throw new Error("KAIJU_USER and KAIJU_PW are required");
   const context = await browser.newContext({ storageState: undefined });
   const page = await context.newPage();
   await page.goto("/sign-in");
@@ -155,4 +155,4 @@ export async function allowApproval(page: Page): Promise<void> {
 }
 
 /** A product failure filed and not fixed yet: the check runs, expected to fail (not when strict). */
-export const EXPECTED_FAILURES = process.env["KOBE_GATE_STRICT"] !== "1";
+export const EXPECTED_FAILURES = process.env["KAIJU_GATE_STRICT"] !== "1";

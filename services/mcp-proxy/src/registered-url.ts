@@ -13,7 +13,7 @@ export type RegisteredUrlLookup = (connectorId: string) => Promise<string | unde
 export interface RegisteredUrlLookupOptions {
   /** The server's internal listener, e.g. http://kobe-server:8082. */
   readonly baseUrl: string;
-  /** What the proxy presents to that listener (KOBE_MCP_INTERNAL_KEY). */
+  /** What the proxy presents to that listener (KAIJU_MCP_INTERNAL_KEY). */
   readonly internalKey: string;
   readonly timeoutMs: number;
   readonly fetch?: typeof fetch;

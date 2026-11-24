@@ -188,7 +188,7 @@ describe.skipIf(!PI_AVAILABLE)("the routed tools match Pi's own", () => {
       const bash = routed.get("bash") as ToolLike;
       const result = (await bash.execute(
         "call",
-        { command: 'echo "[$PI_MODEL][$KOBE_SECRET_TEST]"' } as never,
+        { command: 'echo "[$PI_MODEL][$KAIJU_SECRET_TEST]"' } as never,
         undefined,
         undefined,
         toolContext(),

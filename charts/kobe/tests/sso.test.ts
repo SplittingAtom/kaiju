@@ -72,18 +72,18 @@ describe("auth.sso (KOBE-626 ac-7)", () => {
     const ms = manifests({});
     const server = plain(envOf(ms, "kobe-server"));
     expect(server).toMatchObject({
-      KOBE_SSO_ENABLED: "true",
-      KOBE_SSO_ALLOWED_INTERNAL_CIDRS: "",
-      KOBE_SSO_ALLOWED_PORTS: "443",
-      KOBE_SSO_PROVIDERS: "[]",
+      KAIJU_SSO_ENABLED: "true",
+      KAIJU_SSO_ALLOWED_INTERNAL_CIDRS: "",
+      KAIJU_SSO_ALLOWED_PORTS: "443",
+      KAIJU_SSO_PROVIDERS: "[]",
     });
     const scheduler = envOf(ms, "kobe-scheduler").map((e) => e.name);
-    expect(scheduler.filter((n) => n.startsWith("KOBE_SSO_"))).toEqual([]);
+    expect(scheduler.filter((n) => n.startsWith("KAIJU_SSO_"))).toEqual([]);
     expect(ms.some((m) => m.metadata.name === "kobe-server-sso-egress")).toBe(false);
   });
 
   it("renders the kill switch", () => {
-    expect(plain(envOf(manifests({ enabled: false }), "kobe-server")).KOBE_SSO_ENABLED).toBe(
+    expect(plain(envOf(manifests({ enabled: false }), "kobe-server")).KAIJU_SSO_ENABLED).toBe(
       "false",
     );
   });
@@ -94,8 +94,8 @@ describe("auth.sso (KOBE-626 ac-7)", () => {
       "kobe-server",
     );
     const values = plain(env);
-    expect(values.KOBE_SSO_ALLOWED_INTERNAL_CIDRS).toBe("10.20.0.0/16");
-    const declared = JSON.parse(values.KOBE_SSO_PROVIDERS ?? "[]");
+    expect(values.KAIJU_SSO_ALLOWED_INTERNAL_CIDRS).toBe("10.20.0.0/16");
+    const declared = JSON.parse(values.KAIJU_SSO_PROVIDERS ?? "[]");
     expect(declared).toEqual([
       {
         slug: "contoso-corp",
@@ -106,14 +106,14 @@ describe("auth.sso (KOBE-626 ac-7)", () => {
         accessClaim: "roles",
       },
     ]);
-    expect(env.find((e) => e.name === "KOBE_SSO_CLIENT_SECRET_CONTOSO_CORP")).toEqual({
-      name: "KOBE_SSO_CLIENT_SECRET_CONTOSO_CORP",
+    expect(env.find((e) => e.name === "KAIJU_SSO_CLIENT_SECRET_CONTOSO_CORP")).toEqual({
+      name: "KAIJU_SSO_CLIENT_SECRET_CONTOSO_CORP",
       valueFrom: { secretKeyRef: { name: "kobe-sso-contoso", key: "client-secret" } },
     });
     // The server reads exactly what the chart renders.
     const settings = loadSsoSettings({
       ...values,
-      KOBE_SSO_CLIENT_SECRET_CONTOSO_CORP: "from-the-secret",
+      KAIJU_SSO_CLIENT_SECRET_CONTOSO_CORP: "from-the-secret",
     });
     expect(settings.helmProviders[0]).toMatchObject({
       slug: "contoso-corp",

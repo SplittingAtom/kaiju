@@ -32,7 +32,7 @@ read their configuration and startup files from that directory only (never the s
 Outputs are passed on as the kernel sends them; the agent applies Kaiju's caps and MIME allow-list.
 
 Internet (NB17): like the shell tool, through egress-proxy. The agent passes the token *file*
-(KOBE_EGRESS_TOKEN_FILE), the proxy URL and the thread id, never the token; before each cell the
+(KAIJU_EGRESS_TOKEN_FILE), the proxy URL and the thread id, never the token; before each cell the
 bridge runs a silent snippet in the kernel that reads the current token and sets HTTPS_PROXY and
 friends (as the shell tool's BASH_ENV script does per command), so a rotated token is picked up.
 One execution runs at a time; `interrupt` sends SIGINT to the kernel.
@@ -79,7 +79,7 @@ KERNEL_NAME = "kobe-python"
 EGRESS_REFRESH = """
 def __kobe_egress():
     import os, re
-    f, p = os.environ.get("KOBE_EGRESS_TOKEN_FILE"), os.environ.get("KOBE_EGRESS_PROXY")
+    f, p = os.environ.get("KAIJU_EGRESS_TOKEN_FILE"), os.environ.get("KAIJU_EGRESS_PROXY")
     if not f or not p:
         return
     try:
@@ -87,7 +87,7 @@ def __kobe_egress():
             token = fh.readline().strip()
     except (OSError, ValueError):
         return
-    user = os.environ.get("KOBE_THREAD_ID", "kobe")
+    user = os.environ.get("KAIJU_THREAD_ID", "kobe")
     host = (p[len("http://"):] if p.startswith("http://") else p).rstrip("/")
     if not token or not re.fullmatch(r"[A-Za-z0-9._:-]+", token + user + host):
         return
@@ -1625,7 +1625,7 @@ class Bridge:
         self.commands.put({"op": "shutdown"})
 
     def execute(self, exec_id, code):
-        if os.environ.get("KOBE_EGRESS_TOKEN_FILE") and os.environ.get("KOBE_EGRESS_PROXY"):
+        if os.environ.get("KAIJU_EGRESS_TOKEN_FILE") and os.environ.get("KAIJU_EGRESS_PROXY"):
             # Silent and before the cell on the same shell channel, so it runs first; its own
             # messages carry another parent id and are not forwarded.
             self.kc.execute(

@@ -131,7 +131,7 @@ export async function registerKaijuModels(
   const file = (modelFile ??= takeModelFilePath(deps.env));
   if (file === undefined) {
     // Without a model file there is nothing to register: Pi has no provider and refuses prompts.
-    deps.warn("kobe-models: no model file (KOBE_MODEL_FILE); no model registered");
+    deps.warn("kobe-models: no model file (KAIJU_MODEL_FILE); no model registered");
     return;
   }
   if (contextRecorder === undefined) {

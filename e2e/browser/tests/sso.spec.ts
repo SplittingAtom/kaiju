@@ -21,9 +21,9 @@ import {
 /**
  * KOBE-634 (spec sso-oidc-scim §17 SSO-10): single sign-on in the browser against the mock
  * identity provider (e2e/sso/mock-entra.mjs), registered as its own generic OIDC provider
- * (KOBE_SSO_MOCK_SLUG, default `e2e-mock`) beside any real provider, which this spec never
- * touches. Deployment: e2e/sso/gate1-mock-idp.sh. KOBE_USER is the Owner and a team admin of
- * its active team; the link test also needs KOBE_USER2 / KOBE_PW2 (a local account without 2FA).
+ * (KAIJU_SSO_MOCK_SLUG, default `e2e-mock`) beside any real provider, which this spec never
+ * touches. Deployment: e2e/sso/gate1-mock-idp.sh. KAIJU_USER is the Owner and a team admin of
+ * its active team; the link test also needs KAIJU_USER2 / KAIJU_PW2 (a local account without 2FA).
  *
  * 1. The sign-in page shows "Sign in with <mock>".
  * 2. A first SSO sign-in creates the account from the access mapping (app role → the team,
@@ -38,8 +38,8 @@ import {
  * mapping and revokes the SCIM token. People it made stay as deactivated accounts (Kaiju never
  * deletes users). No model tokens. Run: `npx playwright test sso`.
  */
-const USER2 = process.env["KOBE_USER2"];
-const PW2 = process.env["KOBE_PW2"];
+const USER2 = process.env["KAIJU_USER2"];
+const PW2 = process.env["KAIJU_PW2"];
 
 test.describe.configure({ mode: "serial" });
 
@@ -67,7 +67,7 @@ test.beforeAll(async ({ browser }) => {
     "GET",
     "/v1/team",
   );
-  expect(current.json.role, "KOBE_USER is a team admin of its active team").toBe("team_admin");
+  expect(current.json.role, "KAIJU_USER is a team admin of its active team").toBe("team_admin");
   team = current.json.team;
   const mapping = await pageApi<{ mapping?: { id: string } }>(
     owner,
@@ -119,7 +119,7 @@ test.afterAll(async () => {
 });
 
 test.beforeEach(() => {
-  test.skip(!MOCK.issuer, "KOBE_SSO_MOCK_ISSUER is not set (see e2e/sso/gate1-mock-idp.sh)");
+  test.skip(!MOCK.issuer, "KAIJU_SSO_MOCK_ISSUER is not set (see e2e/sso/gate1-mock-idp.sh)");
   test.skip(!provider, "The mock provider is not available on this deployment");
 });
 
@@ -175,7 +175,7 @@ test("a first sign-in creates a member from the mapping; the team admin takes th
 test("linking needs the local password and a confirmation; then SSO signs in as that account", async ({
   browser,
 }) => {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 are required");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 are required");
   if (!USER2 || !PW2 || !provider) return;
   // member2's address, verified; no app role: member2 keeps only their own memberships.
   const person = newPerson("link", { upn: USER2, email: USER2, roles: [] });

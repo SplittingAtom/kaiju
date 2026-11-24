@@ -4,10 +4,10 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-276: how shared cases counted in the agent's latest pre-publish eval, on its report.
- * Read-only. `KOBE_AGENT_ID` names a team agent whose evals `KOBE_USER` may read. Spends no
- * tokens. Run on gate1: `KOBE_AGENT_ID=… npx playwright test eval-cases-gate`.
+ * Read-only. `KAIJU_AGENT_ID` names a team agent whose evals `KAIJU_USER` may read. Spends no
+ * tokens. Run on gate1: `KAIJU_AGENT_ID=… npx playwright test eval-cases-gate`.
  */
-const AGENT_ID = process.env["KOBE_AGENT_ID"];
+const AGENT_ID = process.env["KAIJU_AGENT_ID"];
 const TEAM_KEY = "kobe.lastTeamId";
 
 /** The agent's latest eval id, read with the page's session (null when it has none). */
@@ -27,7 +27,7 @@ async function latestEval(page: Page, agentId: string): Promise<string | null> {
 }
 
 test("Eval report: how shared cases counted", async ({ page }) => {
-  test.skip(!AGENT_ID, "set KOBE_AGENT_ID to a team agent KOBE_USER owns");
+  test.skip(!AGENT_ID, "set KAIJU_AGENT_ID to a team agent KAIJU_USER owns");
   await page.goto(`/admin/team/agents/${AGENT_ID}`);
   await expect(panelOf(page).getByRole("heading", { level: 1 })).toBeVisible({
     timeout: SHELL_TIMEOUT_MS,

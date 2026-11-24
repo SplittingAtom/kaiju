@@ -4,12 +4,12 @@
 {{- end -}}
 
 {{- define "kobe.envelopeEnv" -}}
-- name: KOBE_ENVELOPE_KEY
+- name: KAIJU_ENVELOPE_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.envelopeSecretName" . }}
       key: key
-- name: KOBE_ENVELOPE_KEY_PREVIOUS
+- name: KAIJU_ENVELOPE_KEY_PREVIOUS
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.envelopeSecretName" . }}

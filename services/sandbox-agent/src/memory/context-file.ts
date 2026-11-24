@@ -9,7 +9,7 @@ import type { SemanticSection } from "./semantic-context.js";
  * launch and never restarts Pi. `verify` is the tripwire: it must still be what the agent wrote.
  */
 export const MEMORY_FILE_NAME = "memory-context.json";
-export const MEMORY_FILE_ENV = "KOBE_MEMORY_FILE";
+export const MEMORY_FILE_ENV = "KAIJU_MEMORY_FILE";
 
 export interface MemoryFileContent {
   readonly tools: boolean;

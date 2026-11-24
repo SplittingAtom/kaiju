@@ -63,7 +63,7 @@ describe.skipIf(!PI_AVAILABLE)("session continuity in real Pi 1.0.0 (KOBE-258)",
   it("keeps a turn cut off at the output limit, and the next run has its context", async () => {
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
     });
     const harness = h;

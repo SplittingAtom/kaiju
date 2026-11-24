@@ -95,11 +95,11 @@ export function rechainSnapshot(kept, { id, prevId }) {
 
 export const DEFAULT_BASE = "origin/main";
 /** Environment variable naming db:rebase's base ref when no argument does (KOBE-815). */
-export const BASE_ENV = "KOBE_DB_REBASE_BASE";
+export const BASE_ENV = "KAIJU_DB_REBASE_BASE";
 
 /**
  * db:rebase's arguments (KOBE-815): `--apply`, or the base ref to bring the branch onto, from
- * `--base <ref>`, `--base=<ref>`, a positional ref, or `KOBE_DB_REBASE_BASE`, in that order;
+ * `--base <ref>`, `--base=<ref>`, a positional ref, or `KAIJU_DB_REBASE_BASE`, in that order;
  * default `origin/main`. A base other than main stacks the branch on an unmerged one.
  */
 export function parseRebaseArgs(argv, env = {}) {

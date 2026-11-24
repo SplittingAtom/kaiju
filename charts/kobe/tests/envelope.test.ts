@@ -36,7 +36,7 @@ const find = (ms: Manifest[], kind: string, name: string) =>
 const keyVars = (ms: Manifest[], deployment: string) =>
   (
     (find(ms, "Deployment", deployment)?.spec.template.spec.containers[0].env ?? []) as any[]
-  ).filter((e) => e.name.startsWith("KOBE_ENVELOPE_KEY"));
+  ).filter((e) => e.name.startsWith("KAIJU_ENVELOPE_KEY"));
 
 describe("envelope key (KOBE-107)", () => {
   const ms = render();
@@ -47,11 +47,11 @@ describe("envelope key (KOBE-107)", () => {
     expect((secret?.stringData as Record<string, string>).key).toMatch(/^[A-Za-z0-9]{48}$/);
     expect(keyVars(ms, "kobe-server")).toEqual([
       {
-        name: "KOBE_ENVELOPE_KEY",
+        name: "KAIJU_ENVELOPE_KEY",
         valueFrom: { secretKeyRef: { name: "kobe-envelope-key", key: "key" } },
       },
       {
-        name: "KOBE_ENVELOPE_KEY_PREVIOUS",
+        name: "KAIJU_ENVELOPE_KEY_PREVIOUS",
         valueFrom: {
           secretKeyRef: { name: "kobe-envelope-key", key: "key-previous", optional: true },
         },

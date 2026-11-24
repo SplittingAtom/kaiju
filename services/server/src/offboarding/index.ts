@@ -73,7 +73,7 @@ export interface Offboarding {
   offboardUser(userId: string, trigger: OffboardTrigger): Promise<void>;
   /**
    * A site admin purges a deactivated person's portable memories (Q7, KOBE-386); until then they
-   * are kept, and reactivation finds them unchanged. `paused`: KOBE_RETENTION_PAUSED.
+   * are kept, and reactivation finds them unchanged. `paused`: KAIJU_RETENTION_PAUSED.
    */
   purgePortable(userId: string): Promise<PortablePurgeOutcome | { readonly status: "paused" }>;
   /**
@@ -100,7 +100,7 @@ export interface OffboardingOptions {
   readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly log: Pick<Logger, "info" | "warn" | "error" | "debug">;
-  /** KOBE_RETENTION_PAUSED (KOBE-243): the sweep and the purge do nothing. */
+  /** KAIJU_RETENTION_PAUSED (KOBE-243): the sweep and the purge do nothing. */
   readonly paused?: boolean;
 }
 

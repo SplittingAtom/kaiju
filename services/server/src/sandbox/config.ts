@@ -13,10 +13,10 @@ import { z } from "zod";
 import { KAIJU_ENDPOINTS, type KaijuEndpoint } from "./constants.js";
 
 /**
- * Sandbox provider configuration (spec D11, D12). The chart renders it into KOBE_SANDBOX_CONFIG
+ * Sandbox provider configuration (spec D11, D12). The chart renders it into KAIJU_SANDBOX_CONFIG
  * (JSON, from the `sandbox` values), the per-audience Ed25519 private keys of the session tokens
- * into KOBE_SESSION_SIGNING_KEY_* (from the generated Secret) and their public keys into
- * KOBE_SESSION_VERIFY_KEY_* (KOBE-513). Validated at startup; invalid config fails fast.
+ * into KAIJU_SESSION_SIGNING_KEY_* (from the generated Secret) and their public keys into
+ * KAIJU_SESSION_VERIFY_KEY_* (KOBE-513). Validated at startup; invalid config fails fast.
  */
 
 /** KOBE-733: dormant-volume reclaim ships off; 30 days once an install turns it on. */
@@ -228,8 +228,8 @@ export function quantityBytes(q: string): number {
 }
 
 /**
- * KOBE_SESSION_SIGNING_KEY_<AUDIENCE>: one Ed25519 private key (PKCS#8 PEM) per audience;
- * KOBE_SESSION_VERIFY_KEY_<AUDIENCE>: its public key bundle (optional here, for rotations).
+ * KAIJU_SESSION_SIGNING_KEY_<AUDIENCE>: one Ed25519 private key (PKCS#8 PEM) per audience;
+ * KAIJU_SESSION_VERIFY_KEY_<AUDIENCE>: its public key bundle (optional here, for rotations).
  */
 export { signingKeyEnvName, verifyKeyEnvName };
 
@@ -245,24 +245,24 @@ export interface SandboxConfig {
 }
 
 /**
- * Returns undefined when KOBE_SANDBOX_CONFIG is unset (the sandbox provider stays disabled and
+ * Returns undefined when KAIJU_SANDBOX_CONFIG is unset (the sandbox provider stays disabled and
  * agent work fails with a clear error); throws when it is set but invalid or keys are missing.
  */
 export function loadSandboxSettings(
   env: Readonly<Record<string, string | undefined>>,
 ): SandboxSettings | undefined {
-  const raw = env.KOBE_SANDBOX_CONFIG?.trim();
+  const raw = env.KAIJU_SANDBOX_CONFIG?.trim();
   if (!raw) return undefined;
   let json: unknown;
   try {
     json = JSON.parse(raw);
   } catch {
-    throw new Error("Invalid configuration: KOBE_SANDBOX_CONFIG is not valid JSON");
+    throw new Error("Invalid configuration: KAIJU_SANDBOX_CONFIG is not valid JSON");
   }
   const parsed = sandboxSettingsSchema.safeParse(json);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
-    throw new Error(`Invalid configuration: KOBE_SANDBOX_CONFIG ${issues}`);
+    throw new Error(`Invalid configuration: KAIJU_SANDBOX_CONFIG ${issues}`);
   }
   return parsed.data;
 }
@@ -298,7 +298,7 @@ export function loadSandboxConfig(
   }
   const distinct = new Set(Object.values(keys).map((k) => k.kid));
   if (problems.length === 0 && distinct.size !== SESSION_TOKEN_AUDIENCES.length) {
-    problems.push("KOBE_SESSION_SIGNING_KEY_* must all differ (one key pair per audience)");
+    problems.push("KAIJU_SESSION_SIGNING_KEY_* must all differ (one key pair per audience)");
   }
   if (problems.length > 0) throw new Error(`Invalid configuration: ${problems.join("; ")}`);
   return {

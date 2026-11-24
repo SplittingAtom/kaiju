@@ -7,7 +7,7 @@
 # DNS change, so a real Entra provider on the same site is untouched. The server reaches it on the
 # Service's https port (private CA via server.extraCaBundle, address via
 # auth.sso.allowedInternalCidrs); the browser reaches only the authorize step, through the ingress
-# (plain HTTP behind it), with Chromium mapping __HOST__ to the ingress (KOBE_SSO_MOCK_MAP).
+# (plain HTTP behind it), with Chromium mapping __HOST__ to the ingress (KAIJU_SSO_MOCK_MAP).
 apiVersion: v1
 kind: Namespace
 metadata:

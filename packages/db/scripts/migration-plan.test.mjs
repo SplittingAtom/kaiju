@@ -102,17 +102,17 @@ describe("db:rebase base ref (KOBE-815)", () => {
     expect(parseRebaseArgs([], {})).toEqual({ apply: false, base: "origin/main" });
   });
 
-  it("takes the base from --base, --base=, a positional ref or KOBE_DB_REBASE_BASE, in that order", () => {
-    const env = { KOBE_DB_REBASE_BASE: "origin/from-env" };
+  it("takes the base from --base, --base=, a positional ref or KAIJU_DB_REBASE_BASE, in that order", () => {
+    const env = { KAIJU_DB_REBASE_BASE: "origin/from-env" };
     expect(parseRebaseArgs(["--base", "origin/stack"], env).base).toBe("origin/stack");
     expect(parseRebaseArgs(["--base=group-88"], env).base).toBe("group-88");
     expect(parseRebaseArgs(["origin/positional"], env).base).toBe("origin/positional");
     expect(parseRebaseArgs([], env).base).toBe("origin/from-env");
-    expect(parseRebaseArgs([], { KOBE_DB_REBASE_BASE: "" }).base).toBe("origin/main");
+    expect(parseRebaseArgs([], { KAIJU_DB_REBASE_BASE: "" }).base).toBe("origin/main");
   });
 
   it("--apply takes no base (the stash names it) and unknown or empty arguments are refused", () => {
-    expect(parseRebaseArgs(["--apply"], { KOBE_DB_REBASE_BASE: "x" })).toEqual({
+    expect(parseRebaseArgs(["--apply"], { KAIJU_DB_REBASE_BASE: "x" })).toEqual({
       apply: true,
       base: null,
     });

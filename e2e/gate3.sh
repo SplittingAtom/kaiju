@@ -20,31 +20,31 @@
 # docs/gates/gate-3.md records what each check proves and what it does not.
 #
 # Runs after the gate1-prep install in CI (k3d, shard `gate3`) and against a real cluster's install:
-#   KOBE_GATE3_NS=<release namespace> KOBE_GATE3_RELEASE=<release> e2e/gate3.sh
+#   KAIJU_GATE3_NS=<release namespace> KAIJU_GATE3_RELEASE=<release> e2e/gate3.sh
 # Non-destructive outside what it creates: users gate3-*@gate3.test, team gate3-a (namespace
 # kobe-team-gate3-a and the sandbox the server makes for gate3-m1, whose pod and volume ac-5
 # deletes), its agents, skills, project, memory docs and threads, and one site blocklist entry for
 # a bundle only this run uploads (removed on exit). The memory switches of team gate3-a are turned
 # on. It reads the database as the app role, so it refuses anything but a k3d context unless
-# KOBE_GATE3_CONTEXT names the context explicitly. Re-runnable: users and team are reused, every
+# KAIJU_GATE3_CONTEXT names the context explicitly. Re-runnable: users and team are reused, every
 # other object is new per run (named with a nonce).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
-NS="${KOBE_GATE3_NS:-kobe-dev}"
-RELEASE="${KOBE_GATE3_RELEASE:-kobe}"
-STEPS=" ${KOBE_GATE3_STEPS:-versions skills projects memory data} "
-SBX_WAIT="${KOBE_GATE3_SANDBOX_WAIT:-180}" # seconds m1's sandbox pod may take to be Running and Ready
-MODEL_ALIAS="${KOBE_GATE3_MODEL:-fast}"
+NS="${KAIJU_GATE3_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATE3_RELEASE:-kobe}"
+STEPS=" ${KAIJU_GATE3_STEPS:-versions skills projects memory data} "
+SBX_WAIT="${KAIJU_GATE3_SANDBOX_WAIT:-180}" # seconds m1's sandbox pod may take to be Running and Ready
+MODEL_ALIAS="${KAIJU_GATE3_MODEL:-fast}"
 # The scripted model (CI) echoes prompts like `bash: <cmd>`, `tool: <name> <json>`, `system?` and
 # `history?`; a real model gets plain instructions instead and the checks read side effects.
-FAKE="${KOBE_GATE3_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
-OWNER_EMAIL="${KOBE_GATE3_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATE3_OWNER_PASSWORD:-e2e owner password}"
+FAKE="${KAIJU_GATE3_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
+OWNER_EMAIL="${KAIJU_GATE3_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATE3_OWNER_PASSWORD:-e2e owner password}"
 # The browser checks (e2e/browser/scripts/gate3-browser.mjs) need Node and Playwright's Chromium
 # where this runs: on in CI, otherwise opt in (or run the printed command elsewhere).
-BROWSER="${KOBE_GATE3_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
+BROWSER="${KAIJU_GATE3_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
 TEAM_SLUG=gate3-a
 TNS="kobe-team-$TEAM_SLUG"
 SERVER="deploy/$RELEASE-server"
@@ -54,8 +54,8 @@ USER_PASSWORD="gate1 user password" # the fixtures' password (e2e/gate1/client.m
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATE3_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATE3_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATE3_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATE3_CONTEXT=$context)" >&2
   exit 2
 fi
 
@@ -353,10 +353,10 @@ fi
 # ---- ac-5: CSV → S3 → sandbox → chart artifact under CSP; the sandbox is lost and nothing is ---------
 if [[ "$STEPS" == *" data "* ]] && sbx_need "ac-5 (data)"; then
   echo "==> ac-5: CSV upload, a computed chart artifact under a strict CSP, then the sandbox is deleted"
-  KOBE_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
-  contains "the gallery agent Kobe (data-analysis and charts skills) exists" '^[0-9a-f-]{36}$' "$KOBE_AGENT"
+  KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
+  contains "the gallery agent Kobe (data-analysis and charts skills) exists" '^[0-9a-f-]{36}$' "$KAIJU_AGENT"
   CSV=$'region,amount\nnorth,120.5\nsouth,80\nnorth,30\neast,50.25\n'
-  start=$(turn "$U_M1" "gate3 data $NONCE" "\"agentId\":\"$KOBE_AGENT\",\"title\":\"gate3 data\"")
+  start=$(turn "$U_M1" "gate3 data $NONCE" "\"agentId\":\"$KAIJU_AGENT\",\"title\":\"gate3 data\"")
   T_DATA=$(field thread "$start")
   contains "a thread with Kaiju starts" '^terminal=run.completed$' "$start"
   up=$(step upload "\"user\":$U_M1,\"threadId\":\"$T_DATA\",\"name\":\"sales.csv\",\"text\":$(json_str "$CSV")")
@@ -475,17 +475,17 @@ fi
 
 # ---- the browser checks: frame CSP (ac-5), Note saved chip (ac-4), version badge (ac-1) ------------
 browser_env() { # the variables gate3-browser.mjs reads, except the password
-  printf 'KOBE_BROWSER_BASE=%s KOBE_BROWSER_EMAIL=gate3-m1@gate3.test KOBE_BROWSER_TEAM=%s KOBE_BROWSER_ARTIFACT=%s:1 KOBE_BROWSER_MEMORY_THREAD=%s KOBE_BROWSER_PINNED_THREAD=%s' \
+  printf 'KAIJU_BROWSER_BASE=%s KAIJU_BROWSER_EMAIL=gate3-m1@gate3.test KAIJU_BROWSER_TEAM=%s KAIJU_BROWSER_ARTIFACT=%s:1 KAIJU_BROWSER_MEMORY_THREAD=%s KAIJU_BROWSER_PINNED_THREAD=%s' \
     "$PUBLIC_URL" "$TEAM" "${ARTIFACT:-none}" "${T_MEMORY:-none}" "${PINNED_THREAD:-none}"
 }
 if ((MODELS)) && [[ -n "${ARTIFACT:-}${T_MEMORY:-}${PINNED_THREAD:-}" ]]; then
-  PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KOBE_PUBLIC_URL 2>/dev/null || true)
+  PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KAIJU_PUBLIC_URL 2>/dev/null || true)
   if [[ "$BROWSER" != 1 ]]; then
-    echo "skip browser checks (KOBE_GATE3_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL:"
-    echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KOBE_BROWSER_MEMORY_PROMPT='<a remember turn>' KOBE_BROWSER_PASSWORD=<the fixtures' password> node scripts/gate3-browser.mjs"
+    echo "skip browser checks (KAIJU_GATE3_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL:"
+    echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KAIJU_BROWSER_MEMORY_PROMPT='<a remember turn>' KAIJU_BROWSER_PASSWORD=<the fixtures' password> node scripts/gate3-browser.mjs"
   else
     echo "==> browser: the chart frame's CSP, the Note saved chip, the version badge"
-    map="${KOBE_GATE3_BROWSER_MAP:-}"
+    map="${KAIJU_GATE3_BROWSER_MAP:-}"
     if [[ -z "$map" && "$context" == k3d-* ]]; then
       # The browser runs beside kubectl: it reaches the ingress through a port-forward and resolves
       # the public host to it, so it talks to Kaiju under its own origin.
@@ -497,7 +497,7 @@ if ((MODELS)) && [[ -n "${ARTIFACT:-}${T_MEMORY:-}${PINNED_THREAD:-}" ]]; then
       until_ok 30 ingress_up || echo "     the port-forward to the ingress did not answer: $(tail -2 "$WORK/port-forward.log")"
     fi
     # shellcheck disable=SC2046 # browser_env is a list of NAME=value words
-    br=$(env $(browser_env) KOBE_BROWSER_MAP="$map" KOBE_BROWSER_PASSWORD="$USER_PASSWORD" KOBE_BROWSER_MEMORY_PROMPT="${MEMORY_PROMPT:-}" \
+    br=$(env $(browser_env) KAIJU_BROWSER_MAP="$map" KAIJU_BROWSER_PASSWORD="$USER_PASSWORD" KAIJU_BROWSER_MEMORY_PROMPT="${MEMORY_PROMPT:-}" \
       node e2e/browser/scripts/gate3-browser.mjs 2>&1 || true)
     printf '%s\n' "$br" | sed 's/^/     /'
     contains "browser: m1 signs in" '^signin=ok$' "$br"
@@ -533,7 +533,7 @@ if ((failed)); then
   exit 1
 fi
 if ((xfailed)); then
-  verdict "Gate 3 suite: passed with $xfailed expected failures (filed product failures; KOBE_GATE_STRICT=1 fails them)"
+  verdict "Gate 3 suite: passed with $xfailed expected failures (filed product failures; KAIJU_GATE_STRICT=1 fails them)"
 else
   verdict "Gate 3 suite: all checks passed"
 fi

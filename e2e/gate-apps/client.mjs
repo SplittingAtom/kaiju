@@ -216,7 +216,7 @@ async function appsEntries() {
 
 /** Forged result reports at the server's internal listener (the sandbox never has its key). */
 async function appsForged() {
-  const port = process.env.KOBE_INTERNAL_PORT ?? "8082";
+  const port = process.env.KAIJU_INTERNAL_PORT ?? "8082";
   const url = `http://127.0.0.1:${port}/internal/v1/mcp/connectors/${config.connectorId}/results`;
   const body = JSON.stringify({ ticket: "forged", input: {}, result: { content: [] } });
   const send = (headers) =>
@@ -231,7 +231,7 @@ async function appsForged() {
   out(
     "forged_token",
     await send({
-      authorization: `Bearer ${process.env.KOBE_MCP_PROXY_INTERNAL_KEY ?? ""}`,
+      authorization: `Bearer ${process.env.KAIJU_MCP_PROXY_INTERNAL_KEY ?? ""}`,
       "kobe-sandbox-token": "forged.sandbox.token",
     }),
   );

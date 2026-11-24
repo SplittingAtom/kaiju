@@ -53,7 +53,7 @@ defaults:
 env:
   K3D_VERSION: v5.9.0
   K3D_SHA256: 06d8f25bc3a971c4eb29e0ff08429b180402db0f4dec838c9eac427e296800a0
-  KOBE_IMAGE_TAG: e2e-${{ github.sha }}
+  KAIJU_IMAGE_TAG: e2e-${{ github.sha }}
   # Downloads retry transient failures (a GitHub 502 on the k3d release must not fail the run).
   CURL_RETRY: --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 20
 
@@ -153,7 +153,7 @@ jobs:
           platforms: linux/amd64
           provenance: false
           sbom: false
-          tags: ghcr.io/splittingatom/kobe-${{ matrix.name }}:${{ env.KOBE_IMAGE_TAG }}
+          tags: ghcr.io/splittingatom/kobe-${{ matrix.name }}:${{ env.KAIJU_IMAGE_TAG }}
           outputs: type=docker,dest=${{ runner.temp }}/${{ matrix.archive || 'e2e-image' }}-${{ matrix.name }}.tar
           # Read-only: publish.yml writes these scopes on every push to main, which every pull
           # request and merge-queue run may read; PR runs don't spend the repository's cache quota.
@@ -165,12 +165,12 @@ jobs:
         if: matrix.name != 'sandbox'
         run: |
           docker load --input "${RUNNER_TEMP}/${{ matrix.archive || 'e2e-image' }}-${{ matrix.name }}.tar"
-          scripts/assert-image-nonroot.sh "ghcr.io/splittingatom/kobe-${{ matrix.name }}:${KOBE_IMAGE_TAG}"
+          scripts/assert-image-nonroot.sh "ghcr.io/splittingatom/kobe-${{ matrix.name }}:${KAIJU_IMAGE_TAG}"
       # KOBE-375: every image ships LICENSE, NOTICE and THIRD_PARTY_LICENSES.md (the sandbox image
       # is checked in sandbox-image.yml).
       - name: Assert ${{ matrix.name }} ships the license files
         if: matrix.name != 'sandbox'
-        run: scripts/assert-image-licenses.sh "ghcr.io/splittingatom/kobe-${{ matrix.name }}:${KOBE_IMAGE_TAG}"
+        run: scripts/assert-image-licenses.sh "ghcr.io/splittingatom/kobe-${{ matrix.name }}:${KAIJU_IMAGE_TAG}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           # archive: false uploads the file as is (its layers are compressed already); the
@@ -305,7 +305,7 @@ jobs:
         env:
           # The nodes' docker.io pulls: the self-hosted runners' cache (it does not resolve
           # elsewhere), or Google's public mirror on GitHub-hosted runners.
-          KOBE_DOCKERHUB_MIRROR: ${{ runner.environment == 'github-hosted' && 'https://mirror.gcr.io' || 'http://dockerhub-mirror.kobe-ci-runners.svc.cluster.local:5000' }}
+          KAIJU_DOCKERHUB_MIRROR: ${{ runner.environment == 'github-hosted' && 'https://mirror.gcr.io' || 'http://dockerhub-mirror.kobe-ci-runners.svc.cluster.local:5000' }}
         run: scripts/dev-cluster.sh
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -320,70 +320,70 @@ jobs:
           merge-multiple: true
       - name: Load the images into k3d
         env:
-          KOBE_IMAGE_ARCHIVES: ${{ runner.temp }}/e2e-images
-          KOBE_E2E_EXTRA_IMAGES: ${{ matrix.shard == 'gate4' && 'orbit-eval' || '' }}
+          KAIJU_IMAGE_ARCHIVES: ${{ runner.temp }}/e2e-images
+          KAIJU_E2E_EXTRA_IMAGES: ${{ matrix.shard == 'gate4' && 'orbit-eval' || '' }}
           SHARD: ${{ matrix.shard }}
         run: |
-          ls -lh "${KOBE_IMAGE_ARCHIVES}"
-          e2e/load-images.sh kobe "${KOBE_IMAGE_TAG}"
+          ls -lh "${KAIJU_IMAGE_ARCHIVES}"
+          e2e/load-images.sh kobe "${KAIJU_IMAGE_TAG}"
           # The node now has its own copies (the restore shard loads them again into its second cluster).
-          if [ "${SHARD}" != restore ]; then rm -rf "${KOBE_IMAGE_ARCHIVES}"; fi
+          if [ "${SHARD}" != restore ]; then rm -rf "${KAIJU_IMAGE_ARCHIVES}"; fi
       - name: Run the ${{ matrix.shard }} shard
         env:
-          KOBE_SANDBOX_IMAGE: ghcr.io/splittingatom/kobe-sandbox:${{ env.KOBE_IMAGE_TAG }}
+          KAIJU_SANDBOX_IMAGE: ghcr.io/splittingatom/kobe-sandbox:${{ env.KAIJU_IMAGE_TAG }}
           SHARD: ${{ matrix.shard }}
           # The nightly and manual runs also exercise the real ClamAV image (KOBE-146): its image and
           # signature download add minutes and ~1 GiB of memory, so pull requests leave it out.
-          KOBE_E2E_CLAMAV: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && matrix.shard == 'suite' && '1' || '' }}
+          KAIJU_E2E_CLAMAV: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && matrix.shard == 'suite' && '1' || '' }}
           # The restore shard creates a second cluster (scripts/dev-cluster.sh) and loads the images again.
-          KOBE_DOCKERHUB_MIRROR: ${{ runner.environment == 'github-hosted' && 'https://mirror.gcr.io' || 'http://dockerhub-mirror.kobe-ci-runners.svc.cluster.local:5000' }}
-          KOBE_IMAGE_ARCHIVES: ${{ matrix.shard == 'restore' && format('{0}/e2e-images', runner.temp) || '' }}
+          KAIJU_DOCKERHUB_MIRROR: ${{ runner.environment == 'github-hosted' && 'https://mirror.gcr.io' || 'http://dockerhub-mirror.kobe-ci-runners.svc.cluster.local:5000' }}
+          KAIJU_IMAGE_ARCHIVES: ${{ matrix.shard == 'restore' && format('{0}/e2e-images', runner.temp) || '' }}
         run: |
           # Gate shards keep their output for the stories job; `shell: bash` (above) has pipefail,
           # so a gate's own exit status, not tee's, ends the step.
           logs="${RUNNER_TEMP}/gate-logs"
           mkdir -p "${logs}"
           case "${SHARD}" in
-            suite | cold-start) KOBE_E2E_SHARD="${SHARD}" e2e/run.sh ;;
+            suite | cold-start) KAIJU_E2E_SHARD="${SHARD}" e2e/run.sh ;;
             # KOBE-168: the whole `suite` with sandbox.toolExecutor.enabled=true (Pi's tools in the
             # paired-uid executor), plus the isolation, cold-start and workspace-sync checks of
             # e2e/executor/. The chart default stays false; this proves it ready.
-            executor) KOBE_E2E_SHARD=suite KOBE_E2E_TOOL_EXECUTOR=1 e2e/run.sh ;;
+            executor) KAIJU_E2E_SHARD=suite KAIJU_E2E_TOOL_EXECUTOR=1 e2e/run.sh ;;
             # Gate 1 (KOBE-1) against a fresh install with the model setup it needs: two teams ×
             # five users, refresh mid-run, live cross-team probe, kill mid-run + Retry, 20
             # cold-start trials (docs/gates/gate-1.md).
-            gate1) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate1.sh 2>&1 | tee "${logs}/gate1.log" ;;
+            gate1) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate1.sh 2>&1 | tee "${logs}/gate1.log" ;;
             # Gate 2 (KOBE-2) on its own cluster, in parallel with the other shards: budget stop,
             # request access, tampered kobe-policy, break-glass, secret scan (docs/gates/gate-2.md).
-            gate2) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate2.sh 2>&1 | tee "${logs}/gate2.log" ;;
+            gate2) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate2.sh 2>&1 | tee "${logs}/gate2.log" ;;
             # Gate 3 (KOBE-3, KOBE-231) on its own cluster: agent versions, skills review and
             # blocklist, projects, memory with Undo and approvals, CSV to chart under CSP and the
-            # lost sandbox (docs/gates/gate-3.md). KOBE_GATE3_BROWSER: the Chromium checks too.
-            gate3) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE3_BROWSER=1 e2e/gate3.sh 2>&1 | tee "${logs}/gate3.log" ;;
+            # lost sandbox (docs/gates/gate-3.md). KAIJU_GATE3_BROWSER: the Chromium checks too.
+            gate3) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && KAIJU_GATE3_BROWSER=1 e2e/gate3.sh 2>&1 | tee "${logs}/gate3.log" ;;
             # Gate 4 (KOBE-4, KOBE-232): the checks of U1, U2, U5-U8, U11, U14-U16 that Gates 1-3
             # don't make, against a fake OAuth MCP server and the Orbit test model (docs/gates/gate-4.md).
-            gate4) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate4/stories.sh 2>&1 | tee "${logs}/gate4.log" ;;
+            gate4) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate4/stories.sh 2>&1 | tee "${logs}/gate4.log" ;;
             # KOBE-233 (U16's backup half, docs/gates/gate-4.md): its own clean install, timed to the
             # first assistant token; kaiju backup; this cluster deleted and a new one created; kaiju restore.
             restore) e2e/gate4-restore.sh 2>&1 | tee "${logs}/restore.log" ;;
             # Gate 5 (KOBE-227, v1.1): U17-U24 in Chromium (e2e/browser) plus API checks, in two
             # halves on their own clusters to keep each shard short (docs/gates/gate-5.md).
-            gate5-a) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE5_STORIES="U17 U18 U19 U20" e2e/gate5.sh 2>&1 | tee "${logs}/gate5-a.log" ;;
-            gate5-b) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE5_STORIES="U21 U22 U23 U24" e2e/gate5.sh 2>&1 | tee "${logs}/gate5-b.log" ;;
+            gate5-a) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && KAIJU_GATE5_STORIES="U17 U18 U19 U20" e2e/gate5.sh 2>&1 | tee "${logs}/gate5-a.log" ;;
+            gate5-b) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && KAIJU_GATE5_STORIES="U21 U22 U23 U24" e2e/gate5.sh 2>&1 | tee "${logs}/gate5-b.log" ;;
             # Gate 7 (KOBE-675, v1.3 Semantic Memory): U39-U54, learning passes end to end with the
             # fake model's scripted extractor, API checks plus the memory specs in Chromium, in two
             # halves on their own clusters (docs/gates/gate-7.md, "k3d checks").
-            gate7-a) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE7_STORIES="U39 U40 U41 U42 U43 U44 U45 U46" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-a.log" ;;
-            gate7-b) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE7_STORIES="U47 U48 U49 U50 U51 U52 U53 U54" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-b.log" ;;
+            gate7-a) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && KAIJU_GATE7_STORIES="U39 U40 U41 U42 U43 U44 U45 U46" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-a.log" ;;
+            gate7-b) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && KAIJU_GATE7_STORIES="U47 U48 U49 U50 U51 U52 U53 U54" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-b.log" ;;
             # The Kaiju Explorer Gate (KOBE-441, MCP Apps): an app in the conversation, then from the
             # rail, against the fake MCP server's ui:// test app, in Chromium plus API checks
             # (docs/gates/gate-apps.md). The gate install's Catalyst run is the coordinator's.
-            gate-apps) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-apps.sh 2>&1 | tee "${logs}/gate-apps.log" ;;
+            gate-apps) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-apps.sh 2>&1 | tee "${logs}/gate-apps.log" ;;
             # The SSO gate (KOBE-633, spec sso-oidc-scim SSO-9): a mock Entra ID (e2e/sso/mock-entra.mjs on
             # the server image) answers as login.microsoftonline.com through a CoreDNS rewrite, trusted
             # through server.extraCaBundle; sign-in, JIT by mapping, refusals, MFA (acrs) and SCIM
             # deactivation. No internet and no test switch in Kaiju.
-            gate-sso) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-sso.sh 2>&1 | tee "${logs}/gate-sso.log" ;;
+            gate-sso) KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-sso.sh 2>&1 | tee "${logs}/gate-sso.log" ;;
             *) echo "unknown shard ${SHARD}" >&2; exit 2 ;;
           esac
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -449,17 +449,17 @@ jobs:
           merge-multiple: true
       - name: U1-U16, each from the checks that prove it
         env:
-          KOBE_GATE4_LOGS: ${{ runner.temp }}/gate-logs
+          KAIJU_GATE4_LOGS: ${{ runner.temp }}/gate-logs
         run: |
-          if [ ! -d "${KOBE_GATE4_LOGS}" ]; then
+          if [ ! -d "${KAIJU_GATE4_LOGS}" ]; then
             echo "::error::no gate-log-* artifacts: no gate shard kept its output"
             exit 1
           fi
-          ls -l "${KOBE_GATE4_LOGS}"
+          ls -l "${KAIJU_GATE4_LOGS}"
           rc=0
           # Every gate run reached its verdict and none says FAILED (gate5 too), then U1-U16.
-          e2e/gate-verdicts.sh "${KOBE_GATE4_LOGS}" | tee -a "$GITHUB_STEP_SUMMARY" || rc=1
-          KOBE_GATE4_VERDICT_ONLY=1 e2e/gate4.sh | tee -a "$GITHUB_STEP_SUMMARY" || rc=1
+          e2e/gate-verdicts.sh "${KAIJU_GATE4_LOGS}" | tee -a "$GITHUB_STEP_SUMMARY" || rc=1
+          KAIJU_GATE4_VERDICT_ONLY=1 e2e/gate4.sh | tee -a "$GITHUB_STEP_SUMMARY" || rc=1
           exit "$rc"
 
   # The required check (branch protection and the merge-queue ruleset name it): passes only when

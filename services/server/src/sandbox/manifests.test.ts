@@ -98,19 +98,19 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     ]);
     const env = Object.fromEntries(must(spec.containers[0]).env.map((e) => [e.name, e.value]));
     expect(env).toMatchObject({
-      KOBE_SERVER_URL: "ws://server.kobe.internal:8081",
-      KOBE_MODEL_GATEWAY_URL: "http://model-gateway.kobe.internal:8080",
-      KOBE_MCP_PROXY_URL: "http://mcp-proxy.kobe.internal",
+      KAIJU_SERVER_URL: "ws://server.kobe.internal:8081",
+      KAIJU_MODEL_GATEWAY_URL: "http://model-gateway.kobe.internal:8080",
+      KAIJU_MCP_PROXY_URL: "http://mcp-proxy.kobe.internal",
       // Proxy URLs always carry the port: curl (and git, through libcurl) assume 1080 otherwise.
       HTTPS_PROXY: "http://egress-proxy.kobe.internal:80",
       HTTP_PROXY: "http://egress-proxy.kobe.internal:80",
       https_proxy: "http://egress-proxy.kobe.internal:80",
       http_proxy: "http://egress-proxy.kobe.internal:80",
-      KOBE_EGRESS_PROXY_URL: "http://egress-proxy.kobe.internal:80",
-      KOBE_BOOTSTRAP_TOKEN_FILE: "/run/kobe-agent/bootstrap/bootstrap-token",
-      KOBE_PI_RUNAS: "/opt/kobe/bin/kobe-runas",
-      KOBE_PI_RUNTIME_DIR: "/run/kobe-pi",
-      KOBE_SKILLS_DIR: "/run/kobe-skills",
+      KAIJU_EGRESS_PROXY_URL: "http://egress-proxy.kobe.internal:80",
+      KAIJU_BOOTSTRAP_TOKEN_FILE: "/run/kobe-agent/bootstrap/bootstrap-token",
+      KAIJU_PI_RUNAS: "/opt/kobe/bin/kobe-runas",
+      KAIJU_PI_RUNTIME_DIR: "/run/kobe-pi",
+      KAIJU_SKILLS_DIR: "/run/kobe-skills",
     });
   });
 
@@ -119,21 +119,21 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     const envOf = (settings: typeof SETTINGS) =>
       (sandboxPodSpec(isolation, settings, ADDRESSES) as unknown as Pod).containers[0]?.env;
     expect(envOf(SETTINGS)).toContainEqual({
-      name: "KOBE_WORKSPACE_SYNC_INTERVAL_MS",
+      name: "KAIJU_WORKSPACE_SYNC_INTERVAL_MS",
       value: "60000",
     });
     expect(
       envOf({ ...SETTINGS, workspaceSync: { ...SETTINGS.workspaceSync, enabled: false } }),
-    ).toContainEqual({ name: "KOBE_WORKSPACE_SYNC_INTERVAL_MS", value: "0" });
+    ).toContainEqual({ name: "KAIJU_WORKSPACE_SYNC_INTERVAL_MS", value: "0" });
   });
 
   it("tells the agent whether to run Pi's tools in the partner-uid executor (KOBE-167), off by default", async () => {
     const isolation = await verified();
     const envOf = (settings: typeof SETTINGS) =>
       (sandboxPodSpec(isolation, settings, ADDRESSES) as unknown as Pod).containers[0]?.env;
-    expect(envOf(SETTINGS)).toContainEqual({ name: "KOBE_TOOL_EXECUTOR", value: "false" });
+    expect(envOf(SETTINGS)).toContainEqual({ name: "KAIJU_TOOL_EXECUTOR", value: "false" });
     expect(envOf({ ...SETTINGS, toolExecutor: { enabled: true } })).toContainEqual({
-      name: "KOBE_TOOL_EXECUTOR",
+      name: "KAIJU_TOOL_EXECUTOR",
       value: "true",
     });
   });
@@ -290,9 +290,9 @@ describe("template, warm pool and claim", () => {
 
   it("carries no collector URL or credential, even when the server has them (KOBE-274 ac-3)", async () => {
     const saved = { ...process.env };
-    process.env.KOBE_OTEL_ENDPOINT = "http://collector.example:4318";
-    process.env.KOBE_OTEL_HEADERS = "Authorization=Basic c2VjcmV0";
-    process.env.KOBE_OTEL_CAPTURE_CONTENT = "true";
+    process.env.KAIJU_OTEL_ENDPOINT = "http://collector.example:4318";
+    process.env.KAIJU_OTEL_HEADERS = "Authorization=Basic c2VjcmV0";
+    process.env.KAIJU_OTEL_CAPTURE_CONTENT = "true";
     try {
       const t = sandboxTemplateManifest("ns", await verified(), SETTINGS, ADDRESSES);
       const text = JSON.stringify(t);

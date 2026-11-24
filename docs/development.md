@@ -65,11 +65,11 @@ Tilt refuses any context other than `k3d-*` unless it is named explicitly, and t
 Postgres (public credentials) is only deployed to k3d. Bring your own values for a real cluster:
 
 ```bash
-KOBE_DEV_CONTEXT=<kube-context> KOBE_DEV_REGISTRY=<registry the cluster can pull from> \
-  KOBE_DEV_VALUES=<values.yaml> tilt up
+KAIJU_DEV_CONTEXT=<kube-context> KAIJU_DEV_REGISTRY=<registry the cluster can pull from> \
+  KAIJU_DEV_VALUES=<values.yaml> tilt up
 ```
 
-The dev release lives in namespace `kobe-dev` (or `kobe-dev-<suffix>` via `KOBE_DEV_NAMESPACE`, with `KOBE_DEV_WEB_PORT` for the port-forward; see [parallel-work.md](parallel-work.md)), never `kaiju`.
+The dev release lives in namespace `kobe-dev` (or `kobe-dev-<suffix>` via `KAIJU_DEV_NAMESPACE`, with `KAIJU_DEV_WEB_PORT` for the port-forward; see [parallel-work.md](parallel-work.md)), never `kaiju`.
 
 The cluster must already meet the prerequisites in [install.md](install.md#isolation).
 
@@ -83,16 +83,16 @@ k3s nodes use many inotify instances. If `scripts/dev-cluster.sh` warns about
 
 ```bash
 pnpm test                                   # unit + chart render tests (needs helm on PATH)
-KOBE_TEST_DATABASE_URL=postgres://... pnpm test:db   # migrations, RLS catalog, cross-team probe,
+KAIJU_TEST_DATABASE_URL=postgres://... pnpm test:db   # migrations, RLS catalog, cross-team probe,
                                             # backup/restore round trip (needs pg_dump/psql 17.6+ on
                                             # PATH, e.g. brew install libpq; turbo strips
-                                            # other env vars, so use PATH, not KOBE_PG_BIN_DIR)
+                                            # other env vars, so use PATH, not KAIJU_PG_BIN_DIR)
 images/sandbox/test-image.sh <image>        # sandbox image acceptance checks
-KOBE_IMAGE_TAG=<tag> e2e/run.sh             # k3d end-to-end suite (cluster from dev-cluster.sh)
+KAIJU_IMAGE_TAG=<tag> e2e/run.sh             # k3d end-to-end suite (cluster from dev-cluster.sh)
 ```
 
 CI splits the k3d suite into shards that run in parallel, each on its own cluster:
-`KOBE_E2E_SHARD=suite` (every section but the KOBE-25 cold-start trials), `cold-start` (the
+`KAIJU_E2E_SHARD=suite` (every section but the KOBE-25 cold-start trials), `cold-start` (the
 sections up to KOBE-25, with its trials), `gate1-prep` followed by `e2e/gate1.sh` (the install
 plus the KOBE-40 model setup Gate 1 needs) and `gate1-prep` followed by `e2e/gate2.sh` (the same
 install, for the Gate 2 safety checks; see [gates/gate-2.md](gates/gate-2.md)). Unset, `e2e/run.sh` runs every section, as before. A

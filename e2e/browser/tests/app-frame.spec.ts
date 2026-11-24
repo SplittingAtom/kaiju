@@ -16,9 +16,9 @@ import { pageApi } from "./support/gate5.js";
  * twice: in an iframe with `sandbox="allow-scripts"` as `AppFrame` makes it, and in one with no
  * `sandbox` attribute, which proves the header's `sandbox` alone isolates it.
  *
- * It needs one app the member can open: `KOBE_APP_ID`, or the first of `GET /v1/team/apps`
+ * It needs one app the member can open: `KAIJU_APP_ID`, or the first of `GET /v1/team/apps`
  * (gate1: the Catalyst connector with the member's key; k3d: the fake MCP app of MA-8,
- * KOBE-441). Without one it skips, unless `KOBE_REQUIRE_APP=1` (the gate runs), when it fails.
+ * KOBE-441). Without one it skips, unless `KAIJU_REQUIRE_APP=1` (the gate runs), when it fails.
  * No tokens; it changes nothing.
  */
 interface App {
@@ -117,10 +117,10 @@ test("an app frame cannot reach the network, Kaiju or the page around it (KOBE-4
   });
   const listed = await pageApi<{ apps?: App[] }>(page, "GET", "/v1/team/apps");
   expect(listed.status).toBe(200);
-  const wanted = process.env["KOBE_APP_ID"];
+  const wanted = process.env["KAIJU_APP_ID"];
   const app = (listed.json.apps ?? []).find((a) => wanted === undefined || a.appId === wanted);
-  if (process.env["KOBE_REQUIRE_APP"] === "1") {
-    expect(app, "KOBE_REQUIRE_APP=1: the member needs a live MCP App").toBeDefined();
+  if (process.env["KAIJU_REQUIRE_APP"] === "1") {
+    expect(app, "KAIJU_REQUIRE_APP=1: the member needs a live MCP App").toBeDefined();
   }
   test.skip(app === undefined, "No MCP App is live for this member in the active team.");
   if (!app) return;

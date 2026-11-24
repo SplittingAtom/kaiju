@@ -9,9 +9,9 @@ import { pageApi } from "./support/gate5.js";
  * frame fills it again instead of keeping the height the app reported before (the picker is
  * `100vh` in its frame, so it would re-report the old height). At 1440x900, then 700, then 1100,
  * the rail's scrolling section `[data-kaiju-app-scroll]` has nothing to scroll. Skips without a
- * live picker (`KOBE_APPS_PICKER`, default "Lakehouse Picker") for the member.
+ * live picker (`KAIJU_APPS_PICKER`, default "Lakehouse Picker") for the member.
  */
-const TITLE = process.env["KOBE_APPS_PICKER"] ?? "Lakehouse Picker";
+const TITLE = process.env["KAIJU_APPS_PICKER"] ?? "Lakehouse Picker";
 
 interface App {
   readonly appId: string;

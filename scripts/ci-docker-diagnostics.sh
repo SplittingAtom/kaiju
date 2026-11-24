@@ -23,7 +23,7 @@ section "disk"
 df -h / "${GITHUB_WORKSPACE:-.}" 2>&1 || true
 
 # ci/runners/values.yaml tees the dind sidecar's daemon log onto the shared work volume.
-log="${KOBE_DIND_LOG:-/home/runner/_work/_dind/dockerd.log}"
+log="${KAIJU_DIND_LOG:-/home/runner/_work/_dind/dockerd.log}"
 section "dockerd log (last 200 lines)"
 if [ -r "$log" ]; then tail -n 200 "$log"; else echo "(no daemon log at $log)"; fi
 exit 0

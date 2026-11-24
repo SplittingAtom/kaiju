@@ -19,7 +19,7 @@ test("U39/U40: Mod+Shift+L learns; the quote; nothing saved until Save; Save and
   chat,
   page,
 }) => {
-  test.skip(!FAKE_MODEL, "scripted by the fake model's extractor (KOBE_FAKE_MODEL=1)");
+  test.skip(!FAKE_MODEL, "scripted by the fake model's extractor (KAIJU_FAKE_MODEL=1)");
   const words = uniqueWords();
   const what = `gate seven ${words} reports as one page documents`;
   await chat.open();

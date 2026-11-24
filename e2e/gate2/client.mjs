@@ -371,7 +371,7 @@ async function approve() {
   const approvalId = randomUUID();
   const t = config.teamId;
   const token = signApproval({
-    key: approvalKeyring(process.env.KOBE_APPROVAL_KEY).current,
+    key: approvalKeyring(process.env.KAIJU_APPROVAL_KEY).current,
     approval_id: approvalId,
     team_id: t,
     run_id: config.runId,
@@ -534,8 +534,8 @@ async function providerKeys() {
   const kdb = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const { SecretBox, PROVIDER_KEY_PURPOSE, providerKeyContext, modelProviders } = kdb;
   const secrets = [
-    process.env.KOBE_MODELS_PROVIDER_KEY_SECRET,
-    process.env.KOBE_MODELS_PROVIDER_KEY_SECRET_PREVIOUS,
+    process.env.KAIJU_MODELS_PROVIDER_KEY_SECRET,
+    process.env.KAIJU_MODELS_PROVIDER_KEY_SECRET_PREVIOUS,
   ].filter((v) => v);
   if (secrets.length === 0) {
     out("provider_keys", "gateway_not_configured");

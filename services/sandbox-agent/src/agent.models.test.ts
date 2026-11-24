@@ -79,13 +79,13 @@ describe("model wiring (KOBE-41)", () => {
     expect(
       launch.argv.slice(launch.argv.indexOf("--model"), launch.argv.indexOf("--model") + 2),
     ).toEqual(["--model", "kobe/openai/gpt-fake"]);
-    expect(launch.env.filter((k) => k.startsWith("KOBE_"))).toEqual([
+    expect(launch.env.filter((k) => k.startsWith("KAIJU_"))).toEqual([
       // The context viewer's capture (KOBE-470), in the dir Pi writes.
-      "KOBE_CONTEXT_FILE",
-      "KOBE_MODEL_FILE",
-      "KOBE_POLICY_FD",
-      "KOBE_TOOL_HOME",
-      "KOBE_TOOL_TMPDIR",
+      "KAIJU_CONTEXT_FILE",
+      "KAIJU_MODEL_FILE",
+      "KAIJU_POLICY_FD",
+      "KAIJU_TOOL_HOME",
+      "KAIJU_TOOL_TMPDIR",
     ]);
     // The config dir: fresh, private (0700), writable, inside the runtime dir, next to the file.
     const runtime = path.join(h.dir, "pi-runtime");
@@ -392,7 +392,7 @@ describe("model wiring (KOBE-41)", () => {
     expect(launch.modelFile).toBeNull();
     expect(launch.argv).not.toContain(MODELS_EXTENSION);
     expect(launch.env).toContain("PI_CODING_AGENT_DIR");
-    expect(launch.env).not.toContain("KOBE_MODEL_FILE");
+    expect(launch.env).not.toContain("KAIJU_MODEL_FILE");
     expect((await stat(launch.agentDir)).mode & 0o777).toBe(0o700);
   });
 });

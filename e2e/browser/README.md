@@ -6,8 +6,8 @@ with another model, Fork to a new thread, the theme toggle with its popups, the 
 row menus with the header rename (KOBE-292), auto-titles with the rail's hover card
 (KOBE-219), pin, archive and move to project (KOBE-220; it creates a project, so the member
 must be allowed to, and archives it afterwards), and sharing with the team between two members
-(KOBE-221; needs `KOBE_USER2`, skipped without it), and follow-up chips behind the team switch
-(KOBE-222; `KOBE_USER` must be a team admin; it turns the switch on and off again), and `@file`
+(KOBE-221; needs `KAIJU_USER2`, skipped without it), and follow-up chips behind the team switch
+(KOBE-222; `KAIJU_USER` must be a team admin; it turns the switch on and off again), and `@file`
 mentions (KOBE-223; it drops a small file into the member's `uploads/` and deletes it at the
 end), and thumbs up and down on an answer with a reason and a comment (KOBE-275). It runs in CI only as Gate 5
 (below) and is not a pnpm workspace package: it has its own `package.json` and `package-lock.json`
@@ -22,9 +22,9 @@ end. A full pass spends real tokens (Compact now sends one ~30k-token turn) and 
 
 `e2e/gate5.sh` runs these specs, grouped by user story U17–U24, plus `tests/gate5/` for the
 criteria they leave out, and gives one verdict per story (docs/gates/gate-5.md). In CI (shards
-`gate5-a`, `gate5-b`) it runs them against k3d with the scripted fake model: `KOBE_FAKE_MODEL=1`
-makes the specs use its prompts (`tests/support/gate5.ts`), and `KOBE_BROWSER_MAP=host:port` makes
-Chromium reach the site's host through a port-forward. `KOBE_BROWSER_RESULTS` moves the JSON report.
+`gate5-a`, `gate5-b`) it runs them against k3d with the scripted fake model: `KAIJU_FAKE_MODEL=1`
+makes the specs use its prompts (`tests/support/gate5.ts`), and `KAIJU_BROWSER_MAP=host:port` makes
+Chromium reach the site's host through a port-forward. `KAIJU_BROWSER_RESULTS` moves the JSON report.
 
 ## Run it
 
@@ -32,26 +32,26 @@ Chromium reach the site's host through a port-forward. `KOBE_BROWSER_RESULTS` mo
 cd e2e/browser
 npm ci
 npx playwright install chromium   # once, unless you use the Playwright container below
-KOBE_BASE_URL=https://kobe.example.org KOBE_USER=member@example.org KOBE_PW='…' npx playwright test
+KAIJU_BASE_URL=https://kobe.example.org KAIJU_USER=member@example.org KAIJU_PW='…' npx playwright test
 ```
 
-| Variable        | Meaning                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `KOBE_BASE_URL` | The deployment's URL (required).                                                                                                                       |
-| `KOBE_USER`     | A member who can sign in with a password, can run conversations and (for the theme spec) can open the team admin console.                              |
-| `KOBE_PW`       | That member's password. Pass it from a secret store; never write it to a file or a log.                                                                |
-| `KOBE_USER2`    | A second member of the same team (password sign-in, only that team), for the sharing spec; optional.                                                   |
-| `KOBE_PW2`      | That member's password; same rules as `KOBE_PW`.                                                                                                       |
-| `KOBE_USER3`    | Another Team admin of the same team (password sign-in) who confirms in the Site proposals spec, so `KOBE_USER` may decide; without it that spec skips. |
-| `KOBE_PW3`      | That admin's password; same rules as `KOBE_PW`.                                                                                                        |
-| `KOBE_WORKERS`  | Specs in parallel (default 1: each one starts a sandbox and spends tokens).                                                                            |
+| Variable         | Meaning                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `KAIJU_BASE_URL` | The deployment's URL (required).                                                                                                                        |
+| `KAIJU_USER`     | A member who can sign in with a password, can run conversations and (for the theme spec) can open the team admin console.                               |
+| `KAIJU_PW`       | That member's password. Pass it from a secret store; never write it to a file or a log.                                                                 |
+| `KAIJU_USER2`    | A second member of the same team (password sign-in, only that team), for the sharing spec; optional.                                                    |
+| `KAIJU_PW2`      | That member's password; same rules as `KAIJU_PW`.                                                                                                       |
+| `KAIJU_USER3`    | Another Team admin of the same team (password sign-in) who confirms in the Site proposals spec, so `KAIJU_USER` may decide; without it that spec skips. |
+| `KAIJU_PW3`      | That admin's password; same rules as `KAIJU_PW`.                                                                                                        |
+| `KAIJU_WORKERS`  | Specs in parallel (default 1: each one starts a sandbox and spends tokens).                                                                             |
 
 One spec: `npx playwright test theme` (by file name) or `-g "Compact now"` (by title). The
 **Regenerate with** spec skips itself when the team has only one enabled model.
 
 Without a local browser, run the same command in the matching image,
 `mcr.microsoft.com/playwright:v1.55.0-noble`, with the three variables passed through
-`docker run -e KOBE_BASE_URL -e KOBE_USER -e KOBE_PW …`.
+`docker run -e KAIJU_BASE_URL -e KAIJU_USER -e KAIJU_PW …`.
 
 ## Files panel stays current (KOBE-599)
 
@@ -61,7 +61,7 @@ Refresh is checked against the server's listing first, so a periodic push that l
 fails the test with "run again" instead of passing silently), and the open panel lists again
 by itself after an upload from another tab, the agent's push after a run, and a new file in a
 mounted project, keeping open folders open. Creates `kobe-599-*` folders and one project
-(`KOBE_USER` must be allowed to create projects) and deletes them. Two short model turns:
+(`KAIJU_USER` must be allowed to create projects) and deletes them. Two short model turns:
 `npx playwright test files-refresh`.
 
 ## Files tree (KOBE-304)
@@ -77,19 +77,19 @@ refused, and deletes the folder at the end. No tokens: `npx playwright test file
 `file-editor.spec.ts` uploads `kobe-463-*/notes.md` into the member's workspace, opens it from the
 Files tree, edits it in Raw and saves, saves over a version that changed meanwhile (the conflict
 notice; nothing is overwritten) and reloads, checks the composer's Viewing chip, then asks the agent
-for one `propose_file_edit` call (one short turn; with `KOBE_FAKE_MODEL=1` the fake's `tool:` line),
+for one `propose_file_edit` call (one short turn; with `KAIJU_FAKE_MODEL=1` the fake's `tool:` line),
 accepts one change and rejects the other in the inline diff and commits. It deletes the folder at
 the end. Needs the deployment's sandbox agent with `file_edits` (KOBE-462) and no `ask-all` approval
-mode for the team; run it pinned to the member's team: `KOBE_TEAM=team1 npx playwright test
+mode for the team; run it pinned to the member's team: `KAIJU_TEAM=team1 npx playwright test
 file-editor`.
 
 ## Agent opens a file (KOBE-484)
 
 `open-file.spec.ts` uploads `kobe-484-*/notes.md` into the member's workspace, asks the agent to
-open it (one short turn; with `KOBE_FAKE_MODEL=1` the fake's `tool: open_file` line), and expects
+open it (one short turn; with `KAIJU_FAKE_MODEL=1` the fake's `tool: open_file` line), and expects
 the "Opened notes.md" card and the file's tab open by itself in the editor with Rendered and Raw.
 It deletes the folder at the end. Needs a deployment whose sandbox agent registers `open_file`
-(`file_edits`) and no `ask-all` approval mode: `KOBE_TEAM=team1 npx playwright test open-file`.
+(`file_edits`) and no `ask-all` approval mode: `KAIJU_TEAM=team1 npx playwright test open-file`.
 
 ## Resizable rail (KOBE-305)
 
@@ -108,7 +108,7 @@ share_file approval for "this conversation", checks the next share runs without 
 tool card says "Allowed by your rule (this conversation)", finds the rule on My area, Approvals and
 on the team Policy page, revokes it there and checks the next share asks again (denied). It
 revokes the signed-in member's share_file rules at the start (any scope: one made by hand would
-skip the first card) and any it left at the end. `KOBE_USER` must be a team admin, with the team's
+skip the first card) and any it left at the end. `KAIJU_USER` must be a team admin, with the team's
 remember limits allowing "this conversation"; a few short model turns:
 `npx playwright test remember-approvals`.
 
@@ -120,18 +120,18 @@ CSP) and replaces only its body with a hostile probe (`tests/support/app-frame-p
 inside the frame, `fetch` (remote and Kaiju), `XMLHttpRequest`, `WebSocket`, a remote image, a
 form post, `window.open`, top navigation, `document.cookie`, storage and the parent's DOM must
 all fail, and each network attempt must be a CSP violation (not just an unreachable host). It
-needs an app the member can open (`KOBE_APP_ID`, or the first of `GET /v1/team/apps`) and skips
-without one, unless `KOBE_REQUIRE_APP=1` (set it at gates), when it fails. It keeps the route's
+needs an app the member can open (`KAIJU_APP_ID`, or the first of `GET /v1/team/apps`) and skips
+without one, unless `KAIJU_REQUIRE_APP=1` (set it at gates), when it fails. It keeps the route's
 own WebRTC guard script before the probe, runs the probe a second time in an iframe without the
 `sandbox` attribute (the header alone must isolate it), checks the CSP by parsing it, and records
-what the browser does with `RTCPeerConnection` (a `webrtc` annotation). `KOBE_ALL_BROWSERS=1`
+what the browser does with `RTCPeerConnection` (a `webrtc` annotation). `KAIJU_ALL_BROWSERS=1`
 adds Firefox and WebKit projects for this spec (`npx playwright install firefox webkit` once).
 No tokens; it changes nothing: `npx playwright test app-frame`.
 
 `lakehouse-drop.spec.ts` (KOBE-551) drops a Lakehouse Picker item on the composer (a synthesized
 drag with the picker's two types) and checks the chip (no text, as for a click), a refused
 invalid item and the `references` of the send; one short model run. In Firefox too with
-`KOBE_ALL_BROWSERS=1 npx playwright test lakehouse-drop --project chromium --project firefox`.
+`KAIJU_ALL_BROWSERS=1 npx playwright test lakehouse-drop --project chromium --project firefox`.
 
 ## The Kaiju Explorer Gate (KOBE-441)
 
@@ -140,22 +140,22 @@ the tool card; one app call per click; the context chip; "Use in chat" inserts a
 the send carries the fenced block; reload rebuilds with no app call; Expand and back), then from
 the rail (a card with no run that the next run sees; a launch during a run waits as a chip), the
 test app's probes (fetch out, `ui/open-link`, the write tool: k3d only) and that no credential is
-in any answer the browser received. One spec for both runs: `KOBE_APPS_CONNECTOR` (default
-`e2e-apps`), `KOBE_APPS_OPEN` (the prompt), `KOBE_APPS_PATH` (tree items to click, comma
-separated), `KOBE_APPS_ITEM_ROLE` (`button` or `treeitem`), `KOBE_APPS_USE_LABEL`,
-`KOBE_APPS_USE_TEXT`, `KOBE_APPS_PROBES=1`, `KOBE_APPS_SECRET`. k3d: `e2e/gate-apps.sh` sets them;
+in any answer the browser received. One spec for both runs: `KAIJU_APPS_CONNECTOR` (default
+`e2e-apps`), `KAIJU_APPS_OPEN` (the prompt), `KAIJU_APPS_PATH` (tree items to click, comma
+separated), `KAIJU_APPS_ITEM_ROLE` (`button` or `treeitem`), `KAIJU_APPS_USE_LABEL`,
+`KAIJU_APPS_USE_TEXT`, `KAIJU_APPS_PROBES=1`, `KAIJU_APPS_SECRET`. k3d: `e2e/gate-apps.sh` sets them;
 the gate install: `docs/gates/gate-apps-runbook.md`. A few model turns.
 
-`app-only-answer.spec.ts` (KOBE-608) asks the model to open the app of `KOBE_APPS_CONNECTOR`
-(prompt `KOBE_APPS_OPEN`, as for the Explorer Gate) and checks that its answer shows only the app
+`app-only-answer.spec.ts` (KOBE-608) asks the model to open the app of `KAIJU_APPS_CONNECTOR`
+(prompt `KAIJU_APPS_OPEN`, as for the Explorer Gate) and checks that its answer shows only the app
 card(s), that "Show response" (closed, keyboard) reveals the rest, and the same after a reload.
-It skips without that connector's app, unless `KOBE_REQUIRE_APP=1`. One model run.
+It skips without that connector's app, unless `KAIJU_REQUIRE_APP=1`. One model run.
 
 ## Console sections (KOBE-291)
 
 `console-sections.spec.ts` opens the Site audit log (Verify chain, a category filter and Clear),
 Site backup and restore, and the Team inventory, and checks none of them is a "coming soon"
-placeholder. Read-only, no tokens. `KOBE_USER` must be a site Admin or the Owner and a team admin
+placeholder. Read-only, no tokens. `KAIJU_USER` must be a site Admin or the Owner and a team admin
 of the active team: `npx playwright test console-sections`.
 
 ## Appearance (KOBE-501)
@@ -165,7 +165,7 @@ of the active team: `npx playwright test console-sections`.
 uploads a generated 1×1 PNG as logo and favicon (the header's `<img>`, `<link rel="icon">`), has
 a `<script>` SVG refused with its reason, picks the Plum preset (AA in light and dark on a console
 page and on the chat, `support/colours.ts`) and resets to Kaiju's defaults, also when a step fails.
-The web caches the branding for 30 s, so checks poll a fresh render. `KOBE_USER` must be the site
+The web caches the branding for 30 s, so checks poll a fresh render. `KAIJU_USER` must be the site
 Owner or an Admin. No tokens: `npx playwright test appearance`. The page is in the console
 screenshots too; its first `consoles` run needs `--update-snapshots` for its new baseline.
 
@@ -181,7 +181,7 @@ offers a level. On kobe-gate1, give glm-5.3 the `reasoning_effort` control first
 
 `consoles.spec.ts` screenshots every Site console, Team console and My-area page in light and dark
 (full page, times masked) for the move of the consoles to Tailwind. It spends no tokens and changes
-nothing. `KOBE_USER` must be the site Owner and a team admin of the active team; the pages come
+nothing. `KAIJU_USER` must be the site Owner and a team admin of the active team; the pages come
 from the consoles' navigation, and detail pages (an agent, a skill, a project) from the first item
 of their lists.
 
@@ -208,11 +208,11 @@ the next run's `e2e/browser/`.
 
 ## Egress access (`egress-access.spec.ts`)
 
-KOBE-605. `KOBE_USER` must be a site admin and admin of the active team (`KOBE_TEAM`), `KOBE_USER2`
-an ordinary member. Hosts come from the environment: `KOBE_EGRESS_BLOCKED_HOST` (an external host
+KOBE-605. `KAIJU_USER` must be a site admin and admin of the active team (`KAIJU_TEAM`), `KAIJU_USER2`
+an ordinary member. Hosts come from the environment: `KAIJU_EGRESS_BLOCKED_HOST` (an external host
 no ceiling pattern covers; member2 requests it and the site admin approves in the Site console),
-`KOBE_EGRESS_INTERNAL_HOST` (a host on the cluster ingress, with `egressProxy.clusterIngress` on and
-no ceiling pattern covering it; approved as Internal from the card) and `KOBE_EGRESS_PRIVATE_HOST`
+`KAIJU_EGRESS_INTERNAL_HOST` (a host on the cluster ingress, with `egressProxy.clusterIngress` on and
+no ceiling pattern covering it; approved as Internal from the card) and `KAIJU_EGRESS_PRIVATE_HOST`
 (resolves to a private address that is not the ingress; must stay blocked). Each scenario skips
 without its variable. Clean-up removes the ceiling rows and team enablements it added.
 
@@ -220,20 +220,20 @@ without its variable. Clean-up removes the ceiling rows and team enablements it 
 
 KOBE-613 (spec `docs/specs/thread-file-map.md`). The agent reads one file of a new `kobe-613-*`
 folder and writes another (two short turns with the `read` and `write` tools; with
-`KOBE_FAKE_MODEL=1` the fake's `tool:` lines). The spec waits until `GET /v1/threads/{id}/file-links`
+`KAIJU_FAKE_MODEL=1` the fake's `tool:` lines). The spec waits until `GET /v1/threads/{id}/file-links`
 lists both, then at 1,280 px checks the Threads panel's lines: solid to the written file, dashed to
 the read one, the pin keeps them, hovering the file in the workspace rail draws a line to the
-thread; at 900 px no rail and no lines, only "Files (N)". With `KOBE_USER2`/`KOBE_PW2` (skipped
-without them) a thread in a new project (`KOBE_USER` must be allowed to create projects) reads the
+thread; at 900 px no rail and no lines, only "Files (N)". With `KAIJU_USER2`/`KAIJU_PW2` (skipped
+without them) a thread in a new project (`KAIJU_USER` must be allowed to create projects) reads the
 project's file, writes one in the owner's workspace and is shared with the team: member2 sees the
 project file by name and the owner's file only as a count. Clean-up deletes the folders, unshares
 and archives and deletes the project. `npx playwright test thread-file-map`.
 
 ## Site proposals (`site-proposals.spec.ts`, Gate C, KOBE-407)
 
-member2 (`KOBE_USER2`/`KOBE_PW2`, a plain member; skipped without them) states a unique office
+member2 (`KAIJU_USER2`/`KAIJU_PW2`, a plain member; skipped without them) states a unique office
 office fact (a meeting room's name) in a no-tools turn, runs Learn from this chat and proposes the candidate to the Site
-with a justification; the owner (`KOBE_USER`, Team admin and Site admin) confirms it with an edit
+with a justification; the owner (`KAIJU_USER`, Team admin and Site admin) confirms it with an edit
 on Workspace console › Memory › To the Site, checks the Site console detail (statement, kind,
 justification, source Workspace, date, none of the conversation), requests changes, confirms
 again and approves. member2 then reads it as a Site memory naming no Workspace, and Your Site
@@ -257,21 +257,21 @@ adds to the authorize request. No model tokens: `npx playwright test sso`.
 Deploy the mock first with `e2e/sso/gate1-mock-idp.sh` (it prints the Helm values to add and the
 variables below). The spec registers the provider through the API when it is missing (console
 provider, needs the envelope key), turns it on for the run and off again, adds and deletes the
-mapping, and creates and revokes a SCIM token. `KOBE_USER` must be the Owner (or a site admin) and
-a team admin of its active team (`KOBE_TEAM`). Each run leaves two deactivated `sso-e2e-*`
+mapping, and creates and revokes a SCIM token. `KAIJU_USER` must be the Owner (or a site admin) and
+a team admin of its active team (`KAIJU_TEAM`). Each run leaves two deactivated `sso-e2e-*`
 accounts (Kaiju never deletes users).
 
-| Variable                      | Meaning                                                                                 |
-| ----------------------------- | --------------------------------------------------------------------------------------- |
-| `KOBE_SSO_MOCK_ISSUER`        | The mock's issuer (`https://mock-idp.kobe-sso-mock.svc.cluster.local/<tenant>/v2.0`).   |
-| `KOBE_SSO_MOCK_CLIENT_ID`     | Its client ID (only to register the provider).                                          |
-| `KOBE_SSO_MOCK_CLIENT_SECRET` | Its client secret (only to register the provider); from the `mock-idp-client` Secret.   |
-| `KOBE_SSO_MOCK_MAP`           | `ip:port` of the cluster's ingress: Chromium reaches the mock's name there.             |
-| `KOBE_SSO_MOCK_SLUG`, `_NAME` | Optional: slug (default `e2e-mock`) and display name (default `Mock IdP (e2e)`).        |
-| `KOBE_USER2`, `KOBE_PW2`      | member2 for the link test (password sign-in, no authenticator app); skipped without it. |
+| Variable                       | Meaning                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `KAIJU_SSO_MOCK_ISSUER`        | The mock's issuer (`https://mock-idp.kobe-sso-mock.svc.cluster.local/<tenant>/v2.0`).   |
+| `KAIJU_SSO_MOCK_CLIENT_ID`     | Its client ID (only to register the provider).                                          |
+| `KAIJU_SSO_MOCK_CLIENT_SECRET` | Its client secret (only to register the provider); from the `mock-idp-client` Secret.   |
+| `KAIJU_SSO_MOCK_MAP`           | `ip:port` of the cluster's ingress: Chromium reaches the mock's name there.             |
+| `KAIJU_SSO_MOCK_SLUG`, `_NAME` | Optional: slug (default `e2e-mock`) and display name (default `Mock IdP (e2e)`).        |
+| `KAIJU_USER2`, `KAIJU_PW2`     | member2 for the link test (password sign-in, no authenticator app); skipped without it. |
 
 `sign-in-sso-only` (KOBE-774) checks the sign-in page with **Require single sign-on** off and on,
-using the same mock and variables: the Owner (`KOBE_USER`/`KOBE_PW`, no authenticator app) links
+using the same mock and variables: the Owner (`KAIJU_USER`/`KAIJU_PW`, no authenticator app) links
 their account to the mock once, turns the setting on from that SSO session and off again. Turning
 it on ends every local session, the suite's stored one included, so run it on its own:
 `npx playwright test sign-in-sso-only`. If a run dies with the setting on, turn it off in the Site
@@ -284,19 +284,19 @@ when you run the suite elsewhere (for example in the Playwright container:
 ## Git section (`git-section.spec.ts`, KOBE-761)
 
 The Workspace admin console's Git page and the members' read-only list on My connectors.
-`KOBE_USER` must be a Workspace admin of the active team. Self-contained: the first two tests
+`KAIJU_USER` must be a Workspace admin of the active team. Self-contained: the first two tests
 answer `/v1/team/git/connections*` in the browser with a fake (`page.route`), so no git host is
 needed and nothing is stored; they walk the three-step Connect dialog with a fake token and check
 it is sent only in request bodies and never shown. The third test runs **Test** (without saving)
-against a real host and is skipped unless `KOBE_GIT_PROVIDER` (`github`, `gitea` or `forgejo`),
-`KOBE_GIT_ORG`, `KOBE_GIT_TOKEN` and, for GitHub Enterprise Server, Gitea or Forgejo,
-`KOBE_GIT_BASE_URL` are set (pass the token from a secret store). No tokens:
+against a real host and is skipped unless `KAIJU_GIT_PROVIDER` (`github`, `gitea` or `forgejo`),
+`KAIJU_GIT_ORG`, `KAIJU_GIT_TOKEN` and, for GitHub Enterprise Server, Gitea or Forgejo,
+`KAIJU_GIT_BASE_URL` are set (pass the token from a secret store). No tokens:
 `npx playwright test git-section`.
 
 ## OAuth connect (`connector-oauth.spec.ts`, KOBE-835)
 
 Connect, the result notice and Disconnect on My connectors against a real authorization server.
-Set `KOBE_OAUTH_CONNECTOR` to an OAuth connector enabled for `KOBE_USER`'s active workspace whose
+Set `KAIJU_OAUTH_CONNECTOR` to an OAuth connector enabled for `KAIJU_USER`'s active workspace whose
 authorization server consents without a login page (the e2e fake `e2e/lib/fake-oauth-mcp.js`,
 reachable from both the browser and the cluster); without it the spec skips. No tokens:
 `npx playwright test connector-oauth`.

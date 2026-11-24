@@ -566,7 +566,7 @@ site invitations keep the email in `invitations`.
 
 **Egress connections (KOBE-38).** The egress proxy writes `egress.connection` rows (system
 actor) for every sandbox connection it handles, aggregated per (team, user, sandbox, host, port,
-outcome, reason) over a 60-second window (`KOBE_EGRESS_AUDIT_FLUSH_MS`): each connection is
+outcome, reason) over a 60-second window (`KAIJU_EGRESS_AUDIT_FLUSH_MS`): each connection is
 counted in exactly one row, with its bytes. Outcomes: `allowed`, `blocked` (`not_enabled`,
 `not_in_ceiling`, `forbidden_address`, `sni_mismatch`, `invalid_target`, `port_not_allowed`,
 `plain_http`, `connection_limit`, `inactive_member`) and `failed` (`dns_failure`, `upstream_unreachable`,
@@ -725,7 +725,7 @@ Secret). Both carry the same fields as the site export, including the chain hash
   destination: status, events behind, events delivered, last delivery, next attempt and the last
   error.
 - **Enterprise number (KOBE-182).** The SD-ID is `kobe@<PEN>`, the PEN from
-  `auditForwarding.syslog.enterpriseNumber` (env `KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER`; digits, no
+  `auditForwarding.syslog.enterpriseNumber` (env `KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER`; digits, no
   leading zero, at most 10; anything else fails at install and at startup). The default, `32473`, is
   the number RFC 5612 reserves for documentation: an organisation with its own registered IANA
   Private Enterprise Number should set it. Match SIEM rules on the APP-NAME `kobe-audit` and the

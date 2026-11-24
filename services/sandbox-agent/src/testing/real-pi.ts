@@ -6,14 +6,14 @@ import { fileURLToPath } from "node:url";
  * Paths for tests against the REAL pinned Pi (`@earendil-works/pi-coding-agent` 1.4.0 from
  * images/sandbox/pi). CI installs Pi with `npm ci --prefix images/sandbox/pi --omit=dev
  * --ignore-scripts`; locally those suites are skipped when Pi is not installed (or set
- * KOBE_TEST_PI_BIN).
+ * KAIJU_TEST_PI_BIN).
  */
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../../../..");
 const PACKAGE = path.resolve(HERE, "../..");
 
 export const PI_BIN =
-  process.env.KOBE_TEST_PI_BIN ?? path.join(REPO, "images/sandbox/pi/node_modules/.bin/pi");
+  process.env.KAIJU_TEST_PI_BIN ?? path.join(REPO, "images/sandbox/pi/node_modules/.bin/pi");
 export const PI_AVAILABLE = existsSync(PI_BIN);
 
 /**
@@ -23,7 +23,7 @@ export const PI_AVAILABLE = existsSync(PI_BIN);
 const DIST_EXTENSION = path.join(PACKAGE, "dist/kobe-policy/index.js");
 const SOURCE_EXTENSION = path.join(PACKAGE, "src/kobe-policy/index.ts");
 export const REAL_POLICY_EXTENSION =
-  process.env.KOBE_TEST_POLICY_EXTENSION ??
+  process.env.KAIJU_TEST_POLICY_EXTENSION ??
   (process.env.CI === undefined ? SOURCE_EXTENSION : DIST_EXTENSION);
 if (process.env.CI !== undefined && !existsSync(REAL_POLICY_EXTENSION)) {
   throw new Error(`kobe-policy is not built: ${REAL_POLICY_EXTENSION} (run pnpm build first)`);
@@ -31,7 +31,7 @@ if (process.env.CI !== undefined && !existsSync(REAL_POLICY_EXTENSION)) {
 
 /** kobe-tools (KOBE-128), same rule as kobe-policy. */
 export const REAL_TOOLS_EXTENSION =
-  process.env.KOBE_TEST_TOOLS_EXTENSION ??
+  process.env.KAIJU_TEST_TOOLS_EXTENSION ??
   path.join(
     PACKAGE,
     process.env.CI === undefined ? "src/kobe-tools/index.ts" : "dist/kobe-tools/index.js",
@@ -52,7 +52,7 @@ export function fauxScript(steps: readonly Record<string, unknown>[]): string {
 
 /** kobe-exec (KOBE-167), same rule as kobe-policy. */
 export const REAL_EXEC_EXTENSION =
-  process.env.KOBE_TEST_EXEC_EXTENSION ??
+  process.env.KAIJU_TEST_EXEC_EXTENSION ??
   path.join(
     PACKAGE,
     process.env.CI === undefined ? "src/kobe-exec/index.ts" : "dist/kobe-exec/index.js",

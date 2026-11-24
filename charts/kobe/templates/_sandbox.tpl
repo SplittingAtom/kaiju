@@ -72,7 +72,7 @@ sandbox.sessionKeysSecret, sandbox.sessionVerifyKeysConfigMap (required then).
 
 {{/* `<audience>` key of the verify-keys ConfigMap as a verifier's env var (public key only). */}}
 {{- define "kobe.sessionVerifyKeyEnv" -}}
-- name: KOBE_SESSION_VERIFY_KEY_{{ .env }}
+- name: KAIJU_SESSION_VERIFY_KEY_{{ .env }}
   valueFrom:
     configMapKeyRef:
       name: {{ include "kobe.sessionVerifyKeysName" .root }}
@@ -85,7 +85,7 @@ sandbox.sessionKeysSecret, sandbox.sessionVerifyKeysConfigMap (required then).
 {{- end -}}
 
 {{/*
-KOBE_SANDBOX_CONFIG for the server (validated by services/server/src/sandbox/config.ts): the
+KAIJU_SANDBOX_CONFIG for the server (validated by services/server/src/sandbox/config.ts): the
 sandbox image and sizing, and how sandboxes reach Kaiju's services (Service for the ClusterIP,
 pod labels and port for the team NetworkPolicy).
 */}}
@@ -190,7 +190,7 @@ still starts: the server then denies every tool call that needs approval (fail c
 {{- define "kobe.sandboxEnv" -}}
 {{ include "kobe.sandboxConfigEnv" . }}
 {{- range $env, $aud := include "kobe.sessionKeyNames" . | fromJson }}
-- name: KOBE_SESSION_SIGNING_KEY_{{ $env }}
+- name: KAIJU_SESSION_SIGNING_KEY_{{ $env }}
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.sessionKeysSecretName" $ }}
@@ -198,7 +198,7 @@ still starts: the server then denies every tool call that needs approval (fail c
 {{- /* The server's own rotation bundle comes from the Secret, never the ConfigMap: a ConfigMap
   editor must not be able to add a key the server accepts (sandbox-wire, MCP /grant). Optional: the
   server always accepts its own key's public half. */}}
-- name: KOBE_SESSION_VERIFY_KEY_{{ $env }}
+- name: KAIJU_SESSION_VERIFY_KEY_{{ $env }}
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.sessionKeysSecretName" $ }}
@@ -206,13 +206,13 @@ still starts: the server then denies every tool call that needs approval (fail c
       optional: true
 {{- end }}
 {{- /* Optional: a pre-created Secret without `trace-span` only turns the span relay off. */}}
-- name: KOBE_TRACE_SPAN_KEY
+- name: KAIJU_TRACE_SPAN_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.sessionKeysSecretName" . }}
       key: trace-span
       optional: true
-- name: KOBE_APPROVAL_KEY
+- name: KAIJU_APPROVAL_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.sessionKeysSecretName" . }}
@@ -225,6 +225,6 @@ Sandbox config alone, for the scheduler (KOBE-174): it wakes sandboxes through t
 holds no session-token key, run-token key or approval key (the server signs and verifies those).
 */}}
 {{- define "kobe.sandboxConfigEnv" -}}
-- name: KOBE_SANDBOX_CONFIG
+- name: KAIJU_SANDBOX_CONFIG
   value: {{ include "kobe.sandboxConfig" . | quote }}
 {{- end -}}

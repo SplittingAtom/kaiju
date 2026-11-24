@@ -13,9 +13,9 @@ import { launchFromPlusMenu } from "./support/plus-apps.js";
  * The app is the fake MCP server's test explorer (e2e/lib/fake-mcp.js, FAKE_MCP_APPS=1, the
  * `e2e-apps` connector of e2e/gate-apps.sh): its "Use as item" sends the chosen table and its
  * namespace as resource_links. No Catalyst dependency. Without that app for the member the file
- * skips (`KOBE_APPS_CONNECTOR` names another connector whose app has the same button).
+ * skips (`KAIJU_APPS_CONNECTOR` names another connector whose app has the same button).
  */
-const CONNECTOR = process.env["KOBE_APPS_CONNECTOR"] ?? "e2e-apps";
+const CONNECTOR = process.env["KAIJU_APPS_CONNECTOR"] ?? "e2e-apps";
 const PATH = ["c", "c.n", "c.n.t"];
 
 interface App {

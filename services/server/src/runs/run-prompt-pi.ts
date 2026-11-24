@@ -129,7 +129,7 @@ export function isRunSetup(entry: PiSessionEntry, gatewayModel: string | undefin
   return false;
 }
 
-/** The sandbox's workspace (`KOBE_WORKSPACE_DIR`), as Pi records its cwd. */
+/** The sandbox's workspace (`KAIJU_WORKSPACE_DIR`), as Pi records its cwd. */
 const WORKSPACE = "/workspace";
 /** Pi's own system entry is a few KB (its tools' schemas included); MCP tools add some. */
 const SYSTEM_ENTRY_MAX_BYTES = 256 * 1024;

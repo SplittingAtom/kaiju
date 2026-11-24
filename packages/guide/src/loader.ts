@@ -39,7 +39,7 @@ export const AUDIENCES = ["member", "admin", "agent"] as const;
 export type GuideAudience = (typeof AUDIENCES)[number];
 
 /** Stands for the public origin in `markdown`; the routes replace it per request. */
-export const ORIGIN_TOKEN = "%%KOBE_ORIGIN%%";
+export const ORIGIN_TOKEN = "%%KAIJU_ORIGIN%%";
 
 /** Pages without an `order` sort after the numbered ones (then by title). */
 const DEFAULT_ORDER = 1000;

@@ -22,8 +22,8 @@ export const KC_SECRET = "Kc~Secret.Value-0123456789abcdefgh";
 
 export const settingsFor = (enabled: "true" | "false"): SsoSettings =>
   loadSsoSettings({
-    KOBE_SSO_ENABLED: enabled,
-    KOBE_SSO_PROVIDERS: JSON.stringify([
+    KAIJU_SSO_ENABLED: enabled,
+    KAIJU_SSO_PROVIDERS: JSON.stringify([
       {
         slug: "corp",
         displayName: "Contoso",
@@ -40,8 +40,8 @@ export const settingsFor = (enabled: "true" | "false"): SsoSettings =>
         accessClaim: "groups",
       },
     ]),
-    KOBE_SSO_CLIENT_SECRET_CORP: CORP_SECRET,
-    KOBE_SSO_CLIENT_SECRET_KC: KC_SECRET,
+    KAIJU_SSO_CLIENT_SECRET_CORP: CORP_SECRET,
+    KAIJU_SSO_CLIENT_SECRET_KC: KC_SECRET,
   });
 
 export let h: Harness;

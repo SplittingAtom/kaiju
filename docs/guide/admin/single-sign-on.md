@@ -201,7 +201,7 @@ It never leaves the site without a way in:
   installation's owner database role:
 
   ```bash
-  KOBE_DB_MIGRATE_URL=<the chart's migrate URL> kaiju sso allow-local-sign-in --operator <your name>
+  KAIJU_DB_MIGRATE_URL=<the chart's migrate URL> kaiju sso allow-local-sign-in --operator <your name>
   ```
 
   Password and passkey sign-in work again at once (the setup Owner's password included); the audit

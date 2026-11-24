@@ -10,7 +10,7 @@ import { connectorNameSchema } from "../tools.js";
  * The field names only the run's EFFECTIVE connectors (team-exposed, the run's user has a usable
  * grant, the agent's tool list allows at least the listed tools) and their tools. It carries no
  * URL, no credential and no token: the agent builds Pi's `mcp.json` from its own mcp-proxy URL
- * (`KOBE_MCP_PROXY_URL`) and its own `kobe.mcp-proxy` session token, so nothing about the upstream
+ * (`KAIJU_MCP_PROXY_URL`) and its own `kobe.mcp-proxy` session token, so nothing about the upstream
  * server or the user's grant ever reaches the sandbox. Empty `servers` means "no connectors": Pi
  * is then started without the MCP extension.
  */

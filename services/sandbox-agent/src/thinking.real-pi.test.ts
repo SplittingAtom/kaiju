@@ -69,7 +69,7 @@ async function start(levels: ReadonlyMap<string, ThinkingLevel>) {
   });
   h = await startHarness({
     piBin: PI_BIN,
-    env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+    env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
     models: {
       gatewayUrl: gateway.url,
       extension: REAL_MODELS_EXTENSION,

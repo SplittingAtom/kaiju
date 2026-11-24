@@ -7,13 +7,13 @@ import { bashTurn, pageApi, secondBrowser } from "./support/gate5.js";
  * KOBE-605 (egress access, EA-4; spec docs/specs/egress-access.md). Every host comes from the
  * environment, so nothing about a deployment is in the repository:
  *
- * - `KOBE_USER` / `KOBE_PW`: a site admin (Owner or Admin) who is also admin of the active team
- *   (`KOBE_TEAM` pins it); `KOBE_USER2` / `KOBE_PW2`: an ordinary member of that team.
- * - `KOBE_EGRESS_BLOCKED_HOST`: an external host name outside the site ceiling (no pattern of the
+ * - `KAIJU_USER` / `KAIJU_PW`: a site admin (Owner or Admin) who is also admin of the active team
+ *   (`KAIJU_TEAM` pins it); `KAIJU_USER2` / `KAIJU_PW2`: an ordinary member of that team.
+ * - `KAIJU_EGRESS_BLOCKED_HOST`: an external host name outside the site ceiling (no pattern of the
  *   ceiling covers it). (a)/(b) skip without it.
- * - `KOBE_EGRESS_INTERNAL_HOST`: a host served by the cluster's ingress that no ceiling pattern
+ * - `KAIJU_EGRESS_INTERNAL_HOST`: a host served by the cluster's ingress that no ceiling pattern
  *   covers yet (gate1 has `egressProxy.clusterIngress` on). (c) skips without it.
- * - `KOBE_EGRESS_PRIVATE_HOST`: a host name that resolves to a private address that is NOT the
+ * - `KAIJU_EGRESS_PRIVATE_HOST`: a host name that resolves to a private address that is NOT the
  *   cluster ingress. (d) skips without it.
  *
  * (a) member2 is blocked, sees "Request access to HOST" and the site-admins sentence, requests,
@@ -26,16 +26,16 @@ import { bashTurn, pageApi, secondBrowser } from "./support/gate5.js";
  * blocked card after the retry (KOBE-605: cards outlive their run).
  *
  * The agent's curl goes through a bash tool turn (the fake model's `bash:` line with
- * KOBE_FAKE_MODEL=1). Each test first denies pending requests for its host left by an earlier run;
+ * KAIJU_FAKE_MODEL=1). Each test first denies pending requests for its host left by an earlier run;
  * clean-up (finally) puts the host's ceiling row back as it was, removes the team enablement,
  * denies leftover requests and trashes threads. member2's approved request from an earlier run
  * does not answer a new block (KOBE-609), so the spec passes twice in a row.
  */
-const USER2 = process.env["KOBE_USER2"];
-const PW2 = process.env["KOBE_PW2"];
-const BLOCKED_HOST = process.env["KOBE_EGRESS_BLOCKED_HOST"]?.trim().toLowerCase();
-const INTERNAL_HOST = process.env["KOBE_EGRESS_INTERNAL_HOST"]?.trim().toLowerCase();
-const PRIVATE_HOST = process.env["KOBE_EGRESS_PRIVATE_HOST"]?.trim().toLowerCase();
+const USER2 = process.env["KAIJU_USER2"];
+const PW2 = process.env["KAIJU_PW2"];
+const BLOCKED_HOST = process.env["KAIJU_EGRESS_BLOCKED_HOST"]?.trim().toLowerCase();
+const INTERNAL_HOST = process.env["KAIJU_EGRESS_INTERNAL_HOST"]?.trim().toLowerCase();
+const PRIVATE_HOST = process.env["KAIJU_EGRESS_PRIVATE_HOST"]?.trim().toLowerCase();
 
 const DECISION_TIMEOUT_MS = 90_000;
 
@@ -190,8 +190,8 @@ test("member2 is blocked off the ceiling, requests; the site admin approves; the
   page,
   browser,
 }) => {
-  test.skip(!BLOCKED_HOST, "KOBE_EGRESS_BLOCKED_HOST names an external host outside the ceiling");
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!BLOCKED_HOST, "KAIJU_EGRESS_BLOCKED_HOST names an external host outside the ceiling");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const host = BLOCKED_HOST as string;
   await new Chat(page).open();
   const before = await prepare(page, host);
@@ -251,7 +251,7 @@ test("internal host: forbidden_address, the site admin approves Internal (same c
   chat,
   page,
 }) => {
-  test.skip(!INTERNAL_HOST, "KOBE_EGRESS_INTERNAL_HOST names a host on the cluster ingress");
+  test.skip(!INTERNAL_HOST, "KAIJU_EGRESS_INTERNAL_HOST names a host on the cluster ingress");
   const host = INTERNAL_HOST as string;
   await chat.open();
   const before = await prepare(page, host);
@@ -287,7 +287,7 @@ test("an allowlisted host that resolves to a private address and is not internal
   chat,
   page,
 }) => {
-  test.skip(!PRIVATE_HOST, "KOBE_EGRESS_PRIVATE_HOST names a host resolving to a private address");
+  test.skip(!PRIVATE_HOST, "KAIJU_EGRESS_PRIVATE_HOST names a host resolving to a private address");
   const host = PRIVATE_HOST as string;
   await chat.open();
   const before = await prepare(page, host);

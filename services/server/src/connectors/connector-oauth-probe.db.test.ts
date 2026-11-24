@@ -43,7 +43,7 @@ const answer = (secret: string | undefined, kind: ProbeCredentialKind | undefine
 beforeAll(async () => {
   await fake.start();
   h = await openHarness({
-    envelope: must(loadEnvelope({ KOBE_ENVELOPE_KEY: "d".repeat(48) })),
+    envelope: must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "d".repeat(48) })),
     connectors: {
       allowHttp: true,
       allowedPorts: [fake.port],

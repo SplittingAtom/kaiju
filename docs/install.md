@@ -140,7 +140,7 @@ The gateway verifies all three with the `model-gateway` public key and holds no 
 of them. Rotating the `model-gateway` pair (below) therefore rotates all three at once. Run
 tokens live up to 24 hours (they are revoked when their run ends), so in step 3 wait until every
 run started before step 2 has ended, not just 15 minutes, before removing the old public key. The only secret the gateway shares with the
-server is `trace-span` (`KOBE_TRACE_SPAN_KEY`): both remap sandbox span ids with it (KOBE-274) and
+server is `trace-span` (`KAIJU_TRACE_SPAN_KEY`): both remap sandbox span ids with it (KOBE-274) and
 the gateway salts its budget-reservation keys with it. It authorises nothing; rotating it only
 breaks the link between spans exported before and after the change. Replace it in the Secret and
 restart the server and the gateway together, while no runs are active.
@@ -479,7 +479,7 @@ egressProxy:
     ports: [8443] # Traefik's pod port after servicelb/kube-proxy DNAT (not 443)
 ```
 
-This sets `KOBE_EGRESS_INTERNAL_TARGETS` and adds NetworkPolicy egress to the addresses (on
+This sets `KAIJU_EGRESS_INTERNAL_TARGETS` and adds NetworkPolicy egress to the addresses (on
 `allowedPorts`) and to the ingress pods (on `ports`). Enabled without all four fields, the chart
 refuses to render. A host matched by an internal pattern may resolve only to global addresses or
 those targets; any other allowlisted host that resolves to a private address stays blocked (DNS
@@ -823,8 +823,8 @@ like every other model. By default the chart runs a small one in the cluster
 - **Check it** (after a deploy): from the Bifrost pod, the only one allowed to connect,
   `kubectl -n <ns> exec deploy/<release>-bifrost -- wget -qO- --header 'Content-Type: application/json' --post-data '{"model":"nomic-embed-text","input":"hello"}' http://<release>-embeddings:8080/v1/embeddings`
   returns a 768-number vector; the same from any other pod times out. Bifrost lists the model:
-  from the server pod, `GET $KOBE_BIFROST_URL/api/models?provider=kobe-local` with
-  `Authorization: Bearer base64(kobe:$KOBE_BIFROST_ADMIN_PASSWORD)` shows `nomic-embed-text`.
+  from the server pod, `GET $KAIJU_BIFROST_URL/api/models?provider=kobe-local` with
+  `Authorization: Bearer base64(kobe:$KAIJU_BIFROST_ADMIN_PASSWORD)` shows `nomic-embed-text`.
 
 ## MCP connectors
 
@@ -887,7 +887,7 @@ such record: it is checked against its thread's turned-off connectors only. That
 for the rollout and is to be removed in the next release.
 
 **Probing and drift.** Kaiju pins a connector's tools from its `tools/list`, and re-checks every
-pinned connector each `KOBE_CONNECTOR_REFRESH_SECONDS` (default 3600) for changed tools, which stay
+pinned connector each `KAIJU_CONNECTOR_REFRESH_SECONDS` (default 3600) for changed tools, which stay
 disabled until a site admin approves them. **Re-probe** on a connector's row in Site console >
 Connectors (site admins only; KOBE-430) runs that check now for one connector and says what it
 found: no changes, N changed / added / removed (changed and new tools wait in the review), or why it
@@ -923,7 +923,7 @@ everyone, the setup Owner included. It turns on only from an SSO session of an e
 turns itself off when the last enabled provider is disabled or deleted, and is not in force while
 `auth.sso.enabled` is `false` or no provider can finish a sign-in. When the provider is down and
 nobody can sign in, the break-glass is the operator CLI with the owner role (the chart's migrate
-URL, as for `kaiju restore`): `KOBE_DB_MIGRATE_URL=<migrate URL> kaiju sso allow-local-sign-in
+URL, as for `kaiju restore`): `KAIJU_DB_MIGRATE_URL=<migrate URL> kaiju sso allow-local-sign-in
 --operator <name>`. It turns the setting off and records `identity.sso.required.disabled`
 (`reason: break_glass`) in the audit log. Setting `auth.sso.enabled: false` also brings local
 sign-in back, but switches single sign-on off for everyone.
@@ -1204,7 +1204,7 @@ content). Without `s3.bucket`, workspace sync stays off and the server logs a wa
 
 Use an `https://` endpoint. A plain `http://` endpoint works, but every workspace file and the
 request signatures then travel unencrypted, and the server logs a warning at every start
-("KOBE_S3_ENDPOINT is plain http"); accept it only on a network you trust.
+("KAIJU_S3_ENDPOINT is plain http"); accept it only on a network you trust.
 
 `sandbox.workspaceSync.maxFileSize` (default `1Gi`) is the largest file workspace sync stores;
 larger files stay on the volume only. It can be at most `5Gi`, the largest object S3 accepts in a
@@ -1254,9 +1254,9 @@ cannot reach the bytes until the lock expires.
 `s3.prefix` (default empty) puts every object under a key prefix, for a bucket shared with other
 applications. It must be relative and end in `/` (for example `kobe/`; letters, digits and
 `! _ . * ' ( ) / -` only); the chart rejects anything else. It is applied on the server and the
-scheduler (`KOBE_S3_PREFIX`). Changing it on an existing site hides the objects written under
+scheduler (`KAIJU_S3_PREFIX`). Changing it on an existing site hides the objects written under
 the old prefix, so move them first or keep the old value. `kaiju backup` and `kaiju restore` read
-`KOBE_S3_PREFIX` too; set it to the same value.
+`KAIJU_S3_PREFIX` too; set it to the same value.
 
 ### Timeouts (Postgres and S3)
 
@@ -1271,8 +1271,8 @@ A stuck network call must never pin a database transaction, its locks or a poole
   with an error (logged as `database connection lost` with `sqlstate: 25P03`, the error an
   `IdleInTransactionTimeoutError`), and a background job picks the work up on its next pass. The nightly
   retention purge and run-event compaction batches raise the statement timeout to 10 min for
-  their own transaction. The server and scheduler read `KOBE_DB_STATEMENT_TIMEOUT_MS` and
-  `KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` (milliseconds, `0` turns one off); the chart does not
+  their own transaction. The server and scheduler read `KAIJU_DB_STATEMENT_TIMEOUT_MS` and
+  `KAIJU_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` (milliseconds, `0` turns one off); the chart does not
   set them, so the defaults apply. The settings are sent with `SET`, not as startup parameters,
   so a session-mode PgBouncer in front works unchanged.
 - **New connections only.** The timeouts take effect on connections opened by this release's
@@ -1302,8 +1302,8 @@ A stuck network call must never pin a database transaction, its locks or a poole
   60 s leaves the object stream silent, the download is cut, and the browser reports it failed
   (start it again). Object calls made while a
   transaction holds locks also have a total bound: deletes 30 s (then aborted, 10 s to settle),
-  memory writes and restores 30 s. Override with `KOBE_S3_CONNECT_TIMEOUT_MS` and
-  `KOBE_S3_IDLE_TIMEOUT_MS` on the server.
+  memory writes and restores 30 s. Override with `KAIJU_S3_CONNECT_TIMEOUT_MS` and
+  `KAIJU_S3_IDLE_TIMEOUT_MS` on the server.
 - **Kubernetes.** Each Kubernetes API call of the server gives up after 10 s, including those
   made under a row or legal-hold lock (hibernation, workspace volume deletes).
 
@@ -1366,7 +1366,7 @@ operating system's TCP keepalive gives up, by default after about two hours, and
 configuration is not synced until then.
 
 At start each server works out this budget for the configured replicas (from the values above,
-which the chart passes as `KOBE_DB_BUDGET_SERVER_REPLICAS` and `KOBE_DB_BUDGET_PEER_CONNECTIONS`)
+which the chart passes as `KAIJU_DB_BUDGET_SERVER_REPLICAS` and `KAIJU_DB_BUDGET_PEER_CONNECTIONS`)
 and logs a warning (`postgres connection budget exceeds max_connections`) when it comes to more
 than `SHOW max_connections` minus 10. It is an estimate of full pools in steady state: rollout
 pods, the migration Job and backups are not counted, and nothing is refused because of it.
@@ -1484,7 +1484,7 @@ style changes, the presets and the upload rules are in [theming.md](theming.md).
 live in Postgres (`site_branding_assets`), so they need no S3 and are in every backup.
 
 **Server URL for the web.** The web reads the branding from the server on every server render, so
-even the first paint and the sign-in page are branded. `web.serverUrl` (env `KOBE_SERVER_URL` on
+even the first paint and the sign-in page are branded. `web.serverUrl` (env `KAIJU_SERVER_URL` on
 the web pod) defaults to this release's server Service, `http://<fullname>-server` (port 80, which
 the existing NetworkPolicies already admit); leave it empty for a normal install. Set it only for a
 split install where web and server are not one release, to the server's in-cluster origin
@@ -1606,7 +1606,7 @@ list in `ingress.annotations` under that key keep working after it. A client ove
 **Site console notice.** While no limit is configured, the Site console's overview shows Site
 admins an information notice ("No rate limit at the ingress"; "Ingress rate limit unknown" when
 `ingress.enabled` is false and the chart cannot tell). The chart passes the state to the server as
-`KOBE_INGRESS_RATE_LIMIT` (`chart`, `external`, `none` or `unknown`). If your own edge (load
+`KAIJU_INGRESS_RATE_LIMIT` (`chart`, `external`, `none` or `unknown`). If your own edge (load
 balancer, WAF, CDN, or your own ingress) already limits requests per client, declare it so the
 notice goes away:
 
@@ -1723,6 +1723,47 @@ upgrade again. Rolling a bundled-CloudNativePG release back to its first revisio
 revision's initial migration Job, which resets app-role grants to that build's matrix; the next
 upgrade restores them.
 
+### Environment variable names (`KAIJU_*`)
+
+Every Kaiju setting read from the environment starts with `KAIJU_`. Before the rename the
+variables started with `KOBE_`; the mapping is mechanical: `KOBE_` + rest becomes
+`KAIJU_` + rest (`KOBE_PUBLIC_URL` → `KAIJU_PUBLIC_URL`,
+`KOBE_SESSION_SIGNING_KEY_MCP_PROXY` → `KAIJU_SESSION_SIGNING_KEY_MCP_PROXY`). The chart sets only
+the new names, so a Helm upgrade needs nothing from you.
+
+For one release, every service, the migration Job, the database wait init container, the server's
+command-line tools, the sandbox agent and the `kaiju` CLI also accept the old name of any
+variable whose new name is unset:
+
+- **Only the old name set:** it is used, and the process logs one warning at startup naming each
+  old variable and its new name (`... used for now: KOBE_X → KAIJU_X`). Values are never logged.
+- **Both names set:** the new name wins unless it is empty, the old one is ignored, and the warning says so
+  (`... ignored because the new name is set too and wins: KOBE_X (KAIJU_X is used)`).
+
+Rename what you set yourself before the next release removes the old names: variables added to the
+Deployments by hand or by a post-renderer (`kubectl set env`, Kustomize patches), the environment
+of scripts that run the `kaiju` CLI (`KAIJU_BACKUP_KEY`, `KAIJU_BACKUP_DATABASE_URL`,
+`KAIJU_DB_MIGRATE_URL`, `KAIJU_S3_*`, ...) and your CI or test setup (`KAIJU_TEST_DATABASE_URL`;
+`pnpm verify` stops when only the old `KOBE_TEST_DATABASE_URL` is set). Postgres settings and
+roles (`kobe.team_id`, `kobe_app`), Secret names and keys and every stored value keep their
+names; nothing in the database changes.
+
+During the upgrade, pods of both versions run side by side, each with the image and the names
+its own chart version set, so neither side needs the fallback. Sandboxes keep the SandboxTemplate
+they started from until the server's team reconcile (every 300 s) writes the new image and the new
+names together; a template the old server wrote carries the old image, which reads the old names
+itself. The fallback is for a new image under old names: a chart rolled back without its images,
+a values file that pins the new images under the old chart, or variables you set by hand. An image
+from before the rename does not read the new names, so do not run older images under this chart.
+The skill-scan image is the exception for this release: the server also accepts the result line of
+a scanner image built before the rename (rebuild it before the next release).
+
+An empty value under the new name does not hide a value under the old one: the chart renders some
+optional settings as empty strings (`KAIJU_S3_PREFIX`, the CIDR lists), so a `KOBE_S3_PREFIX` you
+added by hand is still used, and the warning says so (`KOBE_S3_PREFIX → KAIJU_S3_PREFIX
+(KAIJU_S3_PREFIX is set but empty, so KOBE_S3_PREFIX is used)`). Once you rename it, set the chart
+value (`s3.prefix`) instead where there is one.
+
 ### Upgrade notes
 
 Release notes for operators, one file per release, are in [docs/releases](releases/): start
@@ -1736,6 +1777,9 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Environment variables are `KAIJU_*` (Kaiju rename, KOBE-748).** The chart sets the new
+  names; the old `KOBE_*` names still work for this release, with a startup warning that names
+  them. Rename any you set yourself ([Environment variable names](#environment-variable-names-kaiju_)).
 - **Renamed log and connection names (Kaiju rename, KOBE-747).** The migrate Job and the
   database wait init container log `"service":"kaiju-migrate"` and `"service":"kaiju-db-wait"`
   (before: `kobe-migrate`, `kobe-db-wait`), and every connection's `application_name` in
@@ -1790,7 +1834,7 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   narrower (ULA `fc00::/7` excepted). Private LAN and cluster ranges keep working unchanged.
   The schema catches the common mistakes; the services validate finally. An entry they reject
   (an invalid CIDR such as one with leading zeros, or an always-refused range) makes the pod
-  crash-loop with `Invalid configuration: KOBE_..._ALLOWED_INTERNAL_CIDRS: ...` in its log
+  crash-loop with `Invalid configuration: KAIJU_..._ALLOWED_INTERNAL_CIDRS: ...` in its log
   (`kubectl logs deploy/<release>-mcp-proxy`, `-egress-proxy` or `-server`).
 
 - **HSTS (KOBE-695).** An install with an https public URL now sends
@@ -1900,7 +1944,7 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   drops `projects.visibility` and deletes explicit `reader` rows (owners and editors stay).
   Confidential work belongs in a separate workspace or in a member's My files. Before upgrading,
   list what becomes visible with the read-only dry-run
-  `KOBE_BACKUP_DATABASE_URL=<backup role URL> kaiju projects restricted` (add `--json` for a
+  `KAIJU_BACKUP_DATABASE_URL=<backup role URL> kaiju projects restricted` (add `--json` for a
   machine-readable list; the backup role of [backup and restore](backup-restore.md) has the
   `BYPASSRLS` it needs) and keep the list with your upgrade record.
 - **Ed25519 run and server-call tokens (KOBE-521).** The server now signs run tokens and
@@ -1909,9 +1953,9 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   the shared secret they used to be derived from, so a compromised gateway cannot mint them. The
   generated Secret `<release>-sandbox-session-keys` gains `trace-span` (a fresh random value) and
   loses `model-gateway`; the ConfigMap is unchanged. Env: the gateway loses
-  `KOBE_SESSION_KEY_MODEL_GATEWAY` and gains `KOBE_TRACE_SPAN_KEY` (required; it refuses to start
-  if `KOBE_SESSION_KEY_MODEL_GATEWAY` or any `KOBE_SESSION_SIGNING_KEY_*` is still set); the
-  server loses `KOBE_SESSION_KEY_MODEL_GATEWAY` and gains `KOBE_TRACE_SPAN_KEY` (optional). With
+  `KAIJU_SESSION_KEY_MODEL_GATEWAY` and gains `KAIJU_TRACE_SPAN_KEY` (required; it refuses to start
+  if `KAIJU_SESSION_KEY_MODEL_GATEWAY` or any `KAIJU_SESSION_SIGNING_KEY_*` is still set); the
+  server loses `KAIJU_SESSION_KEY_MODEL_GATEWAY` and gains `KAIJU_TRACE_SPAN_KEY` (optional). With
   `sandbox.sessionKeysSecret`, add a `trace-span` entry (`openssl rand -base64 36`) before
   upgrading (the same applies to a Secret restored from a backup taken before this release:
   without `trace-span` the gateway pod fails with `CreateContainerConfigError`); the old
@@ -2105,10 +2149,10 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   `auto` is named in a notice (`kobe: dropped team approval floor <mode> of team <id>`): such a
   team is looser after the upgrade. Restore its strictness with team ask rules (an `ask` rule on
   `*` asks for every tool, like `ask-all`).
-- **Approval key (KOBE-37).** Tool-call approvals are signed with `KOBE_APPROVAL_KEY`, which the
+- **Approval key (KOBE-37).** Tool-call approvals are signed with `KAIJU_APPROVAL_KEY`, which the
   chart generates as `approval-hmac` in the sandbox session-keys Secret. If you pre-create that
   Secret (`sandbox.sessionKeysSecret`), add an `approval-hmac` key (at least 32 random characters).
-  Without it the server starts, logs `KOBE_APPROVAL_KEY is not set`, and denies every tool call
+  Without it the server starts, logs `KAIJU_APPROVAL_KEY is not set`, and denies every tool call
   that needs approval. See [approvals](approvals.md).
 
 - **Model gateway (KOBE-40).** Sandboxes now reach models through the new `model-gateway` shim
@@ -2283,7 +2327,7 @@ true` lets the hibernation sweep delete a sandbox hibernated for `dormantDays` (
   `resourcequotas` in team namespaces (chart RBAC) to report a full quota.
 - **Retention job (KOBE-18).** One server replica at a time runs the nightly retention pass under
   a session-level advisory lock, so the server needs a direct (or session-mode pooled) Postgres
-  connection; transaction-mode poolers break session locks. `KOBE_RETENTION_HOUR_UTC` (0-23,
+  connection; transaction-mode poolers break session locks. `KAIJU_RETENTION_HOUR_UTC` (0-23,
   default 3) sets the hour.
 - **Retention sweeps (KOBE-741).** The nightly pass also deletes rows of tables that would
   otherwise grow for ever, each past its own period (chart `retention.sweeps`; `enabled: false`
@@ -2325,7 +2369,7 @@ To recover a site from a backup (full steps in
    first-run setup** ([First run](#first-run-to-the-first-chat)): the restore refuses a site with
    users. The server's start seeds the gallery agents; the restore replaces those.
 3. Stop the writers: `kubectl -n kobe scale deploy/kobe-server deploy/kobe-scheduler --replicas=0`.
-4. Run `kaiju restore --from <backup>` as the owner role (`KOBE_DB_MIGRATE_URL`), and check the
+4. Run `kaiju restore --from <backup>` as the owner role (`KAIJU_DB_MIGRATE_URL`), and check the
    printed fingerprint against the one recorded at backup time.
 5. If the backup is older than the bucket or the cluster, set `retention.paused: true` first; then
    scale back up. Users sign in again.

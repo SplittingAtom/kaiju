@@ -41,7 +41,7 @@ beforeAll(async () => {
     }) as never);
   }
   h = await openHarness({
-    envelope: must(loadEnvelope({ KOBE_ENVELOPE_KEY: "f".repeat(48) })),
+    envelope: must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "f".repeat(48) })),
     connectors: {
       allowHttp: true,
       allowedPorts: [fake.port],

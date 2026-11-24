@@ -178,11 +178,11 @@ const MESSAGES = [
 ];
 
 /**
- * The target is 50 ms (ac-4), measured with this file run alone (`KOBE_PERF_STRICT=1`; numbers in
+ * The target is 50 ms (ac-4), measured with this file run alone (`KAIJU_PERF_STRICT=1`; numbers in
  * the ledger). Under `pnpm verify` many suites share the CPUs and the database, so the default
  * bound only catches a regression of several times.
  */
-const P95_MAX_MS = process.env.KOBE_PERF_STRICT === "1" ? 50 : 200;
+const P95_MAX_MS = process.env.KAIJU_PERF_STRICT === "1" ? 50 : 200;
 
 const VECTOR_MODEL = "kobe-local/nomic-embed-text";
 /** The keyword-only p95 of the run above (the hybrid bound is relative to it). */

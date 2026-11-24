@@ -6,10 +6,10 @@ import { expect, test } from "../support/chat.js";
  * multi-child entry; Fork to a new thread creates a thread with the copied entries and a working
  * back-link; Regenerate with another model produces a sibling, a marker, and switches the picker;
  * hidden for a pinned agent." root-edit, fork and regenerate-with specs prove most of it; the
- * marker, the back-link's target, the picker and the pinned agent are here. KOBE_GATE5_PINNED_THREAD
+ * marker, the back-link's target, the picker and the pinned agent are here. KAIJU_GATE5_PINNED_THREAD
  * is a thread of the member's on an agent that pins its model (e2e/gate5.sh makes it).
  */
-const PINNED_THREAD = process.env["KOBE_GATE5_PINNED_THREAD"];
+const PINNED_THREAD = process.env["KAIJU_GATE5_PINNED_THREAD"];
 
 test("U22: a fork marker at each entry with two branches", async ({ chat, page }) => {
   await chat.open();
@@ -85,7 +85,7 @@ test("U22: Regenerate with another model switches the conversation's model picke
 });
 
 test("U22: Regenerate with is hidden for an agent that pins its model", async ({ chat, page }) => {
-  test.skip(!PINNED_THREAD, "set KOBE_GATE5_PINNED_THREAD (e2e/gate5.sh makes one)");
+  test.skip(!PINNED_THREAD, "set KAIJU_GATE5_PINNED_THREAD (e2e/gate5.sh makes one)");
   await page.goto(`/?thread=${PINNED_THREAD}`);
   await expect(chat.composer).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   const answer = chat.answers.last();

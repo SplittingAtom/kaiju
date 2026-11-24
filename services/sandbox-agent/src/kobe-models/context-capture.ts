@@ -6,14 +6,14 @@ import path from "node:path";
  * The latest model call's context, as kobe-models handed it to Pi's API adapter (KOBE-470,
  * docs/specs/context-viewer.md): the provider records every session request's `context` (system
  * prompt, tool declarations, messages) with the answer's usage, so the agent can show the owner
- * exactly what the model saw. One file per Pi process, `KOBE_CONTEXT_FILE` in the process's private
+ * exactly what the model saw. One file per Pi process, `KAIJU_CONTEXT_FILE` in the process's private
  * `agent/` directory (the one Pi writes, which the thread's tools cannot under a Pi identity),
  * replaced atomically after each call and removed with the directory when Pi exits. Nothing leaves
  * the sandbox unless the owner opens the context viewer.
  *
  * Dependency-free (node builtins only), like the rest of kobe-models.
  */
-export const CONTEXT_FILE_ENV = "KOBE_CONTEXT_FILE";
+export const CONTEXT_FILE_ENV = "KAIJU_CONTEXT_FILE";
 export const CONTEXT_FILE_NAME = "kobe-context.json";
 export const CONTEXT_CAPTURE_VERSION = 1;
 /** A larger capture is replaced by a stub (`too_large`); the viewer then rebuilds from the session. */

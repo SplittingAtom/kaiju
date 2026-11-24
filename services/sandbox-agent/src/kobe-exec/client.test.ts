@@ -137,7 +137,7 @@ describe("ExecClient", () => {
 
 describe("connect", () => {
   it("removes the fd variable from the environment and opens the channel", () => {
-    const env: Record<string, string | undefined> = { KOBE_EXEC_FD: "5" };
+    const env: Record<string, string | undefined> = { KAIJU_EXEC_FD: "5" };
     const warnings: string[] = [];
     const opened: number[] = [];
     const transport = connect(
@@ -148,7 +148,7 @@ describe("connect", () => {
         return new PassThrough() as unknown as Duplex;
       },
     );
-    expect(env.KOBE_EXEC_FD).toBeUndefined();
+    expect(env.KAIJU_EXEC_FD).toBeUndefined();
     expect(opened).toEqual([5]);
     expect(transport).toBeInstanceOf(ExecClient);
     expect(warnings).toEqual([]);
@@ -157,7 +157,7 @@ describe("connect", () => {
   it.each([undefined, "", "abc", "4", "99999"])(
     "fails every call, never falls back, when the fd variable is %j",
     async (value) => {
-      const env: Record<string, string | undefined> = { KOBE_EXEC_FD: value };
+      const env: Record<string, string | undefined> = { KAIJU_EXEC_FD: value };
       const warnings: string[] = [];
       const transport = connect(env, (m) => warnings.push(m));
       expect(warnings).toHaveLength(1);
@@ -171,7 +171,7 @@ describe("connect", () => {
   it("fails every call when the fd cannot be opened", async () => {
     const warnings: string[] = [];
     const transport = connect(
-      { KOBE_EXEC_FD: "5" },
+      { KAIJU_EXEC_FD: "5" },
       (m) => warnings.push(m),
       () => {
         throw new Error("EBADF");

@@ -30,7 +30,7 @@ import {
  * control shows the plant works against the old layout; the hardened layout (private HOME and
  * TMPDIR, caches off) does not run it, for the current Pi and for the next one.
  */
-const HELPER = process.env.KOBE_TEST_PI_RUNAS;
+const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
 const PACKAGE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MODELS_EXTENSION = path.join(
   PACKAGE,

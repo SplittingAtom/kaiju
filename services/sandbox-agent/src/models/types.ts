@@ -14,7 +14,7 @@ export interface ModelTokenSource {
 }
 
 export interface ModelWiring {
-  /** `KOBE_MODEL_GATEWAY_URL`: an http(s) origin, no credentials. */
+  /** `KAIJU_MODEL_GATEWAY_URL`: an http(s) origin, no credentials. */
   readonly gatewayUrl: string;
   /** The kobe-models extension file (root-owned, read-only). */
   readonly extension: string;

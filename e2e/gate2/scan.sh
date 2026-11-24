@@ -7,7 +7,7 @@
 # site's Kubernetes Secrets (every value of the release namespace and of its dependencies'
 # namespaces: internal signing/sealing keys, database and S3 credentials, the Bifrost admin
 # password), the plaintext provider API keys (opened in a server pod with the site's own key),
-# and any extra values in KOBE_GATE2_EXTRA_SECRETS_FILE (connector tokens, a real provider key kept
+# and any extra values in KAIJU_GATE2_EXTRA_SECRETS_FILE (connector tokens, a real provider key kept
 # outside the cluster). What the sandbox holds is copied out and searched with `grep -F -f`; a hit is
 # reported by the secret's label and the file it was found in, never by value.
 
@@ -167,12 +167,12 @@ run_secret_scan() {
   fi
 
   # 1. What is to be looked for.
-  local deps=(kobe-deps "$NS-deps" ${KOBE_GATE2_DEPS_NS:-})
+  local deps=(kobe-deps "$NS-deps" ${KAIJU_GATE2_DEPS_NS:-})
   collect_k8s_secrets "$dir" "$NS" "${deps[@]}"
   collect_provider_keys "$dir"
-  if [[ -n "${KOBE_GATE2_EXTRA_SECRETS_FILE:-}" ]]; then
-    [[ -r "$KOBE_GATE2_EXTRA_SECRETS_FILE" ]] || { fail "${SCAN_LABEL:-ac-5}: KOBE_GATE2_EXTRA_SECRETS_FILE is not readable"; return; }
-    add_secret_value "$dir" "extra secrets file" "$KOBE_GATE2_EXTRA_SECRETS_FILE"
+  if [[ -n "${KAIJU_GATE2_EXTRA_SECRETS_FILE:-}" ]]; then
+    [[ -r "$KAIJU_GATE2_EXTRA_SECRETS_FILE" ]] || { fail "${SCAN_LABEL:-ac-5}: KAIJU_GATE2_EXTRA_SECRETS_FILE is not readable"; return; }
+    add_secret_value "$dir" "extra secrets file" "$KAIJU_GATE2_EXTRA_SECRETS_FILE"
   fi
   n=$(wc -l <"$dir/labels" | tr -d ' ')
   scan_control "the site's secret values were collected (CI side only: $n secrets/keys; values never printed)" '^[1-9][0-9]*$' "$n"

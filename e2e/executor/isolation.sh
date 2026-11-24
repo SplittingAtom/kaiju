@@ -8,7 +8,7 @@ EXEC_DIR=e2e/executor
 source e2e/executor/trials.sh # helpers (in_owner, tool_said, ...)
 
 contains "the sandbox agent runs with the tool executor on (pod env from the chart flag)" '^true$' \
-  "$(in_owner 'printenv KOBE_TOOL_EXECUTOR')"
+  "$(in_owner 'printenv KAIJU_TOOL_EXECUTOR')"
 $KUBECTL -n "$TEAM_NS" exec -i "$(owner_pod_now)" -c agent -- sh -c 'cat > /workspace/.kaiju168-probe.sh && chmod 0664 /workspace/.kaiju168-probe.sh' \
   <"$EXEC_DIR/probe.sh" >/dev/null 2>&1 || true
 in_owner 'rm -f /workspace/.kaiju168-plant-loaded' >/dev/null

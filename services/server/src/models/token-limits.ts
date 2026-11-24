@@ -5,7 +5,7 @@ import { z } from "zod";
 /**
  * A model's output limit and context window (KOBE-259). The catalog may set both per model; a null
  * falls back to these site defaults (chart `server.modelDefaults`, config
- * `KOBE_MODEL_DEFAULT_*`). Reasoning models (the catalog's admin-set `reasoning` flag) get a
+ * `KAIJU_MODEL_DEFAULT_*`). Reasoning models (the catalog's admin-set `reasoning` flag) get a
  * higher output default: their hidden reasoning spends the same allowance as the answer.
  */
 export interface ModelTokenDefaults {
@@ -78,44 +78,44 @@ const tokens = (name: string, [min, max]: readonly [number, number], fallback: n
 
 const tokenDefaultsSchema = z
   .object({
-    KOBE_MODEL_DEFAULT_MAX_OUTPUT_TOKENS: tokens(
-      "KOBE_MODEL_DEFAULT_MAX_OUTPUT_TOKENS",
+    KAIJU_MODEL_DEFAULT_MAX_OUTPUT_TOKENS: tokens(
+      "KAIJU_MODEL_DEFAULT_MAX_OUTPUT_TOKENS",
       MODEL_OUTPUT_TOKENS_RANGE,
       MODEL_TOKEN_DEFAULTS.maxOutputTokens,
     ),
-    KOBE_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS: tokens(
-      "KOBE_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS",
+    KAIJU_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS: tokens(
+      "KAIJU_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS",
       MODEL_OUTPUT_TOKENS_RANGE,
       MODEL_TOKEN_DEFAULTS.reasoningMaxOutputTokens,
     ),
-    KOBE_MODEL_DEFAULT_CONTEXT_WINDOW: tokens(
-      "KOBE_MODEL_DEFAULT_CONTEXT_WINDOW",
+    KAIJU_MODEL_DEFAULT_CONTEXT_WINDOW: tokens(
+      "KAIJU_MODEL_DEFAULT_CONTEXT_WINDOW",
       MODEL_CONTEXT_WINDOW_RANGE,
       MODEL_TOKEN_DEFAULTS.contextWindow,
     ),
   })
   .superRefine((v, ctx) => {
     for (const name of [
-      "KOBE_MODEL_DEFAULT_MAX_OUTPUT_TOKENS",
-      "KOBE_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS",
+      "KAIJU_MODEL_DEFAULT_MAX_OUTPUT_TOKENS",
+      "KAIJU_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS",
     ] as const) {
-      if (v[name] >= v.KOBE_MODEL_DEFAULT_CONTEXT_WINDOW) {
+      if (v[name] >= v.KAIJU_MODEL_DEFAULT_CONTEXT_WINDOW) {
         ctx.addIssue({
           code: "custom",
           path: [name],
-          message: `${name} must be below KOBE_MODEL_DEFAULT_CONTEXT_WINDOW`,
+          message: `${name} must be below KAIJU_MODEL_DEFAULT_CONTEXT_WINDOW`,
         });
       }
     }
   });
 
-/** The site defaults from the environment (config `KOBE_MODEL_DEFAULT_*`, KOBE-259). */
+/** The site defaults from the environment (config `KAIJU_MODEL_DEFAULT_*`, KOBE-259). */
 export function parseModelTokenDefaults(env: Readonly<Record<string, string | undefined>>) {
   return tokenDefaultsSchema
     .transform((v): ModelTokenDefaults => ({
-      maxOutputTokens: v.KOBE_MODEL_DEFAULT_MAX_OUTPUT_TOKENS,
-      reasoningMaxOutputTokens: v.KOBE_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS,
-      contextWindow: v.KOBE_MODEL_DEFAULT_CONTEXT_WINDOW,
+      maxOutputTokens: v.KAIJU_MODEL_DEFAULT_MAX_OUTPUT_TOKENS,
+      reasoningMaxOutputTokens: v.KAIJU_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS,
+      contextWindow: v.KAIJU_MODEL_DEFAULT_CONTEXT_WINDOW,
     }))
     .safeParse(env);
 }

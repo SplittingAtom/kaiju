@@ -9,7 +9,7 @@ import { uniqueWords } from "./support/unique.js";
  * first) → edit → pin → archive → restore, with Undo once, and focus checked where the editor
  * promises it. The memory's text is unique per run (support/unique.ts) and status messages are
  * matched exactly (each group's "n of 10 pinned." line contains "pinned."). It is left archived
- * at the end (memories are never deleted). Needs the Memories switches on for KOBE_USER's active
+ * at the end (memories are never deleted). Needs the Memories switches on for KAIJU_USER's active
  * workspace. Spends no tokens. Run on gate1: `npx playwright test memory-editor`.
  */
 const ONLY_HERE = "Only in this workspace";

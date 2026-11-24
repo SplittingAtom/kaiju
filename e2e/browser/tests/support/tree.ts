@@ -13,9 +13,9 @@ import { RUN_START_TIMEOUT_MS, RUN_TIMEOUT_MS, SHELL_TIMEOUT_MS } from "./consta
  * else. Tests assert on the prompts and the structure, never on the model's words. Every test
  * leaves the leaf on the CHARLIE branch as it found it.
  */
-export const SECOND_USER = process.env["KOBE_USER2"];
-export const SECOND_PW = process.env["KOBE_PW2"];
-export const NO_SECOND = "KOBE_USER2 and KOBE_PW2 name a second member of the team";
+export const SECOND_USER = process.env["KAIJU_USER2"];
+export const SECOND_PW = process.env["KAIJU_PW2"];
+export const NO_SECOND = "KAIJU_USER2 and KAIJU_PW2 name a second member of the team";
 const TEAM_KEY = "kobe.lastTeamId";
 
 export const LABEL = "try 5% cut";

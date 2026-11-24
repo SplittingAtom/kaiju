@@ -7,13 +7,13 @@ import { SHELL_TIMEOUT_MS } from "./support/constants.js";
  * in one tab; another tab of theirs saves it: the first tab shows "You changed this file in
  * another tab or device just now." with Reload and keeps its text until Reload (ac-1); with a
  * draft, the next save from the other tab brings KOBE-491's Compare / Keep mine / Take theirs
- * and nothing typed is lost (ac-2). With a second member (KOBE_USER2 / KOBE_PW2, member2 on
+ * and nothing typed is lost (ac-2). With a second member (KAIJU_USER2 / KAIJU_PW2, member2 on
  * gate1), both have the same path open in their own workspaces: the owner's change badges only
  * the owner's tab, never the second member's, whose own save then badges theirs (ac-4). No model
  * turn. Writes `kobe-496-*\/notes.md` in each workspace and deletes the folder at the end.
  */
-const SECOND_USER = process.env["KOBE_USER2"];
-const SECOND_PW = process.env["KOBE_PW2"];
+const SECOND_USER = process.env["KAIJU_USER2"];
+const SECOND_PW = process.env["KAIJU_PW2"];
 const TEAM_KEY = "kobe.lastTeamId";
 const BASE = "alpha\nbeta\ngamma\n";
 const BADGE = "You changed this file in another tab or device just now.";
@@ -150,7 +150,7 @@ test("two members, same path: only the member whose file changed gets the badge"
   page,
   browser,
 }) => {
-  test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!SECOND_USER || !SECOND_PW, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const dir = uniqueDir();
   const path = `${dir}/notes.md`;
   await chat.open();

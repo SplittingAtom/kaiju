@@ -88,7 +88,7 @@ beforeAll(async () => {
     credentials: { username: forgejo.login, token: "fake-gitea-token-0123456789abcdef" },
   });
   gitPort = Number(new URL(git.origin).port);
-  envelope = must(loadEnvelope({ KOBE_ENVELOPE_KEY: "c".repeat(48) }));
+  envelope = must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "c".repeat(48) }));
   await fx.setup([{}], () => ({
     envelope,
     blobs: { objects, prefix: PREFIX },

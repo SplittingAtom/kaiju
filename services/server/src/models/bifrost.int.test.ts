@@ -15,9 +15,9 @@ import { reconcile } from "./reconcile.js";
  * The real Bifrost (KOBE-40, D30 ac-3): the HTTP admin client and a reconcile pass against an
  * actual Bifrost binary, then inference with a member's virtual key through each provider kind
  * (OpenAI, Anthropic native, Gemini, Ollama, OpenAI-compatible) to a fake upstream. Opt-in:
- * KOBE_TEST_BIFROST_BIN=<path to bifrost-http> (CI has no binary; e2e runs the real image).
+ * KAIJU_TEST_BIFROST_BIN=<path to bifrost-http> (CI has no binary; e2e runs the real image).
  */
-const BIN = process.env.KOBE_TEST_BIFROST_BIN;
+const BIN = process.env.KAIJU_TEST_BIFROST_BIN;
 const PASSWORD = "integration-admin-password-0001";
 const logger = pino({ level: "silent" });
 

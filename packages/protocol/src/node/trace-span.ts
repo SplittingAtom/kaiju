@@ -11,7 +11,7 @@ import {
  */
 
 /**
- * `k_trace` = HKDF-SHA256(secret = `KOBE_TRACE_SPAN_KEY`, info `kobe/trace-span/v1`). The secret
+ * `k_trace` = HKDF-SHA256(secret = `KAIJU_TRACE_SPAN_KEY`, info `kobe/trace-span/v1`). The secret
  * is shared by the server and the model gateway and authorises nothing (KOBE-521).
  */
 export function deriveTraceSpanKey(master: Uint8Array): Uint8Array {

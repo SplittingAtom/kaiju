@@ -40,7 +40,7 @@ spec:
           imagePullPolicy: {{ $root.Values.global.imagePullPolicy }}
           command: ["node", "node_modules/@kaiju/db/dist/cli/migrate.js"]
           env:
-            - name: KOBE_DB_MIGRATE_URL
+            - name: KAIJU_DB_MIGRATE_URL
               valueFrom:
                 secretKeyRef:
                   {{- if $cnpg }}
@@ -50,7 +50,7 @@ spec:
                   name: {{ $root.Values.postgres.external.existingSecret }}
                   key: {{ $root.Values.postgres.external.migrateUrlKey }}
                   {{- end }}
-            - name: KOBE_DB_APP_ROLE
+            - name: KAIJU_DB_APP_ROLE
               value: {{ ternary "kobe_app" (default "kobe_app" $root.Values.postgres.external.appRole) $cnpg | quote }}
           {{- include "kobe.containerSecurityContext" $root | nindent 10 }}
           terminationMessagePolicy: FallbackToLogsOnError

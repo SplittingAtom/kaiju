@@ -20,7 +20,7 @@ export const MAX_PENDING_OPENS_PER_THREAD = 4;
 type OpenRequest = Extract<KaijuToolsRequest, { op: "file.open" }>;
 
 export interface FileOpenBrokerDeps {
-  /** The workspace root (`KOBE_WORKSPACE_DIR`). */
+  /** The workspace root (`KAIJU_WORKSPACE_DIR`). */
   readonly root: string;
   /** Send a frame now; false when the wire is not ready. */
   readonly send: (frame: FileOpenFrame) => boolean;

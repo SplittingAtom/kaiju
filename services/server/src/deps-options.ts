@@ -36,7 +36,7 @@ export interface ServerDepsOptions {
    */
   readonly dbPool?: { readonly max?: number; readonly applicationName?: string };
   readonly publicUrl: string;
-  /** KOBE_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
+  /** KAIJU_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
   readonly retentionPaused?: boolean;
   /** Months per-call usage is kept (KOBE-741 sweep); null: kept for ever. Shown on usage pages. */
   readonly usageRetentionMonths?: number | null;
@@ -114,18 +114,18 @@ export interface ServerDepsOptions {
     readonly discovery?: ModelDiscovery;
   };
   /**
-   * The site's approval HMAC key (KOBE-37, config `KOBE_APPROVAL_KEY`); without it, tool calls
+   * The site's approval HMAC key (KOBE-37, config `KAIJU_APPROVAL_KEY`); without it, tool calls
    * that need approval are denied.
    */
   readonly approvalKeys?: ApprovalKeyring;
   /** Approval tuning (tests shorten the TTL and the poll). */
   readonly approvals?: Partial<Omit<ApprovalServiceOptions, "db" | "keys">>;
   /**
-   * Header injection (KOBE-39, config `KOBE_EGRESS_HEADER_SECRET`): the secrets sealing injected
+   * Header injection (KOBE-39, config `KAIJU_EGRESS_HEADER_SECRET`): the secrets sealing injected
    * header values (current first); unset = header injection off.
    */
   readonly egressHeaderSecrets?: readonly string[];
-  /** Site envelope (KOBE-107, `KOBE_ENVELOPE_KEY`) for per-record secrets; unset = off. */
+  /** Site envelope (KOBE-107, `KAIJU_ENVELOPE_KEY`) for per-record secrets; unset = off. */
   readonly envelope?: Envelope;
   /**
    * Single sign-on (`auth.sso`, KOBE-626): the kill switch, the SSRF exceptions and the Helm
@@ -147,7 +147,7 @@ export interface ServerDepsOptions {
   readonly modelTokenDefaults?: ModelTokenDefaults;
   /**
    * The server's own model calls (KOBE-234/219: auto-titles) through the model gateway: its
-   * in-cluster URL (`KOBE_MODEL_GATEWAY_URL`) and the server-call token key (the model-gateway
+   * in-cluster URL (`KAIJU_MODEL_GATEWAY_URL`) and the server-call token key (the model-gateway
    * Ed25519 signing key, KOBE-521). Unset: no run announces an epilogue and nothing is called.
    */
   readonly serverCalls?: {

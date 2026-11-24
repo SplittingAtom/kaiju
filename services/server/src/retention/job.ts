@@ -573,7 +573,7 @@ export interface RetentionJobOptions extends PassDeps {
   readonly pool: Pick<pg.Pool, "connect">;
   /** UTC hour the nightly pass runs in (0–23). */
   readonly hourUtc: number;
-  /** KOBE_RETENTION_PAUSED (KOBE-243): no pass runs, whatever is due. */
+  /** KAIJU_RETENTION_PAUSED (KOBE-243): no pass runs, whatever is due. */
   readonly paused?: boolean;
   readonly now?: () => Date;
   readonly budgetMs?: number;
@@ -673,7 +673,7 @@ export class RetentionJob {
 
   start(intervalMs: number = RETENTION_CHECK_INTERVAL_MS): void {
     if (this.options.paused) {
-      this.options.logger.warn("retention is paused (KOBE_RETENTION_PAUSED); no pass will run");
+      this.options.logger.warn("retention is paused (KAIJU_RETENTION_PAUSED); no pass will run");
     }
     const run = () => {
       if (this.running) return;

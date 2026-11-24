@@ -73,42 +73,42 @@ export function filesEnabled(env: Record<string, string | undefined>): boolean {
   return raw === "1";
 }
 
-/** Whether the agent announced the `projects` capability (KOBE_TOOLS_PROJECTS=1); read once, removed. */
+/** Whether the agent announced the `projects` capability (KAIJU_TOOLS_PROJECTS=1); read once, removed. */
 export function projectsEnabled(env: Record<string, string | undefined>): boolean {
   const raw = env[TOOLS_PROJECTS_ENV];
   Reflect.deleteProperty(env, TOOLS_PROJECTS_ENV);
   return raw === "1";
 }
 
-/** Whether the agent announced `skill_drafts` (KOBE_TOOLS_SKILL_DRAFTS=1, KOBE-442); read once, removed. */
+/** Whether the agent announced `skill_drafts` (KAIJU_TOOLS_SKILL_DRAFTS=1, KOBE-442); read once, removed. */
 export function skillDraftsEnabled(env: Record<string, string | undefined>): boolean {
   const raw = env[TOOLS_SKILL_DRAFTS_ENV];
   Reflect.deleteProperty(env, TOOLS_SKILL_DRAFTS_ENV);
   return raw === "1";
 }
 
-/** Whether the agent announced `file_edits` (KOBE_TOOLS_FILE_EDITS=1, KOBE-462); read once, removed. */
+/** Whether the agent announced `file_edits` (KAIJU_TOOLS_FILE_EDITS=1, KOBE-462); read once, removed. */
 export function fileEditsEnabled(env: Record<string, string | undefined>): boolean {
   const raw = env[TOOLS_FILE_EDITS_ENV];
   Reflect.deleteProperty(env, TOOLS_FILE_EDITS_ENV);
   return raw === "1";
 }
 
-/** Whether the agent announced `notebooks` (KOBE_TOOLS_NOTEBOOKS=1, KOBE-464); read once, removed. */
+/** Whether the agent announced `notebooks` (KAIJU_TOOLS_NOTEBOOKS=1, KOBE-464); read once, removed. */
 export function notebooksEnabled(env: Record<string, string | undefined>): boolean {
   const raw = env[TOOLS_NOTEBOOKS_ENV];
   Reflect.deleteProperty(env, TOOLS_NOTEBOOKS_ENV);
   return raw === "1";
 }
 
-/** Whether the agent announced the `memory` capability (KOBE_TOOLS_MEMORY=1); read once, removed. */
+/** Whether the agent announced the `memory` capability (KAIJU_TOOLS_MEMORY=1); read once, removed. */
 export function memoryEnabled(env: Record<string, string | undefined>): boolean {
   const raw = env[TOOLS_MEMORY_ENV];
   Reflect.deleteProperty(env, TOOLS_MEMORY_ENV);
   return raw === "1";
 }
 
-/** The per-run memory file named by KOBE_MEMORY_FILE; read once and removed like the other variables. */
+/** The per-run memory file named by KAIJU_MEMORY_FILE; read once and removed like the other variables. */
 export function memoryFile(env: Record<string, string | undefined>): string | undefined {
   const raw = env[MEMORY_FILE_ENV];
   Reflect.deleteProperty(env, MEMORY_FILE_ENV);

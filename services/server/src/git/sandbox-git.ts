@@ -127,7 +127,7 @@ export function gitRemotesOf(connections: readonly GitConnectionRecord[]): RunGi
 export interface RunGitInput {
   readonly user: { readonly id: string; readonly name: string; readonly email: string };
   readonly mode: GitCommitEmailMode;
-  /** The Site's host (`KOBE_PUBLIC_URL`), for the no-reply form. */
+  /** The Site's host (`KAIJU_PUBLIC_URL`), for the no-reply form. */
   readonly siteHost: string;
   readonly connections: readonly GitConnectionRecord[];
 }

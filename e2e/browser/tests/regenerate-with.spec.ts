@@ -19,9 +19,9 @@ test("Regenerate with another model adds version 2 under a Model changed to mark
   const defaultName = /^Team default \(([^)]*)\)/.exec(
     items.find((t) => DEFAULT_ITEM.test(t)) ?? "",
   );
-  // KOBE_GATE5_MODEL2 names a model whose upstream differs from the default's (two aliases of one
+  // KAIJU_GATE5_MODEL2 names a model whose upstream differs from the default's (two aliases of one
   // model change nothing the marker shows: it names the model, not the alias).
-  const preferred = process.env["KOBE_GATE5_MODEL2"];
+  const preferred = process.env["KAIJU_GATE5_MODEL2"];
   const other =
     items.find((t) => preferred !== undefined && t === preferred) ??
     items.find((t) => !DEFAULT_ITEM.test(t) && !t.endsWith(CURRENT) && t !== defaultName?.[1]);

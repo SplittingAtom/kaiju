@@ -14,6 +14,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./legacy-env": {
+      "types": "./dist/node/legacy-env.d.ts",
+      "default": "./dist/node/legacy-env.js"
+    },
     "./node": {
       "types": "./dist/node/index.d.ts",
       "default": "./dist/node/index.js"

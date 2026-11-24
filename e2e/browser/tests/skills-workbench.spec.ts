@@ -7,7 +7,7 @@ import { panelOf } from "./support/panel.js";
  * from the server (review B1: a server component calling a client module's function was a 500),
  * the retired editor URLs land on it, and a draft's edits autosave, lint and scan, and survive
  * leaving the editor at once by an in-app link (review B2). The spec starts one draft and deletes
- * it at the end; no model turn. `KOBE_USER` must be able to write skills in the active team.
+ * it at the end; no model turn. `KAIJU_USER` must be able to write skills in the active team.
  * Run on gate1: `npx playwright test skills-workbench`.
  */
 const NAME = `e2e-workbench-${Date.now().toString(36)}`;

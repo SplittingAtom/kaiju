@@ -102,15 +102,15 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     await chmod(workspace, 0o2775);
   }
   const config = loadConfig({
-    KOBE_SERVER_URL: server.url,
-    KOBE_SANDBOX_ID: SANDBOX_ID,
-    KOBE_SANDBOX_TOKEN_FILE: tokenFile,
-    KOBE_WORKSPACE_DIR: workspace,
-    KOBE_SESSION_DIR: sessions,
-    KOBE_PI_BIN: options.piBin ?? FAKE_PI,
+    KAIJU_SERVER_URL: server.url,
+    KAIJU_SANDBOX_ID: SANDBOX_ID,
+    KAIJU_SANDBOX_TOKEN_FILE: tokenFile,
+    KAIJU_WORKSPACE_DIR: workspace,
+    KAIJU_SESSION_DIR: sessions,
+    KAIJU_PI_BIN: options.piBin ?? FAKE_PI,
     // Each Pi gets a private directory under here (its PI_CODING_AGENT_DIR and model file).
-    KOBE_PI_RUNTIME_DIR: options.runtimeDir ?? path.join(dir, "pi-runtime"),
-    KOBE_POLICY_EXTENSION: FAKE_POLICY_EXTENSION,
+    KAIJU_PI_RUNTIME_DIR: options.runtimeDir ?? path.join(dir, "pi-runtime"),
+    KAIJU_POLICY_EXTENSION: FAKE_POLICY_EXTENSION,
     ...options.env,
   });
   const exits: number[] = [];

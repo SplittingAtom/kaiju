@@ -94,7 +94,7 @@ auth.trustedProxies. */}}
 {{- end }}
 
 {{/* Who limits requests per client at the ingress, for the Site console's health view
-(KOBE_INGRESS_RATE_LIMIT): "chart" (this chart's middleware), "external" (the operator declared
+(KAIJU_INGRESS_RATE_LIMIT): "chart" (this chart's middleware), "external" (the operator declared
 their own edge limit), "none" (the chart's Ingress without a limit), "unknown" (no chart-managed
 Ingress and nothing declared). */}}
 {{- define "kobe.ingress.rateLimitSource" -}}

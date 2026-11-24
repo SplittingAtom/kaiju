@@ -4,14 +4,14 @@
  * `@kaiju/protocol`) because the extension ships on its own and imports only node builtins and its
  * own files; `protocol.test.ts` pins the copies of `@kaiju/protocol` constants.
  *
- * The file (`KOBE_MODEL_FILE`, 0600, in the Pi process's private runtime directory) holds the
+ * The file (`KAIJU_MODEL_FILE`, 0600, in the Pi process's private runtime directory) holds the
  * sandbox's current `kobe.model-gateway` session token — the one credential a sandbox is designed
  * to hold (D30: "sandboxes call Bifrost with their session token") — and the active run id. The
  * agent rewrites it atomically on every token rotation and run start/end; the extension reads it
  * for every model request, so a rotated token is used by the next request and never interrupts a
  * streaming call (an HTTP request authenticates once, when it starts).
  */
-export const MODEL_FILE_ENV = "KOBE_MODEL_FILE";
+export const MODEL_FILE_ENV = "KAIJU_MODEL_FILE";
 export const MODEL_FILE_VERSION = 1;
 /** The Pi provider id; models are selected as `kobe/<gateway model>`. */
 export const KAIJU_PROVIDER_ID = "kobe";
@@ -61,7 +61,7 @@ export interface ModelFileModel {
 
 export interface ModelFileState {
   readonly v: typeof MODEL_FILE_VERSION;
-  /** `KOBE_MODEL_GATEWAY_URL` (http(s), no credentials). */
+  /** `KAIJU_MODEL_GATEWAY_URL` (http(s), no credentials). */
   readonly gateway_url: string;
   /**
    * The run's model, or null before the first run (a Pi started for `get_entries`). Selected by

@@ -37,7 +37,7 @@ describe.skipIf(!PI_AVAILABLE)("the agent's system prompt in real Pi (KOBE-123)"
   it("reaches the model, appended to Pi's default prompt", async () => {
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
     });
     const prompt = "You are the marker agent. KAIJU-PROMPT-MARKER:real-pi `$(id)`";

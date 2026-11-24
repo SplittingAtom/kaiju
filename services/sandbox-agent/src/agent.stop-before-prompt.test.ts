@@ -81,7 +81,7 @@ describe("Stop before Pi has the run's prompt", () => {
   it("a Stop that arrives while the run's Pi is still starting is not lost", async () => {
     // Pi takes 1.5 s to start: run.start has not begun the run when the Stop arrives.
     h = await startHarness({
-      env: { KOBE_POLICY_EXTENSION: "/opt/kobe/pi-extensions/kobe-policy-slow/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/kobe-policy-slow/index.js" },
     });
     const started = h.server.command(runStart("say:first"), 30_000);
     const t0 = Date.now();
@@ -97,7 +97,7 @@ describe("Stop before Pi has the run's prompt", () => {
 
   it("a Steer that arrives while the run's Pi is still starting reaches Pi after the prompt", async () => {
     h = await startHarness({
-      env: { KOBE_POLICY_EXTENSION: "/opt/kobe/pi-extensions/kobe-policy-slow/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/kobe-policy-slow/index.js" },
     });
     const started = h.server.command(runStart("hang"), 30_000);
     const steer = { type: "run.steer", run_id: RUN, thread_id: THREAD, message: "steer early" };

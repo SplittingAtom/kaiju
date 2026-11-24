@@ -35,7 +35,7 @@ export class SyncHttpError extends Error {
 }
 
 export interface SyncClientOptions {
-  /** KOBE_SERVER_URL (ws:// or wss://). */
+  /** KAIJU_SERVER_URL (ws:// or wss://). */
   readonly serverUrl: string;
   readonly readToken: () => Promise<string>;
   /** JSON calls: the whole exchange. Transfers: until the response starts. */

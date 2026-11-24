@@ -310,7 +310,7 @@ function sandboxRuntimes(
     (isServer ? undefined : createSandboxRuntime(env, isolation, db, { providerOnly: true }));
   if (!providerRuntime) {
     log.error(
-      "KOBE_SANDBOX_CONFIG is not set: sandboxes are disabled (install with the Helm chart)",
+      "KAIJU_SANDBOX_CONFIG is not set: sandboxes are disabled (install with the Helm chart)",
     );
   }
   return { sandbox, providerRuntime };

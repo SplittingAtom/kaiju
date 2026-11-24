@@ -40,7 +40,7 @@ async function start(withTools = true): Promise<Harness> {
   h = await startHarness({
     pace: UNPACED,
     piBin: PI_BIN,
-    env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+    env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
     extensions: [FAUX_MODEL_EXTENSION],
     ...(withTools ? { toolsExtension: REAL_TOOLS_EXTENSION } : {}),
   });

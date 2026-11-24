@@ -7,7 +7,7 @@ import { panelOf } from "./support/panel.js";
  * The console sections that were "coming soon" although their tickets were done (KOBE-291): the
  * Site audit log, Site backup and restore, and the Team inventory (its agents on the Agents
  * page's Team tab since KOBE-570). Read-only: it applies a filter
- * and clears it, nothing else. `KOBE_USER` must be the site Owner (or an Admin) and a team admin
+ * and clears it, nothing else. `KAIJU_USER` must be the site Owner (or an Admin) and a team admin
  * of the active team. Spends no tokens. Run on gate1: `npx playwright test console-sections`.
  */
 

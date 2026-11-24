@@ -2,7 +2,7 @@
 # The single sign-on gate (KOBE-633; spec docs/specs/sso-oidc-scim.md §17 SSO-9): OIDC sign-in
 # against a mock Microsoft Entra ID and Entra's SCIM provisioning requests, offline in k3d.
 #
-#   KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-sso.sh      (CI shard `gate-sso`)
+#   KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-sso.sh      (CI shard `gate-sso`)
 #
 # The mock (e2e/sso/mock-entra.mjs) runs from the installed server image (its own `jose`, no new
 # image) in namespace kobe-sso-infra, with TLS from a CA made here. CoreDNS answers
@@ -14,17 +14,17 @@
 # e2e/sso/scim-client.mjs). Parts: setup, sign-in + JIT by mapping, refusals (unmapped, overage,
 # IdP error, replayed state, every bad-token mode), MFA (acrs c1 proving and not, under
 # require_2fa), SCIM (create with Entra's quirks, sign-in, deactivation ending the session at once,
-# reactivation, delete). Refuses any context but k3d-* unless KOBE_GATESSO_CONTEXT names it.
+# reactivation, delete). Refuses any context but k3d-* unless KAIJU_GATESSO_CONTEXT names it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KOBE_GATESSO_NS:-kobe-dev}"
-RELEASE="${KOBE_GATESSO_RELEASE:-kobe}"
-CHART="${KOBE_GATESSO_CHART:-charts/kobe}"
-OWNER_EMAIL="${KOBE_GATESSO_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATESSO_OWNER_PASSWORD:-e2e owner password}"
+NS="${KAIJU_GATESSO_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATESSO_RELEASE:-kobe}"
+CHART="${KAIJU_GATESSO_CHART:-charts/kobe}"
+OWNER_EMAIL="${KAIJU_GATESSO_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATESSO_OWNER_PASSWORD:-e2e owner password}"
 INFRA_NS=kobe-sso-infra
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
@@ -38,8 +38,8 @@ NONCE="$(date +%s)"
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATESSO_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATESSO_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATESSO_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATESSO_CONTEXT=$context)" >&2
   exit 2
 fi
 

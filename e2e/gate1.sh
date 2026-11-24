@@ -5,34 +5,34 @@
 # answer over 20 trials. docs/gates/gate-1.md records what each check proves and what it does not.
 #
 # Runs after e2e/run.sh in CI (k3d) and against a real cluster's throwaway install:
-#   KOBE_GATE1_NS=<release namespace> KOBE_GATE1_RELEASE=<release> e2e/gate1.sh
+#   KAIJU_GATE1_NS=<release namespace> KAIJU_GATE1_RELEASE=<release> e2e/gate1.sh
 # Non-destructive outside what it creates: users gate1-*@gate1.test, teams gate1-a/gate1-b (their
 # kobe-team-* namespaces and sandboxes, created by the server) and its own pods. It signs sandbox
 # wire tokens with the site's keys, so it refuses anything but a k3d context unless
-# KOBE_GATE1_CONTEXT names the context explicitly. Re-runnable: fixtures are reused.
+# KAIJU_GATE1_CONTEXT names the context explicitly. Re-runnable: fixtures are reused.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
-NS="${KOBE_GATE1_NS:-kobe-dev}"
-RELEASE="${KOBE_GATE1_RELEASE:-kobe}"
-STEPS=" ${KOBE_GATE1_STEPS:-chat-real chat-stream probe interrupt cold} "
-TRIALS="${KOBE_GATE1_TRIALS:-20}"
-P95_MAX="${KOBE_GATE1_P95_MS:-20000}"
-COLD_KEY="${KOBE_GATE1_COLD_USER:-c1}"
+NS="${KAIJU_GATE1_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATE1_RELEASE:-kobe}"
+STEPS=" ${KAIJU_GATE1_STEPS:-chat-real chat-stream probe interrupt cold} "
+TRIALS="${KAIJU_GATE1_TRIALS:-20}"
+P95_MAX="${KAIJU_GATE1_P95_MS:-20000}"
+COLD_KEY="${KAIJU_GATE1_COLD_USER:-c1}"
 # Model alias the fixtures make each team's default: CI's fake upstream (`fast`, set up by
-# e2e/run.sh) or a real site's catalog model (KOBE_GATE1_MODEL).
-MODEL_ALIAS="${KOBE_GATE1_MODEL:-fast}"
-OWNER_EMAIL="${KOBE_GATE1_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATE1_OWNER_PASSWORD:-e2e owner password}"
+# e2e/run.sh) or a real site's catalog model (KAIJU_GATE1_MODEL).
+MODEL_ALIAS="${KAIJU_GATE1_MODEL:-fast}"
+OWNER_EMAIL="${KAIJU_GATE1_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATE1_OWNER_PASSWORD:-e2e owner password}"
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
 NONCE="$(date +%s)"
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATE1_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATE1_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATE1_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATE1_CONTEXT=$context)" >&2
   exit 2
 fi
 
@@ -177,7 +177,7 @@ spec:
       securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
       resources: { requests: { cpu: 50m, memory: 64Mi }, limits: { cpu: 500m, memory: 256Mi } }
       env:
-        - { name: KOBE_WIRE_URL, value: "ws://$SERVER_IP:8081/v1/sandbox/connect" }
+        - { name: KAIJU_WIRE_URL, value: "ws://$SERVER_IP:8081/v1/sandbox/connect" }
         - { name: GATE1_IDENTITIES, value: "[$ids]" }
         - { name: GATE1_SETTLE, value: "$settle" }
         - { name: GATE1_WORDS, value: "$words" }
@@ -287,15 +287,15 @@ if [[ "$STEPS" == *" cold "* ]]; then
   values=""
   for i in $(seq 1 "$TRIALS"); do
     hib=""
-    [[ -z "${KOBE_GATE1_WARM:-}" ]] && hib=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- node dist/cli/lifecycle.js hibernate \
+    [[ -z "${KAIJU_GATE1_WARM:-}" ]] && hib=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- node dist/cli/lifecycle.js hibernate \
       --team-id "$TEAM_A" --user-id "$cold_id" 2>&1 | grep -E '^\{"hibernated"' || true)
-    if [[ -n "${KOBE_GATE1_WARM:-}" ]]; then
+    if [[ -n "${KAIJU_GATE1_WARM:-}" ]]; then
       : # warm trials: the sandbox stays awake
     elif [[ "$hib" != '{"hibernated":true}' ]] || ! until_ok 120 pod_gone; then
       echo "     trial $i: could not hibernate ($hib)"
       continue
     fi
-    sleep "${KOBE_GATE1_SPACING_S:-0}"
+    sleep "${KAIJU_GATE1_SPACING_S:-0}"
     t=$(client "$(printf '{"mode":"trial","trial":%s,"threadId":"%s","base":"%s","nonce":"%s-%s","user":%s}' "$i" "$thread" "$BASE" "$NONCE" "$i" "$cold_json")")
     printf '     cold-start: %s\n' "$t"
     ms=$(printf '%s' "$t" | sed -n 's/.*"ms":\([0-9]*\).*/\1/p' | head -1)

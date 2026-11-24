@@ -112,7 +112,7 @@ describe("the tools' HOME and TMPDIR without egress (KOBE-235)", () => {
     expect(launch.toolHome).toMatch(/\/home$/);
     expect(launch.toolTmp).toBe("/tmp");
     expect(launch.egressTokenFile).toBeNull();
-    expect(launch.env).not.toContain("KOBE_EGRESS_PROXY");
+    expect(launch.env).not.toContain("KAIJU_EGRESS_PROXY");
   });
 
   it("without the script (development) nothing is set", async () => {

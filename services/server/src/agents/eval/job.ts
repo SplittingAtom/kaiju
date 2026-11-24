@@ -137,9 +137,9 @@ export function evalPodSpec(input: EvalJobInput): Record<string, unknown> {
             }
           : {}),
         env: [
-          { name: "KOBE_MODEL_GATEWAY_URL", value: gatewayUrl(s) },
-          { name: "KOBE_MODEL_SESSION_TOKEN", value: input.token },
-          { name: "KOBE_EVAL_MODEL", value: input.model },
+          { name: "KAIJU_MODEL_GATEWAY_URL", value: gatewayUrl(s) },
+          { name: "KAIJU_MODEL_SESSION_TOKEN", value: input.token },
+          { name: "KAIJU_EVAL_MODEL", value: input.model },
         ],
         resources: {
           requests: { ...e.resources.requests, "ephemeral-storage": EVAL_EPHEMERAL.request },

@@ -51,7 +51,7 @@ const logged: string[] = [];
 
 beforeAll(async () => {
   await Promise.all([forgejo.start(), gitea.start(), github.start()]);
-  envelope = must(loadEnvelope({ KOBE_ENVELOPE_KEY: "g".repeat(48) }));
+  envelope = must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "g".repeat(48) }));
   await fx.setup([{}], () => ({
     envelope,
     // The table stores https base URLs only: the test asks for https and the hook below sends it

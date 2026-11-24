@@ -24,7 +24,7 @@ import {
 export interface WorkspaceSyncOptions {
   readonly db: KaijuDb;
   readonly objects: ObjectStore;
-  /** Object key prefix (KOBE_S3_PREFIX), "" or ending in "/". */
+  /** Object key prefix (KAIJU_S3_PREFIX), "" or ending in "/". */
   readonly prefix: string;
   readonly limits: WorkspaceLimits;
   /** KOBE-53 seam: D26's per-team quota. Default: {@link limitsQuota}. */
@@ -39,7 +39,7 @@ export interface WorkspaceSyncOptions {
   readonly collect?: Partial<Omit<CollectOptions, "prefix">>;
   readonly log: Pick<Logger, "error" | "warn" | "info">;
   /**
-   * KOBE_RETENTION_PAUSED (KOBE-243): no collection runs, timed or on quota pressure. After a
+   * KAIJU_RETENTION_PAUSED (KOBE-243): no collection runs, timed or on quota pressure. After a
    * restore from an older backup, rows would judge live blobs unused.
    */
   readonly paused?: boolean;

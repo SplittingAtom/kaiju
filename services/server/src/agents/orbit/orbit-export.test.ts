@@ -173,8 +173,8 @@ describe("mapAgentVersionToOrbit (KOBE-90)", () => {
     };
     for (const [name, result] of Object.entries(cases)) {
       const file = new URL(`./fixtures/${name}.yaml`, import.meta.url);
-      // KOBE_UPDATE_FIXTURES=1 regenerates them; review the diff, CI loads them in Orbit.
-      if (process.env.KOBE_UPDATE_FIXTURES === "1") writeFileSync(file, orbitExportToYaml(result));
+      // KAIJU_UPDATE_FIXTURES=1 regenerates them; review the diff, CI loads them in Orbit.
+      if (process.env.KAIJU_UPDATE_FIXTURES === "1") writeFileSync(file, orbitExportToYaml(result));
       expect(readFileSync(file, "utf8"), name).toBe(orbitExportToYaml(result));
     }
   });

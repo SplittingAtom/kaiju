@@ -1,6 +1,6 @@
 /**
  * Runs once when the web server starts (Next's instrumentation hook). KOBE-500: say whether the
- * server URL for the site branding is configured, so a missing `KOBE_SERVER_URL` is one clear
+ * server URL for the site branding is configured, so a missing `KAIJU_SERVER_URL` is one clear
  * line at startup rather than a surprise later (the web keeps serving with the Kaiju defaults). An
  * invalid one throws here and fails the start (lib/config.ts). KOBE-530: every HTML response gets
  * a Server-Timing header (lib/telemetry/server-timing.ts), enabled here once per process.
@@ -11,6 +11,10 @@ export async function register(): Promise<void> {
   enableServerTiming();
   const { webConfig } = await import("./lib/config");
   const config = webConfig();
+  // KOBE-748: webConfig() gave the one warning about old KOBE_* names; now move them to KAIJU_*
+  // before any request reads process.env (the proxy's HSTS header reads KAIJU_PUBLIC_URL there).
+  const { adoptLegacyEnv } = await import("@kaiju/protocol/legacy-env");
+  adoptLegacyEnv(process.env);
   if (config.problem !== null) console.warn(`[kobe-web] ${config.problem}`);
   else console.info(`[kobe-web] site branding from ${config.serverUrl}`);
 }

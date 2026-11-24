@@ -79,7 +79,7 @@ describe.skipIf(!PI_AVAILABLE)("only the current run's viewed file in real Pi (K
   it("a later run carries its own file or none; the session never holds it", async () => {
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
       toolsExtension: REAL_TOOLS_EXTENSION,
     });

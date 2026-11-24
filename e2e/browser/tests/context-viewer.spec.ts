@@ -7,7 +7,7 @@ import { styleViolations, watchStyleViolations } from "./support/csp.js";
  * gauge under the composer opens the context viewer over the workspace: labelled sections of raw
  * text, a stacked gauge with segments and a legend; a legend row scrolls the text to its first
  * section; Escape closes it and focus returns to the gauge. No style-src CSP violation. Run with
- * KOBE_TEAM=team1.
+ * KAIJU_TEAM=team1.
  */
 test("context viewer: open from the gauge, sections and gauge, legend scrolls, Escape closes", async ({
   chat,

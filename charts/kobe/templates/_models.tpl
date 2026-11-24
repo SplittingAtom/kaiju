@@ -81,25 +81,25 @@ with a server-call token from the gateway session key it already has). The sched
 this.
 */}}
 {{- define "kobe.serverModelsEnv" -}}
-- name: KOBE_BIFROST_URL
+- name: KAIJU_BIFROST_URL
   value: {{ include "kobe.bifrostUrl" . | quote }}
-- name: KOBE_MODEL_GATEWAY_URL
+- name: KAIJU_MODEL_GATEWAY_URL
   value: {{ include "kobe.modelGatewayUrl" . | quote }}
-- name: KOBE_BIFROST_ADMIN_USERNAME
+- name: KAIJU_BIFROST_ADMIN_USERNAME
   value: kobe
-- name: KOBE_BIFROST_ADMIN_PASSWORD
+- name: KAIJU_BIFROST_ADMIN_PASSWORD
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "bifrost-admin-password") | nindent 2 }}
-- name: KOBE_MODELS_PROVIDER_KEY_SECRET
+- name: KAIJU_MODELS_PROVIDER_KEY_SECRET
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "provider-keys") | nindent 2 }}
-- name: KOBE_MODELS_VIRTUAL_KEY_SECRET
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "virtual-keys") | nindent 2 }}
 # Rotation: the previous secrets, if the Secret holds them (values sealed with them still open
 # and are re-sealed by the sync).
-- name: KOBE_MODELS_PROVIDER_KEY_SECRET_PREVIOUS
+- name: KAIJU_MODELS_PROVIDER_KEY_SECRET_PREVIOUS
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "provider-keys-previous" "optional" true) | nindent 2 }}
-- name: KOBE_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "virtual-keys-previous" "optional" true) | nindent 2 }}
-- name: KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS
+- name: KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS
   value: {{ (include "kobe.bifrostValues" . | fromJson).allowUnsafeProviderEndpoints | toString | quote }}
 {{- include "kobe.embeddingsServerEnv" . }}
 {{- end -}}
@@ -113,41 +113,41 @@ only (never provider keys, Bifrost's admin password or any key that mints a cred
 {{- define "kobe.modelGatewayEnv" -}}
 {{- $g := include "kobe.modelGatewayValues" . | fromJson -}}
 {{ include "kobe.databaseEnv" . }}
-- name: KOBE_DB_POOL_MAX
+- name: KAIJU_DB_POOL_MAX
   value: {{ int $g.database.poolMax | quote }}
-- name: KOBE_MODEL_GATEWAY_RATE_POOL_MAX
+- name: KAIJU_MODEL_GATEWAY_RATE_POOL_MAX
   value: {{ int $g.database.ratePoolMax | quote }}
 {{ include "kobe.sessionVerifyKeyEnv" (dict "root" . "env" "MODEL_GATEWAY" "aud" "model-gateway") }}
-- name: KOBE_TRACE_SPAN_KEY
+- name: KAIJU_TRACE_SPAN_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.sessionKeysSecretName" . }}
       key: trace-span
-- name: KOBE_MODELS_VIRTUAL_KEY_SECRET
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "virtual-keys") | nindent 2 }}
-- name: KOBE_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "virtual-keys-previous" "optional" true) | nindent 2 }}
-- name: KOBE_BIFROST_URL
+- name: KAIJU_BIFROST_URL
   value: {{ include "kobe.bifrostUrl" . | quote }}
-- name: KOBE_MODEL_GATEWAY_MAX_BODY_BYTES
+- name: KAIJU_MODEL_GATEWAY_MAX_BODY_BYTES
   value: {{ int64 $g.limits.maxBodyBytes | quote }}
-- name: KOBE_MODEL_GATEWAY_INFLIGHT_BYTES
+- name: KAIJU_MODEL_GATEWAY_INFLIGHT_BYTES
   value: {{ int64 $g.limits.inflightBytes | quote }}
-- name: KOBE_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX
+- name: KAIJU_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX
   value: {{ int64 $g.limits.inflightBytesPerSandbox | quote }}
-- name: KOBE_MODEL_GATEWAY_RATE_BURST
+- name: KAIJU_MODEL_GATEWAY_RATE_BURST
   value: {{ int $g.limits.requestBurst | quote }}
-- name: KOBE_MODEL_GATEWAY_RATE_PER_SECOND
+- name: KAIJU_MODEL_GATEWAY_RATE_PER_SECOND
   value: {{ int $g.limits.requestsPerSecond | quote }}
-- name: KOBE_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX
+- name: KAIJU_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX
   value: {{ int $g.limits.callsPerSandbox | quote }}
-- name: KOBE_MODEL_GATEWAY_MAX_CALLS
+- name: KAIJU_MODEL_GATEWAY_MAX_CALLS
   value: {{ int $g.limits.calls | quote }}
-- name: KOBE_MODEL_GATEWAY_IDLE_TIMEOUT_MS
+- name: KAIJU_MODEL_GATEWAY_IDLE_TIMEOUT_MS
   value: {{ mul (int $g.limits.idleTimeoutSeconds) 1000 | quote }}
-- name: KOBE_MODEL_GATEWAY_CACHE_TTL_MS
+- name: KAIJU_MODEL_GATEWAY_CACHE_TTL_MS
   value: {{ mul (int $g.cacheTtlSeconds) 1000 | quote }}
-- name: KOBE_MODEL_GATEWAY_REQUIRE_RUN_TOKEN
+- name: KAIJU_MODEL_GATEWAY_REQUIRE_RUN_TOKEN
   value: {{ ternary "true" "false" (default false $g.requireRunToken) | quote }}
 {{- end -}}
 

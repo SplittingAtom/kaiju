@@ -11,7 +11,7 @@ import { panelOf } from "./support/panel.js";
  *   npx playwright test consoles --update-snapshots=all   # baseline (writes console-shots/)
  *   npx playwright test consoles                          # compare; diffs in test-results/
  *
- * `KOBE_USER` must be the site Owner (every Site console section) and a team admin of the active
+ * `KAIJU_USER` must be the site Owner (every Site console section) and a team admin of the active
  * team (every Team console section, plus the My area). The pages come from the consoles' own
  * navigation, so sections added later are covered without editing this file; detail pages use the
  * first item of their list when there is one. Nothing is changed on the deployment.
@@ -223,7 +223,7 @@ async function shoot(
 for (const theme of THEMES) {
   test(`console and My-area pages in ${theme}`, async ({ page, context, baseURL }) => {
     test.setTimeout(20 * 60_000);
-    if (!baseURL) throw new Error("KOBE_BASE_URL is required");
+    if (!baseURL) throw new Error("KAIJU_BASE_URL is required");
     await context.addCookies([{ name: THEME_COOKIE, value: theme, url: baseURL }]);
 
     const sections = await navPages(page, theme);
@@ -246,7 +246,7 @@ for (const theme of THEMES) {
 
 test("console and My-area pages at phone width", async ({ page, context, baseURL }) => {
   test.setTimeout(10 * 60_000);
-  if (!baseURL) throw new Error("KOBE_BASE_URL is required");
+  if (!baseURL) throw new Error("KAIJU_BASE_URL is required");
   const theme: Theme = "light";
   await context.addCookies([{ name: THEME_COOKIE, value: theme, url: baseURL }]);
   await page.setViewportSize(MOBILE);

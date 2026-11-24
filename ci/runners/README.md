@@ -84,7 +84,7 @@ first cached (cache hits don't renew it) and fetched again on the next pull.
 - **dind:** `values.yaml` starts dockerd with `--registry-mirror` (plain HTTP, hence
   `--insecure-registry`). Builds, `docker run` and service containers use it, and dockerd falls
   back to Docker Hub if the cache is down.
-- **k3d clusters (e2e):** the workflow sets `KOBE_DOCKERHUB_MIRROR`. `scripts/dev-cluster.sh`
+- **k3d clusters (e2e):** the workflow sets `KAIJU_DOCKERHUB_MIRROR`. `scripts/dev-cluster.sh`
   resolves the Service name on the runner and gives the k3s nodes a `docker.io` mirror by address,
   because the nodes' own cluster DNS can't resolve the outer Service. Unset (local dev) or
   unresolvable (GitHub-hosted runners), nothing changes.

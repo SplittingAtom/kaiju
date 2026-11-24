@@ -2,21 +2,12 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import pg from "pg";
 import { pino } from "pino";
-import { z } from "zod";
 import { isRetryableConnectError } from "../connect-errors.js";
 import { MigrationCancelledError, runMigrations } from "../migrate.js";
+import { parseMigrateEnv } from "./env.js";
 
 // Entry point for the Helm pre-install/pre-upgrade migration Job.
 const logger = pino({ base: { service: "kaiju-migrate" } });
-
-const envSchema = z.object({
-  KOBE_DB_MIGRATE_URL: z.url({
-    protocol: /^postgres(ql)?$/,
-    error: "KOBE_DB_MIGRATE_URL must be a postgres:// URL",
-  }),
-  KOBE_DB_APP_ROLE: z.string().min(1, "KOBE_DB_APP_ROLE is required"),
-  KOBE_DB_CONNECT_TIMEOUT_S: z.coerce.number().int().positive().default(300),
-});
 
 /** A bundled database may still be starting (CloudNativePG post-install); retry until it accepts. */
 async function waitForDatabase(url: string, timeoutMs: number): Promise<void> {
@@ -48,22 +39,16 @@ for (const sig of ["SIGTERM", "SIGINT"] as const) {
 }
 
 async function main(): Promise<void> {
-  const parsed = envSchema.safeParse(process.env);
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
-  }
-  await waitForDatabase(
-    parsed.data.KOBE_DB_MIGRATE_URL,
-    parsed.data.KOBE_DB_CONNECT_TIMEOUT_S * 1000,
-  );
+  const env = parseMigrateEnv(process.env, (message, fields) => logger.warn(fields, message));
+  await waitForDatabase(env.KAIJU_DB_MIGRATE_URL, env.KAIJU_DB_CONNECT_TIMEOUT_S * 1000);
   await runMigrations({
-    databaseUrl: parsed.data.KOBE_DB_MIGRATE_URL,
-    appRole: parsed.data.KOBE_DB_APP_ROLE,
+    databaseUrl: env.KAIJU_DB_MIGRATE_URL,
+    appRole: env.KAIJU_DB_APP_ROLE,
     // Upgrade notes a migration raises (no content beyond ids and setting values).
     onNotice: (message) => logger.warn({ notice: message }, "migration notice"),
     signal: stop.signal,
   });
-  logger.info({ appRole: parsed.data.KOBE_DB_APP_ROLE }, "migrations applied");
+  logger.info({ appRole: env.KAIJU_DB_APP_ROLE }, "migrations applied");
 }
 
 main().catch((err: unknown) => {

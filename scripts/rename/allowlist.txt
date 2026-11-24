@@ -104,6 +104,15 @@ e2e/fixtures/memory-relevance/items.json /\bKobe\b/
 == permanent: Headers as written before the rename, read back from notes and prompts captured before the upgrade (the context viewer accepts both); removed with the one-release fallbacks in KOBE-754
 services/sandbox-agent/src/memory/semantic-context.ts services/sandbox-agent/src/context/sections.test.ts /## What Kobe knows\b/
 
+== permanent: Old environment variable names read for one release (KOBE-748, spec §3 change 5): the fallback helper, the startup warning that names them, the tests that start each service with them, the dev check for the renamed test database URL, the skill-scan result marker of scanner images built before the rename (review LOW-1) and the operator docs; removed with the one-release fallbacks in KOBE-754
+packages/protocol/src/node/legacy-env.ts packages/protocol/src/node/legacy-env.test.ts /\bKOBE_(?:\*|[A-Z0-9_]*)/
+services/*/src/config.ts services/*/src/index.ts services/server/src/cli/legacy-env.ts apps/web/lib/config.ts apps/web/instrumentation.ts packages/cli/src/config.ts packages/db/src/cli/env.ts /\bKOBE_\*/
+services/*/src/config.test.ts services/server/src/core/config.test.ts services/server/src/cli/legacy-env.test.ts apps/web/lib/config.test.ts packages/cli/src/config.test.ts packages/db/src/cli/env.test.ts /\bKOBE_(?:\*|[A-Z0-9_]*)/
+charts/kobe/tests/env-names.test.ts packages/protocol/src/testing/legacy-env.ts /KOBE\w*/
+services/server/src/skills/registry/external-scan-result.ts /(?<=")KOBE_EXTERNAL_SCAN(?= ")/
+packages/db/src/test-support/database.ts scripts/check-test-db-env.sh package.json /\bKOBE_TEST_DATABASE_URL\b/
+docs/install.md docs/releases/** /\bKOBE_[A-Z0-9_*]*/
+
 # ---------------------------------------------------------------------------------------------
 # Provisional: persisted or agent-visible names the spec does not list. Kept (never touched by a step) until the
 # owner answers the question named in the group (docs/ledger/KOBE-745.md, Open questions).
@@ -253,7 +262,7 @@ docs/agent-prompt.md docs/parallel-work.md /\bkobe-(?=<N>-<slug>)|leading `kobe`
 
 == RN-8: CI: runner scale set, its GitHub App, the runner variable and the shared setup action
 ** /\bkobe-(?:k3s|ci-runners|arc-runners)\b/
-** /\bKOBE_RUNNER\b/
+** /\bKOBE_(?:BUILD_)?RUNNER\b/
 ** /\bsetup-kobe\b/
 path .github/actions/setup-kobe/** /kobe/
 
@@ -290,7 +299,9 @@ charts/**/Chart.yaml /^name: kobe$/
 ** /\/opt\/kobe\b/
 ** /\/run\/kobe-[\w-]*/
 ** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
+# The runas helper's compile-time macros and their -D flags: not environment variables (RN-4 leaves them).
 services/sandbox-agent/scripts/test-identities.sh /(?<=-D)KOBE_(?:AGENT_UID|WORKSPACE_GID)\b/
+images/sandbox/runas/kobe-runas.c /\bKOBE_[A-Z0-9_]+\b/
 ** /\/tmp\/kobe-pi\b[\w-]*|(?<=PI_PRIVATE_PREFIX = )"kobe-pi-"/
 scripts/check-images.sh /(?:ghcr\.io\/splittingatom\/|:-)kobe-/
 services/sandbox-agent/src/egress/egress-wiring.test.ts /(?<=")kobe(?=: the sandbox's egress token)/
@@ -309,7 +320,7 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 ** /\bdeploy\/kobe\b/
 ** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/
 charts/** Tiltfile /\bkobe-migrate(?:-initial)?\b/
-scripts/dev-cluster.sh /(?<=KOBE_CLUSTER:-)kobe\b/
+scripts/dev-cluster.sh /(?<=KAIJU_CLUSTER:-)kobe\b/
 scripts/site-identifiers.mjs /(?<=helm install )kobe\b/
 docs/install.md /(?<=IN DATABASE )kobe\b/
 
@@ -336,9 +347,6 @@ services/server/src/audit/forward/*.test.ts /\bkobe-audit\b|\bkobe@\d+/
 docs/** /\battributes\.kobe\.[\w.]+|`kobe\.(?:user_id|agent_id|usage_kind|trace\.[\w.]+)`|\bkobe-audit\b|\bkobe@<PEN>/
 docs/perf/latency-queries.sql /\bkobe_(?:side_p95_ms|share_p50|p50|p95)\b|`kobe_\*`/
 
-== RN-4: Environment variables (KAIJU_* with a one-release KOBE_* fallback)
-** /\bKOBE_(?!(?:WRITES_PER_HOUR_KEY|WRITES_PER_HOUR_DEFAULT|TOOLS_TIMEOUT_MS|TOOL|TEAM_SAMPLES|SKILL_NAMES_ADDED_LATER|SKILL_NAMES|SKILL_IDS|SITE_TOOLS|SITE_SAMPLES|SEED_RETRY|SECTIONS|RESULT_MAX_BYTES|READS_PER_MINUTE_KEY|READS_PER_MINUTE_DEFAULT|PROVIDER_ID|PROVIDER|PAGE_MAX|PACKAGES_DIR|MODEL_ERROR_PREFIX|MEMORY_ITEM_TOOLS|MCP_TEAM_SETTING|MCP_TEAM_LEVELS|MCP_TEAM_LEVEL_DEFAULT|MCP_MODES|MCP_MODE_LABELS|MCP_MODE_KEY|MCP_MODE_DEFAULT|MCP_HINTS|LIMITS|LIMIT_MIN|LIMIT_MAX|LEVEL_LABELS|GALLERY_KEY|FILE|EVENT_TYPES|EVENT_DROPPED_TYPE|ENDPOINTS|DOCS_TOOLS|DIR|BUILTIN_NAMES|BUILTIN_CONNECTOR_URL|BUILTIN_CONNECTOR_ID|AGENT_KEY|ADMIN_WRITE_REASON|ADMIN_TOOLS|ADMIN_TEXT|ADMIN_SUMMARY_MAX|ADMIN_RESULT_HIDDEN|ADMIN_NOT_REMEMBERED|ADMIN_NOT_ALLOWED_REASON)\b)[A-Z0-9_]*/
-
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
 # triages them: narrows the pattern, renames, or moves an entry to another group.
@@ -346,4 +354,4 @@ docs/perf/latency-queries.sql /\bkobe_(?:side_p95_ms|share_p50|p50|p95)\b|`kobe_
 
 == RN-6: Triage: Lower-case names in the chart, e2e harness, CI workflows and images (release name `kobe`, resource names)
 charts/** e2e/** .github/** images/** dev/** ci/** Tiltfile /[\w.@$:-]*kobe[\w.@$:-]*/
-docs/** **/*.md /(?:-n |namespace `|release `|cluster (?:delete )?"?|-d |datname = '|bucket[ =]|svc\/|deploy\/|install |upgrade |create namespace |BUCKET=)kobe\b[\w$-]*|\bkobe-[\w$-]*(?:restored|keys|auth|smtp|s3|db|pg[\w-]*|skill-mirror|sso-contoso|\$s)\b|\bkobe-dev-|\bkobe\.bifrostConfig\b|\bkobe\.example\.com\b|\bkobe:(?=\$KOBE_BIFROST)|\bkobe-erasure\b|`kobe\/`|charts\/kobe\b/
+docs/** **/*.md /(?:-n |namespace `|release `|cluster (?:delete )?"?|-d |datname = '|bucket[ =]|svc\/|deploy\/|install |upgrade |create namespace |BUCKET=)kobe\b[\w$-]*|\bkobe-[\w$-]*(?:restored|keys|auth|smtp|s3|db|pg[\w-]*|skill-mirror|sso-contoso|\$s)\b|\bkobe-dev-|\bkobe\.bifrostConfig\b|\bkobe\.example\.com\b|\bkobe:(?=\$KAIJU_BIFROST)|\bkobe-erasure\b|`kobe\/`|charts\/kobe\b/

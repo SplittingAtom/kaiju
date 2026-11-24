@@ -41,7 +41,7 @@ const until = async (predicate: () => boolean) => {
 function setup(overrides: { argv?: string[]; env?: Record<string, string | undefined> } = {}) {
   const [extensionEnd, agentEnd] = duplexPair();
   const agent = agentSide(agentEnd);
-  const env: Record<string, string | undefined> = { KOBE_POLICY_FD: "3", ...overrides.env };
+  const env: Record<string, string | undefined> = { KAIJU_POLICY_FD: "3", ...overrides.env };
   const opened: number[] = [];
   const warnings: string[] = [];
   const checker = connectPolicy({
@@ -68,7 +68,7 @@ describe("kobe-policy extension load", () => {
     const { pi, handlers } = fakePi();
     await registerKaijuPolicy(pi, t.checker);
     expect(t.opened).toEqual([3]);
-    expect(t.env).not.toHaveProperty("KOBE_POLICY_FD");
+    expect(t.env).not.toHaveProperty("KAIJU_POLICY_FD");
     expect(handlers).toHaveLength(1);
     await until(() => t.agent.lines.length > 0);
     expect(t.agent.lines[0]).toEqual({
@@ -131,7 +131,7 @@ describe("kobe-policy extension load", () => {
     ["not a number", "three"],
     ["stdio", "1"],
   ])("blocks everything when the fd variable is %s", async (_name, value) => {
-    const t = setup({ env: { KOBE_POLICY_FD: value } });
+    const t = setup({ env: { KAIJU_POLICY_FD: value } });
     const { pi, handlers } = fakePi();
     await registerKaijuPolicy(pi, t.checker);
     expect(t.opened).toEqual([]);
@@ -145,7 +145,7 @@ describe("kobe-policy extension load", () => {
   it("blocks everything when the channel cannot be opened", async () => {
     const { pi, handlers } = fakePi();
     const checker = connectPolicy({
-      env: { KOBE_POLICY_FD: "3" },
+      env: { KAIJU_POLICY_FD: "3" },
       argv: ARGV,
       cwd: "/",
       ownPath: OWN,
@@ -173,7 +173,7 @@ describe("kobe-policy extension load", () => {
 
 describe("kobe-policy configuration", () => {
   it("takes its timeouts from clientOptions only (no environment knob)", async () => {
-    const t = setup({ env: { KOBE_POLICY_REPLY_TIMEOUT_MS: "50" } });
+    const t = setup({ env: { KAIJU_POLICY_REPLY_TIMEOUT_MS: "50" } });
     t.agent.send({ type: "channel.hello", nonce: "N" });
     const { pi, handlers } = fakePi();
     await registerKaijuPolicy(pi, t.checker);

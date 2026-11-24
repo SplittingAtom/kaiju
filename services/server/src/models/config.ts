@@ -52,50 +52,50 @@ const optionalSecret = (name: string) =>
     );
 
 const schema = z.object({
-  KOBE_BIFROST_URL: z.url({
+  KAIJU_BIFROST_URL: z.url({
     protocol: /^https?$/,
-    error: "KOBE_BIFROST_URL must be an http(s) URL",
+    error: "KAIJU_BIFROST_URL must be an http(s) URL",
   }),
-  KOBE_BIFROST_ADMIN_USERNAME: z
+  KAIJU_BIFROST_ADMIN_USERNAME: z
     .string()
-    .regex(/^[A-Za-z0-9_.-]{1,64}$/, "KOBE_BIFROST_ADMIN_USERNAME must be a plain user name")
+    .regex(/^[A-Za-z0-9_.-]{1,64}$/, "KAIJU_BIFROST_ADMIN_USERNAME must be a plain user name")
     .default("kobe"),
-  KOBE_BIFROST_ADMIN_PASSWORD: secret("KOBE_BIFROST_ADMIN_PASSWORD"),
-  KOBE_MODELS_PROVIDER_KEY_SECRET: secret("KOBE_MODELS_PROVIDER_KEY_SECRET"),
-  KOBE_MODELS_VIRTUAL_KEY_SECRET: secret("KOBE_MODELS_VIRTUAL_KEY_SECRET"),
-  KOBE_MODELS_PROVIDER_KEY_SECRET_PREVIOUS: optionalSecret(
-    "KOBE_MODELS_PROVIDER_KEY_SECRET_PREVIOUS",
+  KAIJU_BIFROST_ADMIN_PASSWORD: secret("KAIJU_BIFROST_ADMIN_PASSWORD"),
+  KAIJU_MODELS_PROVIDER_KEY_SECRET: secret("KAIJU_MODELS_PROVIDER_KEY_SECRET"),
+  KAIJU_MODELS_VIRTUAL_KEY_SECRET: secret("KAIJU_MODELS_VIRTUAL_KEY_SECRET"),
+  KAIJU_MODELS_PROVIDER_KEY_SECRET_PREVIOUS: optionalSecret(
+    "KAIJU_MODELS_PROVIDER_KEY_SECRET_PREVIOUS",
   ),
-  KOBE_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS: optionalSecret(
-    "KOBE_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS",
+  KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS: optionalSecret(
+    "KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS",
   ),
-  KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS: z
-    .enum(["true", "false"], { error: "KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS must be true or false" })
+  KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS: z
+    .enum(["true", "false"], { error: "KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS must be true or false" })
     .default("false"),
-  KOBE_MODELS_SYNC_INTERVAL_MS: z.coerce
-    .number({ error: "KOBE_MODELS_SYNC_INTERVAL_MS must be a number" })
+  KAIJU_MODELS_SYNC_INTERVAL_MS: z.coerce
+    .number({ error: "KAIJU_MODELS_SYNC_INTERVAL_MS must be a number" })
     .int()
-    .min(1_000, "KOBE_MODELS_SYNC_INTERVAL_MS must be between 1000 and 3600000")
-    .max(3_600_000, "KOBE_MODELS_SYNC_INTERVAL_MS must be between 1000 and 3600000")
+    .min(1_000, "KAIJU_MODELS_SYNC_INTERVAL_MS must be between 1000 and 3600000")
+    .max(3_600_000, "KAIJU_MODELS_SYNC_INTERVAL_MS must be between 1000 and 3600000")
     .default(30_000),
-  KOBE_EMBEDDINGS_LOCAL_URL: z
-    .url({ protocol: /^https?$/, error: "KOBE_EMBEDDINGS_LOCAL_URL must be an http(s) URL" })
+  KAIJU_EMBEDDINGS_LOCAL_URL: z
+    .url({ protocol: /^https?$/, error: "KAIJU_EMBEDDINGS_LOCAL_URL must be an http(s) URL" })
     .optional(),
-  KOBE_EMBEDDINGS_LOCAL_MODEL: z
+  KAIJU_EMBEDDINGS_LOCAL_MODEL: z
     .string()
     .regex(
       new RegExp(PROVIDER_MODEL_PATTERN),
-      "KOBE_EMBEDDINGS_LOCAL_MODEL must be a plain model name",
+      "KAIJU_EMBEDDINGS_LOCAL_MODEL must be a plain model name",
     )
     .optional(),
 });
 
 /** The variables whose presence means "models are configured" (the rest have defaults). */
 const REQUIRED = [
-  "KOBE_BIFROST_URL",
-  "KOBE_BIFROST_ADMIN_PASSWORD",
-  "KOBE_MODELS_PROVIDER_KEY_SECRET",
-  "KOBE_MODELS_VIRTUAL_KEY_SECRET",
+  "KAIJU_BIFROST_URL",
+  "KAIJU_BIFROST_ADMIN_PASSWORD",
+  "KAIJU_MODELS_PROVIDER_KEY_SECRET",
+  "KAIJU_MODELS_VIRTUAL_KEY_SECRET",
 ] as const;
 
 export function loadModelsConfig(
@@ -109,32 +109,32 @@ export function loadModelsConfig(
     throw new Error(`Invalid model gateway configuration: ${issues}`);
   }
   const c = parsed.data;
-  if (c.KOBE_MODELS_PROVIDER_KEY_SECRET === c.KOBE_MODELS_VIRTUAL_KEY_SECRET) {
+  if (c.KAIJU_MODELS_PROVIDER_KEY_SECRET === c.KAIJU_MODELS_VIRTUAL_KEY_SECRET) {
     throw new Error(
       "Invalid model gateway configuration: the provider-key and virtual-key secrets must differ",
     );
   }
-  const localUrl = c.KOBE_EMBEDDINGS_LOCAL_URL;
-  const localModel = c.KOBE_EMBEDDINGS_LOCAL_MODEL;
+  const localUrl = c.KAIJU_EMBEDDINGS_LOCAL_URL;
+  const localModel = c.KAIJU_EMBEDDINGS_LOCAL_MODEL;
   if ((localUrl === undefined) !== (localModel === undefined)) {
     throw new Error(
-      "Invalid model gateway configuration: KOBE_EMBEDDINGS_LOCAL_URL and KOBE_EMBEDDINGS_LOCAL_MODEL are set together",
+      "Invalid model gateway configuration: KAIJU_EMBEDDINGS_LOCAL_URL and KAIJU_EMBEDDINGS_LOCAL_MODEL are set together",
     );
   }
   return {
-    bifrostUrl: c.KOBE_BIFROST_URL,
-    adminUsername: c.KOBE_BIFROST_ADMIN_USERNAME,
-    adminPassword: c.KOBE_BIFROST_ADMIN_PASSWORD,
+    bifrostUrl: c.KAIJU_BIFROST_URL,
+    adminUsername: c.KAIJU_BIFROST_ADMIN_USERNAME,
+    adminPassword: c.KAIJU_BIFROST_ADMIN_PASSWORD,
     providerKeySecrets: [
-      c.KOBE_MODELS_PROVIDER_KEY_SECRET,
-      c.KOBE_MODELS_PROVIDER_KEY_SECRET_PREVIOUS,
+      c.KAIJU_MODELS_PROVIDER_KEY_SECRET,
+      c.KAIJU_MODELS_PROVIDER_KEY_SECRET_PREVIOUS,
     ].filter((v) => v !== ""),
     virtualKeySecrets: [
-      c.KOBE_MODELS_VIRTUAL_KEY_SECRET,
-      c.KOBE_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS,
+      c.KAIJU_MODELS_VIRTUAL_KEY_SECRET,
+      c.KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS,
     ].filter((v) => v !== ""),
-    allowUnsafeEndpoints: c.KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS === "true",
-    syncIntervalMs: c.KOBE_MODELS_SYNC_INTERVAL_MS,
+    allowUnsafeEndpoints: c.KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS === "true",
+    syncIntervalMs: c.KAIJU_MODELS_SYNC_INTERVAL_MS,
     ...(localUrl && localModel
       ? { localEmbedding: { url: localUrl.replace(/\/+$/, ""), model: localModel } }
       : {}),

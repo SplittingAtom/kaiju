@@ -7,7 +7,7 @@ import { panelOf } from "./support/panel.js";
  * KOBE-222 (CE21): with the team's Follow-ups switch on (Team console, off by default), the server
  * asks the thread's model for three follow-ups after each answer; they show as chips above the
  * composer, a chip sends its text, and the chips go until the next answer. The switch is turned
- * back off at the end, whatever happens. Needs a team admin (`KOBE_USER`) whose budgets are all
+ * back off at the end, whatever happens. Needs a team admin (`KAIJU_USER`) whose budgets are all
  * under 80 % (follow-ups are skipped from there on).
  */
 const PROMPT = "No tools. Reply with the single word ALPHA.";

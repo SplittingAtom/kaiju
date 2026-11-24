@@ -44,13 +44,13 @@ function serverEnv(values: Record<string, string> = {}): Record<string, string> 
 describe("upload settings", () => {
   it("defaults to the server's code defaults", () => {
     const env = serverEnv();
-    expect(env.KOBE_UPLOAD_MAX_FILE_BYTES).toBe(String(100 * 1024 ** 2));
-    expect(env.KOBE_UPLOAD_MAX_MESSAGE_BYTES).toBe(String(500 * 1024 ** 2));
-    expect(env.KOBE_TEAM_STORAGE_QUOTA_BYTES).toBe(String(50 * 1024 ** 3));
-    expect(env.KOBE_UPLOAD_ORPHAN_HOURS).toBe("24");
+    expect(env.KAIJU_UPLOAD_MAX_FILE_BYTES).toBe(String(100 * 1024 ** 2));
+    expect(env.KAIJU_UPLOAD_MAX_MESSAGE_BYTES).toBe(String(500 * 1024 ** 2));
+    expect(env.KAIJU_TEAM_STORAGE_QUOTA_BYTES).toBe(String(50 * 1024 ** 3));
+    expect(env.KAIJU_UPLOAD_ORPHAN_HOURS).toBe("24");
     // Workspaces GV2/GV3 (KOBE-579): the object budget and the per-project history cap.
-    expect(env.KOBE_TEAM_MAX_OBJECTS).toBe("2000000");
-    expect(env.KOBE_PROJECT_HISTORY_MAX_COMMITS).toBe("1000");
+    expect(env.KAIJU_TEAM_MAX_OBJECTS).toBe("2000000");
+    expect(env.KAIJU_PROJECT_HISTORY_MAX_COMMITS).toBe("1000");
   });
 
   it("passes overrides through as plain integers", () => {
@@ -63,12 +63,12 @@ describe("upload settings", () => {
       "server.uploads.projectHistoryMaxCommits": "50",
     });
     expect(env).toMatchObject({
-      KOBE_UPLOAD_MAX_FILE_BYTES: "2097152",
-      KOBE_UPLOAD_MAX_MESSAGE_BYTES: "4194304",
-      KOBE_TEAM_STORAGE_QUOTA_BYTES: "107374182400",
-      KOBE_UPLOAD_ORPHAN_HOURS: "72",
-      KOBE_TEAM_MAX_OBJECTS: "5000",
-      KOBE_PROJECT_HISTORY_MAX_COMMITS: "50",
+      KAIJU_UPLOAD_MAX_FILE_BYTES: "2097152",
+      KAIJU_UPLOAD_MAX_MESSAGE_BYTES: "4194304",
+      KAIJU_TEAM_STORAGE_QUOTA_BYTES: "107374182400",
+      KAIJU_UPLOAD_ORPHAN_HOURS: "72",
+      KAIJU_TEAM_MAX_OBJECTS: "5000",
+      KAIJU_PROJECT_HISTORY_MAX_COMMITS: "50",
     });
   });
 

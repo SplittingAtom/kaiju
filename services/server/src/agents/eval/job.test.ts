@@ -131,9 +131,9 @@ describe("Orbit eval Job manifest (KOBE-93)", () => {
     ]);
     const env = Object.fromEntries((pod.containers[0]?.env ?? []).map((e) => [e.name, e.value]));
     expect(env).toEqual({
-      KOBE_MODEL_GATEWAY_URL: "http://model-gateway.kobe.internal:8080",
-      KOBE_MODEL_SESSION_TOKEN: TOKEN,
-      KOBE_EVAL_MODEL: "anthropic/claude-smart",
+      KAIJU_MODEL_GATEWAY_URL: "http://model-gateway.kobe.internal:8080",
+      KAIJU_MODEL_SESSION_TOKEN: TOKEN,
+      KAIJU_EVAL_MODEL: "anthropic/claude-smart",
     });
     // Never a provider key or a proxy to the open internet.
     expect(JSON.stringify(pod)).not.toMatch(/API_KEY|PROXY/i);

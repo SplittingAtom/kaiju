@@ -5,10 +5,10 @@
 # policy.check) still cannot execute an MCP write without a signed approval. Runs from the same
 # sandbox-like client pod as the egress checks, against a fake remote MCP server in the cluster.
 echo "==> MCP proxy (KOBE-58)"
-if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0}" == 1 ]]; then
+if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0}" == 1 ]]; then
   FAKE_MCP_JS=$(cat e2e/lib/fake-mcp.js) # shared with e2e/gate2.sh
   $KUBECTL create namespace "$MCP_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
-  $KUBECTL -n "$MCP_NS" run fake-mcp --restart=Never --image="$KOBE_SANDBOX_IMAGE" --labels=app=fake-mcp \
+  $KUBECTL -n "$MCP_NS" run fake-mcp --restart=Never --image="$KAIJU_SANDBOX_IMAGE" --labels=app=fake-mcp \
     --command -- node -e "$FAKE_MCP_JS" >/dev/null
   $KUBECTL -n "$MCP_NS" expose pod fake-mcp --port=80 --target-port=8080 --name=fake-mcp >/dev/null
   $KUBECTL -n "$MCP_NS" wait --for=condition=Ready pod/fake-mcp --timeout=180s >/dev/null 2>&1 || true
@@ -107,7 +107,7 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0
       const { canonicalJson } = await import('/app/node_modules/@kaiju/protocol/dist/index.js');
       const [tcid, raw] = process.argv.slice(1);
       const input = JSON.parse(raw);
-      const t = signApproval({ key: approvalKeyring(process.env.KOBE_APPROVAL_KEY).current,
+      const t = signApproval({ key: approvalKeyring(process.env.KAIJU_APPROVAL_KEY).current,
         approval_id: '6f214253-8d7e-4f90-b1a2-2d3e4f506172', team_id: '$E2E_TEAM_ID', run_id: '$MCP_RUN',
         tool_call_id: tcid, tool: 'mcp__e2e_fake__create_thing', input, now: new Date() });
       console.log([t.kid, t.expires_at, t.mac, canonicalJson(input)].join('|'));
@@ -171,7 +171,7 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0
       AND action = 'mcp.tool_call' AND target->>'connectorId' = '$SITE_CONNECTOR' AND target->>'decision' = 'allowed'")"
   site_env=$($KUBECTL -n "$TEAM_NS" exec "$($KUBECTL -n "$TEAM_NS" get pods -l "agents.x-k8s.io/claim-uid=$sandbox_id" -o name | head -1)" \
     -c agent -- env 2>/dev/null || true)
-  contains "control: the e2e sandbox's env was read" '^[1-9][0-9]*$' "$(printf '%s\n' "$site_env" | grep -c '^KOBE_' || true)"
+  contains "control: the e2e sandbox's env was read" '^[1-9][0-9]*$' "$(printf '%s\n' "$site_env" | grep -c '^KAIJU_' || true)"
   contains "KOBE-303: the e2e sandbox's env holds no site key" '^0$' "$(printf '%s\n' "$site_env" | grep -c -- "$SITE_KEY" || true)"
   contains "KOBE-303: no SandboxTemplate in the team namespace holds it" '^0$' \
     "$($KUBECTL -n "$TEAM_NS" get sandboxtemplates.extensions.agents.x-k8s.io -o yaml 2>/dev/null | grep -c -- "$SITE_KEY" || true)"
@@ -185,7 +185,7 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0
   # KOBE-449: a real run of a member with no key of their own gets the site-key connector in
   # run.start.mcp, so Pi offers its tool and the model calls it (the fake model's "tools?" echo and
   # "steps:" script). The Owner holds no grant for it (a site connector refuses members' keys).
-  if [[ "${KOBE_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then
+  if [[ "${KAIJU_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then
     echo "SKIP KOBE-449 site-key run (runs in the suite shard only)"
   elif [[ "$(type -t chat_run)" == function && -n "${owner_id:-}" ]]; then
     SITE_AGENT=5e6f7081-92a3-4b4c-9d6e-7f8091a2b3c5
@@ -230,8 +230,8 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0
   contains "control: the release-namespace probe reaches the server" '^control=REACHED$' "$mcp_recv"
   contains "the MCP proxy admits nothing but sandboxes (probe from the release namespace)" '^mcp=BLOCKED$' "$mcp_recv"
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "MCP proxy checks need KOBE_SANDBOX_IMAGE, the e2e sandbox and the egress client pod"
+  fail "MCP proxy checks need KAIJU_SANDBOX_IMAGE, the e2e sandbox and the egress client pod"
 else
-  echo "SKIP MCP proxy checks (KOBE_SANDBOX_IMAGE not set)"
+  echo "SKIP MCP proxy checks (KAIJU_SANDBOX_IMAGE not set)"
 fi
 

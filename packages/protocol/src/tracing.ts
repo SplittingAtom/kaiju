@@ -25,7 +25,7 @@ import { z } from "zod";
  *   under the run's trace id (frames carry none) with **remapped span ids**: exported id =
  *   `mapSandboxSpanId` (`@kaiju/protocol/node`) = the first 64 bits of
  *   HMAC-SHA256(`k_trace`, run id ‖ 0x00 ‖ sandbox span id), `k_trace` = HKDF-SHA256 of the
- *   trace-span secret (`KOBE_TRACE_SPAN_KEY`, shared by server and model gateway; since KOBE-521 a
+ *   trace-span secret (`KAIJU_TRACE_SPAN_KEY`, shared by server and model gateway; since KOBE-521 a
  *   pseudonymisation key only, from which no credential derives) with info
  *   {@link TRACE_SPAN_KDF_INFO}. A sandbox therefore never produces an
  *   exported span id, so it cannot overwrite another span in a backend that upserts by id.
@@ -61,7 +61,7 @@ export const TRACE_DROPPED_ATTRIBUTE = "kobe.trace.sandbox_spans_dropped";
 /** HKDF info of `k_trace`, the key that remaps sandbox span ids (`@kaiju/protocol/node`). */
 export const TRACE_SPAN_KDF_INFO = "kobe/trace-span/v1";
 export const TRACE_SPAN_KEY_BYTES = 32;
-/** Shortest trace-span secret (`KOBE_TRACE_SPAN_KEY`) `k_trace` is derived from. */
+/** Shortest trace-span secret (`KAIJU_TRACE_SPAN_KEY`) `k_trace` is derived from. */
 export const TRACE_SPAN_SECRET_MIN_BYTES = 32;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

@@ -11,7 +11,7 @@
     read -r -d '' PROJECTS_JS <<'JS' || true
 const [team, mode, readerEmail, projectArg, threadArg, readerId] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const out = (k, v) => console.log(k + "=" + v);
 const session = async (email) => {
   const jar = new Map();
@@ -154,7 +154,7 @@ JS
     read -r -d '' FORK_JS <<'JS' || true
 const [team, mode, readerEmail, sourceId, markerA, markerB, title, forkArg, chosenArg] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const out = (k, v) => console.log(k + "=" + v);
 const session = async (email) => {
   const jar = new Map();

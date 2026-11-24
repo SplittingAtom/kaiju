@@ -25,7 +25,7 @@ fi
 approver_token=$(mint kobe.sandbox-wire "${owner_sandbox:-none}" "$owner_id")
 read -r -d '' APPROVER_JS <<'JS' || true
 const { default: WebSocket } = await import("/app/node_modules/ws/wrapper.mjs");
-const { KOBE_WIRE_URL: url, KOBE_WIRE_TOKEN: token, KOBE_SANDBOX_ID: sandboxId } = process.env;
+const { KAIJU_WIRE_URL: url, KAIJU_WIRE_TOKEN: token, KAIJU_SANDBOX_ID: sandboxId } = process.env;
 const log = (line) => console.log(line);
 const open = () =>
   new Promise((resolve) => {
@@ -87,9 +87,9 @@ spec:
       securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
       resources: { requests: { cpu: 50m, memory: 64Mi }, limits: { cpu: 500m, memory: 256Mi } }
       env:
-        - { name: KOBE_WIRE_URL, value: "ws://$server_ip:8081/v1/sandbox/connect" }
-        - { name: KOBE_WIRE_TOKEN, value: "$approver_token" }
-        - { name: KOBE_SANDBOX_ID, value: "${owner_sandbox:-none}" }
+        - { name: KAIJU_WIRE_URL, value: "ws://$server_ip:8081/v1/sandbox/connect" }
+        - { name: KAIJU_WIRE_TOKEN, value: "$approver_token" }
+        - { name: KAIJU_SANDBOX_ID, value: "${owner_sandbox:-none}" }
       command: ["node", "--input-type=module", "-e"]
       args:
         - |

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { KOBE_TOOLS_FD } from "@kaiju/protocol";
+import { KAIJU_TOOLS_FD } from "@kaiju/protocol";
 import { type PiThreadConfig, type RunMcpContext } from "@kaiju/protocol/sandbox-wire";
 import { EXEC_FD, EXEC_FD_ENV } from "../kobe-exec/protocol.js";
 import { KAIJU_PROVIDER_ID } from "../kobe-models/protocol.js";
@@ -33,7 +33,7 @@ import type { RunModel } from "../models/types.js";
  */
 export const POLICY_CHANNEL_FD = 3;
 /** The kobe-tools channel (KOBE-128, artifacts.ts): fd 4, only when the extension is loaded. */
-export const TOOLS_CHANNEL_FD = KOBE_TOOLS_FD;
+export const TOOLS_CHANNEL_FD = KAIJU_TOOLS_FD;
 /** The kobe-exec channel (KOBE-167, kobe-exec/protocol.ts): fd 5, only when the extension is loaded. */
 export const EXEC_CHANNEL_FD = EXEC_FD;
 
@@ -196,7 +196,7 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
   }
   env.PATH ??= "/usr/local/bin:/usr/bin:/bin";
   env.HOME = input.home;
-  // PI_CODING_AGENT_DIR and KOBE_MODEL_FILE name per-process paths: the thread adds them at spawn.
+  // PI_CODING_AGENT_DIR and KAIJU_MODEL_FILE name per-process paths: the thread adds them at spawn.
   env.PI_SKIP_VERSION_CHECK = "1";
   env.PI_TELEMETRY = "0";
   env.PI_OFFLINE = "1";
@@ -206,22 +206,23 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
   // (`$TMPDIR/jiti`, trusted by file name and a hash of public source) and no V8 compile cache.
   env.JITI_FS_CACHE = "false";
   env.NODE_DISABLE_COMPILE_CACHE = "1";
-  env.KOBE_POLICY_FD = String(POLICY_CHANNEL_FD);
-  if (input.toolsExtension !== undefined) env.KOBE_TOOLS_FD = String(TOOLS_CHANNEL_FD);
+  env.KAIJU_POLICY_FD = String(POLICY_CHANNEL_FD);
+  if (input.toolsExtension !== undefined) env.KAIJU_TOOLS_FD = String(TOOLS_CHANNEL_FD);
   if (input.execExtension !== undefined) env[EXEC_FD_ENV] = String(EXEC_CHANNEL_FD);
-  if (input.toolsExtension !== undefined && input.toolsFiles === true) env.KOBE_TOOLS_FILES = "1";
+  if (input.toolsExtension !== undefined && input.toolsFiles === true) env.KAIJU_TOOLS_FILES = "1";
   if (input.toolsExtension !== undefined && input.toolsProjects === true)
-    env.KOBE_TOOLS_PROJECTS = "1";
+    env.KAIJU_TOOLS_PROJECTS = "1";
   if (input.toolsExtension !== undefined && input.toolsSkillDrafts === true)
-    env.KOBE_TOOLS_SKILL_DRAFTS = "1";
+    env.KAIJU_TOOLS_SKILL_DRAFTS = "1";
   if (input.toolsExtension !== undefined && input.toolsFileEdits === true)
-    env.KOBE_TOOLS_FILE_EDITS = "1";
+    env.KAIJU_TOOLS_FILE_EDITS = "1";
   if (input.toolsExtension !== undefined && input.toolsNotebooks === true)
-    env.KOBE_TOOLS_NOTEBOOKS = "1";
-  if (input.toolsExtension !== undefined && input.toolsMemory === true) env.KOBE_TOOLS_MEMORY = "1";
+    env.KAIJU_TOOLS_NOTEBOOKS = "1";
+  if (input.toolsExtension !== undefined && input.toolsMemory === true)
+    env.KAIJU_TOOLS_MEMORY = "1";
   // KOBE-776: built-ins Pi is not offered (kobe-policy removes them from its active tools).
   if (config?.hidden_tools !== undefined && config.hidden_tools.length > 0) {
-    env.KOBE_HIDDEN_TOOLS = config.hidden_tools.join(",");
+    env.KAIJU_HIDDEN_TOOLS = config.hidden_tools.join(",");
   }
 
   // The model is deliberately not part of the key (see `modelsExtension`).

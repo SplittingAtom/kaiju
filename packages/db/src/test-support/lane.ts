@@ -11,7 +11,7 @@ import { sweepStaleTempDirs, sweepStaleTestDatabases } from "./sweep.js";
  * touching another lane's. Without a lane (CI) nothing changes.
  */
 
-export const LANE_ENV = "KOBE_TEST_DB_LANE";
+export const LANE_ENV = "KAIJU_TEST_DB_LANE";
 const LANE_PATTERN = /^[a-z0-9]{1,20}$/;
 const MAX_LANE_LENGTH = 20;
 const REPO_PREFIX = "kobe";
@@ -38,7 +38,7 @@ function workspaceRoot(from: string): string | undefined {
 }
 
 /**
- * The lane for this test run: KOBE_TEST_DB_LANE when set (empty means no lane), else none in CI,
+ * The lane for this test run: KAIJU_TEST_DB_LANE when set (empty means no lane), else none in CI,
  * else derived from the workspace root's directory name (one worktree, one lane).
  */
 export function resolveTestLane(
@@ -165,12 +165,12 @@ export async function dropTestLane(serverUrl: string, lane: string): Promise<Lan
 
 /**
  * Vitest global setup step for every DB suite: sweeps leftovers of crashed runs (KOBE-743: stale
- * throwaway databases on the KOBE_TEST_DATABASE_URL server, stale `kaiju-upgrade-*` temp dirs), then
+ * throwaway databases on the KAIJU_TEST_DATABASE_URL server, stale `kaiju-upgrade-*` temp dirs), then
  * creates the lane's maintenance database when this run has a lane. Returns the lane (undefined in
  * CI).
  */
 export async function prepareTestLane(): Promise<string | undefined> {
-  const base = process.env.KOBE_TEST_DATABASE_URL;
+  const base = process.env.KAIJU_TEST_DATABASE_URL;
   sweepStaleTempDirs();
   if (base) await sweepStaleTestDatabases(base);
   const lane = resolveTestLane();

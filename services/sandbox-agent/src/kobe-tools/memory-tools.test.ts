@@ -276,11 +276,11 @@ describe("registration", () => {
     expect(register(false)).not.toContain("remember");
     expect(register(false)).not.toContain("recall");
   });
-  it("reads KOBE_TOOLS_MEMORY once and removes it", () => {
-    const env: Record<string, string | undefined> = { KOBE_TOOLS_MEMORY: "1" };
+  it("reads KAIJU_TOOLS_MEMORY once and removes it", () => {
+    const env: Record<string, string | undefined> = { KAIJU_TOOLS_MEMORY: "1" };
     expect(memoryEnabled(env)).toBe(true);
-    expect(env.KOBE_TOOLS_MEMORY).toBeUndefined();
-    expect(memoryEnabled({ KOBE_TOOLS_MEMORY: "yes" })).toBe(false);
+    expect(env.KAIJU_TOOLS_MEMORY).toBeUndefined();
+    expect(memoryEnabled({ KAIJU_TOOLS_MEMORY: "yes" })).toBe(false);
     expect(filesEnabled({})).toBe(false);
   });
 });

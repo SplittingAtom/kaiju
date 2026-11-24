@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 
-// Render tests for s3.prefix (KOBE-195): chart value -> KOBE_S3_PREFIX on server and scheduler.
+// Render tests for s3.prefix (KOBE-195): chart value -> KAIJU_S3_PREFIX on server and scheduler.
 
 const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
 const HELM = process.env.HELM_BIN ?? "helm";
@@ -37,7 +37,7 @@ function prefixOf(deployment: string, values: Record<string, string> = {}): stri
     name: string;
     value?: string;
   }[];
-  return env.find((e) => e.name === "KOBE_S3_PREFIX")?.value;
+  return env.find((e) => e.name === "KAIJU_S3_PREFIX")?.value;
 }
 
 describe("s3.prefix", () => {
@@ -45,7 +45,7 @@ describe("s3.prefix", () => {
     expect(prefixOf(name)).toBe("");
   });
 
-  it.each(["kobe-server", "kobe-scheduler"])("sets KOBE_S3_PREFIX on %s", (name) => {
+  it.each(["kobe-server", "kobe-scheduler"])("sets KAIJU_S3_PREFIX on %s", (name) => {
     expect(prefixOf(name, { "s3.prefix": "team-a/kobe/" })).toBe("team-a/kobe/");
   });
 

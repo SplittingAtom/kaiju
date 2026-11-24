@@ -16,11 +16,11 @@ afterAll(async () => {
 
 describe("out-of-order migration on an existing install", () => {
   it("is skipped by Drizzle and caught by assertAllMigrationsApplied", async () => {
-    const saved = process.env.KOBE_TEST_BASE_MIGRATIONS;
-    delete process.env.KOBE_TEST_BASE_MIGRATIONS;
+    const saved = process.env.KAIJU_TEST_BASE_MIGRATIONS;
+    delete process.env.KAIJU_TEST_BASE_MIGRATIONS;
     const db = await createTestDatabase(testServerUrl());
     dbs.push(db);
-    if (saved) process.env.KOBE_TEST_BASE_MIGRATIONS = saved;
+    if (saved) process.env.KAIJU_TEST_BASE_MIGRATIONS = saved;
 
     const dir = mkdtempSync(join(tmpdir(), "kaiju-ooo-"));
     cpSync(DEFAULT_MIGRATIONS_FOLDER, dir, { recursive: true });

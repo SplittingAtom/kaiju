@@ -6,14 +6,14 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-572 (agents-roster AR-8): the Agents page's Personal, Team and Site rosters on gate1 with
- * the owner (KOBE_USER: site Owner and Team1 admin) and member2 (KOBE_USER2/KOBE_PW2, a plain
+ * the owner (KAIJU_USER: site Owner and Team1 admin) and member2 (KAIJU_USER2/KAIJU_PW2, a plain
  * member). Five self-contained scenarios; each creates its agents through the API and the
  * afterEach withdraws their entries, deletes the agents, schedules and threads it made. The team
  * default agent is never changed. Only "assign and run" spends a model turn. Skipped when the
  * deployment has no roster API. Run on gate1: `npx playwright test agents-roster`.
  */
-const USER2 = process.env["KOBE_USER2"];
-const PW2 = process.env["KOBE_PW2"];
+const USER2 = process.env["KAIJU_USER2"];
+const PW2 = process.env["KAIJU_PW2"];
 const TEAM_KEY = "kobe.lastTeamId";
 
 interface Agent {
@@ -158,7 +158,7 @@ async function teamName(page: Page): Promise<string> {
 
 /** member2's own browser (a password sign-in), closed after the test's other clean-up. */
 async function member(browser: Browser): Promise<Page> {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const page = await secondBrowser(browser, USER2, PW2);
   cleanups.unshift(() => page.context().close());
   return page;

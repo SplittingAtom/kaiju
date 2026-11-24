@@ -36,14 +36,14 @@ function render(values: Record<string, string>): Manifest[] {
 const envOf = (ms: Manifest[], name: string): Env[] =>
   ms.find((m) => m.kind === "Deployment" && m.metadata.name === name)?.spec.template.spec
     .containers[0].env ?? [];
-const mirrorEnv = (env: Env[]) => env.filter((e) => e.name.startsWith("KOBE_SKILL_MIRROR_"));
+const mirrorEnv = (env: Env[]) => env.filter((e) => e.name.startsWith("KAIJU_SKILL_MIRROR_"));
 
 describe("server.skillMirror", () => {
   it("defaults: identity only, no token", () => {
     expect(mirrorEnv(envOf(render({}), "kobe-server"))).toEqual([
-      { name: "KOBE_SKILL_MIRROR_USERNAME", value: "x-access-token" },
-      { name: "KOBE_SKILL_MIRROR_AUTHOR_NAME", value: "Kaiju Registry" },
-      { name: "KOBE_SKILL_MIRROR_AUTHOR_EMAIL", value: "registry@kobe.invalid" },
+      { name: "KAIJU_SKILL_MIRROR_USERNAME", value: "x-access-token" },
+      { name: "KAIJU_SKILL_MIRROR_AUTHOR_NAME", value: "Kaiju Registry" },
+      { name: "KAIJU_SKILL_MIRROR_AUTHOR_EMAIL", value: "registry@kobe.invalid" },
     ]);
   });
 
@@ -54,11 +54,11 @@ describe("server.skillMirror", () => {
       "server.skillMirror.username": "kobe-bot",
     });
     expect(mirrorEnv(envOf(ms, "kobe-server"))).toContainEqual({
-      name: "KOBE_SKILL_MIRROR_TOKEN",
+      name: "KAIJU_SKILL_MIRROR_TOKEN",
       valueFrom: { secretKeyRef: { name: "mirror-token", key: "pat", optional: true } },
     });
     expect(mirrorEnv(envOf(ms, "kobe-server"))[0]).toEqual({
-      name: "KOBE_SKILL_MIRROR_USERNAME",
+      name: "KAIJU_SKILL_MIRROR_USERNAME",
       value: "kobe-bot",
     });
     for (const other of ["kobe-scheduler", "kobe-egress-proxy", "kobe-mcp-proxy", "kobe-web"])

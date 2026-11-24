@@ -1,3 +1,4 @@
+import { adoptLegacyEnv } from "@kaiju/protocol/legacy-env";
 import {
   createDb,
   headerBox,
@@ -27,6 +28,8 @@ import { RateBuckets } from "./rate-buckets.js";
 /** Open tunnels get this long to finish on shutdown; stays under k8s' 30 s grace period. */
 const DRAIN_TIMEOUT_MS = 20_000;
 
+// KOBE-748: old KOBE_* names move to KAIJU_* before anything reads process.env (one release).
+adoptLegacyEnv(process.env);
 const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "egress-proxy"));
 const database = createDb(config.databaseUrl, {

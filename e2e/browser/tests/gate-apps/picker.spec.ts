@@ -14,27 +14,27 @@ import { pageApi } from "../support/gate5.js";
  *
  * On the gate install the picker is the Catalyst connector's "Lakehouse Picker". The app and its
  * path come from the environment (the repository is public; nothing here names a host):
- * `KOBE_APPS_CONNECTOR` (the connector's name), `KOBE_APPS_PICKER` (the picker's title; default:
- * the connector's first app named "…Picker…"), `KOBE_APPS_PICKER_PATH` (the items to click, comma
- * separated, the last one a table; default `KOBE_APPS_PATH`), `KOBE_APPS_ITEM_ROLE` (their ARIA
- * role), `KOBE_APPS_PICKER_USE_LABEL` (a button to press after the table, if the picker has one)
- * and `KOBE_APPS_PICKER_TEXT` (text the composer then contains; default: the table's name).
+ * `KAIJU_APPS_CONNECTOR` (the connector's name), `KAIJU_APPS_PICKER` (the picker's title; default:
+ * the connector's first app named "…Picker…"), `KAIJU_APPS_PICKER_PATH` (the items to click, comma
+ * separated, the last one a table; default `KAIJU_APPS_PATH`), `KAIJU_APPS_ITEM_ROLE` (their ARIA
+ * role), `KAIJU_APPS_PICKER_USE_LABEL` (a button to press after the table, if the picker has one)
+ * and `KAIJU_APPS_PICKER_TEXT` (text the composer then contains; default: the table's name).
  * Without a live picker for the member (k3d's test server has none) the file skips.
  */
-const CONNECTOR_SET = (process.env["KOBE_APPS_CONNECTOR"] ?? "") !== "";
-const CONNECTOR = CONNECTOR_SET ? (process.env["KOBE_APPS_CONNECTOR"] as string) : "e2e-apps";
-const TITLE = process.env["KOBE_APPS_PICKER"];
+const CONNECTOR_SET = (process.env["KAIJU_APPS_CONNECTOR"] ?? "") !== "";
+const CONNECTOR = CONNECTOR_SET ? (process.env["KAIJU_APPS_CONNECTOR"] as string) : "e2e-apps";
+const TITLE = process.env["KAIJU_APPS_PICKER"];
 const PATH = (
-  process.env["KOBE_APPS_PICKER_PATH"] ??
-  process.env["KOBE_APPS_PATH"] ??
+  process.env["KAIJU_APPS_PICKER_PATH"] ??
+  process.env["KAIJU_APPS_PATH"] ??
   "c,c.n,c.n.t"
 )
   .split(",")
   .map((s) => s.trim());
-const ITEM_ROLE = (process.env["KOBE_APPS_ITEM_ROLE"] ?? "button") as
+const ITEM_ROLE = (process.env["KAIJU_APPS_ITEM_ROLE"] ?? "button") as
   "button" | "treeitem" | "link";
-const USE_LABEL = process.env["KOBE_APPS_PICKER_USE_LABEL"] ?? "";
-const TEXT = process.env["KOBE_APPS_PICKER_TEXT"] ?? PATH.at(-1) ?? "";
+const USE_LABEL = process.env["KAIJU_APPS_PICKER_USE_LABEL"] ?? "";
+const TEXT = process.env["KAIJU_APPS_PICKER_TEXT"] ?? PATH.at(-1) ?? "";
 const WIDE = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };
 const PICKER_PX = 400;
@@ -62,7 +62,7 @@ async function openWithPicker(chat: Chat, page: Page): Promise<App> {
     picker === undefined,
     CONNECTOR_SET
       ? `SKIPPED: no live picker app of connector "${CONNECTOR}" for this member`
-      : 'SKIPPED: KOBE_APPS_CONNECTOR is not set (the default "e2e-apps" has no picker); ' +
+      : 'SKIPPED: KAIJU_APPS_CONNECTOR is not set (the default "e2e-apps" has no picker); ' +
           "set it to the connector that offers the picker (gate1: catalyst_2)",
   );
   return picker as App;

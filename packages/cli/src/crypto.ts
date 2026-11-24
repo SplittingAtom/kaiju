@@ -12,8 +12,8 @@ import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
 /**
- * Backups are encrypted and authenticated with an operator-held key (KOBE_BACKUP_KEY_FILE or
- * KOBE_BACKUP_KEY, never argv). Per backup, HKDF-SHA256 over a random salt derives one AES-256-GCM
+ * Backups are encrypted and authenticated with an operator-held key (KAIJU_BACKUP_KEY_FILE or
+ * KAIJU_BACKUP_KEY, never argv). Per backup, HKDF-SHA256 over a random salt derives one AES-256-GCM
  * key for the files and one HMAC-SHA256 key for the manifest; the manifest records each file's
  * ciphertext checksum, so the signature covers everything.
  */

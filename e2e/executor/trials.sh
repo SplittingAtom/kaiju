@@ -6,7 +6,7 @@ owner_claim_uid() { $KUBECTL -n "$TEAM_NS" get sandboxclaim "u-$owner_id" -o jso
 owner_pod_now() { $KUBECTL -n "$TEAM_NS" get pods -l "agents.x-k8s.io/claim-uid=$(owner_claim_uid)" -o name 2>/dev/null | head -1; }
 in_owner() { $KUBECTL -n "$TEAM_NS" exec "$(owner_pod_now)" -c agent -- sh -c "$1" 2>&1 || true; }
 tool_said() { sed -n 's/^text=fake-openai: tool said: //p' <<<"$1" | sed -n 1p; } # chat_run output → the tool's one line
-EXEC_LABEL=$([[ "${KOBE_E2E_TOOL_EXECUTOR:-}" == 1 ]] && echo on || echo off)
+EXEC_LABEL=$([[ "${KAIJU_E2E_TOOL_EXECUTOR:-}" == 1 ]] && echo on || echo off)
 owner_lifecycle() { # hibernate|wake → the CLI's answer
   $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node dist/cli/lifecycle.js "$1" \
     --team-id "$E2E_TEAM_ID" --user-id "$owner_id" 2>&1 | grep -E '^\{"(hibernated|woken)"' || true
@@ -75,7 +75,7 @@ slow_trial_diagnostics() { # since (RFC3339)
 # Hibernated → first token (a hello through the real wake path), then the first tool call of the
 # woken sandbox (a new thread: its Pi and, with the flag on, its executor start cold).
 executor_first_token_trials() {
-  local n="${KOBE_E2E_FT_TRIALS:-8}" i out ft tool_ms hib trial_start hung=0
+  local n="${KAIJU_E2E_FT_TRIALS:-8}" i out ft tool_ms hib trial_start hung=0
   local -a fts=() tools=()
   echo "==> cold start: hibernated → first token, executor ${EXEC_LABEL} (KOBE-168)"
   for ((i = 1; i <= n; i++)); do
@@ -103,9 +103,9 @@ executor_first_token_trials() {
   if ((${#fts[@]} == n)); then
     echo "     first-token (executor ${EXEC_LABEL}): n=$n p50=$(percentile 50 "${fts[@]}") ms p95=$(percentile 95 "${fts[@]}") ms"
     echo "     tool-run (executor ${EXEC_LABEL}, first tool after wake): n=${#tools[@]} p50=$(percentile 50 "${tools[@]}") ms p95=$(percentile 95 "${tools[@]}") ms"
-    if (($(percentile 95 "${fts[@]}") <= ${KOBE_COLD_START_P95_MS:-20000})); then
-      ok "hibernated → first token p95 within ${KOBE_COLD_START_P95_MS:-20000} ms (executor ${EXEC_LABEL})"
-    else fail "hibernated → first token p95 within ${KOBE_COLD_START_P95_MS:-20000} ms (executor ${EXEC_LABEL})"; fi
+    if (($(percentile 95 "${fts[@]}") <= ${KAIJU_COLD_START_P95_MS:-20000})); then
+      ok "hibernated → first token p95 within ${KAIJU_COLD_START_P95_MS:-20000} ms (executor ${EXEC_LABEL})"
+    else fail "hibernated → first token p95 within ${KAIJU_COLD_START_P95_MS:-20000} ms (executor ${EXEC_LABEL})"; fi
   else fail "every cold-start trial started hibernated and produced a first token (${#fts[@]} of $n; executor ${EXEC_LABEL})"; fi
 }
 

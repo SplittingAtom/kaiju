@@ -21,7 +21,7 @@ import { BLOB_REFS, freshTarget, memoryLister, rowsOf, sql, U1 } from "./testing
  * upgrade then renames in place (packages/db site-rename-migration.db.test.ts). docs/backup-restore.md
  * It names the old tables on purpose (site-identifiers: allow-file).
  */
-const pgBinDir = process.env.KOBE_PG_BIN_DIR || undefined;
+const pgBinDir = process.env.KAIJU_PG_BIN_DIR || undefined;
 const KEY = randomBytes(32);
 const RENAME_MARKER = 'ALTER TABLE "install_settings" RENAME TO "site_settings"';
 

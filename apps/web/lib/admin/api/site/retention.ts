@@ -13,7 +13,7 @@ export interface RetentionMaximum {
 
 /** What GET returns: the maximum plus whether the deleting jobs are paused (KOBE-243). */
 export interface RetentionStatus extends RetentionMaximum {
-  /** KOBE_RETENTION_PAUSED: the nightly pass, offboarding purges and workspace GC do nothing. */
+  /** KAIJU_RETENTION_PAUSED: the nightly pass, offboarding purges and workspace GC do nothing. */
   readonly paused: boolean;
 }
 

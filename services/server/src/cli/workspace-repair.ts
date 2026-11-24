@@ -3,6 +3,7 @@ import { logger } from "../logger.js";
 import { createS3ObjectStore, loadS3Settings, repairWorkspaces } from "../workspace-sync/index.js";
 import { exitSoon } from "./replica.js";
 import { parseRepairArgs } from "./workspace-repair-args.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Operator tool (KOBE-475), run inside a server pod (its env: database and object storage):
 //   node dist/cli/workspace-repair.js [--dry-run] [--team-id <uuid> [--user-id <uuid>]]
@@ -15,19 +16,20 @@ import { parseRepairArgs } from "./workspace-repair-args.js";
 // Exit 0 when nothing is missing (or everything missing is now marked), 1 on a dry run that found
 // missing content, 2 on a usage or configuration error.
 async function main(): Promise<number> {
+  adoptCliLegacyEnv();
   const args = parseRepairArgs(process.argv.slice(2));
   if (typeof args === "string") {
     console.error(args);
     return 2;
   }
-  const databaseUrl = process.env.KOBE_DATABASE_URL;
+  const databaseUrl = process.env.KAIJU_DATABASE_URL;
   if (!databaseUrl) {
-    console.error("KOBE_DATABASE_URL is not set");
+    console.error("KAIJU_DATABASE_URL is not set");
     return 2;
   }
   const s3 = loadS3Settings(process.env);
   if (!s3) {
-    console.error("object storage is not configured (KOBE_S3_BUCKET)");
+    console.error("object storage is not configured (KAIJU_S3_BUCKET)");
     return 2;
   }
   const database = createDb(databaseUrl, { max: 2 });

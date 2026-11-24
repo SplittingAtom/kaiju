@@ -35,19 +35,19 @@ function internalCidrs(env: Env, name: string): string[] {
  * registry accepts is what the proxy will connect to (KOBE-100).
  */
 export function loadConnectorUrlPolicy(env: Env): ConnectorUrlPolicy {
-  const flag = env.KOBE_MCP_ALLOW_INSECURE_HTTP ?? "false";
+  const flag = env.KAIJU_MCP_ALLOW_INSECURE_HTTP ?? "false";
   if (flag !== "true" && flag !== "false") {
-    throw new Error("Invalid configuration: KOBE_MCP_ALLOW_INSECURE_HTTP must be true or false");
+    throw new Error("Invalid configuration: KAIJU_MCP_ALLOW_INSECURE_HTTP must be true or false");
   }
-  const ports = list(env.KOBE_MCP_ALLOWED_PORTS).map(Number);
+  const ports = list(env.KAIJU_MCP_ALLOWED_PORTS).map(Number);
   if (ports.some((p) => !Number.isInteger(p) || p < 1 || p > 65535)) {
-    throw new Error("Invalid configuration: KOBE_MCP_ALLOWED_PORTS must be ports (1-65535)");
+    throw new Error("Invalid configuration: KAIJU_MCP_ALLOWED_PORTS must be ports (1-65535)");
   }
   return {
     allowHttp: flag === "true",
     allowedPorts: ports.length === 0 ? DEFAULT_ALLOWED_PORTS : ports,
-    allowedInternalCidrs: internalCidrs(env, "KOBE_MCP_ALLOWED_INTERNAL_CIDRS"),
-    deniedCidrs: cidrs(env, "KOBE_MCP_DENIED_CIDRS"),
+    allowedInternalCidrs: internalCidrs(env, "KAIJU_MCP_ALLOWED_INTERNAL_CIDRS"),
+    deniedCidrs: cidrs(env, "KAIJU_MCP_DENIED_CIDRS"),
     resolve: resolveAll,
   };
 }

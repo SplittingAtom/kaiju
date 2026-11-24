@@ -10,9 +10,9 @@ describe("loadTelemetryConfig", () => {
   it("parses endpoint, headers and the capture switch", () => {
     const c = loadTelemetryConfig(
       {
-        KOBE_OTEL_ENDPOINT: "http://collector:4318/",
-        KOBE_OTEL_HEADERS: "authorization=Bearer abc, x-team=1",
-        KOBE_OTEL_CAPTURE_CONTENT: "true",
+        KAIJU_OTEL_ENDPOINT: "http://collector:4318/",
+        KAIJU_OTEL_HEADERS: "authorization=Bearer abc, x-team=1",
+        KAIJU_OTEL_CAPTURE_CONTENT: "true",
       },
       "mcp-proxy",
     );
@@ -23,20 +23,20 @@ describe("loadTelemetryConfig", () => {
   });
 
   it("fails fast on a malformed setting without echoing values", () => {
-    expect(() => loadTelemetryConfig({ KOBE_OTEL_ENDPOINT: "nope" }, "server")).toThrow(
-      /KOBE_OTEL_ENDPOINT/,
-    );
-    expect(() => loadTelemetryConfig({ KOBE_OTEL_CAPTURE_CONTENT: "sometimes" }, "server")).toThrow(
-      /KOBE_OTEL_CAPTURE_CONTENT/,
+    expect(() => loadTelemetryConfig({ KAIJU_OTEL_ENDPOINT: "nope" }, "server")).toThrow(
+      /KAIJU_OTEL_ENDPOINT/,
     );
     expect(() =>
+      loadTelemetryConfig({ KAIJU_OTEL_CAPTURE_CONTENT: "sometimes" }, "server"),
+    ).toThrow(/KAIJU_OTEL_CAPTURE_CONTENT/);
+    expect(() =>
       loadTelemetryConfig(
-        { KOBE_OTEL_ENDPOINT: "http://c:4318", KOBE_OTEL_HEADERS: "secretvalue" },
+        { KAIJU_OTEL_ENDPOINT: "http://c:4318", KAIJU_OTEL_HEADERS: "secretvalue" },
         "server",
       ),
-    ).toThrow(/KOBE_OTEL_HEADERS/);
+    ).toThrow(/KAIJU_OTEL_HEADERS/);
     try {
-      loadTelemetryConfig({ KOBE_OTEL_HEADERS: "secretvalue" }, "server");
+      loadTelemetryConfig({ KAIJU_OTEL_HEADERS: "secretvalue" }, "server");
     } catch (e) {
       expect(String(e)).not.toContain("secretvalue");
     }

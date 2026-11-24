@@ -57,7 +57,7 @@ beforeAll(async () => {
       return (real as (...a: unknown[]) => void)(...args);
     }) as never);
   }
-  const loaded = must(loadEnvelope({ KOBE_ENVELOPE_KEY: "e".repeat(48) }));
+  const loaded = must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "e".repeat(48) }));
   h = await openHarness({
     envelope: loaded,
     connectors: {

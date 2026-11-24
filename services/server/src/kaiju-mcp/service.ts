@@ -77,7 +77,7 @@ export interface KaijuMcpService {
 }
 
 export type KaijuMcpServiceOptions = Omit<McpDecideDeps, "loadConnector" | "refuse" | "guard"> & {
-  /** The deployment's public origin (`KOBE_PUBLIC_URL`): the docs tools' links (KOBE-620). */
+  /** The deployment's public origin (`KAIJU_PUBLIC_URL`): the docs tools' links (KOBE-620). */
   readonly publicUrl: string;
 };
 

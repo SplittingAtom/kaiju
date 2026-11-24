@@ -62,11 +62,11 @@
     bifrost_direct() { # model
       $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
         const db = await import('/app/node_modules/@kaiju/db/dist/index.js');
-        const d = db.createDb(process.env.KOBE_DATABASE_URL);
+        const d = db.createDb(process.env.KAIJU_DATABASE_URL);
         try {
           const rows = await db.withTeam(d.db, '$E2E_TEAM_ID', (tx) => tx.select().from(db.modelGatewayKeys)
             .where(db.eq(db.modelGatewayKeys.userId, '$MODEL_USER_ID')));
-          const box = new db.SecretBox([process.env.KOBE_MODELS_VIRTUAL_KEY_SECRET], db.VIRTUAL_KEY_PURPOSE);
+          const box = new db.SecretBox([process.env.KAIJU_MODELS_VIRTUAL_KEY_SECRET], db.VIRTUAL_KEY_PURPOSE);
           const vk = box.open(rows[0].vkValueEnc, db.virtualKeyContext('$E2E_TEAM_ID', '$MODEL_USER_ID'));
           const r = await fetch('http://kobe-bifrost:8080/v1/chat/completions', { method: 'POST',
             headers: { 'content-type': 'application/json', 'x-bf-vk': vk }, signal: AbortSignal.timeout(15000),

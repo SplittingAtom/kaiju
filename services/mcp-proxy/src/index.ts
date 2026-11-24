@@ -1,3 +1,4 @@
+import { adoptLegacyEnv } from "@kaiju/protocol/legacy-env";
 import { serve } from "@hono/node-server";
 import { initTelemetry, loadTelemetryConfig } from "@kaiju/telemetry";
 import { createApp, createInternalApp } from "./app.js";
@@ -12,6 +13,8 @@ import { createUpstreamClient } from "./upstream.js";
 /** Open streams get this long to finish before being cut; stays under k8s' 30 s grace period. */
 const DRAIN_TIMEOUT_MS = 10_000;
 
+// KOBE-748: old KOBE_* names move to KAIJU_* before anything reads process.env (one release).
+adoptLegacyEnv(process.env);
 const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "mcp-proxy"));
 const upstream = createUpstreamClient({
@@ -65,7 +68,7 @@ const internalApp = createInternalApp(
 );
 if (config.routesKeyShared) {
   logger.warn(
-    "KOBE_MCP_ROUTES_KEY is not set: the internal key also authenticates the server's calls (add a routes-key to the internal key Secret)",
+    "KAIJU_MCP_ROUTES_KEY is not set: the internal key also authenticates the server's calls (add a routes-key to the internal key Secret)",
   );
 }
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {

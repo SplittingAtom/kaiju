@@ -22,7 +22,7 @@ import type { ModelTokenSource } from "../models/types.js";
  * Long-running processes keep the token they started with and need a new shell after ~15 min.
  */
 export interface EgressWiring {
-  /** `KOBE_EGRESS_PROXY_URL`: `http://host:port`, no credentials. */
+  /** `KAIJU_EGRESS_PROXY_URL`: `http://host:port`, no credentials. */
   readonly proxyUrl: string;
   /** Hosts tools reach directly (the pod's `NO_PROXY`). */
   readonly noProxy: string;
@@ -32,7 +32,7 @@ export interface EgressWiring {
 }
 
 export const EGRESS_TOKEN_FILE_NAME = "egress-token";
-export const EGRESS_TOKEN_FILE_ENV = "KOBE_EGRESS_TOKEN_FILE";
+export const EGRESS_TOKEN_FILE_ENV = "KAIJU_EGRESS_TOKEN_FILE";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** JWT characters only: the script refuses anything else, so the file can't inject shell. */
@@ -52,9 +52,9 @@ export function egressEnv(
   return {
     BASH_ENV: wiring.envScript,
     [EGRESS_TOKEN_FILE_ENV]: tokenFile,
-    KOBE_EGRESS_PROXY: wiring.proxyUrl,
+    KAIJU_EGRESS_PROXY: wiring.proxyUrl,
     // Only a UUID: it becomes the proxy URL's user part in the script.
-    ...(UUID.test(threadId) ? { KOBE_THREAD_ID: threadId.toLowerCase() } : {}),
+    ...(UUID.test(threadId) ? { KAIJU_THREAD_ID: threadId.toLowerCase() } : {}),
     NO_PROXY: wiring.noProxy,
     no_proxy: wiring.noProxy,
   };

@@ -12,8 +12,8 @@ import {
 /**
  * KOBE-613 (TFM-4, spec docs/specs/thread-file-map.md): the Threads panel's thread–file lines.
  *
- * Owner (KOBE_USER): a thread whose agent reads one file of a new `kobe-613-*` folder and writes
- * another (two short turns, the `read` and `write` tools; with KOBE_FAKE_MODEL=1 the fake's
+ * Owner (KAIJU_USER): a thread whose agent reads one file of a new `kobe-613-*` folder and writes
+ * another (two short turns, the `read` and `write` tools; with KAIJU_FAKE_MODEL=1 the fake's
  * `tool:` lines). At 1,280 px the panel has three rails: hovering the thread row draws a solid line
  * to the written file and a dashed one to the read file (TFM1); its pin keeps them after the
  * pointer leaves (TFM5); hovering the written file in the workspace rail draws a line to the
@@ -21,7 +21,7 @@ import {
  * "Files (N)…" (TFM4). KOBE-614: the pin sits on the thread row, "Files (N)…" moved from under the
  * title into the row's ⋯ menu, and the workspace rail resizes from its divider (keyboard here).
  *
- * Shared (KOBE_USER2 / KOBE_PW2, skipped without them): the owner's thread in a new project reads
+ * Shared (KAIJU_USER2 / KAIJU_PW2, skipped without them): the owner's thread in a new project reads
  * the project's file and writes one in the owner's own workspace, and is shared with the team.
  * member2 sees the project file by name and the owner's file only as a count (TFM7).
  *
@@ -30,8 +30,8 @@ import {
  * panel reads a row's links once. Clean-up (finally) deletes the folders, unshares, archives and
  * deletes the project; the `chat` fixture trashes the threads.
  */
-const SECOND_USER = process.env["KOBE_USER2"];
-const SECOND_PW = process.env["KOBE_PW2"];
+const SECOND_USER = process.env["KAIJU_USER2"];
+const SECOND_PW = process.env["KAIJU_PW2"];
 const NARROW = { width: 900, height: 800 };
 
 interface LinkedFile {
@@ -241,7 +241,7 @@ test("a shared thread shows the reader project files by name, the owner's own fi
   page,
   browser,
 }) => {
-  test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!SECOND_USER || !SECOND_PW, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const stem = `kobe-613-${uniq()}`;
   const ownPath = `${stem}/own.txt`;
   const projectFile = "notes.md";

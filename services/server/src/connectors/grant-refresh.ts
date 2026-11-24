@@ -66,7 +66,7 @@ export interface RefreshSupport {
 
 /**
  * The token request's deadline for a refresh (KOBE-778, P2-29): well under the MCP proxy's
- * deadline for the whole grant call (`KOBE_MCP_GRANT_TIMEOUT_MS`, 25 s), which must also cover
+ * deadline for the whole grant call (`KAIJU_MCP_GRANT_TIMEOUT_MS`, 25 s), which must also cover
  * waiting for another replica's lease (this plus 5 s) and the refresh after it.
  */
 export const REFRESH_TIMEOUT_MS = 5_000;

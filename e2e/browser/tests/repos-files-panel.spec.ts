@@ -5,7 +5,7 @@ import { pageApi } from "./support/gate5.js";
 
 /**
  * KOBE-768 (spec docs/specs/workspace-git.md G16, G17, G19, G20): Repos in the Files panel and the
- * Convert to repo dialog, in a real browser against a deployment. `KOBE_USER` must be a Workspace
+ * Convert to repo dialog, in a real browser against a deployment. `KAIJU_USER` must be a Workspace
  * admin of the active team.
  *
  * The first test needs no git host: it answers the project list (the deployment's projects plus a
@@ -16,7 +16,7 @@ import { pageApi } from "./support/gate5.js";
  *
  * The second test needs a git connection at Read and write in the active Workspace and goes
  * through the dialog on a real project up to, not including, the start. Only with
- * `KOBE_GIT_E2E_CONVERT=1` (opt-in, off by default, review H1) does it also convert: that creates
+ * `KAIJU_GIT_E2E_CONVERT=1` (opt-in, off by default, review H1) does it also convert: that creates
  * a private repository named `<prefix>kaiju-e2e-<unique>` in the organization, which Kaiju never
  * deletes (remove it on the host afterwards). Spends no model tokens:
  * `npx playwright test repos-files-panel`.
@@ -218,11 +218,11 @@ interface Connection {
   readonly access_level: string;
 }
 
-test("Convert to repo on a real project (needs a git connection at Read and write; converts only with KOBE_GIT_E2E_CONVERT=1)", async ({
+test("Convert to repo on a real project (needs a git connection at Read and write; converts only with KAIJU_GIT_E2E_CONVERT=1)", async ({
   chat,
   page,
 }) => {
-  const convert = process.env["KOBE_GIT_E2E_CONVERT"] === "1";
+  const convert = process.env["KAIJU_GIT_E2E_CONVERT"] === "1";
   await chat.open();
   const list = await pageApi<{ connections?: Connection[]; site?: { enabled: boolean } }>(
     page,

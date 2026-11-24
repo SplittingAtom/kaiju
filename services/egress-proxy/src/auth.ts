@@ -49,7 +49,7 @@ export type TokenVerifier = (token: string) => SessionTokenClaims;
 export type SiteTokenVerifier = (token: string) => SiteEgressClaims;
 
 /**
- * Verifier bound to the proxy's own public key(s) (KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY): EdDSA,
+ * Verifier bound to the proxy's own public key(s) (KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY): EdDSA,
  * exact header. The proxy holds no private key, so it can never mint a token (KOBE-513).
  */
 export function egressTokenVerifier(keys: SessionVerifyKeys): TokenVerifier {

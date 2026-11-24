@@ -17,11 +17,11 @@ import { reconcile } from "./reconcile.js";
  * on the same `config.db` and runs its store migrations (v2.3.0 moves virtual-key rate limits onto
  * model-config tiers). The sync must find nothing to change, the virtual keys must keep their ids
  * and values, and the rate limit must still read back and still be enforced. Opt-in:
- * KOBE_TEST_BIFROST_BIN (new) and KOBE_TEST_BIFROST_BIN_PREVIOUS (old) point at bifrost-http
+ * KAIJU_TEST_BIFROST_BIN (new) and KAIJU_TEST_BIFROST_BIN_PREVIOUS (old) point at bifrost-http
  * binaries (the image's /app/main is static).
  */
-const BIN = process.env.KOBE_TEST_BIFROST_BIN;
-const PREVIOUS = process.env.KOBE_TEST_BIFROST_BIN_PREVIOUS;
+const BIN = process.env.KAIJU_TEST_BIFROST_BIN;
+const PREVIOUS = process.env.KAIJU_TEST_BIFROST_BIN_PREVIOUS;
 const PASSWORD = "integration-admin-password-0001";
 const logger = pino({ level: "silent" });
 

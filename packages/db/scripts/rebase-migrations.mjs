@@ -12,7 +12,7 @@
 //
 // Usage (from packages/db, clean working tree):
 //   pnpm db:rebase [base]        # steps 1-4; stops after 3 if the merge has conflicts
-//   pnpm db:rebase --base <ref>  # the same (also --base=<ref>, or KOBE_DB_REBASE_BASE=<ref>)
+//   pnpm db:rebase --base <ref>  # the same (also --base=<ref>, or KAIJU_DB_REBASE_BASE=<ref>)
 //   pnpm db:rebase --apply       # step 4 only, after resolving conflicts and committing the merge
 //
 // The base defaults to origin/main. Any other ref stacks the branch on an unmerged branch (for

@@ -4,15 +4,15 @@ import { panelOf } from "./support/panel.js";
 import { pinTeam } from "./support/team.js";
 
 /**
- * KOBE-476: the two-tab personal agent creator under My Agents. The signed-in owner (KOBE_USER, a
+ * KOBE-476: the two-tab personal agent creator under My Agents. The signed-in owner (KAIJU_USER, a
  * site Owner) creates an agent across both tabs (Identity, then Behaviour), picks an icon, chooses
  * a connector and moves one of its tools to Denied, saves, reloads and finds it all kept; the
- * Approval mode offers Dangerous. The second member (KOBE_USER2, not an admin) is not offered
+ * Approval mode offers Dangerous. The second member (KAIJU_USER2, not an admin) is not offered
  * Dangerous. Spends no model tokens; the agent is deleted at the end. Needs a connector enabled in
  * the team (gate1: catalyst_2 in Team1). Run on gate1: `npx playwright test agent-creator`.
  */
-const SECOND_USER = process.env["KOBE_USER2"];
-const SECOND_PW = process.env["KOBE_PW2"];
+const SECOND_USER = process.env["KAIJU_USER2"];
+const SECOND_PW = process.env["KAIJU_PW2"];
 const TEAM_KEY = "kobe.lastTeamId";
 
 const tab = (page: Page, name: "Identity" | "Behaviour") =>
@@ -115,7 +115,7 @@ test("create an agent across both tabs, deny a tool, save and reload", async ({ 
 });
 
 test("a member who is not an admin is not offered Dangerous", async ({ browser }) => {
-  test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!SECOND_USER || !SECOND_PW, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const page = await signInSecond(browser);
   try {
     await openCreator(page);

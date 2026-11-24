@@ -35,7 +35,7 @@ check "python data stack imports" '^ok$' run python3 -c \
 check "duckdb queries" '^42$' run python3 -c 'import duckdb; print(duckdb.sql("select 42").fetchone()[0])'
 check "git and CLIs present" '^ok$' run sh -c 'for b in git curl jq rg unzip zip file; do command -v $b >/dev/null || { echo "missing $b"; exit 1; }; done; echo ok'
 # The agent must start and refuse to run without its server URL (exits non-zero by design).
-check "kobe-sandbox-agent installed" 'KOBE_SERVER_URL must be a ws' run sh -c 'node /opt/kobe/sandbox-agent/dist/index.js 2>&1; true'
+check "kobe-sandbox-agent installed" 'KAIJU_SERVER_URL must be a ws' run sh -c 'node /opt/kobe/sandbox-agent/dist/index.js 2>&1; true'
 check "agent ships only dist, deps and manifest" '^ok$' run sh -c \
   'cd /opt/kobe/sandbox-agent && [ "$(ls -A | sort | tr "\n" " ")" = "dist node_modules package.json " ] && echo ok || ls -A'
 check "entrypoint is tini, then the hardened launcher" '^\[/usr/bin/tini -- /opt/kobe/entrypoint.sh\]$' host \
@@ -46,7 +46,7 @@ check "launcher: no core dumps, NODE_OPTIONS dropped, --disable-sigusr1" '^ok$' 
 check "node honours --disable-sigusr1" '^undefined$' run node --disable-sigusr1 -e \
   'process.kill(process.pid,"SIGUSR1");setTimeout(()=>console.log(String(require("inspector").url())),300)'
 # Through the real entrypoint: tini → launcher → agent, which fails fast without configuration.
-check "agent starts through the entrypoint" 'KOBE_SERVER_URL must be a ws' host sh -c \
+check "agent starts through the entrypoint" 'KAIJU_SERVER_URL must be a ws' host sh -c \
   "docker run ${HARDENED[*]} -e NODE_OPTIONS=--inspect=0.0.0.0:9229 \"$IMAGE\" 2>&1; true"
 check "no baked-in Pi config dir (each Pi gets a private one under /tmp, KOBE-41)" '^absent$' run sh -c \
   '[ -e /opt/kobe/pi-agent ] && echo present || echo absent'
@@ -62,17 +62,17 @@ check "kobe-tools extension: root-owned, read-only, .js only" '^0:0 555 0:0 555 
   'd=/opt/kobe/pi-extensions/kobe-tools; echo "$(stat -c "%u:%g %a" ${d%/*}) $(stat -c "%u:%g %a" $d) $(for f in $d/*; do case "$f" in *.js) [ "$(stat -c "%u:%g %a" "$f")" = "0:0 444" ] || echo "bad $f";; *) echo "extra $f";; esac; done; [ -f $d/index.js ] && echo ok)"'
 check "agent accepts the baked kobe-tools file" '^ok$' run node --input-type=module -e \
   'import { checkExtensionFile as c } from "/opt/kobe/sandbox-agent/dist/policy/extension-file.js"; await c("/opt/kobe/pi-extensions/kobe-tools/index.js", "kobe-tools"); console.log("ok")'
-check "the image turns kobe-tools on (KOBE_TOOLS_EXTENSION names the baked file)" '^/opt/kobe/pi-extensions/kobe-tools/index.js$' run sh -c 'echo $KOBE_TOOLS_EXTENSION'
+check "the image turns kobe-tools on (KAIJU_TOOLS_EXTENSION names the baked file)" '^/opt/kobe/pi-extensions/kobe-tools/index.js$' run sh -c 'echo $KAIJU_TOOLS_EXTENSION'
 check "kobe-exec extension (KOBE-167): root-owned, read-only, .js only" '^0:0 555 0:0 555 ok$' run sh -c \
   'd=/opt/kobe/pi-extensions/kobe-exec; echo "$(stat -c "%u:%g %a" ${d%/*}) $(stat -c "%u:%g %a" $d) $(for f in $d/*; do case "$f" in *.js) [ "$(stat -c "%u:%g %a" "$f")" = "0:0 444" ] || echo "bad $f";; *) echo "extra $f";; esac; done; [ -f $d/index.js ] && echo ok)"'
 check "agent accepts the baked kobe-exec file" '^ok$' run node --input-type=module -e \
   'import { checkExtensionFile as c } from "/opt/kobe/sandbox-agent/dist/policy/extension-file.js"; await c("/opt/kobe/pi-extensions/kobe-exec/index.js", "kobe-exec"); console.log("ok")'
-check "the image turns kobe-exec on (KOBE_EXEC_EXTENSION names the baked file)" '^/opt/kobe/pi-extensions/kobe-exec/index.js$' run sh -c 'echo $KOBE_EXEC_EXTENSION'
+check "the image turns kobe-exec on (KAIJU_EXEC_EXTENSION names the baked file)" '^/opt/kobe/pi-extensions/kobe-exec/index.js$' run sh -c 'echo $KAIJU_EXEC_EXTENSION'
 # kobe-tools (KOBE-128) as the agent starts it: fd 3 the policy socket, fd 4 the kobe-tools socket.
 # A scripted model (pi-ai faux provider, in /tmp) calls create_artifact; this script plays kobe-policy
 # (allows) and the agent's end of fd 4 (answers artifact.put), and the tool result must carry the
-# artifact id and version. Without fd 4 (KOBE_TOOLS_FD unset) the tool must not exist.
-KOBE_TOOLS_PROBE='
+# artifact id and version. Without fd 4 (KAIJU_TOOLS_FD unset) the tool must not exist.
+KAIJU_TOOLS_PROBE='
 const fs = require("node:fs");
 const { spawn } = require("node:child_process");
 const mode = process.argv[1];
@@ -92,8 +92,8 @@ export default function (pi) {
   pi.on("input", select);
 }`);
 const env = { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
-  PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KOBE_POLICY_FD: "3" };
-if (withFd4) env.KOBE_TOOLS_FD = "4";
+  PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" };
+if (withFd4) env.KAIJU_TOOLS_FD = "4";
 const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
   "--extension", "/tmp/faux.mjs", "--extension", "/opt/kobe/pi-extensions/kobe-tools/index.js",
   "--extension", "/opt/kobe/pi-extensions/kobe-policy/index.js"], { cwd: "/workspace", env,
@@ -122,10 +122,10 @@ lines(p.stdout, (m) => {
   done((m.isError ? "error " : "ok ") + text, m.isError === !withFd4 ? 0 : 1);
 });'
 check "kobe-tools: create_artifact goes through kobe-policy, then fd 4; the result carries artifact_id and version" \
-  '^ok \{"artifact_id":"7d8e9f0a-1b2c-4d3e-8f4a-5b6c7d8e9f0a","version":1\}$' run_ws node -e "$KOBE_TOOLS_PROBE" fd4
+  '^ok \{"artifact_id":"7d8e9f0a-1b2c-4d3e-8f4a-5b6c7d8e9f0a","version":1\}$' run_ws node -e "$KAIJU_TOOLS_PROBE" fd4
 # Fail closed: a Pi without the channel (an agent that does not offer artifacts) has no such tool.
-check "kobe-tools: without fd 4 no artifact tool is registered" '^error Tool create_artifact not found$' run_ws node -e "$KOBE_TOOLS_PROBE" nofd4
-check "tools Pi runs do not inherit the kobe-tools socket (fd 4) or the policy socket" '^ok no pi sockets$' run_ws node -e "$KOBE_TOOLS_PROBE" leak
+check "kobe-tools: without fd 4 no artifact tool is registered" '^error Tool create_artifact not found$' run_ws node -e "$KAIJU_TOOLS_PROBE" nofd4
+check "tools Pi runs do not inherit the kobe-tools socket (fd 4) or the policy socket" '^ok no pi sockets$' run_ws node -e "$KAIJU_TOOLS_PROBE" leak
 # Pi as the agent starts it (lockdown flags, read-only config dir), fd 3 a socket pair: kobe-policy
 # must load, read channel.hello and answer channel.ready with the nonce.
 check "kobe-policy loads into Pi and reports ready over fd 3" '"type":"channel.ready","nonce":"image-test","extension":"kobe-policy"' run_ws node -e '
@@ -133,7 +133,7 @@ const { spawn } = require("node:child_process");
 const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
   "--no-skills", "--extension", "/opt/kobe/pi-extensions/kobe-policy/index.js"], { cwd: "/workspace",
   env: { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
-    PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KOBE_POLICY_FD: "3" },
+    PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" },
   stdio: ["pipe", "ignore", "inherit", "pipe"] });
 p.stdio[3].write(JSON.stringify({ type: "channel.hello", nonce: "image-test" }) + "\n");
 p.stdio[3].on("data", (d) => { process.stdout.write(d); p.kill("SIGKILL"); process.exit(0); });
@@ -161,7 +161,7 @@ export default function (pi) {
 const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
   "--extension", "/tmp/faux.mjs", "--extension", "/opt/kobe/pi-extensions/kobe-policy/index.js"], { cwd: "/workspace",
   env: { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
-    PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KOBE_POLICY_FD: "3" },
+    PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" },
   stdio: ["pipe", "pipe", "inherit", "pipe"] });
 const done = (msg, code) => { console.log(msg); p.kill("SIGKILL"); process.exit(code); };
 setTimeout(() => done("timeout", 1), 60000);
@@ -203,8 +203,8 @@ srv.listen(0, "127.0.0.1", () => {
     run_id: "11111111-1111-4111-8111-111111111111" }), { mode: 0o600 });
   const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
     "--extension", "/opt/kobe/pi-extensions/kobe-models/index.js", "--extension", "/opt/kobe/pi-extensions/kobe-policy/index.js"], { cwd: "/workspace",
-    env: { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: dir + "/agent", KOBE_MODEL_FILE: dir + "/model.json",
-      PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KOBE_POLICY_FD: "3" },
+    env: { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: dir + "/agent", KAIJU_MODEL_FILE: dir + "/model.json",
+      PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" },
     stdio: ["pipe", "pipe", "inherit", "pipe"] });
   const done = (msg, code) => { console.log(msg); p.kill("SIGKILL"); process.exit(code); };
   setTimeout(() => done("timeout", 1), 60000);
@@ -225,15 +225,15 @@ check "agent accepts the baked egress script" '^ok$' run node --input-type=modul
   'import { checkExtensionFile as c } from "/opt/kobe/sandbox-agent/dist/policy/extension-file.js"; await c("/opt/kobe/egress-env.sh", "egress-env"); console.log("ok")'
 check "a tool shell gets HTTPS_PROXY from the token file through BASH_ENV (KOBE-39)" \
   '^http://9a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d:image.token-1@egress-proxy.kobe.internal:80$' run sh -c \
-  'printf "image.token-1\n" > /tmp/egress-token && env -i PATH=/usr/bin:/bin BASH_ENV=/opt/kobe/egress-env.sh KOBE_EGRESS_TOKEN_FILE=/tmp/egress-token KOBE_EGRESS_PROXY=http://egress-proxy.kobe.internal:80 KOBE_THREAD_ID=9a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d bash -c '"'"'printf "%s\n" "$HTTPS_PROXY"'"'"' < /dev/null'
+  'printf "image.token-1\n" > /tmp/egress-token && env -i PATH=/usr/bin:/bin BASH_ENV=/opt/kobe/egress-env.sh KAIJU_EGRESS_TOKEN_FILE=/tmp/egress-token KAIJU_EGRESS_PROXY=http://egress-proxy.kobe.internal:80 KAIJU_THREAD_ID=9a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d bash -c '"'"'printf "%s\n" "$HTTPS_PROXY"'"'"' < /dev/null'
 # Notebooks (KOBE-464, docs/specs/notebooks.md NB10): the per-thread kernel and its bridge.
 check "notebook stack imports; no debugger in the image (debugpy absent)" '^ok$' run python3 -c \
   'import ipykernel, jupyter_client, nbformat, zmq, importlib.util as u; print("ok" if u.find_spec("debugpy") is None else "debugpy present")'
 check "kernel bridge: root-owned, read-only (KOBE-464)" '^0:0 444 0:0 555$' run sh -c \
   'echo $(stat -c "%u:%g %a" /opt/kobe/kernel/kobe-kernel-bridge.py /opt/kobe/kernel)'
-check "the image turns kernels on (KOBE_KERNEL_BRIDGE names the baked bridge)" '^/opt/kobe/kernel/kobe-kernel-bridge.py$' run sh -c 'echo $KOBE_KERNEL_BRIDGE'
+check "the image turns kernels on (KAIJU_KERNEL_BRIDGE names the baked bridge)" '^/opt/kobe/kernel/kobe-kernel-bridge.py$' run sh -c 'echo $KAIJU_KERNEL_BRIDGE'
 check "agent accepts the baked kernel bridge" '^ok$' run node --input-type=module -e \
-  'import { checkExtensionFile as c } from "/opt/kobe/sandbox-agent/dist/policy/extension-file.js"; await c(process.env.KOBE_KERNEL_BRIDGE, "kernel-bridge"); console.log("ok")'
+  'import { checkExtensionFile as c } from "/opt/kobe/sandbox-agent/dist/policy/extension-file.js"; await c(process.env.KAIJU_KERNEL_BRIDGE, "kernel-bridge"); console.log("ok")'
 # Drives the bridge like the agent does (stdio JSON lines): 1+1, state kept, a matplotlib PNG, and
 # no TCP listener in the container while the kernel runs. Args: the command that starts the bridge.
 KERNEL_PROBE=$(cat <<'PY'
@@ -409,8 +409,8 @@ run_ws_line() { run_ws "$@" | tr '\n' ' ' | sed 's/ $//'; }
 KERNEL_EGRESS_PROBE=$(cat <<'PY'
 import json, os, subprocess, sys
 open("/tmp/egress-token", "w").write("image.token-1\n")
-env = dict(os.environ, KOBE_EGRESS_TOKEN_FILE="/tmp/egress-token", KOBE_EGRESS_PROXY="http://egress-proxy.kobe.internal:80",
-           KOBE_THREAD_ID="9a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
+env = dict(os.environ, KAIJU_EGRESS_TOKEN_FILE="/tmp/egress-token", KAIJU_EGRESS_PROXY="http://egress-proxy.kobe.internal:80",
+           KAIJU_THREAD_ID="9a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
 p = subprocess.Popen(sys.argv[1:], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd="/workspace", env=env)
 read = lambda: json.loads(p.stdout.readline())
 assert read()["ev"] == "ready"
@@ -554,12 +554,12 @@ check "git trusts repositories owned by another uid under /workspace only (syste
    stat -c '%U:%G' /etc/gitconfig"
 check "a kernel runs as a partner uid through kobe-runas (KOBE-464)" '^ok 2 3 listeners=0 png=1$' run_pair_ws \
   python3 -c "$KERNEL_PROBE" $R 3000 /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
-# Fail closed: an agent asked for Pi identities (KOBE_PI_RUNAS) that cannot switch uids (here: no
+# Fail closed: an agent asked for Pi identities (KAIJU_PI_RUNAS) that cannot switch uids (here: no
 # capabilities, no_new_privs) refuses to start rather than run Pi as itself.
 check "the agent refuses to start when it cannot run Pi under its own uid" 'cannot start processes as a Pi identity' host sh -c \
   "docker run ${HARDENED[*]} --group-add 1001 --group-add 2000 --group-add 2001 --group-add 2002 --group-add 2003 \
      --group-add 2004 --group-add 2005 --group-add 2006 --group-add 2007 \
-     -e KOBE_SERVER_URL=ws://127.0.0.1:9 -e KOBE_SANDBOX_ID=11111111-1111-4111-8111-111111111111 \
-     -e KOBE_PI_RUNAS=$R \"$IMAGE\" 2>&1; true"
+     -e KAIJU_SERVER_URL=ws://127.0.0.1:9 -e KAIJU_SANDBOX_ID=11111111-1111-4111-8111-111111111111 \
+     -e KAIJU_PI_RUNAS=$R \"$IMAGE\" 2>&1; true"
 
 exit "$failed"

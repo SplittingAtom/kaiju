@@ -153,10 +153,10 @@ function BackUpSection() {
           list of S3 objects; sandbox volumes are left out (they are rebuilt).
           <Commands label="Take a backup">
             {[
-              "export KOBE_BACKUP_KEY_FILE=<path to kaiju-backup.key>",
-              "export KOBE_BACKUP_DATABASE_URL=<postgres URL of the backup role>",
-              "export KOBE_S3_ENDPOINT=<url> KOBE_S3_BUCKET=<bucket> KOBE_S3_REGION=<region>",
-              "export KOBE_S3_ACCESS_KEY_ID=<id> KOBE_S3_SECRET_ACCESS_KEY=<secret>",
+              "export KAIJU_BACKUP_KEY_FILE=<path to kaiju-backup.key>",
+              "export KAIJU_BACKUP_DATABASE_URL=<postgres URL of the backup role>",
+              "export KAIJU_S3_ENDPOINT=<url> KAIJU_S3_BUCKET=<bucket> KAIJU_S3_REGION=<region>",
+              "export KAIJU_S3_ACCESS_KEY_ID=<id> KAIJU_S3_SECRET_ACCESS_KEY=<secret>",
               "kaiju backup --out <backup dir>/kaiju-$(date -u +%Y%m%dT%H%M%SZ)",
             ].join("\n")}
           </Commands>
@@ -198,11 +198,11 @@ function RestoreSection() {
           you recorded.
           <Commands label="Restore a backup">
             {[
-              "export KOBE_BACKUP_KEY_FILE=<path to kaiju-backup.key>",
-              "export KOBE_DB_MIGRATE_URL=<postgres URL of the owner role>",
-              "export KOBE_S3_ENDPOINT=<url> KOBE_S3_BUCKET=<bucket> KOBE_S3_REGION=<region>",
-              "export KOBE_S3_ACCESS_KEY_ID=<id> KOBE_S3_SECRET_ACCESS_KEY=<secret>",
-              "export KOBE_TMPDIR=/dev/shm",
+              "export KAIJU_BACKUP_KEY_FILE=<path to kaiju-backup.key>",
+              "export KAIJU_DB_MIGRATE_URL=<postgres URL of the owner role>",
+              "export KAIJU_S3_ENDPOINT=<url> KAIJU_S3_BUCKET=<bucket> KAIJU_S3_REGION=<region>",
+              "export KAIJU_S3_ACCESS_KEY_ID=<id> KAIJU_S3_SECRET_ACCESS_KEY=<secret>",
+              "export KAIJU_TMPDIR=/dev/shm",
               "kaiju restore --from <backup dir>",
             ].join("\n")}
           </Commands>

@@ -127,7 +127,7 @@ export const approved = async (s: KaijuSandbox, tool: string, input: Record<stri
 export function useGitToolsWorld(): void {
   beforeAll(async () => {
     await Promise.all([forgejo.start(), gitea.start(), github.start()]);
-    envelope = must(loadEnvelope({ KOBE_ENVELOPE_KEY: "t".repeat(48) }));
+    envelope = must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "t".repeat(48) }));
     await h.setup({
       envelope,
       // https in the table; the hook sends the checked https URL to the fake's plain-HTTP port.

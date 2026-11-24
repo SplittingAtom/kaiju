@@ -11,7 +11,7 @@ import {
 
 /**
  * The run token key (KOBE-118, Ed25519 since KOBE-521): the `kobe.model-gateway` session-token
- * private key (`KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY`), which only the server holds; the gateway
+ * private key (`KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY`), which only the server holds; the gateway
  * verifies with the public half. Run tokens carry their own signed `typ` (`krt2`), so they never
  * pass as session tokens. Undefined (no run tokens) when the key is unset or unreadable; the
  * sandbox config load then fails with the reason.
@@ -30,10 +30,10 @@ export function runTokenKeyFromEnv(
 }
 
 /** The trace-span secret (KOBE-521): shared with the model gateway, authorises nothing. */
-export const TRACE_SPAN_KEY_ENV = "KOBE_TRACE_SPAN_KEY";
+export const TRACE_SPAN_KEY_ENV = "KAIJU_TRACE_SPAN_KEY";
 
 /**
- * `k_trace` (KOBE-274): remaps relayed sandbox span ids. Derived from `KOBE_TRACE_SPAN_KEY`, a
+ * `k_trace` (KOBE-274): remaps relayed sandbox span ids. Derived from `KAIJU_TRACE_SPAN_KEY`, a
  * pseudonymisation secret the model gateway holds too (it remaps the same ids); no credential is
  * derived from it. Undefined (no span relay) when unset or shorter than 32 bytes; a set but
  * too-short secret is reported through `warn` (once, at startup), never echoing the value.

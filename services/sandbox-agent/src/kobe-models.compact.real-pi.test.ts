@@ -66,7 +66,7 @@ describe.skipIf(!PI_AVAILABLE)("thread.compact in real Pi (KOBE-213)", () => {
     };
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       models,
     });
     const server = h.server;

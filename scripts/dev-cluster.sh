@@ -4,18 +4,18 @@
 # Works with a local or remote Docker engine (DOCKER_HOST=ssh://...): binaries are copied into the
 # node containers rather than bind-mounted.
 #   NO_GVISOR=1 creates the cluster without gVisor (to prove the chart refuses to install).
-#   KOBE_DOCKERHUB_MIRROR=http://host:port makes the nodes pull docker.io images through that
+#   KAIJU_DOCKERHUB_MIRROR=http://host:port makes the nodes pull docker.io images through that
 #   pull-through cache (self-hosted CI: ci/runners/dockerhub-mirror.yaml); an https:// URL names a
 #   public mirror (GitHub-hosted CI: https://mirror.gcr.io); unset, they pull from Docker Hub.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-CLUSTER="${KOBE_CLUSTER:-kobe}"
+CLUSTER="${KAIJU_CLUSTER:-kobe}"
 K3S_IMAGE="${K3S_IMAGE:-rancher/k3s:v1.34.6-k3s1}"
-# Single node by default (k3d nodes are inotify-hungry); set KOBE_AGENTS=1 to add an agent.
-AGENTS="${KOBE_AGENTS:-0}"
+# Single node by default (k3d nodes are inotify-hungry); set KAIJU_AGENTS=1 to add an agent.
+AGENTS="${KAIJU_AGENTS:-0}"
 # Local registry for Tilt (discovered via the local-registry-hosting ConfigMap k3d creates).
-REGISTRY_PORT="${KOBE_REGISTRY_PORT:-5005}"
+REGISTRY_PORT="${KAIJU_REGISTRY_PORT:-5005}"
 GVISOR_RELEASE="${GVISOR_RELEASE:-20260928.0}"
 K3D="${K3D:-k3d}"
 KUBECTL="${KUBECTL:-kubectl}"
@@ -50,14 +50,14 @@ fi
 # outer cluster is resolved here and handed to containerd as an address. containerd still falls
 # back to Docker Hub when the mirror fails, so a bad mirror slows pulls but breaks nothing.
 registry_args=()
-if [[ "${KOBE_DOCKERHUB_MIRROR:-}" == https://* ]]; then
+if [[ "${KAIJU_DOCKERHUB_MIRROR:-}" == https://* ]]; then
   # A public mirror: the nodes resolve it themselves (containerd still tries Docker Hub last).
   registries=$(mktemp)
-  printf 'mirrors:\n  docker.io:\n    endpoint:\n      - "%s"\n' "${KOBE_DOCKERHUB_MIRROR%/}" >"$registries"
+  printf 'mirrors:\n  docker.io:\n    endpoint:\n      - "%s"\n' "${KAIJU_DOCKERHUB_MIRROR%/}" >"$registries"
   registry_args=(--registry-config "$registries")
-  echo "==> docker.io pulls in the cluster try ${KOBE_DOCKERHUB_MIRROR} first"
-elif [[ -n "${KOBE_DOCKERHUB_MIRROR:-}" ]]; then
-  mirror="${KOBE_DOCKERHUB_MIRROR#*://}"
+  echo "==> docker.io pulls in the cluster try ${KAIJU_DOCKERHUB_MIRROR} first"
+elif [[ -n "${KAIJU_DOCKERHUB_MIRROR:-}" ]]; then
+  mirror="${KAIJU_DOCKERHUB_MIRROR#*://}"
   mirror="${mirror%%/*}"
   mirror_ip=$(getent hosts "${mirror%:*}" 2>/dev/null | awk '{ print $1; exit }' || true)
   if [[ -n "$mirror_ip" ]]; then
@@ -66,7 +66,7 @@ elif [[ -n "${KOBE_DOCKERHUB_MIRROR:-}" ]]; then
     registry_args=(--registry-config "$registries")
     echo "==> docker.io pulls in the cluster go through ${mirror} (${mirror_ip})"
   else
-    echo "warning: KOBE_DOCKERHUB_MIRROR host ${mirror%:*} does not resolve; pulling from Docker Hub" >&2
+    echo "warning: KAIJU_DOCKERHUB_MIRROR host ${mirror%:*} does not resolve; pulling from Docker Hub" >&2
   fi
 fi
 

@@ -11,27 +11,27 @@ describe("upload settings", () => {
   });
 
   it("reads overrides and fails fast naming the variable", () => {
-    expect(loadUploadSettings({ KOBE_UPLOAD_MAX_FILE_BYTES: "2048" }).maxFileBytes).toBe(2048);
-    expect(() => loadUploadSettings({ KOBE_UPLOAD_MAX_FILE_BYTES: "0" })).toThrow(
-      /KOBE_UPLOAD_MAX_FILE_BYTES/,
+    expect(loadUploadSettings({ KAIJU_UPLOAD_MAX_FILE_BYTES: "2048" }).maxFileBytes).toBe(2048);
+    expect(() => loadUploadSettings({ KAIJU_UPLOAD_MAX_FILE_BYTES: "0" })).toThrow(
+      /KAIJU_UPLOAD_MAX_FILE_BYTES/,
     );
-    expect(() => loadUploadSettings({ KOBE_UPLOAD_ORPHAN_HOURS: "x" })).toThrow(
-      /KOBE_UPLOAD_ORPHAN_HOURS/,
+    expect(() => loadUploadSettings({ KAIJU_UPLOAD_ORPHAN_HOURS: "x" })).toThrow(
+      /KAIJU_UPLOAD_ORPHAN_HOURS/,
     );
   });
 
   it("turns scanning on only when the chart gives a clamd host", () => {
     expect(loadUploadSettings({}).clamav).toBeUndefined();
-    expect(loadUploadSettings({ KOBE_CLAMAV_HOST: "kobe-clamav" }).clamav).toEqual({
+    expect(loadUploadSettings({ KAIJU_CLAMAV_HOST: "kobe-clamav" }).clamav).toEqual({
       host: "kobe-clamav",
       port: 3310,
       timeoutMs: 60_000,
     });
     expect(
-      loadUploadSettings({ KOBE_CLAMAV_HOST: "h", KOBE_CLAMAV_PORT: "4000" }).clamav?.port,
+      loadUploadSettings({ KAIJU_CLAMAV_HOST: "h", KAIJU_CLAMAV_PORT: "4000" }).clamav?.port,
     ).toBe(4000);
-    expect(() => loadUploadSettings({ KOBE_CLAMAV_HOST: "h", KOBE_CLAMAV_PORT: "0" })).toThrow(
-      /KOBE_CLAMAV_PORT/,
+    expect(() => loadUploadSettings({ KAIJU_CLAMAV_HOST: "h", KAIJU_CLAMAV_PORT: "0" })).toThrow(
+      /KAIJU_CLAMAV_PORT/,
     );
   });
 });

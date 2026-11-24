@@ -15,7 +15,7 @@ import { EXEC_CHANNEL_FD, PI_LOCKDOWN_ARGS } from "../pi/pi-launch.js";
 /**
  * A bare driver for the REAL pinned Pi 1.0.0 in RPC mode, started the way the agent starts it
  * (lockdown flags, a private agent dir, kobe-models then kobe-policy, the policy channel on fd 3,
- * the model file named by KOBE_MODEL_FILE) but without the agent in between: no tripwire, no
+ * the model file named by KAIJU_MODEL_FILE) but without the agent in between: no tripwire, no
  * model-file bookkeeping. Tests that ask what Pi itself does with a planted `agent/` directory
  * need exactly that (KOBE-165). Answers Pi's `kobe.run_token` dialog like the agent does.
  */
@@ -234,11 +234,11 @@ export class PiRpc {
           ? {}
           : { JITI_FS_CACHE: "false", NODE_DISABLE_COMPILE_CACHE: "1" }),
       PI_CODING_AGENT_DIR: path.join(dir, "agent"),
-      KOBE_MODEL_FILE: modelFile,
+      KAIJU_MODEL_FILE: modelFile,
       PI_OFFLINE: "1",
       PI_TELEMETRY: "0",
       PI_SKIP_VERSION_CHECK: "1",
-      KOBE_POLICY_FD: "3",
+      KAIJU_POLICY_FD: "3",
       ...(exec === undefined ? {} : { [EXEC_FD_ENV]: String(EXEC_CHANNEL_FD) }),
     };
     const args = [

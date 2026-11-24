@@ -1,22 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { randomBytes } from "node:crypto";
-import { keyFileWarning, parseCommand, readBackupKey, tlsWarning } from "./config.js";
+import { adoptEnv, keyFileWarning, parseCommand, readBackupKey, tlsWarning } from "./config.js";
 
 const S3 = {
-  KOBE_S3_ENDPOINT: "https://s3.example.com",
-  KOBE_S3_BUCKET: "kaiju",
-  KOBE_S3_ACCESS_KEY_ID: "AKIA",
-  KOBE_S3_SECRET_ACCESS_KEY: "very-secret-value",
+  KAIJU_S3_ENDPOINT: "https://s3.example.com",
+  KAIJU_S3_BUCKET: "kaiju",
+  KAIJU_S3_ACCESS_KEY_ID: "AKIA",
+  KAIJU_S3_SECRET_ACCESS_KEY: "very-secret-value",
 };
 const KEY = randomBytes(32);
-const KEY_ENV = { KOBE_BACKUP_KEY: KEY.toString("base64") };
+const KEY_ENV = { KAIJU_BACKUP_KEY: KEY.toString("base64") };
 const BACKUP_URL = "postgres://kobe_backup:pw@db/kobe";
 const OWNER_URL = "postgres://kobe_owner:pw@db/kobe";
 
 describe("parseCommand", () => {
   it("parses backup with object storage", () => {
     const cmd = parseCommand(["backup", "--out", "/b/1"], {
-      KOBE_BACKUP_DATABASE_URL: BACKUP_URL,
+      KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
       ...S3,
       ...KEY_ENV,
     });
@@ -31,19 +31,19 @@ describe("parseCommand", () => {
   it("requires object storage for backup unless --no-objects", () => {
     expect(() =>
       parseCommand(["backup", "--out", "/b/1"], {
-        KOBE_BACKUP_DATABASE_URL: BACKUP_URL,
+        KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
         ...KEY_ENV,
       }),
-    ).toThrow(/KOBE_S3_BUCKET.*--no-objects/);
+    ).toThrow(/KAIJU_S3_BUCKET.*--no-objects/);
     const cmd = parseCommand(["backup", "--out", "/b/1", "--no-objects"], {
-      KOBE_BACKUP_DATABASE_URL: BACKUP_URL,
+      KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
       ...KEY_ENV,
     });
     expect(cmd).toMatchObject({ command: "backup", s3: null });
   });
 
   it("parses --operator and --expect-audit-head, and rejects malformed ones", () => {
-    const env = { KOBE_DB_MIGRATE_URL: OWNER_URL, ...S3, ...KEY_ENV };
+    const env = { KAIJU_DB_MIGRATE_URL: OWNER_URL, ...S3, ...KEY_ENV };
     const hash = "c".repeat(64);
     const cmd = parseCommand(
       ["restore", "--from", "/b", "--operator", "ops.jane", "--expect-audit-head", `42:${hash}`],
@@ -60,7 +60,7 @@ describe("parseCommand", () => {
 
   it("parses restore with the owner URL", () => {
     const cmd = parseCommand(["restore", "--from", "/b/1", "--allow-object-mismatch"], {
-      KOBE_DB_MIGRATE_URL: OWNER_URL,
+      KAIJU_DB_MIGRATE_URL: OWNER_URL,
       ...S3,
       ...KEY_ENV,
     });
@@ -76,14 +76,14 @@ describe("parseCommand", () => {
 
   it("restore --no-objects skips object storage even when configured", () => {
     const cmd = parseCommand(["restore", "--from", "/b", "--no-objects"], {
-      KOBE_DB_MIGRATE_URL: OWNER_URL,
+      KAIJU_DB_MIGRATE_URL: OWNER_URL,
       ...S3,
       ...KEY_ENV,
     });
     expect(cmd).toMatchObject({ s3: null, skipObjects: true, tmpDir: undefined });
     const withTmp = parseCommand(["restore", "--from", "/b"], {
-      KOBE_DB_MIGRATE_URL: OWNER_URL,
-      KOBE_TMPDIR: "/dev/shm",
+      KAIJU_DB_MIGRATE_URL: OWNER_URL,
+      KAIJU_TMPDIR: "/dev/shm",
       ...KEY_ENV,
     });
     expect(withTmp).toMatchObject({ tmpDir: "/dev/shm" });
@@ -92,7 +92,7 @@ describe("parseCommand", () => {
   it("refuses a password in the query string", () => {
     expect(() =>
       parseCommand(["restore", "--from", "/b"], {
-        KOBE_DB_MIGRATE_URL: "postgres://u@db/kaiju?password=pw",
+        KAIJU_DB_MIGRATE_URL: "postgres://u@db/kaiju?password=pw",
         ...KEY_ENV,
       }),
     ).toThrow(/not in \?password=/);
@@ -101,11 +101,11 @@ describe("parseCommand", () => {
   it("explains missing settings without echoing secret values", () => {
     let message = "";
     try {
-      parseCommand(["restore", "--from", "/b"], { ...S3, KOBE_DB_MIGRATE_URL: "mysql://x" });
+      parseCommand(["restore", "--from", "/b"], { ...S3, KAIJU_DB_MIGRATE_URL: "mysql://x" });
     } catch (err) {
       message = (err as Error).message;
     }
-    expect(message).toMatch(/KOBE_DB_MIGRATE_URL/);
+    expect(message).toMatch(/KAIJU_DB_MIGRATE_URL/);
     expect(message).not.toContain("very-secret-value");
   });
 
@@ -113,16 +113,16 @@ describe("parseCommand", () => {
     expect(() =>
       parseCommand(["backup", "--out", "/b"], {
         ...S3,
-        KOBE_S3_ENDPOINT: "https://key:secret@s3.example.com",
-        KOBE_BACKUP_DATABASE_URL: BACKUP_URL,
+        KAIJU_S3_ENDPOINT: "https://key:secret@s3.example.com",
+        KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
         ...KEY_ENV,
       }),
-    ).toThrow(/KOBE_S3_ENDPOINT: must not contain credentials/);
+    ).toThrow(/KAIJU_S3_ENDPOINT: must not contain credentials/);
   });
 
   it("rejects unknown commands and missing paths with usage", () => {
     expect(() => parseCommand(["frobnicate"], {})).toThrow(/Usage/);
-    expect(() => parseCommand(["backup"], { KOBE_BACKUP_DATABASE_URL: BACKUP_URL })).toThrow(
+    expect(() => parseCommand(["backup"], { KAIJU_BACKUP_DATABASE_URL: BACKUP_URL })).toThrow(
       /--out/,
     );
     expect(() => parseCommand(["restore", "--from", "/b", "--bogus"], {})).toThrow(/bogus/);
@@ -136,22 +136,22 @@ describe("readBackupKey", () => {
 
   it("reads the key from a file or the environment", () => {
     expect(
-      readBackupKey({ KOBE_BACKUP_KEY_FILE: "/k" }, () => KEY.toString("hex")).equals(KEY),
+      readBackupKey({ KAIJU_BACKUP_KEY_FILE: "/k" }, () => KEY.toString("hex")).equals(KEY),
     ).toBe(true);
     expect(readBackupKey(KEY_ENV, never).equals(KEY)).toBe(true);
   });
 
   it("requires exactly one source, and never echoes the key", () => {
     expect(() => readBackupKey({}, never)).toThrow(/always encrypted and signed/);
-    expect(() => readBackupKey({ ...KEY_ENV, KOBE_BACKUP_KEY_FILE: "/k" }, never)).toThrow(
+    expect(() => readBackupKey({ ...KEY_ENV, KAIJU_BACKUP_KEY_FILE: "/k" }, never)).toThrow(
       /not both/,
     );
-    expect(() => readBackupKey({ KOBE_BACKUP_KEY_FILE: "/missing" }, never)).toThrow(
+    expect(() => readBackupKey({ KAIJU_BACKUP_KEY_FILE: "/missing" }, never)).toThrow(
       /could not be read/,
     );
     let message = "";
     try {
-      readBackupKey({ KOBE_BACKUP_KEY: "dG9vLXNob3J0" }, never);
+      readBackupKey({ KAIJU_BACKUP_KEY: "dG9vLXNob3J0" }, never);
     } catch (err) {
       message = (err as Error).message;
     }
@@ -175,11 +175,11 @@ describe("tlsWarning", () => {
 
 describe("keyFileWarning", () => {
   it("warns when the key file is group or world readable", () => {
-    expect(keyFileWarning({ KOBE_BACKUP_KEY_FILE: "/k" }, () => 0o100600)).toBeNull();
-    expect(keyFileWarning({ KOBE_BACKUP_KEY_FILE: "/k" }, () => 0o100644)).toMatch(
+    expect(keyFileWarning({ KAIJU_BACKUP_KEY_FILE: "/k" }, () => 0o100600)).toBeNull();
+    expect(keyFileWarning({ KAIJU_BACKUP_KEY_FILE: "/k" }, () => 0o100644)).toMatch(
       /mode 644.*chmod 600/,
     );
-    expect(keyFileWarning({ KOBE_BACKUP_KEY_FILE: "/k" }, () => 0o100640)).toMatch(/WARNING/);
+    expect(keyFileWarning({ KAIJU_BACKUP_KEY_FILE: "/k" }, () => 0o100640)).toMatch(/WARNING/);
     expect(keyFileWarning(KEY_ENV, () => 0o100644)).toBeNull();
   });
 });
@@ -187,20 +187,22 @@ describe("keyFileWarning", () => {
 describe("parseCommand: projects restricted (KOBE-587)", () => {
   it("reads the backup role's URL and needs no backup key or object storage", () => {
     expect(
-      parseCommand(["projects", "restricted"], { KOBE_BACKUP_DATABASE_URL: BACKUP_URL }),
+      parseCommand(["projects", "restricted"], { KAIJU_BACKUP_DATABASE_URL: BACKUP_URL }),
     ).toEqual({ command: "projects-restricted", databaseUrl: BACKUP_URL, json: false });
     expect(
-      parseCommand(["projects", "restricted", "--json"], { KOBE_BACKUP_DATABASE_URL: BACKUP_URL }),
+      parseCommand(["projects", "restricted", "--json"], { KAIJU_BACKUP_DATABASE_URL: BACKUP_URL }),
     ).toMatchObject({ json: true });
   });
 
   it("refuses a missing URL, another subcommand and unknown flags", () => {
-    expect(() => parseCommand(["projects", "restricted"], {})).toThrow(/KOBE_BACKUP_DATABASE_URL/);
+    expect(() => parseCommand(["projects", "restricted"], {})).toThrow(/KAIJU_BACKUP_DATABASE_URL/);
     expect(() =>
-      parseCommand(["projects", "list"], { KOBE_BACKUP_DATABASE_URL: BACKUP_URL }),
+      parseCommand(["projects", "list"], { KAIJU_BACKUP_DATABASE_URL: BACKUP_URL }),
     ).toThrow(/projects restricted/);
     expect(() =>
-      parseCommand(["projects", "restricted", "--force"], { KOBE_BACKUP_DATABASE_URL: BACKUP_URL }),
+      parseCommand(["projects", "restricted", "--force"], {
+        KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
+      }),
     ).toThrow(/force/);
   });
 });
@@ -208,24 +210,72 @@ describe("parseCommand: projects restricted (KOBE-587)", () => {
 describe("parseCommand: sso allow-local-sign-in (KOBE-774)", () => {
   it("reads the owner role's URL and an optional operator", () => {
     expect(
-      parseCommand(["sso", "allow-local-sign-in"], { KOBE_DB_MIGRATE_URL: OWNER_URL }),
+      parseCommand(["sso", "allow-local-sign-in"], { KAIJU_DB_MIGRATE_URL: OWNER_URL }),
     ).toEqual({ command: "sso-allow-local-sign-in", databaseUrl: OWNER_URL, operator: undefined });
     expect(
       parseCommand(["sso", "allow-local-sign-in", "--operator", "ops@corp"], {
-        KOBE_DB_MIGRATE_URL: OWNER_URL,
+        KAIJU_DB_MIGRATE_URL: OWNER_URL,
       }),
     ).toMatchObject({ operator: "ops@corp" });
   });
 
   it("refuses a missing URL, another subcommand and a bad operator", () => {
-    expect(() => parseCommand(["sso", "allow-local-sign-in"], {})).toThrow(/KOBE_DB_MIGRATE_URL/);
-    expect(() => parseCommand(["sso", "off"], { KOBE_DB_MIGRATE_URL: OWNER_URL })).toThrow(
+    expect(() => parseCommand(["sso", "allow-local-sign-in"], {})).toThrow(/KAIJU_DB_MIGRATE_URL/);
+    expect(() => parseCommand(["sso", "off"], { KAIJU_DB_MIGRATE_URL: OWNER_URL })).toThrow(
       /sso allow-local-sign-in/,
     );
     expect(() =>
       parseCommand(["sso", "allow-local-sign-in", "--operator", "a b"], {
-        KOBE_DB_MIGRATE_URL: OWNER_URL,
+        KAIJU_DB_MIGRATE_URL: OWNER_URL,
       }),
     ).toThrow(/--operator/);
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  it("runs with only the old names and warns once, naming them without values", () => {
+    const log = vi.fn();
+    const env: Record<string, string | undefined> = {
+      KOBE_BACKUP_DATABASE_URL: BACKUP_URL,
+      KOBE_BACKUP_KEY: KEY.toString("base64"),
+      USER: "op",
+    };
+    adoptEnv(env, log);
+    expect(env).toEqual({
+      KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
+      KAIJU_BACKUP_KEY: KEY.toString("base64"),
+      USER: "op",
+    });
+    expect(parseCommand(["backup", "--out", "/b/1", "--no-objects"], env)).toMatchObject({
+      databaseUrl: BACKUP_URL,
+    });
+    expect(log).toHaveBeenCalledTimes(1);
+    const line = String(log.mock.calls[0]?.[0]);
+    expect(line).toMatch(/^warning: /);
+    expect(line).toContain("KOBE_BACKUP_DATABASE_URL → KAIJU_BACKUP_DATABASE_URL");
+    expect(line).not.toContain(KEY.toString("base64"));
+    expect(line).not.toContain("pw@");
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const log = vi.fn();
+    const env: Record<string, string | undefined> = {
+      KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
+      KOBE_BACKUP_DATABASE_URL: OWNER_URL,
+      ...KEY_ENV,
+    };
+    adoptEnv(env, log);
+    expect(parseCommand(["backup", "--out", "/b/1", "--no-objects"], env)).toMatchObject({
+      databaseUrl: BACKUP_URL,
+    });
+    expect(String(log.mock.calls[0]?.[0])).toContain(
+      "KOBE_BACKUP_DATABASE_URL (KAIJU_BACKUP_DATABASE_URL is used)",
+    );
+  });
+
+  it("says nothing with the new names only", () => {
+    const log = vi.fn();
+    adoptEnv({ ...KEY_ENV }, log);
+    expect(log).not.toHaveBeenCalled();
   });
 });

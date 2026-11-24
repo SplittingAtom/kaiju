@@ -30,7 +30,7 @@ import { prepareToolDir } from "./threads/exec-wiring.js";
  * uid can and cannot do on its own is identities.partner.real.test.ts; this proves the executor
  * really is that uid, and the properties the tools get from it. Nothing here needs Pi.
  */
-const HELPER = process.env.KOBE_TEST_PI_RUNAS;
+const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
 const WORKSPACE_GID = process.getgid?.() ?? -1;
 
 interface Result {
@@ -176,16 +176,16 @@ describe.runIf(HELPER !== undefined && EXECUTOR_BUILT)(
     }, 60_000);
 
     it("starts the executor only on the first call, and gives the commands no variable of the agent", async () => {
-      process.env.KOBE_AGENT_SECRET_TEST = "must-not-leak";
+      process.env.KAIJU_AGENT_SECRET_TEST = "must-not-leak";
       try {
         const t = await setup();
         expect(t.started()).toBe(0);
         const { out } = await t.run("env");
         expect(t.started()).toBe(1);
-        expect(out).not.toContain("KOBE_AGENT_SECRET_TEST");
+        expect(out).not.toContain("KAIJU_AGENT_SECRET_TEST");
         expect(out).toContain("HOME=");
       } finally {
-        delete process.env.KOBE_AGENT_SECRET_TEST;
+        delete process.env.KAIJU_AGENT_SECRET_TEST;
       }
     }, 60_000);
 

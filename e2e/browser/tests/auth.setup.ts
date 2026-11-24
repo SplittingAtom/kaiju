@@ -4,9 +4,9 @@ import { pinTeam } from "./support/team.js";
 
 /** Signs in once with the password form and saves the session (cookies, the team in storage). */
 setup("sign in", async ({ page }) => {
-  const user = process.env["KOBE_USER"];
-  const password = process.env["KOBE_PW"];
-  if (!user || !password) throw new Error("KOBE_USER and KOBE_PW are required");
+  const user = process.env["KAIJU_USER"];
+  const password = process.env["KAIJU_PW"];
+  if (!user || !password) throw new Error("KAIJU_USER and KAIJU_PW are required");
 
   await page.goto("/sign-in");
   await page.getByLabel("Email").fill(user);
@@ -28,7 +28,7 @@ setup("sign in", async ({ page }) => {
       timeout: SHELL_TIMEOUT_MS,
     })
     .toMatch(/^[0-9a-f-]{36}$/);
-  // KOBE_TEAM pins the team the specs run in (support/team.ts).
+  // KAIJU_TEAM pins the team the specs run in (support/team.ts).
   await pinTeam(page);
   await page.context().storageState({ path: STORAGE_STATE });
 });

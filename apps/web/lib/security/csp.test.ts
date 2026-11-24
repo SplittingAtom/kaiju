@@ -100,29 +100,29 @@ describe("Strict-Transport-Security (KOBE-695)", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("is sent only when the public URL is https, includeSubDomains only when configured", () => {
-    expect(hstsHeader({ KOBE_PUBLIC_URL: "https://kaiju.example" })).toBe("max-age=31536000");
+    expect(hstsHeader({ KAIJU_PUBLIC_URL: "https://kaiju.example" })).toBe("max-age=31536000");
     expect(
       hstsHeader({
-        KOBE_PUBLIC_URL: "https://kaiju.example",
-        KOBE_HSTS_INCLUDE_SUBDOMAINS: "true",
+        KAIJU_PUBLIC_URL: "https://kaiju.example",
+        KAIJU_HSTS_INCLUDE_SUBDOMAINS: "true",
       }),
     ).toBe("max-age=31536000; includeSubDomains");
     expect(
       hstsHeader({
-        KOBE_PUBLIC_URL: "https://kaiju.example",
-        KOBE_HSTS_INCLUDE_SUBDOMAINS: "false",
+        KAIJU_PUBLIC_URL: "https://kaiju.example",
+        KAIJU_HSTS_INCLUDE_SUBDOMAINS: "false",
       }),
     ).toBe("max-age=31536000");
-    expect(hstsHeader({ KOBE_PUBLIC_URL: "http://kaiju.example" })).toBeUndefined();
+    expect(hstsHeader({ KAIJU_PUBLIC_URL: "http://kaiju.example" })).toBeUndefined();
     expect(hstsHeader({})).toBeUndefined();
-    expect(hstsHeader({ KOBE_PUBLIC_URL: "not a url" })).toBeUndefined();
+    expect(hstsHeader({ KAIJU_PUBLIC_URL: "not a url" })).toBeUndefined();
   });
 
   it("is on page responses of an https install, and not on a plain-http one", () => {
-    vi.stubEnv("KOBE_PUBLIC_URL", "https://kaiju.example");
+    vi.stubEnv("KAIJU_PUBLIC_URL", "https://kaiju.example");
     const secure = proxy(new NextRequest("https://kaiju.example/"));
     expect(secure.headers.get("strict-transport-security")).toBe("max-age=31536000");
-    vi.stubEnv("KOBE_PUBLIC_URL", "http://kaiju.example");
+    vi.stubEnv("KAIJU_PUBLIC_URL", "http://kaiju.example");
     const plain = proxy(new NextRequest("http://kaiju.example/"));
     expect(plain.headers.get("strict-transport-security")).toBeNull();
   });
