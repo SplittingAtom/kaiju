@@ -49,7 +49,7 @@ describe("Site backup and restore (KOBE-291)", () => {
       [RETENTION]: [200, running],
     });
     renderSite(<BackupPage />);
-    expect(screen.getByRole("note").textContent).toMatch(/Kobe can't see your backups/);
+    expect(screen.getByRole("note").textContent).toMatch(/Kaiju can't see your backups/);
     const last = (await screen.findByText("Restored")).closest("dl") as HTMLElement;
     expect(last.textContent).toMatch(/ops@example\.org/);
     expect(last.textContent).toMatch(/120,345 rows in 61 tables/);

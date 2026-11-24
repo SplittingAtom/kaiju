@@ -86,11 +86,11 @@ describe("agent picker", () => {
     const radios = within(await group()).getAllByRole("radio") as HTMLInputElement[];
     expect(radios.map((r) => r.closest("label")?.textContent)).toEqual([
       "No agentA plain conversation",
-      "KobePersonal",
-      "KobeTeamkobe-team1",
-      "KobeTeamkobe-ops",
+      "KaijuPersonal",
+      "KaijuTeamkobe-team1",
+      "KaijuTeamkobe-ops",
       "SoloTeam",
-      "KobeBuilt-in",
+      "KaijuBuilt-in",
     ]);
     // Screen readers hear the origin with the name, and the slug where the origin is shared.
     expect(within(await group()).getByRole("radio", { name: "Kaiju, Built-in" })).toBeTruthy();

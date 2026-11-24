@@ -230,7 +230,7 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     await plusSaying("Kaiju is learning from this chat");
     // The pass ends on the server: the next check (every 2 s) sees it.
     fake.learnState.set(t, { new_messages: false, running: null, candidates: 2 });
-    await waitFor(() => expect(notice()).toMatch(/Kobe found 2 things to review/), {
+    await waitFor(() => expect(notice()).toMatch(/Kaiju found 2 things to review/), {
       timeout: 8_000,
     });
     // KOBE-396: the finished pass is announced, so To review can open by itself.

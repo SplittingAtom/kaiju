@@ -113,7 +113,7 @@ describe("gallery agent editor", () => {
     expect(JSON.parse(String(put.body))).toMatchObject({ prompt: "Edited." });
     expect(screen.getByText("Customized")).toBeTruthy();
     // Re-attaching is offered at any time from the editor.
-    expect(screen.getByText(/Kobe is customized: releases no longer update it/)).toBeTruthy();
+    expect(screen.getByText(/Kaiju is customized: releases no longer update it/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reset to repository (Kaiju)" })).toBeTruthy();
   });
 

@@ -45,7 +45,7 @@ describe("an agentless started thread takes an agent (KOBE-458 ac-3)", () => {
     await header();
     const user = userEvent.setup();
     expect(await screen.findByRole("button", { name: /Chat with: No agent/ })).toBeTruthy();
-    await user.click(within(await agentChoices()).getByRole("radio", { name: /Kobe/ }));
+    await user.click(within(await agentChoices()).getByRole("radio", { name: /Kaiju/ }));
     await waitFor(() => expect(chooses()).toHaveLength(1));
     expect(must(chooses()[0]).body).toEqual({ agent_id: KOBE.id });
     expect(await screen.findByText("Agent: Kaiju")).toBeTruthy();

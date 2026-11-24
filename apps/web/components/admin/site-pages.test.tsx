@@ -587,7 +587,7 @@ describe("Settings: the Kaiju connector switch (KOBE-623)", () => {
     await userEvent.clear(reads);
     await userEvent.type(reads, "90");
     await userEvent.click(form.getByRole("button", { name: "Save Kaiju limits" }));
-    await screen.findByText(/Kobe admin limits now 90 reads per minute and 30 writes per hour/);
+    await screen.findByText(/Kaiju admin limits now 90 reads per minute and 30 writes per hour/);
     const put = must(calls.find((c) => c.method === "PUT"));
     expect(JSON.parse(String(put.body))).toEqual({ kobeReadsPerMinute: 90, kobeWritesPerHour: 30 });
   });

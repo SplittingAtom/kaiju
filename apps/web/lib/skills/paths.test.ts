@@ -16,7 +16,7 @@ describe("newPathProblem (KOBE-321)", () => {
     expect(newPathProblem("a/../b.md", others)).toMatch(/\.\./);
     expect(newPathProblem("a\\b.md", others)).toMatch(/\//);
     expect(newPathProblem("Evals/x.yaml", others)).toMatch(/spell them exactly/);
-    expect(newPathProblem("provenance.json", others)).toMatch(/Kobe writes/);
+    expect(newPathProblem("provenance.json", others)).toMatch(/Kaiju writes/);
     expect(newPathProblem("scripts/run.sh", others)).toMatch(/file and a folder/);
     expect(newPathProblem("", others)).toMatch(/Give the file a path/);
   });

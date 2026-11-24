@@ -15,9 +15,9 @@ import { panelOf } from "./support/panel.js";
  */
 const PASS_TIMEOUT_MS = 180_000;
 /** The notice once the pass has ended: what it found, or why it stopped. */
-const PASS_ENDED = /Kobe found|Try again|budget|turned off|isn't enabled/;
+const PASS_ENDED = /Kaiju found|Try again|budget|turned off|isn't enabled/;
 /** The pass left candidates in To review (`use-learn.ts`), so To review opens by itself. */
-const FOUND_SOMETHING = /Kobe found (1 thing|\d+ things) to review/;
+const FOUND_SOMETHING = /Kaiju found (1 thing|\d+ things) to review/;
 
 /**
  * A preference this member has not taught Kaiju yet, so every run's pass finds a new candidate and

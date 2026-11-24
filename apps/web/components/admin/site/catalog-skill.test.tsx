@@ -183,7 +183,7 @@ describe("catalog skill view (ac-1)", () => {
     ).toBeTruthy();
     expect(screen.getByText("Detached")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: /^Compare/ }));
-    expect(await screen.findByText(/Kobe ships 1\.1\.0/)).toBeTruthy();
+    expect(await screen.findByText(/Kaiju ships 1\.1\.0/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: /^Reset to Kaiju/ }));
     await answerConfirm(/Reset pdf to Kaiju/, "Reset to Kaiju");
     expect(await screen.findByText(/not above the Site's 1\.2\.0/)).toBeTruthy();

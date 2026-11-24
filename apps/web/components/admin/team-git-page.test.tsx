@@ -37,7 +37,7 @@ describe("Git section: states (KOBE-761)", () => {
     });
     renderTeam(<TeamGitPage />, ADMIN);
     expect(screen.getByRole("status").textContent).toMatch(/Loading git connections/);
-    await screen.findByText(/Kobe had a problem/);
+    await screen.findByText(/Kaiju had a problem/);
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     await screen.findByText("No git organization is connected");
     expect(summary(calls).filter((c) => c === `GET ${GIT_BASE}`)).toHaveLength(2);

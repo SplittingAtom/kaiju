@@ -62,7 +62,7 @@ describe("run.start.git (KOBE-764)", () => {
     expect(long).toBe("a".repeat(38));
     expect(gitNoReplySlug("x".repeat(80))).toHaveLength(39);
     const email = gitNoReplyEmail({ id: USER, name: "x".repeat(80) }, "Kaiju.Acme.Test");
-    expect(email).toBe(`${id}+${"x".repeat(39)}@users.noreply.kobe.acme.test`);
+    expect(email).toBe(`${id}+${"x".repeat(39)}@users.noreply.kaiju.acme.test`);
     expect((email.split("@")[0] ?? "").length).toBeLessThanOrEqual(64);
     expect(runGitContextSchema.shape.author.shape.email.safeParse(email).success).toBe(true);
   });
