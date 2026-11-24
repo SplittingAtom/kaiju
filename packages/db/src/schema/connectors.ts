@@ -51,7 +51,7 @@ export const CONNECTOR_NAME_PATTERN = "^[a-z0-9]+([-_][a-z0-9]+)*$";
 export const CONNECTOR_URL_MAX = 2048;
 
 /**
- * Built-in connectors hosted by Kaiju itself (KOBE-618, spec kaiju-admin-mcp §3): `kobe`, the Kaiju
+ * Built-in connectors hosted by Kaiju itself (KOBE-618, spec kobe-admin-mcp §3): `kobe`, the Kaiju
  * MCP server (docs and admin tools). Its row is seeded by the server at start
  * ({@link seedKaijuBuiltinConnector}); the MCP proxy routes it to the server's internal listener,
  * never to its URL, which only marks the row (a check ties the two together, so no registered

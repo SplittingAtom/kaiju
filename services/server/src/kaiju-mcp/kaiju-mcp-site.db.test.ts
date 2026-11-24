@@ -38,7 +38,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
 
 /**
  * The Site console tools of the built-in Kaiju MCP server end to end (KOBE-622, spec
- * kaiju-admin-mcp §5 Site list, §6, §8; KA-5 ac-1..5): the real MCP proxy app talks HTTP to the real
+ * kobe-admin-mcp §5 Site list, §6, §8; KA-5 ac-1..5): the real MCP proxy app talks HTTP to the real
  * internal listener, which decides and runs each console route in process as the person, on a real
  * Postgres.
  */

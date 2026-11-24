@@ -31,7 +31,7 @@ const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "egress-proxy"));
 const database = createDb(config.databaseUrl, {
   max: config.dbPoolMax,
-  applicationName: "kobe-egress-proxy",
+  applicationName: "kaiju-egress-proxy",
 });
 const db = database.db;
 

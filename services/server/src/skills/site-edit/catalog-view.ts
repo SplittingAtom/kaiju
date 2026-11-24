@@ -71,7 +71,10 @@ export const RETIRED_STATUSES: readonly string[] = ["deprecated", "archived"];
 const iso = (d: Date | string | null) => (d === null ? null : new Date(d).toISOString());
 
 /** Every version of the skill, newest first. */
-export async function versionRows(db: KaijuDb | KaijuTx, skillId: string): Promise<SiteVersionRow[]> {
+export async function versionRows(
+  db: KaijuDb | KaijuTx,
+  skillId: string,
+): Promise<SiteVersionRow[]> {
   const { rows } = await db.execute<{
     id: string;
     semver: string;

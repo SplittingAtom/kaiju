@@ -171,7 +171,10 @@ export async function revokeTeamInvite(
  * without `xms_edov`, a generic `email` without `email_verified`) must never list, accept or
  * decline someone else's invitation. Local and invited users are always verified.
  */
-export async function verifiedEmailOf(db: KaijuDb | KaijuTx, userId: string): Promise<string | null> {
+export async function verifiedEmailOf(
+  db: KaijuDb | KaijuTx,
+  userId: string,
+): Promise<string | null> {
   const [row] = await db
     .select({ email: users.email, verified: users.emailVerified })
     .from(users)

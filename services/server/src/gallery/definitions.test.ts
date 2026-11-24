@@ -28,7 +28,7 @@ describe("the one gallery agent, Kobe (KOBE-254)", () => {
     // 2: the web-search notice is scoped to requests that need the web (review of #240).
     // 3: no built-in web search any more; research goes through connectors (KOBE-606).
     expect(parsed.map((p) => [p.key, p.generation])).toEqual([[KAIJU_GALLERY_KEY, 4]]);
-    expect(KAIJU_GALLERY_KEY).toBe("kaiju");
+    expect(KAIJU_GALLERY_KEY).toBe("kobe");
     expect(kaiju.frontmatter.name).toBe("Kobe");
     expect(kaiju.frontmatter.description).toBeTruthy();
     expect(kaiju.frontmatter.starters?.length).toBeGreaterThan(0);

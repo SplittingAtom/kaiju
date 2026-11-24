@@ -232,7 +232,9 @@ test("from the rail: a click inserts an app card with no run; the next run sees 
   const app = await theApp(page);
   await launchFromPlusMenu(page, app);
   const threadId = await chat.threadId();
-  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({ timeout: RUN_TIMEOUT_MS });
+  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({
+    timeout: RUN_TIMEOUT_MS,
+  });
   await expect(
     frameOf(page, app).getByRole(ITEM_ROLE, { name: PATH[0] ?? "", exact: true }),
   ).toBeVisible({
@@ -276,7 +278,9 @@ test("from the rail with no thread open: the new thread has the default agent an
   expect(preset, "the server marks the new-conversation agent").toBeDefined();
   await launchFromPlusMenu(page, app);
   const threadId = await chat.threadId();
-  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({ timeout: RUN_TIMEOUT_MS });
+  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({
+    timeout: RUN_TIMEOUT_MS,
+  });
   // ac-1: the thread pinned the agent a new conversation gets, and the composer names it.
   const thread = await pageApi<{ agent_id?: string | null }>(
     page,
@@ -343,7 +347,9 @@ test("from the rail during a run: the launch waits as a chip and goes in after t
   await expect(chip).toBeVisible();
   await chat.waitForIdle();
   await expect(chip).toHaveCount(0);
-  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({ timeout: RUN_TIMEOUT_MS });
+  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({
+    timeout: RUN_TIMEOUT_MS,
+  });
 });
 
 test("no credential reaches the browser or the frame", async ({ chat, page }) => {

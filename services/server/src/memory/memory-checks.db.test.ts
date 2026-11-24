@@ -302,7 +302,11 @@ describe("links and personal data (ac-4)", () => {
     expect((await save(as.site, "site", `Dashboards: https://${OFF_TEAM}/grafana`)).status).toBe(
       201,
     );
-    const look = await save(as.member, "user", `Runbooks: https://d\u043ecs.kaiju379.example.org/x`);
+    const look = await save(
+      as.member,
+      "user",
+      `Runbooks: https://d\u043ecs.kaiju379.example.org/x`,
+    );
     expect(errorOf(look)).toEqual([409, "memory_lint_warning", ["link_lookalike", "link_blocked"]]);
   });
 

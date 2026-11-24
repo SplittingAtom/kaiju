@@ -242,8 +242,8 @@ object storage is configured.
 
 ### Roles
 
-| Command        | Connects as                                                          | Why                                                                                                         |
-| -------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Command         | Connects as                                                          | Why                                                                                                         |
+| --------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `kaiju backup`  | a **backup role**: `BYPASSRLS` + `pg_read_all_data` (or a superuser) | every team table forces RLS, so any other role would silently miss team rows; the backup refuses such roles |
 | `kaiju restore` | the **owner role** (the chart's `migrate-url`)                       | it owns every table, so it can lift `FORCE ROW LEVEL SECURITY` for itself inside the restore transaction    |
 

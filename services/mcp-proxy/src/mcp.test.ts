@@ -2,7 +2,11 @@ import { createHash, randomUUID } from "node:crypto";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { withTestLoopback } from "@kaiju/address-policy/testing";
-import { GIT_BUILTIN_CONNECTOR_ID, KAIJU_BUILTIN_CONNECTOR_ID, canonicalJson } from "@kaiju/protocol";
+import {
+  GIT_BUILTIN_CONNECTOR_ID,
+  KAIJU_BUILTIN_CONNECTOR_ID,
+  canonicalJson,
+} from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   signSessionToken,
@@ -106,7 +110,7 @@ class FakePolicyServer implements PolicyServer {
   kaijuTools: ServerAnswer<ToolsResponse> = {
     ok: true,
     value: {
-      connector: { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kaiju" },
+      connector: { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kobe" },
       tools: [
         {
           name: "team_members_list",
@@ -1110,7 +1114,7 @@ describe("the built-in git connector (KOBE-762)", () => {
     expect(server.asked).toEqual([]);
     expect(fake.received).toEqual([]);
     await rpc("tools/list", undefined, { connector: KAIJU_BUILTIN_CONNECTOR_ID });
-    expect(server.builtinAsked.at(-1)).toBe("list:kaiju");
+    expect(server.builtinAsked.at(-1)).toBe("list:kobe");
   });
 });
 
@@ -1179,7 +1183,11 @@ describe("the built-in Kaiju connector (KOBE-619)", () => {
       ok: true,
       value: { outcome: "error", code: "changed_since_approval", message: "Changed." },
     };
-    const changed = await rpc("tools/call", { name: "team_members_set_role", arguments: {} }, kaiju);
+    const changed = await rpc(
+      "tools/call",
+      { name: "team_members_set_role", arguments: {} },
+      kaiju,
+    );
     expect(changed.json?.result.isError).toBe(true);
     expect(changed.json?.result.content[0].text).toContain("changed_since_approval");
   });

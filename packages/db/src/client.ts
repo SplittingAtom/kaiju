@@ -83,7 +83,7 @@ export interface CreateDbOptions extends AppSessionOptions {
   readonly max?: number;
   /**
    * `application_name` of the pool's sessions (KOBE-736), so `pg_stat_activity` attributes each
-   * connection to its service (e.g. `kobe-server`, `kaiju-gateway`).
+   * connection to its service (e.g. `kaiju-server`, `kaiju-gateway`).
    */
   readonly applicationName?: string;
   /** How long to wait for a free pooled connection before failing (default 10 s). */

@@ -16,7 +16,7 @@ describe("loadModelsConfig", () => {
   it("reads a complete configuration with defaults", () => {
     expect(loadModelsConfig(full)).toEqual({
       bifrostUrl: "http://kobe-bifrost:8080",
-      adminUsername: "kaiju",
+      adminUsername: "kobe",
       adminPassword: "p".repeat(40),
       providerKeySecrets: ["a".repeat(40)],
       virtualKeySecrets: ["b".repeat(40)],

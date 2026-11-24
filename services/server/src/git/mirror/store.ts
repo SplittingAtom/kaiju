@@ -250,7 +250,11 @@ export async function releaseLease(tx: KaijuTx, lease: MirrorLease): Promise<voi
 }
 
 /** Relink and detach end any refresh in flight: its later writes are refused (review L5). */
-export async function revokeLease(tx: KaijuTx, teamId: string, repositoryId: string): Promise<void> {
+export async function revokeLease(
+  tx: KaijuTx,
+  teamId: string,
+  repositoryId: string,
+): Promise<void> {
   await tx.execute(sql`
     UPDATE git_repositories SET ${RELEASE}
      WHERE team_id = ${teamId} AND id = ${repositoryId}`);

@@ -32,7 +32,7 @@ export interface ServerDepsOptions {
   readonly dbTimeouts?: DbTimeouts;
   /**
    * The query pool (KOBE-736): its size (default 10) and `application_name` (default
-   * `kobe-server`; the scheduler passes `kobe-scheduler`).
+   * `kaiju-server`; the scheduler passes `kaiju-scheduler`).
    */
   readonly dbPool?: { readonly max?: number; readonly applicationName?: string };
   readonly publicUrl: string;

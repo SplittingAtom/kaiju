@@ -134,7 +134,10 @@ afterEach(() => {
 function threadWithHistory(title: string) {
   const t = kaiju.addThread(title);
   const u1 = kaiju.addEntry(t, null, { role: "user", content: `${title} question` });
-  kaiju.addEntry(t, u1, { role: "assistant", content: [{ type: "text", text: `${title} answer` }] });
+  kaiju.addEntry(t, u1, {
+    role: "assistant",
+    content: [{ type: "text", text: `${title} answer` }],
+  });
   return t;
 }
 

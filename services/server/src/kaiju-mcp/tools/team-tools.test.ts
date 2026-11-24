@@ -10,7 +10,7 @@ import {
 import { KAIJU_ADMIN_TOOLS, kaijuToolByName } from "./index.js";
 import { seqCursor } from "./team-reports.js";
 
-/** Unit checks of the Team console tools (KOBE-621, spec kaiju-admin-mcp §5, KA-4). */
+/** Unit checks of the Team console tools (KOBE-621, spec kobe-admin-mcp §5, KA-4). */
 
 const ID = "00000000-0000-4000-8000-000000000001";
 /** Every Workspace memory setting at its default (KOBE-381). */

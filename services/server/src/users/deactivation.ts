@@ -56,7 +56,10 @@ export interface DeactivationOptions extends ActivationOptions {
 }
 
 /** How a deactivation was recorded (`users.deactivated_via`); null when active or unknown. */
-export async function deactivatedVia(db: KaijuDb | KaijuTx, userId: string): Promise<string | null> {
+export async function deactivatedVia(
+  db: KaijuDb | KaijuTx,
+  userId: string,
+): Promise<string | null> {
   const [row] = await db
     .select({ via: users.deactivatedVia, at: users.deactivatedAt })
     .from(users)

@@ -423,7 +423,9 @@
      and the column takes that (the conversation keeps its 400 px; KOBE-554). */
   .grid:has(> .artifact:not(:empty):not([data-hidden])) {
     --kaiju-rail-room: calc(760px + 2 * var(--kaiju-shell-gap));
-    --kaiju-artifact-room: calc(100% - var(--kaiju-rail-width) - 2 * var(--kaiju-shell-gap) - 400px);
+    --kaiju-artifact-room: calc(
+      100% - var(--kaiju-rail-width) - 2 * var(--kaiju-shell-gap) - 400px
+    );
     grid-template-columns:
       var(--kaiju-rail-width)
       minmax(

@@ -19,7 +19,7 @@ import { KAIJU_DOCS_TOOLS } from "./docs/index.js";
 import { KAIJU_ADMIN_TOOLS } from "./tools/index.js";
 
 /**
- * The Kaiju MCP switches as the consoles change them (KOBE-623, spec kaiju-admin-mcp §6, KA5): the
+ * The Kaiju MCP switches as the consoles change them (KOBE-623, spec kobe-admin-mcp §6, KA5): the
  * site switch `kobe_mcp.mode` (Site console › Settings, `site.settings.manage`) and the team level
  * `teams.settings.kobe_mcp.admin` (Team console › Connectors, `team.connectors.manage`). Each
  * change is audited; reads and the run/list/call checks use `access.ts`.

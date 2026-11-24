@@ -52,7 +52,7 @@ import {
 } from "./skills.js";
 
 /**
- * The Site console tools (KOBE-622, spec kaiju-admin-mcp §5 Site list, KA3, KA8). Console-only by
+ * The Site console tools (KOBE-622, spec kobe-admin-mcp §5 Site list, KA3, KA8). Console-only by
  * KA8 (no tool): break-glass, ownership transfer, site roles, legal hold, retention and every
  * irreversible deletion; the rest left out is listed in docs/ledger/KOBE-622.md.
  */

@@ -29,7 +29,7 @@ import { kaijuConnector, kaijuPinnedTool } from "./pinned.js";
 import { KAIJU_ADMIN_TOOLS, kaijuToolByName } from "./tools/index.js";
 
 /**
- * The Kaiju MCP server, hosted by the server itself (KOBE-619, spec kaiju-admin-mcp §3 design (b)).
+ * The Kaiju MCP server, hosted by the server itself (KOBE-619, spec kobe-admin-mcp §3 design (b)).
  * The MCP proxy routes the built-in connector here (`/internal/v1/mcp/kobe/{list,calls}`); each
  * call is decided and executed in this one request: the sandbox token is authenticated by the
  * route, the run leased to the sandbox for the claimed thread is resolved, `decideMcpCall` decides
@@ -185,7 +185,9 @@ export function createKaijuMcpService(options: KaijuMcpServiceOptions): KaijuMcp
                   message: `${pinned.pi_name} is not available to you in this team (your role, or the Kaiju admin switches).`,
                 };
               }
-              if (!(await withinKaijuLimit(db, principal.userId, def.readOnly ? "read" : "write"))) {
+              if (
+                !(await withinKaijuLimit(db, principal.userId, def.readOnly ? "read" : "write"))
+              ) {
                 return {
                   code: "kobe_admin_rate_limited",
                   message: def.readOnly

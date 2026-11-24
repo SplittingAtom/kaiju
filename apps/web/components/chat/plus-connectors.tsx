@@ -92,7 +92,7 @@ const GIT_TEXT = {
 } as const;
 
 /**
- * The built-in Kaiju connector (KOBE-623, spec kaiju-admin-mcp KA7): no toggle, its docs tools are
+ * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp KA7): no toggle, its docs tools are
  * in every conversation; the line says which admin tools the member has, as the server decided.
  */
 function BuiltinKaiju({ connector }: { readonly connector: ChatConnector }) {

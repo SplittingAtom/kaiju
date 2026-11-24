@@ -36,7 +36,7 @@ describe("the built-in kaiju connector row", () => {
     const results = await Promise.all(
       Array.from({ length: 8 }, () => seedKaijuBuiltinConnector(app.db)),
     );
-    const rows = await app.db.select().from(connectors).where(eq(connectors.builtin, "kaiju"));
+    const rows = await app.db.select().from(connectors).where(eq(connectors.builtin, "kobe"));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       id: KAIJU_BUILTIN_CONNECTOR_ID,
@@ -96,7 +96,11 @@ describe("the built-in kaiju connector row", () => {
         url: KAIJU_BUILTIN_CONNECTOR_URL,
         authKind: "api_key" as const,
       },
-      { id: KAIJU_BUILTIN_CONNECTOR_ID, url: KAIJU_BUILTIN_CONNECTOR_URL, toolsHash: "a".repeat(64) },
+      {
+        id: KAIJU_BUILTIN_CONNECTOR_ID,
+        url: KAIJU_BUILTIN_CONNECTOR_URL,
+        toolsHash: "a".repeat(64),
+      },
     ];
     for (const values of bad) {
       // A distinct transaction per attempt: the unique id may conflict before the check.

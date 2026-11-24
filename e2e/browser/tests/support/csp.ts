@@ -12,7 +12,10 @@ export async function watchStyleViolations(page: Page): Promise<void> {
   await page.evaluate(() => {
     const seen: string[] = [];
     const unnonced: string[] = [];
-    const w = window as unknown as { kaijuStyleViolations: string[]; kaijuUnnoncedStyles: string[] };
+    const w = window as unknown as {
+      kaijuStyleViolations: string[];
+      kaijuUnnoncedStyles: string[];
+    };
     w.kaijuStyleViolations = seen;
     w.kaijuUnnoncedStyles = unnonced;
     new MutationObserver((records) => {

@@ -327,7 +327,10 @@ export type ReplaceResult =
   | { readonly ok: false; readonly code: "not_found" };
 
 /** Replaces the sealed credential after a passing test (G8); the old ciphertext is overwritten. */
-export function replaceGitCredential(db: KaijuDb, r: CredentialReplacement): Promise<ReplaceResult> {
+export function replaceGitCredential(
+  db: KaijuDb,
+  r: CredentialReplacement,
+): Promise<ReplaceResult> {
   return withTeam(db, r.teamId, async (tx): Promise<ReplaceResult> => {
     const [previous] = await tx
       .select({

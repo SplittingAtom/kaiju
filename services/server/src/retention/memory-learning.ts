@@ -182,7 +182,11 @@ async function dropNotices(tx: KaijuTx, teamId: string, objects: readonly string
  * proposal or suggestion of it involves. Proposals and suggestions go first, in their own
  * statements, so the candidates' `ON DELETE SET NULL` refs never touch a row being deleted.
  */
-async function purgePasses(tx: KaijuTx, teamId: string, cutoff: Date): Promise<LearningPurgeCounts> {
+async function purgePasses(
+  tx: KaijuTx,
+  teamId: string,
+  cutoff: Date,
+): Promise<LearningPurgeCounts> {
   const doomed = await tx.execute<{ id: string }>(sql`
     SELECT p.id FROM memory_learning_passes p
      WHERE p.team_id = ${teamId} AND p.finished_at IS NOT NULL

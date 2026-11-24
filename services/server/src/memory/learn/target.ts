@@ -20,7 +20,11 @@ export type LearnTarget =
 /** Provider kinds known to take `response_format: json_schema` through the gateway (as the judge). */
 const STRUCTURED_OUTPUT_KINDS: ReadonlySet<string> = new Set(["openai"]);
 
-export async function learnTarget(tx: KaijuTx, teamId: string, alias: string): Promise<LearnTarget> {
+export async function learnTarget(
+  tx: KaijuTx,
+  teamId: string,
+  alias: string,
+): Promise<LearnTarget> {
   const resolved = await resolveRunModel(tx, teamId, alias);
   if (!resolved.ok || resolved.model === undefined) return { ok: false };
   const [row] = await tx

@@ -17,7 +17,11 @@ const E2 = "00000000-0000-4000-8000-000000000302";
 const TH = "th1";
 
 let seq = 0;
-function ev<T extends KaijuEventType>(type: T, payload: KaijuEventPayload<T>, run = RUN): KaijuEvent {
+function ev<T extends KaijuEventType>(
+  type: T,
+  payload: KaijuEventPayload<T>,
+  run = RUN,
+): KaijuEvent {
   seq += 1;
   return { run_id: run, seq, ts: "2026-10-21T10:00:00Z", type, payload } as KaijuEvent;
 }

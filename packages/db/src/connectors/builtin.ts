@@ -24,7 +24,7 @@ export type KaijuBuiltinSeed =
 const pgServerSegment = (name: string) => name.replace(/-/g, "_");
 
 /**
- * Seeds the built-in `kobe` connector row (KOBE-618, spec kaiju-admin-mcp §11 KA-1). Idempotent and
+ * Seeds the built-in `kobe` connector row (KOBE-618, spec kobe-admin-mcp §11 KA-1). Idempotent and
  * safe across replicas starting together: the row has a fixed id, and the insert does nothing on
  * any unique conflict (id, `builtin`, name or Pi server segment), so exactly one row exists after
  * any number of concurrent calls. Named `kobe`, or `kobe-builtin` when a registered connector

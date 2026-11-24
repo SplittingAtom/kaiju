@@ -102,7 +102,10 @@ describe("Strict-Transport-Security (KOBE-695)", () => {
   it("is sent only when the public URL is https, includeSubDomains only when configured", () => {
     expect(hstsHeader({ KOBE_PUBLIC_URL: "https://kaiju.example" })).toBe("max-age=31536000");
     expect(
-      hstsHeader({ KOBE_PUBLIC_URL: "https://kaiju.example", KOBE_HSTS_INCLUDE_SUBDOMAINS: "true" }),
+      hstsHeader({
+        KOBE_PUBLIC_URL: "https://kaiju.example",
+        KOBE_HSTS_INCLUDE_SUBDOMAINS: "true",
+      }),
     ).toBe("max-age=31536000; includeSubDomains");
     expect(
       hstsHeader({

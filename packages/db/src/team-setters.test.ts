@@ -40,8 +40,8 @@ const TEST_CODE = /(?:\.test\.[a-z]+$|(?:^|\/)(?:testing|test-support|__tests__)
  * a positional parameter that could carry it), or `SET [LOCAL|SESSION] kobe.team_id`.
  */
 const SETS_TEAM = [
-  /set_config\s*\(\s*(?:'kaiju\.team_id'|"kaiju\.team_id"|\$\{\s*TEAM_ID_SETTING\s*\}|TEAM_ID_SETTING\b|\$\d+\s*[,)])/i,
-  /\bSET\s+(?:LOCAL\s+|SESSION\s+)?["']?kaiju\.team_id\b/i,
+  /set_config\s*\(\s*(?:'kobe\.team_id'|"kobe\.team_id"|\$\{\s*TEAM_ID_SETTING\s*\}|TEAM_ID_SETTING\b|\$\d+\s*[,)])/i,
+  /\bSET\s+(?:LOCAL\s+|SESSION\s+)?["']?kobe\.team_id\b/i,
 ];
 
 function setsTeam(source: string): boolean {
@@ -63,14 +63,14 @@ const ALLOWED_MENTIONS: Readonly<Record<string, string>> = {
 
 /** Reads of the setting, which every RLS policy and team check does. */
 const READ =
-  /current_setting\(\s*(?:\$\{\s*TEAM_ID_SETTING\s*\}|'kaiju\.team_id'|"kaiju\.team_id")/gi;
+  /current_setting\(\s*(?:\$\{\s*TEAM_ID_SETTING\s*\}|'kobe\.team_id'|"kobe\.team_id")/gi;
 /** `import { … } from` / `export { … } from` without a rename (`as`). */
 const PLAIN_IMPORT = /\b(?:import|export)\s+(?:type\s+)?\{[^}]*\}\s*from\s*["'][^"']+["'];?/g;
 const MENTION = [
   /TEAM_ID_SETTING/,
-  /kaiju\.team_id/i,
-  /["'`]kaiju\.["'`]\s*(?:\+|\|\|)/i,
-  /kaiju\.\$\{/i,
+  /kobe\.team_id/i,
+  /["'`]kobe\.["'`]\s*(?:\+|\|\|)/i,
+  /kobe\.\$\{/i,
 ];
 
 function withoutComments(file: string, source: string): string {
@@ -119,9 +119,9 @@ describe("team setters (KOBE-697)", () => {
     // The name as a value anywhere but a read.
     expect(ts(`const name = "kobe.team_id";`)).toBe(true);
     // Concatenated names.
-    expect(ts(`const name = "kaiju." + "team_id";`)).toBe(true);
-    expect(ts("const name = `kaiju.${'team_id'}`;")).toBe(true);
-    expect(mentionsTeam("x.sql", "SELECT set_config('kaiju.' || 'team_id', t, true);")).toBe(true);
+    expect(ts(`const name = "kobe." + "team_id";`)).toBe(true);
+    expect(ts("const name = `kobe.${'team_id'}`;")).toBe(true);
+    expect(mentionsTeam("x.sql", "SELECT set_config('kobe.' || 'team_id', t, true);")).toBe(true);
     // Shell and Python.
     expect(mentionsTeam("x.sh", `psql -c "SET LOCAL kobe.team_id = '$T'"`)).toBe(true);
     expect(

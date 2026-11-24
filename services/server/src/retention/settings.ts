@@ -60,7 +60,11 @@ export async function readMaximumLayer(db: Executor, forUpdate = false): Promise
 }
 
 /** The team's layer; call inside the team's `withTeam` transaction. */
-export async function readTeamLayer(tx: KaijuTx, teamId: string, forUpdate = false): Promise<Layer> {
+export async function readTeamLayer(
+  tx: KaijuTx,
+  teamId: string,
+  forUpdate = false,
+): Promise<Layer> {
   const query = tx
     .select({
       period: teamRetention.period,

@@ -103,7 +103,11 @@ type Row = {
 const toDate = (v: Date | string | null | undefined): Date | null =>
   v === null || v === undefined ? null : new Date(v);
 
-async function readRow(tx: KaijuTx, target: SandboxTarget, lock: boolean): Promise<Row | undefined> {
+async function readRow(
+  tx: KaijuTx,
+  target: SandboxTarget,
+  lock: boolean,
+): Promise<Row | undefined> {
   const res = await tx.execute<Row>(sql`
     SELECT s.state, s.sandbox_id, s.rebuild_started_at, w.last_push_at
       FROM sandboxes s

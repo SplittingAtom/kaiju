@@ -83,7 +83,11 @@ class RunEndedError extends Error {}
 class ArtifactMissingError extends Error {}
 
 /** The run is active, in this thread, and owned by the sandbox's user. */
-async function runActive(tx: KaijuTx, target: PutTarget, frame: ArtifactPutFrame): Promise<boolean> {
+async function runActive(
+  tx: KaijuTx,
+  target: PutTarget,
+  frame: ArtifactPutFrame,
+): Promise<boolean> {
   // A compaction (KOBE-213) makes no tool calls: refused from the database, not only the lease.
   const res = await tx.execute<{ status: string; kind: string }>(sql`
     SELECT r.status, r.kind FROM runs r

@@ -107,7 +107,9 @@ describe("from the tree's node menu (ac-3)", () => {
     // The conversation shows the entered branch with the folded summary.
     expect(await screen.findByText("old answer", {}, WAIT)).toBeTruthy();
     expect(screen.queryByText("new answer")).toBeNull();
-    const marker = must(document.querySelector<HTMLElement>('[data-kaiju-marker="branch_summary"]'));
+    const marker = must(
+      document.querySelector<HTMLElement>('[data-kaiju-marker="branch_summary"]'),
+    );
     expect(within(marker).getByRole("button", { name: /Summary of another branch/ })).toBeTruthy();
     // The tree shows the summary row under the node it entered.
     await openTree();

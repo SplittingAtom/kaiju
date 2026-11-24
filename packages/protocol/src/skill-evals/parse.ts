@@ -138,7 +138,7 @@ function valueAt(value: unknown, path: readonly Segment[]): unknown {
 function codeOf(issue: z.core.$ZodIssue, raw: unknown): SkillEvalIssueCode {
   switch (issue.code) {
     case "custom": {
-      const code = (issue.params as { kaiju?: SkillEvalIssueCode } | undefined)?.kobe;
+      const code = (issue.params as { kaiju?: SkillEvalIssueCode } | undefined)?.kaiju;
       return code ?? "invalid_value";
     }
     case "invalid_type":

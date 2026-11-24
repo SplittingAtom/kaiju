@@ -72,7 +72,7 @@ export class KaijuMcpHarness {
   private kaijuName = "kobe";
   private gitName = "kobe-git";
   /** Which built-in the calls below address (KOBE-762: the git connector is its own). */
-  builtin: "kobe" | "git" = "kaiju";
+  builtin: "kobe" | "git" = "kobe";
   private nextId = 1;
 
   /** `extra`: more server options (the git tools' envelope and host seam, KOBE-762). */
@@ -209,7 +209,8 @@ export class KaijuMcpHarness {
 
   async rpc(s: KaijuSandbox, method: string, params?: Record<string, unknown>) {
     if (!this.proxy) throw new Error("harness not set up");
-    const connector = this.builtin === "git" ? GIT_BUILTIN_CONNECTOR_ID : KAIJU_BUILTIN_CONNECTOR_ID;
+    const connector =
+      this.builtin === "git" ? GIT_BUILTIN_CONNECTOR_ID : KAIJU_BUILTIN_CONNECTOR_ID;
     const res = await this.proxy.request(`/v1/mcp/${connector}`, {
       method: "POST",
       headers: {

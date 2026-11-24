@@ -44,7 +44,7 @@ describe("manifestFromReply", () => {
           cargo: ["x"],
         },
       },
-      compatibility: { kaiju: ">=1" },
+      compatibility: { kobe: ">=1" },
       changelog: "whatever",
     });
     const { manifest, fromModel } = manifestFromReply(reply, SEED);

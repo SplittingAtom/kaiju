@@ -1,4 +1,8 @@
-import { generateSessionKeyPair, signSessionToken, signSiteEgressToken } from "@kaiju/session-token";
+import {
+  generateSessionKeyPair,
+  signSessionToken,
+  signSiteEgressToken,
+} from "@kaiju/session-token";
 import { describe, expect, it } from "vitest";
 import { authenticate, egressTokenVerifier, siteTokenVerifier } from "./auth.js";
 

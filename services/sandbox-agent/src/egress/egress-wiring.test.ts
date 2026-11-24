@@ -109,7 +109,7 @@ describe("egress env for Pi's tools", () => {
     expect(missing.stdout).toBe("[]");
     // Not silent: one line on stderr says why the internet will be unreachable.
     expect(missing.stderr).toBe(
-      "kaiju: the sandbox's egress token is not readable; internet access through the egress proxy is unavailable\n",
+      "kobe: the sandbox's egress token is not readable; internet access through the egress proxy is unavailable\n",
     );
     await writeFile(tokenFile, "abc$(touch pwned)@evil:1\n");
     const malformed = toolShellFull(env, 'printf "[%s]" "${HTTPS_PROXY:-}"');

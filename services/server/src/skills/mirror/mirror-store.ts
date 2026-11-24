@@ -262,7 +262,11 @@ export interface WithdrawalPlan {
  * waits in `toCommit`. A commit and tag already pushed are kept in the record: they stay on the
  * remote, Kaiju never rewrites history. A version published and unblocked again is pending again.
  */
-export async function planWithdrawals(db: KaijuDb, url: string, now: Date): Promise<WithdrawalPlan> {
+export async function planWithdrawals(
+  db: KaijuDb,
+  url: string,
+  now: Date,
+): Promise<WithdrawalPlan> {
   const res = await db.execute<{
     id: string;
     name: string;

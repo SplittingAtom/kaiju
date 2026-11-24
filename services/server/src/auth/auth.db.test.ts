@@ -12,7 +12,11 @@ import { fakeIsolation } from "../testing/isolation.js";
 const PUBLIC_URL = "http://kaiju.test";
 const SETUP_TOKEN = "setup-token-for-tests-0123456789";
 let nextIp = 1;
-const OWNER = { email: "owner@kaiju.test", name: "Owner", password: "correct horse battery staple" };
+const OWNER = {
+  email: "owner@kaiju.test",
+  name: "Owner",
+  password: "correct horse battery staple",
+};
 
 let deps: ServerDeps;
 let app: ReturnType<typeof createApp>;

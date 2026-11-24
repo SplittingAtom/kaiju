@@ -210,7 +210,7 @@ function serverFailure(id: JsonRpcId, failure: string): Answer {
 }
 
 /**
- * The built-in Kaiju connector (KOBE-619, spec kaiju-admin-mcp §3): hosted by the server, never an
+ * The built-in Kaiju connector (KOBE-619, spec kobe-admin-mcp §3): hosted by the server, never an
  * upstream. Its tools are listed and its calls decided and executed by the server's internal
  * listener; the proxy attaches no credential and contacts nothing else.
  */

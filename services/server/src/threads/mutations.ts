@@ -327,7 +327,11 @@ export async function trashThread(tx: KaijuTx, viewer: Viewer, id: string): Prom
 }
 
 /** Restores a thread from Trash within the 30-day window; past it the thread awaits purge. */
-export async function restoreThread(tx: KaijuTx, viewer: Viewer, id: string): Promise<ThreadResult> {
+export async function restoreThread(
+  tx: KaijuTx,
+  viewer: Viewer,
+  id: string,
+): Promise<ThreadResult> {
   const locked = await lockForChange(tx, viewer, id);
   if (!locked.ok) return locked;
   if (!locked.thread.deletedAt) return { ok: false, error: "not_in_trash" };

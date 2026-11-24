@@ -24,7 +24,7 @@ const LEVEL_HINTS: Readonly<Record<KaijuLevel, string>> = {
 };
 
 /**
- * The built-in Kaiju connector in Team console › Connectors (KOBE-623, spec kaiju-admin-mcp §6, KA5):
+ * The built-in Kaiju connector in Team console › Connectors (KOBE-623, spec kobe-admin-mcp §6, KA5):
  * its docs tools are on for every agent; the team's level adds Kaiju's admin tools (`read`, or
  * `read and write`), gated by `team.connectors.manage` and only while the site switch allows
  * admin tools. The server decides and audits the change.
@@ -87,8 +87,8 @@ function KaijuCard({
       <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
         <Badge tone="running">Built in</Badge>
         <span className={HINT}>
-          {KAIJU_LEVEL_LABELS[kaiju.level]}. The docs tools are on for every agent; admin tools act as
-          the person in the conversation, never with more than their permissions.
+          {KAIJU_LEVEL_LABELS[kaiju.level]}. The docs tools are on for every agent; admin tools act
+          as the person in the conversation, never with more than their permissions.
         </span>
       </p>
       {!siteAllows && (

@@ -104,7 +104,7 @@ describe("packages with evals/ and kobe.skill.yaml", () => {
       "&semver=1.4.0",
     );
     expect(res.status).toBe(400);
-    expect(res.json.message).toMatch(/kaiju\.skill\.yaml/);
+    expect(res.json.message).toMatch(/kobe\.skill\.yaml/);
   });
 
   it("makes an evals-only change a new version with the same runtime hash", async () => {

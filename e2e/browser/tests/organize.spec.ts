@@ -145,14 +145,14 @@ test("pin, archive and move to project, in the Threads panel and after a reload"
     const projectGroup = threads(page)
       .locator('[data-group="project"]')
       .filter({ has: page.getByRole("button", { name: new RegExp(projectName) }) });
-    await expect(projectGroup.locator("[data-kaiju-thread]").filter({ hasText: title })).toHaveCount(
-      1,
-    );
+    await expect(
+      projectGroup.locator("[data-kaiju-thread]").filter({ hasText: title }),
+    ).toHaveCount(1);
     await page.reload();
     await chat.openThreads();
-    await expect(projectGroup.locator("[data-kaiju-thread]").filter({ hasText: title })).toHaveCount(
-      1,
-    );
+    await expect(
+      projectGroup.locator("[data-kaiju-thread]").filter({ hasText: title }),
+    ).toHaveCount(1);
 
     await chat.closeThreads();
     await chat.ask("No tools. Reply with the single word MOVED.");

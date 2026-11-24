@@ -168,7 +168,10 @@ test("Repos in Files: git icon, host link, branch, ahead/behind, details, a refu
   const tree = projectsTree(page);
   const repo = tree.getByRole("treeitem", { name: "E2E Repo 768" });
   await expect(repo).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
-  await expect(repo).toHaveAttribute("title", "e2e-repo-768 · github.com · acme-e2e/kaiju-e2e-repo");
+  await expect(repo).toHaveAttribute(
+    "title",
+    "e2e-repo-768 · github.com · acme-e2e/kaiju-e2e-repo",
+  );
   await expect(repo.locator("svg.lucide-git-branch")).toHaveCount(1);
   await expect(repo).toContainText("fix");
   await expect(repo).toContainText("↑2 ↓1");

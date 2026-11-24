@@ -5,7 +5,11 @@
  * check results (`warnings`, `duplicates`, `policy_conflicts`, `current_version`, `capacity`) in
  * `error.details`, read with {@link checksOf}.
  */
-import type { SemanticMemoryKind, SemanticMemoryScope, SemanticMemoryStatus } from "@kaiju/protocol";
+import type {
+  SemanticMemoryKind,
+  SemanticMemoryScope,
+  SemanticMemoryStatus,
+} from "@kaiju/protocol";
 import { apiRequest, type ApiError, type ApiResult } from "../api/client";
 
 export type ItemScope = SemanticMemoryScope;

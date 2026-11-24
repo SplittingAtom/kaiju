@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { SecretBox, VIRTUAL_KEY_PURPOSE, virtualKeyContext, type GatewayPrincipal } from "@kaiju/db";
+import {
+  SecretBox,
+  VIRTUAL_KEY_PURPOSE,
+  virtualKeyContext,
+  type GatewayPrincipal,
+} from "@kaiju/db";
 import {
   RUN_TOKEN_HEADER,
   SERVER_CALL_AUDIENCE,

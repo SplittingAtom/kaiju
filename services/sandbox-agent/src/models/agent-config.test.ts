@@ -27,6 +27,6 @@ describe("guarded Pi config (KOBE-169)", () => {
     expect(await tamperedConfig(agent)).toEqual(["agent/models.json", "agent/settings.json"]);
     await symlink(path.join(agent, "models.json"), path.join(agent, "settings.json"));
     expect(await tamperedConfig(agent)).toEqual(["agent/models.json", "agent/settings.json"]);
-    expect(await readFile(path.join(agent, "models.json"), "utf8")).toContain("kaiju");
+    expect(await readFile(path.join(agent, "models.json"), "utf8")).toContain("kobe");
   });
 });

@@ -179,7 +179,10 @@ describe("status tokens (KOBE-301)", () => {
       ).toBeGreaterThan(4.5);
       // The count pill (notification bell): its text on the accent.
       expect(
-        contrast(resolve(theme, "--kaiju-status-accent-fg"), resolve(theme, "--kaiju-status-accent")),
+        contrast(
+          resolve(theme, "--kaiju-status-accent-fg"),
+          resolve(theme, "--kaiju-status-accent"),
+        ),
       ).toBeGreaterThan(4.5);
     });
   }
@@ -560,7 +563,10 @@ describe("design tokens (KOBE-498)", () => {
         );
       }
       expect(
-        contrast(resolve(theme, "--kaiju-brand-primary-fg"), resolve(theme, "--kaiju-brand-primary")),
+        contrast(
+          resolve(theme, "--kaiju-brand-primary-fg"),
+          resolve(theme, "--kaiju-brand-primary"),
+        ),
       ).toBeGreaterThanOrEqual(4.5);
     });
   }

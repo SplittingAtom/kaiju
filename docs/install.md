@@ -1283,8 +1283,8 @@ A stuck network call must never pin a database transaction, its locks or a poole
   role; the migration Job's owner role has neither, so Kaiju cannot set them itself):
 
   ```sql
-  ALTER ROLE kobe_app IN DATABASE kaiju SET statement_timeout = '2min';
-  ALTER ROLE kobe_app IN DATABASE kaiju SET idle_in_transaction_session_timeout = '5min';
+  ALTER ROLE kobe_app IN DATABASE kobe SET statement_timeout = '2min';
+  ALTER ROLE kobe_app IN DATABASE kobe SET idle_in_transaction_session_timeout = '5min';
   ```
 
   Role defaults, too, apply only to sessions opened afterwards. Do not set them on the database
@@ -1343,12 +1343,12 @@ Postgres headroom when you add replicas or raise pool sizes:
         shared_buffers: "512MB"
   ```
 
-Each connection names its service in `pg_stat_activity.application_name`: `kobe-server` /
-`kobe-scheduler` (query pool), `kaiju-event-stream` (the server's stream pool),
+Each connection names its service in `pg_stat_activity.application_name`: `kaiju-server` /
+`kaiju-scheduler` (query pool), `kaiju-event-stream` (the server's stream pool),
 `kaiju-server-listen` / `kaiju-scheduler-listen` (the one LISTEN connection per process, which
 carries every notification channel), `kaiju-gateway`, `kaiju-gateway-listen` and `kaiju-gateway-rate`
 (the member rate limiter's pool, KOBE-810),
-`kobe-egress-proxy` and `kaiju-egress-proxy-listen`, `kaiju-migrate`, `kaiju-cli`:
+`kaiju-egress-proxy` and `kaiju-egress-proxy-listen`, `kaiju-migrate`, `kaiju-cli`:
 
 ```sql
 SELECT application_name, count(*) FROM pg_stat_activity

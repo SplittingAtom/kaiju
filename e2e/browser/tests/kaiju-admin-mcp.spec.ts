@@ -5,7 +5,7 @@ import { pageApi, secondBrowser } from "./support/gate5.js";
 import { panelOf } from "./support/panel.js";
 
 /**
- * KOBE-624 (KA-7; spec docs/specs/kaiju-admin-mcp.md): admin and docs from the conversation through
+ * KOBE-624 (KA-7; spec docs/specs/kobe-admin-mcp.md): admin and docs from the conversation through
  * the built-in Kaiju connector.
  *
  * - `KOBE_USER` / `KOBE_PW`: a site admin who is also team admin of the active team (`KOBE_TEAM`

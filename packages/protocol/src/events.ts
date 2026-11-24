@@ -477,7 +477,9 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   ...memoryPassEventPayloadSchemas,
 } as const satisfies Record<KaijuEventType, z.ZodType>;
 
-export type KaijuEventPayload<T extends KaijuEventType> = z.infer<(typeof EVENT_PAYLOAD_SCHEMAS)[T]>;
+export type KaijuEventPayload<T extends KaijuEventType> = z.infer<
+  (typeof EVENT_PAYLOAD_SCHEMAS)[T]
+>;
 
 /**
  * Envelope of every event: the `run_events` row and the SSE `data:` body.

@@ -1,5 +1,13 @@
 import type { SchedulePausedBy } from "@kaiju/protocol";
-import { and, eq, sql, teamAgentSuspensions, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import {
+  and,
+  eq,
+  sql,
+  teamAgentSuspensions,
+  withTeam,
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { AGENT_SLUG_MAX } from "@kaiju/agent-file";
 import { z } from "zod";
 import { recordAudit } from "../audit/record.js";

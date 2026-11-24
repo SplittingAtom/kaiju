@@ -6,7 +6,7 @@ export interface SiteSettings {
   /** Hours audit events keep the client IP and user agent (KOBE-17): 1-8760, default 12. */
   readonly auditPiiRetentionHours?: number;
   /**
-   * The Kaiju MCP site switch (KOBE-623, spec kaiju-admin-mcp §6, KA5): `off` (no Kaiju connector),
+   * The Kaiju MCP site switch (KOBE-623, spec kobe-admin-mcp §6, KA5): `off` (no Kaiju connector),
    * `docs` (docs tools only; the default) or `admin` (docs plus the admin tools each team turns
    * on). Absent from servers that predate it.
    */

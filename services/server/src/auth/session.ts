@@ -13,7 +13,11 @@ import {
 } from "@kaiju/db";
 import type { SiteRole } from "../authz/permissions.js";
 import type { ServerDeps } from "../deps.js";
-import { DELEGATED_SESSION_PREFIX, delegationOf, type Delegation } from "../kaiju-mcp/delegation.js";
+import {
+  DELEGATED_SESSION_PREFIX,
+  delegationOf,
+  type Delegation,
+} from "../kaiju-mcp/delegation.js";
 import { delegationBacking } from "../kaiju-mcp/delegation-live.js";
 import { storedSettingInForce } from "../sso/required.js";
 import { hasLocalPassword } from "./reset-links.js";

@@ -73,7 +73,7 @@ export function ApprovedInput({ tool, input }: { readonly tool: string; readonly
 }
 
 /**
- * A Kaiju admin write's header (KOBE-623, spec kaiju-admin-mcp §6): where it applies, the server's
+ * A Kaiju admin write's header (KOBE-623, spec kobe-admin-mcp §6): where it applies, the server's
  * summary built from the input (names resolved, never model text) and the change before → after.
  * The exact input is still shown in full below it.
  */

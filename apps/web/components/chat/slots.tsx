@@ -43,7 +43,8 @@ export function ApprovalSlot({ tool }: { readonly tool: ToolActivity }) {
   );
 }
 
-type ArtifactPayload = KaijuEventPayload<"artifact.created"> | KaijuEventPayload<"artifact.updated">;
+type ArtifactPayload =
+  KaijuEventPayload<"artifact.created"> | KaijuEventPayload<"artifact.updated">;
 
 export function ArtifactSlot({ artifact }: { readonly artifact: ArtifactPayload }) {
   const title = artifact.title?.trim() || "Untitled artifact";

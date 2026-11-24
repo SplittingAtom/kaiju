@@ -1,4 +1,7 @@
-import { threadBranchSummaryResultShape, type PiGetEntriesData } from "@kaiju/protocol/sandbox-wire";
+import {
+  threadBranchSummaryResultShape,
+  type PiGetEntriesData,
+} from "@kaiju/protocol/sandbox-wire";
 import { sql, type KaijuTx } from "@kaiju/db";
 import { z } from "zod";
 import { appendRunEventsInTx } from "../event-stream/append.js";

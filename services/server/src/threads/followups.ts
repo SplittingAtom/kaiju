@@ -40,7 +40,10 @@ const SYSTEM_PROMPT =
   "user's message.";
 
 /** Whether the team turned follow-ups on (default off). `teams` is a site table: by id. */
-export async function readFollowupsEnabled(db: KaijuDb | KaijuTx, teamId: string): Promise<boolean> {
+export async function readFollowupsEnabled(
+  db: KaijuDb | KaijuTx,
+  teamId: string,
+): Promise<boolean> {
   const res = await db.execute<{ on: boolean | null }>(sql`
     SELECT (settings -> ${TEAM_FOLLOWUPS_SETTING}) = 'true'::jsonb AS on
       FROM teams WHERE id = ${teamId}`);

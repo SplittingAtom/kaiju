@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 import { splitRenderedPrompt } from "../context/system-prompt.js";
 import type { ExecTransport } from "../kobe-exec/client.js";
 import { registerExecTools, TOOL_NAMES, type PiToolFactories } from "../kobe-exec/tools.js";
-import { registerKaijuModels, type ExtensionApiLike as ModelsApi } from "../kobe-models/register.js";
+import {
+  registerKaijuModels,
+  type ExtensionApiLike as ModelsApi,
+} from "../kobe-models/register.js";
 import type { ModelFileState } from "../kobe-models/protocol.js";
 import {
   registerKaijuPolicy,

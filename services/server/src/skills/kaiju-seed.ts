@@ -172,7 +172,11 @@ async function lockedSkill(tx: KaijuTx, p: KaijuPackage): Promise<SkillRow> {
  * A detached skill (KOBE-495): records the shipped version it skips (when it changed), so the
  * console can say a newer Kaiju version is available. Inside the caller's transaction or alone.
  */
-async function recordShipped(db: KaijuDb | KaijuTx, name: string, semver: string): Promise<boolean> {
+async function recordShipped(
+  db: KaijuDb | KaijuTx,
+  name: string,
+  semver: string,
+): Promise<boolean> {
   const { rows } = await db.execute<{ id: string }>(sql`
     UPDATE registry_skills SET kobe_shipped_version = ${semver}, updated_at = now()
      WHERE name = ${name} AND publisher = 'kobe' AND detached_at IS NOT NULL

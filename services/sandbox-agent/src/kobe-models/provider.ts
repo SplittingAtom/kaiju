@@ -282,7 +282,11 @@ export function createKaijuProvider(deps: KaijuProviderDeps): Provider {
       }
       if (forwarded > 0) {
         // Something was streamed: never retried (the model may have acted); a fixed error.
-        fail(out, errored, `${KAIJU_MODEL_ERROR_PREFIX}model_error: the stream ended with an error`);
+        fail(
+          out,
+          errored,
+          `${KAIJU_MODEL_ERROR_PREFIX}model_error: the stream ended with an error`,
+        );
         return;
       }
       const failure = classifyFailure(errored.errorMessage, response);

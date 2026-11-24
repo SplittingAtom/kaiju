@@ -60,7 +60,7 @@ export function teamConnectorsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
   );
 
   /**
-   * The built-in Kaiju connector (KOBE-623, spec kaiju-admin-mcp §6, KA5): the site switch and the
+   * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp §6, KA5): the site switch and the
    * team's level (`docs` default, `read`, `read_write`). Registered before `/:id`.
    */
   app.get("/kobe", requireTeamPermission("team.read"), async (c) => {

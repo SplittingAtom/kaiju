@@ -13,7 +13,7 @@ import { GalleryAgentEditor } from "./gallery-agent-editor";
  */
 const BASE = "/v1/site/gallery/agents";
 const ATTACHED = {
-  key: "kaiju",
+  key: "kobe",
   generation: 2,
   customized: false,
   customized_at: null,

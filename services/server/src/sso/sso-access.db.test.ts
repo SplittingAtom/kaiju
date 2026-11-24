@@ -475,7 +475,9 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
   });
 
   it("rule 5: no matched value removes every managed row; manual memberships stay", async () => {
-    expect((await apply("carol", ["kaiju.fin.member", "kaiju.mkt.member"])).changes).toHaveLength(2);
+    expect((await apply("carol", ["kaiju.fin.member", "kaiju.mkt.member"])).changes).toHaveLength(
+      2,
+    );
     const none = await apply("carol", ["nothing.mapped"]);
     expect(none.changes.map((c) => c.kind)).toEqual(["removed", "removed"]);
     expect(none.memberships).toEqual([]);

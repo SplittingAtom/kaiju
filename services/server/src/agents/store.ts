@@ -112,7 +112,11 @@ export const auditTeam = (location: AgentLocation) =>
   location.scope === "team" ? location.teamId : null;
 
 /** Runs `fn` in the right transaction: team-scoped (RLS) for team agents, plain otherwise. */
-export function inLocation<T>(db: KaijuDb, location: AgentLocation, fn: (tx: KaijuTx) => Promise<T>) {
+export function inLocation<T>(
+  db: KaijuDb,
+  location: AgentLocation,
+  fn: (tx: KaijuTx) => Promise<T>,
+) {
   return location.scope === "team"
     ? withTeam(db, location.teamId, fn)
     : db.transaction((tx) => fn(tx));

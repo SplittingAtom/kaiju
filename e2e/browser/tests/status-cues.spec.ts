@@ -99,7 +99,9 @@ test("status cues: a green Running badge and the rail's dot, also from another t
   await chat.steering.locator("[data-kaiju-stop]").click();
   await chat.waitForIdle();
   await chat.openThreads();
-  await expect(page.locator(`li[data-kaiju-thread="${threadId}"] [data-status-dot]`)).toHaveCount(0);
+  await expect(page.locator(`li[data-kaiju-thread="${threadId}"] [data-status-dot]`)).toHaveCount(
+    0,
+  );
 });
 
 test("reduced motion stops the pulse", async ({ chat, page }) => {

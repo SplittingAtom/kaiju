@@ -194,7 +194,8 @@ describe("drop a Lakehouse Picker item into the composer (KOBE-551)", () => {
       expect(dropTaken).toBe(true);
       await waitFor(() => expect(hint()).toBe(LAKEHOUSE_DROP_REFUSED));
       expect(
-        within(must(document.getElementById("kaiju-composer-hint"))).getByRole("status").textContent,
+        within(must(document.getElementById("kaiju-composer-hint"))).getByRole("status")
+          .textContent,
       ).toBe(LAKEHOUSE_DROP_REFUSED);
       expect(input.value).toBe("Hello");
       expect(chips()).toHaveLength(0);

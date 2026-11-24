@@ -7,7 +7,11 @@ import {
   type Server as NetServer,
   type Socket,
 } from "node:net";
-import { generateSessionKeyPair, signSessionToken, signSiteEgressToken } from "@kaiju/session-token";
+import {
+  generateSessionKeyPair,
+  signSessionToken,
+  signSiteEgressToken,
+} from "@kaiju/session-token";
 import { InMemorySpanExporter, initTelemetry } from "@kaiju/telemetry";
 import { pino } from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";

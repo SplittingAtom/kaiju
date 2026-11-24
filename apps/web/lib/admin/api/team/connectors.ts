@@ -86,7 +86,7 @@ export const EXPOSURE_LABELS: Readonly<Record<Exposure, string>> = {
   custom: "Chosen tools",
 };
 
-/** The built-in Kaiju connector's levels for a team (KOBE-623, spec kaiju-admin-mcp §6, KA5). */
+/** The built-in Kaiju connector's levels for a team (KOBE-623, spec kobe-admin-mcp §6, KA5). */
 export type KaijuLevel = "docs" | "read" | "read_write";
 /** The site switch: `off` (no Kaiju connector), `docs` (default), `admin`. */
 export type KaijuMode = "off" | "docs" | "admin";

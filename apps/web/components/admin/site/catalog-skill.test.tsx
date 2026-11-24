@@ -45,7 +45,7 @@ const SKILL = {
   status: "active",
   retired: false,
   blocklisted: false,
-  kaiju: ATTACHED,
+  kobe: ATTACHED,
   draft: null,
   versions: [VERSION],
 };
@@ -135,7 +135,7 @@ describe("catalog skill view (ac-1)", () => {
   it("says a newer Kaiju version is available, compares, and resets after asking", async () => {
     const detached = {
       ...SKILL,
-      kaiju: {
+      kobe: {
         ...ATTACHED,
         detached: true,
         detachedFromVersion: "1.0.0",

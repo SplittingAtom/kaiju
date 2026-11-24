@@ -79,7 +79,7 @@ describe("authorship (G13, GQ10)", () => {
       committer: { name: "Ada via Kaiju", email: "ada@x.test" },
     });
     const noreply = conversionIdentity(ada, ada.id, "noreply", "kaiju.test");
-    expect(noreply.author.email).toMatch(/^[0-9a-f]{10}\+ada@users\.noreply\.kobe\.test$/);
+    expect(noreply.author.email).toMatch(/^[0-9a-f]{10}\+ada@users\.noreply\.kaiju\.test$/);
   });
   it("a member who left keeps the name, never the mailbox; an unknown one is a former member", () => {
     const left = conversionIdentity({ ...ada, left: true }, ada.id, "member", "kaiju.test");
@@ -88,7 +88,7 @@ describe("authorship (G13, GQ10)", () => {
     expect(left.committer.name).toBe("Ada via Kaiju");
     const gone = conversionIdentity(undefined, ada.id, "member", "kaiju.test");
     expect(gone.author.name).toBe(FORMER_MEMBER);
-    expect(gone.author.email).toMatch(/@users\.noreply\.kobe\.test$/);
+    expect(gone.author.email).toMatch(/@users\.noreply\.kaiju\.test$/);
   });
   it("messages keep their text with one trailing newline", () => {
     expect(gitMessage("  Fix it\r\n\r\nBody  ")).toBe("Fix it\n\nBody\n");

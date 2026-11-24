@@ -119,10 +119,12 @@ describe("package layout (KOBE-309)", () => {
       "Provenance.json",
       "skill.md",
     ])
-      expect(checkPackagePaths(["SKILL.md", path], { kaijuProvenance: true }), path).toContainEqual({
-        path,
-        problem: "reserved_name_case",
-      });
+      expect(checkPackagePaths(["SKILL.md", path], { kaijuProvenance: true }), path).toContainEqual(
+        {
+          path,
+          problem: "reserved_name_case",
+        },
+      );
     expect(
       checkPackagePaths(["SKILL.md", "scripts/Evals/x", "references/KOBE.SKILL.YAML"]),
     ).toEqual([]);
@@ -345,7 +347,7 @@ describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
         egress: ["pypi.org", "files.pythonhosted.org"],
         packages: { pip: ["openpyxl==3.1.*"] },
       },
-      compatibility: { kaiju: ">=1.2", pi: "1.0.x" },
+      compatibility: { kobe: ">=1.2", pi: "1.0.x" },
       changelog: "Adds a totals row per region.",
     });
   });

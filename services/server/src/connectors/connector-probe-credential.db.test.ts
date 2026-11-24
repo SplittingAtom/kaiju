@@ -320,7 +320,8 @@ describe("site admins are told about an auth_required skip (ac-3)", () => {
     await refreshAllConnectors(db(), h.deps.connectorProbe, quiet, { envelope: h.deps.envelope });
     expect((await row(id)).refresh_skipped).toBe("auth_required");
 
-    const sweep = () => notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kaiju.test" });
+    const sweep = () =>
+      notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kaiju.test" });
     await sweep();
     const mail = h.mailer.to("root@probe.test").filter((m) => m.subject.includes("notify-a"));
     expect(mail).toHaveLength(1);

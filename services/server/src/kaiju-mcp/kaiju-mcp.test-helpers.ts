@@ -14,7 +14,11 @@ import {
   createUpstreamClient,
   type UpstreamClient,
 } from "@kaiju/mcp-proxy";
-import { KAIJU_BUILTIN_CONNECTOR_ID, KAIJU_MCP_MODE_KEY, seedKaijuBuiltinConnector } from "@kaiju/db";
+import {
+  KAIJU_BUILTIN_CONNECTOR_ID,
+  KAIJU_MCP_MODE_KEY,
+  seedKaijuBuiltinConnector,
+} from "@kaiju/db";
 import { approvalKeyring } from "../approvals/index.js";
 import { createInternalApp } from "../routes/internal.js";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
@@ -27,7 +31,7 @@ import {
 } from "../testing/mcp-fixtures.js";
 
 /**
- * The built-in Kaiju MCP server end to end (KOBE-619, spec kaiju-admin-mcp §3, §6–§8, KA-2 ac-1..6):
+ * The built-in Kaiju MCP server end to end (KOBE-619, spec kobe-admin-mcp §3, §6–§8, KA-2 ac-1..6):
  * a sandbox calls the **real MCP proxy app**, which talks HTTP to the **real internal listener**;
  * the server decides (policy engine, Kaiju admin guard, signed approvals over the `approvals` table,
  * audit) and executes the console route in process as the person, on a real Postgres. The sandbox

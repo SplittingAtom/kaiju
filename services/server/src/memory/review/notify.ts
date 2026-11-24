@@ -35,7 +35,11 @@ export async function noticeCandidatesReady(
 }
 
 /** Drops the pass's reminder once none of its candidates is open (decided or expired). */
-export async function settleWhenDecided(tx: KaijuTx, teamId: string, passId: string): Promise<void> {
+export async function settleWhenDecided(
+  tx: KaijuTx,
+  teamId: string,
+  passId: string,
+): Promise<void> {
   const { rows } = await tx.execute(sql`
     SELECT 1 FROM memory_candidates
      WHERE team_id = ${teamId} AND pass_id = ${passId} AND state = 'open' AND expires_at > now()

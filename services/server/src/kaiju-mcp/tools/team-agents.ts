@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { kaijuTool, routeCursorSchema, type BeforeState, type KaijuRouteCaller } from "../catalog.js";
+import {
+  kaijuTool,
+  routeCursorSchema,
+  type BeforeState,
+  type KaijuRouteCaller,
+} from "../catalog.js";
 
 /**
  * The team's agents (Agents › Team tab with the admins' inventory, KOBE-570; Team console

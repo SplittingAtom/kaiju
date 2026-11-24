@@ -155,7 +155,7 @@ describe("Kaiju-published rows carry no person", () => {
         c.query<{ id: string }>(
           `INSERT INTO registry_versions (${VERSION_COLUMNS}, publisher${extra})
            VALUES ($1, '1.0.0', 1, $2, $2, '{}', '{}', '{}', '{}', 'pass', 'approved', now(),
-             'kaiju'${values}) RETURNING id`,
+             'kobe'${values}) RETURNING id`,
           [kaijuSkill, HASH_B],
         );
       // Bytes are required, a submitter or reviewer refused.
@@ -177,8 +177,8 @@ describe("Kaiju-published rows carry no person", () => {
       await expect(insert(", runtime_storage_key", ", 'k'")).rejects.toMatchObject({
         constraint: "registry_versions_storage",
       });
-      kaijuVersion = (await insert(", runtime_storage_key, runtime_size_bytes", ", 'k', 10")).rows[0]
-        ?.id as string;
+      kaijuVersion = (await insert(", runtime_storage_key, runtime_size_bytes", ", 'k', 10"))
+        .rows[0]?.id as string;
     });
   });
 

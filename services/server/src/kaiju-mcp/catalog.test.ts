@@ -18,7 +18,7 @@ describe("Kaiju MCP catalog (KOBE-619)", () => {
   it("annotates reads read-only and writes as closed-world writes", () => {
     for (const tool of KAIJU_ADMIN_TOOLS) {
       const pinned = kaijuPinnedTool("kobe-builtin", tool);
-      expect(pinned.pi_name).toBe(`mcp__kaiju_builtin__${tool.name}`);
+      expect(pinned.pi_name).toBe(`mcp__kobe_builtin__${tool.name}`);
       expect(pinned.annotations.readOnlyHint).toBe(tool.readOnly);
       expect(pinned.annotations.openWorldHint).toBe(false);
       expect(pinned.input_schema.type).toBe("object");

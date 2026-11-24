@@ -74,7 +74,7 @@ export interface ChatConnector {
   /** Why it is not working; null when it works. */
   readonly problem: ConnectorProblem | null;
   /**
-   * The built-in Kaiju connector (KOBE-623, spec kaiju-admin-mcp KA7): its docs tools are on in every
+   * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp KA7): its docs tools are on in every
    * conversation, so it has no toggle; `admin` says which admin tools the member gets where the
    * agent uses the Kaiju connector (`off` while the switches or their role give none).
    */

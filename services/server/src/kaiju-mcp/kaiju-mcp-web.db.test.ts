@@ -9,7 +9,7 @@ import { KaijuMcpHarness, type KaijuWorld } from "../testing/kaiju-mcp-harness.j
 import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
- * KA-6 (KOBE-623, spec kaiju-admin-mcp §6–§8): what the web relies on from the server. The
+ * KA-6 (KOBE-623, spec kobe-admin-mcp §6–§8): what the web relies on from the server. The
  * "Admin change" card's server summary, the team level and site switch round trips, audit "via
  * agent" with a thread link only for those who may read it, and shared-thread redaction of Kaiju
  * admin results wherever a reader is served a tool's output.

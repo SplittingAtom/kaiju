@@ -1,4 +1,4 @@
-import { and, eq, isNull, siteAgents, type AgentScope, type KaijuTx } from "@kobe/db";
+import { and, eq, isNull, siteAgents, type AgentScope, type KaijuTx } from "@kaiju/db";
 import { KAIJU_GALLERY_KEY } from "../gallery/definitions.js";
 import { readTeamDefaultAgent } from "./team-default.js";
 import { resolveAgentPin, type AgentPin } from "./versions.js";

@@ -184,7 +184,11 @@ const side = (definition: AgentDefinition) => ({
 });
 
 /** Compare (KOBE-494): the repo's definition and the agent's current version, side by side. */
-export async function compareWithRepository(db: KaijuDb, id: string, currentVersion: number | null) {
+export async function compareWithRepository(
+  db: KaijuDb,
+  id: string,
+  currentVersion: number | null,
+) {
   const state = await galleryState(db, id);
   if (!state) return null;
   const repo = state.key === null ? null : repositoryDefinition(state.key);

@@ -69,10 +69,10 @@ afterAll(async () => {
 
 describe("the one gallery agent (KOBE-254)", () => {
   it("ac-1: a fresh install seeds exactly Kobe, published, with every tool and `all` connectors", async () => {
-    expect(await seed()).toEqual([expect.objectContaining({ key: "kaiju", action: "created" })]);
+    expect(await seed()).toEqual([expect.objectContaining({ key: "kobe", action: "created" })]);
     const rows = await galleryRows();
     expect(rows.map((r) => [r.gallery_key, r.current_version, r.archived_at])).toEqual([
-      ["kaiju", 1, null],
+      ["kobe", 1, null],
     ]);
     expect(await listedSlugs()).toEqual(["kaiju"]);
     const kaijuId = rows[0]?.id ?? "";
@@ -112,7 +112,9 @@ describe("the one gallery agent (KOBE-254)", () => {
 
     // The upgrade, then two more restarts: same outcome each time.
     for (let restart = 0; restart < 3; restart += 1) {
-      expect(await seed()).toEqual([expect.objectContaining({ key: "kaiju", action: "unchanged" })]);
+      expect(await seed()).toEqual([
+        expect.objectContaining({ key: "kobe", action: "unchanged" }),
+      ]);
       const rows = await galleryRows();
       expect(rows).toHaveLength(7);
       for (const r of rows.filter((x) => x.gallery_key !== "kobe")) {

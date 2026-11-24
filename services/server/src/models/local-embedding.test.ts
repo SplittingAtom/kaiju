@@ -68,9 +68,9 @@ describe("withLocalEmbedding", () => {
       },
       "f".repeat(32),
     );
-    expect(desired.providers.map((p) => p.name).sort()).toEqual(["kaiju-embed-stub", "ollama"]);
+    expect(desired.providers.map((p) => p.name).sort()).toEqual(["kobe-embed-stub", "ollama"]);
     expect(desired.virtualKeys[0]?.models).toEqual({
-      "kaiju-embed-stub": ["text-embedding-3-small"],
+      "kobe-embed-stub": ["text-embedding-3-small"],
     });
   });
 

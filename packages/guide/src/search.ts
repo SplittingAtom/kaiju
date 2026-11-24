@@ -2,7 +2,7 @@ import { headingSlug } from "./headings.js";
 import type { GuidePage, GuideSection } from "./loader.js";
 
 /**
- * Search over the guide for the `docs_search` tool (KOBE-620, spec kaiju-admin-mcp §4): page titles,
+ * Search over the guide for the `docs_search` tool (KOBE-620, spec kobe-admin-mcp §4): page titles,
  * summaries and h2–h4 headings, never the body. Every word of the query must match somewhere in
  * the page; a word found in the title ranks above one found in a heading, above the summary. Ties
  * keep nav order. Results are capped.

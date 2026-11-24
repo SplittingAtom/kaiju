@@ -121,7 +121,7 @@ const SITE_PROPOSAL = row({
 });
 
 const GALLERY_STATE = {
-  key: "kaiju",
+  key: "kobe",
   generation: 3,
   customized: true,
   customizedAt: "2026-10-30T10:00:00Z",
@@ -351,7 +351,7 @@ describe("Site tab as a site admin: the Gallery page's actions (ac-1)", () => {
     await rowAction("Kobe", "Export file");
     await waitFor(() =>
       expect(clicked).toEqual([
-        { href: "/v1/site/gallery/agents/g-1/export", download: "kaiju.md" },
+        { href: "/v1/site/gallery/agents/g-1/export", download: "kobe.md" },
       ]),
     );
     click.mockRestore();

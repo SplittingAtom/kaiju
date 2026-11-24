@@ -62,7 +62,9 @@ async function row(title: string): Promise<HTMLElement> {
 }
 
 const activityOf = async (title: string) =>
-  must((await row(title)).querySelector("[data-kaiju-activity]")).getAttribute("data-kaiju-activity");
+  must((await row(title)).querySelector("[data-kaiju-activity]")).getAttribute(
+    "data-kaiju-activity",
+  );
 
 function asked(): KaijuEventPayload<"approval.requested"> {
   return {

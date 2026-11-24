@@ -141,11 +141,13 @@ export async function decide(p: Person, approvalId: string, body: object, replic
     "x-forwarded-for": p.browser.ip,
     ...(p.browser.team ? { "x-kobe-team": p.browser.team } : {}),
   };
-  const res = await fx.replica(replica).app.request(`http://kaiju.test/v1/approvals/${approvalId}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  const res = await fx
+    .replica(replica)
+    .app.request(`http://kaiju.test/v1/approvals/${approvalId}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
   return { status: res.status, json: (await res.json()) as Record<string, unknown> };
 }
 

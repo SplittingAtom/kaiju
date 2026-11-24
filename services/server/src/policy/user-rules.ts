@@ -5,7 +5,14 @@ import {
   type RememberScope,
   type ToolRegistry,
 } from "@kaiju/protocol";
-import { sql, SYSTEM_ACTOR, withTeam, type AuditActor, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import {
+  sql,
+  SYSTEM_ACTOR,
+  withTeam,
+  type AuditActor,
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { liveUserRule } from "./live-rule.js";
 import { readTeamRememberLimits } from "./remember-limits-store.js";
 import { RULE_REFUSAL_TEXT, rememberedRuleRefusal } from "./remember-limits.js";

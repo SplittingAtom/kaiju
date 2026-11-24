@@ -85,7 +85,11 @@ export function workspaceKit(deps: WorkspaceRoutesDeps) {
    * (throws {@link Busy}), and lock/statement timeouts so a queue on one workspace's row lock
    * can't pin pool connections.
    */
-  const bounded = <T>(teamId: string, lockMs: number, fn: (tx: KaijuTx) => Promise<T>): Promise<T> =>
+  const bounded = <T>(
+    teamId: string,
+    lockMs: number,
+    fn: (tx: KaijuTx) => Promise<T>,
+  ): Promise<T> =>
     withTeam(db, teamId, async (t) => {
       await t.execute(sql`
         SELECT set_config('lock_timeout', ${String(lockMs)}, true),

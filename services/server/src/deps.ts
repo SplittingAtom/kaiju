@@ -306,7 +306,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   const database = createDb(options.databaseUrl, {
     ...session,
     ...(options.dbPool?.max === undefined ? {} : { max: options.dbPool.max }),
-    applicationName: options.dbPool?.applicationName ?? "kobe-server",
+    applicationName: options.dbPool?.applicationName ?? "kaiju-server",
   });
   const authAttempts = new AuthAttemptAudit(database.db);
   authAttempts.start();

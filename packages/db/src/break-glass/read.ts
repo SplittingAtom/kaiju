@@ -203,7 +203,10 @@ function inScope(grant: BreakGlassGrantView): SQL {
 }
 
 /** Step 1: the active grant for this admin, row-locked against concurrent revocation. */
-async function lockActiveGrant(tx: KaijuTx, access: BreakGlassAccess): Promise<BreakGlassGrantView> {
+async function lockActiveGrant(
+  tx: KaijuTx,
+  access: BreakGlassAccess,
+): Promise<BreakGlassGrantView> {
   const result = await tx.execute<{
     id: string;
     team_id: string;

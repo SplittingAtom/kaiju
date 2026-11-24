@@ -278,7 +278,8 @@ const DEFAULT_PRESET: Preset = {
     "--input": "oklch(0.922 0 0)",
     "--ring": "oklch(0.708 0 0)",
     "--kaiju-brand-primary": "#2449c7",
-    "--kaiju-brand-primary-hover": "color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)",
+    "--kaiju-brand-primary-hover":
+      "color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)",
     "--kaiju-brand-primary-fg": "#ffffff",
     "--kaiju-brand-link": "#2449c7",
     "--kaiju-brand-focus": "#2449c7",
@@ -312,7 +313,8 @@ const DEFAULT_PRESET: Preset = {
     "--input": "oklch(1 0 0 / 15%)",
     "--ring": "oklch(0.556 0 0)",
     "--kaiju-brand-primary": "#4263eb",
-    "--kaiju-brand-primary-hover": "color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)",
+    "--kaiju-brand-primary-hover":
+      "color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)",
     "--kaiju-brand-primary-fg": "#ffffff",
     "--kaiju-brand-link": "#8fa8ff",
     "--kaiju-brand-focus": "#8fa8ff",

@@ -47,7 +47,8 @@ describe("run.start → Pi prompt → pi.event stream", () => {
   });
 
   it("passes the agent's system prompt to Pi as an appended, agent-owned file (KOBE-123)", async () => {
-    const prompt = 'You are the marker agent. KAIJU-PROMPT-MARKER:abc \u00e9 `$(rm -rf /)` "quoted"';
+    const prompt =
+      'You are the marker agent. KAIJU-PROMPT-MARKER:abc \u00e9 `$(rm -rf /)` "quoted"';
     h = await startHarness();
     await h.server.command(runStart("say:hi", { config: { system_prompt: prompt } }));
     const [launch] = await h.commandsLog();

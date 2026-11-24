@@ -205,7 +205,9 @@ describe("the fade's CSS (ac-1, ac-3)", () => {
 
   it("tints only while the message list is pinned; otherwise words arrive plain", () => {
     const source = flat(CSS);
-    expect(source).toContain('[data-kaiju-scroll="messages"] { --kaiju-arrive-tint: currentColor; }');
+    expect(source).toContain(
+      '[data-kaiju-scroll="messages"] { --kaiju-arrive-tint: currentColor; }',
+    );
     expect(source).toMatch(
       /\[data-kaiju-scroll="messages"\]\[data-kaiju-follow="pinned"\] \{ --kaiju-arrive-tint: var\(--admin-accent/,
     );

@@ -102,7 +102,10 @@ async function openShared(t: string) {
 }
 
 const status = () =>
-  (document.querySelector("[data-kaiju-shortcut-status]")?.textContent ?? "").replace(/\u00a0/g, "");
+  (document.querySelector("[data-kaiju-shortcut-status]")?.textContent ?? "").replace(
+    /\u00a0/g,
+    "",
+  );
 // By selector: an open dialog hides the rest from the accessibility tree.
 const rail = () => must(document.querySelector<HTMLElement>('aside[aria-label="Workspace"]'));
 const threadParam = () => new URL(window.location.href).searchParams.get("thread");
@@ -306,22 +309,22 @@ describe("the ? sheet and tooltips list them (ac-2)", { timeout: 30_000 }, () =>
     const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
     const rows = sheet.querySelectorAll("[data-kaiju-shortcut]");
     expect(rows).toHaveLength(12);
-    expect([...rows].map((r) => r.querySelector("[data-kaiju-shortcut-name]")?.textContent)).toEqual(
-      [
-        "Search actions, threads and files",
-        "New conversation",
-        "Collapse or expand the rail",
-        "Show the files",
-        "Show or hide the artifact column",
-        "Show or hide all details",
-        "Stop",
-        "Steer now",
-        "Edit your last message",
-        "Previous conversation",
-        "Next conversation",
-        "Go to the message box",
-      ],
-    );
+    expect(
+      [...rows].map((r) => r.querySelector("[data-kaiju-shortcut-name]")?.textContent),
+    ).toEqual([
+      "Search actions, threads and files",
+      "New conversation",
+      "Collapse or expand the rail",
+      "Show the files",
+      "Show or hide the artifact column",
+      "Show or hide all details",
+      "Stop",
+      "Steer now",
+      "Edit your last message",
+      "Previous conversation",
+      "Next conversation",
+      "Go to the message box",
+    ]);
     const mac = isMacPlatform();
     expect(rows[0]?.querySelector("kbd")?.textContent).toBe(mac ? "⌘K" : "Ctrl+K");
     expect(within(sheet).getByRole("list", { name: "Message box keys" })).toBeTruthy();

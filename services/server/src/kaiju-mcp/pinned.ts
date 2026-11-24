@@ -63,7 +63,10 @@ export function kaijuPinnedTools(connectorName: string): PinnedTool[] {
  * The built-in as a team connector: `custom` exposure over the docs tools and the admin tools in
  * `enabled` (Pi names).
  */
-export function kaijuConnector(row: KaijuBuiltinRow, enabled: readonly KaijuTool[]): EnabledConnector {
+export function kaijuConnector(
+  row: KaijuBuiltinRow,
+  enabled: readonly KaijuTool[],
+): EnabledConnector {
   const tools = kaijuPinnedTools(row.name);
   const allowed = new Set([...KAIJU_DOCS_TOOLS, ...enabled].map((t) => t.name));
   return {

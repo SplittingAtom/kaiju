@@ -135,9 +135,9 @@ describe("floating cards (KOBE-554)", () => {
     expect(declares(SHELL, ".grid", "padding: var(--kaiju-shell-gutter);")).toBe(true);
     expect(declares(SHELL, ".grid", "column-gap: var(--kaiju-shell-gap);")).toBe(true);
     // The rail's room counts the gaps beside the floors.
-    expect(declares(SHELL, ".grid", "--kaiju-rail-room: calc(400px + var(--kaiju-shell-gap));")).toBe(
-      true,
-    );
+    expect(
+      declares(SHELL, ".grid", "--kaiju-rail-room: calc(400px + var(--kaiju-shell-gap));"),
+    ).toBe(true);
   });
 
   it("rail, artifact column and conversation are cards: card colour, border, panel radius", () => {
@@ -339,9 +339,9 @@ describe("breakpoints (KOBE-201, CE7, CE8)", () => {
   it("the rail's dragged width yields to the columns' floors; its handle is wide-only (KOBE-305)", () => {
     // 280 px unless dragged, never leaving the conversation (and an open artifact column) less
     // than its floor.
-    expect(declares(SHELL, ".grid", "--kaiju-rail-room: calc(400px + var(--kaiju-shell-gap));")).toBe(
-      true,
-    );
+    expect(
+      declares(SHELL, ".grid", "--kaiju-rail-room: calc(400px + var(--kaiju-shell-gap));"),
+    ).toBe(true);
     expect(
       declares(
         SHELL,

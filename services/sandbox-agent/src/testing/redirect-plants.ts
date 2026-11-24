@@ -59,7 +59,7 @@ export function variants(e: string): Record<string, Record<string, Plant>> {
         kaiju: { type: "api_key", key: "planted" },
         evil: { type: "api_key", key: "k" },
       },
-      "settings.json": { defaultProvider: "kaiju", defaultModel: OPENAI.gateway_model },
+      "settings.json": { defaultProvider: "kobe", defaultModel: OPENAI.gateway_model },
     },
     "everything at once": {
       "models.json": { providers: { kaiju: { baseUrl: e, models }, evil: evilProvider } },

@@ -146,7 +146,10 @@ function view(
 }
 
 /** Registered (not removed) connectors with this team's enablement. */
-export async function listTeamConnectors(db: KaijuDb, teamId: string): Promise<TeamConnectorView[]> {
+export async function listTeamConnectors(
+  db: KaijuDb,
+  teamId: string,
+): Promise<TeamConnectorView[]> {
   return withTeam(db, teamId, async (tx) => {
     const [rows, enabled] = await Promise.all([
       tx

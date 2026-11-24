@@ -10,7 +10,7 @@ import {
 } from "./index.js";
 
 /**
- * KOBE-620 (KA-3, spec kaiju-admin-mcp §4, KA4): the docs tools of the built-in Kaiju connector
+ * KOBE-620 (KA-3, spec kobe-admin-mcp §4, KA4): the docs tools of the built-in Kaiju connector
  * answer the guide the web serves, byte for byte, for the deployment's origin and app name.
  */
 const CTX = { appName: "Acme Chat", origin: "https://chat.example.com" };
@@ -37,7 +37,7 @@ describe("the docs tools", () => {
     for (const tool of KAIJU_DOCS_TOOLS) {
       expect(isKaijuDocsToolName(tool.name)).toBe(true);
       expect(tool.input.safeParse({ unexpected: 1 }).success).toBe(false);
-      const pinned = kaijuPinnedTool("kaiju", tool);
+      const pinned = kaijuPinnedTool("kobe", tool);
       expect(pinned.pi_name).toBe(`mcp__kobe__${tool.name}`);
       expect(pinned.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });
     }

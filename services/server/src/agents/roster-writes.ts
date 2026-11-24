@@ -166,7 +166,12 @@ async function countEntries(
   return row?.n ?? 0;
 }
 
-async function hasRoom(tx: KaijuTx, target: RosterTarget, teamId: string | null, proposal: boolean) {
+async function hasRoom(
+  tx: KaijuTx,
+  target: RosterTarget,
+  teamId: string | null,
+  proposal: boolean,
+) {
   return proposal
     ? (await countEntries(tx, target, teamId, ["proposed"])) < AGENT_ROSTER_PROPOSALS_CAP
     : (await countEntries(tx, target, teamId, ["active", "suspended"])) < AGENT_ROSTER_CAP;

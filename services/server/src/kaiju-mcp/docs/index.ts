@@ -15,7 +15,7 @@ import { readAppName } from "../../branding/settings.js";
 import type { KaijuDb } from "@kaiju/db";
 
 /**
- * The docs tools of the built-in Kaiju connector (KOBE-620, spec kaiju-admin-mcp §4, KA4, KA7): the
+ * The docs tools of the built-in Kaiju connector (KOBE-620, spec kobe-admin-mcp §4, KA4, KA7): the
  * user guide as the web serves it (`@kaiju/guide`, the same pages and renderers as /llms.txt,
  * /llms-full.txt and /docs/<slug>.md), with the deployment's public origin and the site's app
  * name, so an agent in a sandbox reads the docs without any egress. Read-only, no team or user
@@ -147,13 +147,19 @@ const docsSearch = docsTool({
 });
 
 /** Every docs tool (KA7: on every run of every agent while the site switch is not `off`). */
-export const KAIJU_DOCS_TOOLS: readonly KaijuDocsTool[] = [docsIndex, docsPage, docsFull, docsSearch];
+export const KAIJU_DOCS_TOOLS: readonly KaijuDocsTool[] = [
+  docsIndex,
+  docsPage,
+  docsFull,
+  docsSearch,
+];
 
 export function kaijuDocsToolByName(name: string): KaijuDocsTool | undefined {
   return KAIJU_DOCS_TOOLS.find((t) => t.name === name);
 }
 
-export const isKaijuDocsToolName = (name: string): boolean => kaijuDocsToolByName(name) !== undefined;
+export const isKaijuDocsToolName = (name: string): boolean =>
+  kaijuDocsToolByName(name) !== undefined;
 
 /** Runs one docs tool; invalid input and unknown pages are tool errors, never throws. */
 export function runKaijuDocsTool(

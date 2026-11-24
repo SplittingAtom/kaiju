@@ -8,8 +8,8 @@ import {
   redactEvent,
 } from "./admin-redaction.js";
 
-const member = adminResultGate({ segments: ["kaiju"], teamRole: "member", siteRole: null });
-const teamAdmin = adminResultGate({ segments: ["kaiju"], teamRole: "team_admin", siteRole: null });
+const member = adminResultGate({ segments: ["kobe"], teamRole: "member", siteRole: null });
+const teamAdmin = adminResultGate({ segments: ["kobe"], teamRole: "team_admin", siteRole: null });
 
 const result = (toolName: string, text = "secret rows") => ({
   type: "message",
@@ -45,12 +45,12 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
 
   it("follows the built-in's fallback name", () => {
     const gate = adminResultGate({
-      segments: ["kaiju_builtin"],
+      segments: ["kobe_builtin"],
       teamRole: "member",
       siteRole: null,
     });
-    expect(gate.hides("mcp__kaiju_builtin__team_members_list")).toBe(true);
-    // A registered connector that took the name `kaiju` is not the built-in.
+    expect(gate.hides("mcp__kobe_builtin__team_members_list")).toBe(true);
+    // A registered connector that took the name `kobe` is not the built-in.
     expect(gate.hides("mcp__kobe__team_members_list")).toBe(false);
   });
 
@@ -133,7 +133,7 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
     expect(JSON.stringify(out)).not.toContain("secret rows");
     expect(JSON.stringify(out)).toContain(KAIJU_ADMIN_RESULT_HIDDEN);
     const siteAdmin = adminResultGate({
-      segments: ["kaiju"],
+      segments: ["kobe"],
       teamRole: "member",
       siteRole: "admin",
     });

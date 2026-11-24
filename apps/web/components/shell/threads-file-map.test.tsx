@@ -363,7 +363,9 @@ describe("KOBE-614: the pin on the row, the rail's handle", () => {
     handle.focus();
     await user.keyboard("{ArrowLeft}");
     await waitFor(() => expect(fake.preferences["threads_file_rail_width"]).toBe(424), WAIT);
-    expect(body(dialog).style.getPropertyValue("--kaiju-file-rail-col")).toBe("minmax(240px,424px)");
+    expect(body(dialog).style.getPropertyValue("--kaiju-file-rail-col")).toBe(
+      "minmax(240px,424px)",
+    );
     expect(body(dialog).style.getPropertyValue("--kobe-threads-col")).toBe("minmax(12rem,1fr)");
     // Enter: back to the default.
     await user.keyboard("{Enter}");

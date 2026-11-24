@@ -427,7 +427,7 @@ function handle(cmd) {
         data: { sessionFile, isStreaming: streaming, model: selectedModel ?? null },
       });
     case "set_model":
-      if (registered === undefined || cmd.provider !== "kaiju" || cmd.modelId !== registered.id)
+      if (registered === undefined || cmd.provider !== "kobe" || cmd.modelId !== registered.id)
         return respond(cmd, {
           success: false,
           error: `Model not found: ${cmd.provider}/${cmd.modelId}`,

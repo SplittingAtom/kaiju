@@ -27,7 +27,7 @@ describe("mapAgentVersionToOrbit (KOBE-90)", () => {
   it("maps role, prompt and one agent into Orbit's setup layer", () => {
     const def = definition({ role: "Analyst", description: "Crunches numbers" });
     const { config } = exportOf(def);
-    expect(config.name).toBe("kaiju-sales-analyst-v3");
+    expect(config.name).toBe("kobe-sales-analyst-v3");
     expect(config.description).toBe("Crunches numbers");
     expect(config.setup.agents).toHaveLength(1);
     expect(config.setup.agents[0]).toMatchObject({
@@ -80,7 +80,7 @@ describe("mapAgentVersionToOrbit (KOBE-90)", () => {
       "mcp__github__get_pr",
       "mcp__slack__post",
     ]);
-    expect(config.metadata.kaiju).toMatchObject({ connectors: "all" });
+    expect(config.metadata.kobe).toMatchObject({ connectors: "all" });
     expect(() => exportOf(def, { mcpTools: ["not_mcp"] })).toThrow(/connector/);
   });
 

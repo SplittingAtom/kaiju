@@ -21,7 +21,7 @@ export interface AuditRequestContext {
 }
 
 /**
- * The person acted through an agent (KOBE-618, spec kaiju-admin-mcp §7): a Kaiju MCP admin tool ran
+ * The person acted through an agent (KOBE-618, spec kobe-admin-mcp §7): a Kaiju MCP admin tool ran
  * the console's own action for them in a run. Accepted on every action, recorded in the target
  * under {@link AUDIT_VIA_AGENT_KEY} (so the hash chain covers it), and only with a user actor.
  */

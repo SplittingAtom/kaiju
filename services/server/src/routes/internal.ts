@@ -39,7 +39,7 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  *      tools for this person now) | 404 `connector_not_available`
  * POST /internal/v1/mcp/kobe/calls `{tool, arguments, thread_id?, tool_call_id?}` → 200
  *      `{outcome: "result", result}` | `{outcome: "denied" | "error", code, message}`: decided and
- *      executed in this one request (spec kaiju-admin-mcp §3) | 404 `connector_not_available`
+ *      executed in this one request (spec kobe-admin-mcp §3) | 404 `connector_not_available`
  * 429 `rate_limited` (per sandbox, `DECIDE_RATE`),
  * 404 `connector_not_available`, 400 `invalid_request`.
  */

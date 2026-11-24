@@ -6,7 +6,7 @@ import { KAIJU_ADMIN_TOOLS, kaijuToolByName } from "./tools/index.js";
 import { KaijuMcpHarness, type KaijuWorld } from "../testing/kaiju-mcp-harness.js";
 
 /**
- * The Team console tools end to end (KOBE-621, spec kaiju-admin-mcp §5, KA-4): every tool through
+ * The Team console tools end to end (KOBE-621, spec kobe-admin-mcp §5, KA-4): every tool through
  * the real MCP proxy and internal listener on a real Postgres. ac-1: without the console page's
  * permission a tool is not listed and a forged call is refused like a 403, even approved; with it,
  * listed and it works. ac-2: each write records the console's own audit event, the person "via

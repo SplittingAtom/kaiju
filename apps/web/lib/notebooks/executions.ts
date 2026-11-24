@@ -201,7 +201,10 @@ function endOf(p: NotebookFinishedPayload): ExecutionEnd {
   };
 }
 
-function withBlocked(egress: readonly BlockedDomain[], event: KaijuEvent): readonly BlockedDomain[] {
+function withBlocked(
+  egress: readonly BlockedDomain[],
+  event: KaijuEvent,
+): readonly BlockedDomain[] {
   if (event.type !== "egress.blocked") return egress;
   const known = egress.some(
     (b) => b.runId === event.run_id && b.payload.domain === event.payload.domain,

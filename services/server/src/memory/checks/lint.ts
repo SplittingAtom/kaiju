@@ -15,7 +15,7 @@ import { lintViews } from "./text.js";
 
 type LintCode = Extract<SemanticMemoryWarningCode, `instruction_${string}`>;
 
-const AGENT = String.raw`(?:you|the (?:assistant|agent|model|ai|bot)|kobe|claude)`;
+const AGENT = String.raw`(?:you|the (?:assistant|agent|model|ai|bot)|kobe|kaiju|claude)`;
 /** Where an imperative verb starts: a sentence or clause, or after "please", "always", "you should" */
 const LEAD = String.raw`(?:^|[.!?;:,(]\s*|\b(?:please|always|first|then|and|or|to|must|should|will|can|could|never|just)\s+)`;
 

@@ -16,7 +16,7 @@ import {
 
 /**
  * KOBE-618's migration as an upgrade runs it (the owner role) on a site shaped like gate1: a
- * registered connector already named `kaiju`, enabled for a team, and a populated audit chain.
+ * registered connector already named `kobe`, enabled for a team, and a populated audit chain.
  * Registered rows keep `builtin` NULL and pass the new checks; the seed then falls back to
  * `kobe-builtin`; the chain still verifies with `via` rows appended after the upgrade.
  */
@@ -52,7 +52,7 @@ beforeAll(async () => {
       ids.team,
     ]);
     for (const [id, name] of [
-      [ids.kaiju, "kaiju"],
+      [ids.kaiju, "kobe"],
       [ids.other, "jira"],
     ] as const) {
       await c.query(
@@ -114,7 +114,7 @@ describe("the built-in connector on upgrade (KOBE-618)", () => {
       );
       expect(res.rows).toEqual([
         { id: ids.other, name: "jira", builtin: null },
-        { id: ids.kaiju, name: "kaiju", builtin: null },
+        { id: ids.kaiju, name: "kobe", builtin: null },
         { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kobe-builtin", builtin: "kobe" },
       ]);
       // The built-in needs no team row: teams keep exactly their own enablements.

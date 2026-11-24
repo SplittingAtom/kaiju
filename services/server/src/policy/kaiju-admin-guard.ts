@@ -10,7 +10,7 @@ import { KAIJU_BUILTIN_CONNECTOR_ID } from "@kaiju/db";
 import { isKaijuDocsToolName } from "../kaiju-mcp/docs/index.js";
 
 /**
- * The Kaiju admin guard (KOBE-619, spec kaiju-admin-mcp §6, KA2), applied after the policy engine at
+ * The Kaiju admin guard (KOBE-619, spec kobe-admin-mcp §6, KA2), applied after the policy engine at
  * both enforcement points (the sandbox's `policy.check` and the MCP proxy's re-check), like the
  * viewed-file guard:
  *

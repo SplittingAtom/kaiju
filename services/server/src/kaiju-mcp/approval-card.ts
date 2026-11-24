@@ -1,10 +1,14 @@
-import { KAIJU_ADMIN_SUMMARY_MAX, parseMcpToolName, type KaijuAdminApproval } from "@kaiju/protocol";
+import {
+  KAIJU_ADMIN_SUMMARY_MAX,
+  parseMcpToolName,
+  type KaijuAdminApproval,
+} from "@kaiju/protocol";
 import { sql, type KaijuTx } from "@kaiju/db";
 import { isWriteTool } from "./catalog.js";
 import { kaijuToolByName } from "./tools/index.js";
 
 /**
- * The "Admin change" approval card's scope and summary (KOBE-623, spec kaiju-admin-mcp §6): built
+ * The "Admin change" approval card's scope and summary (KOBE-623, spec kobe-admin-mcp §6): built
  * by the server from the approved input with the tool's own `summary`, never from model text, with
  * the ids it names replaced by names the approver recognises ("Ana Lee", "Team Research"). The
  * card still shows the exact input below the summary, so a name never hides what runs.

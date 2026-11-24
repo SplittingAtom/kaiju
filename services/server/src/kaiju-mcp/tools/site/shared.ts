@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { BeforeState, KaijuRoute, KaijuRouteCaller } from "../../catalog.js";
 
 /**
- * Helpers shared by the Site console tools (KOBE-622, spec kaiju-admin-mcp §5 Site list): reading a
+ * Helpers shared by the Site console tools (KOBE-622, spec kobe-admin-mcp §5 Site list): reading a
  * console route as the person for a write's before-state, and bounding text the model sees.
  */
 

@@ -2,7 +2,15 @@ import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
 import type { SkillBundleRef } from "@kaiju/protocol/sandbox-wire";
 import { canonicalZip, SkillPackageError } from "@kaiju/protocol";
-import { and, eq, teamMembers, withTeam, type KaijuDb, type KaijuTx, type TeamRole } from "@kaiju/db";
+import {
+  and,
+  eq,
+  teamMembers,
+  withTeam,
+  type KaijuDb,
+  type KaijuTx,
+  type TeamRole,
+} from "@kaiju/db";
 import { RULE_SET, type ScanResult } from "@kaiju/skill-scanner";
 import type { BlobStore } from "../../retention/blobs.js";
 import type { SkillRef } from "../../resolver/resolve.js";

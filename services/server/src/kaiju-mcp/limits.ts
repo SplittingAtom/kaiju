@@ -1,4 +1,10 @@
-import { KAIJU_BUILTIN_CONNECTOR_ID, siteSettings, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import {
+  KAIJU_BUILTIN_CONNECTOR_ID,
+  siteSettings,
+  sql,
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**

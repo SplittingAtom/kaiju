@@ -50,7 +50,11 @@ export async function agentRunnable(
   return (await resolveAgentPin(tx, viewer, agentId)).ok;
 }
 
-export async function countActiveHere(tx: KaijuTx, teamId: string, userId: string): Promise<number> {
+export async function countActiveHere(
+  tx: KaijuTx,
+  teamId: string,
+  userId: string,
+): Promise<number> {
   const [row] = await tx
     .select({ n: sql<number>`count(*)::int` })
     .from(schedules)

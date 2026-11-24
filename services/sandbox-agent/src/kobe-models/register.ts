@@ -5,7 +5,12 @@ import {
   type ModelFileModel,
   type ModelFileState,
 } from "./protocol.js";
-import { createKaijuProvider, kaijuModel, type KaijuProviderDeps, type PiAiLike } from "./provider.js";
+import {
+  createKaijuProvider,
+  kaijuModel,
+  type KaijuProviderDeps,
+  type PiAiLike,
+} from "./provider.js";
 import { takeModelFilePath } from "./state-file.js";
 import { withTimeout } from "./timeout.js";
 import { ContextRecorder, takeContextFilePath } from "./context-capture.js";

@@ -1,4 +1,10 @@
-import { RUN_SKILL_USES_MAX, sql, type KaijuTx, type RunSkillRef, type RunSkillUse } from "@kaiju/db";
+import {
+  RUN_SKILL_USES_MAX,
+  sql,
+  type KaijuTx,
+  type RunSkillRef,
+  type RunSkillUse,
+} from "@kaiju/db";
 import { matchSkillRead, skillUsesFrom } from "./detect.js";
 
 /**

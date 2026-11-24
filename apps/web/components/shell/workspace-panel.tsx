@@ -57,7 +57,8 @@ export function WorkspacePanel({
     () => () => {
       requestAnimationFrame(() => {
         const at = document.activeElement;
-        if (at === null || at === document.body) document.getElementById("kaiju-chat-main")?.focus();
+        if (at === null || at === document.body)
+          document.getElementById("kaiju-chat-main")?.focus();
       });
     },
     [],

@@ -1,4 +1,9 @@
-import type { PolicyDecision, PolicyInput, PolicyReasonCode, ToolDescriptor } from "@kaiju/protocol";
+import type {
+  PolicyDecision,
+  PolicyInput,
+  PolicyReasonCode,
+  ToolDescriptor,
+} from "@kaiju/protocol";
 import type { ConnectorAuthKind, KaijuDb, PinnedTool } from "@kaiju/db";
 import type { RunPolicyContextSource } from "../sandbox-wire/types.js";
 import type { McpApprovalFailure, McpApprovalVerifier } from "./approvals.js";

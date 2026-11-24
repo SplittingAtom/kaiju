@@ -119,7 +119,7 @@ function schedulerDeps(i: ProcessDepsInput): ServerDeps {
     dbTimeouts: config.dbTimeouts,
     isolation: i.isolation,
     // KOBE-736: the scheduler serves no event streams, so its stream pool never opens.
-    dbPool: { max: config.dbPools.max, applicationName: "kobe-scheduler" },
+    dbPool: { max: config.dbPools.max, applicationName: "kaiju-scheduler" },
     listen: { applicationName: "kaiju-scheduler-listen" },
     ...schedulerAuthStandIn(),
     // No run-token key: the wire host that delivers run.start mints run tokens, not the scheduler.
@@ -158,7 +158,7 @@ function apiServerDeps(
     databaseUrl: config.databaseUrl,
     dbTimeouts: config.dbTimeouts,
     isolation: i.isolation,
-    dbPool: { max: config.dbPools.max, applicationName: "kobe-server" },
+    dbPool: { max: config.dbPools.max, applicationName: "kaiju-server" },
     listen: { applicationName: "kaiju-server-listen" },
     eventStream: { poolMax: config.dbPools.streamMax },
     retentionPaused: config.retentionPaused,

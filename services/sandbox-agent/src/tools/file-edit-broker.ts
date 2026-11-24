@@ -1,5 +1,8 @@
 import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
-import type { FileEditProposeFrame, FileEditProposeResultFrame } from "@kaiju/protocol/sandbox-wire";
+import type {
+  FileEditProposeFrame,
+  FileEditProposeResultFrame,
+} from "@kaiju/protocol/sandbox-wire";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 

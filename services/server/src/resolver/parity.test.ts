@@ -180,7 +180,9 @@ describe("resolver v2 parity with today's runs (ac-4)", () => {
     const after = resolveEffective(now);
     if (!after.ok) throw new Error("resolve failed");
     // D5: the built-in now loads as a skill of the run.
-    expect(after.value.skills.map(key).sort()).toEqual([...before.skills, ...kobe].map(key).sort());
+    expect(after.value.skills.map(key).sort()).toEqual(
+      [...before.skills, ...kaiju].map(key).sort(),
+    );
     // A blocklisted offered skill now says so (it was left out silently before), one notice each.
     const blockedOffered = (input.team.offeredSkills ?? [])
       .filter((s) => input.blockedHashes.includes(s.hash) && !input.agent.exclusiveSkills)
@@ -267,7 +269,7 @@ function expectedNow(input: LegacyInput, kaiju: readonly SkillRef[]) {
         : (team.offeredSkills ?? []).includes(s)
           ? 1
           : 2;
-  const ordered = [...legacy.skills, ...kobe].sort((a, b) => rank(a) - rank(b));
+  const ordered = [...legacy.skills, ...kaiju].sort((a, b) => rank(a) - rank(b));
   const blockedOffered = ex ? [] : (team.offeredSkills ?? []).filter((s) => blocked.has(s.hash));
   return {
     skills: ordered.slice(0, RUN_SKILLS_MAX),

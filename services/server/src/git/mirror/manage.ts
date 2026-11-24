@@ -77,7 +77,11 @@ type RepoRow = {
 
 const iso = (d: Date | string | null) => (d === null ? null : new Date(d).toISOString());
 
-async function repoOf(tx: KaijuTx, teamId: string, projectId: string): Promise<RepoRow | undefined> {
+async function repoOf(
+  tx: KaijuTx,
+  teamId: string,
+  projectId: string,
+): Promise<RepoRow | undefined> {
   const res = await tx.execute<RepoRow>(sql`
     SELECT g.id, g.connection_id, c.provider, g.base_url, g.full_name, g.default_branch,
            g.host_state, g.mirror_head_sha, g.mirror_commit_id, g.mirror_refreshed_at,

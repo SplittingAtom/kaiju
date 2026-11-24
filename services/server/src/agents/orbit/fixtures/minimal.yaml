@@ -1,4 +1,4 @@
-name: kaiju-sales-analyst-v1
+name: kobe-sales-analyst-v1
 setup:
   agents:
     - name: sales-analyst

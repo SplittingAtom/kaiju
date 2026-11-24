@@ -211,7 +211,9 @@ describe("drag a workspace file into the composer (KOBE-374 ac-4)", () => {
 
     const hover = dragToComposer(row("notes"));
     expect(hover).toEqual({ drop: "folder", hint: MENTION_FOLDER_REFUSED });
-    expect(document.getElementById("kaiju-composer-hint")?.textContent).toBe(MENTION_FOLDER_REFUSED);
+    expect(document.getElementById("kaiju-composer-hint")?.textContent).toBe(
+      MENTION_FOLDER_REFUSED,
+    );
     expect(chips()).toEqual([`@projects/${PROJECT}/plan.md`]);
     expect(moves).toBe(0);
   });

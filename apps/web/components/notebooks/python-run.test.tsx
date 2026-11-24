@@ -210,7 +210,9 @@ describe("Run what you see (KOBE-805)", () => {
         duration_ms: 1500,
       },
     });
-    expect(toolbar().querySelector("[data-kaiju-run-clock]")?.textContent).toBe("Error after 1.5 s");
+    expect(toolbar().querySelector("[data-kaiju-run-clock]")?.textContent).toBe(
+      "Error after 1.5 s",
+    );
     expect(within(toolbar()).queryByRole("button", { name: "Stop" })).toBeNull();
   });
 
@@ -244,7 +246,9 @@ describe("Run what you see (KOBE-805)", () => {
     await user.click(button("Restart"));
     expect(kernel.ops).toEqual(["restart"]);
     await waitFor(() =>
-      expect(toolbar().querySelector("[data-kaiju-kernel]")?.textContent).toBe("Kernel not started"),
+      expect(toolbar().querySelector("[data-kaiju-kernel]")?.textContent).toBe(
+        "Kernel not started",
+      ),
     );
   });
 

@@ -385,7 +385,11 @@ export async function markExecution(
 }
 
 /** Whether the eval run was cancelled (or ended) under a running execution. */
-export async function evalRunOpen(db: KaijuDb, teamId: string, evalRunId: string): Promise<boolean> {
+export async function evalRunOpen(
+  db: KaijuDb,
+  teamId: string,
+  evalRunId: string,
+): Promise<boolean> {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute(sql`
       SELECT 1 FROM skill_eval_runs

@@ -249,7 +249,11 @@ async function appsOf(db: KaijuDb, callable: readonly MemberAppConnector[]): Pro
 }
 
 /** Every app live for the member in the team (MA8), with its connector (no template bytes). */
-export async function memberApps(db: KaijuDb, teamId: string, userId: string): Promise<MemberApp[]> {
+export async function memberApps(
+  db: KaijuDb,
+  teamId: string,
+  userId: string,
+): Promise<MemberApp[]> {
   const { rows, grants } = await enabledConnectors(db, teamId, userId);
   const siteKeys = await liveSiteKeys(db, rows);
   return appsOf(

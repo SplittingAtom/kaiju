@@ -1,5 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, eq, isForeignKeyViolation, threadEntries, threads, type KaijuTx } from "@kaiju/db";
+import {
+  and,
+  asc,
+  eq,
+  isForeignKeyViolation,
+  threadEntries,
+  threads,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { RateLimitRule } from "../rate-limit.js";
 import { projectDefaultAgent } from "../projects/run-context.js";
 import { resolveAgentPin } from "../agents/versions.js";

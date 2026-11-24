@@ -16,7 +16,7 @@ import {
   type KaijuAdminGuard,
 } from "./kaiju-admin-guard.js";
 
-/** KOBE-619 (spec kaiju-admin-mcp §6, KA2): Kaiju admin writes ask in every mode. */
+/** KOBE-619 (spec kobe-admin-mcp §6, KA2): Kaiju admin writes ask in every mode. */
 const NOW = new Date("2026-11-11T10:00:00.000Z");
 const kaiju = (risk: ToolDescriptor["risk"]): ToolDescriptor => ({
   name: "mcp__kobe__team_members_set_role",
@@ -27,7 +27,7 @@ const kaiju = (risk: ToolDescriptor["risk"]): ToolDescriptor => ({
   scope: "external",
 });
 const other: ToolDescriptor = {
-  ...kobe("write"),
+  ...kaiju("write"),
   connector_id: "00000000-0000-4000-8000-000000000009",
 };
 
@@ -115,7 +115,7 @@ describe("guardKaijuAdmin", () => {
   });
 
   it("leaves the docs tools to the ordinary policy: scheduled runs, evals and auto too (KOBE-620)", () => {
-    const docs: ToolDescriptor = { ...kobe("read"), name: "mcp__kobe__docs_index" };
+    const docs: ToolDescriptor = { ...kaiju("read"), name: "mcp__kobe__docs_index" };
     expect(isKaijuTool(docs)).toBe(true);
     expect(isKaijuAdminTool(docs)).toBe(false);
     expect(isKaijuAdminTool(kaiju("read"))).toBe(true);

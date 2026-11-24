@@ -8,7 +8,7 @@ import {
   type KaijuDb,
   type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { KAIJU_GALLERY_KEY } from "../../gallery/definitions.js";
 import { logger } from "../../logger.js";
 import type { BlobStore } from "../../retention/blobs.js";

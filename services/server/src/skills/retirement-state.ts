@@ -47,7 +47,10 @@ export function retirementOf(
 }
 
 /** The skill's status and replacement (site rows). */
-export async function skillStanding(tx: KaijuTx | KaijuDb, skillId: string): Promise<SkillStanding> {
+export async function skillStanding(
+  tx: KaijuTx | KaijuDb,
+  skillId: string,
+): Promise<SkillStanding> {
   const r = await tx.execute<{ status: string; rid: string | null; rname: string | null }>(sql`
     SELECT s.status::text AS status, r.id AS rid, r.name AS rname
       FROM registry_skills s LEFT JOIN registry_skills r ON r.id = s.replacement_id

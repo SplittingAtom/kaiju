@@ -217,9 +217,9 @@ describe("connector tools: Allowed and Denied (ac-2)", () => {
 
 describe("the built-in Kaiju connector (KOBE-623)", () => {
   const KAIJU = {
-    kaiju: {
+    kobe: {
       connector_id: "6b6f6265-0000-4000-8000-000000000001",
-      name: "kaiju",
+      name: "kobe",
       mode: "admin",
       level: "read",
       docs_tools: ["mcp__kobe__docs_index", "mcp__kobe__docs_page"],
@@ -239,7 +239,7 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
     await fillIdentity();
     await userEvent.click(tab("Behaviour"));
     const add = await screen.findByRole("combobox", { name: "Add a connector" });
-    await within(add).findByRole("option", { name: "kaiju (Kaiju's admin tools)" });
+    await within(add).findByRole("option", { name: "kobe (Kaiju's admin tools)" });
     await userEvent.selectOptions(add, "jira");
     // Narrowing to jira's tools keeps Kaiju's docs tools on.
     const allowed = () =>
@@ -254,22 +254,22 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
     ]);
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "Add a connector" }),
-      "kaiju",
+      "kobe",
     );
     expect(allowed()).toContain("mcp__kobe__team_members_list");
     await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
-    await waitFor(() => expect(postedBody(calls).frontmatter.connectors).toEqual(["jira", "kaiju"]));
+    await waitFor(() => expect(postedBody(calls).frontmatter.connectors).toEqual(["jira", "kobe"]));
   });
 
   it("is not offered while the site switch is off, and its absence changes nothing", async () => {
     stubApi({
       ...READ,
-      "GET /v1/team/connectors/kobe": [200, { kaiju: { ...KAIJU.kaiju, mode: "off" } }],
+      "GET /v1/team/connectors/kobe": [200, { kobe: { ...KAIJU.kobe, mode: "off" } }],
     });
     renderTeam(<AgentBuilderPage scope="personal" />, { role: "member", permissions: [] });
     await userEvent.click(tab("Behaviour"));
     const add = await screen.findByRole("combobox", { name: "Add a connector" });
-    expect(within(add).queryByRole("option", { name: /kaiju/ })).toBeNull();
+    expect(within(add).queryByRole("option", { name: /kobe/ })).toBeNull();
   });
 });
 

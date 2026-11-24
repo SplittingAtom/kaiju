@@ -99,7 +99,11 @@ export async function headOf(tx: KaijuTx, teamId: string, projectId: string): Pr
 }
 
 /** The tree of a commit (empty for null: a project with no commit yet). */
-export async function loadTree(tx: KaijuTx, teamId: string, commitId: string | null): Promise<Tree> {
+export async function loadTree(
+  tx: KaijuTx,
+  teamId: string,
+  commitId: string | null,
+): Promise<Tree> {
   if (commitId === null) return new Map();
   const res = await tx.execute<EntryRow>(sql`
     SELECT path, sha256, blob_ref, size_bytes, mime_type, executable FROM project_tree_entries

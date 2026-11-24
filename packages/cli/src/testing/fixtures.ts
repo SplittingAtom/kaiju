@@ -187,7 +187,7 @@ export async function seed(db: TestDatabase): Promise<void> {
 
 /**
  * What the server's start writes into a site before anyone signs up (KOBE-422, the rows
- * `@kaiju/db` STARTUP_SEEDED_ROWS covers): the gallery agent `kaiju` and its published version,
+ * `@kaiju/db` STARTUP_SEEDED_ROWS covers): the gallery agent `kobe` and its published version,
  * the seed's two audit events, the retention pass's, PII sweep's and SIEM forwarder's
  * bookkeeping, and the catalog usage job's snapshot of the last closed window (KOBE-339; the
  * same window on every site started that day, so a restore that kept it would collide).
@@ -203,8 +203,8 @@ export async function serverStarted(url: string, agentId = randomUUID()): Promis
        VALUES ('${agentId}', 1, '{"name":"Kobe"}', 'You are Kobe.', '{}', 1);
      UPDATE site_agents SET current_version = 1 WHERE id = '${agentId}';
      INSERT INTO audit_log (actor_kind, action, target) VALUES
-       ('system', 'agent.created', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kaiju', 'source', 'seed')),
-       ('system', 'agent.published', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kaiju', 'version', 1));
+       ('system', 'agent.created', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kobe', 'source', 'seed')),
+       ('system', 'agent.published', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kobe', 'version', 1));
      INSERT INTO site_settings (key, value) VALUES
        ('retention.pass_started_at', '2026-10-18T03:00:00.000Z'),
        ('retention.last_pass_at', '2026-10-18T03:00:00.000Z'), ('retention.cursor', ''),

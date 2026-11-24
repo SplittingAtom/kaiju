@@ -192,7 +192,10 @@ describe("Save to folder (ac-3)", () => {
     expect(header.dataset.dropTarget).toBeUndefined();
     // Dropping a filed row on Current takes it out of its folder.
     await chooseNode("Budgets");
-    const filed = await waitFor(() => must(panel.querySelector(`[data-kaiju-thread="${t}"]`)), WAIT);
+    const filed = await waitFor(
+      () => must(panel.querySelector(`[data-kaiju-thread="${t}"]`)),
+      WAIT,
+    );
     data = dragData();
     fireEvent.dragStart(filed, { dataTransfer: data });
     fireEvent.dragOver(node(panel, "Current"), { dataTransfer: data });

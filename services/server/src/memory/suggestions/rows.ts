@@ -155,7 +155,11 @@ export async function lockSuggestion(
 }
 
 /** Who decides a project's suggestions: its owners and editors and the Team admins. */
-export async function decidersOf(tx: KaijuTx, teamId: string, projectId: string): Promise<string[]> {
+export async function decidersOf(
+  tx: KaijuTx,
+  teamId: string,
+  projectId: string,
+): Promise<string[]> {
   const { rows } = await tx.execute<{ user_id: string }>(sql`
     SELECT user_id FROM project_members
      WHERE team_id = ${teamId} AND project_id = ${projectId} AND role IN ('owner', 'editor')

@@ -11,7 +11,7 @@ import { isKaijuDocsToolName } from "../kaiju-mcp/docs/index.js";
 import { kaijuToolByName } from "../kaiju-mcp/tools/index.js";
 
 /**
- * Shared threads hide Kaiju admin results (KOBE-623, spec kaiju-admin-mcp §8, decision KA6). A
+ * Shared threads hide Kaiju admin results (KOBE-623, spec kobe-admin-mcp §8, decision KA6). A
  * teammate reading a thread shared with them sees that an admin tool ran, its input and its
  * approval card, but the tool's output is replaced by "Admin result hidden" unless they hold the
  * tool's own permission now (its console page's team or site permission). The thread's owner sees

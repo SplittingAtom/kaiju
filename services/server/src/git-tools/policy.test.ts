@@ -23,7 +23,7 @@ import { GIT_TOOLS, gitToolByName } from "./catalog.js";
  */
 const CONN = "55555555-0000-4000-8000-000000000005";
 
-const pinned = gitPinnedTools("kaiju");
+const pinned = gitPinnedTools("kobe");
 function descriptor(name: string): ToolDescriptor {
   const tool = pinned.find((t) => t.name === name);
   if (!tool) throw new Error(name);
@@ -84,7 +84,7 @@ describe("default decisions (GQ3, G9)", () => {
     const d = decide("git_create_branch", {
       connection: CONN,
       repository: "docs",
-      name: "kaiju/x",
+      name: "kobe/x",
       from: "main",
     });
     expect(d).toMatchObject({ effect: "allow" });

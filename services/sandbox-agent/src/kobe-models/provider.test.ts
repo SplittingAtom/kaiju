@@ -327,7 +327,7 @@ describe("kaiju provider", () => {
     ]);
     const second = await collect(revoked.provider.stream(revoked.model, {}));
     expect(revoked.calls).toHaveLength(2);
-    expect(second.result.errorMessage).toMatch(/^kaiju\.model_error:model_session_revoked: /);
+    expect(second.result.errorMessage).toMatch(/^kobe\.model_error:model_session_revoked: /);
   });
 
   it("never retries once something was streamed, and passes aborts through with fixed text", async () => {
@@ -413,7 +413,7 @@ describe("kaiju provider", () => {
     const model = provider.getModels()[0] as Model;
     const { result } = await collect(provider.stream(model, {}));
     expect(calls).toEqual([]);
-    expect(result.errorMessage).toMatch(/^kaiju\.model_error:model_error: gave up/);
+    expect(result.errorMessage).toMatch(/^kobe\.model_error:model_error: gave up/);
   });
 
   it("ends the stream with model_error when the adapter itself throws (never a hung run)", async () => {
@@ -440,7 +440,7 @@ describe("kaiju provider", () => {
     const model = provider.getModels()[0] as Model;
     const { result, events } = await collect(provider.stream(model, {}));
     expect(result.stopReason).toBe("error");
-    expect(result.errorMessage).toMatch(/^kaiju\.model_error:model_error: /);
+    expect(result.errorMessage).toMatch(/^kobe\.model_error:model_error: /);
     expect(events.at(-1)?.type).toBe("error");
   });
 });

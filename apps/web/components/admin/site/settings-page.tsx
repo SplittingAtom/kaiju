@@ -180,7 +180,7 @@ const KAIJU_MCP_HINTS: Readonly<Record<KaijuMcpMode, string>> = {
 };
 
 /**
- * The Kaiju MCP switch (`kobeMcpMode`, KOBE-623, spec kaiju-admin-mcp §6, KA5): off, docs only (the
+ * The Kaiju MCP switch (`kobeMcpMode`, KOBE-623, spec kobe-admin-mcp §6, KA5): off, docs only (the
  * default) or docs and admin tools. A team still chooses its own level in Team console ›
  * Connectors; this caps it for the whole site. Audited by the server.
  */

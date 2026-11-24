@@ -3,7 +3,7 @@ import { findThreads } from "../threads/repository.js";
 import { viewerProjectIds } from "../threads/references.js";
 
 /**
- * "via agent" in the audit views (KOBE-623, spec kaiju-admin-mcp §7): an event a person caused
+ * "via agent" in the audit views (KOBE-623, spec kobe-admin-mcp §7): an event a person caused
  * through a Kaiju MCP admin tool carries `target.viaAgent` (thread, run, tool call). The views say
  * so, and link the thread only for a viewer who may read it now: a member of its team who owns it
  * or has it shared with them (the thread rules of `readableBy`). Ids only otherwise.

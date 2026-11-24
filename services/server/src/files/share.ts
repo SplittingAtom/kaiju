@@ -167,7 +167,11 @@ function replay(
   return prior.runId === runId ? { ok: true, file: prior.file, replay: true } : OTHER_RUN;
 }
 
-async function runActive(tx: KaijuTx, target: ShareTarget, frame: FileShareFrame): Promise<boolean> {
+async function runActive(
+  tx: KaijuTx,
+  target: ShareTarget,
+  frame: FileShareFrame,
+): Promise<boolean> {
   // A compaction (KOBE-213) makes no tool calls: refused from the database, not only the lease.
   const res = await tx.execute<{ status: string; kind: string }>(sql`
     SELECT r.status, r.kind FROM runs r

@@ -263,7 +263,11 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
       const first = await a.listBranches("docs");
       const main = first.items.find((b) => b.name === "main");
       expect(main?.commitSha).toMatch(/^[0-9a-f]{40}$/);
-      const made = await a.createBranch({ repository: "docs", name: "kaiju/feature", from: "main" });
+      const made = await a.createBranch({
+        repository: "docs",
+        name: "kaiju/feature",
+        from: "main",
+      });
       expect(made).toMatchObject({ name: "kaiju/feature", commitSha: main?.commitSha });
       const bySha = await a.createBranch({
         repository: "docs",
