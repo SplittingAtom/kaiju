@@ -371,6 +371,74 @@ function realOwner(path, line, token) {
   return hit?.owner?.step ?? "unowned";
 }
 
+/** Like realOwner, as `step: group reason`. */
+function realGroup(path, line, token) {
+  const { found } = audit(REPO, loadAllowlist(REPO), [
+    { path, read: () => ({ binary: false, text: line }) },
+  ]);
+  const at = line.indexOf(token);
+  assert.ok(at >= 0, `${token} in ${line}`);
+  const hit = found.find((o) => o.start >= at && o.start < at + token.length);
+  return hit?.owner ? `${hit.owner.step}: ${hit.owner.group.reason}` : "unowned";
+}
+
+test("real allowlist: RN-3's file-name entries claim repository files only (KOBE-746 review)", () => {
+  const fileNames = /^RN-3: File and directory names/;
+  const theirs = [
+    ["services/server/src/x.ts", 'import { a } from "../kobe-mcp/access.js";', "kobe-mcp"],
+    ["apps/web/x.test.tsx", 'import { FakeKobe } from "../../lib/chat/testing/fake-kobe";', "kobe"],
+    ["services/server/src/x.ts", 'import { KOBE_FILE } from "./agents/kobe.js";', "kobe"],
+    ["docs/x.md", "see `apps/web/components/chat/kobe-runtime.tsx`", "kobe-runtime"],
+  ];
+  for (const [path, line, token] of theirs) {
+    assert.match(realGroup(path, line, token), fileNames, `${line} ${token}`);
+  }
+  const notTheirs = [
+    // A wire route between the model gateway and the eval image, and paths inside pods: RN-6.
+    [
+      "services/model-gateway/src/gateway.ts",
+      'const CASES = "/kobe/eval-cases";',
+      "kobe",
+      /^RN-6: Image names/,
+    ],
+    [
+      "services/sandbox-agent/src/config.ts",
+      '"/var/run/secrets/kobe/bootstrap-token"',
+      "kobe",
+      /^RN-6: Image names/,
+    ],
+    ["services/Dockerfile", "COPY ca.pem /etc/kobe/extra-ca/", "kobe", /^RN-6: Image names/],
+    // Test URLs, a database name, a runtime file and regex literals in tests are not files.
+    [
+      "apps/web/x.test.ts",
+      'fetch("http://kobe.test/v1/me")',
+      "kobe",
+      /^RN-3: Triage: Test fixture/,
+    ],
+    [
+      "packages/cli/src/x.test.ts",
+      '"postgres://u:p@db:5432/kobe?sslmode=disable"',
+      "kobe",
+      /^RN-3: Triage: Test fixture/,
+    ],
+    [
+      "services/sandbox-agent/src/x.ts",
+      'join(dir, "agent/kobe-context.json")',
+      "kobe",
+      /^RN-3: Triage: Lower-case names in application code/,
+    ],
+    [
+      "apps/web/x.test.tsx",
+      "expect(text).toMatch(/kobe found/);",
+      "kobe",
+      /^RN-3: Triage: Test fixture/,
+    ],
+  ];
+  for (const [path, line, token, group] of notTheirs) {
+    assert.match(realGroup(path, line, token), group, `${line} ${token}`);
+  }
+});
+
 test("real allowlist: owners of the cases from review round 1", () => {
   const cases = [
     ["apps/web/lib/api.ts", 'headers: { "x-kobe-team": id }', "x-kobe-team", "RN-5"],

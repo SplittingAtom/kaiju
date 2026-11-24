@@ -213,6 +213,7 @@ charts/** /\bkobe\.[a-zA-Z]\w*/
 charts/**/Chart.yaml /^name: kobe$/
 
 == RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries
+** /\/kobe\/eval-cases\b|\/var\/run\/secrets\/kobe\b|\/var\/run\/kobe\b|\/etc\/kobe\b|\/usr\/share\/doc\/kobe\b/
 ** /\bghcr\.io\/splittingatom\/kobe-[\w-]+/
 ** /(?<![\w.-])kobe-(?:server|web|sandbox|sandbox-agent|mcp-proxy|egress-proxy|model-gateway|orbit-eval|skill-scan|bifrost)(?::[\w.${}-]+)?(?![\w-])/
 ** /\/opt\/kobe\b/
@@ -275,9 +276,9 @@ packages/cli/package.json /"kobe": "/
 
 == RN-3: File and directory names, and the imports and references that name them
 path ** /kobe/i
-** /(?:\.{1,2}\/|\/)(?:[\w.-]+\/)*[\w.-]*kobe[\w.-]*/i
-** /\b[\w-]*kobe[\w.*-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
-** /\b[\w-]*kobe[\w-]*\/(?:[\w.*-]+\/)*[\w.*-]+\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|css)\b/
+** /(?:\.{1,2}\/|\/)(?:[\w.-]+\/)*(?:kobe-(?:admin-guard|admin-mcp|builtin-connector|builtin-upgrade|connector-card|detach|exec|guide-seed|guide-skill-upgrade|kernel-bridge|mcp|models|packages|policy|published-skills|rate-limits|reclaim|runas|runtime|seed|site-samples|skills|team-samples|tools)|(?:catalog|fake|gallery)-kobe|kobe_rules|kobe(?=\.(?:ts|js)\b))(?![\w])[\w.-]*/
+** /\b(?:kobe-(?:admin-guard|admin-mcp|builtin-connector|builtin-upgrade|connector-card|detach|exec|guide-seed|guide-skill-upgrade|kernel-bridge|mcp|models|packages|policy|published-skills|rate-limits|reclaim|runas|runtime|seed|site-samples|skills|team-samples|tools)|(?:catalog|fake|gallery)-kobe|kobe_rules|kobe(?=\.(?:ts|js)\b))(?![\w])[\w.*-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
+** /\b(?:kobe-(?:admin-guard|admin-mcp|builtin-connector|builtin-upgrade|connector-card|detach|exec|guide-seed|guide-skill-upgrade|kernel-bridge|mcp|models|packages|policy|published-skills|rate-limits|reclaim|runas|runtime|seed|site-samples|skills|team-samples|tools)|(?:catalog|fake|gallery)-kobe|kobe_rules|kobe(?=\.(?:ts|js)\b))(?![\w])\/(?:[\w.*-]+\/)*[\w.*-]+\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|css)\b/
 ** /\bkobe-mcp(?=: )/
 
 == RN-3: Server modules named after the product (admin MCP, its guard, the seed)

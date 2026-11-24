@@ -4,6 +4,9 @@
 # By hand: ghcr package visibility, Dependabot paths, chart version bump, refresh
 # images/*/third-party-licenses.json and `pnpm licenses:update`. Objects inside team namespaces
 # are RN-7's (configured with the prefix); the Bifrost customer names stay (external state).
+# Also by hand (KOBE-746 review): the model gateway's /kobe/eval-cases route and the in-pod paths
+# (/var/run/secrets/kobe, /var/run/kobe, /etc/kobe, /usr/share/doc/kobe): a Job or sandbox that
+# runs across the upgrade still uses the old path, so serve or mount both for one release.
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
