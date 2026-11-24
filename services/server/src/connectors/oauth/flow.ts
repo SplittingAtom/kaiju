@@ -73,7 +73,18 @@ async function clientFor(
   return registered;
 }
 
-export async function startFlow(deps: OauthFlowDeps, subject: Subject): Promise<StartOutcome> {
+/**
+ * Where the browser lands after the callback (KOBE-835): My connectors, or the Site console's
+ * connector registry for a site admin who connected from there. Sealed in the state as a name;
+ * the callback maps it to a fixed path on Kobe's own origin, so it can never redirect elsewhere.
+ */
+export type ReturnTarget = "me" | "site";
+
+export async function startFlow(
+  deps: OauthFlowDeps,
+  subject: Subject,
+  returnTo: ReturnTarget = "me",
+): Promise<StartOutcome> {
   const connector = await connectorFor(deps.db, subject);
   if (!connector) return { ok: false, failure: "not_available" };
   if (connector.authKind !== "oauth") return { ok: false, failure: "not_oauth" };
@@ -102,6 +113,7 @@ export async function startFlow(deps: OauthFlowDeps, subject: Subject): Promise<
         tokenEndpoint: info.tokenEndpoint,
         clientId: client.clientId,
         ...(client.clientSecret === undefined ? {} : { clientSecret: client.clientSecret }),
+        ret: returnTo,
       },
       deps.now(),
     );
@@ -131,10 +143,12 @@ export interface CallbackParams {
 }
 
 export type FinishOutcome =
-  | { readonly ok: true; readonly connectorId: string }
+  | { readonly ok: true; readonly connectorId: string; readonly returnTo: ReturnTarget }
   | {
       readonly ok: false;
       readonly connectorId: string | undefined;
+      /** Undefined only with an unusable state (then nothing else is known either). */
+      readonly returnTo?: ReturnTarget;
       readonly failure: OauthError["code"] | "access_denied" | "not_available";
     };
 
@@ -155,9 +169,11 @@ export async function finishFlow(
     return { ok: false, connectorId: undefined, failure: "invalid_state" };
   }
   const { subject, payload } = opened;
+  const returnTo: ReturnTarget = payload.ret ?? "me";
   const fail = (failure: Extract<FinishOutcome, { ok: false }>["failure"]): FinishOutcome => ({
     ok: false,
     connectorId: subject.connectorId,
+    returnTo,
     failure,
   });
   if (params.error !== undefined) return fail("access_denied");
@@ -198,7 +214,9 @@ export async function finishFlow(
         resource: payload.resource,
       }),
     });
-    return stored.ok ? { ok: true, connectorId: subject.connectorId } : fail("not_available");
+    return stored.ok
+      ? { ok: true, connectorId: subject.connectorId, returnTo }
+      : fail("not_available");
   } catch (error) {
     if (error instanceof OauthError) return fail(error.code);
     throw error;

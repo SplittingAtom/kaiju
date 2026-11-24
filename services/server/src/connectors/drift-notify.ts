@@ -148,7 +148,7 @@ export function skippedMessage(
           "its server URL changed since it was set). Set (or re-enter) its site-wide key.",
         ]
       : [
-          "Add your own key for the connector (My connector keys, in a team that enabled it) and",
+          "Add your own key for the connector (My connectors, in a team that enabled it) and",
           "pin or approve its tools, or give it a site-wide key.",
         ];
   return {

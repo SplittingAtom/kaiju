@@ -40,7 +40,7 @@ export const CONNECTOR_PROBLEMS = [
 ] as const;
 export type ConnectorProblem = (typeof CONNECTOR_PROBLEMS)[number];
 
-const MY_KEYS = { href: "/me/connectors", label: "My connector keys" } as const;
+const MY_CONNECTORS = { href: "/me/connectors", label: "My connectors" } as const;
 
 /** What the member reads, and where it is fixed (null: a site admin fixes it). */
 export const PROBLEM_TEXT: Readonly<
@@ -49,9 +49,12 @@ export const PROBLEM_TEXT: Readonly<
     { readonly message: string; readonly fix: { href: string; label: string } | null }
   >
 > = {
-  no_key: { message: "Add your API key for this server.", fix: MY_KEYS },
-  not_connected: { message: "Connect your account to this server.", fix: MY_KEYS },
-  grant_expired: { message: "Your sign-in to this server expired. Connect again.", fix: MY_KEYS },
+  no_key: { message: "Add your API key for this server.", fix: MY_CONNECTORS },
+  not_connected: { message: "Connect your account to this server.", fix: MY_CONNECTORS },
+  grant_expired: {
+    message: "Your sign-in to this server expired. Connect again.",
+    fix: MY_CONNECTORS,
+  },
   site_key_unusable: {
     message: "The site's key for this server can't be used. Ask a site admin.",
     fix: null,

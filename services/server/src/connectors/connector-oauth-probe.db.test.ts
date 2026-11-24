@@ -184,3 +184,45 @@ describe("the periodic drift check of an OAuth connector", () => {
     expect((await choices()).at(-1)).toMatchObject({ purpose: "refresh", credential: "none" });
   });
 });
+
+describe("connect from the Site console, then Re-probe (KOBE-835)", () => {
+  it("a new OAuth connector with nobody connected is pinned by Re-probe once the admin connects", async () => {
+    const { rows } = await h.admin.query<{ id: string }>(
+      `INSERT INTO connectors (name, url, auth_kind) VALUES ('fresh', $1, 'oauth') RETURNING id`,
+      [fake.mcpUrl],
+    );
+    const fresh = must(rows[0]).id;
+    await h.admin.query(
+      `INSERT INTO team_connectors (team_id, connector_id, exposure, enabled_by) VALUES ($1, $2, 'all', $3)`,
+      [team, fresh, rootId],
+    );
+    const before = await root.post(`${BASE}/${fresh}/refresh`);
+    expect(before.status).toBe(502);
+    expect(before.json).toMatchObject({ failure: "auth_required" });
+    expect(before.json.message).toMatch(/Connect your account/);
+
+    const started = await root.post(`${GRANTS}/${fresh}/oauth/start`, { return_to: "site" });
+    expect(started.status, started.text).toBe(200);
+    const back = await fake.authorize(
+      (started.json as { authorization_url: string }).authorization_url,
+    );
+    const done = await root.get(`${GRANTS}/oauth/callback${back.search}`);
+    expect(new URL(must(done.headers.get("location") ?? undefined)).pathname).toBe(
+      "/admin/site/connectors",
+    );
+
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE '%connector-reprobe:%'`);
+    const after = await root.post(`${BASE}/${fresh}/refresh`);
+    expect(after.status, after.text).toBe(200);
+    expect(after.json.refresh).toMatchObject({ status: "pinned", tools: 1 });
+    expect(probes.at(-1)).toEqual({
+      secret: must(fake.issued.at(-1)).accessToken,
+      kind: "access_token",
+    });
+    const { rows: pinned } = await h.admin.query<{ pinned_by: string }>(
+      `SELECT pinned_by FROM connectors WHERE id = $1`,
+      [fresh],
+    );
+    expect(must(pinned[0]).pinned_by).toBe(rootId);
+  });
+});

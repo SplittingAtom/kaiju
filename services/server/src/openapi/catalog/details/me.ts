@@ -13,6 +13,7 @@ import {
   uploadResponseSchema,
 } from "@kobe/protocol";
 import { putGrantSchema } from "../../../connectors/grants.js";
+import { oauthStartBodySchema } from "../../../routes/connector-oauth.js";
 import { timeZoneBodySchema } from "../../../routes/me.js";
 import { setupSchema } from "../../../routes/setup.js";
 import { activeTeamSchema } from "../../../teams/schemas.js";
@@ -218,10 +219,11 @@ export const connectorGrantsDetails: Readonly<Record<string, CatalogDetail>> = {
     errors: ["404", "409", "422", "503"],
   },
   "post /v1/connector-grants/{connectorId}/oauth/start": {
-    body: null,
+    body: named("ConnectorOauthStartBody", oauthStartBodySchema),
     response: untyped("ConnectorOauthStart", obj({ authorization_url: str })),
-    responseDescription: "Send the browser to `authorization_url`.",
-    errors: ["404", "422", "429", "502", "503"],
+    responseDescription:
+      "Send the browser to `authorization_url`. The callback brings it back to My connectors, or (`return_to: site`, site admins) to the Site console's connector registry.",
+    errors: ["400", "404", "422", "429", "502", "503"],
   },
 };
 

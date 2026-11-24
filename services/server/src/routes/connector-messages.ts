@@ -7,7 +7,7 @@ export const PIN_MESSAGES: Record<Extract<PinOutcome, { ok: false }>["failure"],
   unreachable: "The server could not be reached.",
   timeout: "The server did not answer in time.",
   auth_required:
-    "The server asked for credentials. Kobe probes with the connector's site-wide key, else your own key for it (add one at My connector keys in a team that enabled it); never a member's. Tools stay unpinned (none are offered).",
+    "The server asked for credentials. Kobe probes with the connector's site-wide key, else your own key for it (add one at My connectors in a team that enabled it); never a member's. Tools stay unpinned (none are offered).",
   http_error: "The server answered with an error.",
   protocol_error: "The server did not answer as an MCP server.",
   too_large: "The server's tool list was too large.",
