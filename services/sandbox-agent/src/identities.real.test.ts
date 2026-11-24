@@ -16,7 +16,7 @@ import { existsSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { openAgentTemp, writeFileAtomic } from "./atomic-file.js";
 import { writeAgentFile } from "./mcp/pi-mcp-config.js";
-import { preparePiPrivateDirs } from "./threads/exec-wiring.js";
+import { PI_PRIVATE_PREFIX, preparePiPrivateDirs } from "./threads/exec-wiring.js";
 import type { ModelTokenSource } from "./models/types.js";
 import { loadPiIdentities, PI_UID_MIN, PiIdentities } from "./pi/identities.js";
 import { EXECUTOR_ENTRY } from "./testing/real-pi.js";
@@ -197,7 +197,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     ok(await h.server.command(runStart("say:a", { config: { model: MODEL } })));
     const pi = await launch(THREAD);
     const root = path.dirname(pi.home);
-    expect(root.startsWith(path.join(shm, "kaiju-pi-"))).toBe(true);
+    expect(root.startsWith(path.join(shm, PI_PRIVATE_PREFIX))).toBe(true);
     expect(pi.tmpdir).toBe(path.join(root, "tmp"));
     const modes = async (dir: string) => {
       const info = await stat(dir);
@@ -221,7 +221,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     ok(await h.server.command(runStart("say:a", { config: { model: MODEL } })));
     const pi = await launch(THREAD);
     const root = path.dirname(pi.home);
-    expect(root.startsWith(path.join(shm, "kaiju-pi-"))).toBe(true);
+    expect(root.startsWith(path.join(shm, PI_PRIVATE_PREFIX))).toBe(true);
     expect(pi.home).not.toBe(path.join(h.dir, "home"));
     expect(pi.tmpdir).toBe(path.join(root, "tmp"));
     const me = process.getuid?.() ?? 0;
