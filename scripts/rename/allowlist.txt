@@ -209,6 +209,7 @@ packages/cli/package.json /"kobe": "/
 ** /\bkobe(?=[A-Z])\w*/
 ** /\b\w*[a-z\d]KOBE\w*|\b\w*_KOBE\w*/
 ** /(?<=-D)KOBE_\w+/
+**/*.{ts,tsx,mts,cts,js,mjs,cjs,py,sh} /\bKOBE\b(?!-)/
 ** /\bKOBE(?=\.[A-Za-z]\w*(?!\.yaml))|\bKOBE-(?=[A-Z]{2})[A-Z-]+/
 
 == RN-3: DOM data attributes, CSS custom properties and classes
@@ -229,7 +230,6 @@ path ** /kobe/i
 
 == RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
 ** /\bKobe\b/
-** /\bKOBE\b(?![-.])|\bKOBE(?=\. )/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
