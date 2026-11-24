@@ -37,7 +37,8 @@ services/server/src/memory/checks/lint.ts /(?<=\|)kobe(?=\|(?:kaiju\|)?claude)/
 
 == permanent: Postgres settings and advisory-lock keys (spec §3 stays 2, RN3)
 packages/db/src/team-setters.test.ts packages/db/src/run-usage-retention-setting.test.ts /(?<![@\w])kobe(?=\\?\.)/
-** /\bkobe\.(?:team_id|break_glass_grant|break_glass_actor|run_usage_retention|restore(?:\.\w+)?|legal_hold|audit\.pii_sweep)\b/
+# The span attribute `kobe.team_id` in these files is telemetry, not the setting: RN-5 renames it.
+** !packages/telemetry/src/spans.ts !packages/telemetry/src/spans.test.ts !services/server/src/memory/learn/execute.ts !services/server/src/sandbox-wire/trace-intake.test.ts !services/server/src/sandbox-wire/trace-spans.db.test.ts !services/model-gateway/src/gateway-tracing.test.ts !services/egress-proxy/src/proxy.test.ts !packages/protocol/src/sandbox-wire/trace-frames.ts !docs/tracing.md /\bkobe\.(?:team_id|break_glass_grant|break_glass_actor|run_usage_retention|restore(?:\.\w+)?|legal_hold|audit\.pii_sweep)\b/
 
 == permanent: Postgres roles, functions, tables, columns, policies and the LISTEN/NOTIFY channels (spec §3 stays 2, §5 no migration)
 ** /\bkobe_(?:app|owner|backup|listen_probe|rate_limits\w*|run_events|egress(?:_blocked)?|memory_settings|models|sandbox|skill_eval|grants_applied|reserve_budget|settle_budget|extend_budget|count_model_spend|shipped_version|ensure_memory_vectors|spend_guard|run_usage_append_only|install_limits_guard|site_limits_guard|budget_email_guard|budget_alert_verify|budget_alert_emails|refuse_deactivated_session|entry_search_text|cap_sso_session_expiry)\b/
@@ -340,11 +341,11 @@ docs/install.md /(?<=IN DATABASE )kobe\b/
 == RN-5: Telemetry attribute and span names, logger names, OTLP audit attributes
 ** /(?<=["'`])kobe\.(?:tool|run|turn|upstream|memory|workspace|sandbox|session|agent|audit|model|research|embeddings|ingress|egress|sso|setup_ms|retention|published|sync|pod|node|container|stop_reason|outcome|wake|thread_id|run_id|run_token|sandbox_id|web_vital|team_level_changed|frontmatter)(?![\w-])(?:[.:][\w.-]*)?/
 ** /(?<=["'`])kobe\.(?:sandbox-relay|server|skill-eval)\b/
-** /(?<=["'`])kobe\.(?:turns|tool_calls|user_id|agent_id|reason|bytes_up|bytes_down|upgraded|site_job|connector_id|duration_ms|call_id|usage_kind|route|thinking_level|aborted|token\.kind|trace\.[\w.]+)\b/
+** /(?<=["'`])kobe\.(?:turns|tool_calls|team_id|user_id|agent_id|reason|bytes_up|bytes_down|upgraded|site_job|connector_id|duration_ms|call_id|usage_kind|route|thinking_level|aborted|token\.kind|trace\.[\w.]+)\b/
 packages/telemetry/src/content.ts /\|kobe\\\.\(message/
 services/server/src/audit/forward/*.test.ts /\bkobe-audit\b|\bkobe@\d+/
 ** /(?<=getTracer\()"kobe"|(?<=TRACER_NAME = )"kobe"|`kobe-\$\{service\}`|\bkobe@(?=\$\{|<)|(?<=APP-NAME `)kobe-audit\b|(?<=^\s*)"kobe-audit"(?=,)/
-docs/** /\battributes\.kobe\.[\w.]+|`kobe\.(?:user_id|agent_id|usage_kind|trace\.[\w.]+)`|\bkobe-audit\b|\bkobe@<PEN>/
+docs/** /\battributes\.kobe\.[\w.]+|`kobe\.(?:team_id|user_id|agent_id|usage_kind|trace\.[\w.]+)`|\bkobe-audit\b|\bkobe@<PEN>/
 docs/perf/latency-queries.sql /\bkobe_(?:side_p95_ms|share_p50|p50|p95)\b|`kobe_\*`/
 
 # ---------------------------------------------------------------------------------------------
