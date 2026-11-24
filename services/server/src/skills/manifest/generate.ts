@@ -9,7 +9,7 @@ import { manifestMessages } from "./prompt.js";
 import { ManifestYamlError, manifestFromReply, manifestYaml } from "./parse.js";
 
 /**
- * Drafts a version's `kobe.skill.yaml` with a model (KOBE-564): one server-originated call
+ * Drafts a version's `kaiju.skill.yaml` with a model (KOBE-564): one server-originated call
  * (KOBE-234 contract, purpose `skill_manifest`, no run) on the model the member chose, which
  * must be enabled for the team (never a fallback to another model), under the member's own budget
  * lines. The reply is cleaned to the package contract (`parse.ts`); the name, version and

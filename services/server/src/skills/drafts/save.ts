@@ -122,7 +122,7 @@ export async function saveDraftVersion(
 /**
  * The version's origin (KOBE-344 review): the draft's, with `modified: true` unless the files are
  * still byte for byte those imported (the canonical zip's hash; an origin without one counts as
- * modified). Compared before the save writes the chosen number into kobe.skill.yaml.
+ * modified). Compared before the save writes the chosen number into kaiju.skill.yaml.
  */
 export function versionOrigin(
   origin: Record<string, unknown> | null,

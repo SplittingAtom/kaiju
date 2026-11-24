@@ -17,7 +17,7 @@ const MESSAGES: Readonly<Record<PackageProblemCode, string>> = {
   duplicate: "Another file has this path in a different case.",
   file_and_directory: "That path is both a file and a folder.",
   reserved_name_case:
-    "Only SKILL.md, evals/ and kobe.skill.yaml are special: spell them exactly so.",
+    "Only SKILL.md, evals/ and kaiju.skill.yaml are special: spell them exactly so.",
   reserved_directory: "evals is a folder: put files inside it.",
   provenance_not_allowed: "Kaiju writes provenance.json itself.",
   skill_md_missing: "",

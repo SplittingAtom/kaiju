@@ -10,7 +10,7 @@ import { MemoryObjects } from "../../testing/memory-objects.js";
 import { pkg } from "../../testing/registry-fixtures.js";
 
 /**
- * KOBE-564 ac-4: Create kobe.skill.yaml for a version without one, end to end against Postgres
+ * KOBE-564 ac-4: Create kaiju.skill.yaml for a version without one, end to end against Postgres
  * with the real server-call client and a gateway stand-in that verifies the token (a run-less
  * `skill_manifest` claim), answers as a model would and writes the ledger row the gateway writes.
  * The version is forked into a draft of the member's with the file in place; the version itself
@@ -231,10 +231,10 @@ describe("POST /v1/skills/promotions/manifest (KOBE-564)", () => {
     const draftId = res.json.draft.id as string;
     expect(await draftFiles(builder, draftId)).toEqual([
       "SKILL.md",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
       "scripts/report.py",
     ]);
-    const yaml = await builder.get(`/v1/skills/drafts/${draftId}/files/kobe.skill.yaml`);
+    const yaml = await builder.get(`/v1/skills/drafts/${draftId}/files/kaiju.skill.yaml`);
     expect(yaml.status).toBe(200);
     expect(yaml.text).toContain("name: sales-report");
     expect(yaml.text).toContain(`version: ${v.semver}`);
@@ -343,7 +343,7 @@ describe("POST /v1/skills/promotions/manifest (KOBE-564)", () => {
 });
 
 describe("POST /v1/skills/drafts/:id/manifest (KOBE-564)", () => {
-  it("writes kobe.skill.yaml into an open draft at If-Match's revision, once", async () => {
+  it("writes kaiju.skill.yaml into an open draft at If-Match's revision, once", async () => {
     const started = await builder.post("/v1/skills/drafts", {
       name: "draft-report",
       template: "document-generator",
@@ -371,7 +371,7 @@ describe("POST /v1/skills/drafts/:id/manifest (KOBE-564)", () => {
       version: "0.1.0",
       license: "MIT",
     });
-    expect(await draftFiles(builder, id)).toContain("kobe.skill.yaml");
+    expect(await draftFiles(builder, id)).toContain("kaiju.skill.yaml");
     const again = await builder.request(
       "POST",
       `/v1/skills/drafts/${id}/manifest`,

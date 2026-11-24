@@ -18,7 +18,7 @@ import { hashGroups } from "./hash-checks.js";
  * run start); nothing is cached, so a new entry takes effect on the next request in every team.
  *
  * Entries work on alias groups (KOBE-310, docs/skill-package.md "Identity"): a stored hash whose
- * zip held `evals/` or `kobe.skill.yaml` shares one identity with its runtime hash and every other
+ * zip held `evals/` or `kaiju.skill.yaml` shares one identity with its runtime hash and every other
  * stored hash aliased to it. A hash is blocked when any member of its group is listed; adding a
  * hash whose group is already blocked changes nothing; removing one unblocks the whole group.
  */

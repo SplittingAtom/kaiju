@@ -34,7 +34,7 @@ export const sourceSchema = z.strictObject({
 export const declineSchema = z.strictObject({
   note: z.string().trim().min(1).max(1000).optional(),
 });
-/** Create kobe.skill.yaml (KOBE-564): the version, the member's model and their license choice. */
+/** Create kaiju.skill.yaml (KOBE-564): the version, the member's model and their license choice. */
 export const manifestSchema = sourceSchema.extend({
   model: z.string().min(1).max(128).optional(),
   license: z.string().regex(LICENSE_PATTERN).optional(),
@@ -104,7 +104,7 @@ function depsOf(deps: ServerDeps): PromoteDeps | null {
 const UNAVAILABLE = { code: "storage_unavailable", message: "Skill storage is not configured." };
 const NO_MODEL_CALLS = {
   code: "model_calls_unavailable",
-  message: "This server has no model gateway for its own calls; write kobe.skill.yaml yourself.",
+  message: "This server has no model gateway for its own calls; write kaiju.skill.yaml yourself.",
 };
 
 /** The status of a refused manifest draft (KOBE-564): what went wrong, never a crash. */
@@ -160,7 +160,7 @@ export function skillPromotionRoutes(
   });
 
   /**
-   * Create kobe.skill.yaml for a version without one (KOBE-564): the member's chosen model
+   * Create kaiju.skill.yaml for a version without one (KOBE-564): the member's chosen model
    * drafts it, and the version is forked into a Workbench draft of theirs holding the file.
    */
   app.post("/manifest", requireTeamPermission("team.personal.create"), async (c) => {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { SEMVER_PATTERN, SKILL_NAME_PATTERN } from "./layout.js";
 
 /**
- * `kobe.skill.yaml` (KOBE-309, spec SK19): the author-edited registry metadata of a skill
+ * `kaiju.skill.yaml` (KOBE-309, spec SK19): the author-edited registry metadata of a skill
  * package. Kaiju never loads it into a sandbox (it is outside the runtime hash) and nothing in it
  * grants anything: capabilities are checked against the team's egress and policy, never trusted
  * (no approval bypass).
@@ -75,7 +75,7 @@ export const kaijuSkillManifestSchema = z.strictObject({
     .optional(),
   compatibility: z
     .strictObject({
-      kobe: z.string().regex(COMPATIBILITY_PATTERN).optional(),
+      kaiju: z.string().regex(COMPATIBILITY_PATTERN).optional(),
       pi: z.string().regex(COMPATIBILITY_PATTERN).optional(),
     })
     .optional(),

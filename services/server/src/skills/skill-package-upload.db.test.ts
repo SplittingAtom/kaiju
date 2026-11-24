@@ -11,7 +11,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
 /**
  * Uploads over HTTP under the package contract (KOBE-309, KOBE-310): authored packages that
  * today's rules refuse are refused before anything is stored; a package with `evals/` and
- * `kobe.skill.yaml` is stored as its runtime zip (`content_hash` = runtime hash) plus its
+ * `kaiju.skill.yaml` is stored as its runtime zip (`content_hash` = runtime hash) plus its
  * package zip, the manifest numbers the version, and a download returns the whole package.
  */
 const team = randomUUID();
@@ -57,7 +57,7 @@ describe("refused before anything is stored", () => {
     ["a case variant of evals/", { "Evals/cases.yaml": "x" }, "reserved_path"],
     ["a file and folder clash", { scripts: "x", "scripts/run.py": "y" }, "path_conflict"],
     ["a bidi control in a name", { "run‮gnp.sh": "x" }, "unsafe_path"],
-    ["an invalid kobe.skill.yaml", { "kobe.skill.yaml": "apiVersion: nope\n" }, "invalid_manifest"],
+    ["an invalid kaiju.skill.yaml", { "kaiju.skill.yaml": "apiVersion: nope\n" }, "invalid_manifest"],
   ] as const) {
     it(what, async () => {
       const before = objects.objects.size;
@@ -69,12 +69,12 @@ describe("refused before anything is stored", () => {
   }
 });
 
-describe("packages with evals/ and kobe.skill.yaml", () => {
+describe("packages with evals/ and kaiju.skill.yaml", () => {
   const files = {
     "SKILL.md": SKILL_MD,
     "scripts/run.py": "print(1)\n",
     "evals/cases.yaml": "cases: []\n",
-    "kobe.skill.yaml": manifest("1.2.0"),
+    "kaiju.skill.yaml": manifest("1.2.0"),
   };
 
   it("stores the runtime zip as the content hash and numbers the version from the manifest", async () => {
@@ -93,23 +93,23 @@ describe("packages with evals/ and kobe.skill.yaml", () => {
     expect(Object.keys(unzipSync(bundle.bytes)).sort()).toEqual([
       "SKILL.md",
       "evals/cases.yaml",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
       "scripts/run.py",
     ]);
   });
 
   it("refuses a requested semver that differs from the manifest's version", async () => {
     const res = await upload(
-      zipOf({ ...files, "kobe.skill.yaml": manifest("1.3.0"), "scripts/run.py": "print(2)\n" }),
+      zipOf({ ...files, "kaiju.skill.yaml": manifest("1.3.0"), "scripts/run.py": "print(2)\n" }),
       "&semver=1.4.0",
     );
     expect(res.status).toBe(400);
-    expect(res.json.message).toMatch(/kobe\.skill\.yaml/);
+    expect(res.json.message).toMatch(/kaiju\.skill\.yaml/);
   });
 
   it("makes an evals-only change a new version with the same runtime hash", async () => {
     const res = await upload(
-      zipOf({ ...files, "evals/cases.yaml": "cases: [1]\n", "kobe.skill.yaml": manifest("1.2.1") }),
+      zipOf({ ...files, "evals/cases.yaml": "cases: [1]\n", "kaiju.skill.yaml": manifest("1.2.1") }),
     );
     expect(res.status, JSON.stringify(res.json)).toBe(201);
     expect(res.json.version).toMatchObject({
@@ -120,7 +120,7 @@ describe("packages with evals/ and kobe.skill.yaml", () => {
   });
 
   it("refuses a manifest that names another skill", async () => {
-    const res = await upload(zipOf({ ...files, "kobe.skill.yaml": manifest("9.0.0", "other") }));
+    const res = await upload(zipOf({ ...files, "kaiju.skill.yaml": manifest("9.0.0", "other") }));
     expect(res).toMatchObject({ status: 400, json: { code: "invalid_manifest" } });
   });
 });

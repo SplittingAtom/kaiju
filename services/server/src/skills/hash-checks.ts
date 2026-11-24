@@ -23,7 +23,7 @@ import { parseSkillMd } from "./skill-md.js";
  * What each stored skill hash is under the KOBE-309 package contract (KOBE-310;
  * docs/skill-package.md "Identity"), in the site-wide `skill_hash_checks`:
  *  - same: the stored zip is its own runtime payload (every version stored since KOBE-310);
- *  - alias: the stored zip held `evals/` or `kobe.skill.yaml`, so its runtime hash differs. Many
+ *  - alias: the stored zip held `evals/` or `kaiju.skill.yaml`, so its runtime hash differs. Many
  *    stored hashes can share one runtime hash; the runtime hash and all of them are one group;
  *  - legacy: today's path rules refuse the stored zip. Its stored hash is its only identity.
  * Rows are written once and never changed.
@@ -156,7 +156,7 @@ async function unchecked(db: KaijuDb): Promise<Stored[]> {
 
 /**
  * The outcome for one stored zip (already verified against its hash): legacy when today's path
- * rules refuse it, or when its SKILL.md or `kobe.skill.yaml` (never read before KOBE-310) is
+ * rules refuse it, or when its SKILL.md or `kaiju.skill.yaml` (never read before KOBE-310) is
  * invalid; otherwise its runtime hash. Rows are written once and never re-evaluated, so a later
  * tightening of the rules applies to new uploads only.
  */

@@ -53,7 +53,7 @@ export type ServerCallPurpose = z.infer<typeof serverCallPurposeSchema>;
 /**
  * Every purpose a server-call token may carry: the epilogue's, the eval judge's, and the skill
  * manifest's (`skill_manifest`, KOBE-564: a member asks Kaiju to write a version's
- * `kobe.skill.yaml` with the model they chose; the only purpose a member starts, so it names no
+ * `kaiju.skill.yaml` with the model they chose; the only purpose a member starts, so it names no
  * thread or run: {@link RUNLESS_SERVER_CALL_PURPOSES}), and the learning pass's (`memory_learn`,
  * KOBE-390, SM14/SM15: one extractor call per pass, bound to the leaf's last completed run and
  * naming its pass in `pass_id`; semantic-memory/learning.ts), and the embedding calls
@@ -186,7 +186,7 @@ export const SERVER_CALL_LIMITS = {
     max_body_bytes: 2 * 1024 * 1024,
     temperature: 0,
   },
-  // KOBE-564: a `kobe.skill.yaml` drafted from SKILL.md (up to 100 KiB) and the file list; the
+  // KOBE-564: a `kaiju.skill.yaml` drafted from SKILL.md (up to 100 KiB) and the file list; the
   // answer is one small JSON object (summary, tags, capabilities), so the output cap is modest.
   skill_manifest: {
     max_output_tokens: 1024,

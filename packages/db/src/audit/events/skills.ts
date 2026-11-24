@@ -178,7 +178,7 @@ export const SKILLS_EVENTS = {
     requestId: id.optional(),
   }),
   /**
-   * Kaiju drafted a kobe.skill.yaml for a version without one, with the member's chosen model,
+   * Kaiju drafted a kaiju.skill.yaml for a version without one, with the member's chosen model,
    * into a new Workbench draft of theirs (KOBE-564); `from` says whether the model's reply was
    * used or SKILL.md's description alone. Metadata only: never the manifest's text.
    */

@@ -40,7 +40,7 @@ export interface DraftEditor {
   /** Adds a text file (empty unless `text` is given), by the same write as an autosave. */
   readonly addFile: (path: string, text?: string) => Promise<ApiError | null>;
   /**
-   * Create kobe.skill.yaml with a model (KOBE-564): the file appears in the tree (open it to
+   * Create kaiju.skill.yaml with a model (KOBE-564): the file appears in the tree (open it to
    * read the text); the notice says which model wrote it. Absent where the client offers none.
    */
   readonly createManifest?: (choice: ManifestDraftChoice) => Promise<ManifestOutcome>;

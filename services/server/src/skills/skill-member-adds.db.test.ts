@@ -36,7 +36,7 @@ async function version(skill: string, name: string, semver: string, seq: number,
       "SKILL.md": strToU8(
         `---\nname: ${name}\ndescription: Checks invoices. Use it for invoices.\n---\n# Invoices\n\n${semver}\n`,
       ),
-      "kobe.skill.yaml": strToU8(manifest),
+      "kaiju.skill.yaml": strToU8(manifest),
     }),
   );
   if (!valid.ok) throw new Error(valid.error.message);

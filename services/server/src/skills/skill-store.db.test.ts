@@ -173,7 +173,7 @@ describe("versions, approval and export", () => {
     const v1 = await put(team(teamA), bundleOf("exported", {}, "One."), "1.0.0");
     const v2 = await put(
       team(teamA),
-      bundleOf("exported", { "kobe.skill.yaml": manifest("1.1.0") }, "Two."),
+      bundleOf("exported", { "kaiju.skill.yaml": manifest("1.1.0") }, "Two."),
     );
     const v3 = await put(team(teamA), bundleOf("exported", {}, "Three."), "2.0.0");
     if (!v1.ok || !v2.ok || !v3.ok) throw new Error("upload refused");
@@ -195,7 +195,7 @@ describe("versions, approval and export", () => {
     expect(exported.map((e) => e.version.semver)).toEqual(["1.1.0", "2.0.0"]);
     const [second] = exported;
     if (!second || !("bytes" in second)) throw new Error("no bytes");
-    expect(files(second.bytes)).toEqual(["SKILL.md", "kobe.skill.yaml"]);
+    expect(files(second.bytes)).toEqual(["SKILL.md", "kaiju.skill.yaml"]);
     expect(sha256Hex(second.bytes)).toBe(v2.version.packageHash);
     expect(await store.export(team(teamB), id)).toEqual([]);
   });

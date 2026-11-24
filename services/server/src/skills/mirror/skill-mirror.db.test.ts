@@ -46,7 +46,7 @@ async function publish(name: string, semver: string, state = "approved"): Promis
   const valid = validateZipBundle(
     zipSync({
       "SKILL.md": strToU8(`---\nname: ${name}\ndescription: Does ${name}.\n---\n# ${semver}\n`),
-      "kobe.skill.yaml": strToU8(
+      "kaiju.skill.yaml": strToU8(
         `apiVersion: kobe.dev/skill/v1\nname: ${name}\nversion: ${semver}\nsummary: S.\nlicense: Apache-2.0\n`,
       ),
       "evals/cases.yaml": strToU8("cases: []\n"),

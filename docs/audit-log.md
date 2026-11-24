@@ -498,7 +498,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `skill.maintainer.added` | site | `skillId`, `userId` | A maintainer or Site admin added a catalog skill maintainer (KOBE-332, SK24) |
 | `skill.maintainer.removed` | site | `skillId`, `userId` | A maintainer or Site admin removed a maintainer; never the last (KOBE-332) |
 | `skill.maintainers.reassigned` | site | `skillId`, `userIds` | A Site admin reassigned the maintainers (KOBE-332, SK24) |
-| `skill.manifest.generated` | team | `draftId`, `skillId?`, `scope?`, `version?`, `semver?`, `model`, `from` (model, seed) | Kaiju drafted a kobe.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564) |
+| `skill.manifest.generated` | team | `draftId`, `skillId?`, `scope?`, `version?`, `semver?`, `model`, `from` (model, seed) | Kaiju drafted a kaiju.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564) |
 | `skill.member_add.added` | team | `skillId`, `name`, `semver`, `pinMode` | A member added a catalog skill for themselves in the team: it loads only in their runs there (KOBE-338, SK25) |
 | `skill.member_add.changed` | team | `skillId`, `name`, `semver`, `pinMode`, `previous` (`semver`, `pinMode`) | A member changed the version or pin mode of their own add (KOBE-338) |
 | `skill.member_add.removed` | team | `skillId`, `name` | A member removed their own add (KOBE-338); adds a block removes are counted on `skill.catalog.blocked` |

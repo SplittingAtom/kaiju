@@ -8,7 +8,7 @@ import { validateZipBundle, type ValidBundle } from "./bundle.js";
  * The package set of Kaiju's own catalog skills (KOBE-317, SK4): the former built-ins, one
  * directory per skill under `services/server/builtin-skills/<name>/`, shipped with the server
  * image (so a Kaiju release updates them without a sandbox image rebuild). Each holds the skill's
- * files and a `kobe.skill.yaml` whose `version` is the catalog semver: changing a skill's files
+ * files and a `kaiju.skill.yaml` whose `version` is the catalog semver: changing a skill's files
  * means raising it (`kaiju-packages.test.ts` holds each version's hash).
  *
  * Every package goes through the upload's own checks (`validateZipBundle`: limits, paths,
@@ -55,7 +55,7 @@ export async function readKaijuPackage(dir: string, name: string): Promise<Kaiju
   const bundle = checked.value;
   if (bundle.name !== name)
     throw new KaijuPackageError(`${name}: SKILL.md names ${bundle.name}, not its directory`);
-  if (!bundle.manifest) throw new KaijuPackageError(`${name}: kobe.skill.yaml is missing`);
+  if (!bundle.manifest) throw new KaijuPackageError(`${name}: kaiju.skill.yaml is missing`);
   return { name, semver: bundle.manifest.version, manifest: bundle.manifest, bundle };
 }
 

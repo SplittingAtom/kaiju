@@ -9,7 +9,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
 
 /**
  * KOBE-333 (SK19, SK20): Promote to Site. The package that leaves is the version's own (payload,
- * evals/, kobe.skill.yaml) with a Kaiju-written provenance holding scorecard numbers only; SK20's
+ * evals/, kaiju.skill.yaml) with a Kaiju-written provenance holding scorecard numbers only; SK20's
  * rules refuse with reasons; a Builder's promotion waits for a Team admin unless the team lets
  * Builders promote, with audits in the team and on the Site; and promotion is the only way skill
  * content leaves a team.
@@ -53,7 +53,7 @@ const pkg = (name: string, semver: string, license = true) =>
   new RawBody(
     zipSync({
       "SKILL.md": strToU8(skillMd(name)),
-      "kobe.skill.yaml": strToU8(manifest(name, semver, license)),
+      "kaiju.skill.yaml": strToU8(manifest(name, semver, license)),
       "evals/cases.yaml": strToU8(CASES),
       "evals/fixtures/sales.csv": strToU8("region,total\nnorth,1\n"),
       "evals/fixtures/regions/map.json": strToU8("{}"),
@@ -170,7 +170,7 @@ describe("a Team admin's promotion (ac-1)", () => {
       refusals: [],
       newSkill: true,
       fromConversation: false,
-      files: [{ path: "SKILL.md" }, { path: "kobe.skill.yaml" }],
+      files: [{ path: "SKILL.md" }, { path: "kaiju.skill.yaml" }],
     });
     expect((preview.json.fixtures as { path: string }[]).map((f) => f.path)).toEqual([
       "evals/cases.yaml",
@@ -209,14 +209,14 @@ describe("a Team admin's promotion (ac-1)", () => {
     const left = JSON.stringify([row?.provenance, row?.scorecard, row?.source]);
     for (const leak of ["caseId", "threadId", "runId", "prompt", "q3-workbook", "details"])
       expect(left).not.toContain(leak);
-    // The stored package is the version's own: payload, evals/ and kobe.skill.yaml, no transcripts.
+    // The stored package is the version's own: payload, evals/ and kaiju.skill.yaml, no transcripts.
     const stored = objects.objects.get(row?.package_storage_key as string);
     expect(Object.keys(unzipSync(new Uint8Array(stored as Buffer))).sort()).toEqual([
       "SKILL.md",
       "evals/cases.yaml",
       "evals/fixtures/regions/map.json",
       "evals/fixtures/sales.csv",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
     ]);
     expect(await audit("skill.promoted")).toMatchObject([
       {
@@ -530,7 +530,7 @@ async function conversationDraft(ownerId: string, name: string): Promise<string>
     );
     const files: Record<string, string> = {
       "SKILL.md": skillMd(name),
-      "kobe.skill.yaml": manifest(name, "0.1.0"),
+      "kaiju.skill.yaml": manifest(name, "0.1.0"),
       "evals/cases.yaml": CASES,
       "evals/fixtures/sales.csv": "region,total\nnorth,1\n",
       "evals/fixtures/regions/map.json": "{}",

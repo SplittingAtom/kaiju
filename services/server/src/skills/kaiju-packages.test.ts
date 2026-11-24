@@ -14,7 +14,7 @@ import { sha256Hex } from "./storage.js";
  * S5). **Append only: never edit or remove a line.** A Site that holds a version refuses other
  * bytes under it (kaiju-seed.ts `version_reused`), so changing a published version's files would
  * leave Sites with different content under one name@semver. To change a skill: raise `version`
- * in its kobe.skill.yaml and add a line here; the newest line must be what ships.
+ * in its kaiju.skill.yaml and add a line here; the newest line must be what ships.
  */
 const PUBLISHED: Record<string, Record<string, { runtime: string; package: string }>> = {
   "data-analysis": {
@@ -90,9 +90,9 @@ describe("the Kaiju package set (KOBE-317)", () => {
     for (const p of await loadKaijuPackages()) {
       const runtime = Object.keys(unzipSync(p.bundle.zip));
       expect(runtime).toContain("SKILL.md");
-      expect(runtime).not.toContain("kobe.skill.yaml");
+      expect(runtime).not.toContain("kaiju.skill.yaml");
       expect(Object.keys(unzipSync(p.bundle.packageZip ?? new Uint8Array()))).toContain(
-        "kobe.skill.yaml",
+        "kaiju.skill.yaml",
       );
     }
   });
@@ -127,13 +127,13 @@ describe("the Kaiju package set (KOBE-317)", () => {
       const skill = (name: string, md: string, manifest?: string) =>
         mkdir(path.join(dir, name), { recursive: true }).then(async () => {
           await writeFile(path.join(dir, name, "SKILL.md"), md);
-          if (manifest) await writeFile(path.join(dir, name, "kobe.skill.yaml"), manifest);
+          if (manifest) await writeFile(path.join(dir, name, "kaiju.skill.yaml"), manifest);
         });
       const md = (name: string) => `---\nname: ${name}\ndescription: "d"\n---\n# x\n`;
       const yaml = (name: string) =>
         `apiVersion: kobe.dev/skill/v1\nname: ${name}\nversion: 1.0.0\nsummary: s\n`;
       await skill("pdf", md("pdf"));
-      await expect(readKaijuPackage(dir, "pdf")).rejects.toThrow(/kobe.skill.yaml is missing/);
+      await expect(readKaijuPackage(dir, "pdf")).rejects.toThrow(/kaiju.skill.yaml is missing/);
       await skill("xlsx", md("other"), yaml("other"));
       await expect(readKaijuPackage(dir, "xlsx")).rejects.toThrow(/names other/);
       await skill("docx", md("docx"), yaml("docx"));

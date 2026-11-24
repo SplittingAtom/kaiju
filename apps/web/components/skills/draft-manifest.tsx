@@ -9,7 +9,7 @@ import { ManifestChoiceForm } from "./create-manifest";
 import { MANIFEST, type DraftEditor } from "./use-draft-editor";
 
 /**
- * Create kobe.skill.yaml in the Workbench editor (KOBE-564): under the file tree while the draft
+ * Create kaiju.skill.yaml in the Workbench editor (KOBE-564): under the file tree while the draft
  * has none. The chosen model drafts it from the draft's SKILL.md and files, it is written at the
  * revision the author sees (pending edits first, like any change), and the tree opens on it. Its
  * version is a placeholder that Save version writes.
@@ -55,7 +55,7 @@ export function DraftManifest({
     <div className="mt-3 flex flex-col gap-2">
       <ManifestChoiceForm
         teamId={teamId}
-        intro="No kobe.skill.yaml yet: Kaiju can write one from SKILL.md and the files with a model of your choice. Promotion to the Site needs it."
+        intro="No kaiju.skill.yaml yet: Kaiju can write one from SKILL.md and the files with a model of your choice. Promotion to the Site needs it."
         pending={pending}
         done={notice !== null}
         onCreate={(choice) => void run(choice)}

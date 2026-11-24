@@ -11,7 +11,7 @@ export type ManifestOutcome =
   ({ readonly ok: true } & ManifestWritten) | { readonly ok: false; readonly error: ApiError };
 
 /** The manifest's path (the package contract's reserved root name). */
-export const MANIFEST = "kobe.skill.yaml";
+export const MANIFEST = "kaiju.skill.yaml";
 
 export const byteLength = (s: string) => new TextEncoder().encode(s).length;
 

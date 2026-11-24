@@ -198,7 +198,7 @@ export interface ServerDeps {
    */
   readonly skillEvalJudge: SkillEvalJudge | undefined;
   /**
-   * Create kobe.skill.yaml with a model (KOBE-564): a run-less server call through the model
+   * Create kaiju.skill.yaml with a model (KOBE-564): a run-less server call through the model
    * gateway; undefined when server calls are not configured (the routes answer 503).
    */
   readonly skillManifests: SkillManifestGenerator | undefined;
@@ -415,7 +415,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
         log: logger.child({ component: "skill-eval-judge" }),
       })
     : undefined;
-  // Create kobe.skill.yaml with the member's chosen model (KOBE-564): a server call too.
+  // Create kaiju.skill.yaml with the member's chosen model (KOBE-564): a server call too.
   const skillManifests = serverCallClient
     ? createSkillManifestGenerator({
         db: database.db,

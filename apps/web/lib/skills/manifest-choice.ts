@@ -1,5 +1,5 @@
 /**
- * What a member chooses when Kaiju writes a kobe.skill.yaml for them (KOBE-564): the model that
+ * What a member chooses when Kaiju writes a kaiju.skill.yaml for them (KOBE-564): the model that
  * drafts it (a team-enabled catalog alias; undefined: the team default) and their license, which
  * is the author's statement and never the model's.
  */
@@ -30,6 +30,6 @@ export interface ManifestWritten {
 
 export function manifestWrittenNotice(made: ManifestWritten): string {
   return made.source === "model"
-    ? `kobe.skill.yaml written by ${made.model}.`
-    : `${made.model} gave no usable answer; kobe.skill.yaml starts from the SKILL.md description.`;
+    ? `kaiju.skill.yaml written by ${made.model}.`
+    : `${made.model} gave no usable answer; kaiju.skill.yaml starts from the SKILL.md description.`;
 }

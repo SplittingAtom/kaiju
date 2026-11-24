@@ -40,7 +40,7 @@ async function version(
       "SKILL.md": strToU8(
         `---\nname: ${NAME}\ndescription: Builds reports. Use it for reports.\n---\n# Report\n\nVersion ${semver}.\n`,
       ),
-      "kobe.skill.yaml": strToU8(manifest),
+      "kaiju.skill.yaml": strToU8(manifest),
     }),
   );
   if (!valid.ok) throw new Error(valid.error.message);

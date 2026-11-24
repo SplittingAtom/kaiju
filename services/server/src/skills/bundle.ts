@@ -46,7 +46,7 @@ export type Result<T> =
 export interface ValidBundle extends SkillMd {
   /**
    * The runtime zip (KOBE-309 contract): the canonical zip of the payload, without `evals/` and
-   * `kobe.skill.yaml`, the single wrapper directory stripped. What is stored as the version's
+   * `kaiju.skill.yaml`, the single wrapper directory stripped. What is stored as the version's
    * bundle, hashed as its `content_hash` (= runtime hash) and served to sandboxes.
    */
   readonly zip: Uint8Array;
@@ -54,7 +54,7 @@ export interface ValidBundle extends SkillMd {
   readonly packageZip: Uint8Array | null;
   /** SHA-256 of `packageZip`, or of `zip` when there is none. */
   readonly packageHash: string;
-  /** The parsed `kobe.skill.yaml`, if the package has one (its name matches SKILL.md). */
+  /** The parsed `kaiju.skill.yaml`, if the package has one (its name matches SKILL.md). */
   readonly manifest: KaijuSkillManifest | null;
   /** Files and bytes of the runtime payload (what a sandbox unpacks). */
   readonly fileCount: number;
@@ -159,7 +159,7 @@ function checkContract(names: readonly string[]): Result<never> | null {
   const code = PROBLEM_CODES[problem.problem] ?? "unsafe_path";
   const why =
     code === "reserved_path"
-      ? `${printable(problem.path)} is reserved: only SKILL.md, evals/ and kobe.skill.yaml, spelled exactly so, are special, and Kaiju writes provenance.json itself.`
+      ? `${printable(problem.path)} is reserved: only SKILL.md, evals/ and kaiju.skill.yaml, spelled exactly so, are special, and Kaiju writes provenance.json itself.`
       : code === "path_conflict"
         ? `${printable(problem.path)} is both a file and a folder.`
         : `Unsafe path in bundle: ${printable(problem.path)} (${problem.problem.replaceAll("_", " ")})`;
@@ -167,7 +167,7 @@ function checkContract(names: readonly string[]): Result<never> | null {
 }
 
 /**
- * Parses and checks `kobe.skill.yaml` by the contract's text rules; null when absent. Also used on
+ * Parses and checks `kaiju.skill.yaml` by the contract's text rules; null when absent. Also used on
  * stored packages (KOBE-310 recompute and export), whose manifests were never read before.
  */
 export function readManifest(
@@ -175,7 +175,7 @@ export function readManifest(
   skillName: string,
 ): Result<KaijuSkillManifest | null> {
   if (!bytes) return { ok: true, value: null };
-  const bad = (why: string) => fail("invalid_manifest", `kobe.skill.yaml: ${why}`);
+  const bad = (why: string) => fail("invalid_manifest", `kaiju.skill.yaml: ${why}`);
   if (bytes.length > MANIFEST_MAX_BYTES) return bad(`larger than ${MANIFEST_MAX_BYTES} bytes.`);
   let value: unknown;
   try {

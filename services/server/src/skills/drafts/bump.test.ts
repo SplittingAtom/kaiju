@@ -22,13 +22,13 @@ describe("adviseBump (KOBE-321, SK14)", () => {
     expect(adviseBump(files(BASE), files(BASE))).toEqual({ kind: null, reasons: [] });
   });
 
-  it("suggests a patch for references, assets, evals and kobe.skill.yaml", () => {
+  it("suggests a patch for references, assets, evals and kaiju.skill.yaml", () => {
     for (const change of [
       { "references/guide.md": "Guide, revised." },
       { "assets/logo.png": new Uint8Array([0x89, 0x51]) },
       { "references/new.md": "New." },
       { "evals/cases.yaml": "cases: []" },
-      { "kobe.skill.yaml": "apiVersion: kobe.dev/skill/v1" },
+      { "kaiju.skill.yaml": "apiVersion: kobe.dev/skill/v1" },
     ]) {
       const advice = adviseBump(files(BASE), files({ ...BASE, ...change }));
       expect(advice.kind, JSON.stringify(Object.keys(change))).toBe("patch");

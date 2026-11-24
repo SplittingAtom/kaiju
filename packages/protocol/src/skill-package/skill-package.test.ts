@@ -34,16 +34,16 @@ describe("package layout (KOBE-309)", () => {
     expect(packageFileRole("SKILL.md")).toBe("runtime");
     expect(packageFileRole("scripts/build.py")).toBe("runtime");
     expect(packageFileRole("scripts/evals/x")).toBe("runtime");
-    expect(packageFileRole("references/kobe.skill.yaml")).toBe("runtime");
+    expect(packageFileRole("references/kaiju.skill.yaml")).toBe("runtime");
     expect(packageFileRole("evals/cases.yaml")).toBe("evals");
     expect(packageFileRole("evals/fixtures/a.csv")).toBe("evals");
-    expect(packageFileRole("kobe.skill.yaml")).toBe("manifest");
+    expect(packageFileRole("kaiju.skill.yaml")).toBe("manifest");
     expect(packageFileRole("provenance.json")).toBe("provenance");
   });
 
   it("splits a package into the runtime payload and the hashed package", () => {
     const files = new Map(
-      ["SKILL.md", "evals/cases.yaml", "kobe.skill.yaml", "provenance.json", "assets/a"].map(
+      ["SKILL.md", "evals/cases.yaml", "kaiju.skill.yaml", "provenance.json", "assets/a"].map(
         (p) => [p, utf8(p)] as const,
       ),
     );
@@ -51,7 +51,7 @@ describe("package layout (KOBE-309)", () => {
     expect([...hashedPackageFiles(files).keys()]).toEqual([
       "SKILL.md",
       "evals/cases.yaml",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
       "assets/a",
     ]);
   });
@@ -115,7 +115,7 @@ describe("package layout (KOBE-309)", () => {
     for (const path of [
       "Evals/cases.yaml",
       "EVALS",
-      "KOBE.SKILL.YAML",
+      "KAIJU.SKILL.YAML",
       "Provenance.json",
       "skill.md",
     ])
@@ -126,7 +126,7 @@ describe("package layout (KOBE-309)", () => {
         },
       );
     expect(
-      checkPackagePaths(["SKILL.md", "scripts/Evals/x", "references/KOBE.SKILL.YAML"]),
+      checkPackagePaths(["SKILL.md", "scripts/Evals/x", "references/KAIJU.SKILL.YAML"]),
     ).toEqual([]);
     expect(checkPackagePaths(["SKILL.md", "aς", "aσ"]).map((p) => p.problem)).toEqual([
       "duplicate",
@@ -244,7 +244,7 @@ describe("golden hash vectors (KOBE-309 ac-3)", () => {
     });
   }
 
-  it("equals the package hash for a package with no evals/ and no kobe.skill.yaml", () => {
+  it("equals the package hash for a package with no evals/ and no kaiju.skill.yaml", () => {
     const files = new Map([
       ["SKILL.md", utf8("x")],
       ["provenance.json", utf8("{}")],
@@ -303,7 +303,7 @@ const PROVENANCE_REFUSALS: Record<string, string> = {
 const issueAt = (i: { path: PropertyKey[] }) =>
   i.path.length === 0 ? "(root)" : i.path.map(String).join(".");
 
-describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
+describe("kaiju.skill.yaml (KOBE-309 ac-1)", () => {
   const all = fixtures("manifest");
 
   it("has valid and invalid golden fixtures", () => {
@@ -347,7 +347,7 @@ describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
         egress: ["pypi.org", "files.pythonhosted.org"],
         packages: { pip: ["openpyxl==3.1.*"] },
       },
-      compatibility: { kobe: ">=1.2", pi: "1.0.x" },
+      compatibility: { kaiju: ">=1.2", pi: "1.0.x" },
       changelog: "Adds a totals row per region.",
     });
   });

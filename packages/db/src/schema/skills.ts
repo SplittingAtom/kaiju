@@ -79,7 +79,7 @@ const versionColumns = () => ({
   packageHash: text(),
   /**
    * The package zip (KOBE-310) when it differs from the runtime zip in `storage_key` (the version
-   * has `evals/` or `kobe.skill.yaml`); null when the two are the same bytes, and for versions
+   * has `evals/` or `kaiju.skill.yaml`); null when the two are the same bytes, and for versions
    * stored before KOBE-310 (their `storage_key` zip is the whole upload).
    */
   packageStorageKey: text(),

@@ -3,7 +3,7 @@
  * tools that hold the same files produce the same bytes, in every timezone, so the hash is an
  * identity. It is byte-for-byte what the server's canonical repack has written since KOBE-78
  * (fflate `zipSync`, stored): for a stored bundle without the reserved root names (`evals/`,
- * `kobe.skill.yaml`, `provenance.json`), its `content_hash` is its runtime hash under this rule.
+ * `kaiju.skill.yaml`, `provenance.json`), its `content_hash` is its runtime hash under this rule.
  *
  * Layout (all integers little-endian), for each file in {@link canonicalOrder}:
  *

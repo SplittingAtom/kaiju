@@ -77,7 +77,7 @@ export interface ManifestDraft extends ManifestWritten {
 }
 
 /**
- * Create kobe.skill.yaml for a version without one (KOBE-564): the chosen model drafts it, and
+ * Create kaiju.skill.yaml for a version without one (KOBE-564): the chosen model drafts it, and
  * the version is forked into a Workbench draft of the caller's with the file in place.
  */
 export function createManifestDraft(

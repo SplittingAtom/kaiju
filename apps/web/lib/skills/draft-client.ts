@@ -26,7 +26,7 @@ export interface DraftClient {
   remove(id: string, path: string, rev: number): Promise<ApiResult<Changed>>;
   share(id: string, rev: number, shared: boolean): Promise<ApiResult<DraftSummary>>;
   scan(id: string, signal?: AbortSignal): Promise<ApiResult<ScanPreview>>;
-  /** Create kobe.skill.yaml with a model (KOBE-564); absent where the server offers none. */
+  /** Create kaiju.skill.yaml with a model (KOBE-564); absent where the server offers none. */
   manifest?(
     id: string,
     rev: number,

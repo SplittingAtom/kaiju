@@ -37,7 +37,7 @@ const FOLDER_PATH = /(?<![\w./~\\-])((?:scripts|references|assets|evals)\/[\w./-
 /** An absolute path: `/a/b…`, `~/…` or a drive letter (not a URL: `://` is excluded). */
 const ABSOLUTE =
   /(?<![\w.:/~\\-])(\/[\w.@-]+(?:\/[\w.@-]+)*|~\/[^\s)`'"<>]+|[A-Za-z]:\\[^\s)`'"<>]+)/g;
-const PACKAGE_SEGMENT = /\/(?:scripts|references|assets|evals)\/|\/SKILL\.md$|\/kobe\.skill\.yaml$/;
+const PACKAGE_SEGMENT = /\/(?:scripts|references|assets|evals)\/|\/SKILL\.md$|\/kaiju\.skill\.yaml$/;
 const EXTERNAL = /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i;
 
 const item = (id: string, level: LintLevel, message: string, file?: string): LintItem => ({

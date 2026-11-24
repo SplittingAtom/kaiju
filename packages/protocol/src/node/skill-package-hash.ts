@@ -11,7 +11,7 @@ import {
 /**
  * The two hashes of a skill package (KOBE-309, spec SK14), lowercase hex SHA-256 of canonical
  * zips (skill-package/canonical-zip.ts):
- *  - runtime hash: of the runtime payload (no `evals/`, `kobe.skill.yaml`, `provenance.json`).
+ *  - runtime hash: of the runtime payload (no `evals/`, `kaiju.skill.yaml`, `provenance.json`).
  *    For a bundle with none of those it equals the `content_hash` Kaiju has stored since KOBE-78.
  *  - package hash: of everything but `provenance.json`.
  * Every function checks the whole file set first (`checkPackagePaths`, with `options`) and throws
@@ -31,7 +31,7 @@ export function runtimeZip(files: PackageFiles, options: CheckPackageOptions = {
   return canonicalZip(runtimeFiles(files));
 }
 
-/** The canonical zip of the hashed package (payload, `evals/`, `kobe.skill.yaml`). */
+/** The canonical zip of the hashed package (payload, `evals/`, `kaiju.skill.yaml`). */
 export function packageZip(files: PackageFiles, options: CheckPackageOptions = {}): Uint8Array {
   assertPackagePaths(files.keys(), options);
   return canonicalZip(hashedPackageFiles(files));

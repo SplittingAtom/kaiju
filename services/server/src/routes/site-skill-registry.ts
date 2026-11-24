@@ -67,7 +67,7 @@ export function siteSkillRegistryRoutes(
 
   // The review console (KOBE-334): the queue at `/` and each version at `/:id`, after the fixed
   // paths above.
-  // A catalog version's export (KOBE-345): the full package (kobe.skill.yaml, provenance.json)
+  // A catalog version's export (KOBE-345): the full package (kaiju.skill.yaml, provenance.json)
   // or a portable zip, for Site catalog managers only.
   app.get(
     "/versions/:id/export",

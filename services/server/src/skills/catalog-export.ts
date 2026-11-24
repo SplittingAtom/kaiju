@@ -11,7 +11,7 @@ import { readPackage } from "./registry/review-diff.js";
  * A catalog version's export (KOBE-345): only a published one (Approved, or Deprecated, which
  * SK31 keeps working for existing installs; not suspended, not on the site blocklist, not of an
  * archived skill, as the catalog browse hides those), from its stored package, checked against both recorded
- * hashes before anything leaves. `package` (with kobe.skill.yaml and Kaiju's provenance.json) is
+ * hashes before anything leaves. `package` (with kaiju.skill.yaml and Kaiju's provenance.json) is
  * for Site catalog managers; the portable zips for members of a team that hasn't blocked it.
  */
 export type CatalogExportResult =

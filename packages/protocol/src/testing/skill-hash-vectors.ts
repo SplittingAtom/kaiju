@@ -28,7 +28,7 @@ const PACKAGE_EXTRAS: readonly [string, Uint8Array][] = [
   ["evals/cases.yaml", utf8("cases:\n  - id: q3\n    prompt: Build Q3\n")],
   ["evals/fixtures/sales.csv", utf8("region,total\nnorth,10\n")],
   [
-    "kobe.skill.yaml",
+    "kaiju.skill.yaml",
     utf8(
       "apiVersion: kobe.dev/skill/v1\nname: quarterly-report\nversion: 1.3.0\nsummary: Builds the workbook.\n",
     ),
@@ -54,7 +54,7 @@ export const SKILL_HASH_VECTORS: readonly SkillHashVector[] = [
     packageHash: PAYLOAD_RUNTIME,
   },
   {
-    name: "the same payload as a full package (evals/, kobe.skill.yaml, provenance.json)",
+    name: "the same payload as a full package (evals/, kaiju.skill.yaml, provenance.json)",
     files: new Map([...PAYLOAD, ...PACKAGE_EXTRAS, PROVENANCE]),
     options: { kaijuProvenance: true },
     runtimeHash: PAYLOAD_RUNTIME,

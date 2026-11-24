@@ -5,11 +5,11 @@
  *   SKILL.md            required; the portable skill (Agent Skills format)     runtime
  *   scripts/ references/ assets/ (and any other path)                          runtime
  *   evals/              eval suite: cases.yaml, fixtures/ (KOBE-324)           package only
- *   kobe.skill.yaml     author-edited registry metadata (manifest.ts)          package only
+ *   kaiju.skill.yaml     author-edited registry metadata (manifest.ts)          package only
  *   provenance.json     Kaiju-generated at promotion (provenance.ts)            neither hash
  *
  * Three file sets, all addressed by path → bytes:
- *  - the **runtime payload**: every file except `evals/**`, `kobe.skill.yaml` and
+ *  - the **runtime payload**: every file except `evals/**`, `kaiju.skill.yaml` and
  *    `provenance.json`. Its canonical zip is the bundle a sandbox gets (`--skill <dir>`), and its
  *    SHA-256, the **runtime hash**, is the skill's identity everywhere (blocklist, resolver,
  *    materialization): the `content_hash` columns.
@@ -22,7 +22,7 @@
  */
 
 export const SKILL_MD_PATH = "SKILL.md";
-export const MANIFEST_PATH = "kobe.skill.yaml";
+export const MANIFEST_PATH = "kaiju.skill.yaml";
 export const PROVENANCE_PATH = "provenance.json";
 export const EVALS_DIR = "evals/";
 /** Conventional payload directories (Agent Skills); other paths are allowed too. */
@@ -57,7 +57,7 @@ const pick = (files: PackageFiles, keep: (role: PackageFileRole) => boolean): Pa
 export const runtimeFiles = (files: PackageFiles): PackageFiles =>
   pick(files, (role) => role === "runtime");
 
-/** Everything the package hash covers: the payload, `evals/` and `kobe.skill.yaml`. */
+/** Everything the package hash covers: the payload, `evals/` and `kaiju.skill.yaml`. */
 export const hashedPackageFiles = (files: PackageFiles): PackageFiles =>
   pick(files, (role) => role !== "provenance");
 
@@ -146,7 +146,7 @@ function fold(s: string): string {
  *  - two paths equal under case folding (they collide on case-insensitive filesystems);
  *  - a path that is both a file and a directory (`scripts` and `scripts/x`, case-folded): no
  *    filesystem or git tree can hold both;
- *  - a root name that is a case variant of a reserved one (`Evals/`, `KOBE.SKILL.YAML`,
+ *  - a root name that is a case variant of a reserved one (`Evals/`, `KAIJU.SKILL.YAML`,
  *    `skill.md`): refused rather than treated as payload or as reserved, so an author on a
  *    case-insensitive filesystem never ships evals into the runtime by accident;
  *  - a file named `evals` (the directory is reserved);

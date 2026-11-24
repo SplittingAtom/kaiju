@@ -8,7 +8,7 @@ import { isReservedWorkspacePath } from "./outputs.js";
  * in the runtime bundle (`runtimeFiles` drops `evals/**`, so neither the suite nor its fixtures
  * reach a sandbox that loads the skill, and editing them never changes the runtime hash).
  *
- * Text rules as `kobe.skill.yaml`: UTF-8, at most {@link EVAL_CASES_MAX_BYTES}, one YAML 1.2
+ * Text rules as `kaiju.skill.yaml`: UTF-8, at most {@link EVAL_CASES_MAX_BYTES}, one YAML 1.2
  * (core schema) document whose root is a mapping, duplicate keys and aliases refused.
  * {@link parseSkillEvalSuite} applies them and returns located issues for Workbench lint.
  *

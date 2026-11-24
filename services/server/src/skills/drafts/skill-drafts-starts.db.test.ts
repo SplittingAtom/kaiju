@@ -192,7 +192,7 @@ describe("fork (ac-1, ac-3)", () => {
     const saved = await upload(
       builder,
       "team",
-      zip("team-report", { "kobe.skill.yaml": MANIFEST("team-report", "0.1.0") }),
+      zip("team-report", { "kaiju.skill.yaml": MANIFEST("team-report", "0.1.0") }),
     );
     const fork = await author.post("/v1/skills/drafts/fork", {
       source: { kind: "team", skillId: saved.skill.id },
@@ -217,7 +217,7 @@ describe("fork (ac-1, ac-3)", () => {
         hash: rows[0]?.content_hash,
       },
     });
-    expect(await filesOf(author, fork.json.draft.id)).toEqual(["SKILL.md", "kobe.skill.yaml"]);
+    expect(await filesOf(author, fork.json.draft.id)).toEqual(["SKILL.md", "kaiju.skill.yaml"]);
     // The team's audit names the version copied (review N3).
     const audit = await h.admin.query<{ target: Record<string, unknown> }>(
       `SELECT target FROM audit_log WHERE team_id = $1 AND action = 'skill.draft.created'
@@ -237,7 +237,7 @@ describe("fork (ac-1, ac-3)", () => {
     const saved = await upload(
       builder,
       "team",
-      zip("edited-skill", { "kobe.skill.yaml": MANIFEST("edited-skill", "0.1.0") }),
+      zip("edited-skill", { "kaiju.skill.yaml": MANIFEST("edited-skill", "0.1.0") }),
     );
     const fork = (
       await builder.post("/v1/skills/drafts/fork", {
@@ -665,13 +665,13 @@ describe("personal saves of the team's skills (review S4)", () => {
     await upload(
       builder,
       "team",
-      zip("older-team", { "kobe.skill.yaml": MANIFEST("older-team", "0.1.0") }),
+      zip("older-team", { "kaiju.skill.yaml": MANIFEST("older-team", "0.1.0") }),
     );
     await upload(
       builder,
       "team",
       zip("older-team", {
-        "kobe.skill.yaml": MANIFEST("older-team", "0.2.0"),
+        "kaiju.skill.yaml": MANIFEST("older-team", "0.2.0"),
         "references/new.md": "New.",
       }),
     );

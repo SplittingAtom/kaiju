@@ -12,7 +12,7 @@ import { findSkill, type SkillLocation } from "../store.js";
 import type { PromoteSource } from "./promote-check.js";
 
 /**
- * Create kobe.skill.yaml for a version that has none (KOBE-564): what the Promote panel offers
+ * Create kaiju.skill.yaml for a version that has none (KOBE-564): what the Promote panel offers
  * when SK20 refuses a version with `no_manifest`. A stored version is immutable (its hashes are
  * its identity), so the manifest cannot be added to it: Kaiju drafts the file with the model the
  * member chose, then forks the version into a new Workbench draft of the member's with the file in
@@ -99,7 +99,7 @@ export async function createManifestDraft(
     return refuse("not_found", "No such skill version.");
   }
   if (read.files.has(MANIFEST_PATH))
-    return refuse("has_manifest", "This version already has a kobe.skill.yaml.");
+    return refuse("has_manifest", "This version already has a kaiju.skill.yaml.");
   const semver =
     (await deps.store.listVersions(location, source.skillId)).find(
       (v) => v.version === source.version,

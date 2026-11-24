@@ -1,6 +1,6 @@
 ---
 title: Skills
-summary: What skills are, how to turn them on, and how to write, test, save and promote a skill in the Workbench, including the kobe.skill.yaml file.
+summary: What skills are, how to turn them on, and how to write, test, save and promote a skill in the Workbench, including the kaiju.skill.yaml file.
 section: Agents and skills
 order: 2
 audience: member
@@ -60,14 +60,14 @@ conversation with the current one attached read-only. When the agent has written
 `skills/<name>/` in My files, **Save skill to Workbench** (or `/saveskill <name>`) brings it into
 the Workbench as a private draft.
 
-## kobe.skill.yaml
+## kaiju.skill.yaml
 
-`kobe.skill.yaml` sits next to `SKILL.md` and describes the skill for the registry: its name and
+`kaiju.skill.yaml` sits next to `SKILL.md` and describes the skill for the registry: its name and
 version (which must match `SKILL.md` and the saved version), a summary of up to 280 characters,
 up to ten topic tags, a license, the internet hosts and pip or npm packages it needs, and a
 changelog. It is needed to promote a skill to the Site Registry, not to use one in your team.
 
-You do not have to write it by hand. When a draft or version has none, **Create kobe.skill.yaml**
+You do not have to write it by hand. When a draft or version has none, **Create kaiju.skill.yaml**
 asks a model your team enables (**Model for the manifest**) to fill in the summary, tags and
 capabilities from your files, with the license you choose (Proprietary, Apache-2.0, MIT or
 BSD-3-Clause). Review the file, then save a new version: the evals run again before promotion.

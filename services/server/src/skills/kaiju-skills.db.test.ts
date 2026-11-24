@@ -369,7 +369,7 @@ describe("versions only rise", () => {
   async function variant(name: string, semver: string, extra?: Record<string, string>) {
     const dir = await mkdtemp(path.join(tmpdir(), "kaiju-variant-"));
     await cp(path.join(KAIJU_PACKAGES_DIR, name), path.join(dir, name), { recursive: true });
-    const yaml = path.join(dir, name, "kobe.skill.yaml");
+    const yaml = path.join(dir, name, "kaiju.skill.yaml");
     await writeFile(
       yaml,
       (await readFile(yaml, "utf8")).replace("version: 1.0.0", `version: ${semver}`),

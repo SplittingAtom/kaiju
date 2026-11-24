@@ -63,7 +63,7 @@ injected headers are changed in the console only.
 - Installing Python or npm packages needs the package index (for example `pypi.org` and
   `files.pythonhosted.org`) to be enabled.
 - If a site works in your browser but not for the agent, it is almost always the egress list.
-- A skill that lists hosts in its `kobe.skill.yaml` does not get access by doing so.
+- A skill that lists hosts in its `kaiju.skill.yaml` does not get access by doing so.
 
 ## Related
 

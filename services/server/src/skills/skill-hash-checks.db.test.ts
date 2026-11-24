@@ -38,7 +38,7 @@ const stored = {
   b: zip({
     ...PAYLOAD,
     "evals/cases.yaml": "b: 2\n",
-    "kobe.skill.yaml": "apiVersion: kobe.dev/skill/v1\nname: shared\nversion: 0.1.0\nsummary: S.\n",
+    "kaiju.skill.yaml": "apiVersion: kobe.dev/skill/v1\nname: shared\nversion: 0.1.0\nsummary: S.\n",
   }),
   c: runtimeZip(asMap(PAYLOAD)),
   d: zip({ ...PAYLOAD, "provenance.json": "{}" }),
@@ -238,10 +238,10 @@ describe("export never assumes an unchecked hash is clean (KOBE-310 review S2)",
   it("checks on demand, and refuses invalid or contradicting manifests", async () => {
     const skill = await newPersonalSkill("manifested", [
       { "SKILL.md": md, "notes.md": "plain, never checked" },
-      { "SKILL.md": md, "kobe.skill.yaml": "apiVersion: nope\n" },
-      { "SKILL.md": md, "kobe.skill.yaml": manifest("0.3.0", "other-name") },
-      { "SKILL.md": md, "kobe.skill.yaml": manifest("9.9.9") },
-      { "SKILL.md": md, "kobe.skill.yaml": manifest("0.5.0") },
+      { "SKILL.md": md, "kaiju.skill.yaml": "apiVersion: nope\n" },
+      { "SKILL.md": md, "kaiju.skill.yaml": manifest("0.3.0", "other-name") },
+      { "SKILL.md": md, "kaiju.skill.yaml": manifest("9.9.9") },
+      { "SKILL.md": md, "kaiju.skill.yaml": manifest("0.5.0") },
     ]);
     const store = new PostgresSkillStore(db(), blobs());
     const exported = await store.export({ scope: "personal", ownerUserId: userId }, skill);

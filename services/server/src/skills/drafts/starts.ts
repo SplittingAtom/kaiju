@@ -27,7 +27,7 @@ export function startFromTemplate(
   return createDraft(ctx, { name, startedFrom: "template", files: templateFiles(template, name) });
 }
 
-/** Every file of a validated bundle, `evals/` and `kobe.skill.yaml` included. */
+/** Every file of a validated bundle, `evals/` and `kaiju.skill.yaml` included. */
 export function packageFiles(bundle: ValidBundle): Map<string, Uint8Array> {
   return new Map(Object.entries(unzipSync(bundle.packageZip ?? bundle.zip)));
 }

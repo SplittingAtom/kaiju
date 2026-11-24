@@ -16,7 +16,7 @@ characters, 2 MiB body, temperature 0, skipped only at 100 %); it may send exact
 `response_format`, the verdict schema (`SERVER_CALL_RESPONSE_FORMATS`), which the gateway compares.
 Usage rows are `kind = eval_judge` (migration 0147). Details in [skill-evals.md](../skill-evals.md).
 
-**Skill manifest (KOBE-564).** Create kobe.skill.yaml in the Promote panel is a server call too:
+**Skill manifest (KOBE-564).** Create kaiju.skill.yaml in the Promote panel is a server call too:
 purpose `skill_manifest`, the one purpose a **member starts** rather than a completed run. Its token
 names no `thread_id` or `run_id` (`RUNLESS_SERVER_CALL_PURPOSES`; the claims schema refuses either
 on it, and refuses their absence on every other purpose), the gateway skips the run check for it,

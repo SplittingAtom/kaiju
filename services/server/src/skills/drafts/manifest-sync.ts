@@ -2,7 +2,7 @@ import { isMap, parseDocument } from "yaml";
 import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
 
 /**
- * A draft's `kobe.skill.yaml` at Save version (KOBE-322). The manifest's `version` and
+ * A draft's `kaiju.skill.yaml` at Save version (KOBE-322). The manifest's `version` and
  * `changelog` must equal the version saved, but a draft's manifest was copied from its parent
  * (a fork) or written before the author chose the number. So the save writes the number and the
  * changelog the author gave into the manifest it packages; every other key stays as written

@@ -28,7 +28,7 @@ export const SKILL_MD_PATH = "SKILL.md";
 const PROBLEM_TEXT: Partial<Record<PackageProblemCode, string>> = {
   duplicate: "another file has this path in a different case",
   file_and_directory: "it is both a file and a folder",
-  reserved_name_case: "only SKILL.md, evals/ and kobe.skill.yaml, spelled exactly so, are special",
+  reserved_name_case: "only SKILL.md, evals/ and kaiju.skill.yaml, spelled exactly so, are special",
   reserved_directory: "evals is a folder",
   provenance_not_allowed: "Kaiju writes provenance.json itself",
 };

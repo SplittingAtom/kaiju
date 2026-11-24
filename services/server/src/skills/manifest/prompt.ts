@@ -1,7 +1,7 @@
 import { SERVER_CALL_LIMITS, type ServerCallRequest } from "@kaiju/protocol";
 
 /**
- * The prompt that asks a model to draft a version's `kobe.skill.yaml` (KOBE-564). The model sees
+ * The prompt that asks a model to draft a version's `kaiju.skill.yaml` (KOBE-564). The model sees
  * the skill's SKILL.md and its file list, and answers one JSON object with the fields an author
  * would fill in: summary, tags, capabilities. It never decides the name, version, license or
  * maintainers: the server sets those from the version and the author (`parse.ts`). The skill's

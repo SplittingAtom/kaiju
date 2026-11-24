@@ -55,7 +55,7 @@ export interface SkillStore {
   listVersions(location: SkillLocation, skillId: string): Promise<SkillVersionRecord[]>;
   /**
    * A version's package as a verified stream, for download and the browser editor: the package
-   * zip when it differs from the runtime zip (so `evals/` and `kobe.skill.yaml` survive an edit),
+   * zip when it differs from the runtime zip (so `evals/` and `kaiju.skill.yaml` survive an edit),
    * else the runtime zip.
    */
   openVersion(
@@ -119,7 +119,7 @@ export type SandboxBundle =
  * One exported version. `runtimeHash` is its identity under the package contract (for a version
  * stored before KOBE-310 with `evals/`, not its `contentHash`): promotion and the catalog use it.
  * `legacy` lists why a version can't leave until re-saved: today's path rules, an invalid SKILL.md
- * or `kobe.skill.yaml`, or a manifest whose version is not the version's semver.
+ * or `kaiju.skill.yaml`, or a manifest whose version is not the version's semver.
  */
 export type ExportedVersion =
   | {
@@ -395,7 +395,7 @@ async function packageCandidates(
 }
 
 /**
- * Whether a stored (already validated) `kobe.skill.yaml` names `semver`: a version uploaded
+ * Whether a stored (already validated) `kaiju.skill.yaml` names `semver`: a version uploaded
  * before KOBE-310 was numbered 0.<n>.0 whatever its manifest said, and such a package can't
  * leave under a number its own manifest contradicts.
  */

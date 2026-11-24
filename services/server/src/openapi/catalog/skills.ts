@@ -152,7 +152,7 @@ export const skillsAreas: readonly CatalogArea[] = [
       [
         "post",
         "/v1/skills/drafts/{id}/manifest",
-        "Draft a kobe.skill.yaml for the draft with a model",
+        "Draft a kaiju.skill.yaml for the draft with a model",
       ],
       ["get", "/v1/skills/drafts/{id}/scan", "Get the live scan verdict and findings of a draft"],
       ["post", "/v1/skills/drafts/{id}/versions", "Save a draft as a new skill version"],
@@ -184,7 +184,7 @@ export const skillsAreas: readonly CatalogArea[] = [
       [
         "post",
         "/v1/skills/promotions/manifest",
-        "Draft a kobe.skill.yaml for a version without one",
+        "Draft a kaiju.skill.yaml for a version without one",
         "Forks the version into a Workbench draft holding the file.",
       ],
       [

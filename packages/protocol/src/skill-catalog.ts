@@ -32,7 +32,7 @@ export const SYSTEM_TAGS = ["default"] as const;
 export type SystemTag = (typeof SYSTEM_TAGS)[number];
 export const REGISTRY_TAG_STATUSES = ["active", "retired"] as const;
 export type RegistryTagStatus = (typeof REGISTRY_TAG_STATUSES)[number];
-/** A tag name: a lowercase slug (the topic tags of `kobe.skill.yaml` use the same pattern). */
+/** A tag name: a lowercase slug (the topic tags of `kaiju.skill.yaml` use the same pattern). */
 export const REGISTRY_TAG_PATTERN = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
 
 /**
