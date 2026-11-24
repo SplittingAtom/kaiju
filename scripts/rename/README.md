@@ -1,16 +1,18 @@
 # Rename tooling (Kobe → Kaiju)
 
 Spec: [`docs/specs/rename-kaiju.md`](../../docs/specs/rename-kaiju.md). Built in KOBE-745 (RN-1);
-used by every later step (RN-2..RN-9), one step per PR.
+used by every later step, one step per PR, in this order: RN-2..RN-8, RN-12..RN-20 (the owner's
+answers of 2026-11-24, spec §11), then RN-9, the fresh test install, last (`STEPS` in `lib.mjs`).
+RN-10 (next release) and RN-11 (spec only) own no allowlist groups.
 
-| File              | What it is                                                                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `allowlist.txt`   | Every allowed remaining use of the old name, in groups: `permanent`, `provisional` (an open question) or a step (`RN-2`..`RN-9`), each with its reason |
-| `guard.mjs`       | The guard: fails on an occurrence no entry owns, and on an entry that owns nothing (stale); `--final` also fails while any group is not permanent      |
-| `steps/RN-n.txt`  | The replacement patterns of one step                                                                                                                   |
-| `rename.mjs`      | Dry run (default) or `--apply --step RN-n`                                                                                                             |
-| `lib.mjs`         | Shared engine (parsing, globs, ownership, case-keeping swap)                                                                                           |
-| `rename.test.mjs` | Self-test on fixture repositories, plus owners of sample lines on the real allowlist (`node --test scripts/rename/rename.test.mjs`)                    |
+| File              | What it is                                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `allowlist.txt`   | Every allowed remaining use of the old name, in groups: `permanent`, `provisional` (an open question) or a step (`STEPS` in `lib.mjs`), each with its reason |
+| `guard.mjs`       | The guard: fails on an occurrence no entry owns, and on an entry that owns nothing (stale); `--final` also fails while any group is not permanent            |
+| `steps/RN-n.txt`  | The replacement patterns of one step                                                                                                                         |
+| `rename.mjs`      | Dry run (default) or `--apply --step RN-n`                                                                                                                   |
+| `lib.mjs`         | Shared engine (parsing, globs, ownership, case-keeping swap)                                                                                                 |
+| `rename.test.mjs` | Self-test on fixture repositories, plus owners of sample lines on the real allowlist (`node --test scripts/rename/rename.test.mjs`)                          |
 
 CI's static job and `pnpm verify` run the guard and the self-test. The guard is a root script, not
 a package test, so turbo never replays a cached pass after a change elsewhere in the tree.
@@ -19,7 +21,8 @@ a package test, so turbo never replays a cached pass after a change elsewhere in
 
 ```text
 # comment
-== <step>: <reason>                 a group; <step> is permanent, provisional or RN-2..RN-9
+== <step>: <reason>                 a group; <step> is permanent, provisional or a step of STEPS
+== <step> (KOBE-n): <reason>        the same, naming the step's ticket
 <glob>... /<regex>/[i]              an entry: matched line by line in the selected files' contents
 path <glob>... /<regex>/[i]         an entry: matched against the file's path
 ```

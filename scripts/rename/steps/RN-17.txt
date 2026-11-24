@@ -1,0 +1,10 @@
+# RN-17 (KOBE-830): sandbox Unix users renamed with the same numeric ids, `/home/kobe` kept as a symlink (owner answers of 2026-11-24, docs/specs/rename-kaiju.md §11).
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
+# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
+# permanent group with their reason. Until then the dry run lists every occurrence as left for
+# hand edits.
+
+== RN-17 (KOBE-830): The sandbox Unix users (`kobe`, `kobe-agent`, `kobe-pi`, `kobe-tool`) and their home folder, which Pi sessions and workspace files name in absolute paths and the image and the sandbox agent must agree on: renamed with the same numeric ids, `/home/kobe` kept as a symlink (owner decision 2026-11-24, was Q7)

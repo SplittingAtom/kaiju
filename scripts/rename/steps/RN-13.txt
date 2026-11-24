@@ -1,0 +1,10 @@
+# RN-13 (KOBE-826): built-in connector id, tool names, routes and settings keys, renamed with a data migration (owner answers of 2026-11-24, docs/specs/rename-kaiju.md §11).
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
+# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
+# permanent group with their reason. Until then the dry run lists every occurrence as left for
+# hand edits.
+
+== RN-13 (KOBE-826): Built-in connector: id `kobe`, its MCP tool names, API routes (`/v1/team/connectors/kobe`, a catalog skill's `/kobe/compare` and `/kobe/reset`, server and web client together) and the site settings keys stored in the database: renamed with a data migration (owner decision 2026-11-24, was Q3)

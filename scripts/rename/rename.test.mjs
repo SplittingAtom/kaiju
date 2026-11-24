@@ -336,6 +336,32 @@ test("step progress: a step with no allowlist groups is done, and done steps com
   assert.deepEqual(skipped, { done: ["RN-3"], outOfOrder: ["RN-3"] });
 });
 
+test("steps RN-12..RN-20 (KOBE-824) run after RN-8 and before RN-9; headers may name the ticket", () => {
+  assert.deepEqual(STEPS.slice(STEPS.indexOf("RN-8") + 1), [
+    ...["RN-12", "RN-13", "RN-14", "RN-15", "RN-16", "RN-17", "RN-18", "RN-19", "RN-20"],
+    "RN-9",
+  ]);
+  const list = parseList("== RN-13 (KOBE-826): connector\n** /x/\n== RN-20: skills\n** /y/\n");
+  assert.deepEqual(
+    list.groups.map((g) => [g.step, g.reason]),
+    [
+      ["RN-13", "connector"],
+      ["RN-20", "skills"],
+    ],
+  );
+  // RN-10 and RN-11 own no groups: not steps of the allowlist.
+  assert.throws(() => parseList("== RN-10: x\n"), /bad group header/);
+  assert.throws(() => parseList("== RN-11 (KOBE-824): x\n"), /bad group header/);
+  assert.throws(() => parseList("== RN-13 (later): x\n"), /bad group header/);
+  const groups = (...steps) => steps.map((step) => ({ step, reason: "r" }));
+  // RN-12..RN-20 may finish while RN-9 is open; RN-9 may not finish before them.
+  const migrations = STEPS.slice(STEPS.indexOf("RN-12"), STEPS.indexOf("RN-9"));
+  assert.deepEqual(stepProgress(groups("permanent", "RN-9")).outOfOrder, []);
+  assert.deepEqual(stepProgress(groups(...migrations)).outOfOrder, ["RN-9"]);
+  const skipped = groups(...migrations.filter((s) => s !== "RN-13"), "RN-9");
+  assert.deepEqual(stepProgress(skipped).outOfOrder, ["RN-13"]);
+});
+
 test("the repository's lists parse, each step file holds only its own step", () => {
   const allowlist = loadAllowlist(REPO);
   assert.ok(allowlist.groups.every((g) => g.reason.length > 10));
@@ -427,13 +453,13 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
       "services/server/src/x.ts",
       'import { KOBE_FILE } from "./agents/kobe.js";',
       "kobe",
-      /^provisional: \(Q13\)/,
+      /^RN-18: The gallery agent's name/,
     ],
     [
       "services/sandbox-agent/src/x.ts",
       'join(dir, "agent/kobe-context.json")',
       "kobe",
-      /^provisional: \(Q4\)/,
+      /^RN-14: Names persisted in workspace volumes/,
     ],
     // Escaped forms in regex literals belong to the value they spell (KOBE-747).
     [
@@ -446,7 +472,7 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
       "services/sandbox-agent/src/x.test.ts",
       "expect(m).toMatch(/^kobe\\.model_error:x/);",
       "kobe",
-      /^provisional: \(Q4\)/,
+      /^RN-14: Names persisted in workspace volumes/,
     ],
     [
       "services/server/src/auth/x.ts",
@@ -475,7 +501,7 @@ test("real allowlist: owners of the cases from review round 1", () => {
     ["scripts/hadron.sh", 'echo "KOBE-${BASH_REMATCH[2]}"', "KOBE-", "permanent"],
     ["apps/web/lib/admin/nav/types.ts", "type TicketId = `KOBE-${number}`;", "KOBE-", "permanent"],
     ["packages/db/drizzle/0137_kobe_published_skills.sql", "", "kobe", "permanent"],
-    ["services/server/builtin-skills/pdf/kobe.skill.yaml", "", "kobe", "provisional"],
+    ["services/server/builtin-skills/pdf/kobe.skill.yaml", "", "kobe", "RN-12"],
     ["services/server/builtin-skills/kobe-guide/SKILL.md", "", "kobe", "permanent"],
     ["packages/db/src/schema/registry.ts", '  "kobe-guide",', "kobe-guide", "permanent"],
     ["packages/db/src/schema/registry.ts", "    kobeShippedVersion: text(),", "kobe", "permanent"],
@@ -603,7 +629,7 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "unowned",
     ],
     ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', "kobeName", "unowned"],
-    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', '"kobe"', "provisional"],
+    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', '"kobe"', "RN-18"],
   ];
   for (const [path, line, token, step] of cases) {
     assert.equal(realOwner(path, line, token), step, `${path}: ${line || "(path)"} ${token}`);
