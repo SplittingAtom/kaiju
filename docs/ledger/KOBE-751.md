@@ -125,4 +125,5 @@ One command at a time, TMPDIR on disk:
 - `pnpm build`, `typecheck`, `lint` (incl. `helm lint --strict`), `format:check`: ok. Guard ok;
   self-test 23/23; `check-site-wording.mjs`, `check-public-hygiene.sh` ok.
 - Unit: server 4,587 passed (8 skipped); chart 426; web 4,313.
+- DB suites: `@kaiju/server test:db` 3,751 passed; `@kaiju/db test:db` 2,180 passed.
 - `*.real.test.ts` / `*.real-pi.test.ts`: none build sandbox settings or team names (checked).
