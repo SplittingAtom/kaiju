@@ -105,7 +105,7 @@ describe("readThreadLineage", () => {
       return answering(200, body)("");
     });
     expect(read).toEqual(body);
-    expect(seen?.get("x-kobe-team")).toBe("team-1");
+    expect(seen?.get("x-kaiju-team")).toBe("team-1");
   });
 
   it("is null for a refusal, a bad body, another thread or no network", async () => {

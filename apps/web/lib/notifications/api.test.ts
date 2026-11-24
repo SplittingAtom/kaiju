@@ -50,7 +50,7 @@ describe("notifications API client (KOBE-181)", () => {
       unreadCount: 3,
       nextCursor: "next",
     });
-    expect(calls[0]?.headers.get("x-kobe-team")).toBe("t-1");
+    expect(calls[0]?.headers.get("x-kaiju-team")).toBe("t-1");
   });
 
   it("marks some or all read with the contract's bodies", async () => {

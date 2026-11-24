@@ -36,7 +36,7 @@ groups {P, 1000}, `no_new_privs`, no capabilities, as a descendant of Pi. What i
 Pi 1.0.0 re-reads `models.json` when the model list is reopened (`docs/models.md`: "Opening `/model`
 reloads the file"), lets it set a provider's `baseUrl`/headers, and runs `!command` values at request
 time. If a planted `models.json` can redirect the `kobe` provider (or add a provider the next
-`set_model` selects) to a listener the tool controls, the provider attaches `x-kobe-run-token` and the
+`set_model` selects) to a listener the tool controls, the provider attaches `x-kaiju-run-token` and the
 session token to that request, and the "in memory only" property of KOBE-118 is gone: the tool never
 reads Pi's memory, it makes Pi hand the token over. Whether `models.json` can override an
 extension-registered provider in 1.0.0 is **[unverified]**; it is the first thing to test (T1 below).

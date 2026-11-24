@@ -209,12 +209,12 @@ describe("upstream span (KOBE-528)", () => {
       expect(isChildOf(span, route)).toBe(true);
       expect(span?.kind).toBe(SpanKind.CLIENT);
       expect(span?.attributes).toEqual({
-        "kobe.upstream.kind": "probe",
-        "kobe.upstream.method": "tools/list",
-        "kobe.upstream.outcome": "ok",
-        "kobe.upstream.error": false,
+        "kaiju.upstream.kind": "probe",
+        "kaiju.upstream.method": "tools/list",
+        "kaiju.upstream.outcome": "ok",
+        "kaiju.upstream.error": false,
         // initialize, notifications/initialized, tools/list
-        "kobe.upstream.requests": 3,
+        "kaiju.upstream.requests": 3,
       });
       expect(span?.status.code).not.toBe(SpanStatusCode.ERROR);
       expect(JSON.stringify(span?.attributes)).not.toContain("127.0.0.1");
@@ -226,8 +226,8 @@ describe("upstream span (KOBE-528)", () => {
     await traced(async (exporter) => {
       await postTraced({ connector_id: CONNECTOR, url: fake.url });
       const span = spanNamed(exporter, "mcp.upstream");
-      expect(span?.attributes["kobe.upstream.outcome"]).toBe("auth_required");
-      expect(span?.attributes["kobe.upstream.error"]).toBe(true);
+      expect(span?.attributes["kaiju.upstream.outcome"]).toBe("auth_required");
+      expect(span?.attributes["kaiju.upstream.error"]).toBe(true);
       expect(span?.status.code).toBe(SpanStatusCode.ERROR);
     });
   });

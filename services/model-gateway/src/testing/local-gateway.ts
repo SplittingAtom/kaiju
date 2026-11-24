@@ -26,7 +26,7 @@ import { createFakeLlm, type SeenRequest } from "./fake-llm.js";
 export interface LocalGatewayOptions {
   /** `<gateway provider>/<model>` ids the team enabled. */
   readonly enabledModels: readonly string[];
-  /** Whether a run id (sent as `x-kobe-run-id`) is an active run of this sandbox. */
+  /** Whether a run id (sent as `x-kaiju-run-id`) is an active run of this sandbox. */
   readonly isRunLeased?: (runId: string) => boolean;
   /** KOBE-42 seam, e.g. to refuse calls with 503 + Retry-After. */
   readonly gate?: CallGate;

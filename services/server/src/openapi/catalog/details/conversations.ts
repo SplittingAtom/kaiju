@@ -80,7 +80,7 @@ const teamQuery = {
   team: {
     type: "string",
     format: "uuid",
-    description: "The team the page believes is active (a download link cannot send X-Kobe-Team).",
+    description: "The team the page believes is active (a download link cannot send X-Kaiju-Team).",
   },
 };
 

@@ -70,7 +70,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   mcp_proxy_ip=$(svc_ip kobe-mcp-proxy || true)
   mcp_rpc() { # token json-body → the answer body, then "status=<http status>"
     in_sandbox "curl -s -m 30 -w '\nstatus=%{http_code}\n' -H 'authorization: Bearer $1' -H 'content-type: application/json' \
-      -H 'accept: application/json, text/event-stream' -H 'kobe-thread-id: $MCP_THREAD' --data-raw '$2' \
+      -H 'accept: application/json, text/event-stream' -H 'kaiju-thread-id: $MCP_THREAD' --data-raw '$2' \
       http://$mcp_proxy_ip:80/v1/mcp/$MCP_CONNECTOR"
   }
   # Positive control: the (restarted) proxy answers this pod at all (receiving-side CNI warm-up).
@@ -153,7 +153,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
   contains "KOBE-303: no registry answer carries the key" '^0$' "$(printf '%s\n' "$site_set" | grep -c -- "$SITE_KEY" || true)"
   site_rpc() { # token thread json-body → the answer body, then "status=<http status>"
     in_sandbox "curl -s -m 30 -w '\nstatus=%{http_code}\n' -H 'authorization: Bearer $1' -H 'content-type: application/json' \
-      -H 'accept: application/json, text/event-stream' -H 'kobe-thread-id: $2' --data-raw '$3' \
+      -H 'accept: application/json, text/event-stream' -H 'kaiju-thread-id: $2' --data-raw '$3' \
       http://$mcp_proxy_ip:80/v1/mcp/$SITE_CONNECTOR"
   }
   member2_token=$(mint kobe.mcp-proxy "$sync_sandbox" "$SYNC_USER_ID")

@@ -222,7 +222,7 @@ describe("kaiju provider", () => {
     expect([DEFAULT_MAX_OUTPUT_TOKENS, DEFAULT_CONTEXT_WINDOW]).toEqual([16_384, 128_000]);
   });
 
-  it("sends the current token as the API key and the active run as x-kobe-run-id", async () => {
+  it("sends the current token as the API key and the active run as x-kaiju-run-id", async () => {
     const { provider, model, calls } = setup([{ text: "hi" }]);
     const { events, result } = await collect(
       provider.stream(model, {}, { headers: { "x-other": "1" } }),
@@ -232,22 +232,41 @@ describe("kaiju provider", () => {
     expect(calls[0]).toMatchObject({
       apiKey: "token-one-".padEnd(40, "1"),
       maxRetries: 0,
-      headers: { "x-other": "1", "x-kobe-run-id": RUN },
+      headers: { "x-other": "1", "x-kaiju-run-id": RUN, "x-kobe-run-id": RUN },
     });
   });
 
-  it("sends the run's token as x-kobe-run-token (KOBE-118) and overrides one in the options", async () => {
+  it("sends the run's token as x-kaiju-run-token (KOBE-118) and overrides one in the options", async () => {
     const { provider, model, calls } = setup([{ text: "a" }, { text: "b" }], [state()], (runId) =>
       runId === RUN ? "krt1.tok.mac" : undefined,
     );
-    await collect(provider.stream(model, {}, { headers: { "X-Kobe-Run-Token": "forged" } }));
-    expect(calls[0]?.headers).toEqual({ "x-kobe-run-id": RUN, "x-kobe-run-token": "krt1.tok.mac" });
+    await collect(
+      provider.stream(
+        model,
+        {},
+        {
+          headers: {
+            "X-Kaiju-Run-Token": "forged",
+            "X-Kobe-Run-Token": "forged",
+            "x-kobe-run-id": "x",
+          },
+        },
+      ),
+    );
+    // Both names for one release (KOBE-749), and a copy under either name is never passed on.
+    expect(calls[0]?.headers).toEqual({
+      "x-kaiju-run-id": RUN,
+      "x-kobe-run-id": RUN,
+      "x-kaiju-run-token": "krt1.tok.mac",
+      "x-kobe-run-token": "krt1.tok.mac",
+    });
     // Another run's token is never sent for this run, and none without a run.
     const other = setup([{ text: "c" }], [state({ run_id: null })], () => "krt1.tok.mac");
     await collect(other.provider.stream(other.model, {}));
-    expect(other.calls[0]?.headers).not.toHaveProperty("x-kobe-run-token");
+    expect(other.calls[0]?.headers).not.toHaveProperty("x-kaiju-run-token");
     const none = setup([{ text: "d" }], [state()], () => undefined);
     await collect(none.provider.stream(none.model, {}));
+    expect(none.calls[0]?.headers).not.toHaveProperty("x-kaiju-run-token");
     expect(none.calls[0]?.headers).not.toHaveProperty("x-kobe-run-token");
   });
 
@@ -271,6 +290,7 @@ describe("kaiju provider", () => {
     await collect(provider.stream(model, {}));
     await collect(provider.stream(model, {}));
     expect(calls[1]).toMatchObject({ apiKey: "token-two-".padEnd(40, "2") });
+    expect(calls[1]?.headers).not.toHaveProperty("x-kaiju-run-id");
     expect(calls[1]?.headers).not.toHaveProperty("x-kobe-run-id");
   });
 

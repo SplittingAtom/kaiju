@@ -168,7 +168,7 @@ export function signInThrottlePlugin(o: {
   }
 
   return {
-    id: "kobe-sign-in-throttle",
+    id: "kaiju-sign-in-throttle",
     onRequest: async (request, ctx) => {
       if (o.clientIps && getIP(request, ctx.options) === null) o.clientIps.unknown("sign-in");
       return undefined;

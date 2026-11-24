@@ -60,7 +60,7 @@ export function newSince(countAtUnpin: number, countNow: number): number {
 /** Where a thread was left: a scroll offset, or the bottom (so a reopened thread shows what's new). */
 export type SavedScroll = number | "bottom";
 
-const KEY_PREFIX = "kobe.scroll:";
+const KEY_PREFIX = "kaiju.scroll:";
 const BOTTOM = "bottom";
 
 /** Remembers the position for this tab. Storage can be missing or full: then nothing is kept. */

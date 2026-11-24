@@ -17,16 +17,16 @@ function toNanos(date: Date): string {
 /** One event as an OTLP LogRecord (JSON encoding): the action is the body, fields are attributes. */
 export function logRecord(entry: AuditEntry) {
   const attributes: Attribute[] = [
-    { key: "kobe.audit.seq", value: { intValue: String(entry.seq) } },
-    str("kobe.audit.id", entry.id),
-    str("kobe.audit.action", entry.action),
-    str("kobe.audit.actor.kind", entry.actor.kind),
-    str("kobe.audit.target", JSON.stringify(entry.target)),
-    str("kobe.audit.hash", entry.hash),
-    str("kobe.audit.prev_hash", entry.prevHash),
+    { key: "kaiju.audit.seq", value: { intValue: String(entry.seq) } },
+    str("kaiju.audit.id", entry.id),
+    str("kaiju.audit.action", entry.action),
+    str("kaiju.audit.actor.kind", entry.actor.kind),
+    str("kaiju.audit.target", JSON.stringify(entry.target)),
+    str("kaiju.audit.hash", entry.hash),
+    str("kaiju.audit.prev_hash", entry.prevHash),
   ];
-  if (entry.teamId) attributes.push(str("kobe.audit.team_id", entry.teamId));
-  if (entry.actor.id) attributes.push(str("kobe.audit.actor.id", entry.actor.id));
+  if (entry.teamId) attributes.push(str("kaiju.audit.team_id", entry.teamId));
+  if (entry.actor.id) attributes.push(str("kaiju.audit.actor.id", entry.actor.id));
   if (entry.ip) attributes.push(str("client.address", entry.ip));
   if (entry.userAgent) attributes.push(str("user_agent.original", entry.userAgent));
   return {
@@ -43,8 +43,8 @@ export function exportLogsRequest(events: readonly AuditEntry[]) {
   return {
     resourceLogs: [
       {
-        resource: { attributes: [str("service.name", "kobe-server")] },
-        scopeLogs: [{ scope: { name: "kobe.audit" }, logRecords: events.map(logRecord) }],
+        resource: { attributes: [str("service.name", "kaiju-server")] },
+        scopeLogs: [{ scope: { name: "kaiju.audit" }, logRecords: events.map(logRecord) }],
       },
     ],
   };

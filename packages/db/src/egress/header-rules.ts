@@ -38,7 +38,9 @@ const RESERVED = new Set([
   "forwarded",
   "http2-settings",
 ]);
-const RESERVED_PREFIXES = ["proxy-", "x-forwarded-", "x-kobe-"];
+// `x-kobe-`: the names before the rename, still read by the receivers for one release (KOBE-749;
+// both stay reserved, so no rule ever injected one).
+const RESERVED_PREFIXES = ["proxy-", "x-forwarded-", "x-kaiju-", "x-kobe-"];
 
 export function headerNameProblem(name: string): string | undefined {
   if (!TOKEN.test(name)) return "is not a valid header name";

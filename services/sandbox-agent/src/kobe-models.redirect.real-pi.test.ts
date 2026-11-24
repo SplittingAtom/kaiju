@@ -41,7 +41,7 @@ import {
 /**
  * KOBE-165 (T1 of KOBE-74, design: KOBE-119): can a tool, which runs as Pi's own uid, redirect the
  * Kaiju model provider by writing Pi's writable `agent/` directory (models.json, settings.json,
- * auth.json), so that Pi sends the run-bound gateway token (x-kobe-run-token, KOBE-118) and the
+ * auth.json), so that Pi sends the run-bound gateway token (x-kaiju-run-token, KOBE-118) and the
  * session token to a listener the tool owns? Asked of the REAL pinned Pi 1.0.0 with the real
  * kobe-models and kobe-policy, started the way the agent starts it but WITHOUT the agent's
  * tripwire (`verifyRuntime`), which would stop Pi before the next prompt and so hide what Pi
@@ -53,7 +53,7 @@ import {
  * resolves the model from Pi's catalog, which has merged a planted `models.json` `models[]` entry
  * with its own `baseUrl` (provider-composer.js applyModelsJson), and kobe-models' `input` hook then
  * keeps that model because its id already matches (register.ts). The next request sends the session
- * token and `x-kobe-run-token` to the listener. A provider-level `baseUrl`, a second provider,
+ * token and `x-kaiju-run-token` to the listener. A provider-level `baseUrl`, a second provider,
  * `settings.json` and `auth.json` do not redirect. Those three cases (two plants and the
  * tripwire-clean one) were `it.fails` until KOBE-167: the paired tool uid takes the tool's write
  * access to `agent/` away from Pi itself. They are plain `it` now, in the last `describe`, run with
@@ -178,7 +178,7 @@ async function setModelScenario(
 function expectNothingLeaked(listener: Listener, legit: Listener): void {
   expect(listener.requests.map((r) => r.headers)).toEqual([]);
   expect(listener.connections()).toBe(0);
-  expect(legit.requests.at(-1)?.headers["x-kobe-run-token"]).toBe(RUN_TOKEN(3));
+  expect(legit.requests.at(-1)?.headers["x-kaiju-run-token"]).toBe(RUN_TOKEN(3));
 }
 
 describe.skipIf(!PI_AVAILABLE)(
@@ -195,7 +195,7 @@ describe.skipIf(!PI_AVAILABLE)(
 
         // Control: before the plant, the run reaches the legitimate gateway with its run token.
         await runWith(rpc, gw, session, 1, OPENAI, "control");
-        expect(legit.requests.at(-1)?.headers["x-kobe-run-token"]).toBe(RUN_TOKEN(1));
+        expect(legit.requests.at(-1)?.headers["x-kaiju-run-token"]).toBe(RUN_TOKEN(1));
 
         // The tool plants the files in a run that holds the token (the real bash tool).
         await runWith(rpc, gw, session, 2, OPENAI, `bash: ${plantCommand(plant)}`);
@@ -213,7 +213,7 @@ describe.skipIf(!PI_AVAILABLE)(
         expect(listener.requests.map((r) => r.headers)).toEqual([]);
         expect(listener.connections()).toBe(0);
         // And every post-plant model request went to the legitimate gateway with its run's token.
-        const tokens = new Set(legit.requests.map((r) => r.headers["x-kobe-run-token"]));
+        const tokens = new Set(legit.requests.map((r) => r.headers["x-kaiju-run-token"]));
         for (const n of [3, 4, 5]) expect(tokens.has(RUN_TOKEN(n))).toBe(true);
       },
       240_000,
@@ -234,7 +234,7 @@ describe.skipIf(!PI_AVAILABLE)(
     it("control: with the tool in Pi's uid the planted models.json redirects set_model", async () => {
       const { listener } = await setModelScenario(LEAKING[0] as string);
       expect(listener.requests.length).toBeGreaterThan(0);
-      expect(listener.requests[0]?.headers["x-kobe-run-token"]).toBeTruthy();
+      expect(listener.requests[0]?.headers["x-kaiju-run-token"]).toBeTruthy();
     }, 120_000);
   },
 );
@@ -353,7 +353,7 @@ describe.runIf(PI_AVAILABLE && EXECUTOR_BUILT && HELPER !== undefined)(
       });
       expect(await toolUid(rpc)).toBe(identity.uid);
       expect(listener.requests.length).toBeGreaterThan(0);
-      expect(listener.requests[0]?.headers["x-kobe-run-token"]).toBeTruthy();
+      expect(listener.requests[0]?.headers["x-kaiju-run-token"]).toBeTruthy();
     }, 180_000);
   },
 );

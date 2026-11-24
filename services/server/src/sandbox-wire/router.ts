@@ -348,13 +348,13 @@ export class CommandRouter implements SandboxRouter {
             runId,
           }),
           ...(runId === undefined ? {} : sessionAttributes({ threadId, userId: target.userId })),
-          "kobe.command.kind": kind,
+          "kaiju.command.kind": kind,
         },
       },
       async (span) => {
         const sent = this.#withTraceContext(kind, runId, span, frame);
         const outcome = await this.#sendQueued(target, kind, threadId, runId, options, sent);
-        span.setAttribute("kobe.outcome", outcome.ok ? "ok" : outcome.error.code);
+        span.setAttribute("kaiju.outcome", outcome.ok ? "ok" : outcome.error.code);
         return outcome;
       },
     );

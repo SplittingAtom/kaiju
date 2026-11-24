@@ -43,9 +43,18 @@ export type ModelRunErrorCode = (typeof MODEL_RUN_ERROR_CODES)[number];
  * The extension asks for it over Pi's own RPC channel (an `input` dialog with this title, which
  * the agent answers from memory and never relays), once per run, and keeps it in memory.
  */
-export const RUN_TOKEN_UI_TITLE = "kobe.run_token";
+export const RUN_TOKEN_UI_TITLE = "kaiju.run_token";
 /** Request header carrying it (mirrors `RUN_TOKEN_HEADER` in packages/protocol; a test pins it). */
-export const RUN_TOKEN_HEADER = "x-kobe-run-token";
+export const RUN_TOKEN_HEADER = "x-kaiju-run-token";
+/** The run's id (advisory; mirrors the `x-kaiju-run-id` name the gateway reads). */
+export const RUN_ID_HEADER = "x-kaiju-run-id";
+/**
+ * The names of both before the rename (mirror `LEGACY_HEADER_NAMES` in packages/protocol; a test
+ * pins them): sent next to the new ones for one release, so a gateway pod from before the rename
+ * still attributes the call during a rolling upgrade (KOBE-749; removed in KOBE-754).
+ */
+export const LEGACY_RUN_TOKEN_HEADER = "x-kobe-run-token";
+export const LEGACY_RUN_ID_HEADER = "x-kobe-run-id";
 
 export interface ModelFileModel {
   /** `<gateway provider>/<model>` (the catalog's `gateway_model`). */
@@ -70,7 +79,7 @@ export interface ModelFileState {
   readonly model: ModelFileModel | null;
   /** The current `kobe.model-gateway` session token. */
   readonly token: string;
-  /** The active run on this Pi (sent as `x-kobe-run-id`), or null between runs. */
+  /** The active run on this Pi (sent as `x-kaiju-run-id`), or null between runs. */
   readonly run_id: string | null;
   /**
    * The run's current span as a W3C `traceparent` (KOBE-274), sent with the run's model calls;

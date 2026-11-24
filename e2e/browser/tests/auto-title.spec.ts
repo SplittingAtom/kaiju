@@ -9,7 +9,7 @@ import { expect, test } from "./support/chat.js";
 const PROMPT = "No tools. Reply with the single word ALPHA.";
 /** The title call runs after the run (up to 15 s), and the event follows within the window. */
 const TITLE_TIMEOUT_MS = 45_000;
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 test("a new thread gets its title after the first answer, in the rail and the header", async ({
   chat,
@@ -32,7 +32,7 @@ test("a new thread gets its title after the first answer, in the rail and the he
     async ({ id, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
       const res = await fetch(`/v1/threads/${encodeURIComponent(id)}?limit=1`, {
-        headers: team ? { "x-kobe-team": team } : {},
+        headers: team ? { "x-kaiju-team": team } : {},
       });
       return res.ok ? ((await res.json()) as { title: string | null }).title : null;
     },

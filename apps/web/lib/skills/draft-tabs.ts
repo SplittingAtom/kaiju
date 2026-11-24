@@ -10,7 +10,7 @@ export const DRAFT_TABS = ["define", "test", "eval"] as const;
 export type DraftTab = (typeof DRAFT_TABS)[number];
 
 const DEFAULT_TAB: DraftTab = "define";
-const KEY_PREFIX = "kobe.workbench.tab.";
+const KEY_PREFIX = "kaiju.workbench.tab.";
 
 const isDraftTab = (v: unknown): v is DraftTab =>
   typeof v === "string" && (DRAFT_TABS as readonly string[]).includes(v);

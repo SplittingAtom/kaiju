@@ -53,7 +53,7 @@ const body = (schemaName: string) => ({
 });
 
 const TEAM_HEADER = {
-  name: "X-Kobe-Team",
+  name: "X-Kaiju-Team",
   in: "header",
   required: false,
   description: "The Workspace the client believes is active; must match when sent.",
@@ -95,7 +95,7 @@ const SAVE_ERRORS = {
     "`invalid_request`: the body does not match, or breaks a scope rule of the stored item " +
       "(a portable item's kind or `as_of`, `policy` off the Site, a source thread you can't " +
       "read, Undo to a version that was pruned); `team_header_required`: a change in an " +
-      "active Workspace without `X-Kobe-Team`.",
+      "active Workspace without `X-Kaiju-Team`.",
   ),
   "404": ERR("`memory_item_not_found`."),
   "409": ERR(

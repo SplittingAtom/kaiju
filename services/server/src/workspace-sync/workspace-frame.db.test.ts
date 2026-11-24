@@ -33,7 +33,7 @@ beforeAll(async () => {
 
 afterAll(() => fx.teardown());
 
-/** A browser signed in as `p`, sending no X-Kobe-Team (an iframe can't). */
+/** A browser signed in as `p`, sending no X-Kaiju-Team (an iframe can't). */
 function browserFor(p: Person): TestBrowser {
   const b = new TestBrowser(app, PUBLIC_URL);
   for (const [k, v] of p.browser.cookies) b.cookies.set(k, v);
@@ -164,7 +164,7 @@ describe("GET /v1/workspace/frame", () => {
     expect((await w.a.get(frame(".kobe/state.html", w.team))).status).toBe(404);
     await seed(w.team, w.alice, "gone.html", "<p>gone</p>");
     await w.a.request("DELETE", "/v1/workspace/files?path=gone.html", undefined, {
-      "x-kobe-team": w.team,
+      "x-kaiju-team": w.team,
     });
     expect((await w.a.get(frame("gone.html", w.team))).status).toBe(404);
     const key = await seed(w.team, w.alice, "lost.html", "<p>lost</p>");

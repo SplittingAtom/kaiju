@@ -88,7 +88,7 @@ describe("My connectors: OAuth (KOBE-835)", () => {
     await vi.waitFor(() => expect(assign).toHaveBeenCalledWith(AUTHORIZE));
     const post = calls.find((c) => c.method === "POST");
     expect(JSON.parse(String(post?.body))).toEqual({});
-    expect(post?.headers.get("x-kobe-team")).toBeTruthy();
+    expect(post?.headers.get("x-kaiju-team")).toBeTruthy();
   });
 
   it("never follows an authorization URL that is not http(s)", async () => {

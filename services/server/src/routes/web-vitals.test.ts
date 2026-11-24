@@ -65,11 +65,11 @@ describe("POST /v1/telemetry/web-vitals (KOBE-525)", () => {
     const [lcp, cls] = spans();
     expect(lcp?.name).toBe("web.vital LCP /threads");
     expect(lcp?.attributes).toEqual({
-      "kobe.web_vital.name": "LCP",
-      "kobe.web_vital.value": 1234.5,
+      "kaiju.web_vital.name": "LCP",
+      "kaiju.web_vital.value": 1234.5,
       "http.route": "/threads",
-      "kobe.web_vital.rating": "good",
-      "kobe.web_vital.navigation_type": "navigate",
+      "kaiju.web_vital.rating": "good",
+      "kaiju.web_vital.navigation_type": "navigate",
     });
     const ms = (s: typeof lcp) =>
       s ? (s.endTime[0] - s.startTime[0]) * 1000 + (s.endTime[1] - s.startTime[1]) / 1e6 : NaN;
@@ -77,7 +77,7 @@ describe("POST /v1/telemetry/web-vitals (KOBE-525)", () => {
     // CLS is unitless: its span lasts 1000 × the score (milli-CLS), the raw score is an attribute.
     expect(cls?.name).toBe("web.vital CLS /admin/site/users");
     expect(ms(cls)).toBeCloseTo(120, 0);
-    expect(cls?.attributes["kobe.web_vital.value"]).toBe(0.12);
+    expect(cls?.attributes["kaiju.web_vital.value"]).toBe(0.12);
   });
 
   it("refuses unknown metrics, negative or huge values, extra fields and empty batches", async () => {

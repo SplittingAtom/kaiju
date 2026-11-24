@@ -195,7 +195,7 @@ describe("Team egress", () => {
         "DELETE /v1/team/egress/domains/old.example.com",
       ]),
     );
-    expect(calls.every((c) => c.headers.get("x-kobe-team") === TEAM.id)).toBe(true);
+    expect(calls.every((c) => c.headers.get("x-kaiju-team") === TEAM.id)).toBe(true);
   });
 
   it("shows the server's refusal", async () => {

@@ -31,7 +31,7 @@ export function skipRequestTrace(c: HonoContext): void {
   skipped.add(c.req.raw);
 }
 
-const TRACER_NAME = "kobe";
+const TRACER_NAME = "kaiju";
 
 /**
  * One server span per request: method, route template (never the raw path), status, sizes. Joins

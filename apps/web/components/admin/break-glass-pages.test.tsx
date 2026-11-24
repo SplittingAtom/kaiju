@@ -95,7 +95,7 @@ describe("site break-glass page", () => {
       legalHold: true,
       userId: "u-bob",
     });
-    expect(post.headers.get("x-kobe-team")).toBeNull();
+    expect(post.headers.get("x-kaiju-team")).toBeNull();
   });
 
   it("offers approve and deny on others' requests, and shows the server's refusal", async () => {
@@ -335,7 +335,7 @@ describe("team break-glass page", () => {
     expect(banner.textContent).toContain("Restricted (legal hold)");
     expect(screen.getByText("Threads of Bob")).toBeTruthy();
     expect(screen.getByText("Incident 7")).toBeTruthy();
-    await waitFor(() => expect(calls[0]?.headers.get("x-kobe-team")).toBe(TEAM.id));
+    await waitFor(() => expect(calls[0]?.headers.get("x-kaiju-team")).toBe(TEAM.id));
   });
 
   it("says when nobody has access", async () => {
@@ -393,6 +393,6 @@ describe("team audit view", () => {
     const banner = await screen.findByRole("note", { name: "Active break-glass access" });
     expect(banner.textContent).toContain("Incident 42");
     expect(screen.getByText("governance.break_glass.read")).toBeTruthy();
-    expect(calls.every((c) => c.headers.get("x-kobe-team") === TEAM.id)).toBe(true);
+    expect(calls.every((c) => c.headers.get("x-kaiju-team") === TEAM.id)).toBe(true);
   });
 });

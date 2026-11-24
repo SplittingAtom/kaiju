@@ -85,7 +85,7 @@ const out = (k, v) => console.log(k + "=" + v);
 const session = async (email) => {
   const jar = new Map();
   const call = async (method, path, body) => {
-    const headers = { origin, "x-kobe-team": team, cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") };
+    const headers = { origin, "x-kaiju-team": team, cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") };
     if (body !== undefined) headers["content-type"] = "application/json";
     const res = await fetch(base + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
     for (const c of res.headers.getSetCookie()) { const [pair] = c.split(";"); const at = pair.indexOf("="); jar.set(pair.slice(0, at), pair.slice(at + 1)); }

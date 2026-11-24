@@ -76,7 +76,7 @@ describe("create (POST /v1/threads)", () => {
     expect(raw.status).toBe(400);
   });
 
-  it("needs X-Kobe-Team on changes and an active team", async () => {
+  it("needs X-Kaiju-Team on changes and an active team", async () => {
     const tab = await signIn("bob");
     expect((await tab.post("/v1/threads", {})).json.code).toBe("team_header_required");
     tab.team = finance;
@@ -167,13 +167,13 @@ describe("visibility: private threads, team admins and other teams", () => {
     expect(rows).toEqual([{ team_id: marketing }]);
   });
 
-  it("rejects a stale tab whose X-Kobe-Team names another team", async () => {
+  it("rejects a stale tab whose X-Kaiju-Team names another team", async () => {
     const res = await as.bob.request(
       "PATCH",
       `/v1/threads/${bobs}`,
       { title: "t" },
       {
-        "x-kobe-team": marketing,
+        "x-kaiju-team": marketing,
       },
     );
     expect(res).toMatchObject({ status: 409, json: { code: "team_mismatch" } });

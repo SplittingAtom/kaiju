@@ -28,7 +28,7 @@ const runSpan = {
   start_ms: T0,
   end_ms: T0 + 5_000.25,
   status: "ok",
-  attributes: { "kobe.run.outcome": "completed", "kobe.turns": 2 },
+  attributes: { "kaiju.run.outcome": "completed", "kaiju.turns": 2 },
 };
 const toolSpan = {
   span_id: "2222222222222222",
@@ -38,7 +38,7 @@ const toolSpan = {
   end_ms: T0 + 20,
   status: "error",
   error_type: "tool_error",
-  attributes: { "kobe.tool.call_id": "call_1", "kobe.tool.outcome": "error" },
+  attributes: { "kaiju.tool.call_id": "call_1", "kaiju.tool.outcome": "error" },
 };
 const frame = {
   v: 1,
@@ -78,8 +78,8 @@ describe("trace.spans envelope (sandbox → server)", () => {
       ...toolSpan,
       attributes: {
         ...toolSpan.attributes,
-        "kobe.tool.input": "\u0001".repeat(SANDBOX_SPAN_CONTENT_MAX_CHARS),
-        "kobe.tool.output": "\u0001".repeat(SANDBOX_SPAN_CONTENT_MAX_CHARS),
+        "kaiju.tool.input": "\u0001".repeat(SANDBOX_SPAN_CONTENT_MAX_CHARS),
+        "kaiju.tool.output": "\u0001".repeat(SANDBOX_SPAN_CONTENT_MAX_CHARS),
       },
     };
     expect(valid(fat)).toBe(true);
@@ -100,22 +100,46 @@ describe("sandbox spans (parsed one by one)", () => {
         ...runSpan,
         span_id: "3333333333333333",
         name: "sandbox.turn",
-        attributes: { "kobe.turn.index": 0, "kobe.stop_reason": "tool_use", "kobe.tool_calls": 1 },
+        attributes: {
+          "kaiju.turn.index": 0,
+          "kaiju.stop_reason": "tool_use",
+          "kaiju.tool_calls": 1,
+        },
       },
       toolSpan,
       {
         ...runSpan,
         name: "sandbox.compaction",
-        attributes: { "kobe.compaction.trigger": "threshold", "kobe.compaction.tokens_before": 1 },
+        attributes: {
+          "kaiju.compaction.trigger": "threshold",
+          "kaiju.compaction.tokens_before": 1,
+        },
       },
       {
         ...runSpan,
         name: "sandbox.workspace_sync",
-        attributes: { "kobe.sync.direction": "push", "kobe.sync.files": 2, "kobe.sync.bytes": 10 },
+        attributes: {
+          "kaiju.sync.direction": "push",
+          "kaiju.sync.files": 2,
+          "kaiju.sync.bytes": 10,
+        },
       },
     ]) {
       expect(parseSandboxSpan(span), span.name).toEqual(span);
     }
+  });
+
+  it("reads the attributes of a sandbox agent built before the rename as kaiju.* (KOBE-749, one release)", () => {
+    const old = {
+      ...toolSpan,
+      attributes: { "kobe.tool.call_id": "call-1", "kobe.tool.outcome": "ok" },
+    };
+    expect(parseSandboxSpan(old)?.attributes).toEqual({
+      "kaiju.tool.call_id": "call-1",
+      "kaiju.tool.outcome": "ok",
+    });
+    expect(old.attributes).toHaveProperty("kobe.tool.call_id");
+    expect(valid({ ...toolSpan, attributes: { "kobe.tool.nope": 1 } })).toBe(false);
   });
 
   it("carries no identity, trace id or tool name: the server stamps those", () => {
@@ -124,8 +148,8 @@ describe("sandbox spans (parsed one by one)", () => {
       "team_id",
       "session.id",
       "user.id",
-      "kobe.run_id",
-      "kobe.tool.name",
+      "kaiju.run_id",
+      "kaiju.tool.name",
     ]) {
       expect(valid({ ...runSpan, [key]: "x" }), key).toBe(false);
       expect(valid({ ...toolSpan, attributes: { ...toolSpan.attributes, [key]: "x" } }), key).toBe(
@@ -150,12 +174,12 @@ describe("sandbox spans (parsed one by one)", () => {
   });
 
   it("uses closed codes: no free-form error type or stop reason", () => {
-    const turn = { ...runSpan, name: "sandbox.turn", attributes: { "kobe.turn.index": 0 } };
+    const turn = { ...runSpan, name: "sandbox.turn", attributes: { "kaiju.turn.index": 0 } };
     expect(
-      valid({ ...turn, attributes: { "kobe.turn.index": 0, "kobe.stop_reason": "other" } }),
+      valid({ ...turn, attributes: { "kaiju.turn.index": 0, "kaiju.stop_reason": "other" } }),
     ).toBe(true);
     expect(
-      valid({ ...turn, attributes: { "kobe.turn.index": 0, "kobe.stop_reason": "hello" } }),
+      valid({ ...turn, attributes: { "kaiju.turn.index": 0, "kaiju.stop_reason": "hello" } }),
     ).toBe(false);
     expect(valid({ ...toolSpan, error_type: "other" })).toBe(true);
     expect(valid({ ...toolSpan, error_type: "secret_leak_here" })).toBe(false);
@@ -167,8 +191,8 @@ describe("sandbox spans (parsed one by one)", () => {
       attributes: { ...toolSpan.attributes, ...extra },
     });
     const max = "x".repeat(SANDBOX_SPAN_CONTENT_MAX_CHARS);
-    expect(valid(at({ "kobe.tool.input": max }))).toBe(true);
-    expect(valid(at({ "kobe.tool.output": `${max}x` }))).toBe(false);
+    expect(valid(at({ "kaiju.tool.input": max }))).toBe(true);
+    expect(valid(at({ "kaiju.tool.output": `${max}x` }))).toBe(false);
   });
 
   it("rejects bad ids, implausible or reversed times and status combinations", () => {

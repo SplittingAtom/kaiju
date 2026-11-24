@@ -9,7 +9,7 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
     teamScoped: true,
     details: projectsDetails,
     description:
-      "Projects: shared instructions, files and members. Team-scoped: send X-Kobe-Team on changes.",
+      "Projects: shared instructions, files and members. Team-scoped: send X-Kaiju-Team on changes.",
     entries: [
       ["get", "/v1/projects", "List the projects the member can see"],
       ["post", "/v1/projects", "Create a project", "Answers 201."],
@@ -118,7 +118,7 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
     teamScoped: true,
     details: agentsDetails,
     description:
-      "Agents of the active team: personal, team and gallery. Team-scoped: send X-Kobe-Team on changes.",
+      "Agents of the active team: personal, team and gallery. Team-scoped: send X-Kaiju-Team on changes.",
     entries: [
       ["get", "/v1/agents", "List the agents the member can see", "`scope` filters."],
       ["post", "/v1/agents", "Create an agent"],

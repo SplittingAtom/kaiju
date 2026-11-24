@@ -226,6 +226,10 @@ describe("push and pull", () => {
       rev: 1,
       sha256: hash,
     });
+    // Also under the pre-rename name for older sandbox agents (one release, KOBE-749).
+    expect(file.headers.get("x-kobe-workspace-entry")).toBe(
+      file.headers.get(WORKSPACE_ENTRY_HEADER),
+    );
     expect((await call(b, "GET", "/file?path=nope.txt")).status).toBe(404);
     expect((await call(b, "GET", "/file?path=../etc/passwd")).status).toBe(400);
 

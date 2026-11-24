@@ -158,17 +158,17 @@ describe("traceNodeRequest", () => {
     await serve((req, res) => {
       // The handler cannot reject; the request ends when it does.
       void traceNodeRequest("gateway.request", req, res, async (span) => {
-        span.setAttributes({ "kobe.call_id": "c1" });
+        span.setAttributes({ "kaiju.call_id": "c1" });
         await new Promise((r) => setTimeout(r, 5));
         span.open(parent);
         span.open(); // the first call wins
-        span.setAttributes({ "kobe.route": "openai" });
+        span.setAttributes({ "kaiju.route": "openai" });
         res.end("ok");
       });
     });
     const [span] = exporter.getFinishedSpans();
     expect(span?.spanContext().traceId).toBe("3e4f5a6b7c8d4e9f8a1b2c3d4e5f6071");
     expect(span?.parentSpanContext?.spanId).toBe("8a1b2c3d4e5f6071");
-    expect(span?.attributes).toMatchObject({ "kobe.call_id": "c1", "kobe.route": "openai" });
+    expect(span?.attributes).toMatchObject({ "kaiju.call_id": "c1", "kaiju.route": "openai" });
   });
 });

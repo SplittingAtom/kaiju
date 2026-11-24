@@ -196,12 +196,12 @@ describe("a pass that succeeds (ac-4)", () => {
       const started = await startAndWait(s);
       const span = exporter.getFinishedSpans().find((x) => x.name === "memory.learn_pass");
       expect(span?.attributes).toMatchObject({
-        "kobe.memory.pass_id": started.ok ? started.passId : "",
-        "kobe.memory.model_alias": LEARNER,
-        "kobe.memory.prompt_version": CURRENT_EXTRACTOR_PROMPT.version,
+        "kaiju.memory.pass_id": started.ok ? started.passId : "",
+        "kaiju.memory.model_alias": LEARNER,
+        "kaiju.memory.prompt_version": CURRENT_EXTRACTOR_PROMPT.version,
         "gen_ai.request.model": `openai/${LEARNER}`,
-        "kobe.memory.candidates": 1,
-        "kobe.memory.outcome": "completed",
+        "kaiju.memory.candidates": 1,
+        "kaiju.memory.outcome": "completed",
       });
     } finally {
       await telemetry.shutdown();

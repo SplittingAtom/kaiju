@@ -10,7 +10,7 @@ import { pageApi, toolTurn } from "./support/gate5.js";
  * Uploads `kobe-489-*\/notes.md`, deletes the folder and turns the switch off again at the end.
  * Two short model turns; the model may word things differently, so only the cards are checked.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 const PREFERENCES = "/v1/me/preferences";
 const BASE = "alpha\nbeta\n";
 
@@ -23,7 +23,7 @@ async function workspace(
   return page.evaluate(
     async ({ op, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       const q = encodeURIComponent(path);
       if (op === "delete") {
         const res = await fetch(`/v1/workspace/files?path=${q}`, { method: "DELETE", headers });

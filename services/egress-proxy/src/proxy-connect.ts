@@ -9,7 +9,7 @@ import { blockAttempt, finishAttempt, type Attempt, type ProxyRuntime } from "./
 import { reply } from "./proxy-reply.js";
 import { runTunnel } from "./tunnel.js";
 
-const REALM = 'Basic realm="kobe-egress"';
+const REALM = 'Basic realm="kaiju-egress"';
 
 type Allowed = Extract<EgressDecision, { allowed: true }>;
 

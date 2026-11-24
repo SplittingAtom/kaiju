@@ -124,7 +124,7 @@ test("an app frame cannot reach the network, Kaiju or the page around it (KOBE-4
   }
   test.skip(app === undefined, "No MCP App is live for this member in the active team.");
   if (!app) return;
-  const team = await page.evaluate(() => window.localStorage.getItem("kobe.lastTeamId"));
+  const team = await page.evaluate(() => window.localStorage.getItem("kaiju.lastTeamId"));
   expect(team).toBeTruthy();
 
   // The real frame response, with the probe in place of the template.

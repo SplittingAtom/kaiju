@@ -262,7 +262,7 @@ export async function decide(p: Person, approvalId: string, decision: "allow" | 
       origin: "http://kaiju.test",
       "content-type": "application/json",
       "x-forwarded-for": p.browser.ip,
-      ...(p.browser.team ? { "x-kobe-team": p.browser.team } : {}),
+      ...(p.browser.team ? { "x-kaiju-team": p.browser.team } : {}),
     },
     body: JSON.stringify({ decision }),
   });

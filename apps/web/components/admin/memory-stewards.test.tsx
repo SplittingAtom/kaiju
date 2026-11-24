@@ -73,7 +73,7 @@ describe("Workspace memory stewards on the Members page", () => {
     await screen.findByText("Bob is now a memory steward.");
     const put = calls.find((c) => c.method === "PUT");
     expect(put?.url).toBe("/v1/team/memory/stewards/u-bob");
-    expect(put?.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(put?.headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 
   it("asks before taking the grant", async () => {

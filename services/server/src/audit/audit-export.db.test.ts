@@ -236,7 +236,7 @@ async function collectors() {
 }
 
 const seqOf = (record: any): number =>
-  Number(record.attributes.find((a: any) => a.key === "kobe.audit.seq").value.intValue);
+  Number(record.attributes.find((a: any) => a.key === "kaiju.audit.seq").value.intValue);
 const syslogSeqs = (chunks: Buffer[]): number[] =>
   [
     ...Buffer.concat(chunks)

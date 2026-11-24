@@ -410,7 +410,7 @@ if [[ "$STEPS" == *" mcp "* ]] && sbx_need "ac-3 (mcp)"; then
   proxy_ip=$($KUBECTL -n "$NS" get svc "$RELEASE-mcp-proxy" -o jsonpath='{.spec.clusterIP}')
   mcp_rpc() { # token json-body → the answer body, then "status=<http status>"
     in_sbx "curl -s -m 30 --noproxy '*' -w '\nstatus=%{http_code}\n' -H 'authorization: Bearer $1' -H 'content-type: application/json' \
-      -H 'accept: application/json, text/event-stream' -H 'kobe-thread-id: $MCP_THREAD' --data-raw '$2' http://$proxy_ip:80/v1/mcp/$CONNECTOR_ID"
+      -H 'accept: application/json, text/event-stream' -H 'kaiju-thread-id: $MCP_THREAD' --data-raw '$2' http://$proxy_ip:80/v1/mcp/$CONNECTOR_ID"
   }
   fake_calls() { $KUBECTL -n "$INFRA_NS" logs fake-mcp 2>&1 | grep -c "^CALL $1 " || true; }
   fake_auth() { $KUBECTL -n "$INFRA_NS" logs fake-mcp 2>&1 | grep -c AUTH-HEADER-PRESENT || true; }

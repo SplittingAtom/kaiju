@@ -15,7 +15,7 @@ export async function call(
 ): Promise<{ readonly status: number; readonly body: unknown }> {
   const res = await fake.fetch(path, {
     method,
-    headers: { "x-kobe-team": fake.teamId, "content-type": "application/json" },
+    headers: { "x-kaiju-team": fake.teamId, "content-type": "application/json" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const text = await res.text();

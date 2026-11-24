@@ -377,7 +377,7 @@ describe("scroll position per thread (ac-2)", () => {
     threadWithHistory("Beta");
     await openAtBottom(a, "Alpha");
     scrollTo(300);
-    await waitFor(() => expect(sessionStorage.getItem(`kobe.scroll:${a}`)).toBe("300"));
+    await waitFor(() => expect(sessionStorage.getItem(`kaiju.scroll:${a}`)).toBe("300"));
 
     const user = userEvent.setup();
     await user.click((await titles()).getByRole("button", { name: "Beta" }));
@@ -392,7 +392,7 @@ describe("scroll position per thread (ac-2)", () => {
 
   it("a restored position stays put while content grows", async () => {
     const a = threadWithHistory("Alpha");
-    sessionStorage.setItem(`kobe.scroll:${a}`, "300");
+    sessionStorage.setItem(`kaiju.scroll:${a}`, "300");
     openApp(kaiju, a);
     expect(await screen.findByText("Alpha answer")).toBeTruthy();
     await waitFor(() => expect(list().scrollTop).toBe(300));
@@ -406,7 +406,7 @@ describe("scroll position per thread (ac-2)", () => {
     await openAtBottom(a, "Alpha");
     scrollTo(300);
     scrollTo(maxTop());
-    await waitFor(() => expect(sessionStorage.getItem(`kobe.scroll:${a}`)).toBe("bottom"));
+    await waitFor(() => expect(sessionStorage.getItem(`kaiju.scroll:${a}`)).toBe("bottom"));
   });
 
   it("leaving a thread saves its position at once, under its own key only", async () => {
@@ -425,31 +425,31 @@ describe("scroll position per thread (ac-2)", () => {
     });
     await openAtBottom(a, "Alpha");
     scrollTo(300);
-    expect(sessionStorage.getItem(`kobe.scroll:${a}`)).toBeNull(); // not written yet: debounced
+    expect(sessionStorage.getItem(`kaiju.scroll:${a}`)).toBeNull(); // not written yet: debounced
 
     await userEvent.setup().click((await titles()).getByRole("button", { name: "Beta" }));
     await waitFor(() => expect(pill()).toBeNull()); // Alpha left, Beta not restored yet
-    expect(sessionStorage.getItem(`kobe.scroll:${a}`)).toBe("300");
+    expect(sessionStorage.getItem(`kaiju.scroll:${a}`)).toBe("300");
     // A late scroll while Beta loads belongs to neither thread.
     act(() => {
       list().scrollTop = 900;
       list().dispatchEvent(new Event("scroll"));
     });
     await new Promise((resolve) => setTimeout(resolve, 300)); // past the save delay
-    expect(sessionStorage.getItem(`kobe.scroll:${a}`)).toBe("300");
-    expect(sessionStorage.getItem(`kobe.scroll:${b}`)).toBeNull();
+    expect(sessionStorage.getItem(`kaiju.scroll:${a}`)).toBe("300");
+    expect(sessionStorage.getItem(`kaiju.scroll:${b}`)).toBeNull();
     release();
     expect(await screen.findByText("Beta answer")).toBeTruthy();
     await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
     await new Promise((resolve) => setTimeout(resolve, 300));
-    expect(sessionStorage.getItem(`kobe.scroll:${a}`)).toBe("300");
-    expect(sessionStorage.getItem(`kobe.scroll:${b}`) ?? "bottom").toBe("bottom");
+    expect(sessionStorage.getItem(`kaiju.scroll:${a}`)).toBe("300");
+    expect(sessionStorage.getItem(`kaiju.scroll:${b}`) ?? "bottom").toBe("bottom");
   });
 
   it("the pill's count starts again in each thread", async () => {
     const a = threadWithHistory("Alpha");
     const b = threadWithHistory("Beta");
-    sessionStorage.setItem(`kobe.scroll:${b}`, "100");
+    sessionStorage.setItem(`kaiju.scroll:${b}`, "100");
     await openAtBottom(a, "Alpha");
     const runId = await startRun(a, "draw a chart");
     scrollTo(200);

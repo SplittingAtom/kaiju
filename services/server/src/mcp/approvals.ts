@@ -13,7 +13,7 @@ import type { ApprovalVerifier } from "../approvals/verify.js";
  * Where the ids come from (none of it lets a sandbox reach another user's or run's approval):
  * - **team, user, sandbox**: the sandbox's `kobe.mcp-proxy` session token, verified by the server
  *   with that audience's key (`principal.ts`), plus liveness and membership.
- * - **run**: never taken from the sandbox. The sandbox names its thread (`Kobe-Thread-Id`); the
+ * - **run**: never taken from the sandbox. The sandbox names its thread (`Kaiju-Thread-Id`); the
  *   server takes that thread's active run only if the thread is the token user's and the run is
  *   leased to the token's sandbox (`sandbox_run_leases`, written when the server delivered
  *   `run.start`). Another user's or another sandbox's thread yields no run → deny.

@@ -209,6 +209,8 @@ describe("exports (KOBE-345)", () => {
     await approve(skillId);
     const res = await builder.get(url);
     expect(res.status, res.text).toBe(200);
+    expect(res.headers.get("x-kaiju-sha256")).toBe(sha256(res.bytes));
+    // The pre-rename name too, for one release (KOBE-749; removed in KOBE-754).
     expect(res.headers.get("x-kobe-sha256")).toBe(sha256(res.bytes));
     const { folder, files } = unpack(res.bytes);
     expect(folder).toBe("report");

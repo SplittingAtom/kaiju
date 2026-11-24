@@ -122,13 +122,15 @@ test("Add to project: the owner adds an artifact; another member reads it under 
     await expect(tab.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
     // The server agrees: the bytes are there, a write is refused.
     const read = await second.evaluate(async (path) => {
-      const team = window.localStorage.getItem("kobe.lastTeamId") ?? "";
+      const team = window.localStorage.getItem("kaiju.lastTeamId") ?? "";
       const q = encodeURIComponent(path);
-      const get = await fetch(`/v1/workspace/file?path=${q}`, { headers: { "x-kobe-team": team } });
+      const get = await fetch(`/v1/workspace/file?path=${q}`, {
+        headers: { "x-kaiju-team": team },
+      });
       const text = await get.text();
       const put = await fetch(`/v1/workspace/file?path=${q}&base_sha256=${"0".repeat(64)}`, {
         method: "PUT",
-        headers: { "x-kobe-team": team, "content-type": "text/plain" },
+        headers: { "x-kaiju-team": team, "content-type": "text/plain" },
         body: "overwritten",
       });
       return { get: get.status, text, put: put.status };

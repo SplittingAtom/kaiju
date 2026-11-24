@@ -28,7 +28,7 @@ describe("readThreadBranches", () => {
     });
     expect(read).toEqual(answer);
     expect(seen?.url).toBe(`/v1/threads/${T}/branches`);
-    expect(seen?.headers.get("x-kobe-team")).toBe("team-1");
+    expect(seen?.headers.get("x-kaiju-team")).toBe("team-1");
   });
 
   it("is null for an error, a malformed answer or a network failure (no error box)", async () => {

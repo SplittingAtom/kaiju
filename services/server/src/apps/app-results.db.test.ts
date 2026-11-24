@@ -89,7 +89,7 @@ async function post(path: string, body: unknown, token: string, key = INTERNAL_K
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${key}`,
-      "kobe-sandbox-token": token,
+      "kaiju-sandbox-token": token,
     },
     body: JSON.stringify(body),
   });

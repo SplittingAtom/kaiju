@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { eq, getMembership, sessionActiveTeams, teams, type TeamRole } from "@kaiju/db";
+import { readRenamedHeader } from "@kaiju/protocol";
 import type { AuthVariables } from "../auth/session.js";
 import type { ServerDeps } from "../deps.js";
 import { delegationOf } from "../kaiju-mcp/delegation.js";
@@ -17,7 +18,15 @@ import {
 } from "./permissions.js";
 
 /** Header naming the team the client believes is active (multi-tab guard); required on changes. */
-export const TEAM_HEADER = "x-kobe-team";
+export const TEAM_HEADER = "x-kaiju-team";
+
+/**
+ * The team header of a request: `x-kaiju-team`, else the pre-rename `x-kobe-team` that API clients
+ * and scripts may still send (accepted for one release, KOBE-749; removed in KOBE-754).
+ */
+export function teamHeaderOf(c: Context): string | undefined {
+  return readRenamedHeader((name) => c.req.header(name), TEAM_HEADER);
+}
 
 export interface ActiveTeam {
   readonly id: string;
@@ -65,7 +74,7 @@ export async function requestNamesTeam(
   deps: ServerDeps,
   c: Context<{ Variables: TeamVariables }>,
 ): Promise<boolean> {
-  if (c.req.header(TEAM_HEADER) !== undefined || delegationOf(c) !== undefined) return true;
+  if (teamHeaderOf(c) !== undefined || delegationOf(c) !== undefined) return true;
   return (await readActiveTeamId(deps, c.get("sessionId"))) !== null;
 }
 
@@ -79,7 +88,7 @@ export function requireTeam(deps: ServerDeps) {
   return createMiddleware<{ Variables: TeamVariables }>(async (c, next) => {
     // Already resolved for this request by an enclosing router (e.g. /team and /team/invites).
     if (c.var.team !== undefined) return next();
-    const claimed = c.req.header(TEAM_HEADER);
+    const claimed = teamHeaderOf(c);
     // A Kaiju MCP admin tool's in-process call (KOBE-619): the run's team, never another; the team
     // header is implied (a different one is refused), membership re-checked as for a session.
     const delegation = delegationOf(c);

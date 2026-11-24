@@ -119,7 +119,7 @@ describe("My area, Approvals (KOBE-289 ac-4)", () => {
     await screen.findByText("Revoked: share_file (this conversation).");
     const del = must(calls.find((c) => c.method === "DELETE"));
     expect(del.url).toBe("/v1/team/policy/my-rules/r-1");
-    expect(del.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(del.headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 
   it("shows an empty list and saves the time zone", async () => {

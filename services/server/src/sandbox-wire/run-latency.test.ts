@@ -36,7 +36,7 @@ describe("RunLatency (KOBE-525)", () => {
         name: "run.pi_ready",
         startMs: T0,
         endMs: T0 + 800,
-        attributes: { "kobe.run.kind": "run" },
+        attributes: { "kaiju.run.kind": "run" },
       },
     ]);
   });
@@ -52,7 +52,7 @@ describe("RunLatency (KOBE-525)", () => {
         name: "run.first_token",
         startMs: T0,
         endMs: T0 + 1_500,
-        attributes: { "kobe.run.kind": "run", "kobe.token.kind": "reasoning" },
+        attributes: { "kaiju.run.kind": "run", "kaiju.token.kind": "reasoning" },
       },
     ]);
   });
@@ -66,7 +66,7 @@ describe("RunLatency (KOBE-525)", () => {
   it("tags compaction runs", () => {
     const { spans, latency } = setup({ compaction: true });
     latency.observe([delta], T0 + 100);
-    expect(spans.map((s) => s.attributes["kobe.run.kind"])).toEqual(["compaction", "compaction"]);
+    expect(spans.map((s) => s.attributes["kaiju.run.kind"])).toEqual(["compaction", "compaction"]);
   });
 
   it("pairs tool.call with tool.result into a tool-call round trip", () => {
@@ -80,13 +80,21 @@ describe("RunLatency (KOBE-525)", () => {
         name: "run.tool_call",
         startMs: T0 + 1_000,
         endMs: T0 + 1_200,
-        attributes: { "kobe.run.kind": "run", "kobe.tool.name": "read", "kobe.tool.error": true },
+        attributes: {
+          "kaiju.run.kind": "run",
+          "kaiju.tool.name": "read",
+          "kaiju.tool.error": true,
+        },
       },
       {
         name: "run.tool_call",
         startMs: T0 + 1_000,
         endMs: T0 + 3_000,
-        attributes: { "kobe.run.kind": "run", "kobe.tool.name": "bash", "kobe.tool.error": false },
+        attributes: {
+          "kaiju.run.kind": "run",
+          "kaiju.tool.name": "bash",
+          "kaiju.tool.error": false,
+        },
       },
     ]);
   });

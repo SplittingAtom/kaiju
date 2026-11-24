@@ -1,3 +1,4 @@
+import { withLegacyHeaderNames } from "@kaiju/protocol";
 import { z } from "zod";
 import type { GitRequest } from "./grammar.js";
 
@@ -10,7 +11,7 @@ import type { GitRequest } from "./grammar.js";
  *
  * POST <server internal>/internal/v1/git/transport
  *   Authorization: Bearer <egress proxy internal key>
- *   Kobe-Sandbox-Token: <the sandbox's own kobe.egress-proxy token>
+ *   Kaiju-Sandbox-Token: <the sandbox's own kobe.egress-proxy token>
  *   {host, prefix, owner, repository, service}
  */
 
@@ -101,11 +102,13 @@ export function serverDecider(options: ServerDeciderOptions): GitDecider {
     try {
       res = await doFetch(url, {
         method: "POST",
-        headers: {
+        // Both token header names for one release, so an old server pod reads it during a rolling
+        // upgrade (KOBE-749; the old name goes in KOBE-754).
+        headers: withLegacyHeaderNames({
           authorization: `Bearer ${options.internalKey}`,
-          "kobe-sandbox-token": query.token,
+          "kaiju-sandbox-token": query.token,
           "content-type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           host: query.host,
           prefix: query.request.prefix,

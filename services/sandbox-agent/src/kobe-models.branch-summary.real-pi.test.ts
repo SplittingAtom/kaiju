@@ -175,8 +175,8 @@ describe.skipIf(!PI_AVAILABLE)("thread.branch_summary in real Pi (KOBE-548)", ()
     const summaryCalls = (tap as Listener).requests.slice(calls);
     expect(summaryCalls.length).toBeGreaterThan(0);
     for (const call of summaryCalls) {
-      expect(call.headers["x-kobe-run-id"]).toBe(runId(5));
-      expect(call.headers["x-kobe-run-token"]).toBe(SUMMARY_TOKEN.token);
+      expect(call.headers["x-kaiju-run-id"]).toBe(runId(5));
+      expect(call.headers["x-kaiju-run-token"]).toBe(SUMMARY_TOKEN.token);
     }
 
     // The next prompt continues from the summary and its model sees it.

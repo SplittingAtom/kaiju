@@ -8,7 +8,7 @@ import { error, json, NOW, type FakeAnswer, type FakeRequest } from "./state";
  */
 
 export function memoryRoute(k: FakeCore, method: string, url: URL, headers: Headers): Response {
-  if (headers.get("x-kobe-team") !== k.teamId) return error(409, "team_mismatch");
+  if (headers.get("x-kaiju-team") !== k.teamId) return error(409, "team_mismatch");
   const [, , id, leaf] = url.pathname.split("/").filter(Boolean); // v1 memory id restore
   if (method === "DELETE" && id && leaf === undefined) return new Response(null, { status: 204 });
   if (method === "POST" && id && leaf === "restore") {

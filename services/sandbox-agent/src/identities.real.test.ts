@@ -350,7 +350,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
       { mcp },
     );
     expect(own.code).toBe(0);
-    expect(own.stdout).toContain(`"Kobe-Thread-Id": "${THREAD}"`);
+    expect(own.stdout).toContain(`"Kaiju-Thread-Id": "${THREAD}"`);
     expect(own.stdout).toContain("Bearer mcp-token-");
     const other = await tool(
       THREAD_2,

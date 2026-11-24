@@ -12,7 +12,7 @@ import { styleViolations, watchStyleViolations } from "./support/csp.js";
  * thread; the folder is deleted at the end. (Written with the repo's conventions; needs the gate
  * install.)
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 const SOURCE =
   "import pandas as pd\n" +
@@ -28,7 +28,7 @@ async function workspace(page: Page, op: "upload" | "delete", path: string, cont
   return page.evaluate(
     async ({ op, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (op === "delete") {
         const q = encodeURIComponent(path);
         return (await fetch(`/v1/workspace/files?path=${q}`, { method: "DELETE", headers })).status;

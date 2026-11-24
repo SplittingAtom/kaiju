@@ -101,7 +101,7 @@ export function serverCallBoundToRun(purpose: ServerCallTokenPurpose): boolean {
   );
 }
 
-export const SERVER_CALL_TOKEN_HEADER = "x-kobe-server-call";
+export const SERVER_CALL_TOKEN_HEADER = "x-kaiju-server-call";
 /** The signed JWS `typ` of a server-call token (KOBE-521): never `JWT` or `krt2`. */
 export const SERVER_CALL_TOKEN_TYP = "ksc2";
 /** The audience no other Kaiju token carries (session and run tokens say `kobe.model-gateway`). */

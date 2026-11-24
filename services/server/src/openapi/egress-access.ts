@@ -30,7 +30,7 @@ const body = (schemaName: string) => ({
 });
 
 const teamHeader = (required: boolean) => ({
-  name: "X-Kobe-Team",
+  name: "X-Kaiju-Team",
   in: "header",
   required,
   description: "The team the client believes is active. Required on changes; must match.",

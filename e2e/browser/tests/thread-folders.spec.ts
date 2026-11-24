@@ -11,7 +11,7 @@ import { expect, test } from "./support/chat.js";
  */
 const SECOND_USER = process.env["KAIJU_USER2"];
 const SECOND_PW = process.env["KAIJU_PW2"];
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** Calls the API from the page (session cookie, Origin and team header as the chat sends them). */
 async function api(page: Page, method: string, path: string, body?: unknown) {
@@ -20,7 +20,7 @@ async function api(page: Page, method: string, path: string, body?: unknown) {
       const team = window.localStorage.getItem(teamKey) ?? "";
       const res = await fetch(path, {
         method,
-        headers: { "x-kobe-team": team, ...(body ? { "content-type": "application/json" } : {}) },
+        headers: { "x-kaiju-team": team, ...(body ? { "content-type": "application/json" } : {}) },
         body: body ? JSON.stringify(body) : undefined,
       });
       return { status: res.status, json: (await res.json().catch(() => null)) as unknown };

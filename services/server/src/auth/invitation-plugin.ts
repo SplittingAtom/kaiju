@@ -39,7 +39,7 @@ export function invitationPlugin({
   readonly publicOrigin: string;
 }) {
   return {
-    id: "kobe-invitation",
+    id: "kaiju-invitation",
     endpoints: {
       lookupInvitation: createAuthEndpoint(
         "/invitation/lookup",

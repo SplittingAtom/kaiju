@@ -133,8 +133,8 @@ its key is used), and the public halves again in the ConfigMap
 holds `trace-span` and `approval-hmac`.
 
 **Run and server-call tokens (KOBE-521).** The server's credentials for the model gateway, run
-tokens (a run's model calls, `x-kobe-run-token`) and server-call tokens (titles, follow-ups, the
-eval judge; `x-kobe-server-call`), are signed with the `model-gateway` private key too, each with
+tokens (a run's model calls, `x-kaiju-run-token`) and server-call tokens (titles, follow-ups, the
+eval judge; `x-kaiju-server-call`), are signed with the `model-gateway` private key too, each with
 its own signed JWS `typ` (`krt2`, `ksc2`; session tokens say `JWT`), so no kind passes as another.
 The gateway verifies all three with the `model-gateway` public key and holds no key that signs any
 of them. Rotating the `model-gateway` pair (below) therefore rotates all three at once. Run
@@ -1788,6 +1788,20 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   [Postgres connections](#postgres-connections)). Update log filters, alerts and `pg_stat_activity`
   queries that match the old names. The operator CLI is now called `kaiju`. Nothing in the
   database changes.
+- **Renamed headers, cookies and telemetry names (Kaiju rename, KOBE-749).** API clients and
+  scripts send the active team as `X-Kaiju-Team`; the server still accepts `X-Kobe-Team` for
+  this release, and the skill export answers with both `X-Kaiju-Sha256` and `X-Kobe-Sha256`.
+  For this release every component sends its internal headers under both the new and the old
+  name and accepts either, so old and new pods work together in both directions during a rolling
+  `helm upgrade`, and sandboxes still on the old image keep working until they restart (the
+  next release sends and accepts only the new names). Span, attribute, scope and `service.name` values start with `kaiju` instead of `kobe`
+  ([Tracing](tracing.md#names-after-the-rename-to-kaiju)); audit forwarding sends syslog APP-NAME
+  `kaiju-audit` with SD-ID `kaiju@<PEN>` and OTLP attributes `kaiju.audit.*` with
+  `service.name` `kaiju-server` ([Audit log](audit-log.md)). Update SIEM rules, saved queries and
+  dashboards. Browser storage keys and cookies have new names: members keep their session, but
+  each browser forgets its per-browser choices once (theme, last Workspace and conversation,
+  panel sizes and tabs, dismissed notices), and an SSO sign-in in progress during the upgrade
+  has to be started again.
 - **Git through the egress proxy (KOBE-763).** The chart generates one more Secret,
   `<release>-egress-proxy-internal` (or name your own with `egressProxy.git.internalKeySecret`;
   offline renders need it), and lets the egress proxy reach the server's internal port 8082.

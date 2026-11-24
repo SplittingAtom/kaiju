@@ -27,7 +27,7 @@ const GRANT = { token: "eyJhbGciOiJFZERTQSJ9.e30.sig", expires_at: "2026-10-01T0
 
 describe("run token format", () => {
   it("names the header, capability and signed typ", () => {
-    expect(RUN_TOKEN_HEADER).toBe("x-kobe-run-token");
+    expect(RUN_TOKEN_HEADER).toBe("x-kaiju-run-token");
     expect(CAPABILITY_RUN_TOKEN).toBe("run_token");
     expect(RUN_TOKEN_TYP).toBe("krt2");
   });

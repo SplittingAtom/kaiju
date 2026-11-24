@@ -18,6 +18,9 @@ docs/ledger/** docs/gates/** docs/releases/** docs/RUN-LEDGER.md docs/review-*.m
 == permanent: The guide's rename note and the operators' upgrade note name the old names on purpose, like the line at the top of docs/releases/ (spec §8.1)
 docs/guide/whats-new.md /^## Kobe is now Kaiju$/
 docs/install.md /(?<=\(before: `)kobe-migrate(?=`)|(?<=`kobe-migrate`, `)kobe-db-wait(?=`\))/
+docs/guide/whats-new.md /(?<=The old `)X-Kobe-Team(?=` still works)/
+docs/install.md /(?<=accepts `)X-Kobe-Team(?=` for)|(?<=and `)X-Kobe-Sha256(?=`\.)|(?<=with `kaiju` instead of `)kobe(?=`)/
+docs/tracing.md /(?<=renamed )Kobe(?= to Kaiju \(KOBE-749\))|(?<=instead of `)kobe\.(?=`)|(?<=\(each was `)kobe-(?=\*`\))|(?<=reads their `)kobe\.(?=\*` span)/
 
 == permanent: Applied migrations (contents and file names, which the journal names) and their snapshots are never edited; database objects and the Drizzle properties that map to their columns keep their names (spec §3 stays 2, §5 no migration)
 packages/db/drizzle/** /kobe/i
@@ -37,7 +40,8 @@ services/server/src/memory/checks/lint.ts /(?<=\|)kobe(?=\|(?:kaiju\|)?claude)/
 
 == permanent: Postgres settings and advisory-lock keys (spec §3 stays 2, RN3)
 packages/db/src/team-setters.test.ts packages/db/src/run-usage-retention-setting.test.ts /(?<![@\w])kobe(?=\\?\.)/
-** /\bkobe\.(?:team_id|break_glass_grant|break_glass_actor|run_usage_retention|restore(?:\.\w+)?|legal_hold|audit\.pii_sweep)\b/
+# The span attribute `kobe.team_id` in these files is telemetry, not the setting: RN-5 renames it.
+** !packages/telemetry/src/spans.ts !packages/telemetry/src/spans.test.ts !services/server/src/memory/learn/execute.ts !services/server/src/sandbox-wire/trace-intake.test.ts !services/server/src/sandbox-wire/trace-spans.db.test.ts !services/model-gateway/src/gateway-tracing.test.ts !services/egress-proxy/src/proxy.test.ts !packages/protocol/src/sandbox-wire/trace-frames.ts !docs/tracing.md /\bkobe\.(?:team_id|break_glass_grant|break_glass_actor|run_usage_retention|restore(?:\.\w+)?|legal_hold|audit\.pii_sweep)\b/
 
 == permanent: Postgres roles, functions, tables, columns, policies and the LISTEN/NOTIFY channels (spec §3 stays 2, §5 no migration)
 ** /\bkobe_(?:app|owner|backup|listen_probe|rate_limits\w*|run_events|egress(?:_blocked)?|memory_settings|models|sandbox|skill_eval|grants_applied|reserve_budget|settle_budget|extend_budget|count_model_spend|shipped_version|ensure_memory_vectors|spend_guard|run_usage_append_only|install_limits_guard|site_limits_guard|budget_email_guard|budget_alert_verify|budget_alert_emails|refuse_deactivated_session|entry_search_text|cap_sso_session_expiry)\b/
@@ -69,7 +73,7 @@ packages/db/src/migrate.ts /(?<=0x6b6f6265; \/\/ )"kobe"/
 services/server/src/models/sync.ts /\("kobe" \+ 40\)/
 
 == permanent: Forgery tests send the pre-rename header spelling on purpose, next to the current one (KOBE-747 review)
-services/server/src/k{obe,aiju}-mcp/** /(?<=")kobe-delegation(?=": claim)/
+services/server/src/k{obe,aiju}-mcp/** /(?<="(?:x-)?)kobe-delegation(?=": claim)/
 
 == permanent: Rate-limit keys in `kobe_rate_limits` start with `kobe:`; old and new pods count in the same rows during a rolling upgrade, like the lock names (KOBE-747)
 ** /\bkobe:(?=\$\{|["'`]|unknown-client-ip\b)/
@@ -112,6 +116,16 @@ charts/kobe/tests/env-names.test.ts packages/protocol/src/testing/legacy-env.ts 
 services/server/src/skills/registry/external-scan-result.ts /(?<=")KOBE_EXTERNAL_SCAN(?= ")/
 packages/db/src/test-support/database.ts scripts/check-test-db-env.sh package.json /\bKOBE_TEST_DATABASE_URL\b/
 docs/install.md docs/releases/** /\bKOBE_[A-Z0-9_*]*/
+
+== permanent: Old header names, the span attribute prefix and a session-storage key read for one release and sent next to the new ones (KOBE-749, spec §3 changes 6 and 8): the shared header map, its readers and senders, the egress rules' reserved prefix, the skill export's and the workspace file's old response headers, the trace frames' attribute prefix of older sandbox agents, the reload-draft stash of the last build before the rename, and the tests that send them; removed with the one-release fallbacks in KOBE-754
+packages/protocol/src/legacy-headers.ts packages/protocol/src/legacy-headers.test.ts /\b(?:x-)?kobe-[a-z-]+|(?<=")kobe(?="\))/
+services/server/src/authz/middleware.ts services/server/src/mcp/principal.ts services/mcp-proxy/src/mcp.ts services/model-gateway/src/gateway.ts apps/web/lib/teams.ts services/sandbox-agent/src/kobe-models/protocol.ts services/server/src/teams/teams.db.test.ts services/server/src/mcp/mcp.calls.db.test.ts services/mcp-proxy/src/mcp.test.ts services/model-gateway/src/gateway-runs.test.ts services/model-gateway/src/server-call.test.ts apps/web/lib/api/client.test.ts apps/web/lib/teams.test.ts services/egress-proxy/src/git/decisions.test.ts services/mcp-proxy/src/credentials.test.ts services/sandbox-agent/src/kobe-models/provider.test.ts services/sandbox-agent/src/mcp/pi-mcp-config.test.ts services/server/src/models/embedding-client.test.ts services/server/src/models/gateway-client.test.ts services/sandbox-agent/src/testing/real-pi-rpc.ts /\bx-kobe-(?:team|run-id|run-token|server-call)\b|\bX-Kobe-(?:Team|Run-Token)\b|\bkobe-sandbox-token\b|\b[Kk]obe-[Tt]hread-[Ii]d\b/
+packages/db/src/egress/header-rules.ts packages/db/src/egress/header-rules.test.ts /\bx-kobe-|\bX-Kobe-Team\b/
+services/server/src/skills/export.ts services/server/src/skills/skill-export.db.test.ts /\bx-kobe-sha256\b/
+services/server/src/workspace-sync/workspace-sync.db.test.ts services/sandbox-agent/src/testing/fake-sync-server.ts /\bx-kobe-workspace-entry\b/
+packages/protocol/src/sandbox-wire/trace-frames.ts /(?<=")kobe\.(?=")|`kobe\.\*`/
+packages/protocol/src/sandbox-wire/trace-frames.test.ts /(?<=")kobe\.tool\.(?:call_id|outcome|nope)\b/
+apps/web/lib/build/reload-draft.ts apps/web/lib/build/reload-draft.test.ts /\bkobe\.reload-drafts\b/
 
 # ---------------------------------------------------------------------------------------------
 # Provisional: persisted or agent-visible names the spec does not list. Kept (never touched by a step) until the
@@ -157,7 +171,7 @@ packages/db/src/connectors/builtin.ts packages/db/src/schema/connectors.ts servi
 
 == provisional: (Q4) Names persisted in workspace volumes and Pi session files: the `.kobe/` folder, custom entry types, the Pi provider id
 ** /(?<![\w-])\.kobe\b(?!-)/
-** /\bkobe\\?\.(?:branch|app_card|skipped_actions|event_dropped|model_error|app_call|compaction|turn|reload-drafts|notebook\.html)\b/
+** /\bkobe\\?\.(?:branch|app_card|skipped_actions|event_dropped|model_error|notebook\.html)\b/
 ** /\bprovider["']?\s*:\s*["']kobe["']/
 ** /["']providers?["']\s*:\s*\{\s*["']kobe["']/
 docs/skill-evals.md packages/protocol/src/skill-evals/outputs.test.ts /\?kobe\/\*/
@@ -247,9 +261,6 @@ THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b
 ** /\bkobe\.(?:image|invalid|localtest\.me)\b/
 ** /\bkobe_(?:static|gate4_backup)\b/
 
-== RN-5: Paired values: telemetry names the e2e harness asserts and the code emits (renamed together)
-** /\bkobe\.(?:run|command\.kind)\b(?![\w-])/
-
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
 
@@ -316,36 +327,13 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 
 == RN-6: Kubernetes object names in the release namespace and the e2e clusters (Services, Secrets, Deployments ...)
 ** /\bkobe-sandbox-(?!token\b)[\w-]+/
-** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|theme|default)(?![\w-])/
+** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|default)(?![\w-])/
 ** /\bdeploy\/kobe\b/
 ** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/
 charts/** Tiltfile /\bkobe-migrate(?:-initial)?\b/
 scripts/dev-cluster.sh /(?<=KAIJU_CLUSTER:-)kobe\b/
 scripts/site-identifiers.mjs /(?<=helm install )kobe\b/
 docs/install.md /(?<=IN DATABASE )kobe\b/
-
-== RN-5: HTTP headers (`x-kobe-team` accepted for one release)
-** /\bx-kobe-[\w-]+/i
-** /\bKobe-Thread-Id\b/i
-** /\bkobe-sandbox-token\b/i
-** /\bx-kobe-(?=["'`])|(?<=realm=\\?")kobe-(?:egress|scim)\b/
-
-== RN-5: Cookies and browser storage keys (members are signed out once)
-** /__Host-kobe[\w-]*/
-** /(?<=["'`])kobe\.(?:last\w*|scroll|agents\.tab|fileEditor\.\w+|chat\.\w+|workbench\.\w+|web\.\w+|retentionNotice\.\w+|lastTeamId)\b/
-** /\bkobe-(?:invitation|threads)\b/
-** /(?<=["'`])kobe\.(?:pythonRun\.\w+|artifactTabs:|filesTree:|panelOrigin)/
-** /(?<=["'`])kobe-sso(?:-link)?(?=["'`])|(?<=\bid: )"kobe-(?:audit|sign-in-throttle)"/
-
-== RN-5: Telemetry attribute and span names, logger names, OTLP audit attributes
-** /(?<=["'`])kobe\.(?:tool|run|turn|upstream|memory|workspace|sandbox|session|agent|audit|model|research|embeddings|ingress|egress|sso|setup_ms|retention|published|sync|pod|node|container|stop_reason|outcome|wake|thread_id|run_id|run_token|sandbox_id|web_vital|team_level_changed|frontmatter)(?![\w-])(?:[.:][\w.-]*)?/
-** /(?<=["'`])kobe\.(?:sandbox-relay|server|skill-eval)\b/
-** /(?<=["'`])kobe\.(?:turns|tool_calls|user_id|agent_id|reason|bytes_up|bytes_down|upgraded|site_job|connector_id|duration_ms|call_id|usage_kind|route|thinking_level|aborted|token\.kind|trace\.[\w.]+)\b/
-packages/telemetry/src/content.ts /\|kobe\\\.\(message/
-services/server/src/audit/forward/*.test.ts /\bkobe-audit\b|\bkobe@\d+/
-** /(?<=getTracer\()"kobe"|(?<=TRACER_NAME = )"kobe"|`kobe-\$\{service\}`|\bkobe@(?=\$\{|<)|(?<=APP-NAME `)kobe-audit\b|(?<=^\s*)"kobe-audit"(?=,)/
-docs/** /\battributes\.kobe\.[\w.]+|`kobe\.(?:user_id|agent_id|usage_kind|trace\.[\w.]+)`|\bkobe-audit\b|\bkobe@<PEN>/
-docs/perf/latency-queries.sql /\bkobe_(?:side_p95_ms|share_p50|p50|p95)\b|`kobe_\*`/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area

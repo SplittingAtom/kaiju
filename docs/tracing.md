@@ -16,26 +16,38 @@ The proxies and the gateway restrict egress by NetworkPolicy: add the collector 
 
 ## What a span holds
 
-Metadata only: span names, opaque ids (`kobe.team_id`, `kobe.user_id`, `kobe.thread_id`,
-`kobe.agent_id`, `kobe.run_id`, `kobe.sandbox_id`), durations, HTTP method, route template, status
+Metadata only: span names, opaque ids (`kaiju.team_id`, `kaiju.user_id`, `kaiju.thread_id`,
+`kaiju.agent_id`, `kaiju.run_id`, `kaiju.sandbox_id`), durations, HTTP method, route template, status
 code, byte sizes, token counts (`gen_ai.usage.*`), the model name, outcomes. Never message text,
 prompts, tool input or output, headers, or URLs (HTTP spans record the route template, never the
 raw path; the query string is content). Errors record the error type, never its message.
 
 Spans: `<METHOD> <route>` for each HTTP listener, `sandbox.ws.upgrade`, `sandbox.command` (run
 start, steer, stop, compaction), `mcp.tools/call`, `model_gateway.request` (GenAI attributes),
-`egress.connection`, `server_call.<purpose>` (titles and follow-ups), the run root `kobe.run`, and
+`egress.connection`, `server_call.<purpose>` (titles and follow-ups), the run root `kaiju.run`, and
 the sandbox's `sandbox.run`, `sandbox.turn`, `sandbox.tool`, `sandbox.compaction` and
 `sandbox.workspace_sync` (relayed, below). Tool spans carry the tool's name only as the server's
 policy decision knows it (`unknown` otherwise) and the outcome; error codes are closed enums.
 `mcp.tools/call` likewise names the tool only once the server resolved it to a pinned tool.
 
+### Names after the rename to Kaiju
+
+Since the release that renamed Kobe to Kaiju (KOBE-749), every Kaiju-specific span, attribute and
+scope name starts with `kaiju.` instead of `kobe.` (`kaiju.run`, `kaiju.tool.name`,
+`kaiju.team_id`, `kaiju.upstream.kind`, `kaiju.web_vital.*`, ...), tracers are named `kaiju`, and
+services report `service.name` `kaiju-server`, `kaiju-scheduler`, `kaiju-mcp-proxy`,
+`kaiju-egress-proxy`, `kaiju-model-gateway` and, for relayed sandbox spans, `kaiju-sandbox-agent`
+(each was `kobe-*`). Update saved queries, dashboards and alert rules in your backend; traces
+recorded before the upgrade keep the old names. While sandboxes still run an image from before the
+upgrade, the server reads their `kobe.*` span attributes and exports them under the new names (for
+one release). Standard names (`gen_ai.*`, `http.*`, `session.id`, `user.id`) did not change.
+
 ## Run traces and sessions
 
-One run is one trace: its trace id is the run id's 32 hex digits and its root span `kobe.run` has
+One run is one trace: its trace id is the run id's 32 hex digits and its root span `kaiju.run` has
 the run id's low 64 bits as span id, so every component places spans in it without a lookup, and
 Langfuse scores can name a run's trace from the run id. The server records the root when the run
-ends (with `kobe.trace.sandbox_spans_dropped` when sandbox spans were lost); its command spans for
+ends (with `kaiju.trace.sandbox_spans_dropped` when sandbox spans were lost); its command spans for
 the run (`run.start`, steer, stop) are children of the root and link to the request that caused
 them. A compaction is its own run, so its own trace. Title and follow-up calls land in the trace of
 the run that triggered them.
@@ -48,7 +60,7 @@ from the sandbox.
 ## Content capture
 
 `telemetry.captureContent: true` (env `KAIJU_OTEL_CAPTURE_CONTENT=true`) adds `url.query`,
-`kobe.tool.input` / `kobe.tool.output` (MCP calls and the sandbox's tool spans) and `gen_ai.prompt`
+`kaiju.tool.input` / `kaiju.tool.output` (MCP calls and the sandbox's tool spans) and `gen_ai.prompt`
 (the model request body),
 each truncated to 4096 characters. The gate is enforced twice: call sites add content only through
 `contentAttributes()`, and the exporter wrapper (`packages/telemetry/src/content.ts`) drops any
@@ -100,7 +112,7 @@ connection as a lease violation; a late frame is dropped quietly), parses each s
 remaps span ids with a keyed HMAC per run (so a sandbox can never produce or overwrite another
 span's id), drops duplicates and cycles, clamps times to the run, stamps team, user, thread, run,
 sandbox and the session itself, and strips content attributes when capture is off. Relayed spans
-go through their own bounded export queue (service name `kobe-sandbox-agent`), behind a per-replica
+go through their own bounded export queue (service name `kaiju-sandbox-agent`), behind a per-replica
 budget with a per-team share, so they never delay or evict the server's own spans; drops are
 counted. Limits: 64 spans per frame, 10 frames per second per connection (counted on the decoded
 frame type), 2048 spans per run, 512 buffered spans in the agent. A run's cap, seen-set and command

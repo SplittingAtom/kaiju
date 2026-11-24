@@ -18,7 +18,7 @@ const [team, content, timeoutMs, model, agentId, reuseThread, approveAll, fileId
 const base = "http://127.0.0.1:" + process.env.PORT;
 const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
-const headers = () => ({ origin, "content-type": "application/json", "x-kobe-team": team,
+const headers = () => ({ origin, "content-type": "application/json", "x-kaiju-team": team,
   cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") });
 const call = async (method, path, body) => {
   const res = await fetch(base + path, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) });
@@ -116,14 +116,14 @@ JS
       '^text=fake-openai: hello-pi-[0-9]+$' "$chat_out"
     contains "the run ended run.completed" '^terminal=run.completed$' "$chat_out"
     contains "the woken sandbox produced a first token" '^first_token_ms=[0-9]+$' "$chat_out"
-    contains "the shim attributed the model call to the run (x-kobe-run-id from Pi)" "\"runId\":\"$chat_run\"" \
+    contains "the shim attributed the model call to the run (x-kaiju-run-id from Pi)" "\"runId\":\"$chat_run\"" \
       "$($KUBECTL -n "$NS" logs -l app.kubernetes.io/component=model-gateway --tail=-1 --since=15m 2>/dev/null | grep -F "\"runId\":\"${chat_run:-none}\"" | head -1)"
     # KOBE-43: the shim wrote the call to the run_usage ledger from the upstream's usage report.
     usage_row() { psql_kobe "SELECT status || '|' || usage_source || '|' || input_tokens || '|' || output_tokens FROM run_usage WHERE team_id = '$E2E_TEAM_ID' AND run_id = '${chat_run:-00000000-0000-4000-8000-000000000000}' ORDER BY at LIMIT 1"; }
     contains "the model call is in the run_usage ledger with the provider's reported tokens" \
       '^200\|reported\|[1-9][0-9]*\|[1-9][0-9]*$' "$(wait_for 30 '^200\|' usage_row)"
     contains "the team usage dashboard counts it" '^200 .*"calls":[1-9]' "$(as_owner "GET /v1/team/usage")"
-    # KOBE-274: that run is one trace in the OTLP sink: the server's kobe.run root and run.start
+    # KOBE-274: that run is one trace in the OTLP sink: the server's kaiju.run root and run.start
     # command span, the sandbox's spans relayed through the server (the sandbox has no collector),
     # and the gateway's model call under a sandbox span; every span in the thread's session, no content.
     echo "==> run traces (KOBE-274)"
@@ -136,16 +136,16 @@ let spans = [];
 const have = (n) => spans.some((s) => s.name === n);
 for (;;) {
   try { spans = await (await fetch(sink + "/spans?trace=" + hex)).json(); } catch { spans = []; }
-  if ((have("kobe.run") && have("sandbox.run") && have("model_gateway.request")) || Date.now() > deadline) break;
+  if ((have("kaiju.run") && have("sandbox.run") && have("model_gateway.request")) || Date.now() > deadline) break;
   await new Promise((r) => setTimeout(r, 3000));
 }
 const by = (n) => spans.filter((s) => s.name === n);
-const root = by("kobe.run")[0];
-const command = by("sandbox.command").find((s) => s.attributes["kobe.command.kind"] === "run.start");
+const root = by("kaiju.run")[0];
+const command = by("sandbox.command").find((s) => s.attributes["kaiju.command.kind"] === "run.start");
 const run = by("sandbox.run")[0];
 // The sandbox's model call; the server's title and follow-up calls (KOBE-234) hang under the root.
 const gateways = by("model_gateway.request");
-const sandboxIds = new Set(spans.filter((s) => s.service === "kobe-sandbox-agent").map((s) => s.spanId));
+const sandboxIds = new Set(spans.filter((s) => s.service === "kaiju-sandbox-agent").map((s) => s.spanId));
 const nameOf = new Map(spans.map((s) => [s.spanId, s.name]));
 out("spans", spans.length);
 out("span_names", spans.map((s) => s.name).sort().join(","));
@@ -155,9 +155,9 @@ out("root", root ? (root.spanId === rootId && !root.parentSpanId ? "ok" : "bad")
 out("command_under_root", command && command.parentSpanId === rootId ? "ok" : "no");
 out("sandbox_run_under_command", run && command && run.parentSpanId === command.spanId ? "ok" : "no");
 out("gateway_under_sandbox", gateways.some((g) => sandboxIds.has(g.parentSpanId)) ? "ok" : "no");
-const sessioned = spans.filter((s) => ["kobe.run", "sandbox.command", "sandbox.run", "sandbox.turn", "model_gateway.request"].includes(s.name));
+const sessioned = spans.filter((s) => ["kaiju.run", "sandbox.command", "sandbox.run", "sandbox.turn", "model_gateway.request"].includes(s.name));
 out("session", sessioned.length >= 4 && sessioned.every((s) => s.attributes["session.id"] === threadId && s.attributes["user.id"] === userId) ? "ok" : "no");
-out("content_keys", spans.flatMap((s) => Object.keys(s.attributes)).filter((k) => /^(gen_ai\.(prompt|completion)|kobe\.tool\.(input|output)|url\.query)/.test(k)).length);
+out("content_keys", spans.flatMap((s) => Object.keys(s.attributes)).filter((k) => /^(gen_ai\.(prompt|completion)|kaiju\.tool\.(input|output)|url\.query)/.test(k)).length);
 out("emails", JSON.stringify(spans).includes("@e2e.test") ? 1 : 0);
 out("names", /"(E2E owner|Owner)"/i.test(JSON.stringify(spans)) ? 1 : 0);
 JS
@@ -166,8 +166,8 @@ JS
       "$OTEL_SINK" "${chat_run:-00000000-0000-4000-8000-000000000000}" "${chat_thread:-none}" "${owner_id:-none}" 120000 2>&1 | tail -14)
     printf '     traces: %s\n' "$(printf '%s' "$traces" | tr '\n' ' ')"
     contains "the run is one trace across server, sandbox agent and model gateway" \
-      '^services=kobe-model-gateway,kobe-sandbox-agent,kobe-server$' "$traces"
-    contains "the trace has the run's kobe.run root with its fixed id" '^root=ok$' "$traces"
+      '^services=kaiju-model-gateway,kaiju-sandbox-agent,kaiju-server$' "$traces"
+    contains "the trace has the run's kaiju.run root with its fixed id" '^root=ok$' "$traces"
     contains "the server's run.start command span hangs under the root" '^command_under_root=ok$' "$traces"
     contains "the sandbox's run span (relayed through the server) hangs under the command span" \
       '^sandbox_run_under_command=ok$' "$traces"

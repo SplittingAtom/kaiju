@@ -62,7 +62,9 @@ describe("buildPiMcpConfig (KOBE-111)", () => {
       expect(Object.keys(server).sort()).toEqual(["exposure", "headers", "toolExposure", "url"]);
       expect(server.headers).toEqual({
         Authorization: `!cat '${TOKEN_FILE}'`,
-        "Kobe-Thread-Id": THREAD,
+        "Kaiju-Thread-Id": THREAD,
+        // The old name too for one release, for an mcp-proxy pod from before the rename (KOBE-749).
+        "kobe-thread-id": THREAD,
       });
     }
     const urls = strings(config).filter((s) => /^[a-z]+:\/\//.test(s));
@@ -72,7 +74,7 @@ describe("buildPiMcpConfig (KOBE-111)", () => {
 
   it("KOBE-244: every server carries the run's thread, which mcp-proxy requires; ids a header or shell could misread are refused", () => {
     for (const server of Object.values(config.mcpServers)) {
-      expect((server.headers as Record<string, string>)["Kobe-Thread-Id"]).toBe(THREAD);
+      expect((server.headers as Record<string, string>)["Kaiju-Thread-Id"]).toBe(THREAD);
     }
     for (const bad of ["", "a b", "a\nb", "x".repeat(65), "a;b"]) {
       expect(() =>

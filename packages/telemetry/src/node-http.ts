@@ -57,7 +57,7 @@ export function traceNodeRequest<T>(
   const requestSpan: RequestSpan = {
     open(parent = ROOT_CONTEXT) {
       if (span) return spanContext;
-      span = trace.getTracer("kobe").startSpan(
+      span = trace.getTracer("kaiju").startSpan(
         name,
         {
           kind: SpanKind.SERVER,

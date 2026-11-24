@@ -262,7 +262,7 @@ async function rpc(
       authorization: `Bearer ${options.token ?? token()}`,
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
-      "kobe-thread-id": THREAD,
+      "kaiju-thread-id": THREAD,
       ...options.headers,
     },
     body:
@@ -746,11 +746,12 @@ describe("tools/call", () => {
     await rpc(
       "tools/call",
       { name: "get_issue", arguments: {} },
-      { headers: { "x-api-key": "from-sandbox" } },
+      { headers: { "x-api-key": "from-sandbox", "kobe-thread-id": THREAD } },
     );
     const [first] = fake.received;
     expect(first?.headers.authorization).toBe("Bearer grant");
     expect(first?.headers["x-api-key"]).toBeUndefined();
+    expect(fake.received.every((r) => r.headers["kaiju-thread-id"] === undefined)).toBe(true);
     expect(fake.received.every((r) => r.headers["kobe-thread-id"] === undefined)).toBe(true);
   });
 
@@ -775,7 +776,7 @@ describe("tools/call", () => {
         authorization: `Bearer ${token()}`,
         "content-type": "application/json",
         accept: "application/json, text/event-stream",
-        "kobe-thread-id": THREAD,
+        "kaiju-thread-id": THREAD,
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
@@ -1009,9 +1010,29 @@ describe("tools/call", () => {
     await rpc(
       "tools/call",
       { name: "get_issue", arguments: {} },
-      { headers: { "kobe-thread-id": "nope" } },
+      { headers: { "kaiju-thread-id": "nope" } },
     );
     expect(server.asked[0]?.query.threadId).toBeUndefined();
+  });
+
+  it("reads the pre-rename Kobe-Thread-Id of an older sandbox image (KOBE-749, one release)", async () => {
+    const res = await app().request(`/v1/mcp/${CONNECTOR}`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token()}`,
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        "Kobe-Thread-Id": THREAD,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: nextId++,
+        method: "tools/call",
+        params: { name: "get_issue", arguments: {} },
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(server.asked[0]?.query.threadId).toBe(THREAD);
   });
 
   it("caps concurrent calls per sandbox", async () => {
@@ -1050,8 +1071,8 @@ describe("tracing (KOBE-274)", () => {
   it("names the tool from the server's decision, never from the sandbox, and drops the thread header", async () => {
     await traced(async (exporter) => {
       await rpc("tools/call", { name: "get_issue", arguments: { a: "x" } });
-      expect(callSpan(exporter)?.attributes["kobe.tool.name"]).toBe("get_issue");
-      expect(callSpan(exporter)?.attributes).not.toHaveProperty("kobe.thread_id");
+      expect(callSpan(exporter)?.attributes["kaiju.tool.name"]).toBe("get_issue");
+      expect(callSpan(exporter)?.attributes).not.toHaveProperty("kaiju.thread_id");
     });
     await traced(async (exporter) => {
       server.next = () => ({
@@ -1059,7 +1080,7 @@ describe("tracing (KOBE-274)", () => {
         value: { decision: "deny", code: "unknown_tool", message: "No such tool." },
       });
       await rpc("tools/call", { name: "leak the quarterly numbers", arguments: {} });
-      expect(callSpan(exporter)?.attributes["kobe.tool.name"]).toBe("unknown");
+      expect(callSpan(exporter)?.attributes["kaiju.tool.name"]).toBe("unknown");
       expect(JSON.stringify(callSpan(exporter)?.attributes)).not.toContain("quarterly");
     });
   });
@@ -1071,12 +1092,12 @@ describe("tracing (KOBE-274)", () => {
       const parent = callSpan(exporter);
       expect(span?.parentSpanContext?.spanId).toBe(parent?.spanContext().spanId);
       expect(span?.attributes).toMatchObject({
-        "kobe.upstream.kind": "mcp",
-        "kobe.upstream.method": "tools/call",
-        "kobe.upstream.outcome": "ok",
-        "kobe.upstream.error": false,
+        "kaiju.upstream.kind": "mcp",
+        "kaiju.upstream.method": "tools/call",
+        "kaiju.upstream.outcome": "ok",
+        "kaiju.upstream.error": false,
       });
-      expect(span?.attributes).not.toHaveProperty("kobe.connector_id");
+      expect(span?.attributes).not.toHaveProperty("kaiju.connector_id");
       expect(JSON.stringify(span?.attributes)).not.toContain("get_issue");
     });
   });
@@ -1086,7 +1107,7 @@ describe("tracing (KOBE-274)", () => {
     await traced(async (exporter) => {
       await rpc("tools/call", { name: "get_issue", arguments: {} });
       const span = exporter.getFinishedSpans().find((s) => s.name === "mcp.upstream");
-      expect(span?.attributes["kobe.upstream.outcome"]).toBe("auth_required");
+      expect(span?.attributes["kaiju.upstream.outcome"]).toBe("auth_required");
       expect(span?.status.code).toBe(SpanStatusCode.ERROR);
     });
   });

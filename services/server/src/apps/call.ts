@@ -277,9 +277,9 @@ async function decideCall(
  * names or content; `error` (when given) also sets the span's status.
  */
 function outcome(span: Span, value: string, error?: boolean): void {
-  span.setAttribute("kobe.app_call.outcome", value);
+  span.setAttribute("kaiju.app_call.outcome", value);
   if (error === undefined) return;
-  span.setAttribute("kobe.app_call.error", error);
+  span.setAttribute("kaiju.app_call.error", error);
   if (error) span.setStatus({ code: SpanStatusCode.ERROR });
 }
 

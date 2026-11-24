@@ -5,7 +5,7 @@
  * browser's storage (a reload does not pulse again), or in memory when storage is blocked.
  */
 
-export const LEARN_NUDGE_KEY = "kobe.learn-nudge.v1";
+export const LEARN_NUDGE_KEY = "kaiju.learn-nudge.v1";
 
 const claimed = new Map<string, string>();
 

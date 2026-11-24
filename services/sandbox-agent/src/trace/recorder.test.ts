@@ -107,15 +107,18 @@ describe("TraceRecorder (KOBE-274)", () => {
     const turn = byName["sandbox.turn"];
     const tool = byName["sandbox.tool"];
     expect(run?.parent_span_id).toBe(COMMAND);
-    expect(run?.attributes).toEqual({ "kobe.run.outcome": "completed", "kobe.turns": 1 });
+    expect(run?.attributes).toEqual({ "kaiju.run.outcome": "completed", "kaiju.turns": 1 });
     expect(turn?.parent_span_id).toBe(run?.span_id);
     expect(turn?.attributes).toEqual({
-      "kobe.turn.index": 0,
-      "kobe.stop_reason": "tool_use",
-      "kobe.tool_calls": 1,
+      "kaiju.turn.index": 0,
+      "kaiju.stop_reason": "tool_use",
+      "kaiju.tool_calls": 1,
     });
     expect(tool?.parent_span_id).toBe(turn?.span_id);
-    expect(tool?.attributes).toEqual({ "kobe.tool.call_id": "call_1", "kobe.tool.outcome": "ok" });
+    expect(tool?.attributes).toEqual({
+      "kaiju.tool.call_id": "call_1",
+      "kaiju.tool.outcome": "ok",
+    });
     expect(JSON.stringify(frames)).not.toMatch(/secret|SECRET|bash/);
     // Model calls go under the run, then the turn, then the run again, then nothing.
     expect(parents).toEqual([
@@ -153,8 +156,8 @@ describe("TraceRecorder (KOBE-274)", () => {
     recorder.startRun(RUN, THREAD, trace(true));
     aRun(recorder, tick, true);
     const tool = spans().find((s) => s.name === "sandbox.tool");
-    expect(tool?.attributes["kobe.tool.input"]).toContain("cat secret.txt");
-    expect(tool?.attributes["kobe.tool.output"]).toContain("TOP SECRET");
+    expect(tool?.attributes["kaiju.tool.input"]).toContain("cat secret.txt");
+    expect(tool?.attributes["kaiju.tool.output"]).toContain("TOP SECRET");
   });
 
   it("marks a denied call blocked and a stopped run aborted", () => {
@@ -167,8 +170,8 @@ describe("TraceRecorder (KOBE-274)", () => {
     recorder.runEnded(RUN);
     const tool = spans().find((s) => s.name === "sandbox.tool");
     expect(tool).toMatchObject({ status: "error", error_type: "blocked" });
-    expect(tool?.attributes["kobe.tool.outcome"]).toBe("blocked");
-    expect(spans().find((s) => s.name === "sandbox.run")?.attributes["kobe.run.outcome"]).toBe(
+    expect(tool?.attributes["kaiju.tool.outcome"]).toBe("blocked");
+    expect(spans().find((s) => s.name === "sandbox.run")?.attributes["kaiju.run.outcome"]).toBe(
       "aborted",
     );
   });
@@ -229,7 +232,7 @@ describe("TraceRecorder (KOBE-274)", () => {
     expect(spans()[0]).toMatchObject({
       name: "sandbox.compaction",
       parent_span_id: COMMAND,
-      attributes: { "kobe.compaction.trigger": "command", "kobe.compaction.tokens_before": 1234 },
+      attributes: { "kaiju.compaction.trigger": "command", "kaiju.compaction.tokens_before": 1234 },
     });
   });
 });

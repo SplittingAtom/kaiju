@@ -11,7 +11,7 @@ export const meAreas: readonly CatalogArea[] = [
     tag: "Me",
     description:
       "The signed-in member's own account: profile, teams and invitations, preferences, time zone, " +
-      "linked sign-ins and notifications. Not team-scoped except notifications (send X-Kobe-Team).",
+      "linked sign-ins and notifications. Not team-scoped except notifications (send X-Kaiju-Team).",
     detailed: true,
     details: meDetails,
     entries: [
@@ -98,7 +98,7 @@ export const meAreas: readonly CatalogArea[] = [
   {
     tag: "Files",
     description:
-      "Uploading files and reading shared files. Team-scoped: send X-Kobe-Team; needs `team.chat`.",
+      "Uploading files and reading shared files. Team-scoped: send X-Kaiju-Team; needs `team.chat`.",
     detailed: true,
     teamScoped: true,
     details: filesDetails,
@@ -128,7 +128,7 @@ export const meAreas: readonly CatalogArea[] = [
     tag: "Connector grants",
     description:
       "A member's own API keys for connectors that use one, and the OAuth start for connectors that " +
-      "use it. Team-scoped: send X-Kobe-Team; needs `team.chat`. Keys are write-only.",
+      "use it. Team-scoped: send X-Kaiju-Team; needs `team.chat`. Keys are write-only.",
     detailed: true,
     teamScoped: true,
     details: connectorGrantsDetails,

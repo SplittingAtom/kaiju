@@ -323,14 +323,23 @@ describe("active team and switcher API (ac-5)", () => {
     expect((await as.bob.get("/v1/me/teams")).json.activeTeamId).toBe(marketing);
   });
 
-  it("rejects a request whose X-Kobe-Team names a different team (stale tab)", async () => {
-    const stale = await as.bob.get("/v1/team", { "x-kobe-team": finance });
+  it("rejects a request whose X-Kaiju-Team names a different team (stale tab)", async () => {
+    const stale = await as.bob.get("/v1/team", { "x-kaiju-team": finance });
     expect(stale).toMatchObject({
       status: 409,
       json: { code: "team_mismatch", activeTeamId: marketing },
     });
+    expect((await as.bob.get("/v1/team", { "x-kaiju-team": marketing })).status).toBe(200);
+    expect((await as.bob.get("/v1/team", { "x-kaiju-team": "nope" })).status).toBe(400);
+  });
+
+  it("still reads the pre-rename X-Kobe-Team from API clients, the new name winning (KOBE-749)", async () => {
+    const stale = await as.bob.get("/v1/team", { "x-kobe-team": finance });
+    expect(stale).toMatchObject({ status: 409, json: { code: "team_mismatch" } });
     expect((await as.bob.get("/v1/team", { "x-kobe-team": marketing })).status).toBe(200);
     expect((await as.bob.get("/v1/team", { "x-kobe-team": "nope" })).status).toBe(400);
+    const both = { "x-kaiju-team": marketing, "x-kobe-team": finance };
+    expect((await as.bob.get("/v1/team", both)).status).toBe(200);
   });
 
   it("cannot be set through Better Auth's update-session endpoint", async () => {
@@ -365,12 +374,12 @@ describe("team membership via /v1/team (ac-2, ac-4)", () => {
     for (const who of ["alice", "bob", "carol"] as const) as[who].team = finance;
   });
 
-  it("requires X-Kobe-Team on team changes (a stale tab can't write to another team)", async () => {
+  it("requires X-Kaiju-Team on team changes (a stale tab can't write to another team)", async () => {
     const res = await as.alice.request(
       "PATCH",
       `/v1/team/members/${ids.bob}`,
       { role: "contributor" },
-      { "x-kobe-team": "" },
+      { "x-kaiju-team": "" },
     );
     expect(res.status).toBe(400);
     as.alice.team = undefined;
@@ -380,6 +389,14 @@ describe("team membership via /v1/team (ac-2, ac-4)", () => {
       status: 400,
       json: { code: "team_header_required" },
     });
+    // An API client still on the pre-rename header can change its team (one release, KOBE-749).
+    const legacy = await as.alice.request(
+      "PATCH",
+      `/v1/team/members/${ids.bob}`,
+      { role: "member" },
+      { "x-kobe-team": finance },
+    );
+    expect(legacy.status).toBe(200);
     as.alice.team = finance;
     expect((await as.alice.get("/v1/team/members")).json.members).toEqual(
       expect.arrayContaining([expect.objectContaining({ userId: ids.bob, role: "member" })]),

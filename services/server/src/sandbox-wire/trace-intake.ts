@@ -122,7 +122,7 @@ export class TraceIntake {
   }
 
   /**
-   * A run leased to a connection of this replica (every run gets a `kobe.run` root when it ends
+   * A run leased to a connection of this replica (every run gets a `kaiju.run` root when it ends
    * here). Leased again after a reconnect: its state is kept, only the holder is updated.
    */
   track(runId: string, threadId: string, startedAt: Date | null, owner: RunOwner): void {
@@ -331,15 +331,15 @@ export class TraceIntake {
       ),
     );
     if (span.name === "sandbox.tool") {
-      const callId = span.attributes["kobe.tool.call_id"];
+      const callId = span.attributes["kaiju.tool.call_id"];
       // Kept only for a call the server decided, and only as a plain id (some models write it).
       const name = run.tools.get(callId);
       const plainId = CALL_ID.test(callId);
-      const { "kobe.tool.call_id": _callId, ...rest } = raw;
+      const { "kaiju.tool.call_id": _callId, ...rest } = raw;
       return this.#withoutContent({
         ...rest,
-        "kobe.tool.name": name ?? UNKNOWN_TOOL,
-        ...(name === undefined || !plainId ? {} : { "kobe.tool.call_id": callId }),
+        "kaiju.tool.name": name ?? UNKNOWN_TOOL,
+        ...(name === undefined || !plainId ? {} : { "kaiju.tool.call_id": callId }),
       });
     }
     return this.#withoutContent(raw);

@@ -16,16 +16,16 @@ import type { CallGate, UsageSink } from "../seams.js";
  *    audiences' tokens fail) in any header a model SDK uses for its API key;
  * 2. an inference path (routes.ts) — never Bifrost's admin API;
  * 3. the token's member and sandbox still live (principals.ts; cached ≤ a few seconds);
- * 4. run attribution: a run token (`x-kobe-run-token`, KOBE-118: verified, recorded and active,
+ * 4. run attribution: a run token (`x-kaiju-run-token`, KOBE-118: verified, recorded and active,
  *    bound to this team and sandbox, the run id comes from it), else the legacy advisory
- *    `x-kobe-run-id` (must be leased to this sandbox) unless the token is mandatory;
+ *    `x-kaiju-run-id` (must be leased to this sandbox) unless the token is mandatory;
  * 5. concurrency limits and the {@link CallGate} seam (KOBE-42);
  * 6. forwarded to Bifrost with only allowlisted headers plus `x-bf-vk: <member's virtual key>`,
  *    so Bifrost applies that member's team model allowlist (and, with KOBE-42, budgets);
  * 7. the response streamed back unbuffered; a client that goes away cancels the upstream call.
  *
  * Server calls (KOBE-234, server-call.ts) take the same path with their own identity: the
- * `x-kobe-server-call` token instead of 1., the member without a sandbox in 3., the token's run
+ * `x-kaiju-server-call` token instead of 1., the member without a sandbox in 3., the token's run
  * in 4., the contract's body and the token's model and cap, and the purpose's budget soft limit.
  */
 export interface GatewayOptions {

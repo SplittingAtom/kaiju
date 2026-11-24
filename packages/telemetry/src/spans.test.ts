@@ -22,17 +22,17 @@ function start(captureContent: boolean) {
 /** What a careless call site might record. */
 async function runCarelessly() {
   await withSpan(
-    "kobe.run",
+    "kaiju.run",
     {
       attributes: {
         "gen_ai.prompt": SECRET_PROMPT,
         "gen_ai.completion": "answer",
-        "kobe.tool.input": '{"q":"x"}',
-        "kobe.tool.output": "rows",
+        "kaiju.tool.input": '{"q":"x"}',
+        "kaiju.tool.output": "rows",
         "http.request.header.authorization": "Bearer s3cret",
         "url.query": "token=abc",
         "gen_ai.usage.input_tokens": 12,
-        "kobe.run_id": "run-1",
+        "kaiju.run_id": "run-1",
       },
     },
     async (span) => {
@@ -49,9 +49,9 @@ describe("content gating", () => {
     const [span] = exporter.getFinishedSpans();
     expect(span?.attributes).toEqual({
       "gen_ai.usage.input_tokens": 12,
-      "kobe.run_id": "run-1",
-      "kobe.team_id": "team-1",
-      "kobe.thread_id": "thr-1",
+      "kaiju.run_id": "run-1",
+      "kaiju.team_id": "team-1",
+      "kaiju.thread_id": "thr-1",
     });
     expect(JSON.stringify(exporter.getFinishedSpans().map((s) => s.attributes))).not.toContain(
       SECRET_PROMPT,
@@ -63,7 +63,7 @@ describe("content gating", () => {
     await runCarelessly();
     const [span] = exporter.getFinishedSpans();
     expect(span?.attributes["gen_ai.prompt"]).toBe(SECRET_PROMPT);
-    expect(span?.attributes["kobe.tool.input"]).toBe('{"q":"x"}');
+    expect(span?.attributes["kaiju.tool.input"]).toBe('{"q":"x"}');
     expect(span?.attributes["url.query"]).toBe("token=abc");
   });
 
@@ -121,7 +121,7 @@ describe("recordSpan", () => {
     recordSpan("egress.connection", {
       startTime: 1_000,
       endTime: 1_250,
-      attributes: { "kobe.outcome": "allowed" },
+      attributes: { "kaiju.outcome": "allowed" },
     });
     const span = exporter.getFinishedSpans()[0];
     expect(span?.name).toBe("egress.connection");

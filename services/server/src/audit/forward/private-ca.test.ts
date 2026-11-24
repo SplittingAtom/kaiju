@@ -172,6 +172,6 @@ describe.skipIf(!enabled)("syslog over TLS to a private CA (KOBE-182)", () => {
     expect(stdout.trim()).toBe("delivered");
     await new Promise((r) => setTimeout(r, 50));
     expect(received).toHaveLength(1);
-    expect(received[0]).toMatch(/\[kobe@32473 seq="42"/);
+    expect(received[0]).toMatch(/\[kaiju@32473 seq="42"/);
   });
 });

@@ -12,7 +12,7 @@ describe("wakeSpans (KOBE-525)", () => {
       reason: "first_start",
       resumed: false,
     });
-    const attributes = { "kobe.wake.reason": "first_start", "kobe.wake.resumed": false };
+    const attributes = { "kaiju.wake.reason": "first_start", "kaiju.wake.resumed": false };
     expect(spans).toEqual([
       { name: "sandbox.wake", startMs: T0, endMs: T0 + 4_000, attributes },
       { name: "sandbox.claim", startMs: T0, endMs: T0 + 1_200, attributes },
@@ -28,7 +28,7 @@ describe("wakeSpans (KOBE-525)", () => {
       reason: null,
       resumed: true,
     });
-    expect(wake?.attributes["kobe.wake.reason"]).toBe("reconnect");
+    expect(wake?.attributes["kaiju.wake.reason"]).toBe("reconnect");
     expect(wake?.endMs).toBe(T0 + 50);
     expect(claim?.endMs).toBe(T0 + 50);
     expect(ready).toMatchObject({ startMs: T0 + 50, endMs: T0 + 50 });

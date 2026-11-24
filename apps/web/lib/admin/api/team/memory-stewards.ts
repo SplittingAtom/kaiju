@@ -1,6 +1,6 @@
 /**
  * Team console: Workspace memory stewards (`/v1/team/memory/stewards`, KOBE-380; Team admins).
- * Responses arrive camelized. Every call names the team (`X-Kobe-Team`).
+ * Responses arrive camelized. Every call names the team (`X-Kaiju-Team`).
  */
 import { apiRequest, type ApiResult } from "../../../api/client";
 

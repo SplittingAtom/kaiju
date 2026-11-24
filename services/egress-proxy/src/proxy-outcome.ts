@@ -55,7 +55,7 @@ export function finishAttempt(
     error: outcome === "failed",
     attributes: {
       ...(identity.site
-        ? { "kobe.site_job": identity.site }
+        ? { "kaiju.site_job": identity.site }
         : idAttributes({
             teamId: identity.teamId,
             userId: identity.userId,
@@ -63,14 +63,14 @@ export function finishAttempt(
           })),
       ...(a.host === undefined ? {} : { "server.address": a.host }),
       ...(a.port === undefined ? {} : { "server.port": a.port }),
-      "kobe.outcome": outcome,
-      ...(reason === undefined ? {} : { "kobe.reason": reason }),
-      "kobe.bytes_up": bytes.bytesUp,
-      "kobe.bytes_down": bytes.bytesDown,
-      "kobe.upgraded": upgraded,
+      "kaiju.outcome": outcome,
+      ...(reason === undefined ? {} : { "kaiju.reason": reason }),
+      "kaiju.bytes_up": bytes.bytesUp,
+      "kaiju.bytes_down": bytes.bytesDown,
+      "kaiju.upgraded": upgraded,
       // KOBE-525: a fixed route per kind, and the set-up latency of a tunnel that opened.
       "http.route": a.git ? "git" : upgraded ? "http-upgrade" : "CONNECT",
-      ...(bytes.setupMs === undefined ? {} : { "kobe.setup_ms": bytes.setupMs }),
+      ...(bytes.setupMs === undefined ? {} : { "kaiju.setup_ms": bytes.setupMs }),
     },
   });
   logger.info(

@@ -220,7 +220,7 @@ function AddMapping({
             name={`claim-${providerId}`}
             value={claimValue}
             onChange={(e) => setClaimValue(e.target.value)}
-            placeholder="kobe.research.member"
+            placeholder="kaiju.research.member"
           />
         </Field>
         <Field label="Team">

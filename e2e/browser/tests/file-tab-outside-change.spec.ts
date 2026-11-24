@@ -12,7 +12,7 @@ import { bashTurn, toolTurn } from "./support/gate5.js";
  * refuses direct writes to the viewed file). Writes `kobe-491-*\/notes.md`, deletes the folder at
  * the end. Three short model turns; the model may phrase replies freely, only the file matters.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 const BASE = "alpha\nbeta\ngamma\n";
 const FIRST = "alpha\nbeta\ngamma\nfrom the agent\n";
 const SECOND = "ALPHA\nbeta\ngamma\nfrom the agent\n";
@@ -22,7 +22,7 @@ async function workspace(page: Page, method: "POST" | "DELETE", path: string, co
   return page.evaluate(
     async ({ method, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (method === "DELETE") {
         const q = encodeURIComponent(path);
         return (await fetch(`/v1/workspace/files?path=${q}`, { method, headers })).status;

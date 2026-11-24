@@ -15,7 +15,7 @@ import {
   type ThreadContextErrorCode,
 } from "@kaiju/protocol";
 import "../security/zod-jitless";
-import { TEAM_HEADER } from "../teams";
+import { teamHeaders } from "../teams";
 
 export type ContextRead =
   | { readonly kind: "ready"; readonly context: ThreadContext }
@@ -84,7 +84,7 @@ export async function readThreadContext(
   try {
     res = await fetchFn(`/v1/threads/${encodeURIComponent(threadId)}/context`, {
       method: "GET",
-      headers: { accept: "application/json", [TEAM_HEADER]: teamId },
+      headers: { accept: "application/json", ...teamHeaders(teamId) },
       credentials: "same-origin",
       cache: "no-store",
     });

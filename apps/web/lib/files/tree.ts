@@ -143,7 +143,7 @@ export const canUploadInto = (folder: string, checkedOut?: ReadonlySet<string>):
 
 // ----------------------------------------------------------------------------- remembered state
 
-const KEY_PREFIX = "kobe.filesTree:";
+const KEY_PREFIX = "kaiju.filesTree:";
 
 export const expandedKey = (teamId: string): string => `${KEY_PREFIX}${teamId}`;
 

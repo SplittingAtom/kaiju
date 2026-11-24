@@ -7,7 +7,7 @@
  * column is a labelled region; Escape closes the active tab, and with no tabs it is gone. Artifacts
  * are view-only: text kinds open read-only in the file editor's UI, and the thread's owner can Edit
  * as file (KOBE-485), which copies a version into their workspace and opens that file. What it shows comes from `/v1/artifacts` (team in
- * `X-Kobe-Team`); HTML and SVG are shown in a sandboxed frame loaded from the server's frame route
+ * `X-Kaiju-Team`); HTML and SVG are shown in a sandboxed frame loaded from the server's frame route
  * (`artifact-views.tsx`). Workspace files open here as tabs too (KOBE-268, `files/file-tab.tsx`).
  * State: `artifact-state.tsx`.
  */

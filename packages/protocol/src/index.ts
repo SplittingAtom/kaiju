@@ -33,6 +33,7 @@ export * from "./sse.js";
 export * from "./runs.js";
 export * from "./run-orchestrator.js";
 export * from "./session-token.js";
+export * from "./legacy-headers.js";
 export * from "./run-token.js";
 export * from "./server-call.js";
 export * from "./server-call-embeddings.js";

@@ -38,7 +38,7 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,62}$/;
 const BODY_TYPES = /^application\/(scim\+)?json\s*(;|$)/i;
 
 function unauthorized(c: Context): Response {
-  c.header("WWW-Authenticate", 'Bearer realm="kobe-scim"');
+  c.header("WWW-Authenticate", 'Bearer realm="kaiju-scim"');
   return scimError(c, 401, "A valid SCIM token for this provider is required.");
 }
 

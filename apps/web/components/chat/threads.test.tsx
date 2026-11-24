@@ -257,7 +257,7 @@ describe("thread list (RemoteThreadListAdapter)", () => {
     expect(other).toBeTruthy();
   });
 
-  it("sends X-Kobe-Team on every thread and run request", async () => {
+  it("sends X-Kaiju-Team on every thread and run request", async () => {
     const t = fake.addThread("Teamed");
     openApp(fake, t);
     await userEvent.setup().type(await composer(), "hi{Enter}");

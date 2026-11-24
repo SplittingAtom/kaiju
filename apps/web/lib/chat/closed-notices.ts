@@ -4,7 +4,7 @@
  * storage means nothing is remembered; closing still hides the notice for this page view.
  */
 
-const KEY = "kobe.chat.closedNotices";
+const KEY = "kaiju.chat.closedNotices";
 
 /** The most recent closed notices kept; older ones may show again. */
 export const CLOSED_NOTICES_MAX = 200;

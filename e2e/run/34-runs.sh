@@ -16,7 +16,7 @@ const call = async (method, path, body) => {
     headers: {
       origin,
       "content-type": "application/json",
-      "x-kobe-team": team,
+      "x-kaiju-team": team,
       cookie: [...jar].map(([k, v]) => k + "=" + v).join("; "),
     },
     body: body === undefined ? undefined : JSON.stringify(body),

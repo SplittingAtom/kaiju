@@ -257,12 +257,12 @@ test("a shared thread shows the reader project files by name, the owner's own fi
   try {
     const uploaded = await page.evaluate(
       async ({ id, name }) => {
-        const team = window.localStorage.getItem("kobe.lastTeamId");
+        const team = window.localStorage.getItem("kaiju.lastTeamId");
         const form = new FormData();
         form.set("file", new File(["project notes\n"], name, { type: "text/markdown" }));
         const res = await fetch(`/v1/projects/${id}/files`, {
           method: "POST",
-          headers: team ? { "x-kobe-team": team } : {},
+          headers: team ? { "x-kaiju-team": team } : {},
           body: form,
         });
         return res.status;

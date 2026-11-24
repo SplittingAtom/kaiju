@@ -8,7 +8,7 @@ import { panelOf } from "./support/panel.js";
  * tokens. Run on gate1: `KAIJU_AGENT_ID=… npx playwright test eval-cases-gate`.
  */
 const AGENT_ID = process.env["KAIJU_AGENT_ID"];
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** The agent's latest eval id, read with the page's session (null when it has none). */
 async function latestEval(page: Page, agentId: string): Promise<string | null> {
@@ -16,7 +16,7 @@ async function latestEval(page: Page, agentId: string): Promise<string | null> {
     async ({ id, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
       const res = await fetch(`/v1/agents/${encodeURIComponent(id)}/evals`, {
-        headers: team ? { "x-kobe-team": team } : {},
+        headers: team ? { "x-kaiju-team": team } : {},
       });
       if (!res.ok) return null;
       const body = (await res.json()) as { evals: { id: string }[] };

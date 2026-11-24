@@ -94,7 +94,7 @@ describe("Workspace settings › Memory (KOBE-381 ac-3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await screen.findByText(/Memory is off in this workspace.*nothing stored was deleted/i);
     expect(putBody(calls)).toEqual(off);
-    expect(must(calls.find((c) => c.method === "PUT")).headers.get("x-kobe-team")).toBe("t-1");
+    expect(must(calls.find((c) => c.method === "PUT")).headers.get("x-kaiju-team")).toBe("t-1");
   });
 
   it("Site memories can be turned off alone", async () => {

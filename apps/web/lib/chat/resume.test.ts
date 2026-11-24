@@ -67,7 +67,7 @@ describe("resume points", () => {
     expect(loaded?.tools.tc1?.result?.preview).toHaveLength(2000);
     store.map.set([...store.map.keys()][0] ?? "", "{not json");
     expect(loadResumePoint(store, RUN, new Set(["e1", "e2"]))).toBeUndefined();
-    store.map.set("kobe.chat.resume." + RUN, JSON.stringify({ ...at({}), runId: "other" }));
+    store.map.set("kaiju.chat.resume." + RUN, JSON.stringify({ ...at({}), runId: "other" }));
     expect(loadResumePoint(store, RUN, new Set(["e1", "e2"]))).toBeUndefined();
   });
 

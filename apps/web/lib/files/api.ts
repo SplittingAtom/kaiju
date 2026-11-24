@@ -1,6 +1,6 @@
 /**
  * The workspace file browser API (KOBE-148, `/v1/workspace`) over the shared client. Every call
- * sends `X-Kobe-Team`, so a tab left on another team gets `team_mismatch`. The workspace is the
+ * sends `X-Kaiju-Team`, so a tab left on another team gets `team_mismatch`. The workspace is the
  * caller's own, so no call names an owner. Entries are camelized by the client.
  */
 import type { SyncConflictView } from "./sync-conflicts";

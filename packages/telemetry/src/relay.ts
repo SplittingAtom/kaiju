@@ -34,7 +34,7 @@ export const RELAY_QUEUE_DEFAULTS: RelayQueueOptions = {
   intervalMs: 1000,
 };
 
-const SCOPE = { name: "kobe.sandbox-relay" };
+const SCOPE = { name: "kaiju.sandbox-relay" };
 
 function readable(span: RelaySpan, resource: Resource): ReadableSpan {
   const startTime = millisToHrTime(span.startMs);

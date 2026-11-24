@@ -17,7 +17,7 @@ import { bashTurn, pageApi } from "./support/gate5.js";
  * Writes `kobe-599-*` folders in My files and one `kobe-599-*` project (KAIJU_USER must be allowed
  * to create projects, as for the projects specs); deletes them at the end. Two short model turns.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 /** The panel lists again a moment after a change (debounced hint): seconds, never a reload. */
 const LIVE_MS = 20_000;
 /** How long the run keeps going after writing the file (longer than the Refresh checks). */
@@ -29,7 +29,7 @@ async function workspace(page: Page, method: "POST" | "DELETE", path: string, co
   return page.evaluate(
     async ({ method, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (method === "DELETE") {
         const q = encodeURIComponent(path);
         return (await fetch(`/v1/workspace/files?path=${q}`, { method, headers })).status;
@@ -156,7 +156,7 @@ test("a new file in a mounted project shows in the open panel without a click (a
         form.set("file", new File([text], file, { type: "text/markdown" }));
         const res = await fetch(`/v1/projects/${id}/files`, {
           method: "POST",
-          headers: team ? { "x-kobe-team": team } : {},
+          headers: team ? { "x-kaiju-team": team } : {},
           body: form,
         });
         return res.status;

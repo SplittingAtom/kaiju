@@ -89,7 +89,7 @@ const grantFor = async () => {
     method: "POST",
     headers: {
       authorization: `Bearer ${INTERNAL_KEY}`,
-      "kobe-sandbox-token": mcpToken({
+      "kaiju-sandbox-token": mcpToken({
         sandboxId: await activeSandbox(h.admin, team, aliceId),
         teamId: team,
         userId: aliceId,
@@ -445,7 +445,7 @@ describe("reactive refresh (KOBE-778, P2-28)", () => {
       headers: {
         authorization: `Bearer ${INTERNAL_KEY}`,
         "content-type": "application/json",
-        "kobe-sandbox-token": mcpToken({
+        "kaiju-sandbox-token": mcpToken({
           sandboxId: await activeSandbox(h.admin, team, aliceId),
           teamId: team,
           userId: aliceId,

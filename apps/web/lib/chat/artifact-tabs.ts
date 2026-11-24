@@ -90,7 +90,7 @@ function normalise(open: readonly string[], active: unknown): ArtifactTabs {
   return { open, active: kept ?? null };
 }
 
-const KEY_PREFIX = "kobe.artifactTabs:";
+const KEY_PREFIX = "kaiju.artifactTabs:";
 
 export function tabsKey(teamId: string, threadId: string): string {
   return `${KEY_PREFIX}${teamId}:${threadId}`;

@@ -7,7 +7,7 @@ import { expect, filesSection, test } from "./support/chat.js";
  * broken one) into `kobe-801-*\/`, opens it from Files, pages, zooms, finds text, selects it,
  * and deletes the folder at the end. No model turn.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** A valid PDF, one Helvetica line per page, with the cross-reference offsets it needs. */
 function pdf(pages: readonly string[]): string {
@@ -44,7 +44,7 @@ async function workspace(page: Page, op: "upload" | "delete", path: string, cont
   return page.evaluate(
     async ({ op, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (op === "delete") {
         const q = encodeURIComponent(path);
         return (await fetch(`/v1/workspace/files?path=${q}`, { method: "DELETE", headers })).status;

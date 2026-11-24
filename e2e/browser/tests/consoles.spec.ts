@@ -21,7 +21,7 @@ import { panelOf } from "./support/panel.js";
 
 const THEMES = ["light", "dark"] as const;
 type Theme = (typeof THEMES)[number];
-const THEME_COOKIE = "kobe-theme";
+const THEME_COOKIE = "kaiju-theme";
 
 /**
  * Pages outside the consoles' navigation, and sections shot by name so a change to the nav can't

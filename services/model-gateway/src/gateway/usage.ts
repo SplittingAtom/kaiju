@@ -82,10 +82,10 @@ export function finishRequest(
         sandboxId: call.sandboxId,
         runId: call.runId,
       }),
-      "kobe.call_id": call.callId,
-      "kobe.usage_kind": call.purpose ?? (call.eval ? "eval" : "run"),
-      "kobe.route": call.route,
-      ...(state.thinkingLevel === undefined ? {} : { "kobe.thinking_level": state.thinkingLevel }),
+      "kaiju.call_id": call.callId,
+      "kaiju.usage_kind": call.purpose ?? (call.eval ? "eval" : "run"),
+      "kaiju.route": call.route,
+      ...(state.thinkingLevel === undefined ? {} : { "kaiju.thinking_level": state.thinkingLevel }),
       ...(call.model === undefined ? {} : { "gen_ai.request.model": call.model }),
       ...(usage === undefined
         ? {}
@@ -96,7 +96,7 @@ export function finishRequest(
       "http.response.status_code": state.status,
       "http.request.body.size": state.bytesIn,
       "http.response.body.size": state.bytesOut,
-      "kobe.aborted": state.aborted,
+      "kaiju.aborted": state.aborted,
       ...(state.promptBody
         ? contentAttributes({ "gen_ai.prompt": state.promptBody.toString("utf8") })
         : {}),

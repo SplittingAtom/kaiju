@@ -55,17 +55,17 @@ SELECT arrayElement(metadata_values, indexOf(metadata_names, 'attributes.http.ro
 FORMAT PrettyCompact;
 
 -- 3. Egress proxy: tunnel set-up time (CONNECT → Connection Established; for http-upgrade:
---    request → verified upstream TLS), attribute `kobe.setup_ms`. The span itself lasts as long
+--    request → verified upstream TLS), attribute `kaiju.setup_ms`. The span itself lasts as long
 --    as the tunnel, so its duration is not a latency.
 SELECT arrayElement(metadata_values, indexOf(metadata_names, 'attributes.http.route')) AS route,
        count() AS n,
-       quantileExact(0.50)(toUInt64OrNull(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.setup_ms')))) AS p50_ms,
-       quantileExact(0.95)(toUInt64OrNull(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.setup_ms')))) AS p95_ms,
-       quantileExact(0.99)(toUInt64OrNull(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.setup_ms')))) AS p99_ms
+       quantileExact(0.50)(toUInt64OrNull(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.setup_ms')))) AS p50_ms,
+       quantileExact(0.95)(toUInt64OrNull(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.setup_ms')))) AS p95_ms,
+       quantileExact(0.99)(toUInt64OrNull(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.setup_ms')))) AS p99_ms
   FROM events_core
  WHERE start_time > now() - INTERVAL 7 DAY
    AND name = 'egress.connection'
-   AND arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.setup_ms')) != ''
+   AND arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.setup_ms')) != ''
  GROUP BY route
 FORMAT PrettyCompact;
 
@@ -83,7 +83,7 @@ SELECT name,
 FORMAT PrettyCompact;
 
 -- 4b. Tool call round trip per tool (the ten slowest at p95).
-SELECT arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.tool.name')) AS tool,
+SELECT arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.tool.name')) AS tool,
        count() AS n,
        round(quantileExact(0.50)(dateDiff('millisecond', start_time, end_time))) AS p50_ms,
        round(quantileExact(0.95)(dateDiff('millisecond', start_time, end_time))) AS p95_ms
@@ -99,7 +99,7 @@ FORMAT PrettyCompact;
 --    bound to a warm-pool pod, or the Sandbox resumed: `sandbox.claim`) and pod Ready
 --    (`sandbox.pod_ready`); wake → agent hello (`sandbox.agent_hello`). Pi ready is query 4.
 SELECT name,
-       arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.wake.reason')) AS reason,
+       arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.wake.reason')) AS reason,
        count() AS n,
        round(quantileExact(0.50)(dateDiff('millisecond', start_time, end_time))) AS p50_ms,
        round(quantileExact(0.95)(dateDiff('millisecond', start_time, end_time))) AS p95_ms,
@@ -125,9 +125,9 @@ SELECT name,
 FORMAT PrettyCompact;
 
 -- 7. Workspace writes (KOBE-529): the child spans of the three write routes, which split object
---    store time (`workspace.s3_put`, attribute `kobe.workspace.s3_op`: stream / copy / put /
+--    store time (`workspace.s3_put`, attribute `kaiju.workspace.s3_op`: stream / copy / put /
 --    delete) from Postgres (`workspace.reserve_tx`, `workspace.blob_tx`, `workspace.manifest_tx`,
---    and `workspace.lock_wait` inside the manifest transaction, attribute `kobe.workspace.lock`).
+--    and `workspace.lock_wait` inside the manifest transaction, attribute `kaiju.workspace.lock`).
 --    A server span is the root of its own trace (KOBE-274), so children join their route by
 --    `trace_id`. An upload's `stream` also spans receiving the browser's body. `trace_id` is
 --    assumed to be the column's name: check it in query 0's DESCRIBE before the first run.
@@ -141,9 +141,9 @@ WITH routes AS (
      children AS (
        SELECT trace_id,
               if(name = 'workspace.s3_put',
-                 concat(name, ' ', arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.workspace.s3_op'))),
+                 concat(name, ' ', arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.workspace.s3_op'))),
                  if(name = 'workspace.lock_wait',
-                    concat(name, ' ', arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.workspace.lock'))),
+                    concat(name, ' ', arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.workspace.lock'))),
                     name)) AS child,
               sum(dateDiff('millisecond', start_time, end_time)) AS ms
          FROM events_core
@@ -187,8 +187,8 @@ SELECT r.route,
        round(quantileExact(0.95)(s.s3_ms)) AS s3_p95_ms,
        round(quantileExact(0.50)(s.pg_ms)) AS pg_p50_ms,
        round(quantileExact(0.95)(s.pg_ms)) AS pg_p95_ms,
-       round(quantileExact(0.95)(greatest(r.route_ms - s.s3_ms, 0))) AS kobe_side_p95_ms,
-       round(quantileExact(0.50)(if(r.route_ms > 0, greatest(r.route_ms - s.s3_ms, 0) / r.route_ms, 0)), 2) AS kobe_share_p50
+       round(quantileExact(0.95)(greatest(r.route_ms - s.s3_ms, 0))) AS kaiju_side_p95_ms,
+       round(quantileExact(0.50)(if(r.route_ms > 0, greatest(r.route_ms - s.s3_ms, 0) / r.route_ms, 0)), 2) AS kaiju_share_p50
   FROM routes AS r
  INNER JOIN split AS s ON s.trace_id = r.trace_id
  GROUP BY r.route
@@ -199,7 +199,7 @@ FORMAT PrettyCompact;
 --    Child spans: `app_call.decide` (app, thread, schema validation, policy), `app_call.credential`
 --    (key or grant revealed; api_key/oauth connectors only), `app_call.audit` (the allowed row) and
 --    `app_call.proxy` (mcp-proxy + the app backend). Every request is a trace of its own (the
---    listeners never join a caller's trace), so spans are matched by `trace_id`; `kobe_*` is the
+--    listeners never join a caller's trace), so spans are matched by `trace_id`; `kaiju_*` is the
 --    route minus the proxy round trip, per request. The proxy's own split is query 9.
 SELECT count() AS n,
        round(quantileExact(0.50)(route_ms)) AS route_p50,
@@ -209,8 +209,8 @@ SELECT count() AS n,
        round(quantileExact(0.95)(audit_ms)) AS audit_p95,
        round(quantileExact(0.50)(proxy_ms)) AS proxy_p50,
        round(quantileExact(0.95)(proxy_ms)) AS proxy_p95,
-       round(quantileExact(0.50)(route_ms - proxy_ms)) AS kobe_p50,
-       round(quantileExact(0.95)(route_ms - proxy_ms)) AS kobe_p95,
+       round(quantileExact(0.50)(route_ms - proxy_ms)) AS kaiju_p50,
+       round(quantileExact(0.95)(route_ms - proxy_ms)) AS kaiju_p95,
        round(sum(proxy_ms) / sum(route_ms), 2) AS proxy_share
   FROM (
         SELECT trace_id,
@@ -233,7 +233,7 @@ FORMAT PrettyCompact;
 
 -- 9. MCP proxy (KOBE-527, KOBE-528): each route minus its upstream round trip (`mcp.upstream`, one
 --    per upstream MCP session: initialize, initialized, the request(s); the session DELETE is not
---    in it). `kobe_*` is the proxy's own share, including the policy decision with the server for
+--    in it). `kaiju_*` is the proxy's own share, including the policy decision with the server for
 --    `/v1/mcp/:connectorId`. Requests that never reach an upstream (a sandbox's tools/list, a
 --    refused call) are listed apart (`reached_upstream = 0`).
 SELECT route,
@@ -243,8 +243,8 @@ SELECT route,
        round(quantileExact(0.95)(route_ms)) AS route_p95,
        round(quantileExact(0.50)(upstream_ms)) AS upstream_p50,
        round(quantileExact(0.95)(upstream_ms)) AS upstream_p95,
-       round(quantileExact(0.50)(route_ms - upstream_ms)) AS kobe_p50,
-       round(quantileExact(0.95)(route_ms - upstream_ms)) AS kobe_p95,
+       round(quantileExact(0.50)(route_ms - upstream_ms)) AS kaiju_p50,
+       round(quantileExact(0.95)(route_ms - upstream_ms)) AS kaiju_p95,
        round(sum(upstream_ms) / sum(route_ms), 2) AS upstream_share
   FROM (
         SELECT trace_id,
@@ -266,11 +266,11 @@ FORMAT PrettyCompact;
 
 -- 9b. Upstream round trips by kind (mcp: a sandbox's call, probe: the server's pinning probe,
 --     app: an MCP App's own call), method and outcome, with the HTTP requests per session.
-SELECT arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.upstream.kind')) AS kind,
-       arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.upstream.method')) AS method,
-       arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.upstream.outcome')) AS outcome,
+SELECT arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.upstream.kind')) AS kind,
+       arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.upstream.method')) AS method,
+       arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.upstream.outcome')) AS outcome,
        count() AS n,
-       round(avg(toUInt32OrZero(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kobe.upstream.requests')))), 1) AS requests,
+       round(avg(toUInt32OrZero(arrayElement(metadata_values, indexOf(metadata_names, 'attributes.kaiju.upstream.requests')))), 1) AS requests,
        round(quantileExact(0.50)(dateDiff('millisecond', start_time, end_time))) AS p50_ms,
        round(quantileExact(0.95)(dateDiff('millisecond', start_time, end_time))) AS p95_ms
   FROM events_core

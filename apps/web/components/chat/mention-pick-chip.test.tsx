@@ -138,7 +138,7 @@ describe("picking a file with @ makes a chip (KOBE-756)", { timeout: 30_000 }, (
     const t = fake.addThread("Sales");
     const many = Array.from({ length: 20 }, (_, i) => `f${i}.txt`);
     sessionStorage.setItem(
-      "kobe.reload-drafts",
+      "kaiju.reload-drafts",
       JSON.stringify({ savedAt: Date.now(), drafts: { [t]: { text: "x", mentions: many } } }),
     );
     openApp(fake, t);

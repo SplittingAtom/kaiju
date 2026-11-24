@@ -7,7 +7,7 @@ import {
 } from "@kaiju/protocol/sandbox-wire";
 import { Readable } from "node:stream";
 import { SYSTEM_ACTOR } from "@kaiju/db";
-import { workspacePathSchema } from "@kaiju/protocol";
+import { LEGACY_HEADER_NAMES, workspacePathSchema } from "@kaiju/protocol";
 import { Hono } from "hono";
 import { recordAudit } from "../../audit/record.js";
 import { recordFlushProof } from "../../sandbox-lifecycle/reclaim.js";
@@ -92,6 +92,11 @@ export function workspaceChangeRoutes(kit: WorkspaceKit): Hono<Vars> {
         "content-length": String(entry.size),
         "cache-control": "no-store",
         [WORKSPACE_ENTRY_HEADER]: encodeWorkspaceEntryHeader(publicEntry(entry)),
+        // Under its pre-rename name too, for sandbox agents built before the rename that are
+        // still running during the upgrade (one release, KOBE-749; removed in KOBE-754).
+        [LEGACY_HEADER_NAMES[WORKSPACE_ENTRY_HEADER]]: encodeWorkspaceEntryHeader(
+          publicEntry(entry),
+        ),
       },
     });
   });

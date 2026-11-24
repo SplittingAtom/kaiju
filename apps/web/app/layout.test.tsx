@@ -12,7 +12,7 @@ vi.mock("next/server", () => ({ connection: async () => undefined }));
 vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: (name: string) =>
-      name === "kobe-theme" && cookie !== undefined ? { value: cookie } : undefined,
+      name === "kaiju-theme" && cookie !== undefined ? { value: cookie } : undefined,
   }),
   headers: async () => new Headers({ "x-nonce": NONCE }),
 }));

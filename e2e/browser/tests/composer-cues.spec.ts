@@ -8,7 +8,7 @@ import { expect, test, filesSection } from "./support/chat.js";
  * @file mention. Light and dark screenshots of the badge, the focused and the pulsing composer are
  * attached to the report (the ledger's evidence). The dragged file is deleted at the end.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 /** Streams long enough for the pulse checks to happen while the run goes. */
 const STORY =
   "No tools. Write a detailed 1500-word short story about a lighthouse keeper and a storm.";
@@ -50,7 +50,7 @@ async function workspace(page: Page, method: "POST" | "DELETE", path: string): P
   return page.evaluate(
     async ({ method, path, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (method === "DELETE") {
         const q = encodeURIComponent(path);
         return (await fetch(`/v1/workspace/files?path=${q}`, { method, headers })).status;

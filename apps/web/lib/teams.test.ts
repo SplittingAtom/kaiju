@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   TEAM_HEADER,
+  teamHeaders,
   fetchMyTeams,
   roleLabel,
   setActiveTeam,
@@ -123,6 +124,7 @@ describe("setActiveTeam", () => {
   });
 
   it("exposes the header that pins requests to the active team", () => {
-    expect(TEAM_HEADER).toBe("x-kobe-team");
+    expect(TEAM_HEADER).toBe("x-kaiju-team");
+    expect(teamHeaders("t-1")).toEqual({ "x-kaiju-team": "t-1", "x-kobe-team": "t-1" });
   });
 });

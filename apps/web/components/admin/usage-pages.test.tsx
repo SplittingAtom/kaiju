@@ -42,7 +42,7 @@ function stubUsage(body: unknown) {
         };
         return new Response(JSON.stringify(limits), { status: 200 });
       }
-      urls.push({ url, team: new Headers(init.headers).get("x-kobe-team") });
+      urls.push({ url, team: new Headers(init.headers).get("x-kaiju-team") });
       return new Response(JSON.stringify(body), { status: 200 });
     }),
   );

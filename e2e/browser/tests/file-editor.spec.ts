@@ -14,7 +14,7 @@ import { toolTurn } from "./support/gate5.js";
  * KOBE-469: CodeMirror's styles apply under the nonce CSP (the gutter sits beside the text, the
  * diff is coloured) and no style-src violation is reported.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 const BASE = "alpha\nbeta\ngamma\n";
 const PROPOSED = "alpha\nBETA\ngamma\ndelta\n";
@@ -53,7 +53,7 @@ async function workspace(
   return page.evaluate(
     async ({ op, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       const q = encodeURIComponent(path);
       if (op === "delete") {
         const res = await fetch(`/v1/workspace/files?path=${q}`, { method: "DELETE", headers });

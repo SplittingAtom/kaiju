@@ -72,7 +72,7 @@ describe("readThreadEgressBlocked", () => {
     expect(await readThreadEgressBlocked("t 1", "team-1", fetchFn)).toEqual(body);
     expect(fetchFn).toHaveBeenCalledWith(
       "/v1/threads/t%201/egress-blocked",
-      expect.objectContaining({ headers: expect.objectContaining({ "x-kobe-team": "team-1" }) }),
+      expect.objectContaining({ headers: expect.objectContaining({ "x-kaiju-team": "team-1" }) }),
     );
     const bad = vi.fn(async () => new Response(JSON.stringify({ blocked: [{}] }), { status: 200 }));
     expect(await readThreadEgressBlocked("t", "team-1", bad)).toBeNull();

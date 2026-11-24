@@ -83,7 +83,7 @@ describe("Workspace console Memory page (ac-1)", () => {
     expect(await screen.findByText("Archived.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
     const archive = calls.find((c) => c.url.endsWith("/archive"));
-    expect(archive?.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(archive?.headers.get("x-kaiju-team")).toBe(TEAM.id);
 
     // Site Policy, read-only, as text.
     const policy = await screen.findByRole("list", { name: "Site Policy" });
@@ -147,7 +147,7 @@ describe("Workspace console Memory page (ac-1)", () => {
     );
     expect(await screen.findByText("No Site proposals")).toBeTruthy();
     expect(
-      calls.find((c) => c.url.startsWith("/v1/memory/site-proposals"))?.headers.get("x-kobe-team"),
+      calls.find((c) => c.url.startsWith("/v1/memory/site-proposals"))?.headers.get("x-kaiju-team"),
     ).toBe(TEAM.id);
     window.history.replaceState(null, "", "/");
   });

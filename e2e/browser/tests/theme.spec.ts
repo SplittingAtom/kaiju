@@ -4,7 +4,7 @@ import { type Chat, expect, test } from "./support/chat.js";
 import { expectThemed, MIN_CONTRAST, type Paint, paintOf, type Theme } from "./support/colours.js";
 import { panelOf } from "./support/panel.js";
 
-const THEME_COOKIE = "kobe-theme";
+const THEME_COOKIE = "kaiju-theme";
 
 const themeToggle = (page: Page) =>
   page.getByRole("button", { name: "Dark theme", exact: true }).first();

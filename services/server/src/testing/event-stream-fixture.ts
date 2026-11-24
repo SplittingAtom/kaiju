@@ -170,7 +170,7 @@ export class EventStreamFixture {
       "x-forwarded-for": p.browser.ip,
       accept: "text/event-stream",
     };
-    if (p.browser.team) headers["x-kobe-team"] = p.browser.team;
+    if (p.browser.team) headers["x-kaiju-team"] = p.browser.team;
     if (opts.lastEventId !== undefined) headers["last-event-id"] = opts.lastEventId;
     const q = opts.startingAfter !== undefined ? `?starting_after=${opts.startingAfter}` : "";
     return this.replica(replica).app.request(`${PUBLIC_URL}/v1/runs/${runId}/events${q}`, {

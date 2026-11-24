@@ -64,7 +64,7 @@ export function accountArea(k: FakeCore, req: FakeRequest): FakeAnswer {
   }
   if (url.pathname === "/v1/schedules") return json(200, { schedules: [], active_count: 0 });
   if (url.pathname === "/v1/team/models" && k.teamModels.length > 0) {
-    if (headers.get("x-kobe-team") !== k.teamId) return error(409, "team_mismatch");
+    if (headers.get("x-kaiju-team") !== k.teamId) return error(409, "team_mismatch");
     const models = k.teamModels.map((m) => ({
       ...m,
       context_window: m.context_window ?? null,
@@ -80,7 +80,7 @@ export function accountArea(k: FakeCore, req: FakeRequest): FakeAnswer {
     });
   }
   if (url.pathname === "/v1/agents/runnable") {
-    if (headers.get("x-kobe-team") !== k.teamId) return error(409, "team_mismatch");
+    if (headers.get("x-kaiju-team") !== k.teamId) return error(409, "team_mismatch");
     const start = Number(url.searchParams.get("cursor") ?? 0);
     const page = k.runnableAgents.slice(start, start + k.runnablePageSize);
     const next = start + page.length;

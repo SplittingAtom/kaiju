@@ -19,7 +19,7 @@ const [team, threadId] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
 const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
-const headers = () => ({ origin, "content-type": "application/json", "x-kobe-team": team,
+const headers = () => ({ origin, "content-type": "application/json", "x-kaiju-team": team,
   cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") });
 const call = async (method, path, body) => {
   const res = await fetch(base + path, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) });
@@ -86,7 +86,7 @@ const [team, content] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
 const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
-const headers = () => ({ origin, "content-type": "application/json", "x-kobe-team": team,
+const headers = () => ({ origin, "content-type": "application/json", "x-kaiju-team": team,
   cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") });
 const call = async (method, path, body) => {
   const res = await fetch(base + path, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) });

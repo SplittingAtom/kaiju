@@ -101,12 +101,12 @@ async function memberId(page: Page, email: string): Promise<string> {
 async function uploadAs(page: Page, id: string, name: string, text: string) {
   return page.evaluate(
     async ({ id, name, text }) => {
-      const team = window.localStorage.getItem("kobe.lastTeamId");
+      const team = window.localStorage.getItem("kaiju.lastTeamId");
       const form = new FormData();
       form.set("file", new File([text], name, { type: "text/markdown" }));
       const res = await fetch(`/v1/projects/${id}/files`, {
         method: "POST",
-        headers: team ? { "x-kobe-team": team } : {},
+        headers: team ? { "x-kaiju-team": team } : {},
         body: form,
       });
       return res.status;

@@ -45,7 +45,7 @@ export function ssoLinkPlugin(options: SsoLinkPluginOptions) {
   const enrolment = new WeakSet<object>();
 
   return {
-    id: "kobe-sso-link",
+    id: "kaiju-sso-link",
     hooks: {
       before: [
         {

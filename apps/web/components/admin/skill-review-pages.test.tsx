@@ -65,7 +65,7 @@ describe("Skill review (KOBE-80)", () => {
     expect(screen.queryByRole("alertdialog")).toBeNull();
     const post = must(calls.find((c) => c.method === "POST"));
     expect(JSON.parse(String(post.body))).toEqual({ decision: "approved" });
-    expect(post.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(post.headers.get("x-kaiju-team")).toBe(TEAM.id);
     expect(await screen.findByText("No pending skill versions.")).toBeTruthy();
   });
 

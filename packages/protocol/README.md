@@ -110,16 +110,16 @@ Gaps reported by KOBE-23/24/30/35/36, fixed in one contract PR:
 
 `run.start.run_token` (`{ token, expires_at }`, optional) carries a server-minted token bound to one
 run, for the model gateway. Sent only to agents whose `hello.capabilities` lists `run_token`; the
-agent keeps it in Pi's memory only and sends it as `x-kobe-run-token` next to the session bearer.
+agent keeps it in Pi's memory only and sends it as `x-kaiju-run-token` next to the session bearer.
 Format (KOBE-521): compact JWS, EdDSA (Ed25519) with the `kobe.model-gateway` key pair, signed
 `typ` `krt2` (`signRunToken`/`verifyRunToken` in `@kaiju/session-token`; the gateway holds the
 public key only; the HMAC `krt1` format is refused); claims `run_id`, `team_id`, `sandbox_id`, `iat`, `exp`, `jti`. Gateway rollout:
-header present must verify (no fallback); absent keeps the legacy advisory `x-kobe-run-id` until
+header present must verify (no fallback); absent keeps the legacy advisory `x-kaiju-run-id` until
 enforcement is switched on (KOBE-118). Details in `src/run-token.ts`.
 
 ## Run traces (KOBE-274)
 
-One run is one trace: trace id = the run id's hex digits (`runTraceId`), root span `kobe.run` with
+One run is one trace: trace id = the run id's hex digits (`runTraceId`), root span `kaiju.run` with
 id `runRootSpanId`, so the server, the model gateway and the sandbox agree without a lookup. These
 ids are predictable, so **no listener a sandbox can reach joins a caller's trace by propagation**:
 the model gateway starts `model_gateway.request` only after it attributed the call to a run, in that

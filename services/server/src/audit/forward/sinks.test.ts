@@ -51,7 +51,7 @@ describe("syslog (RFC 5424)", () => {
       { hostname: "kobe-0", procId: 42 },
     );
     expect(message).toMatch(
-      /^<110>1 2026-10-01T12:00:00\.123Z kobe-0 kobe-audit 42 identity\.team\.created \[kobe@32473 seq="7" id="[^"]+" team="[^"]+" actorKind="user" actor="[^"]+" hash="b{64}"\] \{/,
+      /^<110>1 2026-10-01T12:00:00\.123Z kobe-0 kaiju-audit 42 identity\.team\.created \[kaiju@32473 seq="7" id="[^"]+" team="[^"]+" actorKind="user" actor="[^"]+" hash="b{64}"\] \{/,
     );
     const body = JSON.parse(message.slice(message.indexOf("] {") + 2)) as { action: string };
     expect(body.action).toBe("identity.team.created");
@@ -59,9 +59,9 @@ describe("syslog (RFC 5424)", () => {
 
   it("puts the configured enterprise number in the SD-ID (KOBE-182)", () => {
     expect(formatSyslogMessage(entry(), { enterpriseNumber: "61234" })).toContain(
-      '[kobe@61234 seq="',
+      '[kaiju@61234 seq="',
     );
-    expect(syslogSdId()).toBe("kobe@32473");
+    expect(syslogSdId()).toBe("kaiju@32473");
   });
 
   it("limits MSGID to 32 characters and uses - for empty header fields", () => {
@@ -82,7 +82,7 @@ describe("syslog (RFC 5424)", () => {
     await settle();
     const messages = unframe(Buffer.concat(received[0] ?? []));
     expect(messages).toHaveLength(2);
-    expect(messages[1]).toContain('[kobe@61234 seq="2"');
+    expect(messages[1]).toContain('[kaiju@61234 seq="2"');
   });
 
   it("rejects when nothing listens", async () => {
@@ -148,8 +148,8 @@ describe("OTLP logs", () => {
     const record = body.resourceLogs[0]?.scopeLogs[0]?.logRecords[0];
     expect(record?.timeUnixNano).toBe("1790856000123000000");
     expect(record?.body).toEqual({ stringValue: "identity.team.created" });
-    expect(record?.attributes).toContainEqual({ key: "kobe.audit.seq", value: { intValue: "5" } });
-    expect(record?.attributes.map((a) => a.key)).toContain("kobe.audit.team_id");
+    expect(record?.attributes).toContainEqual({ key: "kaiju.audit.seq", value: { intValue: "5" } });
+    expect(record?.attributes.map((a) => a.key)).toContain("kaiju.audit.team_id");
   });
 
   it("posts JSON with the configured headers and fails on non-2xx", async () => {

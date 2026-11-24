@@ -76,7 +76,7 @@ describe("slow consumers over real HTTP (ac-6)", () => {
           host: "127.0.0.1",
           port,
           path: `/v1/runs/${run}/events`,
-          headers: { cookie, "x-kobe-team": team, accept: "text/event-stream" },
+          headers: { cookie, "x-kaiju-team": team, accept: "text/event-stream" },
         },
         (res) => {
           expect(res.statusCode).toBe(200);

@@ -9,8 +9,8 @@ import { expectThemed, paintOf } from "./support/colours.js";
  * (ac-3). The project is made (and archived afterwards) through the API, so the member needs to be
  * allowed to create projects (a team admin or builder, as for the theme spec's admin console).
  */
-const TEAM_KEY = "kobe.lastTeamId";
-const THEME_COOKIE = "kobe-theme";
+const TEAM_KEY = "kaiju.lastTeamId";
+const THEME_COOKIE = "kaiju-theme";
 
 /** Calls the API from the page (session cookie, Origin and team header as the chat sends them). */
 async function api(page: Page, method: string, path: string, body?: unknown) {
@@ -19,7 +19,7 @@ async function api(page: Page, method: string, path: string, body?: unknown) {
       const team = window.localStorage.getItem(teamKey) ?? "";
       const res = await fetch(path, {
         method,
-        headers: { "x-kobe-team": team, ...(body ? { "content-type": "application/json" } : {}) },
+        headers: { "x-kaiju-team": team, ...(body ? { "content-type": "application/json" } : {}) },
         body: body ? JSON.stringify(body) : undefined,
       });
       return { status: res.status, json: (await res.json().catch(() => null)) as unknown };

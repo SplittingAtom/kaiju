@@ -11,7 +11,7 @@ export const MAX_CAPTURED_CHARS = 4096;
  * {@link contentAttributes}). Token counts (`gen_ai.usage.*`) and sizes are metadata and pass.
  */
 const CONTENT_KEY =
-  /^(gen_ai\.(prompt|completion|input|output)(\.|$)|gen_ai\.(system_instructions|tool\.(call\.)?(arguments|result)).*|url\.(query|full)|http\.(request|response)\.(header|body)(\.(?!size$).*)?|kobe\.(message|tool\.(input|output)|content).*|db\.query\.text)$/;
+  /^(gen_ai\.(prompt|completion|input|output)(\.|$)|gen_ai\.(system_instructions|tool\.(call\.)?(arguments|result)).*|url\.(query|full)|http\.(request|response)\.(header|body)(\.(?!size$).*)?|kaiju\.(message|tool\.(input|output)|content).*|db\.query\.text)$/;
 
 export function isContentKey(key: string): boolean {
   return CONTENT_KEY.test(key);

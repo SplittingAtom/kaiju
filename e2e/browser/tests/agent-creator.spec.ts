@@ -13,7 +13,7 @@ import { pinTeam } from "./support/team.js";
  */
 const SECOND_USER = process.env["KAIJU_USER2"];
 const SECOND_PW = process.env["KAIJU_PW2"];
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 const tab = (page: Page, name: "Identity" | "Behaviour") =>
   panelOf(page).getByRole("tab", { name, exact: true });
@@ -35,7 +35,7 @@ async function deleteAgent(page: Page, id: string): Promise<void> {
     async ({ id, teamKey }) => {
       await fetch(`/v1/agents/${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: { "x-kobe-team": window.localStorage.getItem(teamKey) ?? "" },
+        headers: { "x-kaiju-team": window.localStorage.getItem(teamKey) ?? "" },
       });
     },
     { id, teamKey: TEAM_KEY },

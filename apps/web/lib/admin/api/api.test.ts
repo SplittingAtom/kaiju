@@ -138,7 +138,7 @@ describe("site resources call the right routes", () => {
     expect(calls).toHaveLength(1);
     expect(`${must(calls[0]).method} ${must(calls[0]).url}`).toBe(route);
     // Site routes are not team-scoped: no team header.
-    expect(must(calls[0]).headers.has("x-kobe-team")).toBe(false);
+    expect(must(calls[0]).headers.has("x-kaiju-team")).toBe(false);
   });
 
   it("sends wire bodies the server's strict schemas accept", async () => {
@@ -209,6 +209,6 @@ describe("team resources name the active team on every call", () => {
     const calls = stubApi({ [route]: [200, body] });
     expect((await call()).ok).toBe(true);
     expect(`${must(calls[0]).method} ${must(calls[0]).url}`).toBe(route);
-    expect(must(calls[0]).headers.get("x-kobe-team")).toBe("t-1");
+    expect(must(calls[0]).headers.get("x-kaiju-team")).toBe("t-1");
   });
 });

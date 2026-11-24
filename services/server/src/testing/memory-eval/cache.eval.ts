@@ -75,7 +75,7 @@ function client() {
     origin: ORIGIN,
     "content-type": "application/json",
     cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
-    ...(team ? { "x-kobe-team": team } : {}),
+    ...(team ? { "x-kaiju-team": team } : {}),
     ...extra,
   });
   const keep = (res: Response) => {

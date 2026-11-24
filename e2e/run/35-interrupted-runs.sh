@@ -126,7 +126,7 @@ const jar = new Map();
 const call = async (method, path, body) => {
   const res = await fetch(base + path, {
     method,
-    headers: { origin, "content-type": "application/json", "x-kobe-team": team,
+    headers: { origin, "content-type": "application/json", "x-kaiju-team": team,
       cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") },
     body: body === undefined ? undefined : JSON.stringify(body),
   });

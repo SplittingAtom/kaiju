@@ -5,13 +5,13 @@ import { uuidSchema } from "./common.js";
  * Run-bound model-gateway tokens (KOBE-117, part of KOBE-73). CONTRACT ONLY: minting, delivery and
  * enforcement are KOBE-118.
  *
- * Why: the sandbox session token (session-token.ts) is per sandbox, and `x-kobe-run-id` is advisory
+ * Why: the sandbox session token (session-token.ts) is per sandbox, and `x-kaiju-run-id` is advisory
  * (anything in the sandbox that can read the token can call the gateway with any run id), so a
  * per-run budget stop (D30) cannot be enforced against a run's own tools. A run token is minted by
  * the server at `run.start`, bound to exactly one run, revoked at run end, and delivered only to
  * that thread's Pi (in `run.start.run_token`, never in a file or env var the tools can read).
  *
- * Wire: the model-gateway shim accepts it in the `x-kobe-run-token` request header
+ * Wire: the model-gateway shim accepts it in the `x-kaiju-run-token` request header
  * ({@link RUN_TOKEN_HEADER}). `Authorization: Bearer <session token>` stays as it is.
  *
  * Format (KOBE-521): a compact JWS signed **EdDSA (Ed25519)** by the server with the
@@ -28,18 +28,18 @@ import { uuidSchema } from "./common.js";
  * parse, `now < exp`, `iat <= now + skew`, and then the stateful checks the token cannot carry:
  * the run is still active (revocation at run end; `jti` can name it in audit) and `sandbox_id`/
  * `team_id` match the session token on the same request. The run id used for attribution and
- * budget is `claims.run_id`; an `x-kobe-run-id` that disagrees is a 403.
+ * budget is `claims.run_id`; an `x-kaiju-run-id` that disagrees is a 403.
  *
  * Rollout (old agents keep working): the server sends `run.start.run_token` only to agents whose
  * `hello.capabilities` lists {@link CAPABILITY_RUN_TOKEN}. Gateway order: (1) header present: it
  * must verify, else 401 with no fallback to the advisory header; (2) header absent: legacy
- * behaviour (session token plus advisory `x-kobe-run-id`), allowed until the operator turns on
+ * behaviour (session token plus advisory `x-kaiju-run-id`), allowed until the operator turns on
  * enforcement (a gateway setting owned by KOBE-118), after which a missing header is a 401.
  * Roll out server, then gateway, then agents/images; enable enforcement once no sandbox without
  * the capability remains.
  */
 export const CAPABILITY_RUN_TOKEN = "run_token";
-export const RUN_TOKEN_HEADER = "x-kobe-run-token";
+export const RUN_TOKEN_HEADER = "x-kaiju-run-token";
 /** The signed JWS `typ` of a run token (KOBE-521): never `JWT` (session tokens) or `ksc2`. */
 export const RUN_TOKEN_TYP = "krt2";
 /** Longest token any verifier reads; larger input is rejected before parsing. */

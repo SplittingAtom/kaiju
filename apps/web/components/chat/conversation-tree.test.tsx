@@ -380,7 +380,7 @@ describe("labels (ac-3)", () => {
     // The server refuses a reader's write with read_only, as the fake does.
     const res = await fake.fetch(`/v1/threads/${t}/labels/${u2b}`, {
       method: "PUT",
-      headers: { "content-type": "application/json", "x-kobe-team": fake.teamId },
+      headers: { "content-type": "application/json", "x-kaiju-team": fake.teamId },
       body: JSON.stringify({ label: "x" }),
     });
     expect(res.status).toBe(403);
@@ -396,7 +396,7 @@ describe("labels (ac-3)", () => {
     expect(within(menu).getByRole("menuitem", { name: "Continue from here" })).toBeTruthy();
     const res = await fake.fetch(`/v1/threads/${t}/labels/${u2b}`, {
       method: "PUT",
-      headers: { "content-type": "application/json", "x-kobe-team": fake.teamId },
+      headers: { "content-type": "application/json", "x-kaiju-team": fake.teamId },
       body: JSON.stringify({ label: "x" }),
     });
     expect(res.status).toBe(409);

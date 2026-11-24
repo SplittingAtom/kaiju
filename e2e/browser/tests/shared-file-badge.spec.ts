@@ -14,7 +14,7 @@ import { SHELL_TIMEOUT_MS } from "./support/constants.js";
  */
 const SECOND_USER = process.env["KAIJU_USER2"];
 const SECOND_PW = process.env["KAIJU_PW2"];
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 const BASE = "alpha\nbeta\ngamma\n";
 const BADGE = "You changed this file in another tab or device just now.";
 /** The badge follows a save within a few seconds (stream hint, debounced read). */
@@ -30,7 +30,7 @@ async function workspace(page: Page, call: WorkspaceCall): Promise<number> {
   return page.evaluate(
     async ({ call, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       const slash = call.path.lastIndexOf("/");
       const folder = call.path.slice(0, slash);
       if (call.op === "delete") {

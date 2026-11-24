@@ -221,13 +221,18 @@ describe("server-call gateway client (KOBE-219 ac-4, ac-8)", () => {
       "traceparent",
       "tracestate",
       SERVER_CALL_TOKEN_HEADER,
+      // Its old name for one release, for a gateway pod from before the rename (KOBE-749).
+      "x-kobe-server-call",
     ]);
+    expect(req?.headers["x-kobe-server-call"]).toBe(req?.headers[SERVER_CALL_TOKEN_HEADER]);
     expect(names.filter((n) => !allowed.has(n))).toEqual([]);
     for (const credential of [
       "authorization",
       "x-api-key",
       "x-goog-api-key",
       "api-key",
+      "x-kaiju-run-token",
+      "x-kaiju-run-id",
       "x-kobe-run-token",
       "x-kobe-run-id",
     ]) {

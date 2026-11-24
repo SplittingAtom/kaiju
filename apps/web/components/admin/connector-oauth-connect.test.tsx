@@ -102,7 +102,7 @@ describe("Site console: connect an account to an OAuth connector (KOBE-835)", ()
     await vi.waitFor(() => expect(assign).toHaveBeenCalledWith(AUTHORIZE));
     const post = calls.find((c) => c.method === "POST");
     expect(JSON.parse(String(post?.body))).toEqual({ return_to: "site" });
-    expect(post?.headers.get("x-kobe-team")).toBe(TEAM);
+    expect(post?.headers.get("x-kaiju-team")).toBe(TEAM);
   });
 
   it("says when the active workspace has not enabled the connector, and does not start", async () => {

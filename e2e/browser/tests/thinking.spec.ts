@@ -7,7 +7,7 @@ import { expect, test } from "./support/chat.js";
  * With the Off pill pressed the answer has no reasoning block and the run records `off`.
  */
 const PROMPT = "No tools. Reply with the single word ALPHA.";
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 test("thinking off: the answer has no reasoning block and the run records off", async ({
   chat,
@@ -46,7 +46,7 @@ test("thinking off: the answer has no reasoning block and the run records off", 
   const recorded = await page.evaluate(
     async ({ id, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers = team ? { "x-kobe-team": team } : undefined;
+      const headers = team ? { "x-kaiju-team": team } : undefined;
       const [thread, usage] = await Promise.all([
         fetch(`/v1/threads/${encodeURIComponent(id)}?limit=1`, { headers }).then((r) => r.json()),
         fetch(`/v1/threads/${encodeURIComponent(id)}/usage`, { headers }).then((r) => r.json()),

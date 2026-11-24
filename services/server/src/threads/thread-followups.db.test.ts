@@ -332,7 +332,7 @@ describe("follow-ups (KOBE-222)", () => {
     expect(body.max_tokens).toBe(SERVER_CALL_LIMITS.followups.max_output_tokens);
     expect(JSON.stringify(body.messages)).toContain("What drives our Q3 revenue?");
     expect(JSON.stringify(body.messages)).toContain("Mostly renewals");
-    for (const h of ["authorization", "x-api-key", "x-kobe-run-id"]) {
+    for (const h of ["authorization", "x-api-key", "x-kaiju-run-id"]) {
       expect(call?.headers[h]).toBeUndefined();
     }
 

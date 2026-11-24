@@ -33,7 +33,7 @@ export const RUN_TAB_LABELS: Readonly<Record<RunTab, string>> = {
   log: "Log",
   variables: "Variables",
 };
-export const RUN_TAB_KEY = "kobe.pythonRun.tab";
+export const RUN_TAB_KEY = "kaiju.pythonRun.tab";
 
 export function readRunTab(): RunTab {
   try {

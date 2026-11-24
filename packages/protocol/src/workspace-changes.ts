@@ -7,7 +7,7 @@ import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
  * is an SSE stream of the caller's **own** (team, user) workspace: the owner comes from the
  * session, so no parameter can name another member's files (as for every `/v1/workspace` route).
  *
- * Query: `team` (required: EventSource cannot send `X-Kobe-Team`; another active team answers 409
+ * Query: `team` (required: EventSource cannot send `X-Kaiju-Team`; another active team answers 409
  * `team_mismatch`) and `path` once per open file, at most {@link WORKSPACE_CHANGES_MAX_PATHS}.
  * One stream per page serves its whole open tab set; a changed set opens a new stream.
  *

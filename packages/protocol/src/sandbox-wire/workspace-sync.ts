@@ -208,7 +208,7 @@ export const workspaceCommitResponseSchema = z.strictObject({
  * headers are not). 404 `not_found` when the path has no live row; 502 `content_missing` when
  * storage lacks its content (now listed by `blobs/lost` until a sandbox uploads it again).
  */
-export const WORKSPACE_ENTRY_HEADER = "x-kobe-workspace-entry";
+export const WORKSPACE_ENTRY_HEADER = "x-kaiju-workspace-entry";
 
 export function encodeWorkspaceEntryHeader(entry: WorkspaceEntry): string {
   const bytes = ENCODER.encode(JSON.stringify(entry));

@@ -102,7 +102,7 @@ export function attachSandboxGateway(server: Server, options: GatewayOptions): (
     span: Span,
   ): Promise<void> => {
     const no = (status: number, reason: string) => {
-      span.setAttributes({ "http.response.status_code": status, "kobe.outcome": "refused" });
+      span.setAttributes({ "http.response.status_code": status, "kaiju.outcome": "refused" });
       options.onRefused(status, reason);
       refuse(socket, status);
     };
@@ -143,7 +143,7 @@ export function attachSandboxGateway(server: Server, options: GatewayOptions): (
       return no(401, "not allowed");
     }
     if (socket.destroyed) return;
-    span.setAttribute("kobe.outcome", "accepted");
+    span.setAttribute("kaiju.outcome", "accepted");
     wss.handleUpgrade(req, socket, head, (ws) => options.accept(ws, claims));
   };
 

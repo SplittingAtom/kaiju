@@ -29,7 +29,7 @@ import { SANDBOX_SMALL_FRAME_MAX_BYTES, SANDBOX_WIRE_VERSION } from "./connectio
  *   the tool's name comes from the server's own decision record), compaction and workspace sync.
  *   Every code is a closed enum; a value the agent cannot map is `other`. Token counts are NOT
  *   sent: the gateway's `model_gateway.request` is the meter (a second count would double costs).
- * - Content (`kobe.tool.input` / `kobe.tool.output`, at most {@link SANDBOX_SPAN_CONTENT_MAX_CHARS}
+ * - Content (`kaiju.tool.input` / `kaiju.tool.output`, at most {@link SANDBOX_SPAN_CONTENT_MAX_CHARS}
  *   characters each) only when the run's `trace.capture_content` is true.
  * - `span_id`: random 16 hex digits per span, unique within the run. `parent_span_id`: the run
  *   span's (and a `thread.compact` compaction span's) is the span id of `trace.traceparent`; every
@@ -61,7 +61,7 @@ import { SANDBOX_SMALL_FRAME_MAX_BYTES, SANDBOX_WIRE_VERSION } from "./connectio
  *   per replica a relayed-span budget with a fair share per team; relayed spans have their own
  *   bounded export queue, so they never evict or delay the server's own spans. Every drop (agent
  *   `dropped`, rate, run cap, duplicate, invalid, clamp, cycle, queue) is counted in a metric and
- *   on the run's `kobe.run` root ({@link TRACE_DROPPED_ATTRIBUTE}).
+ *   on the run's `kaiju.run` root ({@link TRACE_DROPPED_ATTRIBUTE}).
  * - Re-attribution: trace id = `runTraceId(run_id)`; span and parent ids remapped with
  *   `mapSandboxSpanId`, except a parent equal to a command span id the server issued for the run,
  *   which is kept. A span id seen before in the run is a duplicate and dropped (seen-set of at most
@@ -71,9 +71,9 @@ import { SANDBOX_SMALL_FRAME_MAX_BYTES, SANDBOX_WIRE_VERSION } from "./connectio
  *   time the run ends stays an orphan in the run's trace (accepted).
  * - Times are clamped to the run window `[run started − skew, min(now, run ended + grace) + skew]`
  *   ({@link TRACE_SPAN_CLOCK_SKEW_MS}); a span whose end is still before its start is dropped.
- * - Stamps, never from the frame: `kobe.team_id`, `kobe.user_id`, `kobe.thread_id` (the lease's),
- *   `kobe.run_id`, `kobe.sandbox_id`, `session.id`, `user.id` (tracing.ts); `kobe.tool.name` from
- *   its policy decision for (`run_id`, `kobe.tool.call_id`), else `unknown` with the call id
+ * - Stamps, never from the frame: `kaiju.team_id`, `kaiju.user_id`, `kaiju.thread_id` (the lease's),
+ *   `kaiju.run_id`, `kaiju.sandbox_id`, `session.id`, `user.id` (tracing.ts); `kaiju.tool.name` from
+ *   its policy decision for (`run_id`, `kaiju.tool.call_id`), else `unknown` with the call id
  *   dropped; span status and `error.type` from `error_type`. Content keys are stripped at intake
  *   when capture is off, and the exporter's content gate drops them again.
  * - Accepted: a sandbox holding two runs can move spans between them (same team, user, sandbox).
@@ -145,34 +145,34 @@ const content = z.string().max(SANDBOX_SPAN_CONTENT_MAX_CHARS);
 export const SANDBOX_SPAN_ATTRIBUTES = {
   /** Pi `agent_start` → `agent_end` (or the run's stop). */
   "sandbox.run": z.strictObject({
-    "kobe.run.outcome": z.enum(["completed", "aborted", "failed"]).optional(),
-    "kobe.turns": count.optional(),
+    "kaiju.run.outcome": z.enum(["completed", "aborted", "failed"]).optional(),
+    "kaiju.turns": count.optional(),
   }),
   /** Pi `turn_start` → `turn_end`: one model step and its tool calls. */
   "sandbox.turn": z.strictObject({
-    "kobe.turn.index": count,
-    "kobe.stop_reason": z.enum(SANDBOX_TURN_STOP_REASONS).optional(),
-    "kobe.tool_calls": count.optional(),
+    "kaiju.turn.index": count,
+    "kaiju.stop_reason": z.enum(SANDBOX_TURN_STOP_REASONS).optional(),
+    "kaiju.tool_calls": count.optional(),
   }),
   /** Pi `tool_execution_start` → `tool_execution_end`. */
   "sandbox.tool": z.strictObject({
     /** The server keeps it only when it decided this call for the run, and adds the tool's name. */
-    "kobe.tool.call_id": idSchema,
+    "kaiju.tool.call_id": idSchema,
     /** `blocked`: kobe-policy blocked the call (deny or approval refused). */
-    "kobe.tool.outcome": z.enum(["ok", "error", "blocked", "aborted"]),
-    "kobe.tool.input": content.optional(),
-    "kobe.tool.output": content.optional(),
+    "kaiju.tool.outcome": z.enum(["ok", "error", "blocked", "aborted"]),
+    "kaiju.tool.input": content.optional(),
+    "kaiju.tool.output": content.optional(),
   }),
   /** Pi compaction: a `thread.compact` command or an automatic one inside a run. */
   "sandbox.compaction": z.strictObject({
-    "kobe.compaction.trigger": z.enum(["command", "threshold", "overflow"]),
-    "kobe.compaction.tokens_before": count.optional(),
+    "kaiju.compaction.trigger": z.enum(["command", "threshold", "overflow"]),
+    "kaiju.compaction.tokens_before": count.optional(),
   }),
   /** One workspace sync push or pull during the run (workspace-sync.ts). */
   "sandbox.workspace_sync": z.strictObject({
-    "kobe.sync.direction": z.enum(["push", "pull"]),
-    "kobe.sync.files": count.optional(),
-    "kobe.sync.bytes": count.optional(),
+    "kaiju.sync.direction": z.enum(["push", "pull"]),
+    "kaiju.sync.files": count.optional(),
+    "kaiju.sync.bytes": count.optional(),
   }),
 } as const;
 
@@ -180,7 +180,7 @@ export const SANDBOX_SPAN_NAMES = Object.keys(SANDBOX_SPAN_ATTRIBUTES) as Sandbo
 export type SandboxSpanName = keyof typeof SANDBOX_SPAN_ATTRIBUTES;
 
 /** Attribute keys that carry content (exported only with `captureContent`). */
-export const SANDBOX_SPAN_CONTENT_KEYS = ["kobe.tool.input", "kobe.tool.output"] as const;
+export const SANDBOX_SPAN_CONTENT_KEYS = ["kaiju.tool.input", "kaiju.tool.output"] as const;
 
 const time = z.number().min(SANDBOX_SPAN_TIME_MIN_MS).max(SANDBOX_SPAN_TIME_MAX_MS);
 const spanFields = {
@@ -216,9 +216,33 @@ export const sandboxSpanSchema = z
   });
 export type SandboxSpan = z.infer<typeof sandboxSpanSchema>;
 
+/**
+ * Attribute prefix of sandbox agents built before the rename to Kaiju: the server reads their
+ * `kobe.*` attributes as `kaiju.*` for one release (KOBE-749; removed in KOBE-754), so a sandbox
+ * still running an old image keeps its spans during the upgrade.
+ */
+const LEGACY_ATTRIBUTE_PREFIX = "kobe.";
+const ATTRIBUTE_PREFIX = "kaiju.";
+
+function withRenamedAttributes(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value;
+  const attributes: unknown = (value as { attributes?: unknown }).attributes;
+  if (typeof attributes !== "object" || attributes === null || Array.isArray(attributes)) {
+    return value;
+  }
+  const entries = Object.entries(attributes);
+  if (!entries.some(([key]) => key.startsWith(LEGACY_ATTRIBUTE_PREFIX))) return value;
+  const renamed = entries.map(([key, v]): [string, unknown] =>
+    key.startsWith(LEGACY_ATTRIBUTE_PREFIX)
+      ? [ATTRIBUTE_PREFIX + key.slice(LEGACY_ATTRIBUTE_PREFIX.length), v]
+      : [key, v],
+  );
+  return { ...value, attributes: Object.fromEntries(renamed) };
+}
+
 /** One span as the server parses it, on its own (an invalid span is dropped, not the frame). */
 export function parseSandboxSpan(value: unknown): SandboxSpan | undefined {
-  const parsed = sandboxSpanSchema.safeParse(value);
+  const parsed = sandboxSpanSchema.safeParse(withRenamedAttributes(value));
   return parsed.success ? parsed.data : undefined;
 }
 

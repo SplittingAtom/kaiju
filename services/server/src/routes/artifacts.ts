@@ -129,7 +129,7 @@ export function artifactRoutes(
   });
 
   /**
-   * The document for the panel's iframe. A frame can't send `X-Kobe-Team`, so the team the page
+   * The document for the panel's iframe. A frame can't send `X-Kaiju-Team`, so the team the page
    * believes is active comes as `?team=` and must match the session's (as the thread export).
    */
   app.get("/:id/versions/:n/frame", async (c) => {

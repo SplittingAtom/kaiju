@@ -149,7 +149,7 @@ describe("team budgets page (KOBE-42)", () => {
       daily_tokens: 200_000,
       user_requests_per_minute: 20,
     });
-    expect(must(calls.find((c) => c.method === "PUT")).headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(must(calls.find((c) => c.method === "PUT")).headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 
   it("saves the default member budget", async () => {

@@ -41,6 +41,8 @@ export class FakeSyncServer {
   failWith: number | undefined;
   /** The next this many file downloads answer 500 (a transient server error). */
   failDownloads = 0;
+  /** Send a file's entry only under its pre-rename header, like a server from before KOBE-749. */
+  legacyEntryHeader = false;
   /** Content lost from storage (KOBE-475): listed by `GET blobs/lost`, missing until resent. */
   readonly lost = new Set<string>();
   /** Answer `GET blobs/lost` with 404, like a server from before KOBE-475. */
@@ -255,7 +257,8 @@ export class FakeSyncServer {
       const data = this.blobs.get(row.sha256) ?? Buffer.alloc(0);
       res.writeHead(200, {
         "content-length": String(data.length),
-        [WORKSPACE_ENTRY_HEADER]: encodeWorkspaceEntryHeader(row),
+        [this.legacyEntryHeader ? "x-kobe-workspace-entry" : WORKSPACE_ENTRY_HEADER]:
+          encodeWorkspaceEntryHeader(row),
       });
       res.end(data);
       return;

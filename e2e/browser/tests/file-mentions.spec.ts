@@ -17,7 +17,7 @@ const LEAD = FAKE_MODEL ? "bash: xargs cat <<'EOF'" : "Use a tool to read the me
  * The file is deleted again at the end. The k3d suite (`e2e/run.sh`, "mentions") proves the read
  * with the fake model; this spec shows the picker and the real agent on a deployment.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** The member's own workspace API, called from the page (session cookie, CSRF Origin). */
 async function workspace(
@@ -29,7 +29,7 @@ async function workspace(
   return page.evaluate(
     async ({ method, name, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (method === "DELETE") {
         const path = encodeURIComponent(`uploads/${name}`);
         return (await fetch(`/v1/workspace/files?path=${path}`, { method, headers })).status;

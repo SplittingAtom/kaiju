@@ -155,7 +155,7 @@ describe("creating agents (D8, D19)", () => {
     expect(res.json.agent).toMatchObject({ scope: "personal", ownerUserId: ids.carol });
   });
 
-  it("requires X-Kobe-Team on changes (stale-tab guard, D9)", async () => {
+  it("requires X-Kaiju-Team on changes (stale-tab guard, D9)", async () => {
     const b = as.bob;
     const team = b.team;
     b.team = undefined;
@@ -428,7 +428,7 @@ describe("team walls and personal agents (D5, D6, D9)", () => {
     }
     // A stale tab still pointing at the other team is refused before any agent lookup.
     const stale = await as.dave.request("DELETE", `/v1/agents/${id}`, undefined, {
-      "x-kobe-team": marketing,
+      "x-kaiju-team": marketing,
     });
     expect(stale).toMatchObject({ status: 409, json: { code: "team_mismatch" } });
   });

@@ -55,8 +55,6 @@ function setsTeam(source: string): boolean {
  */
 const ALLOWED_MENTIONS: Readonly<Record<string, string>> = {
   "packages/db/src/settings.ts": "defines TEAM_ID_SETTING",
-  "packages/telemetry/src/spans.ts": "OpenTelemetry span attribute `kobe.team_id`, not the setting",
-  "services/server/src/memory/learn/execute.ts": "OpenTelemetry span attribute, not the setting",
   "packages/db/src/models/secret-box.ts": "HKDF label `kobe.${purpose}`, not the setting",
   "packages/db/src/tenancy/identity.ts": "prose in a table's documented reason",
 };

@@ -14,7 +14,7 @@ import { useCallback, useId, useState, type CSSProperties, type ReactNode } from
 import { useSplitter, type SplitterRange } from "../shell/use-splitter";
 
 export const SPLIT_VAR = "--kaiju-editor-split";
-export const SPLIT_KEY = "kobe.fileEditor.split";
+export const SPLIT_KEY = "kaiju.fileEditor.split";
 export const SPLIT_DEFAULT = 50;
 export const SPLIT_BOUNDS = { min: 15, max: 85 } as const;
 const STEP = 5;

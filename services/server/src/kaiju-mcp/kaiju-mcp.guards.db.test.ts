@@ -80,11 +80,12 @@ describe("no header or route on the public listener accepts a delegation (ac-6)"
           headers: {
             origin: PUBLIC_URL,
             "content-type": "application/json",
-            "x-kobe-team": w.team,
+            "x-kaiju-team": w.team,
             "kaiju-delegation": claim,
             "kobe-delegation": claim,
+            "x-kaiju-delegation": claim,
             "x-kobe-delegation": claim,
-            "kobe-sandbox-token": mcpToken({
+            "kaiju-sandbox-token": mcpToken({
               sandboxId: randomUUID(),
               teamId: w.team,
               userId: w.admin.id,
@@ -125,7 +126,7 @@ describe("no header or route on the public listener accepts a delegation (ac-6)"
       `/v1/team/members/${w.target.id}`,
       {
         method: "PATCH",
-        headers: { origin: PUBLIC_URL, "content-type": "application/json", "x-kobe-team": w.team },
+        headers: { origin: PUBLIC_URL, "content-type": "application/json", "x-kaiju-team": w.team },
         body: JSON.stringify({ role: "team_admin" }),
       },
       forged,

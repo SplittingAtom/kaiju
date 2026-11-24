@@ -75,7 +75,7 @@ export function threadRetentionRoutes(deps: ServerDeps): Hono<{ Variables: TeamV
   });
 
   /**
-   * `GET /v1/threads/export` → zip. A download link can't send `X-Kobe-Team`, so the team the
+   * `GET /v1/threads/export` → zip. A download link can't send `X-Kaiju-Team`, so the team the
    * page believes is active comes as `?team=` and must match the session's (stale-tab guard).
    */
   app.get("/export", async (c) => {
@@ -192,7 +192,7 @@ function tracked(
 /**
  * Why a download can't start, or null. CSRF: a GET skips the Origin check, so refuse downloads
  * another site starts (each would write an audit row and stream an export). A link can't send
- * `X-Kobe-Team`, so the team the page believes is active comes as `?team=` and must match the
+ * `X-Kaiju-Team`, so the team the page believes is active comes as `?team=` and must match the
  * session's (stale-tab guard).
  */
 function refuseDownload(c: Context<{ Variables: TeamVariables }>, publicUrl: string) {

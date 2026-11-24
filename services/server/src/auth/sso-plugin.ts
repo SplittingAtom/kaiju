@@ -76,7 +76,7 @@ export function browserSsoError(failure: SsoFailure): string {
 
 /** The link-intent cookie of the local-proof flow (§6, KOBE-630): `__Host-` on https. */
 export const linkIntentCookieName = (secure: boolean): string =>
-  secure ? "__Host-kobe-sso-link" : "kobe-sso-link";
+  secure ? "__Host-kaiju-sso-link" : "kaiju-sso-link";
 
 /**
  * OIDC single sign-on as Better Auth endpoints (KOBE-628, spec sso-oidc-scim §5, §9, §13), so it
@@ -106,7 +106,7 @@ export function ssoPlugin(options: SsoPluginOptions) {
   let clientsMemo: OidcClients | undefined;
   const clients = () => (clientsMemo ??= new OidcClients(runtime().net));
   const secure = new URL(o.publicOrigin).protocol === "https:";
-  const cookieName = secure ? "__Host-kobe-sso" : "kobe-sso";
+  const cookieName = secure ? "__Host-kaiju-sso" : "kaiju-sso";
   const linkCookie = linkIntentCookieName(secure);
   const linkBox = new LinkIntentBox(o.secret);
   const cookieOptions = {
@@ -166,7 +166,7 @@ export function ssoPlugin(options: SsoPluginOptions) {
   }
 
   return {
-    id: "kobe-sso",
+    id: "kaiju-sso",
     endpoints: {
       ssoProviders: createAuthEndpoint("/sso/providers", { method: "GET" }, async (ctx) => {
         if (!o.settings.enabled) throw notFound();

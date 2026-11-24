@@ -14,7 +14,7 @@ import { expect, test } from "./support/chat.js";
  */
 const THEMES = ["light", "dark"] as const;
 type Theme = (typeof THEMES)[number];
-const THEME_COOKIE = "kobe-theme";
+const THEME_COOKIE = "kaiju-theme";
 
 const PAGES = [
   { path: "/agents", name: "Agents" },

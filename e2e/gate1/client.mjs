@@ -25,7 +25,7 @@ function client(ip) {
     origin: ORIGIN,
     "content-type": "application/json",
     "x-forwarded-for": ip,
-    ...(team ? { "x-kobe-team": team } : {}),
+    ...(team ? { "x-kaiju-team": team } : {}),
     cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
     ...extra,
   });

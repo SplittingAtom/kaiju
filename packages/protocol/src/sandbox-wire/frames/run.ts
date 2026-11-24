@@ -127,8 +127,8 @@ export const runStartFrameSchema = frame("run.start", {
   /**
    * Run-bound model-gateway token (KOBE-117, run-token.ts): bound to this run, delivered to this
    * thread's Pi only (the agent must not write it to disk or env, nor expose it to tools), sent
-   * as `x-kobe-run-token`. Sent only to agents whose `hello.capabilities` lists
-   * `CAPABILITY_RUN_TOKEN`; absent = legacy (session token + advisory `x-kobe-run-id`).
+   * as `x-kaiju-run-token`. Sent only to agents whose `hello.capabilities` lists
+   * `CAPABILITY_RUN_TOKEN`; absent = legacy (session token + advisory `x-kaiju-run-id`).
    */
   run_token: runTokenGrantSchema.optional(),
   /** Memory indexes and enabled scopes (KOBE-153, memory.ts); only for agents with capability `memory`. */

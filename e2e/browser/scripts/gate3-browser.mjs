@@ -204,7 +204,7 @@ async function main() {
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     await context.addInitScript((team) => {
       try {
-        localStorage.setItem("kobe.lastTeamId", team);
+        localStorage.setItem("kaiju.lastTeamId", team);
       } catch {
         // storage unavailable (an opaque-origin frame): nothing to set
       }

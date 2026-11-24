@@ -52,7 +52,7 @@ describe("run traces", () => {
     const [command, root] = exporter.getFinishedSpans();
     expect(command?.spanContext().traceId).toBe(TRACE);
     expect(command?.parentSpanContext?.spanId).toBe(ROOT);
-    expect(root?.name).toBe("kobe.run");
+    expect(root?.name).toBe("kaiju.run");
     expect(root?.spanContext()).toMatchObject({ traceId: TRACE, spanId: ROOT });
     expect(root?.parentSpanContext).toBeUndefined();
     expect(root?.attributes).toEqual({ "session.id": "t1", "user.id": "u1" });
@@ -73,23 +73,23 @@ describe("span relay", () => {
     const own = start(false, relayed);
     const relay = spanRelay();
     expect(
-      relay?.offer([relaySpan(0, { "kobe.tool.input": "secret", "kobe.tool.outcome": "ok" })]),
+      relay?.offer([relaySpan(0, { "kaiju.tool.input": "secret", "kaiju.tool.outcome": "ok" })]),
     ).toBe(1);
     await relay?.flush();
     const [span] = relayed.getFinishedSpans();
     expect(span?.spanContext()).toMatchObject({ traceId: TRACE, spanId: "0000000000000001" });
     expect(span?.parentSpanContext?.spanId).toBe(ROOT);
-    expect(span?.attributes).toEqual({ "kobe.tool.outcome": "ok" });
-    expect(span?.resource.attributes["service.name"]).toBe("kobe-sandbox-agent");
+    expect(span?.attributes).toEqual({ "kaiju.tool.outcome": "ok" });
+    expect(span?.resource.attributes["service.name"]).toBe("kaiju-sandbox-agent");
     expect(own.getFinishedSpans()).toHaveLength(0);
   });
 
   it("keeps content with capture on", async () => {
     const relayed = new InMemorySpanExporter();
     start(true, relayed);
-    spanRelay()?.offer([relaySpan(0, { "kobe.tool.input": "q" })]);
+    spanRelay()?.offer([relaySpan(0, { "kaiju.tool.input": "q" })]);
     await spanRelay()?.flush();
-    expect(relayed.getFinishedSpans()[0]?.attributes["kobe.tool.input"]).toBe("q");
+    expect(relayed.getFinishedSpans()[0]?.attributes["kaiju.tool.input"]).toBe("q");
   });
 
   it("drops and counts what does not fit, never touching the server's own spans", async () => {

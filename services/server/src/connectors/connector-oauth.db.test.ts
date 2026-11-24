@@ -134,7 +134,7 @@ const grantFor = async (team: string, user: string, connectorId: string) => {
     method: "POST",
     headers: {
       authorization: `Bearer ${INTERNAL_KEY}`,
-      "kobe-sandbox-token": mcpToken({
+      "kaiju-sandbox-token": mcpToken({
         sandboxId: await activeSandbox(h.admin, team, user),
         teamId: team,
         userId: user,

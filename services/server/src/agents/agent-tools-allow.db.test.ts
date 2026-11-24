@@ -224,7 +224,7 @@ describe("the MCP proxy's re-check", () => {
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${INTERNAL_KEY}`,
-          "kobe-sandbox-token": token,
+          "kaiju-sandbox-token": token,
         },
         body: JSON.stringify({ tool, thread_id: w.threadId, arguments: { q: "x" } }),
       });

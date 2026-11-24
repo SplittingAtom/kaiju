@@ -6,7 +6,13 @@
  * like on any reload. The stash lasts {@link RELOAD_DRAFT_TTL_MS} and sign-out clears it, so a
  * person signing in on the same tab later never gets another's draft.
  */
-const KEY = "kobe.reload-drafts";
+const KEY = "kaiju.reload-drafts";
+/**
+ * The key a build from before the rename to Kaiju stashes under: the Reload that installs the
+ * rename itself starts on such a build, so its drafts are taken from there once (KOBE-749;
+ * removed in KOBE-754).
+ */
+const LEGACY_KEY = "kobe.reload-drafts";
 /** A reload takes seconds; anything older is not from the banner's Reload. */
 export const RELOAD_DRAFT_TTL_MS = 10 * 60_000;
 
@@ -48,8 +54,17 @@ export function resetReloadRequest(): void {
   reloadRequested = false;
 }
 
+/** Moves a stash written under {@link LEGACY_KEY} to {@link KEY} (when none is there yet). */
+function adoptLegacyStash(): void {
+  const legacy = sessionStorage.getItem(LEGACY_KEY);
+  if (legacy === null) return;
+  if (sessionStorage.getItem(KEY) === null) sessionStorage.setItem(KEY, legacy);
+  sessionStorage.removeItem(LEGACY_KEY);
+}
+
 function readStash(): Readonly<Record<string, ReloadDraft>> {
   try {
+    adoptLegacyStash();
     const raw = sessionStorage.getItem(KEY);
     if (raw === null) return {};
     const parsed = JSON.parse(raw) as Partial<Stash> | null;
@@ -84,6 +99,11 @@ function writeStash(drafts: Readonly<Record<string, ReloadDraft>>): void {
 /** Drops every kept draft (sign-out). */
 export function forgetReloadDrafts(): void {
   writeStash({});
+  try {
+    sessionStorage.removeItem(LEGACY_KEY);
+  } catch {
+    // Storage blocked: nothing was kept under it either.
+  }
 }
 
 /**

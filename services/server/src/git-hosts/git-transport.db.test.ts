@@ -230,7 +230,7 @@ async function ask(a: Ask = {}) {
     method: "POST",
     headers: {
       authorization: `Bearer ${a.key ?? GIT_KEY}`,
-      "kobe-sandbox-token": a.token ?? egressToken(ids[a.user ?? "contrib"] ?? ""),
+      "kaiju-sandbox-token": a.token ?? egressToken(ids[a.user ?? "contrib"] ?? ""),
       "content-type": "application/json",
     },
     body: JSON.stringify({

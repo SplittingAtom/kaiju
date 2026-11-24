@@ -14,7 +14,7 @@ import { z } from "zod";
  *   trace whichever HTTP request or replica caused them; a Langfuse score (KOBE-275) can name the
  *   trace from the run id alone. A compaction is its own run (KOBE-212), so it is its own trace,
  *   in the same session.
- * - Root span `kobe.run` with span id {@link runRootSpanId}, recorded by the server replica holding
+ * - Root span `kaiju.run` with span id {@link runRootSpanId}, recorded by the server replica holding
  *   the run's sandbox connection once the run ended and its late-span grace passed (start = run
  *   started, end = run ended), with {@link TRACE_DROPPED_ATTRIBUTE} when sandbox spans were dropped.
  *   A run whose sandbox connection is lost for good has no root (its spans stay in its trace).
@@ -55,9 +55,9 @@ export const TRACE_SESSION_ID_ATTRIBUTE = "session.id";
 /** Langfuse (and OTel semconv) user attribute: the member's user id (uuid only). */
 export const TRACE_USER_ID_ATTRIBUTE = "user.id";
 /** Name of a run's root span. */
-export const RUN_ROOT_SPAN_NAME = "kobe.run";
-/** On the `kobe.run` root: sandbox spans dropped (agent buffer plus every server-side drop). */
-export const TRACE_DROPPED_ATTRIBUTE = "kobe.trace.sandbox_spans_dropped";
+export const RUN_ROOT_SPAN_NAME = "kaiju.run";
+/** On the `kaiju.run` root: sandbox spans dropped (agent buffer plus every server-side drop). */
+export const TRACE_DROPPED_ATTRIBUTE = "kaiju.trace.sandbox_spans_dropped";
 /** HKDF info of `k_trace`, the key that remaps sandbox span ids (`@kaiju/protocol/node`). */
 export const TRACE_SPAN_KDF_INFO = "kobe/trace-span/v1";
 export const TRACE_SPAN_KEY_BYTES = 32;
@@ -91,7 +91,7 @@ export function runTraceId(runId: string): string {
 }
 
 /**
- * The span id of a run's root span `kobe.run`: the low 64 bits of the run id (random in a v4
+ * The span id of a run's root span `kaiju.run`: the low 64 bits of the run id (random in a v4
  * uuid), or `0000000000000001` in the impossible case they are all zero.
  */
 export function runRootSpanId(runId: string): string {

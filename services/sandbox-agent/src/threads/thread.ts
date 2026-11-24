@@ -326,7 +326,7 @@ export class Thread {
   }
 
   /**
-   * Make `runId` the run Pi attributes its model calls to (`x-kobe-run-id`), with the run's
+   * Make `runId` the run Pi attributes its model calls to (`x-kaiju-run-id`), with the run's
    * model, before the prompt is sent. The extension reads the file on Pi's `input` hook and per
    * request. `traceparent` is the run's span for those calls (KOBE-274; null: untraced), in the
    * same write so the first call carries it. No-op without model wiring.

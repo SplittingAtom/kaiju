@@ -7,7 +7,7 @@ import { and, connectors, eq, isNull } from "@kaiju/db";
 import { idSchema, uuidSchema } from "@kaiju/protocol";
 import { logger } from "../logger.js";
 import { reportCapturedResult, resultReportSchema, type AppResultsDeps } from "../apps/results.js";
-import { authenticateSandbox, type McpAuthDeps } from "../mcp/principal.js";
+import { authenticateSandbox, sandboxTokenOf, type McpAuthDeps } from "../mcp/principal.js";
 import type { McpService } from "../mcp/service.js";
 import type { KaijuMcpService } from "../kaiju-mcp/service.js";
 import type { GitMcpService } from "../git-tools/mcp-service.js";
@@ -20,7 +20,7 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  * user app (ingress) nor the sandbox listener (8081, which sandboxes reach): the release
  * NetworkPolicy admits only the MCP proxy's pods to this port, and every request must carry the
  * proxy's internal key. The caller's identity is the sandbox's own `kobe.mcp-proxy` session token
- * (`Kobe-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
+ * (`Kaiju-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
  * whose token it has not seen.
  *
  * POST /internal/v1/mcp/connectors/{id}/tools → 200 `{connector, tools}` (pinned + exposed)
@@ -137,7 +137,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
   mcp.post("/connectors/:id/tools", async (c) => {
     const id = connectorId(c.req.param("id"));
     if (!id.success) return notFound(c, "connector_not_available", "Not found.");
-    const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+    const auth = await principalOf(sandboxTokenOf(c));
     if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
     const listed = await deps.mcp.listTools(auth.principal, id.data);
     if (!listed) {
@@ -154,7 +154,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
   mcp.post("/connectors/:id/grant", async (c) => {
     const id = connectorId(c.req.param("id"));
     if (!id.success) return notFound(c, "connector_not_available", "Not found.");
-    const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+    const auth = await principalOf(sandboxTokenOf(c));
     if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
     // A skill eval (KOBE-325) never runs on a member's own keys (nor a Registry reviewer's).
     if (auth.principal.evalThreadId !== undefined) {
@@ -191,7 +191,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
     if (!id.success) return notFound(c, "connector_not_available", "Not found.");
     const body = callBodySchema.safeParse(await readJson(c, null));
     if (!body.success) return invalidRequest(c, "Invalid call.");
-    const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+    const auth = await principalOf(sandboxTokenOf(c));
     if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
     const wait = decideLimiter.take(auth.principal.sandboxId);
     if (wait > 0) {
@@ -223,7 +223,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
   for (const [path, service] of builtins) {
     mcp.post(`/${path}/list`, async (c) => {
       if (!service) return notAvailable(c);
-      const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+      const auth = await principalOf(sandboxTokenOf(c));
       if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
       const wait = decideLimiter.take(auth.principal.sandboxId);
       if (wait > 0) {
@@ -237,7 +237,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
       if (!service) return notAvailable(c);
       const body = callBodySchema.safeParse(await readJson(c, null));
       if (!body.success) return invalidRequest(c, "Invalid call.");
-      const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+      const auth = await principalOf(sandboxTokenOf(c));
       if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
       const wait = decideLimiter.take(auth.principal.sandboxId);
       if (wait > 0) {
@@ -262,7 +262,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
     if (!deps.appResults) return notFound(c, "not_available", "Not stored.");
     const body = resultReportSchema.safeParse(await readJson(c, null));
     if (!body.success) return invalidRequest(c, "Invalid report.");
-    const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+    const auth = await principalOf(sandboxTokenOf(c));
     if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
     const stored = await reportCapturedResult(deps.appResults, auth.principal, id.data, body.data);
     if (stored.ok) return c.json({ storage: stored.storage }, 201);

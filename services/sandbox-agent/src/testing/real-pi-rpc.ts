@@ -17,7 +17,7 @@ import { EXEC_CHANNEL_FD, PI_LOCKDOWN_ARGS } from "../pi/pi-launch.js";
  * (lockdown flags, a private agent dir, kobe-models then kobe-policy, the policy channel on fd 3,
  * the model file named by KAIJU_MODEL_FILE) but without the agent in between: no tripwire, no
  * model-file bookkeeping. Tests that ask what Pi itself does with a planted `agent/` directory
- * need exactly that (KOBE-165). Answers Pi's `kobe.run_token` dialog like the agent does.
+ * need exactly that (KOBE-165). Answers Pi's `kaiju.run_token` dialog like the agent does.
  */
 export interface RecordedRequest {
   readonly method: string;
@@ -67,7 +67,8 @@ export async function startListener(
 
 /**
  * The legitimate gateway as Pi sees it: records every request's headers, then forwards it to the
- * real (local) gateway minus the run token header, which the local gateway has no record of.
+ * real (local) gateway minus the run token header (under both names: the extension also sends the
+ * pre-rename one for a release, KOBE-749), which the local gateway has no record of.
  */
 export async function startTap(upstream: string): Promise<Listener> {
   return startListener((req, res) => {
@@ -75,6 +76,7 @@ export async function startTap(upstream: string): Promise<Listener> {
     req.on("data", (c: Buffer) => chunks.push(c));
     req.on("end", () => {
       const headers = { ...req.headers, host: new URL(upstream).host };
+      Reflect.deleteProperty(headers, "x-kaiju-run-token");
       Reflect.deleteProperty(headers, "x-kobe-run-token");
       const out = http.request(
         upstream + (req.url ?? "/"),
@@ -335,7 +337,7 @@ export class PiRpc {
       if (
         m.type === "extension_ui_request" &&
         m.method === "input" &&
-        m.title === "kobe.run_token"
+        m.title === "kaiju.run_token"
       ) {
         this.#write(this.#child.stdin, {
           type: "extension_ui_response",

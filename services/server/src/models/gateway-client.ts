@@ -7,6 +7,7 @@ import {
   SERVER_CALL_REASONING_EFFORT,
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
+  withLegacyHeaderNames,
   serverCallOutputCapFor,
   serverCallRequestSchema,
   type ServerCallRequest,
@@ -33,7 +34,7 @@ import { readCapped } from "../http/read-capped.js";
  * The server's own model calls (KOBE-219 titles, KOBE-222 follow-ups) through the model gateway,
  * per the KOBE-234 contract (docs/design/server-model-calls.md): one `POST /v1/chat/completions`
  * per call, authenticated by a server-call token minted right before it (TTL 30 s, bound to the
- * purpose, team, member, thread, run, model and output cap) in `x-kobe-server-call`, alone. No
+ * purpose, team, member, thread, run, model and output cap) in `x-kaiju-server-call`, alone. No
  * session token, run token, run id or provider key is ever sent: the gateway forwards with the
  * member's virtual key, as for sandbox calls. Non-streaming, no retries, no redirects; the caller's
  * signal bounds the whole call. Failures carry a short code only (the gateway's, or the status),
@@ -302,16 +303,19 @@ export function createServerCallClient(options: ServerCallClientOptions): Server
             ...(input.threadId === undefined
               ? {}
               : sessionAttributes({ threadId: input.threadId, userId: input.userId })),
-            "kobe.usage_kind": input.purpose,
+            "kaiju.usage_kind": input.purpose,
           },
         },
         async () => {
           const body = JSON.stringify(bodyOf(input));
           // Minted right before the call, sent once, never stored or logged.
-          const headers = injectTraceHeaders({
-            "content-type": "application/json",
-            [SERVER_CALL_TOKEN_HEADER]: mintToken(options.key, input, now()),
-          });
+          // Under both header names for one release: an old gateway pod reads it (KOBE-749/754).
+          const headers = injectTraceHeaders(
+            withLegacyHeaderNames({
+              "content-type": "application/json",
+              [SERVER_CALL_TOKEN_HEADER]: mintToken(options.key, input, now()),
+            }),
+          );
           const res = await post(doFetch, endpoint, headers, body, input.signal);
           let text: string | undefined;
           try {

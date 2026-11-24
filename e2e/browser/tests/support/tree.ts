@@ -16,7 +16,7 @@ import { RUN_START_TIMEOUT_MS, RUN_TIMEOUT_MS, SHELL_TIMEOUT_MS } from "./consta
 export const SECOND_USER = process.env["KAIJU_USER2"];
 export const SECOND_PW = process.env["KAIJU_PW2"];
 export const NO_SECOND = "KAIJU_USER2 and KAIJU_PW2 name a second member of the team";
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 export const LABEL = "try 5% cut";
 export const MAIN = "CHARLIE";
@@ -177,7 +177,7 @@ export async function api(page: Page, method: string, path: string, body?: unkno
       const team = window.localStorage.getItem(teamKey) ?? "";
       const res = await fetch(path, {
         method,
-        headers: { "x-kobe-team": team, ...(body ? { "content-type": "application/json" } : {}) },
+        headers: { "x-kaiju-team": team, ...(body ? { "content-type": "application/json" } : {}) },
         body: body ? JSON.stringify(body) : undefined,
       });
       return { status: res.status, json: (await res.json().catch(() => null)) as unknown };

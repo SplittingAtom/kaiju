@@ -150,7 +150,7 @@ async function callDirect(
       authorization: `Bearer ${s.token}`,
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
-      "kobe-thread-id": options.threadId ?? s.threadId,
+      "kaiju-thread-id": options.threadId ?? s.threadId,
     },
     body: JSON.stringify({
       jsonrpc: "2.0",

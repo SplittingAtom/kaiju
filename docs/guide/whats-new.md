@@ -13,6 +13,14 @@ What changed in the latest release, in short, with a link to the page that expla
 The product has a new name: the app, its emails, the sign-in page and this guide now say
 **Kaiju**. A site that set its own name under **Site admin → Appearance** keeps showing that name.
 
+After the upgrade your browser forgets its own choices once: the theme, the last Workspace and
+conversation it opened, panel sizes and open tabs, and notices you closed. Set them again as you
+go. You stay signed in. If you were in the middle of signing in with your organization's account
+during the upgrade, start the sign-in again.
+
+For admins with scripts or tools that call Kaiju's API: send the Workspace as `X-Kaiju-Team`.
+The old `X-Kobe-Team` still works for this release only.
+
 ## v1.4: git organizations
 
 A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub

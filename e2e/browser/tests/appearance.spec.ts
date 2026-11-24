@@ -14,7 +14,7 @@ import { panelOf } from "./support/panel.js";
  * `npx playwright test appearance`.
  */
 const PAGE = "/admin/site/appearance";
-const THEME_COOKIE = "kobe-theme";
+const THEME_COOKIE = "kaiju-theme";
 /** The web's branding cache (30 s, stale-while-revalidate) plus a request to refresh it. */
 const BRANDING_TIMEOUT_MS = 90_000;
 

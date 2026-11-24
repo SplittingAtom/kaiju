@@ -86,11 +86,11 @@ describe("theme toggle (KOBE-282)", () => {
     renderToggle();
     await user.click(toggle(false));
     expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(cookies).toEqual(["kobe-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax"]);
+    expect(cookies).toEqual(["kaiju-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax"]);
 
     await user.click(toggle(true));
     expect(document.documentElement.dataset.theme).toBe("light");
-    expect(cookies.at(-1)).toBe("kobe-theme=light; Path=/; Max-Age=31536000; SameSite=Lax");
+    expect(cookies.at(-1)).toBe("kaiju-theme=light; Path=/; Max-Age=31536000; SameSite=Lax");
   });
 
   it("a saved choice wins over the OS", () => {

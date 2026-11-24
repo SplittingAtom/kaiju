@@ -340,7 +340,7 @@ describe("team invitations (ac-2)", () => {
           "POST",
           "/v1/team/invites",
           { email: "z@inv.test", role: "member" },
-          { "x-kobe-team": finance },
+          { "x-kaiju-team": finance },
         )
       ).status,
     ).toBe(409);

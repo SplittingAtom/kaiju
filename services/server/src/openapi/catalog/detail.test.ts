@@ -15,7 +15,7 @@ type Operation = {
   readonly parameters?: readonly { name: string; in: string }[];
   readonly requestBody?: { content?: Record<string, { schema?: unknown }> };
   readonly responses?: Record<string, { content?: Record<string, { schema?: unknown }> }>;
-  readonly "x-kobe-detail"?: string;
+  readonly "x-kaiju-detail"?: string;
 };
 
 const doc = openApiDocument() as {
@@ -76,7 +76,7 @@ describe("OpenAPI catalog detail (KOBE-771)", () => {
         const op = doc.paths[path]?.[method];
         const name = `${method} ${path}`;
         expect(op, name).toBeDefined();
-        expect(op?.["x-kobe-detail"], name).toBeUndefined();
+        expect(op?.["x-kaiju-detail"], name).toBeUndefined();
         const success = Object.entries(op?.responses ?? {}).filter(([s]) =>
           /^(2\d\d|302)$/.test(s),
         );

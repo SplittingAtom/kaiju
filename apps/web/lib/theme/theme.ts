@@ -6,7 +6,7 @@
  */
 export type Theme = "light" | "dark";
 
-export const THEME_COOKIE = "kobe-theme";
+export const THEME_COOKIE = "kaiju-theme";
 /** One year, in seconds. */
 export const THEME_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 /** The media query behind "follow the OS". */

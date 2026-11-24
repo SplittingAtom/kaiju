@@ -34,7 +34,7 @@ const entraClaims = (over: Record<string, unknown> = {}) => ({
   auth_time: NOW - 5,
   preferred_username: "Ada@Contoso.com",
   name: "Ada Lovelace",
-  roles: ["kobe.research.member"],
+  roles: ["kaiju.research.member"],
   ...over,
 });
 
@@ -54,7 +54,7 @@ describe("checkIdTokenClaims", () => {
         email: "ada@contoso.com",
         emailVerified: false,
         name: "Ada Lovelace",
-        values: ["kobe.research.member"],
+        values: ["kaiju.research.member"],
         amr: ["pwd", "mfa"],
         acr: "c1",
       },

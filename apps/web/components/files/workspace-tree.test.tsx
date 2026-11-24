@@ -343,7 +343,7 @@ describe("every project, the conversation's one active (KOBE-590, FP1-FP6)", () 
       },
     });
     expect(data).toEqual({
-      "application/x-kobe-unmounted-project-file":
+      "application/x-kaiju-unmounted-project-file":
         "Start a conversation in Other plan to mention its files",
     });
   });

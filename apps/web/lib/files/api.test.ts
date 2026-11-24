@@ -26,7 +26,7 @@ describe("files api", () => {
     });
     const res = await createFilesApi("t1", fetchFn).list("a b");
     expect(must(calls[0]).url).toBe("/v1/workspace/files?path=a+b");
-    expect(new Headers(must(calls[0]).init.headers).get("x-kobe-team")).toBe("t1");
+    expect(new Headers(must(calls[0]).init.headers).get("x-kaiju-team")).toBe("t1");
     expect(res.ok && res.data.entries[0]?.sizeBytes).toBe(3);
   });
 
@@ -62,7 +62,7 @@ describe("files api", () => {
     expect(call.url).toBe("/v1/workspace/files/move");
     expect(call.init.method).toBe("POST");
     expect(JSON.parse(String(call.init.body))).toEqual({ from: "a", to: "b/a" });
-    expect(new Headers(call.init.headers).get("x-kobe-team")).toBe("t1");
+    expect(new Headers(call.init.headers).get("x-kaiju-team")).toBe("t1");
   });
 
   it("deletes by path and wakes", async () => {
@@ -83,7 +83,7 @@ describe("files api", () => {
     const call = must(sync.calls[0]);
     expect(call.url).toBe("/v1/workspace/sync");
     expect(call.init.method).toBe("POST");
-    expect(new Headers(call.init.headers).get("x-kobe-team")).toBe("t1");
+    expect(new Headers(call.init.headers).get("x-kaiju-team")).toBe("t1");
   });
 
   it("downloads bytes", async () => {

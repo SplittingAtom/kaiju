@@ -91,7 +91,7 @@ describe("a workspace row's drag", () => {
     startRowDrag(project, { path: "projects/p1/plan.md", type: "file" }, false);
     expect(project.effectAllowed).toBe("copy");
 
-    expect(TREE_DRAG_TYPE).toBe("application/x-kobe-workspace-path");
+    expect(TREE_DRAG_TYPE).toBe("application/x-kaiju-workspace-path");
     expect(carriesWorkspaceRow(null)).toBe(false);
   });
 });

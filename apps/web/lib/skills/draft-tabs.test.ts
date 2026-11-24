@@ -29,7 +29,7 @@ describe("the remembered tab", () => {
   });
 
   it("ignores a stored value that is no tab, and storage that throws", () => {
-    localStorage.setItem("kobe.workbench.tab.d-1", "nonsense");
+    localStorage.setItem("kaiju.workbench.tab.d-1", "nonsense");
     expect(rememberedDraftTab("d-1")).toBeNull();
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("blocked");

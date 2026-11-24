@@ -67,6 +67,6 @@ describe("the composer's draft across the banner's Reload (KOBE-487)", { timeout
     await screen.findByText("In Two.", undefined, WAIT);
     await typeDraft("gone");
     window.dispatchEvent(new Event("pagehide"));
-    expect(sessionStorage.getItem("kobe.reload-drafts")).toBeNull();
+    expect(sessionStorage.getItem("kaiju.reload-drafts")).toBeNull();
   });
 });

@@ -24,7 +24,7 @@ describe("closed notices", () => {
   });
 
   it("ignores garbled storage and storage that throws", () => {
-    localStorage.setItem("kobe.chat.closedNotices", "{nope");
+    localStorage.setItem("kaiju.chat.closedNotices", "{nope");
     expect(isNoticeClosed("x")).toBe(false);
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("blocked");
