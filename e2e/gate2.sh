@@ -120,7 +120,7 @@ OWNER_JSON=$(printf '{"email":"%s","password":"%s"}' "$OWNER_EMAIL" "$OWNER_PASS
 step() { client "$(printf '{"mode":"%s","base":"%s","owner":%s,%s}' "$1" "$BASE" "$OWNER_JSON" "$2")"; }
 server_now() { $KUBECTL -n "$NS" exec "$SERVER" -c server -- date -u +%Y-%m-%dT%H:%M:%SZ; }
 SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-SANDBOX_IMAGE="${KAIJU_GATE2_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kobe-sandbox}}"
+SANDBOX_IMAGE="${KAIJU_GATE2_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kaiju-sandbox}}"
 
 grant=$(step grant "\"userId\":\"$IA\"")
 contains "ia is a site admin; the site has at least two (Owner + admins)" '^role_status=(200|204)$' "$grant"

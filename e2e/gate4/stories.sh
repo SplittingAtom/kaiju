@@ -154,7 +154,7 @@ chat() { turn "$(user_of "$SBX_WHO")" "$1"; } # scan.sh's Pi view runs through t
 if ((FAKE_INFRA)) && ((MODELS)); then
   echo "==> test servers in $INFRA_NS: an OAuth MCP server and the Orbit test model"
   SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-  SANDBOX_IMAGE="${KAIJU_GATE4_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kobe-sandbox}}"
+  SANDBOX_IMAGE="${KAIJU_GATE4_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kaiju-sandbox}}"
   $KUBECTL create namespace "$INFRA_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
   for svc in fake-oauth orbit-model; do
     $KUBECTL -n "$INFRA_NS" get svc "$svc" >/dev/null 2>&1 \

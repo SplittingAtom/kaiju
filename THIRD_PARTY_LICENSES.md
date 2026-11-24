@@ -977,7 +977,7 @@ Documented exceptions (`tools/license-check/license-exceptions.json`):
 
 ## Sandbox image: Python and npm packages
 
-What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sandbox`): the Python data stack (`images/sandbox/requirements.txt`), Pi and its dependencies (`images/sandbox/pi/package-lock.json`), kaiju-sandbox-agent's production dependencies and the npm CLI. The committed report is `images/sandbox/third-party-licenses.json`; CI `sandbox-image` compares it with the built image and runs the policy check on it.
+What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kaiju-sandbox`): the Python data stack (`images/sandbox/requirements.txt`), Pi and its dependencies (`images/sandbox/pi/package-lock.json`), kaiju-sandbox-agent's production dependencies and the npm CLI. The committed report is `images/sandbox/third-party-licenses.json`; CI `sandbox-image` compares it with the built image and runs the policy check on it.
 
 311 packages, 311 of them shipped in an image.
 
@@ -1414,7 +1414,7 @@ Documented exceptions (`images/orbit-eval/license-exceptions.json`):
 
 ## External skill scanner image: Python packages
 
-What the same script finds in the optional external skill scanner image (`kobe-skill-scan`, KOBE-341): Cisco skill-scanner 2.2.1 (Apache-2.0) with the dependencies of its hashed lock exported without extras and without pcodedmp (`images/skill-scan/requirements.txt`, `scanner-requirements.txt`); its bundled CEL helper is the `skill-scan-cel-go` row. The image runs only when a Site admin turns the external scanner on, as a Job with no network. The committed report is `images/skill-scan/third-party-licenses.json`; CI `skill-scan-image` compares it with the built image.
+What the same script finds in the optional external skill scanner image (`kaiju-skill-scan`, KOBE-341): Cisco skill-scanner 2.2.1 (Apache-2.0) with the dependencies of its hashed lock exported without extras and without pcodedmp (`images/skill-scan/requirements.txt`, `scanner-requirements.txt`); its bundled CEL helper is the `skill-scan-cel-go` row. The image runs only when a Site admin turns the external scanner on, as a Job with no network. The committed report is `images/skill-scan/third-party-licenses.json`; CI `skill-scan-image` compares it with the built image.
 
 98 packages, 98 of them shipped in an image.
 

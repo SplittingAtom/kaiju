@@ -82,7 +82,7 @@ imageReports:
   - id: sandbox
     title: "Sandbox image: Python and npm packages"
     intro: >-
-      What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sandbox`): the
+      What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kaiju-sandbox`): the
       Python data stack (`images/sandbox/requirements.txt`), Pi and its dependencies
       (`images/sandbox/pi/package-lock.json`), kaiju-sandbox-agent's production dependencies and
       the npm CLI. The committed report is `images/sandbox/third-party-licenses.json`; CI
@@ -111,7 +111,7 @@ imageReports:
   - id: skill-scan
     title: "External skill scanner image: Python packages"
     intro: >-
-      What the same script finds in the optional external skill scanner image (`kobe-skill-scan`,
+      What the same script finds in the optional external skill scanner image (`kaiju-skill-scan`,
       KOBE-341): Cisco skill-scanner 2.2.1 (Apache-2.0) with the dependencies of its hashed lock
       exported without extras and without pcodedmp (`images/skill-scan/requirements.txt`,
       `scanner-requirements.txt`); its bundled CEL helper is the `skill-scan-cel-go` row. The image

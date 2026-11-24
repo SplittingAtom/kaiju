@@ -110,7 +110,7 @@ AGENT_FIELD="\"agentId\":\"$KAIJU_AGENT\""
 # ---- the fake MCP Apps server and the proxies' allow-list ---------------------------------------------
 part_begin "setup: the fake MCP server serves ui://e2e/explorer; the connectors are pinned and enabled"
 SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-SANDBOX_IMAGE="${KAIJU_GATEAPPS_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kobe-sandbox}}"
+SANDBOX_IMAGE="${KAIJU_GATEAPPS_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kaiju-sandbox}}"
 $KUBECTL create namespace "$INFRA_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
 $KUBECTL -n "$INFRA_NS" delete pod fake-mcp --ignore-not-found >/dev/null
 $KUBECTL -n "$INFRA_NS" run fake-mcp --restart=Never --image="$SANDBOX_IMAGE" --image-pull-policy=IfNotPresent \
