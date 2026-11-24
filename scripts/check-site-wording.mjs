@@ -31,7 +31,7 @@ const SCOPE_WORDING = [
     "i",
   ),
   new RegExp(`\\binstall${APOSTROPHE}s\\b`, "i"),
-  /\b(?:this|your|that|each|every|one|per) (?:kaiju )?install\b/i,
+  /\b(?:this|your|that|each|every|one|per) (?:k(?:obe|aiju) )?install\b/i, // the old name too (KOBE-746)
   /\b(?:a|an|the) (?:new|fresh|test|existing|throwaway|large|single-admin|real) install\b/i,
   /\bsingle-admin install\b/i,
   /\binstall-(?:wide|level)\b/i,
@@ -63,6 +63,7 @@ function selfTest() {
     'message: "That model is not in the install’s catalog."',
     "`${tool.name} is blocked by install policy.`",
     '"not allowed by this Kaiju install."',
+    '"not allowed by this Kobe install."',
     "<p>a fresh install reaches nothing</p>",
     'prefix="Install "',
     '"Pick a model from the install catalog."',

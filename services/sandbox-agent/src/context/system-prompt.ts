@@ -7,6 +7,7 @@ import {
   HELD_HEADER,
   KNOWN_HEADER,
   PICKS_HEADER,
+  headerForms,
   type SemanticSection,
 } from "../memory/semantic-context.js";
 
@@ -177,8 +178,11 @@ export function splitForcedPrompt(text: string, parts: KobePromptParts | undefin
   const found: { start: number; kind: ContextSectionKind; label: string }[] = [];
   let from = 0;
   for (const s of KOBE_SECTIONS) {
-    const at = text.indexOf(`\n\n${s.header}\n`, from);
-    if (at < 0) continue;
+    const hits = headerForms(s.header)
+      .map((h) => text.indexOf(`\n\n${h}\n`, from))
+      .filter((i) => i >= 0);
+    if (hits.length === 0) continue;
+    const at = Math.min(...hits);
     found.push({ start: at, kind: s.kind, label: s.label });
     from = at + 2;
   }

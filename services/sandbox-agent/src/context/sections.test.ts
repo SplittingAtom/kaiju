@@ -262,6 +262,17 @@ describe("context sections (KOBE-470)", () => {
     ]);
   });
 
+  it("labels notes and prompt parts written before the rename by their old headers (KOBE-746)", () => {
+    const note = "## What Kobe knows for this message\n<<<BEGIN UNTRUSTED MEMORY n>>>\n- fact: x";
+    expect(kinds(sectionsOf([{ role: "user", content: note }]))).toEqual([
+      "memory:What Kaiju knows for this message",
+    ]);
+    const held = "## What Kobe knows for this conversation\nHELD";
+    const byHeader = splitForcedPrompt(`${RENDERED}\n\n${held}`, undefined);
+    expect(kinds(byHeader).at(-1)).toBe("memory:What Kaiju knows for this conversation");
+    expect(byHeader.at(-1)?.text).toBe(held);
+  });
+
   it("splits a forced prompt with held picks after the project instructions (KOBE-658)", () => {
     const held = "## What Kaiju knows for this conversation\nHELD";
     const parts = { memory: "", project: "", viewing: "", known: "", picks: "", held };

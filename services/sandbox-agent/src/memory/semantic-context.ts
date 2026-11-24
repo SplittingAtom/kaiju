@@ -27,6 +27,22 @@ import { capBytes, oneLine, untrustedLinesBlock } from "../kobe-tools/memory-fen
 export const KNOWN_HEADER = "## What Kaiju knows";
 export const PICKS_HEADER = "## What Kaiju knows for this message";
 export const HELD_HEADER = "## What Kaiju knows for this conversation";
+/**
+ * The same headers as written before the rename (KOBE-746): notes in session history and prompts
+ * captured before the upgrade still start with them, so the context viewer reads both. Drop
+ * together with the one-release fallbacks (KOBE-754).
+ */
+export const PRE_RENAME_HEADERS: Readonly<Record<string, string>> = {
+  [KNOWN_HEADER]: "## What Kobe knows",
+  [PICKS_HEADER]: "## What Kobe knows for this message",
+  [HELD_HEADER]: "## What Kobe knows for this conversation",
+};
+
+/** `header` and, for the What Kaiju knows headers, its pre-rename form. */
+export function headerForms(header: string): readonly string[] {
+  const old = PRE_RENAME_HEADERS[header];
+  return old === undefined ? [header] : [header, old];
+}
 
 /** One context-viewer section of a part (KOBE-470): the part is its sections joined by "\n". */
 export interface SemanticSection {
