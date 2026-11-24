@@ -421,7 +421,11 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "RN-5",
     ],
     ["package.json", 'test -z "$KOBE_TEST_DATABASE_URL"', "KOBE_TEST", "RN-4"],
-    ["services/server/src/x.ts", "kobe.tool.name", "kobe.tool", "RN-5"],
+    ["services/server/src/x.ts", '"kobe.tool.name"', "kobe.tool", "RN-5"],
+    // A test variable named kobe is not a telemetry name.
+    ["apps/web/x.test.tsx", 'act(() => kobe.agent.delta(runId, "m1", "Here", 1));', "kobe", "RN-3"],
+    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', "kobeName", "RN-3"],
+    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', '"kobe"', "provisional"],
   ];
   for (const [path, line, token, step] of cases) {
     assert.equal(realOwner(path, line, token), step, `${path}: ${line || "(path)"} ${token}`);
