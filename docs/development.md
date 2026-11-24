@@ -158,7 +158,7 @@ DROP INDEX CONCURRENTLY IF EXISTS "thread_app_results_thread_idx";
 `ci` runs `static` (hygiene, format, build, typecheck, lint, license check) and `unit` (unit and
 chart tests, sandbox privilege separation) side by side; the required `checks` job passes when
 both did, as `db` does for `db-core` and the `db-server` shards. Jobs set up the toolchain with
-the composite actions in `.github/actions/` (`setup-kobe`: pnpm, Node from `.nvmrc`, install and
+the composite actions in `.github/actions/` (`setup-kaiju`: pnpm, Node from `.nvmrc`, install and
 Turbo's cache; `pg17-client`). `static` saves Turbo's local cache (`.turbo/cache`, build output
 only) on every push to `main`, and every `ci` job restores it, so packages unchanged since `main`
 replay their build instead of rebuilding; pull requests and merge-queue runs only read it.
@@ -188,4 +188,4 @@ open PR to re-run. Required checks: `checks`, `db`, `images`, `k3d`.
 
 Self-hosted runners on a k3s cluster (Actions Runner Controller) are documented in
 [`ci/runners/README.md`](../ci/runners/README.md). They are idle by default; set the repository
-variable `KOBE_RUNNER=kobe-k3s` to route jobs to them.
+variable `KAIJU_RUNNER=kobe-k3s` to route jobs to them.

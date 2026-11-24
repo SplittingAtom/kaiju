@@ -12,7 +12,7 @@ import {
 // but only ever drops its own database.
 
 const base = process.env.KAIJU_TEST_DATABASE_URL ?? "";
-const ours = `kobe_test_${randomBytes(4).toString("hex")}_sweep`;
+const ours = `kaiju_test_${randomBytes(4).toString("hex")}_sweep`;
 const DAY = 24 * 60 * 60 * 1000;
 
 describe("stale test database sweep (KOBE-743)", () => {

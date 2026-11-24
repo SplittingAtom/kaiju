@@ -20,7 +20,11 @@ function workspace(name: string): string {
 
 describe("laneFromDirectory", () => {
   it("drops the repository name and keeps the worktree's distinguishing part", () => {
+    expect(laneFromDirectory("Kaiju-wt482")).toBe("wt482");
+    expect(laneFromDirectory("Kaiju")).toBe("kaiju");
+    // Checkouts named before the repository rename (KOBE-752) keep their lanes.
     expect(laneFromDirectory("Kobe-wt482")).toBe("wt482");
+    expect(laneFromDirectory("Kobe-g126")).toBe("g126");
     expect(laneFromDirectory("Kobe")).toBe("kobe");
     expect(laneFromDirectory("my_Lane.2")).toBe("mylane2");
   });
@@ -32,7 +36,7 @@ describe("laneFromDirectory", () => {
 });
 
 describe("resolveTestLane", () => {
-  const root = workspace("Kobe-wt7");
+  const root = workspace("Kaiju-wt7");
   const cwd = join(root, "services", "server");
 
   it("uses KAIJU_TEST_DB_LANE when set", () => {
@@ -65,9 +69,9 @@ describe("resolveTestLane", () => {
 describe("lane names", () => {
   it("points the server URL at the lane database and leaves it alone without a lane", () => {
     const base = "postgres://u:p@db.example:5432/postgres?sslmode=disable";
-    expect(laneDatabaseName("wt7")).toBe("kobe_lane_wt7");
+    expect(laneDatabaseName("wt7")).toBe("kaiju_lane_wt7");
     expect(laneServerUrl(base, "wt7")).toBe(
-      "postgres://u:p@db.example:5432/kobe_lane_wt7?sslmode=disable",
+      "postgres://u:p@db.example:5432/kaiju_lane_wt7?sslmode=disable",
     );
     expect(laneServerUrl(base, undefined)).toBe(base);
   });
@@ -78,12 +82,21 @@ describe("lane names", () => {
   });
 
   it("matches only the lane's own objects", () => {
+    expect(isLaneObjectName("kaiju_test_ab12cd34_wt7", "wt7")).toBe(true);
+    expect(isLaneObjectName("kaiju_up_owner_ab12cd34_wt7", "wt7")).toBe(true);
+    expect(isLaneObjectName("kaiju_lane_wt7", "wt7")).toBe(true);
+    expect(isLaneObjectName("kaiju_test_ab12cd34_wt71", "wt7")).toBe(false);
+    expect(isLaneObjectName("kaiju_test_ab12cd34_xwt7", "wt7")).toBe(false);
+    expect(isLaneObjectName("kaiju_test_ab12cd34", "wt7")).toBe(false);
+    expect(isLaneObjectName("kaiju_lane_wt71", "wt7")).toBe(false);
+    expect(isLaneObjectName("other_test_ab12cd34_wt7", "wt7")).toBe(false);
+  });
+
+  it("still matches the lane's objects named before the repository rename (KOBE-752)", () => {
     expect(isLaneObjectName("kobe_test_ab12cd34_wt7", "wt7")).toBe(true);
     expect(isLaneObjectName("kobe_up_owner_ab12cd34_wt7", "wt7")).toBe(true);
     expect(isLaneObjectName("kobe_lane_wt7", "wt7")).toBe(true);
     expect(isLaneObjectName("kobe_test_ab12cd34_wt71", "wt7")).toBe(false);
-    expect(isLaneObjectName("kobe_test_ab12cd34_xwt7", "wt7")).toBe(false);
-    expect(isLaneObjectName("kobe_test_ab12cd34", "wt7")).toBe(false);
     expect(isLaneObjectName("kobe_lane_wt71", "wt7")).toBe(false);
   });
 });

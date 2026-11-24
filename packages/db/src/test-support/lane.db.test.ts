@@ -35,19 +35,21 @@ describe("test database lanes (KOBE-482)", () => {
   it("lists and drops only the lane's own databases and roles", async () => {
     await ensureLaneDatabase(base, other);
     const hex = randomBytes(4).toString("hex");
-    await sql(`CREATE ROLE kobe_owner_${hex}_${lane} NOLOGIN`);
-    await sql(`CREATE DATABASE kobe_test_${hex}_${lane} OWNER kobe_owner_${hex}_${lane}`);
-    await sql(`CREATE ROLE kobe_owner_${hex}_${other} NOLOGIN`);
+    await sql(`CREATE ROLE kaiju_owner_${hex}_${lane} NOLOGIN`);
+    await sql(`CREATE DATABASE kaiju_test_${hex}_${lane} OWNER kaiju_owner_${hex}_${lane}`);
+    // Left by a checkout from before the repository rename (KOBE-752): still the lane's.
+    await sql(`CREATE DATABASE kobe_test_${hex}_${lane}`);
+    await sql(`CREATE ROLE kaiju_owner_${hex}_${other} NOLOGIN`);
 
     const lanes = await listTestLanes(base);
-    expect(lanes).toContainEqual({ lane, databases: 2, roles: 1 });
+    expect(lanes).toContainEqual({ lane, databases: 3, roles: 1 });
     expect(lanes).toContainEqual({ lane: other, databases: 1, roles: 1 });
 
     const dropped = await dropTestLane(base, lane);
     expect([...dropped.databases].sort()).toEqual(
-      [laneDatabaseName(lane), `kobe_test_${hex}_${lane}`].sort(),
+      [laneDatabaseName(lane), `kaiju_test_${hex}_${lane}`, `kobe_test_${hex}_${lane}`].sort(),
     );
-    expect(dropped.roles).toEqual([`kobe_owner_${hex}_${lane}`]);
+    expect(dropped.roles).toEqual([`kaiju_owner_${hex}_${lane}`]);
     const after = await listTestLanes(base);
     expect(after.some((l) => l.lane === lane)).toBe(false);
     expect(after).toContainEqual({ lane: other, databases: 1, roles: 1 });

@@ -50,9 +50,9 @@ let oldMigrations = "";
 /** A throwaway database migrated with `folder` (owner and app roles as in production). */
 async function install(folder: string): Promise<Install> {
   const suffix = testNameSuffix();
-  const db = `kobe_up_${suffix}`;
-  const ownerRole = `kobe_up_owner_${suffix}`;
-  const appRole = `kobe_up_app_${suffix}`;
+  const db = `kaiju_up_${suffix}`;
+  const ownerRole = `kaiju_up_owner_${suffix}`;
+  const appRole = `kaiju_up_app_${suffix}`;
   const password = randomBytes(12).toString("hex");
   const url = (user: string | null) => {
     const u = new URL(testServerUrl());

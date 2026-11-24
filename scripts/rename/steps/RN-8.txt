@@ -1,6 +1,15 @@
 # RN-8 (KOBE-752): repository rename, remotes, CI runner set and secrets, deploy script,
-# CLAUDE.md (spec §4 step 7). By hand: the GitHub rename itself, the runner scale set and its
-# GitHub App, repository variables, local remotes and the coordinator's notes.
+# CLAUDE.md (spec §4 step 7). Outside the repository, by hand (done 2026-11-24): the GitHub rename
+# itself (SplittingAtom/kobe -> SplittingAtom/kaiju; GitHub redirects the old URL), the runner set's
+# githubConfigUrl, local remotes and the coordinator's scripts and notes.
+# In the repository, by hand (the commit before the apply): CLAUDE.md (product name, chart
+# directory, sandbox agent binary, a note on the kept names), the root package name, the test
+# database prefix `kaiju_` with the lane helpers and the stale-database sweep accepting `kobe_` too
+# (packages/db/src/test-support, docs/parallel-work.md), the sandbox-agent test group. Kept, in
+# permanent groups: the live runner infrastructure names (`kobe-k3s`, `kobe-ci-runners`, the
+# GitHub App and its Secret) and the old test database prefix. The repository variables
+# KOBE_RUNNER and KOBE_BUILD_RUNNER were unset on GitHub, so the workflows now read KAIJU_RUNNER
+# and KAIJU_BUILD_RUNNER with nothing to move.
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
@@ -12,14 +21,7 @@
 ** /(?<![\w-])Kobe-(?:wt|g)(?=[\d<N])/
 ** /\.\.\/Kobe\b/
 
-== RN-8: CI: runner scale set, its GitHub App, the runner variable and the shared setup action
-** /\bkobe-(?:k3s|ci-runners|arc-runners|arc-github-app)\b|\b90-kobe-ci-inotify\b/
-** /\bKOBE_RUNNER\b/
+== RN-8: CI: the runner variables and the shared setup action (the runner set itself keeps its names, see the permanent group)
+** /\bKOBE_(?:BUILD_)?RUNNER\b/
 ** /\bsetup-kobe\b/
 path .github/actions/setup-kobe/** /kobe/
-
-== RN-8: Contributor instructions (CLAUDE.md) name the product, the chart directory and the sandbox agent binary (changed only with the repository rename)
-CLAUDE.md /\bKobe\b|`kobe-sandbox-agent`|`charts\/kobe`/
-
-== RN-8: Root package name
-package.json /"name": "kobe"/

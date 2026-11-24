@@ -94,7 +94,7 @@ jobs:
     name: image (${{ matrix.name }})
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.ready == 'true'
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_BUILD_RUNNER || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_BUILD_RUNNER || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 30
     strategy:
       fail-fast: true
@@ -201,7 +201,7 @@ jobs:
   e2e:
     name: e2e (${{ matrix.shard }})
     needs: image
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     # Healthy shards take about 10 min; under peak load the self-hosted runners' Docker data
     # (Longhorn on the nodes' HDDs) is far slower (ci/runners/README.md).
     # The executor shard (the whole suite with the paired tool uid, plus e2e/executor/) ran 45 min
@@ -236,7 +236,7 @@ jobs:
       # in Playwright's Chromium, pinned by e2e/browser/package-lock.json.
       # KOBE-233: the restore shard runs the operator CLI (packages/cli) on the runner, as an operator
       # would, with PostgreSQL 17 client tools (docs/backup-restore.md, Requirements).
-      - uses: ./.github/actions/setup-kobe
+      - uses: ./.github/actions/setup-kaiju
         if: matrix.shard == 'gate3' || matrix.shard == 'restore' || startsWith(matrix.shard, 'gate5') || startsWith(matrix.shard, 'gate7') || matrix.shard == 'gate-apps'
         with:
           # pnpm only for the restore shard; it installs the CLI's packages alone below.

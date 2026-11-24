@@ -1,7 +1,7 @@
-# Runner scale set for SplittingAtom/kobe (Actions Runner Controller, gha-runner-scale-set chart).
-# Workflows select it with `runs-on: ${{ vars.KOBE_RUNNER || 'ubuntu-latest' }}` and the repository
-# variable KOBE_RUNNER=kobe-k3s. See ci/runners/README.md.
-githubConfigUrl: https://github.com/SplittingAtom/kobe
+# Runner scale set for SplittingAtom/kaiju (Actions Runner Controller, gha-runner-scale-set chart).
+# Workflows select it with `runs-on: ${{ vars.KAIJU_RUNNER || 'ubuntu-latest' }}` and the repository
+# variable KAIJU_RUNNER=kobe-k3s. See ci/runners/README.md.
+githubConfigUrl: https://github.com/SplittingAtom/kaiju
 githubConfigSecret: kobe-arc-github-app
 
 runnerScaleSetName: kobe-k3s

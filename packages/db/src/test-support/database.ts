@@ -98,9 +98,9 @@ export async function createTestDatabase(
   options: TestDatabaseOptions = {},
 ): Promise<TestDatabase> {
   const suffix = testNameSuffix();
-  const dbName = `kobe_test_${suffix}`;
-  const ownerRole = `kobe_owner_${suffix}`;
-  const appRole = `kobe_app_${suffix}`;
+  const dbName = `kaiju_test_${suffix}`;
+  const ownerRole = `kaiju_owner_${suffix}`;
+  const appRole = `kaiju_app_${suffix}`;
   const password = randomBytes(16).toString("hex");
   const urlFor = (user: string): string => {
     const url = new URL(serverUrl);
