@@ -10,6 +10,7 @@
 == permanent: Ticket ids KOBE-n and their lower-case branch form stay (spec §3 stays 1, RN2)
 ** /\bKOBE-(?=[\d$<{.nNx/\[\\]|sso-)[\w$<>{}.\[\]\\+-]*/
 ** /\bkobe-(?:\d+|<[nN]>)\b/
+CLAUDE.md /(?<=project `)kobe(?=`)/
 
 == permanent: Past ledgers, gate documents, release notes and reviews keep the name they were written under (spec §3 stays 6)
 docs/ledger/** docs/gates/** docs/releases/** docs/RUN-LEDGER.md docs/review-*.md docs/perf-baseline-*.md /kobe/i
@@ -18,6 +19,7 @@ docs/ledger/** docs/gates/** docs/releases/** docs/RUN-LEDGER.md docs/review-*.m
 packages/db/drizzle/** /kobe/i
 packages/db/src/schema/** /\bkobe[A-Z]\w*(?=\s*:)/
 ** /\bkobeShippedVersion\b/
+docs/install.md /(?<=\(`)kobe(?=: … |: dropped team approval floor)/
 
 == permanent: The rename tooling and its spec name the old name on purpose
 scripts/rename/** docs/specs/rename-kaiju.md /kobe/i
@@ -56,10 +58,13 @@ scripts/rename/** docs/specs/rename-kaiju.md /kobe/i
 ** /\bkobe-(?:site|install)(?![\w-])/
 ** /\bkobe-\$\{providerId\}/
 ** /\bkobe-vllm\b/
-services/server/src/models/** /\bkobe-(?:mac-mini|ollama[\w-]*)\b/
+services/server/src/models/** docs/guide/memory.md /\bkobe-(?:mac-mini|ollama[\w-]*)\b/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations
 ** /\bkobe:(?:hand-written|no-transaction)\b/
+
+== permanent: Frozen memory relevance set (KOBE-387: nothing changed after its first recorded run, results in docs/gates/gate-7a.md); fictional company data no member or agent reads (KOBE-746)
+e2e/fixtures/memory-relevance/items.json /\bKobe\b/
 
 # ---------------------------------------------------------------------------------------------
 # Provisional: persisted or agent-visible names the spec does not list. Kept (never touched by a step) until the
@@ -71,6 +76,7 @@ docs/specs/** /kobe/i
 
 == provisional: (Q2) Skill package manifest file name, inside packages that already exist outside the database (like kobe.dev/skill/v1)
 ** /\bkobe\.skill\.yaml\b/i
+docs/skill-package.md /\bcompatibility\.kobe\b/
 
 == provisional: (Q3) Built-in connector: id `kobe`, its MCP tool names, API routes (`/v1/team/connectors/kobe`, a catalog skill's `/kobe/compare` and `/kobe/reset`, server and web client together) and the site settings keys stored in the database
 ** /\bmcp__kobe__\w*/
@@ -79,12 +85,15 @@ docs/specs/** /kobe/i
 ** /\bkobe-builtin\b/
 ** /\/connectors\/kobe\b/
 ** /(?<=[\w}"'`])\/kobe(?=["'`]|\/(?:compare|reset)\b)/
+docs/** **/*.md /\*\*kobe\*\*|\bkobe connector|the-kobe-connector|\bmcp__kobe_(?:builtin|git)__\w*|(?<=name `)kobe(?=` was taken)/
 
 == provisional: (Q4) Names persisted in workspace volumes and Pi session files: the `.kobe/` folder, custom entry types, the Pi provider id
 ** /(?<![\w-])\.kobe\b(?!-)/
 ** /\bkobe\.(?:branch|app_card|skipped_actions|event_dropped|model_error|app_call|compaction|turn|reload-drafts|notebook\.html)\b/
 ** /\bprovider["']?\s*:\s*["']kobe["']/
 ** /["']providers?["']\s*:\s*\{\s*["']kobe["']/
+docs/skill-evals.md /\?kobe\/\*/
+docs/design/paired-tool-uid.md /`kobe` provider/
 
 == provisional: (Q5) Model ids `kobe-local/...` stored in model catalogs (like the spec's gateway names)
 ** /\bkobe-local(?:\/[\w.:-]*)?/
@@ -104,6 +113,7 @@ images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
 ** /["'`]kobe["'`]\s*\|\s*["'`](?:maintainer|external|site|gallery)["'`]/
 ** /(?<=\bk(?:obe|aiju)Name\s*=\s*)"kobe"/
 ** /\b(?:z\.enum|oneOfStrings)\(\[[^\]]*["'`]kobe["'`]/
+docs/file-editing.md /(?<=scope `)kobe(?=`)/
 
 == provisional: (Q9) Kubernetes label keys `kobe.splittingatom.io/*` on objects in existing team namespaces (selectors, network policies)
 ** /\bkobe\.splittingatom\.io\b(?:\/[\w-]*)?/
@@ -117,6 +127,12 @@ services/server/src/agents/orbit/** /^\s*kobe:/
 == provisional: (Q12) Built-in skill packages and versioned model prompts: their bytes are pinned (published package hashes, prompt fixtures), so any rename in them needs a new skill or prompt version with new recordings; the owner decides whether they change
 services/server/builtin-skills/** /kobe/i
 services/server/src/memory/learn/prompt/v*/prompt.ts services/server/src/memory/learn/prompt/v*/fixtures/** /^(?!\s*(?:import|export)\b[^\n]*\bfrom\b)[^\n]*kobe[^\n]*$/i
+services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
+
+== provisional: (Q13) The gallery agent's name "Kobe": its definition (name and prompt) is pinned by its generation, and raising the generation re-publishes the agent on every existing install (a change to stored rows); the definition, the tests that read the seeded name and the text that names the agent move together once the owner answers (KOBE-746)
+services/server/src/gallery/** services/server/src/apps/app-launch-agent.db.test.ts e2e/browser/tests/site-gallery-edit.spec.ts /\bKobe\b/
+** /(?<!older )\bKobe agent\b|\bagent,? Kobe\b|site default \(Kobe\)|\bgallery Kobe\b/
+docs/install.md /\(key `kobe`\)/
 
 # ---------------------------------------------------------------------------------------------
 # To rename. Specific steps sit above the generic ones (RN-3 identifiers, RN-2 prose), so the
@@ -158,6 +174,8 @@ THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b
 ** /\bSplittingAtom\/kobe(?![\w-])/i
 ** /(?<![\w-])Kobe-(?:wt|g)(?=[\d<N])/
 ** /\.\.\/Kobe\b/
+packages/db/src/test-support/lane.ts packages/db/src/test-support/lane.test.ts /\bKobe\b/
+docs/agent-prompt.md docs/parallel-work.md /\bkobe-(?=<N>-<slug>)|leading `kobe`|`Kobe` → `kobe`/
 
 == RN-8: CI: runner scale set, its GitHub App, the runner variable and the shared setup action
 ** /\bkobe-(?:k3s|ci-runners|arc-runners)\b/
@@ -220,6 +238,8 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 == RN-5: Telemetry attribute and span names, logger names, OTLP audit attributes
 ** /(?<=["'`])kobe\.(?:tool|run|turn|upstream|memory|workspace|sandbox|session|agent|audit|model|research|embeddings|ingress|egress|sso|setup_ms|retention|published|sync|pod|node|container|stop_reason|outcome|wake|thread_id|run_id|run_token|sandbox_id|web_vital|team_level_changed|frontmatter)(?![\w-])(?:[.:][\w.-]*)?/
 ** /(?<=["'`])kobe\.(?:sandbox-relay|server|skill-eval)\b/
+docs/** /\battributes\.kobe\.[\w.]+|`kobe\.(?:user_id|agent_id|usage_kind|trace\.[\w.]+)`|\bkobe-audit\b|\bkobe@<PEN>/
+docs/perf/latency-queries.sql /\bkobe_(?:side_p95_ms|share_p50|p50|p95)\b|`kobe_\*`/
 
 == RN-4: Environment variables (KAIJU_* with a one-release KOBE_* fallback)
 ** /\bKOBE_(?!(?:WRITES_PER_HOUR_KEY|WRITES_PER_HOUR_DEFAULT|TOOLS_TIMEOUT_MS|TOOL|TEAM_SAMPLES|SKILL_NAMES_ADDED_LATER|SKILL_NAMES|SKILL_IDS|SITE_TOOLS|SITE_SAMPLES|SEED_RETRY|SECTIONS|RESULT_MAX_BYTES|READS_PER_MINUTE_KEY|READS_PER_MINUTE_DEFAULT|PROVIDER_ID|PROVIDER|PAGE_MAX|PACKAGES_DIR|MODEL_ERROR_PREFIX|MEMORY_ITEM_TOOLS|MCP_TEAM_SETTING|MCP_TEAM_LEVELS|MCP_TEAM_LEVEL_DEFAULT|MCP_MODES|MCP_MODE_LABELS|MCP_MODE_KEY|MCP_MODE_DEFAULT|MCP_HINTS|LIMITS|LIMIT_MIN|LIMIT_MAX|LEVEL_LABELS|GALLERY_KEY|FILE|EVENT_TYPES|EVENT_DROPPED_TYPE|ENDPOINTS|DOCS_TOOLS|DIR|BUILTIN_NAMES|BUILTIN_CONNECTOR_URL|BUILTIN_CONNECTOR_ID|AGENT_KEY|ADMIN_WRITE_REASON|ADMIN_TOOLS|ADMIN_TEXT|ADMIN_SUMMARY_MAX|ADMIN_RESULT_HIDDEN|ADMIN_NOT_REMEMBERED|ADMIN_NOT_ALLOWED_REASON)\b)[A-Z0-9_]*/
@@ -257,6 +277,7 @@ path ** /kobe/i
 
 == RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
 ** /\bKobe\b(?!@)/
+docs/** **/*.md /(?<=#what-)kobe(?=-checks-before)|(?<=#created-by-)kobe(?=-on-request)|(?<=https:\/\/<)kobe(?=>)/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
@@ -268,8 +289,9 @@ path ** /kobe/i
 
 == RN-6: Triage: Lower-case names in the chart, e2e harness, CI workflows and images (release name `kobe`, resource names)
 charts/** e2e/** .github/** images/** dev/** ci/** Tiltfile /[\w.@$:-]*kobe[\w.@$:-]*/
+docs/** **/*.md /(?:-n |namespace `|release `|cluster (?:delete )?"?|-d |datname = '|bucket[ =]|svc\/|deploy\/|install |upgrade |create namespace |BUCKET=)kobe\b[\w$-]*|\bkobe-[\w$-]*(?:restored|keys|auth|smtp|s3|db|pg[\w-]*|skill-mirror|sso-contoso|\$s)\b|\bkobe-dev-|\bkobe\.bifrostConfig\b|\bkobe\.example\.com\b|\bkobe:(?=\$KOBE_BIFROST)|\bkobe-erasure\b|`kobe\/`|charts\/kobe\b/
 
-== RN-2: Triage: Lower-case name in documentation and Markdown (commands, example hosts, namespaces)
+== RN-3: Triage: Lower-case names in documentation that name code values (the `kobe` CLI, backup role, connection application names, test database and temp-dir names, CSS names, message prefixes, labels); each moves with the step that renames the code it names (KOBE-746 sorted the rest out)
 docs/** **/*.md /[\w.@$:-]*kobe[\w.@$:-]*/
 
 == RN-3: Triage: Lower-case names in application code (event names, CSS keyframes, ids, labels)

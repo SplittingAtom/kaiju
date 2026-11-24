@@ -11,3 +11,4 @@
 
 == RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
 ** /\bKobe\b(?!@)/
+docs/** **/*.md /(?<=#what-)kobe(?=-checks-before)|(?<=#created-by-)kobe(?=-on-request)|(?<=https:\/\/<)kobe(?=>)/

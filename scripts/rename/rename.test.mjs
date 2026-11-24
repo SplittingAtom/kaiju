@@ -524,7 +524,7 @@ const DISTINCT_VALUES = {
   "kobe.example.com": "unrelated example hosts in app tests (RN-3) and chart tests (RN-6)",
   "kobe-server.kobe-system.svc":
     "one example URL in a config test; both halves change, in RN-3 and RN-6",
-  kobe_: "test database prefix (RN-3) vs a prefix in docs/perf queries (RN-2)",
+  kobe_: "test database prefix (RN-3) vs column aliases in docs/perf queries (RN-5, with the span attributes they read)",
 };
 
 test("real allowlist: no paired value is split across steps, apart from the listed distinct ones", () => {
