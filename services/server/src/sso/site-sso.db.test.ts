@@ -31,9 +31,9 @@ const idp = new FakeIdp()
 
 const helmEnv = (providers: unknown[], enabled = "true"): SsoSettings =>
   loadSsoSettings({
-    KOBE_SSO_ENABLED: enabled,
-    KOBE_SSO_PROVIDERS: JSON.stringify(providers),
-    KOBE_SSO_CLIENT_SECRET_CORP: HELM_SECRET,
+    KAIJU_SSO_ENABLED: enabled,
+    KAIJU_SSO_PROVIDERS: JSON.stringify(providers),
+    KAIJU_SSO_CLIENT_SECRET_CORP: HELM_SECRET,
   });
 const HELM_PROVIDER = {
   slug: "corp",
@@ -58,7 +58,7 @@ beforeAll(async () => {
     }) as never);
   }
   h = await openHarness({
-    envelope: loadEnvelope({ KOBE_ENVELOPE_KEY: "s".repeat(48) }) as Envelope,
+    envelope: loadEnvelope({ KAIJU_ENVELOPE_KEY: "s".repeat(48) }) as Envelope,
     sso: {
       settings: helmEnv([HELM_PROVIDER]),
       net: { resolve: resolver({ "private.example.com": ["10.9.8.7"] }) },

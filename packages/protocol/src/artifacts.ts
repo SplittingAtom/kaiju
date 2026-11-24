@@ -24,7 +24,7 @@ import { notebookRunOkFields, notebookToolsRequestSchema } from "./notebooks.js"
  *
  * Flow: the model calls `create_artifact` / `update_artifact` (Pi tools of the `kobe-tools`
  * extension) -> kobe-policy `policy.check` as for any tool -> once allowed, kobe-tools sends the
- * call to kobe-sandbox-agent on the {@link KOBE_TOOLS_FD} channel -> the agent sends the
+ * call to kobe-sandbox-agent on the {@link KAIJU_TOOLS_FD} channel -> the agent sends the
  * `artifact.put` frame (frames.ts) and waits for `artifact.result` -> the server stores the
  * content, emits `artifact.created` / `artifact.updated` (events.ts) and answers; the tool result
  * is that answer. The server never trusts the input of `artifact.put` on its own: it must equal
@@ -120,7 +120,7 @@ export const artifactFailFields = { ok: z.literal(false), error: artifactErrorSc
  * tool error, never a retry elsewhere). 30 s timeout per request ({@link KAIJU_TOOLS_TIMEOUT_MS}).
  * Later ops get their own `op`: `file.share` (files.ts, KOBE-147); `remember` is not defined yet.
  */
-export const KOBE_TOOLS_FD = 4;
+export const KAIJU_TOOLS_FD = 4;
 export const KAIJU_TOOLS_TIMEOUT_MS = 30_000;
 
 export const kaijuToolsRequestSchema = z.union([

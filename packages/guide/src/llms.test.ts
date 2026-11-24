@@ -60,7 +60,7 @@ describe("llmsFullTxt", () => {
       "# Glossary",
     ]);
     expect(text).toContain("Source: https://chat.example.com/docs/glossary.md");
-    expect(text).not.toContain("%%KOBE_ORIGIN%%");
+    expect(text).not.toContain("%%KAIJU_ORIGIN%%");
   });
 });
 

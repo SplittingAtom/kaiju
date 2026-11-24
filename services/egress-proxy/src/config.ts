@@ -37,19 +37,19 @@ const list = z
 
 const configSchema = z.object({
   PORT: int("PORT", 1, 65535, 8080),
-  KOBE_DATABASE_URL: z
-    .string({ error: "KOBE_DATABASE_URL is required" })
-    .min(1, "KOBE_DATABASE_URL is required"),
+  KAIJU_DATABASE_URL: z
+    .string({ error: "KAIJU_DATABASE_URL is required" })
+    .min(1, "KAIJU_DATABASE_URL is required"),
   /** Query pool size per pod (KOBE-736; chart `<component>.database.poolMax`). */
-  KOBE_DB_POOL_MAX: int("KOBE_DB_POOL_MAX", 1, 200, 10),
+  KAIJU_DB_POOL_MAX: int("KAIJU_DB_POOL_MAX", 1, 200, 10),
   /** Destination ports a sandbox may CONNECT to (HTTPS only by default). */
-  KOBE_EGRESS_ALLOWED_PORTS: list,
+  KAIJU_EGRESS_ALLOWED_PORTS: list,
   /**
    * Internal targets explicitly allowed for every allowlisted domain (CIDRs; the broader legacy
    * option); still subject to the domain allowlist. Like the internal targets, an entry that
    * starts in or covers an always-refused range fails startup (KOBE-694).
    */
-  KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: list.superRefine((cidrs, ctx) => {
+  KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS: list.superRefine((cidrs, ctx) => {
     // KOBE-694: never re-opens loopback, link-local or metadata, as the internal targets.
     try {
       validateInternalTargets(cidrs);
@@ -62,7 +62,7 @@ const configSchema = z.object({
    * marked internal (EA4, KOBE-603). Loopback, link-local and metadata stay refused even if listed;
    * an entry starting in one of those ranges fails startup.
    */
-  KOBE_EGRESS_INTERNAL_TARGETS: list.superRefine((cidrs, ctx) => {
+  KAIJU_EGRESS_INTERNAL_TARGETS: list.superRefine((cidrs, ctx) => {
     try {
       validateInternalTargets(cidrs);
     } catch (err) {
@@ -70,102 +70,102 @@ const configSchema = z.object({
     }
   }),
   /** Cluster pod/Service CIDRs and other ranges to refuse beyond the built-in private ranges. */
-  KOBE_EGRESS_DENIED_CIDRS: list,
-  KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX: int(
-    "KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX",
+  KAIJU_EGRESS_DENIED_CIDRS: list,
+  KAIJU_EGRESS_MAX_CONNECTIONS_PER_SANDBOX: int(
+    "KAIJU_EGRESS_MAX_CONNECTIONS_PER_SANDBOX",
     1,
     10_000,
     64,
   ),
-  KOBE_EGRESS_MAX_CONNECTIONS: int("KOBE_EGRESS_MAX_CONNECTIONS", 1, 100_000, 4_096),
+  KAIJU_EGRESS_MAX_CONNECTIONS: int("KAIJU_EGRESS_MAX_CONNECTIONS", 1, 100_000, 4_096),
   /** Per sandbox, both directions together; 0 disables the limit. */
-  KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND: int(
-    "KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND",
+  KAIJU_EGRESS_BANDWIDTH_BYTES_PER_SECOND: int(
+    "KAIJU_EGRESS_BANDWIDTH_BYTES_PER_SECOND",
     0,
     10_000_000_000,
     20 * 1024 * 1024,
   ),
-  KOBE_EGRESS_IDLE_TIMEOUT_MS: int("KOBE_EGRESS_IDLE_TIMEOUT_MS", 1_000, 86_400_000, 300_000),
+  KAIJU_EGRESS_IDLE_TIMEOUT_MS: int("KAIJU_EGRESS_IDLE_TIMEOUT_MS", 1_000, 86_400_000, 300_000),
   /** Request head and TLS ClientHello must arrive within this. */
-  KOBE_EGRESS_HANDSHAKE_TIMEOUT_MS: int("KOBE_EGRESS_HANDSHAKE_TIMEOUT_MS", 100, 120_000, 10_000),
+  KAIJU_EGRESS_HANDSHAKE_TIMEOUT_MS: int("KAIJU_EGRESS_HANDSHAKE_TIMEOUT_MS", 100, 120_000, 10_000),
   /** Request-head deadline before authentication (slow-loris bound). */
-  KOBE_EGRESS_PREAUTH_TIMEOUT_MS: int("KOBE_EGRESS_PREAUTH_TIMEOUT_MS", 100, 60_000, 5_000),
+  KAIJU_EGRESS_PREAUTH_TIMEOUT_MS: int("KAIJU_EGRESS_PREAUTH_TIMEOUT_MS", 100, 60_000, 5_000),
   /** Unauthenticated sockets per source address (one sandbox pod = one address) and in total. */
-  KOBE_EGRESS_PREAUTH_PER_SOURCE: int("KOBE_EGRESS_PREAUTH_PER_SOURCE", 1, 10_000, 16),
-  KOBE_EGRESS_PREAUTH_TOTAL: int("KOBE_EGRESS_PREAUTH_TOTAL", 1, 100_000, 1_024),
+  KAIJU_EGRESS_PREAUTH_PER_SOURCE: int("KAIJU_EGRESS_PREAUTH_PER_SOURCE", 1, 10_000, 16),
+  KAIJU_EGRESS_PREAUTH_TOTAL: int("KAIJU_EGRESS_PREAUTH_TOTAL", 1, 100_000, 1_024),
   /** Longest tunnel lifetime; tunnels also close when their session token expires. */
-  KOBE_EGRESS_MAX_TUNNEL_SECONDS: int("KOBE_EGRESS_MAX_TUNNEL_SECONDS", 1, 86_400, 3_600),
+  KAIJU_EGRESS_MAX_TUNNEL_SECONDS: int("KAIJU_EGRESS_MAX_TUNNEL_SECONDS", 1, 86_400, 3_600),
   /** How often open tunnels are re-checked against the allowlist and membership. */
-  KOBE_EGRESS_RECHECK_MS: int("KOBE_EGRESS_RECHECK_MS", 1_000, 3_600_000, 30_000),
-  KOBE_EGRESS_CONNECT_TIMEOUT_MS: int("KOBE_EGRESS_CONNECT_TIMEOUT_MS", 100, 120_000, 10_000),
-  KOBE_EGRESS_DNS_TIMEOUT_MS: int("KOBE_EGRESS_DNS_TIMEOUT_MS", 100, 60_000, 3_000),
-  KOBE_EGRESS_CACHE_TTL_MS: int("KOBE_EGRESS_CACHE_TTL_MS", 1_000, 3_600_000, 60_000),
-  KOBE_EGRESS_AUDIT_FLUSH_MS: int("KOBE_EGRESS_AUDIT_FLUSH_MS", 1_000, 3_600_000, 60_000),
+  KAIJU_EGRESS_RECHECK_MS: int("KAIJU_EGRESS_RECHECK_MS", 1_000, 3_600_000, 30_000),
+  KAIJU_EGRESS_CONNECT_TIMEOUT_MS: int("KAIJU_EGRESS_CONNECT_TIMEOUT_MS", 100, 120_000, 10_000),
+  KAIJU_EGRESS_DNS_TIMEOUT_MS: int("KAIJU_EGRESS_DNS_TIMEOUT_MS", 100, 60_000, 3_000),
+  KAIJU_EGRESS_CACHE_TTL_MS: int("KAIJU_EGRESS_CACHE_TTL_MS", 1_000, 3_600_000, 60_000),
+  KAIJU_EGRESS_AUDIT_FLUSH_MS: int("KAIJU_EGRESS_AUDIT_FLUSH_MS", 1_000, 3_600_000, 60_000),
   /**
    * Header injection (KOBE-39): opens the teams' sealed header values (same secret as the server).
    * Unset: plain HTTP is refused for every domain and CONNECT works as before.
    */
-  KOBE_EGRESS_HEADER_SECRET: optionalSecret("KOBE_EGRESS_HEADER_SECRET"),
-  KOBE_EGRESS_HEADER_SECRET_PREVIOUS: optionalSecret("KOBE_EGRESS_HEADER_SECRET_PREVIOUS"),
-  KOBE_EGRESS_UPGRADE_MAX_REQUEST_BYTES: int(
-    "KOBE_EGRESS_UPGRADE_MAX_REQUEST_BYTES",
+  KAIJU_EGRESS_HEADER_SECRET: optionalSecret("KAIJU_EGRESS_HEADER_SECRET"),
+  KAIJU_EGRESS_HEADER_SECRET_PREVIOUS: optionalSecret("KAIJU_EGRESS_HEADER_SECRET_PREVIOUS"),
+  KAIJU_EGRESS_UPGRADE_MAX_REQUEST_BYTES: int(
+    "KAIJU_EGRESS_UPGRADE_MAX_REQUEST_BYTES",
     0,
     10_000_000_000,
     100 * 1024 * 1024,
   ),
-  KOBE_EGRESS_UPGRADE_MAX_RESPONSE_BYTES: int(
-    "KOBE_EGRESS_UPGRADE_MAX_RESPONSE_BYTES",
+  KAIJU_EGRESS_UPGRADE_MAX_RESPONSE_BYTES: int(
+    "KAIJU_EGRESS_UPGRADE_MAX_RESPONSE_BYTES",
     0,
     100_000_000_000,
     2 * 1024 * 1024 * 1024,
   ),
-  KOBE_EGRESS_UPGRADE_TIMEOUT_MS: int("KOBE_EGRESS_UPGRADE_TIMEOUT_MS", 1_000, 86_400_000, 600_000),
+  KAIJU_EGRESS_UPGRADE_TIMEOUT_MS: int("KAIJU_EGRESS_UPGRADE_TIMEOUT_MS", 1_000, 86_400_000, 600_000),
   /**
    * Git smart-HTTP for connected organizations (KOBE-763): the server's internal listener and the
    * key the proxy presents there. Both or neither; unset: git paths get no credential.
    */
-  KOBE_EGRESS_SERVER_URL: z
+  KAIJU_EGRESS_SERVER_URL: z
     .string()
     .default("")
     .refine((v) => v === "" || /^https?:\/\/[^/@?#]+\/?$/.test(v), {
-      message: "KOBE_EGRESS_SERVER_URL must be an http(s) origin",
+      message: "KAIJU_EGRESS_SERVER_URL must be an http(s) origin",
     }),
-  KOBE_EGRESS_INTERNAL_KEY: optionalSecret("KOBE_EGRESS_INTERNAL_KEY"),
-  KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES: int(
-    "KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES",
+  KAIJU_EGRESS_INTERNAL_KEY: optionalSecret("KAIJU_EGRESS_INTERNAL_KEY"),
+  KAIJU_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES: int(
+    "KAIJU_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES",
     1_024,
     1_073_741_824,
     64 * 1024 * 1024,
   ),
-  KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES: int(
-    "KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES",
+  KAIJU_EGRESS_GIT_MAX_RESPONSE_BYTES: int(
+    "KAIJU_EGRESS_GIT_MAX_RESPONSE_BYTES",
     1_024,
     1_099_511_627_776,
     4 * 1024 * 1024 * 1024,
   ),
-  KOBE_EGRESS_GIT_TIMEOUT_MS: int("KOBE_EGRESS_GIT_TIMEOUT_MS", 1_000, 86_400_000, 1_800_000),
-  KOBE_EGRESS_GIT_DECISION_TIMEOUT_MS: int(
-    "KOBE_EGRESS_GIT_DECISION_TIMEOUT_MS",
+  KAIJU_EGRESS_GIT_TIMEOUT_MS: int("KAIJU_EGRESS_GIT_TIMEOUT_MS", 1_000, 86_400_000, 1_800_000),
+  KAIJU_EGRESS_GIT_DECISION_TIMEOUT_MS: int(
+    "KAIJU_EGRESS_GIT_DECISION_TIMEOUT_MS",
     100,
     120_000,
     20_000,
   ),
-  KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX: int(
-    "KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX",
+  KAIJU_EGRESS_GIT_CONCURRENT_PER_SANDBOX: int(
+    "KAIJU_EGRESS_GIT_CONCURRENT_PER_SANDBOX",
     1,
     1_000,
     8,
   ),
-  KOBE_EGRESS_GIT_REQUEST_BURST: int("KOBE_EGRESS_GIT_REQUEST_BURST", 1, 10_000, 60),
-  KOBE_EGRESS_GIT_REQUESTS_PER_SECOND: int("KOBE_EGRESS_GIT_REQUESTS_PER_SECOND", 1, 1_000, 2),
+  KAIJU_EGRESS_GIT_REQUEST_BURST: int("KAIJU_EGRESS_GIT_REQUEST_BURST", 1, 10_000, 60),
+  KAIJU_EGRESS_GIT_REQUESTS_PER_SECOND: int("KAIJU_EGRESS_GIT_REQUESTS_PER_SECOND", 1, 1_000, 2),
   /** Distinct repository decisions per sandbox per minute (cache misses; host API quota). */
-  KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE: int("KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE", 1, 10_000, 30),
+  KAIJU_EGRESS_GIT_LOOKUPS_PER_MINUTE: int("KAIJU_EGRESS_GIT_LOOKUPS_PER_MINUTE", 1, 10_000, 30),
 });
 
 export interface Config {
   readonly port: number;
   readonly databaseUrl: string;
-  /** Query pool size (KOBE_DB_POOL_MAX, KOBE-736); one LISTEN connection comes on top. */
+  /** Query pool size (KAIJU_DB_POOL_MAX, KOBE-736); one LISTEN connection comes on top. */
   readonly dbPoolMax: number;
   /** Public key(s) of the `kobe.egress-proxy` audience (KOBE-513): verify only, never sign. */
   readonly sessionVerifyKeys: SessionVerifyKeys;
@@ -221,17 +221,17 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
   }
   const c = parsed.data;
   const sessionVerifyKeys = verifyKeysFromEnv(env, "kobe.egress-proxy");
-  const ports = c.KOBE_EGRESS_ALLOWED_PORTS.length > 0 ? c.KOBE_EGRESS_ALLOWED_PORTS : ["443"];
+  const ports = c.KAIJU_EGRESS_ALLOWED_PORTS.length > 0 ? c.KAIJU_EGRESS_ALLOWED_PORTS : ["443"];
   const allowedPorts = ports.map((p) => {
     const n = Number(p);
     if (!Number.isInteger(n) || n < 1 || n > 65535) {
-      throw new Error(`Invalid configuration: KOBE_EGRESS_ALLOWED_PORTS has an invalid port`);
+      throw new Error(`Invalid configuration: KAIJU_EGRESS_ALLOWED_PORTS has an invalid port`);
     }
     return n;
   });
   for (const [name, cidrs] of [
-    ["KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS", c.KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS],
-    ["KOBE_EGRESS_DENIED_CIDRS", c.KOBE_EGRESS_DENIED_CIDRS],
+    ["KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS", c.KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS],
+    ["KAIJU_EGRESS_DENIED_CIDRS", c.KAIJU_EGRESS_DENIED_CIDRS],
   ] as const) {
     try {
       validateCidrs(cidrs);
@@ -239,64 +239,64 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       throw new Error(`Invalid configuration: ${name}: ${(err as Error).message}`, { cause: err });
     }
   }
-  if (c.KOBE_EGRESS_HEADER_SECRET === "" && c.KOBE_EGRESS_HEADER_SECRET_PREVIOUS !== "") {
+  if (c.KAIJU_EGRESS_HEADER_SECRET === "" && c.KAIJU_EGRESS_HEADER_SECRET_PREVIOUS !== "") {
     throw new Error(
-      "Invalid configuration: KOBE_EGRESS_HEADER_SECRET_PREVIOUS needs KOBE_EGRESS_HEADER_SECRET",
+      "Invalid configuration: KAIJU_EGRESS_HEADER_SECRET_PREVIOUS needs KAIJU_EGRESS_HEADER_SECRET",
     );
   }
   const headerSecrets =
-    c.KOBE_EGRESS_HEADER_SECRET === ""
+    c.KAIJU_EGRESS_HEADER_SECRET === ""
       ? undefined
-      : [c.KOBE_EGRESS_HEADER_SECRET, c.KOBE_EGRESS_HEADER_SECRET_PREVIOUS].filter((v) => v !== "");
-  if ((c.KOBE_EGRESS_SERVER_URL === "") !== (c.KOBE_EGRESS_INTERNAL_KEY === "")) {
+      : [c.KAIJU_EGRESS_HEADER_SECRET, c.KAIJU_EGRESS_HEADER_SECRET_PREVIOUS].filter((v) => v !== "");
+  if ((c.KAIJU_EGRESS_SERVER_URL === "") !== (c.KAIJU_EGRESS_INTERNAL_KEY === "")) {
     throw new Error(
-      "Invalid configuration: KOBE_EGRESS_SERVER_URL and KOBE_EGRESS_INTERNAL_KEY go together",
+      "Invalid configuration: KAIJU_EGRESS_SERVER_URL and KAIJU_EGRESS_INTERNAL_KEY go together",
     );
   }
   const git =
-    c.KOBE_EGRESS_SERVER_URL === ""
+    c.KAIJU_EGRESS_SERVER_URL === ""
       ? undefined
       : {
-          serverUrl: c.KOBE_EGRESS_SERVER_URL.replace(/\/+$/, ""),
-          internalKey: c.KOBE_EGRESS_INTERNAL_KEY,
-          decisionTimeoutMs: c.KOBE_EGRESS_GIT_DECISION_TIMEOUT_MS,
-          maxFetchRequestBytes: c.KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES,
-          maxResponseBytes: c.KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES,
-          timeoutMs: c.KOBE_EGRESS_GIT_TIMEOUT_MS,
-          concurrentPerSandbox: c.KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX,
-          requestBurst: c.KOBE_EGRESS_GIT_REQUEST_BURST,
-          requestsPerSecond: c.KOBE_EGRESS_GIT_REQUESTS_PER_SECOND,
-          lookupsPerMinute: c.KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE,
+          serverUrl: c.KAIJU_EGRESS_SERVER_URL.replace(/\/+$/, ""),
+          internalKey: c.KAIJU_EGRESS_INTERNAL_KEY,
+          decisionTimeoutMs: c.KAIJU_EGRESS_GIT_DECISION_TIMEOUT_MS,
+          maxFetchRequestBytes: c.KAIJU_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES,
+          maxResponseBytes: c.KAIJU_EGRESS_GIT_MAX_RESPONSE_BYTES,
+          timeoutMs: c.KAIJU_EGRESS_GIT_TIMEOUT_MS,
+          concurrentPerSandbox: c.KAIJU_EGRESS_GIT_CONCURRENT_PER_SANDBOX,
+          requestBurst: c.KAIJU_EGRESS_GIT_REQUEST_BURST,
+          requestsPerSecond: c.KAIJU_EGRESS_GIT_REQUESTS_PER_SECOND,
+          lookupsPerMinute: c.KAIJU_EGRESS_GIT_LOOKUPS_PER_MINUTE,
         };
   return {
     git,
     port: c.PORT,
-    databaseUrl: c.KOBE_DATABASE_URL,
-    dbPoolMax: c.KOBE_DB_POOL_MAX,
+    databaseUrl: c.KAIJU_DATABASE_URL,
+    dbPoolMax: c.KAIJU_DB_POOL_MAX,
     sessionVerifyKeys,
     allowedPorts,
-    allowedInternalCidrs: c.KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS,
-    internalTargets: c.KOBE_EGRESS_INTERNAL_TARGETS,
-    deniedCidrs: c.KOBE_EGRESS_DENIED_CIDRS,
-    maxConnectionsPerSandbox: c.KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX,
-    maxConnections: c.KOBE_EGRESS_MAX_CONNECTIONS,
-    bandwidthBytesPerSecond: c.KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND,
-    idleTimeoutMs: c.KOBE_EGRESS_IDLE_TIMEOUT_MS,
-    handshakeTimeoutMs: c.KOBE_EGRESS_HANDSHAKE_TIMEOUT_MS,
-    connectTimeoutMs: c.KOBE_EGRESS_CONNECT_TIMEOUT_MS,
-    preAuthTimeoutMs: c.KOBE_EGRESS_PREAUTH_TIMEOUT_MS,
-    preAuthPerSource: c.KOBE_EGRESS_PREAUTH_PER_SOURCE,
-    preAuthTotal: c.KOBE_EGRESS_PREAUTH_TOTAL,
-    maxTunnelMs: c.KOBE_EGRESS_MAX_TUNNEL_SECONDS * 1000,
-    recheckMs: c.KOBE_EGRESS_RECHECK_MS,
-    dnsTimeoutMs: c.KOBE_EGRESS_DNS_TIMEOUT_MS,
-    cacheTtlMs: c.KOBE_EGRESS_CACHE_TTL_MS,
-    auditFlushMs: c.KOBE_EGRESS_AUDIT_FLUSH_MS,
+    allowedInternalCidrs: c.KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS,
+    internalTargets: c.KAIJU_EGRESS_INTERNAL_TARGETS,
+    deniedCidrs: c.KAIJU_EGRESS_DENIED_CIDRS,
+    maxConnectionsPerSandbox: c.KAIJU_EGRESS_MAX_CONNECTIONS_PER_SANDBOX,
+    maxConnections: c.KAIJU_EGRESS_MAX_CONNECTIONS,
+    bandwidthBytesPerSecond: c.KAIJU_EGRESS_BANDWIDTH_BYTES_PER_SECOND,
+    idleTimeoutMs: c.KAIJU_EGRESS_IDLE_TIMEOUT_MS,
+    handshakeTimeoutMs: c.KAIJU_EGRESS_HANDSHAKE_TIMEOUT_MS,
+    connectTimeoutMs: c.KAIJU_EGRESS_CONNECT_TIMEOUT_MS,
+    preAuthTimeoutMs: c.KAIJU_EGRESS_PREAUTH_TIMEOUT_MS,
+    preAuthPerSource: c.KAIJU_EGRESS_PREAUTH_PER_SOURCE,
+    preAuthTotal: c.KAIJU_EGRESS_PREAUTH_TOTAL,
+    maxTunnelMs: c.KAIJU_EGRESS_MAX_TUNNEL_SECONDS * 1000,
+    recheckMs: c.KAIJU_EGRESS_RECHECK_MS,
+    dnsTimeoutMs: c.KAIJU_EGRESS_DNS_TIMEOUT_MS,
+    cacheTtlMs: c.KAIJU_EGRESS_CACHE_TTL_MS,
+    auditFlushMs: c.KAIJU_EGRESS_AUDIT_FLUSH_MS,
     headerSecrets,
     upgrade: {
-      maxRequestBytes: c.KOBE_EGRESS_UPGRADE_MAX_REQUEST_BYTES,
-      maxResponseBytes: c.KOBE_EGRESS_UPGRADE_MAX_RESPONSE_BYTES,
-      timeoutMs: c.KOBE_EGRESS_UPGRADE_TIMEOUT_MS,
+      maxRequestBytes: c.KAIJU_EGRESS_UPGRADE_MAX_REQUEST_BYTES,
+      maxResponseBytes: c.KAIJU_EGRESS_UPGRADE_MAX_RESPONSE_BYTES,
+      timeoutMs: c.KAIJU_EGRESS_UPGRADE_TIMEOUT_MS,
     },
   };
 }

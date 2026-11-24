@@ -119,7 +119,7 @@ beforeAll(async () => {
       return (real as (...a: unknown[]) => void)(...args);
     }) as never);
   }
-  envelope = must(loadEnvelope({ KOBE_ENVELOPE_KEY: "e".repeat(48) }));
+  envelope = must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "e".repeat(48) }));
   h = await openHarness({ envelope });
   for (const [id, slug] of [
     [team, "gt"],

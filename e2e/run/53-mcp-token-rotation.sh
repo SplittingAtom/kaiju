@@ -8,9 +8,9 @@
 # owner's sandbox is hibernated first so its next wake trades tokens of the short TTL. Needs the MCP
 # fixture (connector e2e-fake) and the fake model.
 echo "==> real Pi past an MCP token rotation (KOBE-244)"
-if [[ "${KOBE_E2E_TOOL_EXECUTOR:-}" != 1 ]]; then
+if [[ "${KAIJU_E2E_TOOL_EXECUTOR:-}" != 1 ]]; then
   echo "SKIP MCP token rotation check (KOBE-244: runs in the executor shard only)"
-elif [[ -n "${KOBE_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n "${MCP_CONNECTOR:-}" && -n "${owner_id:-}" ]]; then
+elif [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n "${MCP_CONNECTOR:-}" && -n "${owner_id:-}" ]]; then
   ROT_TTL=10
   ROT_AGENT=6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
   rot_t0=$SECONDS
@@ -55,7 +55,7 @@ elif [[ -n "${KOBE_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n 
       | grep -c 'expired token on a live session; answered 404' || true)"
   printf '     rotation e2e: %ss in all (setup %ss, run %ss)\n' "$((SECONDS - rot_t0))" "$((rot_t1 - rot_t0))" "$((SECONDS - rot_t1))"
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "the MCP token rotation check needs KOBE_SANDBOX_IMAGE, the MCP fixture and the model setup"
+  fail "the MCP token rotation check needs KAIJU_SANDBOX_IMAGE, the MCP fixture and the model setup"
 else
   echo "SKIP MCP token rotation check (KOBE-244: needs the MCP fixture and the model setup)"
 fi

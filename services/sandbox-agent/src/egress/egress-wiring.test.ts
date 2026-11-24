@@ -57,13 +57,13 @@ describe("the tools' own HOME and TMPDIR (KOBE-228)", () => {
   const show = 'printf "%s|%s" "$HOME" "$TMPDIR"';
 
   it("a bash tool call gets the shared HOME and TMPDIR instead of Pi's private ones", () => {
-    const env = { ...base, KOBE_TOOL_HOME: "/home/kobe", KOBE_TOOL_TMPDIR: "/tmp" };
+    const env = { ...base, KAIJU_TOOL_HOME: "/home/kobe", KAIJU_TOOL_TMPDIR: "/tmp" };
     expect(toolShell(env, show)).toBe("/home/kobe|/tmp");
   });
 
   it("keeps Pi's values when the variables are absent, relative or carry a newline", () => {
     expect(toolShell(base, show)).toBe("/tmp/kobe-pi-x/home|/tmp/kobe-pi-x/tmp");
-    const relative = { ...base, KOBE_TOOL_HOME: "home", KOBE_TOOL_TMPDIR: "/tmp\nx" };
+    const relative = { ...base, KAIJU_TOOL_HOME: "home", KAIJU_TOOL_TMPDIR: "/tmp\nx" };
     expect(toolShell(relative, show)).toBe("/tmp/kobe-pi-x/home|/tmp/kobe-pi-x/tmp");
   });
 });
@@ -73,14 +73,14 @@ describe("egress env for Pi's tools", () => {
     const env = egressEnv(wiring(), "/tmp/kobe-pi/pi-x/egress-token", THREAD);
     expect(env).toEqual({
       BASH_ENV: SCRIPT,
-      KOBE_EGRESS_TOKEN_FILE: "/tmp/kobe-pi/pi-x/egress-token",
-      KOBE_EGRESS_PROXY: "http://egress-proxy.kobe.internal:80",
-      KOBE_THREAD_ID: THREAD,
+      KAIJU_EGRESS_TOKEN_FILE: "/tmp/kobe-pi/pi-x/egress-token",
+      KAIJU_EGRESS_PROXY: "http://egress-proxy.kobe.internal:80",
+      KAIJU_THREAD_ID: THREAD,
       NO_PROXY: "server.kobe.internal,localhost",
       no_proxy: "server.kobe.internal,localhost",
     });
     expect(JSON.stringify(env)).not.toContain(TOKEN);
-    expect(egressEnv(wiring(), "/f", "not-a-uuid").KOBE_THREAD_ID).toBeUndefined();
+    expect(egressEnv(wiring(), "/f", "not-a-uuid").KAIJU_THREAD_ID).toBeUndefined();
   });
 
   it("every bash tool call gets HTTPS_PROXY with the current token, re-read per shell", async () => {

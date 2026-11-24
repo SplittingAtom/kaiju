@@ -4,12 +4,12 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-430 ac-4: the Re-probe button on the site connector registry, against a real MCP server
- * (on gate1 the Catalyst connector). `KOBE_USER` is a site admin; `KOBE_CONNECTOR` names the
+ * (on gate1 the Catalyst connector). `KAIJU_USER` is a site admin; `KAIJU_CONNECTOR` names the
  * connector (default `catalyst_2`). It re-probes once and checks the outcome is said in words:
  * unchanged, the counts, or a failure reason (a refusal for a recent re-probe also counts). Spends
  * no model tokens. Run on gate1: `npx playwright test connector-reprobe`.
  */
-const NAME = process.env["KOBE_CONNECTOR"] ?? "catalyst_2";
+const NAME = process.env["KAIJU_CONNECTOR"] ?? "catalyst_2";
 
 test("Re-probe: probes now and says what happened", async ({ page }) => {
   await page.goto("/admin/site/connectors");

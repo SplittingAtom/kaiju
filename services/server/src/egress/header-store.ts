@@ -86,7 +86,7 @@ export async function clearTeamDomainHeaders(
 }
 
 /**
- * Re-seals injected header values that a previous `KOBE_EGRESS_HEADER_SECRET` sealed (rotation:
+ * Re-seals injected header values that a previous `KAIJU_EGRESS_HEADER_SECRET` sealed (rotation:
  * the box holds the current secret first, the previous one after it). Values are opened and sealed
  * again in place, never logged; once every row uses the current secret the previous one can be
  * dropped. Returns how many domains were re-sealed.

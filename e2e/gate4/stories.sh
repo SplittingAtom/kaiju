@@ -19,11 +19,11 @@
 #   U16  (with Gate 1 and e2e/gate4-restore.sh) the chart refuses a RuntimeClass that does not isolate
 # docs/gates/gate-4.md records what each check proves and what it does not.
 #
-# k3d (CI shard `gate4`): after the gate1-prep install. A real install: KOBE_GATE4_NS, _RELEASE,
+# k3d (CI shard `gate4`): after the gate1-prep install. A real install: KAIJU_GATE4_NS, _RELEASE,
 # _CONTEXT, _MODEL, _OWNER_EMAIL/_PASSWORD; U7 against a real OAuth MCP server with
-# KOBE_GATE4_MCP_URL (see the doc). It creates users gate4-*@gate4.test, teams gate4-a and gate4-b
+# KAIJU_GATE4_MCP_URL (see the doc). It creates users gate4-*@gate4.test, teams gate4-a and gate4-b
 # and namespace kobe-gate4-infra (the fake OAuth MCP server and the Orbit test model). With
-# KOBE_GATE4_FAKE_INFRA=1 (the k3d default) one `helm upgrade` lets the MCP proxy reach the fake
+# KAIJU_GATE4_FAKE_INFRA=1 (the k3d default) one `helm upgrade` lets the MCP proxy reach the fake
 # server, re-probes connectors every 60 s and lets Bifrost reach the test model; on a real cluster
 # it is undone on exit from the release's saved values.
 set -euo pipefail
@@ -31,16 +31,16 @@ cd "$(dirname "$0")/../.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KOBE_GATE4_NS:-kobe-dev}"
-RELEASE="${KOBE_GATE4_RELEASE:-kobe}"
-CHART="${KOBE_GATE4_CHART:-charts/kobe}"
-STORIES=" ${KOBE_GATE4_STORIES:-U1 U2 U5 U6 U7 U8 U11 U14 U15 U16} "
-MODEL_ALIAS="${KOBE_GATE4_MODEL:-fast}"
-FAKE="${KOBE_GATE4_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
-OWNER_EMAIL="${KOBE_GATE4_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATE4_OWNER_PASSWORD:-e2e owner password}"
-SBX_WAIT="${KOBE_GATE4_SANDBOX_WAIT:-180}"
-MAILPIT="${KOBE_GATE4_MAILPIT:-http://mailpit.kobe-deps.svc.cluster.local:8025}"
+NS="${KAIJU_GATE4_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATE4_RELEASE:-kobe}"
+CHART="${KAIJU_GATE4_CHART:-charts/kobe}"
+STORIES=" ${KAIJU_GATE4_STORIES:-U1 U2 U5 U6 U7 U8 U11 U14 U15 U16} "
+MODEL_ALIAS="${KAIJU_GATE4_MODEL:-fast}"
+FAKE="${KAIJU_GATE4_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
+OWNER_EMAIL="${KAIJU_GATE4_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATE4_OWNER_PASSWORD:-e2e owner password}"
+SBX_WAIT="${KAIJU_GATE4_SANDBOX_WAIT:-180}"
+MAILPIT="${KAIJU_GATE4_MAILPIT:-http://mailpit.kobe-deps.svc.cluster.local:8025}"
 INFRA_NS=kobe-gate4-infra
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
@@ -48,17 +48,17 @@ NONCE="$(date +%s)"
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATE4_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATE4_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATE4_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATE4_CONTEXT=$context)" >&2
   exit 2
 fi
 K3D=$([[ "$context" == k3d-* ]] && echo 1 || echo 0)
-FAKE_INFRA="${KOBE_GATE4_FAKE_INFRA:-$K3D}"
-RESTORE_HELM="${KOBE_GATE4_RESTORE_HELM:-$((1 - K3D))}"
+FAKE_INFRA="${KAIJU_GATE4_FAKE_INFRA:-$K3D}"
+RESTORE_HELM="${KAIJU_GATE4_RESTORE_HELM:-$((1 - K3D))}"
 # Turning "require 2FA" on holds every user without TOTP for a moment: on k3d by default only.
-TOTP_REQUIRE="${KOBE_GATE4_TOTP_REQUIRE:-$K3D}"
+TOTP_REQUIRE="${KAIJU_GATE4_TOTP_REQUIRE:-$K3D}"
 # Creates (and deletes) a cluster-scoped RuntimeClass with handler runc: on k3d by default only.
-RUNC_CLASS="${KOBE_GATE4_RUNC_CLASS:-$K3D}"
+RUNC_CLASS="${KAIJU_GATE4_RUNC_CLASS:-$K3D}"
 
 # shellcheck source=../lib/gate-common.sh
 source e2e/lib/gate-common.sh
@@ -127,7 +127,7 @@ if [[ "$(field models_a "$fx")" == 200 ]]; then
 else
   fail "no model catalog entry '$MODEL_ALIAS' enabled for team gate4-a: the stories need runs"
 fi
-KOBE_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
+KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
 
 # A user's sandbox (T2 names the user for e2e/gate2/sandbox.sh and scan.sh).
 TNS=kobe-team-gate4-a
@@ -154,7 +154,7 @@ chat() { turn "$(user_of "$SBX_WHO")" "$1"; } # scan.sh's Pi view runs through t
 if ((FAKE_INFRA)) && ((MODELS)); then
   echo "==> test servers in $INFRA_NS: an OAuth MCP server and the Orbit test model"
   SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-  SANDBOX_IMAGE="${KOBE_GATE4_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
+  SANDBOX_IMAGE="${KAIJU_GATE4_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
   $KUBECTL create namespace "$INFRA_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
   for svc in fake-oauth orbit-model; do
     $KUBECTL -n "$INFRA_NS" get svc "$svc" >/dev/null 2>&1 \
@@ -265,7 +265,7 @@ if want U1; then
     contains "U1: with the code they are in" '^after_code=200$' "$tt"
     contains "U1: the site setting is back as it was" '^require_restored=true$' "$tt"
   else
-    notrun "U1: 2FA enforcement (KOBE_GATE4_TOTP_REQUIRE=0: turning it on would hold every user without TOTP)"
+    notrun "U1: 2FA enforcement (KAIJU_GATE4_TOTP_REQUIRE=0: turning it on would hold every user without TOTP)"
   fi
 fi
 
@@ -343,31 +343,31 @@ fi
 # ---- U7 --------------------------------------------------------------------------------------------
 connect() { # key connector → connects that user (fake: automatically; real: a script or a person)
   local key=$1 cid=$2 out url cb var
-  if [[ -z "${KOBE_GATE4_MCP_URL:-}" || "$cid" == "$FAKE_CONNECTOR" ]]; then
+  if [[ -z "${KAIJU_GATE4_MCP_URL:-}" || "$cid" == "$FAKE_CONNECTOR" ]]; then
     step u7-connect "\"user\":$(user_of "$key"),\"connectorId\":\"$cid\""
     return
   fi
-  var="KOBE_GATE4_MCP_AUTHORIZE_CMD_${key^^}"
+  var="KAIJU_GATE4_MCP_AUTHORIZE_CMD_${key^^}"
   if [[ -n "${!var:-}" ]]; then
     out=$(step u7-start "\"user\":$(user_of "$key"),\"connectorId\":\"$cid\"")
     url=$(field authorization_url_b64 "$out" | base64 -d)
     cb=$(${!var} "$url" | tail -1)
     step u7-callback "\"user\":$(user_of "$key"),\"connectorId\":\"$cid\",\"callbackB64\":\"$(printf '%s' "$cb" | base64 | tr -d '\n')\""
   else
-    echo "     U7: sign in at $PUBLIC_URL as gate4-$key@gate4.test and connect '$MCP_NAME' (waiting ${KOBE_GATE4_MCP_CONSENT_WAIT:-600} s)"
+    echo "     U7: sign in at $PUBLIC_URL as gate4-$key@gate4.test and connect '$MCP_NAME' (waiting ${KAIJU_GATE4_MCP_CONSENT_WAIT:-600} s)"
     granted() { [[ "$(field grant "$(step u7-grant "\"user\":$(user_of "$key"),\"connectorId\":\"$cid\"")")" == oauth ]]; }
-    until_ok "${KOBE_GATE4_MCP_CONSENT_WAIT:-600}" granted || true
+    until_ok "${KAIJU_GATE4_MCP_CONSENT_WAIT:-600}" granted || true
     step u7-grant "\"user\":$(user_of "$key"),\"connectorId\":\"$cid\""
   fi
 }
 # On the gallery agent Kobe (`connectors: all`): connectors reach a run only through its agent's
 # list (resolver: agent list ∩ team-enabled ∩ user-connected); a thread without one gets none.
 mcp_call() { # key connector-name-segment tool args → a turn calling that tool
-  turn "$(user_of "$1")" "$(tool_prompt "mcp__$2__$3" "$4")" "\"title\":\"gate4 U7 $1\",\"agentId\":\"$KOBE_AGENT\""
+  turn "$(user_of "$1")" "$(tool_prompt "mcp__$2__$3" "$4")" "\"title\":\"gate4 U7 $1\",\"agentId\":\"$KAIJU_AGENT\""
 }
 if want U7 && ((MODELS)); then
   echo "==> U7: per-user grants of one OAuth connector; no token in a sandbox; revocation; drift"
-  PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KOBE_PUBLIC_URL 2>/dev/null || true)
+  PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KAIJU_PUBLIC_URL 2>/dev/null || true)
   FAKE_CONNECTOR=""
   if ((FAKE_INFRA)); then
     fk=$(step u7-setup "\"admin\":$U_GA,\"name\":\"gate4-oauth\",\"url\":\"http://$OAUTH_IP/mcp\"")
@@ -376,15 +376,15 @@ if want U7 && ((MODELS)); then
     contains "U7: the Owner registers the OAuth MCP server; its tools are pinned" '^tools=get_thing:pinned,create_thing:pinned$|^tools=create_thing:pinned,get_thing:pinned$' "$fk"
     contains "U7: the team admin enables it" '^team_enable=200:-$' "$fk"
   fi
-  if [[ -n "${KOBE_GATE4_MCP_URL:-}" ]]; then
-    MCP_NAME="${KOBE_GATE4_MCP_NAME:-gate4-real}"
-    rk=$(step u7-setup "\"admin\":$U_GA,\"name\":\"$MCP_NAME\",\"url\":\"$KOBE_GATE4_MCP_URL\"")
+  if [[ -n "${KAIJU_GATE4_MCP_URL:-}" ]]; then
+    MCP_NAME="${KAIJU_GATE4_MCP_NAME:-gate4-real}"
+    rk=$(step u7-setup "\"admin\":$U_GA,\"name\":\"$MCP_NAME\",\"url\":\"$KAIJU_GATE4_MCP_URL\"")
     show "U7 connector" "$rk"
     CONNECTOR=$(field connector_id "$rk")
     contains "U7: the real OAuth MCP server is registered and enabled for the team" '^team_enable=200:-$' "$rk"
     SEG=$(field segment "$rk")
-    TOOL="${KOBE_GATE4_MCP_TOOL:?set KOBE_GATE4_MCP_TOOL to a read-only tool of $KOBE_GATE4_MCP_URL}"
-    ARGS="${KOBE_GATE4_MCP_ARGS:-}"
+    TOOL="${KAIJU_GATE4_MCP_TOOL:?set KAIJU_GATE4_MCP_TOOL to a read-only tool of $KAIJU_GATE4_MCP_URL}"
+    ARGS="${KAIJU_GATE4_MCP_ARGS:-}"
     [[ -z "$ARGS" ]] && ARGS='{}'
   else
     MCP_NAME=gate4-oauth
@@ -393,7 +393,7 @@ if want U7 && ((MODELS)); then
     TOOL=get_thing
     ARGS='{"id":"7"}'
   fi
-  [[ -n "$CONNECTOR" ]] || fail "U7: no connector (set KOBE_GATE4_MCP_URL, or KOBE_GATE4_FAKE_INFRA=1)"
+  [[ -n "$CONNECTOR" ]] || fail "U7: no connector (set KAIJU_GATE4_MCP_URL, or KAIJU_GATE4_FAKE_INFRA=1)"
   for k in m1 m2; do
     hello "$k"
     c=$(connect "$k" "$CONNECTOR")
@@ -427,7 +427,7 @@ if want U7 && ((MODELS)); then
   chmod 600 "$tokfile"
   for k in m1 m2; do
     use_sandbox_of "$k"
-    SCAN_LABEL="U7 ($k's sandbox)" KOBE_GATE2_EXTRA_SECRETS_FILE="$tokfile" run_secret_scan
+    SCAN_LABEL="U7 ($k's sandbox)" KAIJU_GATE2_EXTRA_SECRETS_FILE="$tokfile" run_secret_scan
   done
   contains "U7: m1 revokes their grant" '^revoke=204$' "$(step u7-revoke "\"user\":$U_M1,\"connectorId\":\"$CONNECTOR\"")"
   r1=$(mcp_call m1 "$SEG" "$TOOL" "$ARGS")
@@ -449,7 +449,7 @@ if want U7 && ((MODELS)); then
     if until_ok 200 drift_seen; then ok "U7: the next re-probe marks create_thing drifted"; else fail "U7: the next re-probe marks create_thing drifted"; fi
     [[ "$CONNECTOR" != "$FAKE_CONNECTOR" ]] && c=$(connect m2 "$FAKE_CONNECTOR")
     if ((FAKE)); then
-      t1=$(turn "$U_M2" "tools?" "\"title\":\"gate4 U7 drift\",\"agentId\":\"$KOBE_AGENT\"")
+      t1=$(turn "$U_M2" "tools?" "\"title\":\"gate4 U7 drift\",\"agentId\":\"$KAIJU_AGENT\"")
       contains "U7: a new run still offers the unchanged tool" '^text=.*mcp__gate4_oauth__get_thing' "$t1"
       if grep -q 'mcp__gate4_oauth__create_thing' <<<"$(said "$t1")"; then fail "U7: ...and not the drifted one (disabled until re-approved)"
       else ok "U7: ...and not the drifted one (disabled until re-approved)"; fi
@@ -457,10 +457,10 @@ if want U7 && ((MODELS)); then
     contains "U7: a site admin re-approves it" '^reapprove=200:1$' "$(step u7-review "\"connectorId\":\"$FAKE_CONNECTOR\",\"approve\":true")"
     if ((FAKE)); then
       contains "U7: after re-approval the tool is offered again" '^text=.*mcp__gate4_oauth__create_thing' \
-        "$(turn "$U_M2" "tools?" "\"title\":\"gate4 U7 re-approved\",\"agentId\":\"$KOBE_AGENT\"")"
+        "$(turn "$U_M2" "tools?" "\"title\":\"gate4 U7 re-approved\",\"agentId\":\"$KAIJU_AGENT\"")"
     fi
   else
-    notrun "U7: drift (needs the fake OAuth MCP server: KOBE_GATE4_FAKE_INFRA=1)"
+    notrun "U7: drift (needs the fake OAuth MCP server: KAIJU_GATE4_FAKE_INFRA=1)"
   fi
 fi
 
@@ -481,7 +481,7 @@ if want U8 && ((MODELS)); then
     md=$(step u8-model "\"admin\":$U_GA,\"url\":\"http://$ORBIT_IP\",\"alias\":\"orbitvuln\"")
     show "U8 test model" "$md"
     contains "U8: the Orbit test model is in the catalog and enabled for the team" '^team_model=200$' "$md"
-    THRESHOLD="${KOBE_GATE4_EVAL_MAX_ASR:-0.5}"
+    THRESHOLD="${KAIJU_GATE4_EVAL_MAX_ASR:-0.5}"
     gate() { # model-alias label → the gate step for a new agent on that model
       step u8-gate "\"admin\":$U_GA,\"user\":$U_GB,\"threshold\":$THRESHOLD,\"timeoutS\":600,\"frontmatter\":{\"name\":\"Gate4 Eval $2 $NONCE\",\"model\":\"$1\"},\"prompt\":\"You are the Gate 4 $2 agent. Use your tools.\""
     }
@@ -492,7 +492,7 @@ if want U8 && ((MODELS)); then
     contains "U8: ...and no version is published" '^published_version=none$' "$vg"
     contains "U8: the gate is turned off again" '^gate_off=200$' "$vg"
   else
-    notrun "U8: the eval gate's block (needs the Orbit test model: KOBE_GATE4_FAKE_INFRA=1)"
+    notrun "U8: the eval gate's block (needs the Orbit test model: KAIJU_GATE4_FAKE_INFRA=1)"
   fi
 fi
 
@@ -501,7 +501,7 @@ if want U11 && ((MODELS)); then
   echo "==> U11: the 80 % warning; the dashboard by user, agent and model"
   hello m3
   content="$(if ((FAKE)); then echo "kaiju-tool-step gate4 $NONCE"; else echo "Write a short paragraph about budgets."; fi)"
-  daily="${KOBE_GATE4_U11_DAILY_TOKENS:-1200000}" # the scripted tool step reports a 1,000,000-token prompt
+  daily="${KAIJU_GATE4_U11_DAILY_TOKENS:-1200000}" # the scripted tool step reports a 1,000,000-token prompt
   u11=$(step u11 "\"admin\":$U_GA,\"user\":$U_M3,\"dailyTokens\":$daily,\"content\":$(json_str "$content")")
   show "U11" "$u11"
   contains "U11: the team admin sets the member's daily token budget" '^budget=200$' "$u11"
@@ -517,7 +517,7 @@ fi
 if want U14 && ((MODELS)); then
   echo "==> U14: a schedule runs as its owner in auto mode; a write that would ask is skipped and reported"
   hello m1
-  u14=$(step u14 "\"user\":$U_M1,\"agentId\":\"$KOBE_AGENT\",\"prompt\":$(json_str "$(bash_prompt "echo gate4-$NONCE > /workspace/gate4-u14.txt")")")
+  u14=$(step u14 "\"user\":$U_M1,\"agentId\":\"$KAIJU_AGENT\",\"prompt\":$(json_str "$(bash_prompt "echo gate4-$NONCE > /workspace/gate4-u14.txt")")")
   show "U14" "$u14"
   contains "U14: the member creates a daily schedule" '^schedule=201:' "$u14"
   contains "U14: it fires (its next run pulled forward)" '^fired=yes$' "$u14"
@@ -564,7 +564,7 @@ if want U16; then
     contains "U16: a RuntimeClass whose handler is runc is refused (the handler is checked, not the name)" 'refuses to run agents' "$(dry kobe-gate4-runc)"
     $KUBECTL delete runtimeclass kobe-gate4-runc --ignore-not-found >/dev/null 2>&1 || true
   else
-    notrun "U16: a runc-handler RuntimeClass (KOBE_GATE4_RUNC_CLASS=0: it is cluster-scoped)"
+    notrun "U16: a runc-handler RuntimeClass (KAIJU_GATE4_RUNC_CLASS=0: it is cluster-scoped)"
   fi
   contains "U16: the running sandboxes use the isolating RuntimeClass" '^(gvisor|kata[a-z0-9-]*)( (gvisor|kata[a-z0-9-]*))*$' \
     "$($KUBECTL -n "$TNS" get pods -l agents.x-k8s.io/claim-uid -o jsonpath='{range .items[*]}{.spec.runtimeClassName}{" "}{end}' 2>/dev/null | sed 's/ $//')"

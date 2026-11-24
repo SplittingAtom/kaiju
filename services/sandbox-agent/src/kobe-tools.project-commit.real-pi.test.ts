@@ -77,7 +77,7 @@ afterEach(async () => {
 async function start(): Promise<{ t: Harness; s: WorkspaceSync }> {
   h = await startHarness({
     piBin: PI_BIN,
-    env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+    env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
     extensions: [FAUX_MODEL_EXTENSION],
     toolsExtension: REAL_TOOLS_EXTENSION,
     workspace: (dir: string) => {

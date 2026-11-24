@@ -40,7 +40,7 @@ export function RetentionMaximumPage() {
             {current.paused && (
               <Notice tone="warn" role="alert">
                 <p>
-                  Retention is paused (KOBE_RETENTION_PAUSED): no nightly deletion, offboarding
+                  Retention is paused (KAIJU_RETENTION_PAUSED): no nightly deletion, offboarding
                   purge or workspace cleanup runs. Resume it with the chart value
                   retention.paused=false once the bucket is reconciled after a restore.
                 </p>

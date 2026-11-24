@@ -25,7 +25,7 @@ import { commandId, frame, openCode } from "./wire.js";
  * How the agent configures a thread's Pi process. SPECULATIVE values (owned by KOBE-41 model wiring,
  * KOBE-47 agent resolution, KOBE-62 MCP wiring); the shape is strict and carries **no URLs and no
  * credentials**: the model gateway and MCP proxy base URLs come from the sandbox's environment
- * (Helm), and the agent builds `<KOBE_MCP_PROXY_URL>/v1/mcp/<connector_id>` itself, so a server bug
+ * (Helm), and the agent builds `<KAIJU_MCP_PROXY_URL>/v1/mcp/<connector_id>` itself, so a server bug
  * or a forged frame cannot point Pi at an arbitrary endpoint.
  */
 /**

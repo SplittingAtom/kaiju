@@ -356,7 +356,7 @@ async function writeRow(
 }
 
 export interface CommitContext {
-  /** Object key prefix (KOBE_S3_PREFIX). */
+  /** Object key prefix (KAIJU_S3_PREFIX). */
   readonly prefix: string;
   readonly quota: QuotaCheck;
   /** Rows (live + tombstones) per workspace. */

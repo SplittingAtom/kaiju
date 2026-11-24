@@ -169,7 +169,7 @@ async function u1Account() {
   c.team = config.teamId;
   out("own_team", (await c.call("GET", "/v1/threads")).status);
   // A passkey (WebAuthn, user verification required), then a sign-in with it alone.
-  const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+  const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
   const key = await authenticator(new URL(origin).hostname, origin);
   const options = await c.call("GET", "/api/auth/passkey/generate-register-options");
   const reg = await c.call("POST", "/api/auth/passkey/verify-registration", {

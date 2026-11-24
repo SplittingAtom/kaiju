@@ -62,7 +62,7 @@ export interface TestDatabase {
 export interface TestDatabaseOptions {
   /**
    * Migrate with this folder only (e.g. `migrationsBefore()`: a site of an older release),
-   * ignoring KOBE_TEST_BASE_MIGRATIONS.
+   * ignoring KAIJU_TEST_BASE_MIGRATIONS.
    */
   readonly migrationsFolder?: string;
   /**
@@ -90,7 +90,7 @@ export async function serverHasPgvector(serverUrl: string): Promise<boolean> {
 /**
  * Creates a throwaway database with a separate owner role (runs migrations) and app role
  * (NOSUPERUSER NOBYPASSRLS, owns nothing), migrated from scratch, or, when
- * KOBE_TEST_BASE_MIGRATIONS names a base branch's migrations folder, upgraded from it. `serverUrl` is a superuser URL
+ * KAIJU_TEST_BASE_MIGRATIONS names a base branch's migrations folder, upgraded from it. `serverUrl` is a superuser URL
  * to a Postgres 17 server, used only to create and drop the database and roles.
  */
 export async function createTestDatabase(
@@ -128,7 +128,7 @@ export async function createTestDatabase(
     );
     await admin.query(`CREATE DATABASE ${dbName} OWNER ${ownerRole}`);
     if (options.vector !== false) await enablePgvector(serverUrl, dbName);
-    const baseFolder = process.env.KOBE_TEST_BASE_MIGRATIONS;
+    const baseFolder = process.env.KAIJU_TEST_BASE_MIGRATIONS;
     if (options.migrationsFolder) {
       await runMigrations({
         databaseUrl: urlFor(ownerRole),
@@ -183,15 +183,15 @@ async function enablePgvector(serverUrl: string, dbName: string): Promise<void> 
 }
 
 /**
- * Reads KOBE_TEST_DATABASE_URL or fails with an explanation (db tests never silently skip). With a
+ * Reads KAIJU_TEST_DATABASE_URL or fails with an explanation (db tests never silently skip). With a
  * test lane (KOBE-482) the URL points at the lane's maintenance database, which the suite's global
  * setup created (`prepareTestLane`).
  */
 export function testServerUrl(): string {
-  const url = process.env.KOBE_TEST_DATABASE_URL;
+  const url = process.env.KAIJU_TEST_DATABASE_URL;
   if (!url) {
     throw new Error(
-      "KOBE_TEST_DATABASE_URL is required for db tests: a superuser URL to a Postgres 17 server " +
+      "KAIJU_TEST_DATABASE_URL is required for db tests: a superuser URL to a Postgres 17 server " +
         "(used only to create and drop a throwaway database and roles).",
     );
   }

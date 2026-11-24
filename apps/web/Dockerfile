@@ -16,8 +16,8 @@ RUN pnpm fetch
 COPY . .
 # KOBE-487: the build id open tabs compare with /api/build (e.g. local-<sha12>); empty = a fresh
 # random one per build. Declared after COPY so it never invalidates the dependency layers.
-ARG KOBE_BUILD_ID=""
-ENV KOBE_BUILD_ID=${KOBE_BUILD_ID}
+ARG KAIJU_BUILD_ID=""
+ENV KAIJU_BUILD_ID=${KAIJU_BUILD_ID}
 RUN pnpm install --offline --frozen-lockfile \
  && pnpm turbo run build --filter=@kaiju/web...
 

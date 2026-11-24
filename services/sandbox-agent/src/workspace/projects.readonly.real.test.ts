@@ -31,7 +31,7 @@ import { WorkspaceSync } from "./sync.js";
  * agent's uid owns `projects/`, the Pi uid (executor off: Pi's own tools) and the partner uid
  * (executor on) hold only the workspace group, the shared workspace root is group-writable.
  */
-const HELPER = process.env.KOBE_TEST_PI_RUNAS;
+const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
 const WORKSPACE_GID = process.getgid?.() ?? -1;
 const BRIEF = "the project brief\n";
 

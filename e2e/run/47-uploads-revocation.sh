@@ -7,12 +7,12 @@
     # note the agent appends to the prompt). Then the thread is deleted forever: its object leaves
     # S3. ClamAV is off in this site (its image and signature download cost minutes and
     # ~1 GiB of memory per cluster): uploads report scan "skipped". The scan itself (EICAR
-    # rejected, clamd down = 503) runs when KOBE_E2E_CLAMAV=1 (the nightly and manual runs).
+    # rejected, clamd down = 503) runs when KAIJU_E2E_CLAMAV=1 (the nightly and manual runs).
     echo "==> uploads (KOBE-146)"
     read -r -d '' UPLOAD_JS <<'JS' || true
 const [team, mode, threadArg, content] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
 const call = async (method, path, body, extra = {}) => {
   const res = await fetch(base + path, {
@@ -122,7 +122,7 @@ JS
     contains "uploads: the file row is gone with the thread" '^0$' \
       "$(psql_kobe "SELECT count(*) FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${up_file:-00000000-0000-4000-8000-000000000000}'")"
 
-    if [[ "${KOBE_E2E_CLAMAV:-}" == 1 ]]; then
+    if [[ "${KAIJU_E2E_CLAMAV:-}" == 1 ]]; then
       # ClamAV on (the real clamav/clamav image; it downloads its signature database first, so the
       # rollout is given 10 min). EICAR is rejected and leaves no object or row, a clean file passes
       # with scan "clean", and with clamd gone uploads fail closed (503 scan_unavailable).

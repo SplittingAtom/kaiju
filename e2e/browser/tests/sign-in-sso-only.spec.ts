@@ -19,7 +19,7 @@ import {
  *
  * 1. Setting off: the panel has the email and password form, and the server takes a password
  *    sign-in (a wrong password is 401, not `SSO_REQUIRED`).
- * 2. Setting on: the Owner (KOBE_USER) signs in through the mock (linking the account with the
+ * 2. Setting on: the Owner (KAIJU_USER) signs in through the mock (linking the account with the
  *    password and a confirmation the first time; the link stays for later runs), turns the setting
  *    on from that SSO session, and a signed-out browser sees only "Sign in with <mock>" and "This
  *    site requires single sign-on": no Email, Password, "Forgot your password?" or passkey; the
@@ -27,13 +27,13 @@ import {
  *    off again, and the password form is back.
  *
  * Turning the setting on ends every session not signed in through a provider, the suite's stored
- * one too: run this spec on its own (`npx playwright test sign-in-sso-only`). KOBE_USER must be the
+ * one too: run this spec on its own (`npx playwright test sign-in-sso-only`). KAIJU_USER must be the
  * Owner, without an authenticator app (the link step signs in with the password only). If a run
  * dies with the setting on, the Owner turns it off in Site console › Single sign-on, or with
- * cluster access: `KOBE_DB_MIGRATE_URL=… kaiju sso allow-local-sign-in`. No model tokens.
+ * cluster access: `KAIJU_DB_MIGRATE_URL=… kaiju sso allow-local-sign-in`. No model tokens.
  */
-const OWNER = process.env["KOBE_USER"] ?? "";
-const OWNER_PW = process.env["KOBE_PW"] ?? "";
+const OWNER = process.env["KAIJU_USER"] ?? "";
+const OWNER_PW = process.env["KAIJU_PW"] ?? "";
 const SETTINGS = "/v1/site/sso/settings";
 
 test.describe.configure({ mode: "serial" });
@@ -79,9 +79,9 @@ test.afterAll(async () => {
 });
 
 test.beforeEach(() => {
-  test.skip(!MOCK.issuer, "KOBE_SSO_MOCK_ISSUER is not set (see e2e/sso/gate1-mock-idp.sh)");
+  test.skip(!MOCK.issuer, "KAIJU_SSO_MOCK_ISSUER is not set (see e2e/sso/gate1-mock-idp.sh)");
   test.skip(!provider, "The mock provider is not available on this deployment");
-  test.skip(!OWNER || !OWNER_PW, "KOBE_USER and KOBE_PW are required");
+  test.skip(!OWNER || !OWNER_PW, "KAIJU_USER and KAIJU_PW are required");
 });
 
 test("setting off: the password form, and the server takes password sign-in", async ({

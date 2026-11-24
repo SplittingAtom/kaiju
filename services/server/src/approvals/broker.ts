@@ -136,7 +136,7 @@ export class ApprovalBrokerImpl implements ApprovalBroker {
       message: `${DENY_PREFIX}${message}`.slice(0, 2000),
     });
     if (!this.#ctx.keys) {
-      return deny("approvals are not configured on this server (KOBE_APPROVAL_KEY).");
+      return deny("approvals are not configured on this server (KAIJU_APPROVAL_KEY).");
     }
     if (req.signal.aborted || this.#closed) return deny("the run's connection closed.");
     let canonical: string;

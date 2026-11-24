@@ -9,11 +9,11 @@
 # egress-requests.db.test.ts. Then header injection: CONNECT to a header domain is refused, and the
 # plain-HTTP upgrade verifies the upstream's certificate (the test upstream's is self-signed: 502).
 echo "==> request access and header injection (KOBE-39)"
-if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${owner_id:-}" && -n "${UPSTREAM_HOST:-}" ]] && declare -F as_owner >/dev/null; then
+if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${owner_id:-}" && -n "${UPSTREAM_HOST:-}" ]] && declare -F as_owner >/dev/null; then
   read -r -d '' EGRESS_JS <<'JS' || true
 const [team, content, timeoutMs, threadArg, ask] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
 const headers = () => ({ origin, "content-type": "application/json", "x-kobe-team": team,
   cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") });
@@ -70,14 +70,14 @@ out("blocked", blocked.join(",") || "-");
 out("text", text.replace(/\s+/g, " "));
 if (ask === "ask") {
   // The chat notice's Request access: the blocked domain and this thread.
-  const domain = (blocked[0] ?? "").split(":")[0] || process.env.KOBE_E2E_DOMAIN;
+  const domain = (blocked[0] ?? "").split(":")[0] || process.env.KAIJU_E2E_DOMAIN;
   const req = await call("POST", "/v1/egress/requests", { domain, thread_id: threadId });
   out("request", req.status + ":" + (req.json.request?.status ?? req.json.code));
   out("request_id", req.json.request?.id ?? "-");
 }
 JS
   egress_chat() { # content [thread-id|-] [ask] → key=value lines
-    $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- env KOBE_E2E_DOMAIN="$UPSTREAM_HOST" \
+    $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- env KAIJU_E2E_DOMAIN="$UPSTREAM_HOST" \
       node --input-type=module -e "$EGRESS_JS" "$E2E_TEAM_ID" "$1" 300000 "${2:--}" "${3:-}" 2>&1 | grep -E '^[a-z_]+=' || true
   }
   # Sandbox tools run without approval unless a rule asks (KOBE-37's story left an ask rule on bash);
@@ -153,8 +153,8 @@ JS
   expect "the team admin removes the header" '^204 ' \
     "$(as_owner "DELETE /v1/team/egress/domains/$UPSTREAM_HOST/headers")"
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "request access checks need KOBE_SANDBOX_IMAGE and the egress and model sections"
+  fail "request access checks need KAIJU_SANDBOX_IMAGE and the egress and model sections"
 else
-  echo "SKIP request access checks (KOBE_SANDBOX_IMAGE not set)"
+  echo "SKIP request access checks (KAIJU_SANDBOX_IMAGE not set)"
 fi
 

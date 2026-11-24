@@ -111,13 +111,13 @@ describe("Publish with the gate on (KOBE-93)", () => {
     );
     // The gateway token is scoped to this team and eval, short-lived, and the only credential.
     const claims = verifySessionToken(
-      env.KOBE_MODEL_SESSION_TOKEN as string,
+      env.KAIJU_MODEL_SESSION_TOKEN as string,
       "kobe.model-gateway",
       VERIFY_KEYS["kobe.model-gateway"],
     );
     expect(claims).toMatchObject({ sub: list[0].id, team_id: finance, user_id: builderId });
     expect(claims.exp - claims.iat).toBeLessThanOrEqual(15 * 60 + 60);
-    expect(env.KOBE_EVAL_MODEL).toBe("anthropic/claude-smart");
+    expect(env.KAIJU_EVAL_MODEL).toBe("anthropic/claude-smart");
     expect(JSON.stringify(job)).not.toContain("sealed-provider-key");
     const map = kube.all("ConfigMap")[0] as unknown as { data: Record<string, string> };
     expect(map.data["agent.yaml"]).toContain("You are careful.");

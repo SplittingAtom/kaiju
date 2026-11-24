@@ -114,7 +114,7 @@ export type { ServerDepsOptions } from "./deps-options.js";
 
 /** Limits on publishing agent versions (KOBE-46 review M3). */
 export interface AgentLimits {
-  /** Versions per agent (config `KOBE_AGENT_MAX_VERSIONS`). */
+  /** Versions per agent (config `KAIJU_AGENT_MAX_VERSIONS`). */
   readonly maxVersions: number;
   /** Publishes + rollbacks per user, across agents. */
   readonly publishRate: RateLimitRule;

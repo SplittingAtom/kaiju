@@ -34,11 +34,11 @@ class Settings:
 
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     source = os.environ if env is None else env
-    url = source.get("KOBE_MODEL_GATEWAY_URL", "").strip()
-    token = source.get("KOBE_MODEL_SESSION_TOKEN", "").strip()
+    url = source.get("KAIJU_MODEL_GATEWAY_URL", "").strip()
+    token = source.get("KAIJU_MODEL_SESSION_TOKEN", "").strip()
     if not url.startswith(("http://", "https://")):
-        raise SettingsError("KOBE_MODEL_GATEWAY_URL must be an http(s) URL (the Kaiju model gateway)")
+        raise SettingsError("KAIJU_MODEL_GATEWAY_URL must be an http(s) URL (the Kaiju model gateway)")
     if not token:
-        raise SettingsError("KOBE_MODEL_SESSION_TOKEN is required (a gateway session token)")
-    override = source.get("KOBE_EVAL_MODEL", "").strip() or None
+        raise SettingsError("KAIJU_MODEL_SESSION_TOKEN is required (a gateway session token)")
+    override = source.get("KAIJU_EVAL_MODEL", "").strip() or None
     return Settings(gateway_url=url, session_token=token, model_override=override)

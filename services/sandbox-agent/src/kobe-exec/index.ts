@@ -8,7 +8,7 @@ import { registerExecTools, type ExtensionApiLike, type PiToolFactories } from "
  * kobe-exec: the Pi 1.0.x extension that makes Pi's seven built-in tools run somewhere other than
  * Pi (KOBE-167, docs/design/paired-tool-uid.md option B). Every call goes through kobe-policy first
  * (the last extension, so it checks the call before this extension's `execute` runs), then over
- * fd 5 (`KOBE_EXEC_FD`) to kobe-sandbox-agent, which relays it to an executor process running as
+ * fd 5 (`KAIJU_EXEC_FD`) to kobe-sandbox-agent, which relays it to an executor process running as
  * the Pi identity's partner uid. The extension itself never touches the file system or starts a
  * process for a tool.
  *

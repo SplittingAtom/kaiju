@@ -3,7 +3,7 @@ import pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 import { dropTestLane, ensureLaneDatabase, laneDatabaseName, listTestLanes } from "./lane.js";
 
-const base = process.env.KOBE_TEST_DATABASE_URL ?? "";
+const base = process.env.KAIJU_TEST_DATABASE_URL ?? "";
 const lane = `t${randomBytes(4).toString("hex")}`;
 const other = `${lane}x`;
 

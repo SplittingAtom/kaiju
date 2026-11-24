@@ -70,7 +70,7 @@ export interface SandboxProviderOptions {
   /** How long a woken sandbox pod may take to be Ready (KOBE-192): the wire wake budget. */
   readonly readyTimeoutMs?: number;
   /**
-   * The configured RuntimeClass (KOBE_RUNTIME_CLASS). Used only by the reconciler, to recognise a
+   * The configured RuntimeClass (KAIJU_RUNTIME_CLASS). Used only by the reconciler, to recognise a
    * definitive loss of isolation (class deleted or no longer isolating) when require() fails.
    */
   readonly runtimeClassName?: string;

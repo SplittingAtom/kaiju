@@ -17,8 +17,8 @@ import type { SessionSigningKey, SessionVerifyKeys } from "./keys.js";
  *   any other header field (jku, x5u, jwk, crit) are rejected; the algorithm is never taken from
  *   the token, and `kid` only picks one of the verifier's own public keys (rotation).
  * - One key pair per audience. The server holds the four private keys
- *   (KOBE_SESSION_SIGNING_KEY_*); each verifying service holds only its audience's public key(s)
- *   (KOBE_SESSION_VERIFY_KEY_*), so a service can verify but never mint a token, not even for its
+ *   (KAIJU_SESSION_SIGNING_KEY_*); each verifying service holds only its audience's public key(s)
+ *   (KAIJU_SESSION_VERIFY_KEY_*), so a service can verify but never mint a token, not even for its
  *   own audience (a compromised proxy cannot impersonate a sandbox).
  * - TTL 15 minutes, no refresh token: a sandbox re-trades its bootstrap token for fresh tokens.
  */

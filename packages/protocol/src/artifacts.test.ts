@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ARTIFACT_CONTENT_MAX_BYTES,
   ARTIFACT_KINDS,
-  KOBE_TOOLS_FD,
+  KAIJU_TOOLS_FD,
   artifactDetailSchema,
   artifactSummarySchema,
   artifactToolInputSchema,
@@ -150,7 +150,7 @@ describe("artifact.put / artifact.result frames", () => {
 });
 
 describe("kobe-tools channel", () => {
-  it("uses fd 4", () => expect(KOBE_TOOLS_FD).toBe(4));
+  it("uses fd 4", () => expect(KAIJU_TOOLS_FD).toBe(4));
   const req = {
     id: "k1",
     op: "artifact.put",

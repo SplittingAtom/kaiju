@@ -67,14 +67,14 @@ appendFileSync(
     env: Object.keys(process.env).sort(),
     // KOBE-41: where the agent put this process's config dir and model file (values, test-only).
     agentDir: process.env.PI_CODING_AGENT_DIR ?? null,
-    modelFile: process.env.KOBE_MODEL_FILE ?? null,
+    modelFile: process.env.KAIJU_MODEL_FILE ?? null,
     // KOBE-39: the egress wiring Pi's bash tool calls see (no token among these).
-    egressTokenFile: process.env.KOBE_EGRESS_TOKEN_FILE ?? null,
+    egressTokenFile: process.env.KAIJU_EGRESS_TOKEN_FILE ?? null,
     bashEnv: process.env.BASH_ENV ?? null,
-    toolHome: process.env.KOBE_TOOL_HOME ?? null,
-    toolTmp: process.env.KOBE_TOOL_TMPDIR ?? null,
-    egressProxy: process.env.KOBE_EGRESS_PROXY ?? null,
-    threadId: process.env.KOBE_THREAD_ID ?? null,
+    toolHome: process.env.KAIJU_TOOL_HOME ?? null,
+    toolTmp: process.env.KAIJU_TOOL_TMPDIR ?? null,
+    egressProxy: process.env.KAIJU_EGRESS_PROXY ?? null,
+    threadId: process.env.KAIJU_THREAD_ID ?? null,
     // KOBE-764: the tools' git config file and the prompt switch.
     gitConfigGlobal: process.env.GIT_CONFIG_GLOBAL ?? null,
     gitTerminalPrompt: process.env.GIT_TERMINAL_PROMPT ?? null,
@@ -99,7 +99,7 @@ const BASE_PATHS = {
 };
 const registered = (() => {
   try {
-    const file = JSON.parse(readFileSync(process.env.KOBE_MODEL_FILE ?? "", "utf8"));
+    const file = JSON.parse(readFileSync(process.env.KAIJU_MODEL_FILE ?? "", "utf8"));
     const m = file.model;
     return m === null
       ? undefined
@@ -124,15 +124,15 @@ let nextPolicy = 1;
 
 // KOBE-128: the kobe-tools socket (fd 4) when the agent passed one; a tool must not inherit it.
 let toolsFdIno = null;
-if (process.env.KOBE_TOOLS_FD) {
-  toolsFdIno = (await import("node:fs")).fstatSync(Number(process.env.KOBE_TOOLS_FD)).ino;
+if (process.env.KAIJU_TOOLS_FD) {
+  toolsFdIno = (await import("node:fs")).fstatSync(Number(process.env.KAIJU_TOOLS_FD)).ino;
 }
 
 let policyFdIno = null;
-if (process.env.KOBE_POLICY_FD) {
-  policyFdIno = (await import("node:fs")).fstatSync(Number(process.env.KOBE_POLICY_FD)).ino;
+if (process.env.KAIJU_POLICY_FD) {
+  policyFdIno = (await import("node:fs")).fstatSync(Number(process.env.KAIJU_POLICY_FD)).ino;
   policySocket = new net.Socket({
-    fd: Number(process.env.KOBE_POLICY_FD),
+    fd: Number(process.env.KAIJU_POLICY_FD),
     readable: true,
     writable: true,
   });
@@ -252,7 +252,7 @@ function runPrompt(message) {
       try { r.fd4Ino = fs.fstatSync(4).ino; } catch { r.fd4Ino = null; }
       try { fs.writeSync(4, '{"id":"forged","op":"artifact.put"}\\n'); r.fd4Write = true; } catch { r.fd4Write = false; }
       try { fs.closeSync(fs.openSync("/proc/" + process.ppid + "/fd/4", "r+")); r.procOpen4 = true; } catch { r.procOpen4 = false; }
-      r.env = Object.keys(process.env).filter((k) => k.startsWith("KOBE_")).sort();
+      r.env = Object.keys(process.env).filter((k) => k.startsWith("KAIJU_")).sort();
       process.stdout.write(JSON.stringify(r));`;
     // Control: "grandchild-inherit" hands fd 3 over explicitly, proving the probe detects it.
     const stdio = message === "grandchild" ? ["pipe", "pipe", "pipe"] : ["pipe", "pipe", "pipe", 3];
@@ -479,10 +479,10 @@ process.stdin.on("data", (chunk) => {
       continue;
     }
     // KOBE-274: the model file as Pi's first model call of this prompt would read it.
-    if (record.type === "prompt" && process.env.KOBE_MODEL_FILE) {
+    if (record.type === "prompt" && process.env.KAIJU_MODEL_FILE) {
       appendFileSync(
         `${sessionFile}.model-at-prompt.jsonl`,
-        `${readPromptFile(process.env.KOBE_MODEL_FILE)}\n`,
+        `${readPromptFile(process.env.KAIJU_MODEL_FILE)}\n`,
       );
     }
     if (record.type === "extension_ui_response") {

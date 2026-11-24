@@ -95,7 +95,7 @@ beforeAll(async () => {
     }) as never);
   }
   h = await openHarness({
-    envelope: must(loadEnvelope({ KOBE_ENVELOPE_KEY: "e".repeat(48) })),
+    envelope: must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "e".repeat(48) })),
     connectors: { resolve: async () => ["93.184.216.34"] },
     connectorProbe: {
       probe: async (url): Promise<ProbeResult> => {

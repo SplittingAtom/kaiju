@@ -7,7 +7,7 @@ import { ApprovalService } from "./service.js";
 
 /**
  * KOBE-817: the scheduler process never decides or signs an approval, so it neither needs
- * KOBE_APPROVAL_KEY nor logs an error about it; the server process still does both.
+ * KAIJU_APPROVAL_KEY nor logs an error about it; the server process still does both.
  */
 
 const db = {} as KaijuDb;
@@ -18,7 +18,7 @@ describe("the approval key's startup log (KOBE-817)", () => {
   it("logs an error on a server process without the key", () => {
     const log = logger();
     new ApprovalService({ db, log });
-    expect(log.error).toHaveBeenCalledWith(expect.stringContaining("KOBE_APPROVAL_KEY is not set"));
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining("KAIJU_APPROVAL_KEY is not set"));
   });
 
   it("logs nothing in the scheduler process, which serves no approvals", () => {

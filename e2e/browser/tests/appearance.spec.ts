@@ -4,7 +4,7 @@ import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
 
 /**
- * KOBE-501 (theming plan §6, ac-1..ac-3): the site Owner (KOBE_USER) brands the site on Site →
+ * KOBE-501 (theming plan §6, ac-1..ac-3): the site Owner (KAIJU_USER) brands the site on Site →
  * Appearance: renames it (the bar's h1 and document.title follow, and the server-rendered HTML of
  * a fresh load already carries the name, so no frame reads "Kaiju"), uploads a generated PNG logo
  * (the header's <img>) and favicon (<link rel=icon>), has a `<script>` SVG refused with the reason,
@@ -115,7 +115,7 @@ test("an admin brands the site: name, logo, favicon, preset, refusals and reset 
   context,
   baseURL,
 }) => {
-  if (!baseURL) throw new Error("KOBE_BASE_URL is required");
+  if (!baseURL) throw new Error("KAIJU_BASE_URL is required");
   const name = `Acme ${Date.now() % 100_000}`;
   const panel = panelOf(page);
   await openAppearance(page);

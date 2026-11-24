@@ -5,7 +5,7 @@ import {
   FILE_SHARE_DESCRIPTION_MAX,
   FILE_SHARE_ERROR_CODES,
   FILE_SHARE_MAX_BYTES,
-  KOBE_TOOLS_FD,
+  KAIJU_TOOLS_FD,
   UPLOAD_DEFAULT_MAX_FILE_BYTES,
   canonicalJson,
   kaijuToolsRequestSchema,
@@ -141,7 +141,7 @@ describe("kobe-tools file.share", () => {
     input: { path: "out/a.csv" },
   };
   it("decodes the request and keeps artifact.put working", () => {
-    expect(KOBE_TOOLS_FD).toBe(4);
+    expect(KAIJU_TOOLS_FD).toBe(4);
     expect(kaijuToolsRequestSchema.safeParse(request).success).toBe(true);
     expect(kaijuToolsRequestSchema.safeParse({ ...request, tool: "create_artifact" }).success).toBe(
       false,

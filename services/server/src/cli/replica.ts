@@ -25,17 +25,17 @@ export interface CliReplica {
 export function joinAsReplica(
   env: Readonly<Record<string, string | undefined>>,
 ): CliReplica | string {
-  const databaseUrl = env.KOBE_DATABASE_URL;
-  if (!databaseUrl) return "KOBE_DATABASE_URL is not set";
+  const databaseUrl = env.KAIJU_DATABASE_URL;
+  if (!databaseUrl) return "KAIJU_DATABASE_URL is not set";
   const database = createDb(databaseUrl, { max: 4, applicationName: "kaiju-cli" });
   const isolation = createIsolationGate({
-    runtimeClassName: env.KOBE_RUNTIME_CLASS?.trim() || undefined,
+    runtimeClassName: env.KAIJU_RUNTIME_CLASS?.trim() || undefined,
     listRuntimeClasses,
   });
   const runtime = createSandboxRuntime(env, isolation, database.db);
   if (!runtime) {
     void database.close();
-    return "KOBE_SANDBOX_CONFIG is not set: sandboxes are disabled";
+    return "KAIJU_SANDBOX_CONFIG is not set: sandboxes are disabled";
   }
   const lifecycle = createSandboxLifecycle({
     db: database.db,

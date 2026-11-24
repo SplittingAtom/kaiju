@@ -221,12 +221,12 @@ export const range = (from: number, to: number): number[] =>
   Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i);
 
 /**
- * Seeded PRNG (mulberry32) for randomized tests. The seed comes from KOBE_TEST_SEED or the clock and
- * is logged, so a failing interleaving can be replayed with `KOBE_TEST_SEED=<seed>`.
+ * Seeded PRNG (mulberry32) for randomized tests. The seed comes from KAIJU_TEST_SEED or the clock and
+ * is logged, so a failing interleaving can be replayed with `KAIJU_TEST_SEED=<seed>`.
  */
 export function seededRandom(label: string): (() => number) & { readonly seed: number } {
-  const seed = Number(process.env.KOBE_TEST_SEED ?? Date.now() % 2 ** 31) >>> 0;
-  console.info(`[${label}] KOBE_TEST_SEED=${seed}`);
+  const seed = Number(process.env.KAIJU_TEST_SEED ?? Date.now() % 2 ** 31) >>> 0;
+  console.info(`[${label}] KAIJU_TEST_SEED=${seed}`);
   let a = seed;
   const next = () => {
     a = (a + 0x6d2b79f5) >>> 0;

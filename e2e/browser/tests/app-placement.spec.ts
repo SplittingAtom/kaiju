@@ -11,11 +11,11 @@ import { launchFromPlusMenu } from "./support/plus-apps.js";
  *
  * Signed in as the owner (site admin), it sets the app's placement through the admin API
  * (`PUT /v1/site/connectors/{id}/templates/placement`) and puts the previous one back in
- * `finally`. The app is `KOBE_PLACEMENT_APP` (its title in `GET /v1/team/apps`; default "Lake
- * Query", gate1's Catalyst app). Without it the spec skips, unless `KOBE_REQUIRE_APP=1`. One rail
+ * `finally`. The app is `KAIJU_PLACEMENT_APP` (its title in `GET /v1/team/apps`; default "Lake
+ * Query", gate1's Catalyst app). Without it the spec skips, unless `KAIJU_REQUIRE_APP=1`. One rail
  * launch (one call of the app's opening tool), no model tokens; it leaves a new thread behind.
  */
-const TITLE = process.env["KOBE_PLACEMENT_APP"] ?? "Lake Query";
+const TITLE = process.env["KAIJU_PLACEMENT_APP"] ?? "Lake Query";
 
 interface App {
   readonly appId: string;
@@ -45,8 +45,8 @@ test("an app placed in the artifact column opens there from a rail launch; its c
 }) => {
   await chat.open();
   const app = await theApp(page);
-  if (process.env["KOBE_REQUIRE_APP"] === "1") {
-    expect(app, `KOBE_REQUIRE_APP=1: the member needs the ${TITLE} app`).toBeDefined();
+  if (process.env["KAIJU_REQUIRE_APP"] === "1") {
+    expect(app, `KAIJU_REQUIRE_APP=1: the member needs the ${TITLE} app`).toBeDefined();
   }
   test.skip(app === undefined, `${TITLE} is not live for this member in the active team.`);
   if (!app) return;

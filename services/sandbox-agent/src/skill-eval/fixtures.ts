@@ -13,7 +13,7 @@ const FIXTURE_MODE = 0o664;
 export type FixtureFetcher = (path: string, size: number) => Promise<Uint8Array>;
 
 export interface FixtureClientOptions {
-  /** KOBE_SERVER_URL (ws:// or wss://). */
+  /** KAIJU_SERVER_URL (ws:// or wss://). */
   readonly serverUrl: string;
   readonly readToken: () => Promise<string>;
   readonly timeoutMs?: number;

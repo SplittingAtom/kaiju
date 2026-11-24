@@ -49,7 +49,7 @@ describe.skipIf(!PI_AVAILABLE)("the context viewer's capture in real Pi (KOBE-47
     };
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       models,
     });
     const config = {

@@ -2,7 +2,7 @@
 fire none of the kernel's execution machinery. Usage: python3 kernel-transport-probe.py <python> <kobe-kernel-bridge.py>.
 
 Run by images/sandbox/test-image.sh (in the image) and by sandbox-agent's
-transport.e2e.test.ts (with KOBE_TEST_KERNEL_PYTHON pointing at a Python with ipykernel).
+transport.e2e.test.ts (with KAIJU_TEST_KERNEL_PYTHON pointing at a Python with ipykernel).
 The member's namespace registers a hook of every kind the execution path runs: pre/post_execute
 and pre/post_run_cell events, an input transformer, a text/plain formatter for `str`, a warnings
 hook, and autoreload (whose own event callbacks are wrapped to record calls). Cells between the
@@ -23,7 +23,7 @@ p = subprocess.Popen(
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
     text=True,
-    cwd=os.environ.get("KOBE_PROBE_CWD", "/workspace"),
+    cwd=os.environ.get("KAIJU_PROBE_CWD", "/workspace"),
 )
 
 

@@ -60,7 +60,7 @@ sudo install -o root -g root -m 0755 ../../images/sandbox/runas/kobe-reclaim.sh 
 sudo setcap cap_setuid,cap_setgid=ep "$helper"
 # One test file at a time: the suites share the identity pool and each kills the uids it used.
 run_tests() {
-  sudo env PATH="$PATH" HOME="$HOME" CI=true KOBE_TEST_PI_RUNAS="$helper" \
+  sudo env PATH="$PATH" HOME="$HOME" CI=true KAIJU_TEST_PI_RUNAS="$helper" \
     setpriv --reuid="$uid" --regid="$gid" --groups="$gid,$agent_gid,2000,2001,2002,2003,3000,3001,3002,3003" \
     --inh-caps=-all -- "$(command -v node)" ../../node_modules/vitest/vitest.mjs run --no-file-parallelism "$@"
 }

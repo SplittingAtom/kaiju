@@ -7,11 +7,11 @@ describe("connectTools", () => {
   it("takes the fd from the environment once and removes it", () => {
     const [ours] = duplexPair();
     const opened: number[] = [];
-    const env: Record<string, string | undefined> = { KOBE_TOOLS_FD: "4" };
+    const env: Record<string, string | undefined> = { KAIJU_TOOLS_FD: "4" };
     const transport = connectTools({ env, openChannel: (fd) => (opened.push(fd), ours) });
     expect(transport).toBeDefined();
     expect(opened).toEqual([4]);
-    expect(env.KOBE_TOOLS_FD).toBeUndefined();
+    expect(env.KAIJU_TOOLS_FD).toBeUndefined();
     ours.destroy();
   });
 
@@ -29,15 +29,15 @@ describe("connectTools", () => {
   it.each(["abc", "3", "-1", "99999", "4 "])("refuses a bad fd (%s) with a warning", (fd) => {
     const warnings: string[] = [];
     expect(
-      connectTools({ env: { KOBE_TOOLS_FD: fd }, warn: (m) => warnings.push(m) }),
+      connectTools({ env: { KAIJU_TOOLS_FD: fd }, warn: (m) => warnings.push(m) }),
     ).toBeUndefined();
-    expect(warnings[0]).toMatch(/invalid KOBE_TOOLS_FD/);
+    expect(warnings[0]).toMatch(/invalid KAIJU_TOOLS_FD/);
   });
 
   it("registers no tool when the fd cannot be opened", () => {
     const warnings: string[] = [];
     const transport = connectTools({
-      env: { KOBE_TOOLS_FD: "4" },
+      env: { KAIJU_TOOLS_FD: "4" },
       openChannel: () => {
         throw new Error("not a socket");
       },
@@ -51,7 +51,7 @@ describe("connectTools", () => {
 describe("registerKaijuTools", () => {
   it("registers both artifact tools with Pi", () => {
     const [ours] = duplexPair();
-    const transport = connectTools({ env: { KOBE_TOOLS_FD: "4" }, openChannel: () => ours });
+    const transport = connectTools({ env: { KAIJU_TOOLS_FD: "4" }, openChannel: () => ours });
     const names: string[] = [];
     registerKaijuTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, transport);
     expect(names).toEqual(["create_artifact", "update_artifact"]);
@@ -60,7 +60,7 @@ describe("registerKaijuTools", () => {
 
   it("registers share_file only when the agent enabled files", () => {
     const [ours] = duplexPair();
-    const transport = connectTools({ env: { KOBE_TOOLS_FD: "4" }, openChannel: () => ours });
+    const transport = connectTools({ env: { KAIJU_TOOLS_FD: "4" }, openChannel: () => ours });
     const names: string[] = [];
     registerKaijuTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, transport, {
       files: true,
@@ -78,11 +78,11 @@ describe("registerKaijuTools", () => {
 
 describe("filesEnabled", () => {
   it("is true only for 1, and removes the variable so tools Pi spawns never see it", () => {
-    const env: Record<string, string | undefined> = { KOBE_TOOLS_FILES: "1" };
+    const env: Record<string, string | undefined> = { KAIJU_TOOLS_FILES: "1" };
     expect(filesEnabled(env)).toBe(true);
-    expect(env.KOBE_TOOLS_FILES).toBeUndefined();
+    expect(env.KAIJU_TOOLS_FILES).toBeUndefined();
     for (const value of [undefined, "", "0", "true", "11"]) {
-      expect(filesEnabled({ KOBE_TOOLS_FILES: value })).toBe(false);
+      expect(filesEnabled({ KAIJU_TOOLS_FILES: value })).toBe(false);
     }
   });
 });

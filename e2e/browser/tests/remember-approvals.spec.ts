@@ -9,7 +9,7 @@ import { panelOf } from "./support/panel.js";
  * the rule is listed on My area, Approvals and on the team Policy page, and revoking it there
  * makes the next call ask again. The team's remember limits are left as they were.
  *
- * Needs `KOBE_USER` to be a team admin of the active team, with the team's ask-on-write default
+ * Needs `KAIJU_USER` to be a team admin of the active team, with the team's ask-on-write default
  * (share_file asks by its risk class) and its remember limits allowing "this conversation".
  * Spends a few short model turns.
  */

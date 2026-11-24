@@ -3,7 +3,7 @@
 # e2e/browser/tests/sso.spec.ts) next to a running Kaiju release, as its own generic OIDC provider.
 # It never touches DNS, kube-system or a real provider: the mock's issuer is its in-cluster name.
 #
-#   KUBECTL="sudo k3s kubectl" KOBE_NS=<release namespace> e2e/sso/gate1-mock-idp.sh
+#   KUBECTL="sudo k3s kubectl" KAIJU_NS=<release namespace> e2e/sso/gate1-mock-idp.sh
 #
 # Idempotent: reruns keep the CA, the client secret and the tenant/client ids (a provider's issuer
 # can't change once someone signed in with it), and restart the mock only when its code changed.
@@ -14,8 +14,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 KUBECTL="${KUBECTL:-kubectl}"
-KOBE_NS="${KOBE_NS:?KOBE_NS (the Kaiju release namespace) is required}"
-RELEASE="${KOBE_RELEASE:-kobe}"
+KAIJU_NS="${KAIJU_NS:?KAIJU_NS (the Kaiju release namespace) is required}"
+RELEASE="${KAIJU_RELEASE:-kobe}"
 NS=kobe-sso-mock
 HOST="mock-idp.$NS.svc.cluster.local"
 # Fixed ids: the mock is a test provider; nothing about them is secret.
@@ -23,7 +23,7 @@ TENANT=6f0b2a41-1c1e-4c43-9d5e-0a5f3a1b2c34
 CLIENT_ID=0b5c1d7e-8a2f-4e61-9c3d-5e7f9a1b3c34
 k() { $KUBECTL "$@"; }
 
-k get namespace "$KOBE_NS" >/dev/null
+k get namespace "$KAIJU_NS" >/dev/null
 WORK=$(mktemp -d)
 chmod 700 "$WORK"
 trap 'rm -rf "$WORK"' EXIT
@@ -56,15 +56,15 @@ fi
 k -n "$NS" create configmap mock-idp-code --from-file=mock-entra.mjs=mock-entra.mjs \
   --dry-run=client -o yaml | k apply -f - >/dev/null
 CODE_HASH=$(sha256sum mock-entra.mjs | cut -c1-16)
-SERVER_IMAGE=$(k -n "$KOBE_NS" get "deploy/$RELEASE-server" \
+SERVER_IMAGE=$(k -n "$KAIJU_NS" get "deploy/$RELEASE-server" \
   -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
 sed -e "s|__SERVER_IMAGE__|$SERVER_IMAGE|g" -e "s|__TENANT__|$TENANT|g" \
-  -e "s|__CLIENT_ID__|$CLIENT_ID|g" -e "s|__HOST__|$HOST|g" -e "s|__KAIJU_NS__|$KOBE_NS|g" \
+  -e "s|__CLIENT_ID__|$CLIENT_ID|g" -e "s|__HOST__|$HOST|g" -e "s|__KAIJU_NS__|$KAIJU_NS|g" \
   -e "s|__CODE_HASH__|$CODE_HASH|g" gate1-mock-idp.yaml | k apply -f - >/dev/null
 k -n "$NS" rollout status deploy/mock-idp --timeout=180s >/dev/null
 
 # The CA for the server's extra bundle, in the release namespace.
-k -n "$KOBE_NS" create configmap kobe-sso-mock-ca --from-file=ca.crt="$WORK/ca.crt" \
+k -n "$KAIJU_NS" create configmap kobe-sso-mock-ca --from-file=ca.crt="$WORK/ca.crt" \
   --dry-run=client -o yaml | k apply -f - >/dev/null
 
 MOCK_IP=$(k -n "$NS" get svc mock-idp -o jsonpath='{.spec.clusterIP}')
@@ -78,8 +78,8 @@ Helm values to add (helm get values -o yaml, edit, upgrade with -f ... --reset-v
     (if the release already has an extra CA bundle, append this CA to that bundle instead)
 
 Spec variables (e2e/browser/README.md, "Single sign-on"):
-  KOBE_SSO_MOCK_ISSUER=https://$HOST/$TENANT/v2.0
-  KOBE_SSO_MOCK_CLIENT_ID=$CLIENT_ID
-  KOBE_SSO_MOCK_CLIENT_SECRET=\$($KUBECTL -n $NS get secret mock-idp-client -o jsonpath='{.data.client-secret}' | base64 -d)
-  KOBE_SSO_MOCK_MAP=${LB_IP:-<ingress load-balancer IP>}:443
+  KAIJU_SSO_MOCK_ISSUER=https://$HOST/$TENANT/v2.0
+  KAIJU_SSO_MOCK_CLIENT_ID=$CLIENT_ID
+  KAIJU_SSO_MOCK_CLIENT_SECRET=\$($KUBECTL -n $NS get secret mock-idp-client -o jsonpath='{.data.client-secret}' | base64 -d)
+  KAIJU_SSO_MOCK_MAP=${LB_IP:-<ingress load-balancer IP>}:443
 OUT

@@ -158,9 +158,9 @@ describe("session keys", () => {
   });
 
   it("names the env per audience and reads a verifier's keys from it", () => {
-    expect(signingKeyEnvName("kobe.sandbox-wire")).toBe("KOBE_SESSION_SIGNING_KEY_SANDBOX_WIRE");
-    expect(verifyKeyEnvName("kobe.mcp-proxy")).toBe("KOBE_SESSION_VERIFY_KEY_MCP_PROXY");
-    const name = "KOBE_SESSION_VERIFY_KEY_MCP_PROXY";
+    expect(signingKeyEnvName("kobe.sandbox-wire")).toBe("KAIJU_SESSION_SIGNING_KEY_SANDBOX_WIRE");
+    expect(verifyKeyEnvName("kobe.mcp-proxy")).toBe("KAIJU_SESSION_VERIFY_KEY_MCP_PROXY");
+    const name = "KAIJU_SESSION_VERIFY_KEY_MCP_PROXY";
     expect(
       verifyKeysFromEnv({ [name]: PAIR.publicPem }, "kobe.mcp-proxy").has(PAIR.signing.kid),
     ).toBe(true);

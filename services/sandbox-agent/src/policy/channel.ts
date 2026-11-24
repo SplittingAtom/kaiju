@@ -17,7 +17,7 @@ import {
 /**
  * Sandbox-local channel between the kobe-policy Pi extension (KOBE-36) and kobe-sandbox-agent.
  *
- * Transport: fd 3 of each `pi --mode rpc` process (`KOBE_POLICY_FD=3` in Pi's env) is one end of a
+ * Transport: fd 3 of each `pi --mode rpc` process (`KAIJU_POLICY_FD=3` in Pi's env) is one end of a
  * socket pair the agent created when it spawned Pi. Nothing listens. Pi spawns its tools with
  * explicit stdio pipes, and Node/libuv does not pass fd 3 on to them (verified on Linux with Node
  * 22 and on macOS, `agent.runs.process.test.ts` "grandchild"); a socket cannot be re-opened

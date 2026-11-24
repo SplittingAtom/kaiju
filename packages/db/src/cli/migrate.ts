@@ -10,12 +10,12 @@ import { MigrationCancelledError, runMigrations } from "../migrate.js";
 const logger = pino({ base: { service: "kaiju-migrate" } });
 
 const envSchema = z.object({
-  KOBE_DB_MIGRATE_URL: z.url({
+  KAIJU_DB_MIGRATE_URL: z.url({
     protocol: /^postgres(ql)?$/,
-    error: "KOBE_DB_MIGRATE_URL must be a postgres:// URL",
+    error: "KAIJU_DB_MIGRATE_URL must be a postgres:// URL",
   }),
-  KOBE_DB_APP_ROLE: z.string().min(1, "KOBE_DB_APP_ROLE is required"),
-  KOBE_DB_CONNECT_TIMEOUT_S: z.coerce.number().int().positive().default(300),
+  KAIJU_DB_APP_ROLE: z.string().min(1, "KAIJU_DB_APP_ROLE is required"),
+  KAIJU_DB_CONNECT_TIMEOUT_S: z.coerce.number().int().positive().default(300),
 });
 
 /** A bundled database may still be starting (CloudNativePG post-install); retry until it accepts. */
@@ -53,17 +53,17 @@ async function main(): Promise<void> {
     throw new Error(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   }
   await waitForDatabase(
-    parsed.data.KOBE_DB_MIGRATE_URL,
-    parsed.data.KOBE_DB_CONNECT_TIMEOUT_S * 1000,
+    parsed.data.KAIJU_DB_MIGRATE_URL,
+    parsed.data.KAIJU_DB_CONNECT_TIMEOUT_S * 1000,
   );
   await runMigrations({
-    databaseUrl: parsed.data.KOBE_DB_MIGRATE_URL,
-    appRole: parsed.data.KOBE_DB_APP_ROLE,
+    databaseUrl: parsed.data.KAIJU_DB_MIGRATE_URL,
+    appRole: parsed.data.KAIJU_DB_APP_ROLE,
     // Upgrade notes a migration raises (no content beyond ids and setting values).
     onNotice: (message) => logger.warn({ notice: message }, "migration notice"),
     signal: stop.signal,
   });
-  logger.info({ appRole: parsed.data.KOBE_DB_APP_ROLE }, "migrations applied");
+  logger.info({ appRole: parsed.data.KAIJU_DB_APP_ROLE }, "migrations applied");
 }
 
 main().catch((err: unknown) => {

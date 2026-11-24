@@ -9,11 +9,11 @@
 //   ac-1  a thread pinned to an older agent version shows "v<N> available" with a switch; one
 //         click moves the thread to v<N> (gate3.sh then checks that its next run uses it).
 //
-// Environment (no secrets on the command line): KOBE_BROWSER_BASE (the public URL), optional
-// KOBE_BROWSER_MAP (host:port the browser connects to for the base's host, e.g. a port-forward to
-// the ingress), KOBE_BROWSER_EMAIL, KOBE_BROWSER_PASSWORD, KOBE_BROWSER_TEAM, and the targets
-// KOBE_BROWSER_ARTIFACT (id:version), KOBE_BROWSER_MEMORY_THREAD with KOBE_BROWSER_MEMORY_PROMPT
-// (a message whose run calls `remember`), KOBE_BROWSER_PINNED_THREAD.
+// Environment (no secrets on the command line): KAIJU_BROWSER_BASE (the public URL), optional
+// KAIJU_BROWSER_MAP (host:port the browser connects to for the base's host, e.g. a port-forward to
+// the ingress), KAIJU_BROWSER_EMAIL, KAIJU_BROWSER_PASSWORD, KAIJU_BROWSER_TEAM, and the targets
+// KAIJU_BROWSER_ARTIFACT (id:version), KAIJU_BROWSER_MEMORY_THREAD with KAIJU_BROWSER_MEMORY_PROMPT
+// (a message whose run calls `remember`), KAIJU_BROWSER_PINNED_THREAD.
 // Uses @playwright/test from e2e/browser (npm ci there, then `npx playwright install chromium`).
 import { chromium } from "@playwright/test";
 
@@ -23,9 +23,9 @@ const env = (name, fallback) => {
   return value;
 };
 const out = (key, value) => console.log(`${key}=${value}`);
-const BASE = env("KOBE_BROWSER_BASE").replace(/\/$/, "");
-const MAP = process.env.KOBE_BROWSER_MAP ?? "";
-const TEAM = env("KOBE_BROWSER_TEAM");
+const BASE = env("KAIJU_BROWSER_BASE").replace(/\/$/, "");
+const MAP = process.env.KAIJU_BROWSER_MAP ?? "";
+const TEAM = env("KAIJU_BROWSER_TEAM");
 /** The artifact's script reports here; nothing may ever reach it (`.invalid` never resolves). */
 const BEACON = "https://gate3-beacon.invalid/";
 const SHELL_MS = 45_000;
@@ -34,8 +34,8 @@ const RUN_MS = 120_000;
 
 async function signIn(page) {
   await page.goto(`${BASE}/sign-in`);
-  await page.getByLabel("Email").fill(env("KOBE_BROWSER_EMAIL"));
-  await page.getByLabel("Password").fill(env("KOBE_BROWSER_PASSWORD"));
+  await page.getByLabel("Email").fill(env("KAIJU_BROWSER_EMAIL"));
+  await page.getByLabel("Password").fill(env("KAIJU_BROWSER_PASSWORD"));
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/sign-in"), { timeout: SHELL_MS });
   out("signin", "ok");
@@ -57,7 +57,7 @@ async function signIn(page) {
 
 /** ac-5: the frame, embedded the way the chat embeds it (same-origin iframe of /frame). */
 async function frameCheck(context, page) {
-  const [id, version] = env("KOBE_BROWSER_ARTIFACT").split(":");
+  const [id, version] = env("KAIJU_BROWSER_ARTIFACT").split(":");
   let beaconHits = 0;
   await context.route(`${BEACON}**`, (route) => {
     beaconHits += 1;
@@ -119,13 +119,13 @@ async function frameCheck(context, page) {
  * itself in the memory thread and watches the chip appear; then one click on Undo.
  */
 async function memoryChip(page) {
-  await page.goto(`${BASE}/?thread=${env("KOBE_BROWSER_MEMORY_THREAD")}`);
+  await page.goto(`${BASE}/?thread=${env("KAIJU_BROWSER_MEMORY_THREAD")}`);
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.waitFor({ timeout: SHELL_MS });
   // The composer shows before the thread has loaded; a message sent then may start a new thread.
   // Type once the thread's earlier turns (gate3.sh's remember v1 and v2) are on screen.
   await page.locator('[data-role="assistant"]').first().waitFor({ timeout: SHELL_MS });
-  await composer.fill(env("KOBE_BROWSER_MEMORY_PROMPT"));
+  await composer.fill(env("KAIJU_BROWSER_MEMORY_PROMPT"));
   await composer.press("Enter");
   const chip = page.getByText(/Note saved/).first();
   const visible = await chip.waitFor({ timeout: RUN_MS }).then(
@@ -167,7 +167,7 @@ async function memoryChip(page) {
 
 /** ac-1: a thread pinned to an older version says a newer one is available and offers a switch. */
 async function versionBadge(page) {
-  await page.goto(`${BASE}/?thread=${env("KOBE_BROWSER_PINNED_THREAD")}`);
+  await page.goto(`${BASE}/?thread=${env("KAIJU_BROWSER_PINNED_THREAD")}`);
   await page.locator('[data-role="assistant"]').first().waitFor({ timeout: SHELL_MS });
   const badge = page.getByText(/v\d+ available/i).first();
   const visible = await badge.waitFor({ timeout: 10_000 }).then(

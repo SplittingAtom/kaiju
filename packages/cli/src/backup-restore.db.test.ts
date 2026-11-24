@@ -47,7 +47,7 @@ import {
   trapBinDir,
 } from "./testing/fixtures.js";
 
-const pgBinDir = process.env.KOBE_PG_BIN_DIR || undefined;
+const pgBinDir = process.env.KAIJU_PG_BIN_DIR || undefined;
 const KEY = randomBytes(32);
 const UNREACHABLE_DB = "postgres://nobody:nothing@127.0.0.1:1/none";
 

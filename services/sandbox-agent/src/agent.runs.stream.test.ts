@@ -92,8 +92,8 @@ describe("run.start → Pi prompt → pi.event stream", () => {
     ]);
     expect(launch?.env).toContain("PI_CODING_AGENT_DIR");
     expect(launch?.env).not.toContain("SECRET_IN_AGENT_ENV");
-    const kaijuVars = (launch?.env as string[]).filter((k) => k.startsWith("KOBE_"));
-    expect(kaijuVars).toEqual(["KOBE_POLICY_FD", "KOBE_TOOL_HOME", "KOBE_TOOL_TMPDIR"]);
+    const kaijuVars = (launch?.env as string[]).filter((k) => k.startsWith("KAIJU_"));
+    expect(kaijuVars).toEqual(["KAIJU_POLICY_FD", "KAIJU_TOOL_HOME", "KAIJU_TOOL_TMPDIR"]);
     const prompts = (await h.commandsLog()).filter((c) => c.type === "prompt");
     expect(prompts).toEqual([{ type: "prompt", message: "say:hi", id: expect.any(String) }]);
   });

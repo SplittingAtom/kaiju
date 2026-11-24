@@ -45,8 +45,8 @@ beforeAll(async () => {
   });
   kc = await MockOidcProvider.create({ issuer: KC, clientId: "kc-app", clientSecret: KC_SECRET });
   const settings = loadSsoSettings({
-    KOBE_SSO_ENABLED: "true",
-    KOBE_SSO_PROVIDERS: JSON.stringify([
+    KAIJU_SSO_ENABLED: "true",
+    KAIJU_SSO_PROVIDERS: JSON.stringify([
       {
         slug: "corp",
         displayName: "Contoso",
@@ -65,8 +65,8 @@ beforeAll(async () => {
         allowedEmailDomains: ["kc.test"],
       },
     ]),
-    KOBE_SSO_CLIENT_SECRET_CORP: CORP_SECRET,
-    KOBE_SSO_CLIENT_SECRET_KC: KC_SECRET,
+    KAIJU_SSO_CLIENT_SECRET_CORP: CORP_SECRET,
+    KAIJU_SSO_CLIENT_SECRET_KC: KC_SECRET,
   });
   h = await openHarness({
     sso: { settings, net: { resolve: resolver() }, request: routeMockOidc(entra, kc) },

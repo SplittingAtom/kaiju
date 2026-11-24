@@ -6,13 +6,13 @@
 // server mirrors). Everything from the wire inwards (routing, translation, batching, the event
 // log, the stream, resume) is the real server.
 //
-// Env: KOBE_WIRE_URL, GATE1_IDENTITIES (JSON [{key, token, sandboxId}]), GATE1_WORDS (answer
+// Env: KAIJU_WIRE_URL, GATE1_IDENTITIES (JSON [{key, token, sandboxId}]), GATE1_WORDS (answer
 // length), GATE1_DELTA_MS (pace), GATE1_SETTLE ("false": stop after the first turn and never
 // settle, so the run stays running until the pod is killed).
 const { default: WebSocket } = await import("/app/node_modules/ws/wrapper.mjs");
 const { randomBytes } = await import("node:crypto");
 
-const url = process.env.KOBE_WIRE_URL;
+const url = process.env.KAIJU_WIRE_URL;
 const identities = JSON.parse(process.env.GATE1_IDENTITIES ?? "[]");
 const words = Number(process.env.GATE1_WORDS ?? "40");
 const deltaMs = Number(process.env.GATE1_DELTA_MS ?? "100");

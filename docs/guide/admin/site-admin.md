@@ -45,7 +45,7 @@ read a person's portable preferences either; reading them needs its own break-gl
   with no account are slowed down the same way, so the answer never tells whether an account
   exists. A second notice appears when, in the last day, sign-in or SCIM requests arrived without
   a client address Kaiju can trust: per-address limits are then shared by everyone. Fix the trusted
-  proxies (`auth.trustedProxies` in the Helm values, `KOBE_TRUSTED_PROXIES`) so they name the
+  proxies (`auth.trustedProxies` in the Helm values, `KAIJU_TRUSTED_PROXIES`) so they name the
   proxies in front of Kaiju; the server also warns in its log.
 - **Single sign-on** and **SSO access mappings**: let people sign in with Microsoft Entra ID or
   another OpenID Connect provider, decide which app roles or groups give which team role,

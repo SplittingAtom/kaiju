@@ -78,15 +78,15 @@ async function sandboxEnv(): Promise<Record<string, string>> {
     ]),
   );
   return {
-    KOBE_SANDBOX_CONFIG: JSON.stringify(settings),
+    KAIJU_SANDBOX_CONFIG: JSON.stringify(settings),
     ...keys,
-    KOBE_RUNTIME_CLASS: "gvisor",
-    KOBE_S3_BUCKET: s3.bucket,
-    KOBE_S3_ENDPOINT: s3Url,
-    KOBE_S3_ACCESS_KEY_ID: s3.accessKeyId,
-    KOBE_S3_SECRET_ACCESS_KEY: "secret-for-start-server",
-    KOBE_INTERNAL_PORT: String(await freePort()),
-    KOBE_MCP_PROXY_INTERNAL_KEY: "k".repeat(32),
+    KAIJU_RUNTIME_CLASS: "gvisor",
+    KAIJU_S3_BUCKET: s3.bucket,
+    KAIJU_S3_ENDPOINT: s3Url,
+    KAIJU_S3_ACCESS_KEY_ID: s3.accessKeyId,
+    KAIJU_S3_SECRET_ACCESS_KEY: "secret-for-start-server",
+    KAIJU_INTERNAL_PORT: String(await freePort()),
+    KAIJU_MCP_PROXY_INTERNAL_KEY: "k".repeat(32),
   };
 }
 
@@ -158,12 +158,12 @@ const sockets = () =>
 function serverConfig(extra: Record<string, string> = {}): Config {
   const config = loadConfig({
     ...extra,
-    KOBE_DATABASE_URL: database.appUrl,
-    KOBE_PUBLIC_URL: "http://localhost:3000",
-    KOBE_AUTH_SECRET: "s".repeat(48),
-    KOBE_SETUP_TOKEN: "setup-token-for-start-server-0",
-    KOBE_SMTP_HOST: "127.0.0.1",
-    KOBE_SMTP_FROM: "Kaiju <kaiju@example.com>",
+    KAIJU_DATABASE_URL: database.appUrl,
+    KAIJU_PUBLIC_URL: "http://localhost:3000",
+    KAIJU_AUTH_SECRET: "s".repeat(48),
+    KAIJU_SETUP_TOKEN: "setup-token-for-start-server-0",
+    KAIJU_SMTP_HOST: "127.0.0.1",
+    KAIJU_SMTP_FROM: "Kaiju <kaiju@example.com>",
   });
   // Any free port.
   return { ...config, port: 0 };

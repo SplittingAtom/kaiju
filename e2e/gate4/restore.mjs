@@ -132,7 +132,7 @@ async function grantOpen() {
   const quiet = { info() {}, warn() {}, error() {} };
   const plain = open(kdb.loadEnvelope(process.env, quiet));
   out("grant_sha", plain === undefined ? "refused" : await sha256(plain));
-  const wrong = kdb.loadEnvelope({ KOBE_ENVELOPE_KEY: randomBytes(32).toString("base64") }, quiet);
+  const wrong = kdb.loadEnvelope({ KAIJU_ENVELOPE_KEY: randomBytes(32).toString("base64") }, quiet);
   out("wrong_key", open(wrong) === undefined ? "refused" : "opened");
 }
 

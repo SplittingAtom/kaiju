@@ -3,12 +3,12 @@ import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
 
 /**
- * KOBE-495: a site admin (KOBE_USER, the gate1 Owner) edits a catalog skill in the Site Console.
+ * KOBE-495: a site admin (KAIJU_USER, the gate1 Owner) edits a catalog skill in the Site Console.
  * Skill tags → Catalog skills → Open shows the versions and the files; Edit from the newest version
  * opens the site draft in the Workbench editor; the spec adds a marker line to SKILL.md (autosaved),
  * reloads (the draft persisted), publishes it with the suggested version, and checks that the
  * active team's catalog now lists the new version as the newest (Default sync and Track installs
- * take it from there). A team-published skill is used (KOBE_CATALOG_SKILL, else the first one the
+ * take it from there). A team-published skill is used (KAIJU_CATALOG_SKILL, else the first one the
  * catalog lists): a Kaiju skill would stay detached. Versions are immutable, so the restore at the
  * end withdraws the version the spec published (Site admins only; installs fall back to the one
  * before) and discards any draft left. Spends no model tokens. Run on gate1:
@@ -26,7 +26,7 @@ interface CatalogRow {
 }
 
 async function pickSkill(page: Page): Promise<CatalogRow | null> {
-  const wanted = process.env["KOBE_CATALOG_SKILL"];
+  const wanted = process.env["KAIJU_CATALOG_SKILL"];
   const skills = await page.evaluate(async (api) => {
     const res = await fetch(`${api}/catalog`);
     return ((await res.json()) as { skills: CatalogRow[] }).skills;
@@ -80,7 +80,7 @@ test("a site admin edits a catalog skill's SKILL.md and publishes it for the tea
     timeout: SHELL_TIMEOUT_MS,
   });
   const skill = await pickSkill(page);
-  test.skip(!skill, "No team-published catalog skill on this Site (set KOBE_CATALOG_SKILL).");
+  test.skip(!skill, "No team-published catalog skill on this Site (set KAIJU_CATALOG_SKILL).");
   if (!skill) return;
   let published: string | null = null;
 

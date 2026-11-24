@@ -51,14 +51,14 @@ describe("scheduler runner chart (KOBE-174)", () => {
       "scheduler.catchUpGraceMinutes": "120",
     });
     expect(scheduler(ms)?.spec.replicas).toBe(3);
-    expect(value(envOf(ms), "KOBE_SCHEDULER_TICK_SECONDS")).toBe("30");
-    expect(value(envOf(ms), "KOBE_SCHEDULER_GRACE_MINUTES")).toBe("120");
+    expect(value(envOf(ms), "KAIJU_SCHEDULER_TICK_SECONDS")).toBe("30");
+    expect(value(envOf(ms), "KAIJU_SCHEDULER_GRACE_MINUTES")).toBe("120");
   });
 
   it("defaults to a 15 s tick and a 60 minute grace window", () => {
     const env = envOf(render());
-    expect(value(env, "KOBE_SCHEDULER_TICK_SECONDS")).toBe("15");
-    expect(value(env, "KOBE_SCHEDULER_GRACE_MINUTES")).toBe("60");
+    expect(value(env, "KAIJU_SCHEDULER_TICK_SECONDS")).toBe("15");
+    expect(value(env, "KAIJU_SCHEDULER_GRACE_MINUTES")).toBe("60");
   });
 
   // KOBE-181: the k3d e2e (dev/values.yaml) observes scheduled runs it pulls due, so it ticks at the
@@ -66,8 +66,8 @@ describe("scheduler runner chart (KOBE-174)", () => {
   it("ticks every 5 s with the dev/e2e values", () => {
     const devValues = fileURLToPath(new URL("../../../dev/values.yaml", import.meta.url));
     const env = envOf(render({}, [devValues]));
-    expect(value(env, "KOBE_SCHEDULER_TICK_SECONDS")).toBe("5");
-    expect(value(env, "KOBE_SCHEDULER_GRACE_MINUTES")).toBe("60");
+    expect(value(env, "KAIJU_SCHEDULER_TICK_SECONDS")).toBe("5");
+    expect(value(env, "KAIJU_SCHEDULER_GRACE_MINUTES")).toBe("60");
   });
 
   it("rejects settings out of range", () => {
@@ -78,9 +78,9 @@ describe("scheduler runner chart (KOBE-174)", () => {
 
   it("gets the sandbox config but no session key, approval key or auth secret", () => {
     const names = envOf(render()).map((e) => e.name);
-    expect(names).toContain("KOBE_SANDBOX_CONFIG");
-    expect(names.filter((n) => n.startsWith("KOBE_SESSION_"))).toEqual([]);
-    for (const forbidden of ["KOBE_APPROVAL_KEY", "KOBE_AUTH_SECRET", "KOBE_SETUP_TOKEN"]) {
+    expect(names).toContain("KAIJU_SANDBOX_CONFIG");
+    expect(names.filter((n) => n.startsWith("KAIJU_SESSION_"))).toEqual([]);
+    for (const forbidden of ["KAIJU_APPROVAL_KEY", "KAIJU_AUTH_SECRET", "KAIJU_SETUP_TOKEN"]) {
       expect(names).not.toContain(forbidden);
     }
   });
@@ -90,6 +90,6 @@ describe("scheduler runner chart (KOBE-174)", () => {
       (m) => m.kind === "Deployment" && m.metadata.name === "kobe-server",
     );
     const names = server?.spec.template.spec.containers[0].env.map((e: Env) => e.name);
-    expect(names).toContain("KOBE_APPROVAL_KEY");
+    expect(names).toContain("KAIJU_APPROVAL_KEY");
   });
 });

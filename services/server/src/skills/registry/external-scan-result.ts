@@ -8,7 +8,7 @@ import { z } from "zod";
  * verdict to Caution; LOW and INFO findings are shown for information. Block stays Kaiju's own
  * decision: nothing here ever sets it.
  */
-export const SCAN_MARKER = "KOBE_EXTERNAL_SCAN ";
+export const SCAN_MARKER = "KAIJU_EXTERNAL_SCAN ";
 /** External rules are named apart from Kaiju's own (`cisco:<rule id>`). */
 export const EXTERNAL_RULE_PREFIX = "cisco:";
 const RAISING = new Set(["medium", "high", "critical"]);

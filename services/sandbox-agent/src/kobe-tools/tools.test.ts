@@ -2,7 +2,7 @@ import {
   ARTIFACT_CONTENT_MAX_BYTES,
   ARTIFACT_TITLE_MAX,
   ARTIFACT_TOOLS,
-  KOBE_TOOLS_FD,
+  KAIJU_TOOLS_FD,
   KAIJU_TOOLS_TIMEOUT_MS,
   CAPABILITY_ARTIFACTS,
   CAPABILITY_FILES,
@@ -53,7 +53,7 @@ const tool = (t: ToolsTransport, name: string) => {
 
 describe("kobe-tools constants mirror the protocol", () => {
   it("matches packages/protocol artifacts.ts", () => {
-    expect(TOOLS_FD).toBe(KOBE_TOOLS_FD);
+    expect(TOOLS_FD).toBe(KAIJU_TOOLS_FD);
     expect(TOOLS_TIMEOUT_MS).toBe(KAIJU_TOOLS_TIMEOUT_MS);
     expect(MAX_CONTENT_BYTES).toBe(ARTIFACT_CONTENT_MAX_BYTES);
     expect(MAX_TITLE_LENGTH).toBe(ARTIFACT_TITLE_MAX);

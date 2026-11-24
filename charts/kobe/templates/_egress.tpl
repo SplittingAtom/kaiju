@@ -40,12 +40,12 @@ predates these keys still renders. Keep in sync with values.yaml.
 
 {{/* The header secret (current, and previous when the Secret holds one) as env, for server and proxy. */}}
 {{- define "kobe.egressHeaderEnv" -}}
-- name: KOBE_EGRESS_HEADER_SECRET
+- name: KAIJU_EGRESS_HEADER_SECRET
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.egressHeaderSecretName" . }}
       key: secret
-- name: KOBE_EGRESS_HEADER_SECRET_PREVIOUS
+- name: KAIJU_EGRESS_HEADER_SECRET_PREVIOUS
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.egressHeaderSecretName" . }}
@@ -61,7 +61,7 @@ predates these keys still renders. Keep in sync with values.yaml.
 
 {{/* Server env: the key the egress proxy presents on the internal listener for git decisions (KOBE-763). */}}
 {{- define "kobe.serverEgressGitEnv" -}}
-- name: KOBE_EGRESS_PROXY_INTERNAL_KEY
+- name: KAIJU_EGRESS_PROXY_INTERNAL_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.egressInternalKeySecretName" . }}
@@ -80,60 +80,60 @@ session-token public key only (never a private key, never the other audiences', 
 {{- define "kobe.egressProxyEnv" -}}
 {{- $e := include "kobe.egressProxyValues" . | fromJson -}}
 {{ include "kobe.databaseEnv" . }}
-- name: KOBE_DB_POOL_MAX
+- name: KAIJU_DB_POOL_MAX
   value: {{ int $e.database.poolMax | quote }}
 {{ include "kobe.sessionVerifyKeyEnv" (dict "root" . "env" "EGRESS_PROXY" "aud" "egress-proxy") }}
-- name: KOBE_EGRESS_ALLOWED_PORTS
+- name: KAIJU_EGRESS_ALLOWED_PORTS
   value: {{ join "," $e.allowedPorts | quote }}
-- name: KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS
+- name: KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS
   value: {{ join "," $e.allowedInternalCidrs | quote }}
-- name: KOBE_EGRESS_INTERNAL_TARGETS
+- name: KAIJU_EGRESS_INTERNAL_TARGETS
   value: {{ include "kobe.egressInternalTargets" . | quote }}
-- name: KOBE_EGRESS_DENIED_CIDRS
+- name: KAIJU_EGRESS_DENIED_CIDRS
   value: {{ join "," $e.deniedCidrs | quote }}
-- name: KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX
+- name: KAIJU_EGRESS_MAX_CONNECTIONS_PER_SANDBOX
   value: {{ int $e.limits.connectionsPerSandbox | quote }}
-- name: KOBE_EGRESS_MAX_CONNECTIONS
+- name: KAIJU_EGRESS_MAX_CONNECTIONS
   value: {{ int $e.limits.connections | quote }}
-- name: KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND
+- name: KAIJU_EGRESS_BANDWIDTH_BYTES_PER_SECOND
   value: {{ int64 $e.limits.bandwidthBytesPerSecond | quote }}
-- name: KOBE_EGRESS_IDLE_TIMEOUT_MS
+- name: KAIJU_EGRESS_IDLE_TIMEOUT_MS
   value: {{ mul (int $e.limits.idleTimeoutSeconds) 1000 | quote }}
-- name: KOBE_EGRESS_MAX_TUNNEL_SECONDS
+- name: KAIJU_EGRESS_MAX_TUNNEL_SECONDS
   value: {{ int $e.limits.maxTunnelSeconds | quote }}
-- name: KOBE_EGRESS_PREAUTH_PER_SOURCE
+- name: KAIJU_EGRESS_PREAUTH_PER_SOURCE
   value: {{ int $e.limits.unauthenticatedPerSource | quote }}
-- name: KOBE_EGRESS_PREAUTH_TOTAL
+- name: KAIJU_EGRESS_PREAUTH_TOTAL
   value: {{ int $e.limits.unauthenticated | quote }}
-- name: KOBE_EGRESS_AUDIT_FLUSH_MS
+- name: KAIJU_EGRESS_AUDIT_FLUSH_MS
   value: {{ mul (int $e.auditFlushSeconds) 1000 | quote }}
 {{ include "kobe.egressHeaderEnv" . }}
-- name: KOBE_EGRESS_UPGRADE_MAX_REQUEST_BYTES
+- name: KAIJU_EGRESS_UPGRADE_MAX_REQUEST_BYTES
   value: {{ int64 $e.upgrade.maxRequestBytes | quote }}
-- name: KOBE_EGRESS_UPGRADE_MAX_RESPONSE_BYTES
+- name: KAIJU_EGRESS_UPGRADE_MAX_RESPONSE_BYTES
   value: {{ int64 $e.upgrade.maxResponseBytes | quote }}
-- name: KOBE_EGRESS_UPGRADE_TIMEOUT_MS
+- name: KAIJU_EGRESS_UPGRADE_TIMEOUT_MS
   value: {{ mul (int $e.upgrade.timeoutSeconds) 1000 | quote }}
 {{- /* Git smart-HTTP for connected organizations (KOBE-763): the server decides and mints. */}}
-- name: KOBE_EGRESS_SERVER_URL
+- name: KAIJU_EGRESS_SERVER_URL
   value: {{ printf "http://%s-server:%s" (include "kobe.fullname" .) (include "kobe.serverInternalPort" .) | quote }}
-- name: KOBE_EGRESS_INTERNAL_KEY
+- name: KAIJU_EGRESS_INTERNAL_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.egressInternalKeySecretName" . }}
       key: key
-- name: KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES
+- name: KAIJU_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES
   value: {{ int64 $e.git.maxFetchRequestBytes | quote }}
-- name: KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES
+- name: KAIJU_EGRESS_GIT_MAX_RESPONSE_BYTES
   value: {{ int64 $e.git.maxResponseBytes | quote }}
-- name: KOBE_EGRESS_GIT_TIMEOUT_MS
+- name: KAIJU_EGRESS_GIT_TIMEOUT_MS
   value: {{ mul (int $e.git.timeoutSeconds) 1000 | quote }}
-- name: KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX
+- name: KAIJU_EGRESS_GIT_CONCURRENT_PER_SANDBOX
   value: {{ int $e.git.concurrentPerSandbox | quote }}
-- name: KOBE_EGRESS_GIT_REQUEST_BURST
+- name: KAIJU_EGRESS_GIT_REQUEST_BURST
   value: {{ int $e.git.requestBurst | quote }}
-- name: KOBE_EGRESS_GIT_REQUESTS_PER_SECOND
+- name: KAIJU_EGRESS_GIT_REQUESTS_PER_SECOND
   value: {{ int $e.git.requestsPerSecond | quote }}
-- name: KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE
+- name: KAIJU_EGRESS_GIT_LOOKUPS_PER_MINUTE
   value: {{ int $e.git.lookupsPerMinute | quote }}
 {{- end -}}

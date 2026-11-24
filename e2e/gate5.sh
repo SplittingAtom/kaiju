@@ -6,28 +6,28 @@
 # docs/gates/gate-5.md lists each story's checks and what they prove.
 #
 #   e2e/gate5.sh                      every story (after the gate1-prep install on k3d)
-#   KOBE_GATE5_STORIES="U19 U24" ...  some stories
-#   KOBE_GATE5_BROWSER=0 ...          API checks only; prints the browser command to run elsewhere,
-#                                     whose report KOBE_GATE5_RESULTS=<results.json> then judges
+#   KAIJU_GATE5_STORIES="U19 U24" ...  some stories
+#   KAIJU_GATE5_BROWSER=0 ...          API checks only; prints the browser command to run elsewhere,
+#                                     whose report KAIJU_GATE5_RESULTS=<results.json> then judges
 #
-# A real install: KOBE_GATE5_NS, _RELEASE, _CONTEXT, _MODEL (the team default), _MODEL2 (a second
+# A real install: KAIJU_GATE5_NS, _RELEASE, _CONTEXT, _MODEL (the team default), _MODEL2 (a second
 # model, for Regenerate with), _OWNER_EMAIL/_PASSWORD. It creates users gate5-{ad,m2}@gate5.test in
 # team gate5-a (and their threads, an agent, workspace files the specs delete again). With the fake
-# model (KOBE_GATE5_MODEL=fast, the k3d default) it adds catalog entry `g5ctx` (a 200,000-token
+# model (KAIJU_GATE5_MODEL=fast, the k3d default) it adds catalog entry `g5ctx` (a 200,000-token
 # window) as the team's default model.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
-NS="${KOBE_GATE5_NS:-kobe-dev}"
-RELEASE="${KOBE_GATE5_RELEASE:-kobe}"
-STORIES="${KOBE_GATE5_STORIES:-U17 U18 U19 U20 U21 U22 U23 U24}"
-MODEL_ALIAS="${KOBE_GATE5_MODEL:-fast}"
-FAKE="${KOBE_GATE5_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
-MODEL2="${KOBE_GATE5_MODEL2:-$([[ "$FAKE" == 1 ]] && echo smart || true)}"
-OWNER_EMAIL="${KOBE_GATE5_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATE5_OWNER_PASSWORD:-e2e owner password}"
-BROWSER="${KOBE_GATE5_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
+NS="${KAIJU_GATE5_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATE5_RELEASE:-kobe}"
+STORIES="${KAIJU_GATE5_STORIES:-U17 U18 U19 U20 U21 U22 U23 U24}"
+MODEL_ALIAS="${KAIJU_GATE5_MODEL:-fast}"
+FAKE="${KAIJU_GATE5_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
+MODEL2="${KAIJU_GATE5_MODEL2:-$([[ "$FAKE" == 1 ]] && echo smart || true)}"
+OWNER_EMAIL="${KAIJU_GATE5_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATE5_OWNER_PASSWORD:-e2e owner password}"
+BROWSER="${KAIJU_GATE5_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
 TEAM_SLUG=gate5-a
 TNS="kobe-team-$TEAM_SLUG"
 SERVER="deploy/$RELEASE-server"
@@ -39,8 +39,8 @@ CTX_WINDOW=200000
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATE5_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATE5_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATE5_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATE5_CONTEXT=$context)" >&2
   exit 2
 fi
 
@@ -204,19 +204,19 @@ for s in $STORIES; do
   # shellcheck disable=SC2207 # space-separated file names
   files+=($(specs_of "$s"))
 done
-PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KOBE_PUBLIC_URL 2>/dev/null || true)
+PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KAIJU_PUBLIC_URL 2>/dev/null || true)
 # U19's interrupt deletes the member's sandbox pod mid-run; its agent log (Pi starts, exits,
 # refusals) goes with it, so the command keeps a copy first (printed below when U19 fails).
 SBX_SELECTOR="agents.x-k8s.io/claim-uid=\$($KUBECTL -n $TNS get sandboxclaim u-$AD -o jsonpath='{.metadata.uid}')"
 KILL_CMD="$KUBECTL -n $TNS logs -l $SBX_SELECTOR --all-containers --tail=-1 >\"$WORK/sandbox-killed-\$(date +%s).log\" 2>&1; $KUBECTL -n $TNS delete pod -l $SBX_SELECTOR --wait=false"
 browser_env() { # the variables the specs read, except the passwords
-  printf 'KOBE_BASE_URL=%s KOBE_USER=gate5-ad@gate5.test KOBE_USER2=gate5-m2@gate5.test KOBE_FAKE_MODEL=%s KOBE_GATE5_PINNED_THREAD=%s KOBE_GATE5_MODEL2=%s' \
+  printf 'KAIJU_BASE_URL=%s KAIJU_USER=gate5-ad@gate5.test KAIJU_USER2=gate5-m2@gate5.test KAIJU_FAKE_MODEL=%s KAIJU_GATE5_PINNED_THREAD=%s KAIJU_GATE5_MODEL2=%s' \
     "$PUBLIC_URL" "$FAKE" "${PINNED_THREAD:-}" "${MODEL2:-}"
 }
-RESULTS="${KOBE_GATE5_RESULTS:-}"
+RESULTS="${KAIJU_GATE5_RESULTS:-}"
 if [[ "$BROWSER" == 1 ]]; then
   echo "==> browser: ${#files[@]} spec files in Chromium against $PUBLIC_URL"
-  map="${KOBE_GATE5_BROWSER_MAP:-}"
+  map="${KAIJU_GATE5_BROWSER_MAP:-}"
   if [[ -z "$map" && "$context" == k3d-* ]]; then
     # Chromium beside kubectl reaches the ingress through a port-forward, under the site's own origin.
     $KUBECTL -n kube-system port-forward svc/traefik 18080:80 >"$WORK/port-forward.log" 2>&1 &
@@ -228,13 +228,13 @@ if [[ "$BROWSER" == 1 ]]; then
   fi
   RESULTS="$WORK/results.json"
   # shellcheck disable=SC2046 # browser_env is a list of NAME=value words
-  (cd e2e/browser && env $(browser_env) KOBE_PW="$USER_PASSWORD" KOBE_PW2="$USER_PASSWORD" \
-    KOBE_BROWSER_MAP="$map" KOBE_BROWSER_RESULTS="$RESULTS" KOBE_GATE5_KILL_SANDBOX="$KILL_CMD" \
+  (cd e2e/browser && env $(browser_env) KAIJU_PW="$USER_PASSWORD" KAIJU_PW2="$USER_PASSWORD" \
+    KAIJU_BROWSER_MAP="$map" KAIJU_BROWSER_RESULTS="$RESULTS" KAIJU_GATE5_KILL_SANDBOX="$KILL_CMD" \
     npx playwright test "${files[@]}" >"$WORK/playwright.log" 2>&1) || true
   grep -E '✓|✘|-  |passed|failed|skipped|flaky' "$WORK/playwright.log" | tail -60 | sed 's/^/     /' || true
 elif [[ -z "$RESULTS" ]]; then
-  echo "skip browser checks (KOBE_GATE5_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL, then judge with KOBE_GATE5_RESULTS=<results.json>:"
-  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KOBE_PW=<the fixtures' password> KOBE_PW2=<same> KOBE_BROWSER_RESULTS=<results.json> npx playwright test ${files[*]}"
+  echo "skip browser checks (KAIJU_GATE5_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL, then judge with KAIJU_GATE5_RESULTS=<results.json>:"
+  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KAIJU_PW=<the fixtures' password> KAIJU_PW2=<same> KAIJU_BROWSER_RESULTS=<results.json> npx playwright test ${files[*]}"
 fi
 
 # ---- verdict -----------------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ for s in $STORIES; do
   [[ "$API_FAILED" == *" $s "* ]] && verdict=FAIL && echo "       its API checks failed (above)"
   grep -qE '^(FAIL|XPASS|INVALID|NOTRUN) ' <<<"$lines" && verdict=FAIL
   [[ "$verdict" == ok ]] && grep -q '^XFAIL ' <<<"$lines" && verdict=XFAIL
-  [[ "$verdict" == XFAIL && "${KOBE_GATE_STRICT:-0}" == 1 ]] && verdict=FAIL
+  [[ "$verdict" == XFAIL && "${KAIJU_GATE_STRICT:-0}" == 1 ]] && verdict=FAIL
   case "$verdict" in
     ok) echo "ok   $s $(text_of "$s")"; proven=$((proven + 1)) ;;
     XFAIL) echo "XFAIL $s $(text_of "$s")"; xfailed_stories=$((xfailed_stories + 1)) ;;
@@ -274,7 +274,7 @@ if ((failed)); then
   exit 1
 fi
 if ((xfailed_stories)); then
-  verdict "Gate 5: $proven of $n stories proven, $xfailed_stories with expected failures (filed; KOBE_GATE_STRICT=1 fails them)"
+  verdict "Gate 5: $proven of $n stories proven, $xfailed_stories with expected failures (filed; KAIJU_GATE_STRICT=1 fails them)"
 else
   verdict "Gate 5: all $n stories proven"
 fi

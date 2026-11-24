@@ -95,7 +95,7 @@ export function evalSandboxPodSpec(
   const containers = spec.containers.map((c) => ({
     ...c,
     env: c.env.map((e) =>
-      e.name === "KOBE_WORKSPACE_SYNC_INTERVAL_MS" ? { ...e, value: "0" } : e,
+      e.name === "KAIJU_WORKSPACE_SYNC_INTERVAL_MS" ? { ...e, value: "0" } : e,
     ),
   }));
   return {

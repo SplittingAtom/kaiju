@@ -7,7 +7,7 @@ scanned with the scanner's offline analyzers only: static rules, YARA, bytecode 
 dataflow. Nothing calls out: no LLM judge, no VirusTotal, no Cisco AI Defense, no OSV, and the
 environment the scanner sees has no API keys (the Job holds none either, and has no network).
 
-The one line on stdout starts with ``KOBE_EXTERNAL_SCAN `` and holds JSON: the scanner's name and
+The one line on stdout starts with ``KAIJU_EXTERNAL_SCAN `` and holds JSON: the scanner's name and
 version and its findings reduced to rule, severity, category, title, file and line. Snippets and
 descriptions are left out: the server shows findings to reviewers, and a finding's evidence stays
 in the package they already read.
@@ -24,7 +24,7 @@ import sys
 import tempfile
 import zipfile
 
-MARKER = "KOBE_EXTERNAL_SCAN "
+MARKER = "KAIJU_EXTERNAL_SCAN "
 MAX_FILES = 2000
 MAX_TOTAL_BYTES = 64 * 1024 * 1024
 MAX_FINDINGS = 200

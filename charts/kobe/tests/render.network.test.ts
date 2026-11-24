@@ -23,10 +23,10 @@ describe("migrations (KOBE-68)", () => {
     expect(migrateEnv(ms)).toEqual(
       expect.arrayContaining([
         {
-          name: "KOBE_DB_MIGRATE_URL",
+          name: "KAIJU_DB_MIGRATE_URL",
           valueFrom: { secretKeyRef: { name: "kobe-db", key: "migrate-url" } },
         },
-        { name: "KOBE_DB_APP_ROLE", value: "kobe_app" },
+        { name: "KAIJU_DB_APP_ROLE", value: "kobe_app" },
       ]),
     );
     expect(job?.spec.template.spec.automountServiceAccountToken).toBe(false);
@@ -50,7 +50,7 @@ describe("migrations (KOBE-68)", () => {
 
   it("defaults keys added after a release so `helm upgrade --reuse-values` keeps working", () => {
     expect(migrateEnv(render({ "postgres.external.appRole": "null" }))).toContainEqual({
-      name: "KOBE_DB_APP_ROLE",
+      name: "KAIJU_DB_APP_ROLE",
       value: "kobe_app",
     });
   });
@@ -62,7 +62,7 @@ describe("migrations (KOBE-68)", () => {
     expect(hook(initial)).toBeUndefined();
     expect(find(ms, "Job", "kobe-migrate")).toBeUndefined();
     expect(initial?.spec.template.spec.containers[0].env).toContainEqual({
-      name: "KOBE_DB_MIGRATE_URL",
+      name: "KAIJU_DB_MIGRATE_URL",
       valueFrom: { secretKeyRef: { name: "kobe-pg-app", key: "uri" } },
     });
   });
@@ -111,7 +111,7 @@ describe("migrations (KOBE-68)", () => {
       expect(wait?.name, name).toBe("wait-for-migrations");
       expect(wait?.command).toEqual(["node", "node_modules/@kaiju/db/dist/cli/wait.js"]);
       expect(wait?.env).toContainEqual({
-        name: "KOBE_DATABASE_URL",
+        name: "KAIJU_DATABASE_URL",
         valueFrom: { secretKeyRef: { name: "kobe-db", key: "app-url" } },
       });
     }
@@ -122,7 +122,7 @@ describe("least privilege between components", () => {
   it("gives mcp-proxy no database credentials (it sits at the sandbox boundary)", () => {
     const env =
       find(render(), "Deployment", "kobe-mcp-proxy")?.spec.template.spec.containers[0].env ?? [];
-    expect(env.map((e: { name: string }) => e.name)).not.toContain("KOBE_DATABASE_URL");
+    expect(env.map((e: { name: string }) => e.name)).not.toContain("KAIJU_DATABASE_URL");
   });
 
   it("refuses an app connection URL key equal to the owner/migration key", () => {
@@ -198,7 +198,7 @@ describe("network policies", () => {
     const usesDb = (spec: any) =>
       [...(spec.initContainers ?? []), ...spec.containers].some((c: any) =>
         (c.env ?? []).some((e: { name: string }) =>
-          /^KOBE_(DATABASE_URL|DB_MIGRATE_URL)$/.test(e.name),
+          /^KAIJU_(DATABASE_URL|DB_MIGRATE_URL)$/.test(e.name),
         ),
       );
     const pods = ms
@@ -266,7 +266,7 @@ describe("CloudNativePG app credentials", () => {
     });
     const env = find(ms, "Deployment", "kobe-server")?.spec.template.spec.containers[0].env;
     expect(env).toContainEqual({
-      name: "KOBE_DB_PASSWORD",
+      name: "KAIJU_DB_PASSWORD",
       valueFrom: { secretKeyRef: { name: "my-app-login", key: "password" } },
     });
   });

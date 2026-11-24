@@ -11,7 +11,7 @@ import {
 // connected. Other worktrees use this server right now: this file selects (with a future "now")
 // but only ever drops its own database.
 
-const base = process.env.KOBE_TEST_DATABASE_URL ?? "";
+const base = process.env.KAIJU_TEST_DATABASE_URL ?? "";
 const ours = `kobe_test_${randomBytes(4).toString("hex")}_sweep`;
 const DAY = 24 * 60 * 60 * 1000;
 

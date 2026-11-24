@@ -4,7 +4,7 @@ import { RUN_TIMEOUT_MS } from "./support/constants.js";
 import { styleViolations, watchStyleViolations } from "./support/csp.js";
 
 /**
- * KOBE-808 (run with KOBE_TEAM=team1): code completion in a `.py` file's editor. Before the
+ * KOBE-808 (run with KAIJU_TEAM=team1): code completion in a `.py` file's editor. Before the
  * kernel runs, the editor's built-in completion works (`pri` offers `print`) and the note under it
  * says why kernel completion is off; after Run, the conversation's kernel adds a variable the run
  * set, a DataFrame's columns (marked "kernel") and a call's signature, and Tab accepts. The

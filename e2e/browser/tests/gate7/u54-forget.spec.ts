@@ -5,14 +5,14 @@ import { panelOf } from "../support/panel.js";
 
 /**
  * Gate 7, U54 (KOBE-675): "'forget X' yields an Open in Memory chip; one click archives with Undo;
- * the next run no longer receives it." e2e/gate7.sh pins one memory for KOBE_USER (so every run is
+ * the next run no longer receives it." e2e/gate7.sh pins one memory for KAIJU_USER (so every run is
  * given it) and passes its id and text. The agent shows it with `show_memory_item` (with the fake
  * model, `tool: show_memory_item {...}`; a real model calls it when asked to forget): the chip
  * appears under the call, Open in Memory opens it on My memory, Archive archives it with Undo,
  * Undo brings it back, Archive again, and the thread's next run is not given it.
  */
-const ITEM = process.env["KOBE_GATE7_FORGET_ITEM"] ?? "";
-const TEXT = process.env["KOBE_GATE7_FORGET_TEXT"] ?? "";
+const ITEM = process.env["KAIJU_GATE7_FORGET_ITEM"] ?? "";
+const TEXT = process.env["KAIJU_GATE7_FORGET_TEXT"] ?? "";
 
 test("U54: Open in Memory, Archive with Undo, and the next run no longer gets it", async ({
   chat,

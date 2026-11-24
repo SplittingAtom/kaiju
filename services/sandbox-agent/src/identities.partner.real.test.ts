@@ -30,7 +30,7 @@ import {
  * that will run as a partner uid is KOBE-167, so these tests start processes with the helper the
  * way the agent will, and check what the uids can and cannot do to each other.
  */
-const HELPER = process.env.KOBE_TEST_PI_RUNAS;
+const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
 const WORKSPACE_GID = process.getgid?.() ?? -1;
 
 interface Result {

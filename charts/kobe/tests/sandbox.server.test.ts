@@ -23,13 +23,13 @@ describe("server sandbox configuration", () => {
   it("is valid for the server's config schema (with keys as the Secret provides them)", () => {
     const data = find(ms, "Secret", "kobe-sandbox-session-keys")?.stringData ?? {};
     const keys = {
-      KOBE_SESSION_SIGNING_KEY_SANDBOX_WIRE: data["sandbox-wire.key"],
-      KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY: data["model-gateway.key"],
-      KOBE_SESSION_SIGNING_KEY_MCP_PROXY: data["mcp-proxy.key"],
-      KOBE_SESSION_SIGNING_KEY_EGRESS_PROXY: data["egress-proxy.key"],
+      KAIJU_SESSION_SIGNING_KEY_SANDBOX_WIRE: data["sandbox-wire.key"],
+      KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY: data["model-gateway.key"],
+      KAIJU_SESSION_SIGNING_KEY_MCP_PROXY: data["mcp-proxy.key"],
+      KAIJU_SESSION_SIGNING_KEY_EGRESS_PROXY: data["egress-proxy.key"],
     };
     const config = loadSandboxConfig({
-      KOBE_SANDBOX_CONFIG: JSON.stringify(sandboxConfig(ms)),
+      KAIJU_SANDBOX_CONFIG: JSON.stringify(sandboxConfig(ms)),
       ...keys,
     });
     expect(config?.settings).toMatchObject({
@@ -248,23 +248,23 @@ describe("server sandbox configuration", () => {
         .map((e) => e.name)
         .filter((n) => n.startsWith(prefix));
     const audiences = ["EGRESS_PROXY", "MCP_PROXY", "MODEL_GATEWAY", "SANDBOX_WIRE"];
-    expect(names("kobe-server", "KOBE_SESSION_SIGNING_KEY_").sort()).toEqual(
-      audiences.map((a) => `KOBE_SESSION_SIGNING_KEY_${a}`),
+    expect(names("kobe-server", "KAIJU_SESSION_SIGNING_KEY_").sort()).toEqual(
+      audiences.map((a) => `KAIJU_SESSION_SIGNING_KEY_${a}`),
     );
-    expect(names("kobe-server", "KOBE_SESSION_VERIFY_KEY_").sort()).toEqual(
-      audiences.map((a) => `KOBE_SESSION_VERIFY_KEY_${a}`),
+    expect(names("kobe-server", "KAIJU_SESSION_VERIFY_KEY_").sort()).toEqual(
+      audiences.map((a) => `KAIJU_SESSION_VERIFY_KEY_${a}`),
     );
     // The scheduler wakes sandboxes but never signs tokens (KOBE-174): it holds no session key.
     for (const d of ["kobe-scheduler", "kobe-web"]) {
-      expect(names(d, "KOBE_SESSION_"), d).toEqual([]);
+      expect(names(d, "KAIJU_SESSION_"), d).toEqual([]);
     }
     for (const [d, aud] of [
       ["kobe-egress-proxy", "EGRESS_PROXY"],
       ["kobe-mcp-proxy", "MCP_PROXY"],
       ["kobe-model-gateway", "MODEL_GATEWAY"],
     ] as const) {
-      expect(names(d, "KOBE_SESSION_SIGNING_KEY_"), d).toEqual([]);
-      expect(names(d, "KOBE_SESSION_VERIFY_KEY_"), d).toEqual([`KOBE_SESSION_VERIFY_KEY_${aud}`]);
+      expect(names(d, "KAIJU_SESSION_SIGNING_KEY_"), d).toEqual([]);
+      expect(names(d, "KAIJU_SESSION_VERIFY_KEY_"), d).toEqual([`KAIJU_SESSION_VERIFY_KEY_${aud}`]);
       // No private key reaches a verifier, by any route.
       expect(JSON.stringify(envOf(ms, d)), d).not.toMatch(/\.key"/);
       expect(JSON.stringify(envOf(ms, d)), d).toContain("kobe-sandbox-session-verify-keys");
@@ -279,7 +279,7 @@ describe("server sandbox configuration", () => {
       .filter((r) => r?.name === "kobe-sandbox-session-keys")
       .map((r) => r?.key);
     expect(fromSecret).toEqual(["trace-span"]);
-    expect(gateway.map((v) => v.name)).not.toContain("KOBE_SESSION_KEY_MODEL_GATEWAY");
+    expect(gateway.map((v) => v.name)).not.toContain("KAIJU_SESSION_KEY_MODEL_GATEWAY");
     // No Deployment reads the retired master secret entry (the ConfigMap's public key is fine).
     for (const d of byKind(ms, "Deployment")) {
       const refs = JSON.stringify(d.spec.template.spec.containers);
@@ -290,7 +290,7 @@ describe("server sandbox configuration", () => {
     // The server signs run and server-call tokens with the model-gateway private key and shares
     // only the trace-span secret (optional: a pre-created Secret without it turns the relay off).
     expect(envOf(ms, "kobe-server")).toContainEqual({
-      name: "KOBE_TRACE_SPAN_KEY",
+      name: "KAIJU_TRACE_SPAN_KEY",
       valueFrom: {
         secretKeyRef: { name: "kobe-sandbox-session-keys", key: "trace-span", optional: true },
       },
@@ -326,7 +326,7 @@ describe("server sandbox configuration", () => {
 
   it("gives the approval key to the server only, optional for pre-created Secrets (KOBE-37)", () => {
     expect(envOf(ms, "kobe-server")).toContainEqual({
-      name: "KOBE_APPROVAL_KEY",
+      name: "KAIJU_APPROVAL_KEY",
       valueFrom: {
         secretKeyRef: { name: "kobe-sandbox-session-keys", key: "approval-hmac", optional: true },
       },

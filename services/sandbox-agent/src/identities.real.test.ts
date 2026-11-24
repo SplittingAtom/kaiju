@@ -34,14 +34,14 @@ import {
 
 /**
  * Privilege separation with the real helper (KOBE-71). Needs Linux, a `kobe-runas` built for this
- * user (KOBE_TEST_PI_RUNAS: root-owned, cap_setuid/cap_setgid, executable by one of our groups)
+ * user (KAIJU_TEST_PI_RUNAS: root-owned, cap_setuid/cap_setgid, executable by one of our groups)
  * and the Pi identity groups among this process's supplementary groups — CI sets that up
  * (services/sandbox-agent/scripts/test-identities.sh). Skipped elsewhere.
  *
  * Every "tool" below is a real child of the scripted Pi, started the way Pi's bash tool starts
  * one, so it runs as that Pi's identity.
  */
-const HELPER = process.env.KOBE_TEST_PI_RUNAS;
+const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
 const MODELS_EXTENSION = "/opt/kobe/pi-extensions/kobe-models/index.js";
 const MODEL = {
   alias: "fast",
@@ -210,7 +210,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     expect(await modes(pi.tmpdir)).toEqual([me, pi.gid, 0o2775]);
     // The jiti and compile caches are off for it, and it is told where the tools' home is.
     expect(pi.env).toEqual(expect.arrayContaining(["JITI_FS_CACHE", "NODE_DISABLE_COMPILE_CACHE"]));
-    expect(pi.env).toContain("KOBE_EXEC_TOOL_HOME");
+    expect(pi.env).toContain("KAIJU_EXEC_TOOL_HOME");
     // Gone once the Pi is (its files, which the reclaim would otherwise open to the group).
     await h.close();
     await until(() => !existsSync(root), 30_000);
@@ -229,8 +229,8 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
       const info = await stat(dir);
       expect([info.uid, info.gid, info.mode & 0o7777]).toEqual([me, pi.gid, 0o2770]);
     }
-    expect(pi.env).toEqual(expect.arrayContaining(["KOBE_TOOL_HOME", "KOBE_TOOL_TMPDIR"]));
-    expect(pi.env).not.toContain("KOBE_EXEC_TOOL_HOME");
+    expect(pi.env).toEqual(expect.arrayContaining(["KAIJU_TOOL_HOME", "KAIJU_TOOL_TMPDIR"]));
+    expect(pi.env).not.toContain("KAIJU_EXEC_TOOL_HOME");
   }, 60_000);
 
   it("a tool of thread A cannot plant ~/.node_modules in thread B's Pi HOME, and B's Pi HOME is not the shared one (KOBE-228)", async () => {
@@ -268,7 +268,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
       expect(pi.uid).not.toBe(process.getuid?.());
       expect(pi.gid).toBe(pi.uid);
       expect(pi.groups.sort()).toEqual([process.getgid?.(), pi.uid].sort());
-      // HOME is Pi's own and private (KOBE-228); the shared one is the tools' (KOBE_TOOL_HOME).
+      // HOME is Pi's own and private (KOBE-228); the shared one is the tools' (KAIJU_TOOL_HOME).
       expect(pi.home).not.toBe(path.join(h.dir, "home"));
     }
     const dir = await stat(path.dirname(a.agentDir));
@@ -505,7 +505,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
   });
 
   it("kills everything a Pi left running and empties its directory before the identity is reused", async () => {
-    await start({ KOBE_PI_IDLE_MS: "200" });
+    await start({ KAIJU_PI_IDLE_MS: "200" });
     ok(await h.server.command(runStart("orphan", { config: { model: MODEL } })));
     const orphan = await h.server.waitFor(
       (f) => f.type === "pi.event" && (f.event as { type?: string }).type === "kaiju_test_orphan",
@@ -605,13 +605,13 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
   });
 
   it("leaves nothing private to a recycled uid: owner-only files go to the workspace group, IPC objects go", async () => {
-    await start({ KOBE_PI_IDLE_MS: "200" });
+    await start({ KAIJU_PI_IDLE_MS: "200" });
     const out = await tool(
       THREAD,
       RUN,
       [
         "umask 077",
-        'echo s > "$KOBE_TOOL_HOME/k71-secret-$$"; echo s > /tmp/k71-secret-$$; echo s > k71-ws-secret-$$',
+        'echo s > "$KAIJU_TOOL_HOME/k71-secret-$$"; echo s > /tmp/k71-secret-$$; echo s > k71-ws-secret-$$',
         "echo \"pid=$$ uid=$(id -u) shm=$(ipcmk -M 4096 | awk '{print $NF}')\"",
       ].join("\n"),
     );
@@ -643,7 +643,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
   });
 
   it("reaches files inside an owner-only (000) directory, and clears a uid's leftovers in the runtime root", async () => {
-    await start({ KOBE_PI_IDLE_MS: "200" });
+    await start({ KAIJU_PI_IDLE_MS: "200" });
     const runtimeRoot = path.join(shm, "pi-runtime");
     const out = await tool(
       THREAD,
@@ -704,7 +704,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     );
     h = await startHarness({
       piBin,
-      env: { KOBE_PI_IDLE_MS: "200" },
+      env: { KAIJU_PI_IDLE_MS: "200" },
       identities: retiring,
       runtimeDir: path.join(shm, "pi-runtime"),
       models: {

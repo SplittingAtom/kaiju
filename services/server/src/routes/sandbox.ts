@@ -44,7 +44,7 @@ export interface SandboxRoutesDeps {
   readonly provider: Pick<SandboxProvider, "identifyBootstrapToken"> &
     Partial<Pick<SandboxProvider, "recheckAssignment">>;
   readonly sessionKeys: SessionKeys;
-  /** Session token lifetime in seconds (KOBE_SESSION_TOKEN_TTL_SECONDS); default 15 min. */
+  /** Session token lifetime in seconds (KAIJU_SESSION_TOKEN_TTL_SECONDS); default 15 min. */
   readonly sessionTokenTtlSeconds?: number;
   readonly now?: () => Date;
   readonly limiter?: RateLimiter;
@@ -98,7 +98,7 @@ export function createSandboxApp(deps: SandboxRoutesDeps): Hono {
  * Sandbox-facing endpoints, mounted at /v1/sandbox outside the session-authenticated API.
  *
  * POST /session — `Authorization: Bearer <projected bootstrap token>` (file at
- * KOBE_BOOTSTRAP_TOKEN_FILE in the pod). Answers:
+ * KAIJU_BOOTSTRAP_TOKEN_FILE in the pod). Answers:
  * - 200 `{sandbox_id, team_id, user_id, expires_at, tokens: {<audience>: <token>}}`: one session
  *   token per audience (packages/protocol session-token.ts). Re-trade before `expires_at`.
  * - 409 `sandbox_unassigned` + `retry_after_ms`: a warm-pool pod nobody has claimed yet. With

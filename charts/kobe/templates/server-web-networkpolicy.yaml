@@ -103,7 +103,7 @@ spec:
 {{- if $wnp.restrictEgress }}
 ---
 # Web egress (KOBE-698; opt-in, web.networkPolicy.restrictEgress): the web app only calls the
-# server (KOBE_SERVER_URL, the in-cluster Service by default) and DNS. A web.serverUrl outside the
+# server (KAIJU_SERVER_URL, the in-cluster Service by default) and DNS. A web.serverUrl outside the
 # release needs a rule in web.networkPolicy.extraEgress.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

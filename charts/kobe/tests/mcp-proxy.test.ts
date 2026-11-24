@@ -60,13 +60,13 @@ describe("MCP proxy Deployment", () => {
       .map((e) => [e.name, e.valueFrom.secretKeyRef ?? e.valueFrom.configMapKeyRef]);
     expect(refs).toEqual([
       [
-        "KOBE_SESSION_VERIFY_KEY_MCP_PROXY",
+        "KAIJU_SESSION_VERIFY_KEY_MCP_PROXY",
         { name: "kobe-sandbox-session-verify-keys", key: "mcp-proxy" },
       ],
-      ["KOBE_MCP_INTERNAL_KEY", { name: "kobe-mcp-proxy-internal", key: "key" }],
+      ["KAIJU_MCP_INTERNAL_KEY", { name: "kobe-mcp-proxy-internal", key: "key" }],
       // KOBE-693: the server's key for the proxy's routes, the other direction.
       [
-        "KOBE_MCP_ROUTES_KEY",
+        "KAIJU_MCP_ROUTES_KEY",
         { name: "kobe-mcp-proxy-internal", key: "routes-key", optional: true },
       ],
     ]);
@@ -83,10 +83,10 @@ describe("MCP proxy Deployment", () => {
     // Approvals are HMAC-signed by the server and verified by the server on the proxy's policy
     // re-check; the proxy only forwards the decision. A proxy compromise cannot mint one.
     const env = envOf(ms, "kobe-mcp-proxy");
-    expect(env.map((e) => e.name)).not.toContain("KOBE_APPROVAL_KEY");
+    expect(env.map((e) => e.name)).not.toContain("KAIJU_APPROVAL_KEY");
     expect(JSON.stringify(env)).not.toContain("approval-hmac");
     const serverEnv = envOf(ms, "kobe-server");
-    expect(serverEnv.find((e) => e.name === "KOBE_APPROVAL_KEY")?.valueFrom?.secretKeyRef).toEqual({
+    expect(serverEnv.find((e) => e.name === "KAIJU_APPROVAL_KEY")?.valueFrom?.secretKeyRef).toEqual({
       name: "kobe-sandbox-session-keys",
       key: "approval-hmac",
       optional: true,
@@ -96,8 +96,8 @@ describe("MCP proxy Deployment", () => {
   it("renders env the proxy's config schema accepts (HTTPS on 443, server's internal port)", () => {
     const config = loadConfig({
       ...plain(envOf(ms, "kobe-mcp-proxy")),
-      KOBE_SESSION_VERIFY_KEY_MCP_PROXY: generateSessionKeyPair().publicPem,
-      KOBE_MCP_INTERNAL_KEY: "i".repeat(48),
+      KAIJU_SESSION_VERIFY_KEY_MCP_PROXY: generateSessionKeyPair().publicPem,
+      KAIJU_MCP_INTERNAL_KEY: "i".repeat(48),
     });
     expect(config.serverUrl).toBe("http://kobe-server:8082");
     expect(config.internalPort).toBe(8081);
@@ -121,11 +121,11 @@ describe("MCP proxy Deployment", () => {
     const own = render({ "mcpProxy.internalKeySecret": "my-key" });
     expect(find(own, "Secret", "kobe-mcp-proxy-internal")).toBeUndefined();
     expect(
-      envOf(own, "kobe-mcp-proxy").find((e) => e.name === "KOBE_MCP_INTERNAL_KEY")?.valueFrom,
+      envOf(own, "kobe-mcp-proxy").find((e) => e.name === "KAIJU_MCP_INTERNAL_KEY")?.valueFrom,
     ).toEqual({ secretKeyRef: { name: "my-key", key: "key" } });
     // An operator's Secret may lack routes-key: optional, and the services fall back to `key`.
     expect(
-      envOf(own, "kobe-mcp-proxy").find((e) => e.name === "KOBE_MCP_ROUTES_KEY")?.valueFrom,
+      envOf(own, "kobe-mcp-proxy").find((e) => e.name === "KAIJU_MCP_ROUTES_KEY")?.valueFrom,
     ).toEqual({ secretKeyRef: { name: "my-key", key: "routes-key", optional: true } });
   });
 });
@@ -135,13 +135,13 @@ describe("server internal listener", () => {
 
   it("serves the internal port with the key; the scheduler gets neither", () => {
     const server = envOf(ms, "kobe-server");
-    expect(plain(server).KOBE_INTERNAL_PORT).toBe("8082");
+    expect(plain(server).KAIJU_INTERNAL_PORT).toBe("8082");
     // The proxy's internal routes on their own port (KOBE-693).
-    expect(plain(server).KOBE_MCP_PROXY_URL).toBe("http://kobe-mcp-proxy:8081");
-    expect(server.find((e) => e.name === "KOBE_MCP_PROXY_INTERNAL_KEY")?.valueFrom).toEqual({
+    expect(plain(server).KAIJU_MCP_PROXY_URL).toBe("http://kobe-mcp-proxy:8081");
+    expect(server.find((e) => e.name === "KAIJU_MCP_PROXY_INTERNAL_KEY")?.valueFrom).toEqual({
       secretKeyRef: { name: "kobe-mcp-proxy-internal", key: "key" },
     });
-    expect(server.find((e) => e.name === "KOBE_MCP_PROXY_ROUTES_KEY")?.valueFrom).toEqual({
+    expect(server.find((e) => e.name === "KAIJU_MCP_PROXY_ROUTES_KEY")?.valueFrom).toEqual({
       secretKeyRef: { name: "kobe-mcp-proxy-internal", key: "routes-key", optional: true },
     });
     expect(pod(ms, "kobe-mcp-proxy")?.containers[0].ports).toContainEqual({
@@ -162,7 +162,7 @@ describe("server internal listener", () => {
       port: 8082,
       targetPort: "internal",
     });
-    expect(envOf(ms, "kobe-scheduler").some((e) => e.name === "KOBE_MCP_PROXY_INTERNAL_KEY")).toBe(
+    expect(envOf(ms, "kobe-scheduler").some((e) => e.name === "KAIJU_MCP_PROXY_INTERNAL_KEY")).toBe(
       false,
     );
   });
@@ -179,15 +179,15 @@ describe("server -> proxy routes (KOBE-693)", () => {
     }
     const config = loadServerConfig({
       ...env,
-      KOBE_DATABASE_URL: "postgres://app@db:5432/kobe",
-      KOBE_DATABASE_MIGRATE_URL: "postgres://owner@db:5432/kobe",
+      KAIJU_DATABASE_URL: "postgres://app@db:5432/kobe",
+      KAIJU_DATABASE_MIGRATE_URL: "postgres://owner@db:5432/kobe",
     });
     expect(config.mcpProxyUrl).toBe("http://kobe-mcp-proxy:8081");
     expect(config.mcpProxyRoutesKey).toBe("kobe-mcp-proxy-internal/routes-key".padEnd(48, "x"));
     expect(config.mcpProxyInternalKey).toBe("kobe-mcp-proxy-internal/key".padEnd(48, "x"));
     // The proxy authenticates the server's routes with the same Secret key.
     expect(
-      envOf(ms, "kobe-mcp-proxy").find((e) => e.name === "KOBE_MCP_ROUTES_KEY")?.valueFrom
+      envOf(ms, "kobe-mcp-proxy").find((e) => e.name === "KAIJU_MCP_ROUTES_KEY")?.valueFrom
         ?.secretKeyRef.key,
     ).toBe("routes-key");
   });
@@ -250,14 +250,14 @@ describe("MCP proxy NetworkPolicy", () => {
       { "mcpProxy.allowedInternalCidrs": ["10.0.5.0/24"], "mcpProxy.allowedPorts": [443, 8443] },
     );
     expect(plain(envOf(ms, "kobe-mcp-proxy"))).toMatchObject({
-      KOBE_MCP_ALLOWED_INTERNAL_CIDRS: "10.0.5.0/24",
-      KOBE_MCP_ALLOWED_PORTS: "443,8443",
+      KAIJU_MCP_ALLOWED_INTERNAL_CIDRS: "10.0.5.0/24",
+      KAIJU_MCP_ALLOWED_PORTS: "443,8443",
     });
     // The server validates registered connector URLs against the same policy (KOBE-100).
     expect(plain(envOf(ms, "kobe-server"))).toMatchObject({
-      KOBE_MCP_ALLOWED_INTERNAL_CIDRS: "10.0.5.0/24",
-      KOBE_MCP_ALLOWED_PORTS: "443,8443",
-      KOBE_MCP_ALLOW_INSECURE_HTTP: "false",
+      KAIJU_MCP_ALLOWED_INTERNAL_CIDRS: "10.0.5.0/24",
+      KAIJU_MCP_ALLOWED_PORTS: "443,8443",
+      KAIJU_MCP_ALLOW_INSECURE_HTTP: "false",
     });
     expect(policy(ms)?.egress).toContainEqual({
       to: [{ ipBlock: { cidr: "10.0.5.0/24" } }],

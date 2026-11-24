@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createOffboarding } from "./index.js";
 import { purgeDeparted } from "./purge.js";
 
-/** KOBE-243: with KOBE_RETENTION_PAUSED nothing is judged or deleted (no db, provider or bucket is touched). */
+/** KOBE-243: with KAIJU_RETENTION_PAUSED nothing is judged or deleted (no db, provider or bucket is touched). */
 const boom = new Proxy({}, { get: () => () => Promise.reject(new Error("must not be touched")) });
 const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
 

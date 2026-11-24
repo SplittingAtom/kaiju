@@ -34,7 +34,7 @@ export function memberRateRule(perMinute: number): RateBucketRule {
  * The Postgres limiter's own connection settings in the gateway (KOBE-810): a small pool apart from
  * the gateway's main one, so a slow or saturated database refuses a model request within about
  * 2 s (acquire, then statement) instead of the main pool's 10 s acquire and 120 s statement limits.
- * Its size is `KOBE_MODEL_GATEWAY_RATE_POOL_MAX` (chart `modelGateway.database.ratePoolMax`, 2).
+ * Its size is `KAIJU_MODEL_GATEWAY_RATE_POOL_MAX` (chart `modelGateway.database.ratePoolMax`, 2).
  */
 export const MEMBER_RATE_DB = { acquireTimeoutMs: 2_000, statementTimeoutMs: 2_000 };
 

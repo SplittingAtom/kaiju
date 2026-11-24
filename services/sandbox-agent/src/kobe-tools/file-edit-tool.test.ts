@@ -116,9 +116,9 @@ describe("propose_file_edit (KOBE-462)", () => {
   });
 
   it("is registered only with the file_edits flag, read once", () => {
-    const env: Record<string, string | undefined> = { KOBE_TOOLS_FILE_EDITS: "1" };
+    const env: Record<string, string | undefined> = { KAIJU_TOOLS_FILE_EDITS: "1" };
     expect(fileEditsEnabled(env)).toBe(true);
-    expect(env.KOBE_TOOLS_FILE_EDITS).toBeUndefined();
+    expect(env.KAIJU_TOOLS_FILE_EDITS).toBeUndefined();
     const names = (fileEdits: boolean) => {
       const registered: string[] = [];
       registerKaijuTools(

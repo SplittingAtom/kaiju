@@ -39,14 +39,14 @@ verdict_on_exit() { # exit-status label: the FAILED verdict for a run that ended
 field() { sed -n "s/^$1=//p" <<<"$2" | sed -n 1p; } # key, output → value
 # An expected failure (KOBE-231): a check of a criterion the product does not meet yet, filed as a
 # product failure. It stays and runs. While the product fails it, it prints XFAIL with the reason
-# and does not fail the run (CI stays green), except under KOBE_GATE_STRICT=1 (a sign-off run),
+# and does not fail the run (CI stays green), except under KAIJU_GATE_STRICT=1 (a sign-off run),
 # where it is an ordinary FAIL. Once it passes it prints XPASS and fails, so the marker goes.
 xfailed=0
 xcontains() { # name, regex, actual output, reason (the filed failure)
   if grep -Eq "$2" <<<"$3"; then
     echo "XPASS $1: passes now, remove its expected-fail marker ($4)"
     failed=1
-  elif [[ "${KOBE_GATE_STRICT:-0}" == 1 ]]; then
+  elif [[ "${KAIJU_GATE_STRICT:-0}" == 1 ]]; then
     fail "$1: got [$(got "$2" "$3")] ($4)"
   else
     echo "XFAIL $1: got [$(got "$2" "$3")] ($4)"

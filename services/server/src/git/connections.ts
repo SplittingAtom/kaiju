@@ -104,7 +104,7 @@ const refuse = (status: Answer["status"], code: string, message: string) =>
 const UNAVAILABLE = refuse(
   503,
   "git_unavailable",
-  "Git connections need the site's envelope key (KOBE_ENVELOPE_KEY), which is not configured.",
+  "Git connections need the site's envelope key (KAIJU_ENVELOPE_KEY), which is not configured.",
 );
 const NOT_FOUND = refuse(404, "connection_not_found", "That git connection does not exist.");
 const RATE_LIMITED = refuse(

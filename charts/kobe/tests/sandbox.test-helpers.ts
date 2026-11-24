@@ -56,4 +56,4 @@ export const container = (ms: Manifest[], deployment: string) =>
 export const envOf = (ms: Manifest[], deployment: string): { name: string; value?: string }[] =>
   container(ms, deployment)?.env ?? [];
 export const sandboxConfig = (ms: Manifest[]) =>
-  JSON.parse(envOf(ms, "kobe-server").find((e) => e.name === "KOBE_SANDBOX_CONFIG")?.value ?? "{}");
+  JSON.parse(envOf(ms, "kobe-server").find((e) => e.name === "KAIJU_SANDBOX_CONFIG")?.value ?? "{}");

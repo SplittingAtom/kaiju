@@ -10,8 +10,8 @@ type CleanupSignal = (typeof CLEANUP_SIGNALS)[number];
 const SIGNAL_NUMBERS: Record<CleanupSignal, number> = { SIGHUP: 1, SIGINT: 2, SIGTERM: 15 };
 
 /**
- * A private (0700) directory for the decrypted dump, under `base` (KOBE_TMPDIR) or the OS temp
- * directory. Point KOBE_TMPDIR at a memory-backed volume so plaintext never reaches a disk.
+ * A private (0700) directory for the decrypted dump, under `base` (KAIJU_TMPDIR) or the OS temp
+ * directory. Point KAIJU_TMPDIR at a memory-backed volume so plaintext never reaches a disk.
  */
 export async function makePrivateWorkDir(base?: string): Promise<string> {
   const dir = await mkdtemp(join(base ?? tmpdir(), "kaiju-restore-"));

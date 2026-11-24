@@ -5,16 +5,16 @@ import { panelOf } from "./support/panel.js";
 /**
  * KOBE-276 ac-3: a member shares a thumbs down as an eval case, clears the rating (the chat no
  * longer offers Withdraw), finds the case under My shared cases and withdraws it there through
- * the console's confirm dialog. `KOBE_AGENT` is the name of a team agent KOBE_USER may chat with
+ * the console's confirm dialog. `KAIJU_AGENT` is the name of a team agent KAIJU_USER may chat with
  * (not a gallery agent). Spends one short model turn. Run on gate1:
- * `KOBE_AGENT=… npx playwright test my-shared-cases`.
+ * `KAIJU_AGENT=… npx playwright test my-shared-cases`.
  */
-const AGENT = process.env["KOBE_AGENT"];
+const AGENT = process.env["KAIJU_AGENT"];
 
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 test("share, clear the rating, withdraw from My shared cases", async ({ chat, page }) => {
-  test.skip(!AGENT, "set KOBE_AGENT to a team agent's name");
+  test.skip(!AGENT, "set KAIJU_AGENT to a team agent's name");
   await chat.open();
   // The agent picker sits in the composer's toolbar (KOBE-418).
   await (await chat.selectors()).getByRole("button", { name: /^Chat with:/ }).click();

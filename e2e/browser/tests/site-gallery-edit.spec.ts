@@ -3,7 +3,7 @@ import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
 
 /**
- * KOBE-494: a site admin (KOBE_USER, the gate1 Owner) edits a gallery agent in the Site Console.
+ * KOBE-494: a site admin (KAIJU_USER, the gate1 Owner) edits a gallery agent in the Site Console.
  * The Agents page's Site tab (the gallery list since KOBE-570) → Edit opens the two-tab agent creator; the spec adds a marker to the system
  * prompt, saves the draft (the agent is now Customized), publishes a new version, sees the
  * Customized badge in the list, and checks that a fork made now copies the new version. At the end
@@ -14,7 +14,7 @@ import { panelOf } from "./support/panel.js";
 /** The gallery list: the Agents page's Site tab (KOBE-570); the editor stays in the console. */
 const GALLERY = "/agents?tab=site";
 const EDITOR = "/admin/site/gallery";
-const AGENT = process.env["KOBE_GALLERY_AGENT"] ?? "Kobe";
+const AGENT = process.env["KAIJU_GALLERY_AGENT"] ?? "Kobe";
 const TEAM_KEY = "kobe.lastTeamId";
 
 async function openGallery(page: Page): Promise<void> {

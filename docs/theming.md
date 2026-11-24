@@ -31,7 +31,7 @@ Three layers, one direction:
 Members keep their own light/dark choice; a theme always defines both.
 
 The web reads the branding from the server on every server render (`GET /v1/site/branding` through
-`KOBE_SERVER_URL`, see [install.md](install.md#branding-and-theming)), with a 1 s timeout and a
+`KAIJU_SERVER_URL`, see [install.md](install.md#branding-and-theming)), with a 1 s timeout and a
 30 s stale-while-revalidate cache per web replica; when the server cannot be reached it serves
 Kaiju's defaults and logs at most once a minute. So the first paint is already themed.
 
@@ -458,7 +458,7 @@ Settings (`site_settings`): `branding.app_name` (the trimmed name), `branding.sh
 unreadable stored value falls back to the default and is logged, never a failed page.
 
 The chart can seed them for GitOps installs: `branding.appName`, `branding.preset` (one of the seven
-ids) and `branding.showName` (only `false` is passed on) become the server's `KOBE_BRANDING_*`
+ids) and `branding.showName` (only `false` is passed on) become the server's `KAIJU_BRANDING_*`
 environment. At start the API server writes each set value **only while that setting is unset**
 (audited as the system); an admin's change always wins and is never overwritten. Reset returns to
 the chart's values at once; without chart values the keys stay unset (Kaiju's defaults). Details in

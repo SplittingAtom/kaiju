@@ -33,7 +33,7 @@ const probes: { url: string; apiKey: string | undefined }[] = [];
 let probeAnswer: ProbeResult = { ok: false, failure: "auth_required" };
 
 function envelope() {
-  const loaded = loadEnvelope({ KOBE_ENVELOPE_KEY: "e".repeat(48) });
+  const loaded = loadEnvelope({ KAIJU_ENVELOPE_KEY: "e".repeat(48) });
   if (!loaded) throw new Error("envelope not loaded");
   return loaded;
 }

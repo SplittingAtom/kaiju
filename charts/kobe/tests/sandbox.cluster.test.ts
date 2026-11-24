@@ -120,7 +120,7 @@ describe("session keys Secret", () => {
         configMapKeyRef?: { name: string; key: string };
       };
     }[];
-    const session = env.filter((e) => e.name.startsWith("KOBE_SESSION_"));
+    const session = env.filter((e) => e.name.startsWith("KAIJU_SESSION_"));
     expect(session.filter((e) => e.valueFrom?.configMapKeyRef)).toEqual([]);
     const resolved = Object.fromEntries(
       session.map((e) => {
@@ -130,7 +130,7 @@ describe("session keys Secret", () => {
       }),
     );
     const config = loadSandboxConfig({
-      KOBE_SANDBOX_CONFIG: JSON.stringify(sandboxConfig(ms)),
+      KAIJU_SANDBOX_CONFIG: JSON.stringify(sandboxConfig(ms)),
       ...resolved,
     });
     for (const a of AUDIENCES) {
@@ -148,15 +148,15 @@ describe("session keys Secret", () => {
     expect(find(ms, "Secret", "kobe-sandbox-session-keys")).toBeUndefined();
     expect(find(ms, "ConfigMap", "kobe-sandbox-session-verify-keys")).toBeUndefined();
     expect(container(ms, "kobe-server")?.env).toContainEqual({
-      name: "KOBE_SESSION_SIGNING_KEY_SANDBOX_WIRE",
+      name: "KAIJU_SESSION_SIGNING_KEY_SANDBOX_WIRE",
       valueFrom: { secretKeyRef: { name: "my-keys", key: "sandbox-wire.key" } },
     });
     expect(container(ms, "kobe-server")?.env).toContainEqual({
-      name: "KOBE_SESSION_VERIFY_KEY_SANDBOX_WIRE",
+      name: "KAIJU_SESSION_VERIFY_KEY_SANDBOX_WIRE",
       valueFrom: { secretKeyRef: { name: "my-keys", key: "sandbox-wire.pub", optional: true } },
     });
     expect(container(ms, "kobe-mcp-proxy")?.env).toContainEqual({
-      name: "KOBE_SESSION_VERIFY_KEY_MCP_PROXY",
+      name: "KAIJU_SESSION_VERIFY_KEY_MCP_PROXY",
       valueFrom: { configMapKeyRef: { name: "my-verify-keys", key: "mcp-proxy" } },
     });
     expect(renderError({ "sandbox.sessionKeysSecret": "my-keys" })).toMatch(

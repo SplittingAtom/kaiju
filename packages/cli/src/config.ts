@@ -20,17 +20,17 @@ export const USAGE = `Usage:
                        passkey sign-in work again; audited with --operator (default: OS user)
 
 Environment:
-  both     KOBE_BACKUP_KEY_FILE      file with the backup key (openssl rand -base64 32), or
-           KOBE_BACKUP_KEY           the key itself; encrypts and signs backups. Keep it safe:
+  both     KAIJU_BACKUP_KEY_FILE      file with the backup key (openssl rand -base64 32), or
+           KAIJU_BACKUP_KEY           the key itself; encrypts and signs backups. Keep it safe:
                                      without it a backup cannot be restored
   backup, projects
-           KOBE_BACKUP_DATABASE_URL  role with BYPASSRLS (or superuser) that can read every table
+           KAIJU_BACKUP_DATABASE_URL  role with BYPASSRLS (or superuser) that can read every table
   restore, sso
-           KOBE_DB_MIGRATE_URL       the owner role (the chart's migrate-url), never the app role
-  both     KOBE_S3_BUCKET, KOBE_S3_ENDPOINT, KOBE_S3_REGION, KOBE_S3_PREFIX,
-           KOBE_S3_FORCE_PATH_STYLE, KOBE_S3_ACCESS_KEY_ID, KOBE_S3_SECRET_ACCESS_KEY
-           KOBE_PG_BIN_DIR           directory with pg_dump, pg_restore and psql (default: PATH)
-  restore  KOBE_TMPDIR               where the decrypted dump is held during the restore
+           KAIJU_DB_MIGRATE_URL       the owner role (the chart's migrate-url), never the app role
+  both     KAIJU_S3_BUCKET, KAIJU_S3_ENDPOINT, KAIJU_S3_REGION, KAIJU_S3_PREFIX,
+           KAIJU_S3_FORCE_PATH_STYLE, KAIJU_S3_ACCESS_KEY_ID, KAIJU_S3_SECRET_ACCESS_KEY
+           KAIJU_PG_BIN_DIR           directory with pg_dump, pg_restore and psql (default: PATH)
+  restore  KAIJU_TMPDIR               where the decrypted dump is held during the restore
                                      (default: OS temp dir; use a memory-backed volume)
 
 See docs/backup-restore.md.`;
@@ -112,19 +112,19 @@ export function tlsWarning(databaseUrl: string): string | null {
 }
 
 const s3Schema = z.object({
-  KOBE_S3_ENDPOINT: z
+  KAIJU_S3_ENDPOINT: z
     .union([z.literal(""), z.url({ protocol: /^https?$/ })])
     .refine(
       (u) => u === "" || (new URL(u).username === "" && new URL(u).password === ""),
-      "must not contain credentials (use KOBE_S3_ACCESS_KEY_ID / KOBE_S3_SECRET_ACCESS_KEY)",
+      "must not contain credentials (use KAIJU_S3_ACCESS_KEY_ID / KAIJU_S3_SECRET_ACCESS_KEY)",
     )
     .default(""),
-  KOBE_S3_REGION: z.string().min(1).default("us-east-1"),
-  KOBE_S3_BUCKET: z.string().min(1).max(255),
-  KOBE_S3_PREFIX: z.string().max(1024).default(""),
-  KOBE_S3_FORCE_PATH_STYLE: z.enum(["true", "false"]).default("true"),
-  KOBE_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
-  KOBE_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  KAIJU_S3_REGION: z.string().min(1).default("us-east-1"),
+  KAIJU_S3_BUCKET: z.string().min(1).max(255),
+  KAIJU_S3_PREFIX: z.string().max(1024).default(""),
+  KAIJU_S3_FORCE_PATH_STYLE: z.enum(["true", "false"]).default("true"),
+  KAIJU_S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  KAIJU_S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
 });
 
 /** Messages name the setting only, never its value (secrets must not reach logs). */
@@ -134,24 +134,24 @@ function fail(error: z.ZodError): never {
 }
 
 function readS3(env: Env): S3Settings | null {
-  if (!env.KOBE_S3_BUCKET) return null;
+  if (!env.KAIJU_S3_BUCKET) return null;
   const parsed = s3Schema.safeParse(env);
   if (!parsed.success) fail(parsed.error);
   const s = parsed.data;
-  if (Boolean(s.KOBE_S3_ACCESS_KEY_ID) !== Boolean(s.KOBE_S3_SECRET_ACCESS_KEY)) {
+  if (Boolean(s.KAIJU_S3_ACCESS_KEY_ID) !== Boolean(s.KAIJU_S3_SECRET_ACCESS_KEY)) {
     throw new Error(
-      "Invalid configuration: set both KOBE_S3_ACCESS_KEY_ID and KOBE_S3_SECRET_ACCESS_KEY, or neither",
+      "Invalid configuration: set both KAIJU_S3_ACCESS_KEY_ID and KAIJU_S3_SECRET_ACCESS_KEY, or neither",
     );
   }
   return {
-    endpoint: s.KOBE_S3_ENDPOINT,
-    region: s.KOBE_S3_REGION,
-    bucket: s.KOBE_S3_BUCKET,
-    prefix: s.KOBE_S3_PREFIX,
-    forcePathStyle: s.KOBE_S3_FORCE_PATH_STYLE === "true",
+    endpoint: s.KAIJU_S3_ENDPOINT,
+    region: s.KAIJU_S3_REGION,
+    bucket: s.KAIJU_S3_BUCKET,
+    prefix: s.KAIJU_S3_PREFIX,
+    forcePathStyle: s.KAIJU_S3_FORCE_PATH_STYLE === "true",
     credentials:
-      s.KOBE_S3_ACCESS_KEY_ID && s.KOBE_S3_SECRET_ACCESS_KEY
-        ? { accessKeyId: s.KOBE_S3_ACCESS_KEY_ID, secretAccessKey: s.KOBE_S3_SECRET_ACCESS_KEY }
+      s.KAIJU_S3_ACCESS_KEY_ID && s.KAIJU_S3_SECRET_ACCESS_KEY
+        ? { accessKeyId: s.KAIJU_S3_ACCESS_KEY_ID, secretAccessKey: s.KAIJU_S3_SECRET_ACCESS_KEY }
         : null,
   };
 }
@@ -164,7 +164,7 @@ function readUrl(env: Env, name: string): string {
 
 /** A warning when the key file is readable by group or others (null when private). */
 export function keyFileWarning(env: Env, statMode: (path: string) => number): string | null {
-  const file = env.KOBE_BACKUP_KEY_FILE;
+  const file = env.KAIJU_BACKUP_KEY_FILE;
   if (!file) return null;
   let mode: number;
   try {
@@ -174,32 +174,32 @@ export function keyFileWarning(env: Env, statMode: (path: string) => number): st
   }
   return (mode & 0o077) === 0
     ? null
-    : `WARNING: KOBE_BACKUP_KEY_FILE is readable by group or others (mode ${(mode & 0o777).toString(8)}); chmod 600 it`;
+    : `WARNING: KAIJU_BACKUP_KEY_FILE is readable by group or others (mode ${(mode & 0o777).toString(8)}); chmod 600 it`;
 }
 
 /** The operator's backup key: from a file or the environment, never from the command line. */
 export function readBackupKey(env: Env, readKeyFile: (path: string) => string): Buffer {
-  const file = env.KOBE_BACKUP_KEY_FILE;
-  const value = env.KOBE_BACKUP_KEY;
+  const file = env.KAIJU_BACKUP_KEY_FILE;
+  const value = env.KAIJU_BACKUP_KEY;
   if (file && value) {
-    throw new Error("Invalid configuration: set KOBE_BACKUP_KEY_FILE or KOBE_BACKUP_KEY, not both");
+    throw new Error("Invalid configuration: set KAIJU_BACKUP_KEY_FILE or KAIJU_BACKUP_KEY, not both");
   }
   if (!file && !value) {
     throw new Error(
-      "Invalid configuration: backups are always encrypted and signed; set KOBE_BACKUP_KEY_FILE (or KOBE_BACKUP_KEY) to a key from `openssl rand -base64 32`",
+      "Invalid configuration: backups are always encrypted and signed; set KAIJU_BACKUP_KEY_FILE (or KAIJU_BACKUP_KEY) to a key from `openssl rand -base64 32`",
     );
   }
   let text: string;
   try {
     text = file ? readKeyFile(file) : (value as string);
   } catch {
-    throw new Error("Invalid configuration: KOBE_BACKUP_KEY_FILE could not be read");
+    throw new Error("Invalid configuration: KAIJU_BACKUP_KEY_FILE could not be read");
   }
   try {
     return parseKeyMaterial(text);
   } catch (err) {
     throw new Error(
-      `Invalid configuration: ${file ? "KOBE_BACKUP_KEY_FILE" : "KOBE_BACKUP_KEY"}: ${(err as Error).message}`,
+      `Invalid configuration: ${file ? "KAIJU_BACKUP_KEY_FILE" : "KAIJU_BACKUP_KEY"}: ${(err as Error).message}`,
       { cause: err },
     );
   }
@@ -223,7 +223,7 @@ export function parseCommand(
   readKeyFile: (path: string) => string = (path) => readFileSync(path, "utf8"),
 ): Command {
   const [command, ...rest] = argv;
-  const pgBinDir = env.KOBE_PG_BIN_DIR || undefined;
+  const pgBinDir = env.KAIJU_PG_BIN_DIR || undefined;
   if (command === "backup") {
     const flags = parseFlags(rest, {
       out: { type: "string" },
@@ -234,13 +234,13 @@ export function parseCommand(
     const s3 = readS3(env);
     if (!s3 && flags["no-objects"] !== true) {
       throw usageError(
-        "Object storage is not configured: set KOBE_S3_BUCKET (and KOBE_S3_ENDPOINT, credentials), or pass --no-objects to back up Postgres only",
+        "Object storage is not configured: set KAIJU_S3_BUCKET (and KAIJU_S3_ENDPOINT, credentials), or pass --no-objects to back up Postgres only",
       );
     }
     return {
       command,
       out: flags.out,
-      databaseUrl: readUrl(env, "KOBE_BACKUP_DATABASE_URL"),
+      databaseUrl: readUrl(env, "KAIJU_BACKUP_DATABASE_URL"),
       s3: flags["no-objects"] === true ? null : s3,
       pgBinDir,
       key: readBackupKey(env, readKeyFile),
@@ -269,12 +269,12 @@ export function parseCommand(
     return {
       command,
       from: flags.from,
-      databaseUrl: readUrl(env, "KOBE_DB_MIGRATE_URL"),
+      databaseUrl: readUrl(env, "KAIJU_DB_MIGRATE_URL"),
       s3: flags["no-objects"] === true ? null : readS3(env),
       allowObjectMismatch: flags["allow-object-mismatch"] === true,
       skipObjects: flags["no-objects"] === true,
       pgBinDir,
-      tmpDir: env.KOBE_TMPDIR || undefined,
+      tmpDir: env.KAIJU_TMPDIR || undefined,
       key: readBackupKey(env, readKeyFile),
       operator,
       expectAuditHead: head ? { seq: Number(head[1]), hash: head[2] ?? "" } : undefined,
@@ -286,7 +286,7 @@ export function parseCommand(
     const flags = parseFlags(flagArgs, { json: { type: "boolean", default: false } });
     return {
       command: "projects-restricted",
-      databaseUrl: readUrl(env, "KOBE_BACKUP_DATABASE_URL"),
+      databaseUrl: readUrl(env, "KAIJU_BACKUP_DATABASE_URL"),
       json: flags.json === true,
     };
   }
@@ -302,7 +302,7 @@ export function parseCommand(
     }
     return {
       command: "sso-allow-local-sign-in",
-      databaseUrl: readUrl(env, "KOBE_DB_MIGRATE_URL"),
+      databaseUrl: readUrl(env, "KAIJU_DB_MIGRATE_URL"),
       operator,
     };
   }

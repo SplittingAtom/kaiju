@@ -6,12 +6,12 @@ import { pageApi, toolTurn } from "./support/gate5.js";
 /**
  * KOBE-585 (workspaces lane WS-2): the owner asks the agent for a small markdown artifact and adds
  * it to a new project (every workspace member reads it, KOBE-587, so the second member can) with
- * Add to project on the artifact header. The second member signs in (KOBE_USER2 / KOBE_PW2, as the
+ * Add to project on the artifact header. The second member signs in (KAIJU_USER2 / KAIJU_PW2, as the
  * KOBE-221 sharing spec), finds the file in the Projects tree of Files, opens it read-only and
  * cannot save over it (403). afterEach archives the project. One short model turn.
  */
-const SECOND_USER = process.env["KOBE_USER2"];
-const SECOND_PW = process.env["KOBE_PW2"];
+const SECOND_USER = process.env["KAIJU_USER2"];
+const SECOND_PW = process.env["KAIJU_PW2"];
 
 let owner: Page | null = null;
 let projectId: string | null = null;
@@ -43,7 +43,7 @@ test("Add to project: the owner adds an artifact; another member reads it under 
   page,
   browser,
 }) => {
-  test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!SECOND_USER || !SECOND_PW, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const stem = `kobe-585-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   await chat.open();
   owner = page;

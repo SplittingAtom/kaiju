@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 
-// Render tests for retention.paused (KOBE-243): chart value -> KOBE_RETENTION_PAUSED; and the
-// table sweeps (KOBE-741): retention.sweeps.* -> KOBE_RETENTION_*_DAYS/_MONTHS (0 = off).
+// Render tests for retention.paused (KOBE-243): chart value -> KAIJU_RETENTION_PAUSED; and the
+// table sweeps (KOBE-741): retention.sweeps.* -> KAIJU_RETENTION_*_DAYS/_MONTHS (0 = off).
 
 const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
 const HELM = process.env.HELM_BIN ?? "helm";
@@ -43,24 +43,24 @@ function envOf(
 }
 
 const pausedOf = (deployment: string, values: Record<string, string> = {}) =>
-  envOf(deployment, "KOBE_RETENTION_PAUSED", values);
+  envOf(deployment, "KAIJU_RETENTION_PAUSED", values);
 
 describe("retention.paused", () => {
   it.each(["kobe-server", "kobe-scheduler"])("is false by default on %s", (name) => {
     expect(pausedOf(name)).toBe("false");
   });
 
-  it.each(["kobe-server", "kobe-scheduler"])("sets KOBE_RETENTION_PAUSED on %s", (name) => {
+  it.each(["kobe-server", "kobe-scheduler"])("sets KAIJU_RETENTION_PAUSED on %s", (name) => {
     expect(pausedOf(name, { "retention.paused": "true" })).toBe("true");
   });
 });
 
 describe("retention.sweeps (KOBE-741)", () => {
   const SWEEPS = {
-    KOBE_RETENTION_EVENTS_DAYS: "30",
-    KOBE_RETENTION_READ_NOTIFICATIONS_DAYS: "180",
-    KOBE_RETENTION_RUN_USAGE_MONTHS: "13",
-    KOBE_RETENTION_EVAL_HISTORY_MONTHS: "12",
+    KAIJU_RETENTION_EVENTS_DAYS: "30",
+    KAIJU_RETENTION_READ_NOTIFICATIONS_DAYS: "180",
+    KAIJU_RETENTION_RUN_USAGE_MONTHS: "13",
+    KAIJU_RETENTION_EVAL_HISTORY_MONTHS: "12",
   };
 
   it("renders the owner's periods by default on the server", () => {
@@ -76,18 +76,18 @@ describe("retention.sweeps (KOBE-741)", () => {
       "retention.sweeps.runUsage.months": "24",
       "retention.sweeps.evalHistory.enabled": "false",
     };
-    expect(envOf("kobe-server", "KOBE_RETENTION_EVENTS_DAYS", values)).toBe("60");
-    expect(envOf("kobe-server", "KOBE_RETENTION_READ_NOTIFICATIONS_DAYS", values)).toBe("0");
-    expect(envOf("kobe-server", "KOBE_RETENTION_RUN_USAGE_MONTHS", values)).toBe("24");
-    expect(envOf("kobe-server", "KOBE_RETENTION_EVAL_HISTORY_MONTHS", values)).toBe("0");
+    expect(envOf("kobe-server", "KAIJU_RETENTION_EVENTS_DAYS", values)).toBe("60");
+    expect(envOf("kobe-server", "KAIJU_RETENTION_READ_NOTIFICATIONS_DAYS", values)).toBe("0");
+    expect(envOf("kobe-server", "KAIJU_RETENTION_RUN_USAGE_MONTHS", values)).toBe("24");
+    expect(envOf("kobe-server", "KAIJU_RETENTION_EVAL_HISTORY_MONTHS", values)).toBe("0");
   });
 
   it("refuses a period outside the schema's range", () => {
     expect(() =>
-      envOf("kobe-server", "KOBE_RETENTION_EVENTS_DAYS", { "retention.sweeps.events.days": "1" }),
+      envOf("kobe-server", "KAIJU_RETENTION_EVENTS_DAYS", { "retention.sweeps.events.days": "1" }),
     ).toThrow();
     expect(() =>
-      envOf("kobe-server", "KOBE_RETENTION_RUN_USAGE_MONTHS", {
+      envOf("kobe-server", "KAIJU_RETENTION_RUN_USAGE_MONTHS", {
         "retention.sweeps.runUsage.months": "3",
       }),
     ).toThrow();

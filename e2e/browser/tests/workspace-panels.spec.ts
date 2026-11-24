@@ -4,7 +4,7 @@ import { longAnswer } from "./support/gate5.js";
 
 /**
  * KOBE-452: the consoles, Agents and Skills open as a large panel over the workspace instead of
- * a page of their own, so the member stays in context. `KOBE_USER` must be a team admin of the
+ * a page of their own, so the member stays in context. `KAIJU_USER` must be a team admin of the
  * active team (the Team console on the rail's top line). Runs against gate1 (README.md).
  */
 /** The Team console's Members section (its h1). */

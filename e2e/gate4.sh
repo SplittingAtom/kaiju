@@ -7,19 +7,19 @@
 # when every part does. docs/gates/gate-4.md lists the parts and what they prove.
 #
 #   e2e/gate4.sh                         run what the selected stories need, then the verdict
-#   KOBE_GATE4_STORIES="U4 U7" ...       some stories only
-#   KOBE_GATE4_LOGS=<dir> ...            reuse runs already made: <dir>/{gate1,gate2,gate3,gate4,restore}.log
-#   KOBE_GATE4_VERDICT_ONLY=1 ...        no cluster: the verdict from KOBE_GATE4_LOGS (CI's `stories` job)
+#   KAIJU_GATE4_STORIES="U4 U7" ...       some stories only
+#   KAIJU_GATE4_LOGS=<dir> ...            reuse runs already made: <dir>/{gate1,gate2,gate3,gate4,restore}.log
+#   KAIJU_GATE4_VERDICT_ONLY=1 ...        no cluster: the verdict from KAIJU_GATE4_LOGS (CI's `stories` job)
 #
-# The runs take KOBE_GATE4_NS, _RELEASE, _CONTEXT, _MODEL, _OWNER_EMAIL, _OWNER_PASSWORD and pass
-# them on as each gate's own variables (KOBE_GATE1_NS, ...). A story with an expected failure
-# (XFAIL, a filed product failure) prints XFAIL and fails only under KOBE_GATE_STRICT=1.
+# The runs take KAIJU_GATE4_NS, _RELEASE, _CONTEXT, _MODEL, _OWNER_EMAIL, _OWNER_PASSWORD and pass
+# them on as each gate's own variables (KAIJU_GATE1_NS, ...). A story with an expected failure
+# (XFAIL, a filed product failure) prints XFAIL and fails only under KAIJU_GATE_STRICT=1.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-STORIES="${KOBE_GATE4_STORIES:-U1 U2 U3 U4 U5 U6 U7 U8 U9 U10 U11 U12 U13 U14 U15 U16}"
-LOGS="${KOBE_GATE4_LOGS:-}"
-OUT="${KOBE_GATE4_OUT:-${LOGS:-$(mktemp -d)}}"
+STORIES="${KAIJU_GATE4_STORIES:-U1 U2 U3 U4 U5 U6 U7 U8 U9 U10 U11 U12 U13 U14 U15 U16}"
+LOGS="${KAIJU_GATE4_LOGS:-}"
+OUT="${KAIJU_GATE4_OUT:-${LOGS:-$(mktemp -d)}}"
 mkdir -p "$OUT"
 
 # What each story's acceptance criteria are (spec §4), and the parts that prove them:
@@ -98,22 +98,22 @@ run_gate() { # log steps → runs that gate into $OUT/<log>.log (its exit status
   local log=$1 steps=$2 rc=0 n=${1#gate}
   if [[ "$log" == restore && "$(${KUBECTL:-kubectl} config current-context)" != k3d-* ]]; then
     # On a real cluster e2e/gate4-restore.sh is its own run (it needs other Kaiju servers stopped):
-    # give its log as KOBE_GATE4_LOGS/restore.log (docs/gates/gate-4.md).
+    # give its log as KAIJU_GATE4_LOGS/restore.log (docs/gates/gate-4.md).
     echo "==> restore: not run here (e2e/gate4-restore.sh is run on its own on a real cluster)"
     return 0
   fi
   echo "==> running $log${steps:+ (steps: $steps)} → $OUT/$log.log"
   local env=(
-    "KOBE_GATE${n}_NS=${KOBE_GATE4_NS:-kobe-dev}" "KOBE_GATE${n}_RELEASE=${KOBE_GATE4_RELEASE:-kobe}"
-    "KOBE_GATE${n}_MODEL=${KOBE_GATE4_MODEL:-fast}"
-    "KOBE_GATE${n}_OWNER_EMAIL=${KOBE_GATE4_OWNER_EMAIL:-owner@e2e.test}"
-    "KOBE_GATE${n}_OWNER_PASSWORD=${KOBE_GATE4_OWNER_PASSWORD:-e2e owner password}"
+    "KAIJU_GATE${n}_NS=${KAIJU_GATE4_NS:-kobe-dev}" "KAIJU_GATE${n}_RELEASE=${KAIJU_GATE4_RELEASE:-kobe}"
+    "KAIJU_GATE${n}_MODEL=${KAIJU_GATE4_MODEL:-fast}"
+    "KAIJU_GATE${n}_OWNER_EMAIL=${KAIJU_GATE4_OWNER_EMAIL:-owner@e2e.test}"
+    "KAIJU_GATE${n}_OWNER_PASSWORD=${KAIJU_GATE4_OWNER_PASSWORD:-e2e owner password}"
   )
-  [[ -n "${KOBE_GATE4_CONTEXT:-}" ]] && env+=("KOBE_GATE${n}_CONTEXT=$KOBE_GATE4_CONTEXT")
-  [[ -n "${KOBE_GATE4_CHART:-}" ]] && env+=("KOBE_GATE${n}_CHART=$KOBE_GATE4_CHART")
-  [[ -n "$steps" ]] && env+=("KOBE_GATE${n}_STEPS=$steps")
+  [[ -n "${KAIJU_GATE4_CONTEXT:-}" ]] && env+=("KAIJU_GATE${n}_CONTEXT=$KAIJU_GATE4_CONTEXT")
+  [[ -n "${KAIJU_GATE4_CHART:-}" ]] && env+=("KAIJU_GATE${n}_CHART=$KAIJU_GATE4_CHART")
+  [[ -n "$steps" ]] && env+=("KAIJU_GATE${n}_STEPS=$steps")
   if [[ "$log" == gate4 ]]; then
-    env "${env[@]}" KOBE_GATE4_STORIES="$steps" e2e/gate4/stories.sh >"$OUT/$log.log" 2>&1 || rc=$?
+    env "${env[@]}" KAIJU_GATE4_STORIES="$steps" e2e/gate4/stories.sh >"$OUT/$log.log" 2>&1 || rc=$?
   elif [[ "$log" == restore ]]; then
     # k3d: last, because it deletes this cluster and leaves a new one with the restored site.
     e2e/gate4-restore.sh >"$OUT/$log.log" 2>&1 || rc=$?
@@ -122,7 +122,7 @@ run_gate() { # log steps → runs that gate into $OUT/<log>.log (its exit status
   fi
   echo "     $log exited $rc"
 }
-if [[ "${KOBE_GATE4_VERDICT_ONLY:-0}" != 1 ]]; then
+if [[ "${KAIJU_GATE4_VERDICT_ONLY:-0}" != 1 ]]; then
   for log in gate1 gate2 gate3 gate4 restore; do
     [[ -n "$LOGS" && -s "$LOGS/$log.log" ]] && continue
     steps=""
@@ -181,7 +181,7 @@ for s in $STORIES; do
       why+=("$label: $oks ok")
     fi
   done < <(printf '%s\n' "${PARTS[@]}")
-  if [[ "$verdict" == XFAIL && "${KOBE_GATE_STRICT:-0}" == 1 ]]; then verdict=FAIL; fi
+  if [[ "$verdict" == XFAIL && "${KAIJU_GATE_STRICT:-0}" == 1 ]]; then verdict=FAIL; fi
   case "$verdict" in
     ok) echo "ok   $s $text"; proven=$((proven + 1)) ;;
     XFAIL) echo "XFAIL $s $text"; xfailed=$((xfailed + 1)) ;;
@@ -195,7 +195,7 @@ if ((failed)); then
   exit 1
 fi
 if ((xfailed)); then
-  echo "Gate 4: $proven of $n stories proven, $xfailed with expected failures (filed; KOBE_GATE_STRICT=1 fails them)"
+  echo "Gate 4: $proven of $n stories proven, $xfailed with expected failures (filed; KAIJU_GATE_STRICT=1 fails them)"
 else
   echo "Gate 4: all $n stories proven"
 fi

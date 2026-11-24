@@ -9,13 +9,13 @@ import { FAKE_MODEL, pageApi } from "./support/gate5.js";
  * them, live and after a reload.
  *
  * The app comes from the environment, as in `gate-apps/explorer.spec.ts` (nothing here names a
- * host): `KOBE_APPS_CONNECTOR` (the connector's name) and `KOBE_APPS_OPEN` (the prompt that makes
+ * host): `KAIJU_APPS_CONNECTOR` (the connector's name) and `KAIJU_APPS_OPEN` (the prompt that makes
  * the model call the app's opening tool). Without the connector's app the spec skips, unless
- * `KOBE_REQUIRE_APP=1`. One model run; it leaves a thread behind.
+ * `KAIJU_REQUIRE_APP=1`. One model run; it leaves a thread behind.
  */
-const CONNECTOR = process.env["KOBE_APPS_CONNECTOR"] ?? "e2e-apps";
+const CONNECTOR = process.env["KAIJU_APPS_CONNECTOR"] ?? "e2e-apps";
 const OPEN =
-  process.env["KOBE_APPS_OPEN"] ??
+  process.env["KAIJU_APPS_OPEN"] ??
   (FAKE_MODEL
     ? 'tool: mcp__e2e_apps__open_explorer {"depth":"5"}'
     : "In one sentence say what you will do, then open the lakehouse explorer, then say in one sentence what it shows.");
@@ -54,8 +54,8 @@ test("an answer with an MCP app shows only the app; Show response reveals the re
 }) => {
   await chat.open();
   const app = await theApp(page);
-  if (process.env["KOBE_REQUIRE_APP"] === "1") {
-    expect(app, `KOBE_REQUIRE_APP=1: the member needs the ${CONNECTOR} app`).toBeDefined();
+  if (process.env["KAIJU_REQUIRE_APP"] === "1") {
+    expect(app, `KAIJU_REQUIRE_APP=1: the member needs the ${CONNECTOR} app`).toBeDefined();
   }
   test.skip(app === undefined, `${CONNECTOR} has no app for this member in the active team.`);
   if (!app) return;

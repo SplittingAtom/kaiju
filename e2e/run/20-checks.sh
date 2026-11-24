@@ -170,7 +170,7 @@ spec:
       securityContext: { runAsNonRoot: true, runAsUser: 1000, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: sandbox
-          image: $KOBE_SANDBOX_IMAGE
+          image: $KAIJU_SANDBOX_IMAGE
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c", "dmesg | head -1; id -u; pi --version; sleep 600"]
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
@@ -179,7 +179,7 @@ spec:
 EOF
 }
 
-if [[ -n "${KOBE_SANDBOX_IMAGE:-}" ]]; then
+if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" ]]; then
   # A real agent-sandbox Sandbox (controller + CRD), not a hand-built pod.
   if ! setup=$(start_sandbox 2>&1); then fail "create agent-sandbox Sandbox: $setup"; fi
   $KUBECTL -n "$SANDBOX_NS" wait --for=condition=Ready sandbox/e2e --timeout=240s >/dev/null 2>&1 || true
@@ -192,9 +192,9 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" ]]; then
   contains "sandbox runs as uid 1000" '^1000$' "$out"
   contains "sandbox has Pi 1.4.x" '^1\.4\.' "$out"
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "KOBE_SANDBOX_IMAGE is not set (required in CI)"
+  fail "KAIJU_SANDBOX_IMAGE is not set (required in CI)"
 else
-  echo "SKIP sandbox checks (KOBE_SANDBOX_IMAGE not set)"
+  echo "SKIP sandbox checks (KAIJU_SANDBOX_IMAGE not set)"
 fi
 
 

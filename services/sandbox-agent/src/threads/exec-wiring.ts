@@ -84,7 +84,7 @@ export const PI_PRIVATE_PREFIX = "kobe-pi-";
  *
  * KOBE-228: the same directories without the executor (`partner: false`), where the tools are Pi's
  * own uid and mode 2770 keeps every other thread's uid out; the tools get the shared HOME/TMPDIR
- * through `KOBE_TOOL_HOME`/`KOBE_TOOL_TMPDIR` (the BASH_ENV script). Same uid means a tool of the
+ * through `KAIJU_TOOL_HOME`/`KAIJU_TOOL_TMPDIR` (the BASH_ENV script). Same uid means a tool of the
  * same thread can still reach them; see docs/ledger/KOBE-228.md.
  */
 export async function preparePiPrivateDirs(

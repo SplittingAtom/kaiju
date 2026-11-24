@@ -35,22 +35,22 @@ const key = (name: string) =>
 const configSchema = z.object({
   PORT: int("PORT", 1, 65535, 8080),
   /** The server's internal listener (policy re-check), e.g. http://kobe-server:8082. */
-  KOBE_MCP_SERVER_URL: z.url({
+  KAIJU_MCP_SERVER_URL: z.url({
     protocol: /^https?$/,
-    error: "KOBE_MCP_SERVER_URL must be an http(s) URL",
+    error: "KAIJU_MCP_SERVER_URL must be an http(s) URL",
   }),
-  KOBE_MCP_INTERNAL_KEY: key("KOBE_MCP_INTERNAL_KEY"),
+  KAIJU_MCP_INTERNAL_KEY: key("KAIJU_MCP_INTERNAL_KEY"),
   /**
    * The server's routes (probe, app calls) listen here, not on PORT (KOBE-693): the
    * NetworkPolicy admits only server pods to this port, while sandboxes reach PORT.
    */
-  KOBE_MCP_INTERNAL_PORT: int("KOBE_MCP_INTERNAL_PORT", 1, 65535, 8081),
+  KAIJU_MCP_INTERNAL_PORT: int("KAIJU_MCP_INTERNAL_PORT", 1, 65535, 8081),
   /**
-   * The key the server presents to those routes (KOBE-693), separate from KOBE_MCP_INTERNAL_KEY,
+   * The key the server presents to those routes (KOBE-693), separate from KAIJU_MCP_INTERNAL_KEY,
    * which the proxy presents to the server. Empty or unset (an operator's Secret without the
-   * second key): KOBE_MCP_INTERNAL_KEY serves both ways, with a startup warning.
+   * second key): KAIJU_MCP_INTERNAL_KEY serves both ways, with a startup warning.
    */
-  KOBE_MCP_ROUTES_KEY: z
+  KAIJU_MCP_ROUTES_KEY: z
     .string()
     .default("")
     .pipe(
@@ -58,46 +58,46 @@ const configSchema = z.object({
         z.literal(""),
         z
           .string()
-          .min(MIN_KEY_LENGTH, `KOBE_MCP_ROUTES_KEY must be at least ${MIN_KEY_LENGTH} characters`),
+          .min(MIN_KEY_LENGTH, `KAIJU_MCP_ROUTES_KEY must be at least ${MIN_KEY_LENGTH} characters`),
       ]),
     ),
   /** Plain-http connector URLs (development and the e2e suite only; credentials would leak). */
-  KOBE_MCP_ALLOW_INSECURE_HTTP: z
-    .enum(["true", "false"], { error: "KOBE_MCP_ALLOW_INSECURE_HTTP must be true or false" })
+  KAIJU_MCP_ALLOW_INSECURE_HTTP: z
+    .enum(["true", "false"], { error: "KAIJU_MCP_ALLOW_INSECURE_HTTP must be true or false" })
     .default("false"),
   /** Upstream ports connectors may use. */
-  KOBE_MCP_ALLOWED_PORTS: list,
+  KAIJU_MCP_ALLOWED_PORTS: list,
   /** Internal targets explicitly allowed (on-premises MCP servers), as CIDRs. */
-  KOBE_MCP_ALLOWED_INTERNAL_CIDRS: list,
+  KAIJU_MCP_ALLOWED_INTERNAL_CIDRS: list,
   /** More ranges to refuse (cluster pod/Service CIDRs when not private). */
-  KOBE_MCP_DENIED_CIDRS: list,
-  KOBE_MCP_MAX_REQUEST_BYTES: int(
-    "KOBE_MCP_MAX_REQUEST_BYTES",
+  KAIJU_MCP_DENIED_CIDRS: list,
+  KAIJU_MCP_MAX_REQUEST_BYTES: int(
+    "KAIJU_MCP_MAX_REQUEST_BYTES",
     1_024,
     16 * 1024 * 1024,
     1024 * 1024,
   ),
-  KOBE_MCP_MAX_RESPONSE_BYTES: int(
-    "KOBE_MCP_MAX_RESPONSE_BYTES",
+  KAIJU_MCP_MAX_RESPONSE_BYTES: int(
+    "KAIJU_MCP_MAX_RESPONSE_BYTES",
     1_024,
     64 * 1024 * 1024,
     4 * 1024 * 1024,
   ),
   /** Whole upstream call (connect, initialize, call); under Pi's 60 s MCP request timeout. */
-  KOBE_MCP_UPSTREAM_TIMEOUT_MS: int("KOBE_MCP_UPSTREAM_TIMEOUT_MS", 1_000, 600_000, 55_000),
-  KOBE_MCP_SERVER_TIMEOUT_MS: int("KOBE_MCP_SERVER_TIMEOUT_MS", 100, 60_000, 10_000),
+  KAIJU_MCP_UPSTREAM_TIMEOUT_MS: int("KAIJU_MCP_UPSTREAM_TIMEOUT_MS", 1_000, 600_000, 55_000),
+  KAIJU_MCP_SERVER_TIMEOUT_MS: int("KAIJU_MCP_SERVER_TIMEOUT_MS", 100, 60_000, 10_000),
   /**
    * The grant call (KOBE-778, P2-29): it may include an OAuth refresh, which can wait for another
    * server replica's refresh lease (up to 10 s) and then refresh itself (5 s deadline). A call's
-   * own deadline (`KOBE_MCP_UPSTREAM_TIMEOUT_MS`, which covers the whole call) still bounds it.
+   * own deadline (`KAIJU_MCP_UPSTREAM_TIMEOUT_MS`, which covers the whole call) still bounds it.
    */
-  KOBE_MCP_GRANT_TIMEOUT_MS: int("KOBE_MCP_GRANT_TIMEOUT_MS", 1_000, 120_000, 25_000),
+  KAIJU_MCP_GRANT_TIMEOUT_MS: int("KAIJU_MCP_GRANT_TIMEOUT_MS", 1_000, 120_000, 25_000),
   /** Concurrent calls per sandbox and per replica. */
-  KOBE_MCP_CALLS_PER_SANDBOX: int("KOBE_MCP_CALLS_PER_SANDBOX", 1, 1_000, 8),
-  KOBE_MCP_MAX_CONCURRENT_CALLS: int("KOBE_MCP_MAX_CONCURRENT_CALLS", 1, 100_000, 256),
+  KAIJU_MCP_CALLS_PER_SANDBOX: int("KAIJU_MCP_CALLS_PER_SANDBOX", 1, 1_000, 8),
+  KAIJU_MCP_MAX_CONCURRENT_CALLS: int("KAIJU_MCP_MAX_CONCURRENT_CALLS", 1, 100_000, 256),
   /** Requests per sandbox: a burst, then this many per second. */
-  KOBE_MCP_REQUEST_BURST: int("KOBE_MCP_REQUEST_BURST", 1, 10_000, 60),
-  KOBE_MCP_REQUESTS_PER_SECOND: int("KOBE_MCP_REQUESTS_PER_SECOND", 1, 10_000, 10),
+  KAIJU_MCP_REQUEST_BURST: int("KAIJU_MCP_REQUEST_BURST", 1, 10_000, 60),
+  KAIJU_MCP_REQUESTS_PER_SECOND: int("KAIJU_MCP_REQUESTS_PER_SECOND", 1, 10_000, 10),
 });
 
 export interface Limits {
@@ -124,7 +124,7 @@ export interface Config {
   readonly port: number;
   /**
    * Public key(s) verifying sandboxes' `kobe.mcp-proxy` session tokens
-   * (KOBE_SESSION_VERIFY_KEY_MCP_PROXY; never a private key, never another audience's).
+   * (KAIJU_SESSION_VERIFY_KEY_MCP_PROXY; never a private key, never another audience's).
    */
   readonly sessionVerifyKeys: SessionVerifyKeys;
   readonly serverUrl: string;
@@ -155,7 +155,7 @@ export const DEFAULT_LIMITS: Limits = {
 function ports(values: readonly string[]): number[] {
   const parsed = (values.length === 0 ? ["443"] : values).map(Number);
   if (parsed.some((p) => !Number.isInteger(p) || p < 1 || p > 65535)) {
-    throw new Error("Invalid configuration: KOBE_MCP_ALLOWED_PORTS must be ports (1-65535)");
+    throw new Error("Invalid configuration: KAIJU_MCP_ALLOWED_PORTS must be ports (1-65535)");
   }
   return parsed;
 }
@@ -191,41 +191,41 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     throw new Error(`Invalid configuration: ${issues}`);
   }
   const d = parsed.data;
-  if (d.KOBE_MCP_GRANT_TIMEOUT_MS < d.KOBE_MCP_SERVER_TIMEOUT_MS) {
+  if (d.KAIJU_MCP_GRANT_TIMEOUT_MS < d.KAIJU_MCP_SERVER_TIMEOUT_MS) {
     throw new Error(
-      "Invalid configuration: KOBE_MCP_GRANT_TIMEOUT_MS must be at least KOBE_MCP_SERVER_TIMEOUT_MS (a grant call may refresh an OAuth token)",
+      "Invalid configuration: KAIJU_MCP_GRANT_TIMEOUT_MS must be at least KAIJU_MCP_SERVER_TIMEOUT_MS (a grant call may refresh an OAuth token)",
     );
   }
-  if (d.KOBE_MCP_INTERNAL_PORT === d.PORT) {
-    throw new Error("Invalid configuration: KOBE_MCP_INTERNAL_PORT must differ from PORT");
+  if (d.KAIJU_MCP_INTERNAL_PORT === d.PORT) {
+    throw new Error("Invalid configuration: KAIJU_MCP_INTERNAL_PORT must differ from PORT");
   }
   return {
     port: d.PORT,
     sessionVerifyKeys: verifyKeysFromEnv(env, "kobe.mcp-proxy"),
-    serverUrl: d.KOBE_MCP_SERVER_URL.replace(/\/+$/, ""),
-    internalKey: d.KOBE_MCP_INTERNAL_KEY,
-    internalPort: d.KOBE_MCP_INTERNAL_PORT,
-    routesKey: d.KOBE_MCP_ROUTES_KEY === "" ? d.KOBE_MCP_INTERNAL_KEY : d.KOBE_MCP_ROUTES_KEY,
-    routesKeyShared: d.KOBE_MCP_ROUTES_KEY === "",
+    serverUrl: d.KAIJU_MCP_SERVER_URL.replace(/\/+$/, ""),
+    internalKey: d.KAIJU_MCP_INTERNAL_KEY,
+    internalPort: d.KAIJU_MCP_INTERNAL_PORT,
+    routesKey: d.KAIJU_MCP_ROUTES_KEY === "" ? d.KAIJU_MCP_INTERNAL_KEY : d.KAIJU_MCP_ROUTES_KEY,
+    routesKeyShared: d.KAIJU_MCP_ROUTES_KEY === "",
     upstream: {
-      allowInsecureHttp: d.KOBE_MCP_ALLOW_INSECURE_HTTP === "true",
-      allowedPorts: ports(d.KOBE_MCP_ALLOWED_PORTS),
+      allowInsecureHttp: d.KAIJU_MCP_ALLOW_INSECURE_HTTP === "true",
+      allowedPorts: ports(d.KAIJU_MCP_ALLOWED_PORTS),
       allowedInternalCidrs: internalCidrs(
-        "KOBE_MCP_ALLOWED_INTERNAL_CIDRS",
-        d.KOBE_MCP_ALLOWED_INTERNAL_CIDRS,
+        "KAIJU_MCP_ALLOWED_INTERNAL_CIDRS",
+        d.KAIJU_MCP_ALLOWED_INTERNAL_CIDRS,
       ),
-      deniedCidrs: cidrs("KOBE_MCP_DENIED_CIDRS", d.KOBE_MCP_DENIED_CIDRS),
+      deniedCidrs: cidrs("KAIJU_MCP_DENIED_CIDRS", d.KAIJU_MCP_DENIED_CIDRS),
     },
     limits: {
-      maxRequestBytes: d.KOBE_MCP_MAX_REQUEST_BYTES,
-      maxResponseBytes: d.KOBE_MCP_MAX_RESPONSE_BYTES,
-      upstreamTimeoutMs: d.KOBE_MCP_UPSTREAM_TIMEOUT_MS,
-      serverTimeoutMs: d.KOBE_MCP_SERVER_TIMEOUT_MS,
-      grantTimeoutMs: d.KOBE_MCP_GRANT_TIMEOUT_MS,
-      callsPerSandbox: d.KOBE_MCP_CALLS_PER_SANDBOX,
-      maxConcurrentCalls: d.KOBE_MCP_MAX_CONCURRENT_CALLS,
-      requestBurst: d.KOBE_MCP_REQUEST_BURST,
-      requestsPerSecond: d.KOBE_MCP_REQUESTS_PER_SECOND,
+      maxRequestBytes: d.KAIJU_MCP_MAX_REQUEST_BYTES,
+      maxResponseBytes: d.KAIJU_MCP_MAX_RESPONSE_BYTES,
+      upstreamTimeoutMs: d.KAIJU_MCP_UPSTREAM_TIMEOUT_MS,
+      serverTimeoutMs: d.KAIJU_MCP_SERVER_TIMEOUT_MS,
+      grantTimeoutMs: d.KAIJU_MCP_GRANT_TIMEOUT_MS,
+      callsPerSandbox: d.KAIJU_MCP_CALLS_PER_SANDBOX,
+      maxConcurrentCalls: d.KAIJU_MCP_MAX_CONCURRENT_CALLS,
+      requestBurst: d.KAIJU_MCP_REQUEST_BURST,
+      requestsPerSecond: d.KAIJU_MCP_REQUESTS_PER_SECOND,
     },
   };
 }

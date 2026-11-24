@@ -150,7 +150,7 @@ export interface ServerCallClient {
 }
 
 export interface ServerCallClientOptions {
-  /** The gateway's in-cluster origin (`KOBE_MODEL_GATEWAY_URL`). */
+  /** The gateway's in-cluster origin (`KAIJU_MODEL_GATEWAY_URL`). */
   readonly url: string;
   /** From {@link serverCallKeyFromEnv}. */
   readonly key: SessionSigningKey;

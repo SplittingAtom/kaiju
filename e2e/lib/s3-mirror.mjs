@@ -2,7 +2,7 @@
 // (KOBE-233) on k3d, where the old cluster's S3 test fixture goes with the cluster: the restore
 // then runs against "a bucket that holds a copy of its objects" (docs/backup-restore.md), as
 // bucket replication would give a real site. Runs in a pod with the Kaiju server image (its
-// @aws-sdk/client-s3); reads KOBE_S3_ENDPOINT, _BUCKET, _REGION, _PREFIX, _ACCESS_KEY_ID,
+// @aws-sdk/client-s3); reads KAIJU_S3_ENDPOINT, _BUCKET, _REGION, _PREFIX, _ACCESS_KEY_ID,
 // _SECRET_ACCESS_KEY from the environment.
 //   export   prints one line per object: `obj <key base64> <size> <etag> <body base64>`
 //   import   reads those lines on stdin, puts each object, prints `copied <key> <size> <etag-same>`
@@ -20,17 +20,17 @@ const {
 
 const MAX_BYTES = 512 * 1024 * 1024; // a test bucket; refuse anything larger than this
 const env = process.env;
-const Bucket = env.KOBE_S3_BUCKET;
-if (!Bucket) throw new Error("KOBE_S3_BUCKET is not set");
+const Bucket = env.KAIJU_S3_BUCKET;
+if (!Bucket) throw new Error("KAIJU_S3_BUCKET is not set");
 const s3 = new S3Client({
-  region: env.KOBE_S3_REGION || "us-east-1",
-  forcePathStyle: (env.KOBE_S3_FORCE_PATH_STYLE ?? "true") === "true",
-  ...(env.KOBE_S3_ENDPOINT ? { endpoint: env.KOBE_S3_ENDPOINT } : {}),
-  ...(env.KOBE_S3_ACCESS_KEY_ID
+  region: env.KAIJU_S3_REGION || "us-east-1",
+  forcePathStyle: (env.KAIJU_S3_FORCE_PATH_STYLE ?? "true") === "true",
+  ...(env.KAIJU_S3_ENDPOINT ? { endpoint: env.KAIJU_S3_ENDPOINT } : {}),
+  ...(env.KAIJU_S3_ACCESS_KEY_ID
     ? {
         credentials: {
-          accessKeyId: env.KOBE_S3_ACCESS_KEY_ID,
-          secretAccessKey: env.KOBE_S3_SECRET_ACCESS_KEY ?? "",
+          accessKeyId: env.KAIJU_S3_ACCESS_KEY_ID,
+          secretAccessKey: env.KAIJU_S3_SECRET_ACCESS_KEY ?? "",
         },
       }
     : {}),
@@ -48,7 +48,7 @@ async function exportAll() {
     const page = await s3.send(
       new ListObjectsV2Command({
         Bucket,
-        Prefix: env.KOBE_S3_PREFIX || undefined,
+        Prefix: env.KAIJU_S3_PREFIX || undefined,
         ...(token ? { ContinuationToken: token } : {}),
       }),
     );

@@ -27,40 +27,40 @@ export const DEFAULT_CLAMD_TIMEOUT_MS = 60_000;
 
 const schema = z.object({
   /** Set by the chart when `clamav.enabled`; absent = no scanning. */
-  KOBE_CLAMAV_HOST: z.string().trim().min(1, "KOBE_CLAMAV_HOST must not be empty").optional(),
-  KOBE_CLAMAV_PORT: z.coerce
-    .number({ error: "KOBE_CLAMAV_PORT must be a number" })
-    .int("KOBE_CLAMAV_PORT must be an integer")
-    .min(1, "KOBE_CLAMAV_PORT must be a port")
-    .max(65535, "KOBE_CLAMAV_PORT must be a port")
+  KAIJU_CLAMAV_HOST: z.string().trim().min(1, "KAIJU_CLAMAV_HOST must not be empty").optional(),
+  KAIJU_CLAMAV_PORT: z.coerce
+    .number({ error: "KAIJU_CLAMAV_PORT must be a number" })
+    .int("KAIJU_CLAMAV_PORT must be an integer")
+    .min(1, "KAIJU_CLAMAV_PORT must be a port")
+    .max(65535, "KAIJU_CLAMAV_PORT must be a port")
     .default(DEFAULT_CLAMD_PORT),
-  KOBE_CLAMAV_TIMEOUT_MS: z.coerce
-    .number({ error: "KOBE_CLAMAV_TIMEOUT_MS must be a number" })
-    .int("KOBE_CLAMAV_TIMEOUT_MS must be an integer")
-    .min(1000, "KOBE_CLAMAV_TIMEOUT_MS must be between 1000 and 600000")
-    .max(600_000, "KOBE_CLAMAV_TIMEOUT_MS must be between 1000 and 600000")
+  KAIJU_CLAMAV_TIMEOUT_MS: z.coerce
+    .number({ error: "KAIJU_CLAMAV_TIMEOUT_MS must be a number" })
+    .int("KAIJU_CLAMAV_TIMEOUT_MS must be an integer")
+    .min(1000, "KAIJU_CLAMAV_TIMEOUT_MS must be between 1000 and 600000")
+    .max(600_000, "KAIJU_CLAMAV_TIMEOUT_MS must be between 1000 and 600000")
     .default(DEFAULT_CLAMD_TIMEOUT_MS),
-  KOBE_UPLOAD_MAX_FILE_BYTES: bytes("KOBE_UPLOAD_MAX_FILE_BYTES").default(
+  KAIJU_UPLOAD_MAX_FILE_BYTES: bytes("KAIJU_UPLOAD_MAX_FILE_BYTES").default(
     UPLOAD_DEFAULT_MAX_FILE_BYTES,
   ),
-  KOBE_UPLOAD_MAX_MESSAGE_BYTES: bytes("KOBE_UPLOAD_MAX_MESSAGE_BYTES").default(
+  KAIJU_UPLOAD_MAX_MESSAGE_BYTES: bytes("KAIJU_UPLOAD_MAX_MESSAGE_BYTES").default(
     UPLOAD_DEFAULT_MAX_MESSAGE_BYTES,
   ),
-  KOBE_TEAM_STORAGE_QUOTA_BYTES: bytes("KOBE_TEAM_STORAGE_QUOTA_BYTES").default(
+  KAIJU_TEAM_STORAGE_QUOTA_BYTES: bytes("KAIJU_TEAM_STORAGE_QUOTA_BYTES").default(
     DEFAULT_TEAM_STORAGE_QUOTA_BYTES,
   ),
-  KOBE_TEAM_MAX_OBJECTS: bytes("KOBE_TEAM_MAX_OBJECTS").default(DEFAULT_TEAM_MAX_OBJECTS),
-  KOBE_PROJECT_HISTORY_MAX_COMMITS: z.coerce
-    .number({ error: "KOBE_PROJECT_HISTORY_MAX_COMMITS must be a number" })
-    .int("KOBE_PROJECT_HISTORY_MAX_COMMITS must be an integer")
-    .min(1, "KOBE_PROJECT_HISTORY_MAX_COMMITS must be between 1 and 100000")
-    .max(100_000, "KOBE_PROJECT_HISTORY_MAX_COMMITS must be between 1 and 100000")
+  KAIJU_TEAM_MAX_OBJECTS: bytes("KAIJU_TEAM_MAX_OBJECTS").default(DEFAULT_TEAM_MAX_OBJECTS),
+  KAIJU_PROJECT_HISTORY_MAX_COMMITS: z.coerce
+    .number({ error: "KAIJU_PROJECT_HISTORY_MAX_COMMITS must be a number" })
+    .int("KAIJU_PROJECT_HISTORY_MAX_COMMITS must be an integer")
+    .min(1, "KAIJU_PROJECT_HISTORY_MAX_COMMITS must be between 1 and 100000")
+    .max(100_000, "KAIJU_PROJECT_HISTORY_MAX_COMMITS must be between 1 and 100000")
     .default(PROJECT_HISTORY_MAX_COMMITS),
-  KOBE_UPLOAD_ORPHAN_HOURS: z.coerce
-    .number({ error: "KOBE_UPLOAD_ORPHAN_HOURS must be a number" })
-    .int("KOBE_UPLOAD_ORPHAN_HOURS must be an integer")
-    .min(1, "KOBE_UPLOAD_ORPHAN_HOURS must be between 1 and 720")
-    .max(720, "KOBE_UPLOAD_ORPHAN_HOURS must be between 1 and 720")
+  KAIJU_UPLOAD_ORPHAN_HOURS: z.coerce
+    .number({ error: "KAIJU_UPLOAD_ORPHAN_HOURS must be a number" })
+    .int("KAIJU_UPLOAD_ORPHAN_HOURS must be an integer")
+    .min(1, "KAIJU_UPLOAD_ORPHAN_HOURS must be between 1 and 720")
+    .max(720, "KAIJU_UPLOAD_ORPHAN_HOURS must be between 1 and 720")
     .default(DEFAULT_ORPHAN_HOURS),
 });
 
@@ -104,18 +104,18 @@ export function loadUploadSettings(
   }
   const e = parsed.data;
   return {
-    maxFileBytes: e.KOBE_UPLOAD_MAX_FILE_BYTES,
-    maxMessageBytes: e.KOBE_UPLOAD_MAX_MESSAGE_BYTES,
-    defaultQuotaBytes: e.KOBE_TEAM_STORAGE_QUOTA_BYTES,
-    orphanHours: e.KOBE_UPLOAD_ORPHAN_HOURS,
-    defaultMaxObjects: e.KOBE_TEAM_MAX_OBJECTS,
-    projectHistoryMaxCommits: e.KOBE_PROJECT_HISTORY_MAX_COMMITS,
-    ...(e.KOBE_CLAMAV_HOST
+    maxFileBytes: e.KAIJU_UPLOAD_MAX_FILE_BYTES,
+    maxMessageBytes: e.KAIJU_UPLOAD_MAX_MESSAGE_BYTES,
+    defaultQuotaBytes: e.KAIJU_TEAM_STORAGE_QUOTA_BYTES,
+    orphanHours: e.KAIJU_UPLOAD_ORPHAN_HOURS,
+    defaultMaxObjects: e.KAIJU_TEAM_MAX_OBJECTS,
+    projectHistoryMaxCommits: e.KAIJU_PROJECT_HISTORY_MAX_COMMITS,
+    ...(e.KAIJU_CLAMAV_HOST
       ? {
           clamav: {
-            host: e.KOBE_CLAMAV_HOST,
-            port: e.KOBE_CLAMAV_PORT,
-            timeoutMs: e.KOBE_CLAMAV_TIMEOUT_MS,
+            host: e.KAIJU_CLAMAV_HOST,
+            port: e.KAIJU_CLAMAV_PORT,
+            timeoutMs: e.KAIJU_CLAMAV_TIMEOUT_MS,
           },
         }
       : {}),

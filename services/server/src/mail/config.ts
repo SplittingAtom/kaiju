@@ -21,7 +21,7 @@ const emailSchema = z.email();
 // "Name <address>" or a bare address; no CR/LF, quotes, angle brackets or commas in the name.
 const FROM_PATTERN = /^(?:([^<>",\r\n]{1,100}?)\s*<([^<>\s,]+)>|([^<>\s,"]+))$/;
 
-/** Parses KOBE_SMTP_FROM; undefined when malformed. */
+/** Parses KAIJU_SMTP_FROM; undefined when malformed. */
 export function parseFrom(value: string): MailAddress | undefined {
   const match = FROM_PATTERN.exec(value.trim());
   if (!match) return undefined;
@@ -38,59 +38,59 @@ const optionalSecret = z
 
 export const smtpSchema = z
   .object({
-    KOBE_SMTP_HOST: z
-      .string({ error: "KOBE_SMTP_HOST is required" })
+    KAIJU_SMTP_HOST: z
+      .string({ error: "KAIJU_SMTP_HOST is required" })
       .trim()
-      .min(1, "KOBE_SMTP_HOST is required")
+      .min(1, "KAIJU_SMTP_HOST is required")
       .max(253)
-      .regex(/^[A-Za-z0-9.:[\]-]+$/, "KOBE_SMTP_HOST must be a host name or IP address"),
-    KOBE_SMTP_PORT: z.coerce
-      .number({ error: "KOBE_SMTP_PORT must be a number" })
-      .int("KOBE_SMTP_PORT must be an integer")
-      .min(1, "KOBE_SMTP_PORT must be between 1 and 65535")
-      .max(65535, "KOBE_SMTP_PORT must be between 1 and 65535")
+      .regex(/^[A-Za-z0-9.:[\]-]+$/, "KAIJU_SMTP_HOST must be a host name or IP address"),
+    KAIJU_SMTP_PORT: z.coerce
+      .number({ error: "KAIJU_SMTP_PORT must be a number" })
+      .int("KAIJU_SMTP_PORT must be an integer")
+      .min(1, "KAIJU_SMTP_PORT must be between 1 and 65535")
+      .max(65535, "KAIJU_SMTP_PORT must be between 1 and 65535")
       .default(587),
-    KOBE_SMTP_SECURITY: z
+    KAIJU_SMTP_SECURITY: z
       .enum(["starttls", "tls", "none"], {
-        error: "KOBE_SMTP_SECURITY must be starttls, tls or none",
+        error: "KAIJU_SMTP_SECURITY must be starttls, tls or none",
       })
       .default("starttls"),
-    KOBE_SMTP_FROM: z.string({ error: "KOBE_SMTP_FROM is required" }).transform((v, ctx) => {
+    KAIJU_SMTP_FROM: z.string({ error: "KAIJU_SMTP_FROM is required" }).transform((v, ctx) => {
       const from = parseFrom(v);
       if (!from) {
         ctx.addIssue({
           code: "custom",
-          message: 'KOBE_SMTP_FROM must be "Name <address>" or an address',
+          message: 'KAIJU_SMTP_FROM must be "Name <address>" or an address',
         });
         return z.NEVER;
       }
       return from;
     }),
-    KOBE_SMTP_USERNAME: optionalSecret,
-    KOBE_SMTP_PASSWORD: optionalSecret,
+    KAIJU_SMTP_USERNAME: optionalSecret,
+    KAIJU_SMTP_PASSWORD: optionalSecret,
   })
   .superRefine((v, ctx) => {
-    if ((v.KOBE_SMTP_USERNAME === undefined) !== (v.KOBE_SMTP_PASSWORD === undefined)) {
+    if ((v.KAIJU_SMTP_USERNAME === undefined) !== (v.KAIJU_SMTP_PASSWORD === undefined)) {
       ctx.addIssue({
         code: "custom",
-        path: ["KOBE_SMTP_PASSWORD"],
-        message: "KOBE_SMTP_USERNAME and KOBE_SMTP_PASSWORD must be set together",
+        path: ["KAIJU_SMTP_PASSWORD"],
+        message: "KAIJU_SMTP_USERNAME and KAIJU_SMTP_PASSWORD must be set together",
       });
     }
-    if (v.KOBE_SMTP_SECURITY === "none" && v.KOBE_SMTP_PASSWORD !== undefined) {
+    if (v.KAIJU_SMTP_SECURITY === "none" && v.KAIJU_SMTP_PASSWORD !== undefined) {
       ctx.addIssue({
         code: "custom",
-        path: ["KOBE_SMTP_SECURITY"],
-        message: "KOBE_SMTP_SECURITY=none would send SMTP credentials unencrypted",
+        path: ["KAIJU_SMTP_SECURITY"],
+        message: "KAIJU_SMTP_SECURITY=none would send SMTP credentials unencrypted",
       });
     }
   })
   .transform((v): SmtpConfig => ({
-    host: v.KOBE_SMTP_HOST,
-    port: v.KOBE_SMTP_PORT,
-    security: v.KOBE_SMTP_SECURITY,
-    from: v.KOBE_SMTP_FROM,
-    ...(v.KOBE_SMTP_USERNAME !== undefined && v.KOBE_SMTP_PASSWORD !== undefined
-      ? { auth: { user: v.KOBE_SMTP_USERNAME, pass: v.KOBE_SMTP_PASSWORD } }
+    host: v.KAIJU_SMTP_HOST,
+    port: v.KAIJU_SMTP_PORT,
+    security: v.KAIJU_SMTP_SECURITY,
+    from: v.KAIJU_SMTP_FROM,
+    ...(v.KAIJU_SMTP_USERNAME !== undefined && v.KAIJU_SMTP_PASSWORD !== undefined
+      ? { auth: { user: v.KAIJU_SMTP_USERNAME, pass: v.KAIJU_SMTP_PASSWORD } }
       : {}),
   }));

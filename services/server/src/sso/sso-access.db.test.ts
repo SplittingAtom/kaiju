@@ -124,7 +124,7 @@ beforeAll(async () => {
     trustedProxies: ["127.0.0.1/32"],
     mailer: new MemoryMailer(),
     // The mapping routes follow the kill switch (review finding 7).
-    sso: { settings: loadSsoSettings({ KOBE_SSO_ENABLED: "true" }) },
+    sso: { settings: loadSsoSettings({ KAIJU_SSO_ENABLED: "true" }) },
   });
   app = createApp(deps);
   for (const who of PEOPLE) {

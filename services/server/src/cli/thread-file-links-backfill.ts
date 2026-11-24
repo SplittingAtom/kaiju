@@ -16,9 +16,9 @@ async function main(): Promise<number> {
     console.error(options);
     return 2;
   }
-  const databaseUrl = process.env.KOBE_DATABASE_URL;
+  const databaseUrl = process.env.KAIJU_DATABASE_URL;
   if (!databaseUrl) {
-    console.error("KOBE_DATABASE_URL is not set");
+    console.error("KAIJU_DATABASE_URL is not set");
     return 2;
   }
   const database = createDb(databaseUrl, { max: 2 });

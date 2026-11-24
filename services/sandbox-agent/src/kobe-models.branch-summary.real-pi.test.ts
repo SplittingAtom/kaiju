@@ -116,7 +116,7 @@ describe.skipIf(!PI_AVAILABLE)("thread.branch_summary in real Pi (KOBE-548)", ()
     };
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       models,
     });
     const harness = h;

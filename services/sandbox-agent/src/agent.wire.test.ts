@@ -279,7 +279,7 @@ describe("delivery and resume", () => {
   it("gives up a run whose un-acked events exceed the outbox limit", async () => {
     h = await startHarness({
       server: { autoAck: false, ackRuns: () => [] },
-      env: { KOBE_OUTBOX_MAX_BYTES: "600" },
+      env: { KAIJU_OUTBOX_MAX_BYTES: "600" },
     });
     await h.server.command(runStart("say:Hello"));
     await until(helloOn(2));

@@ -241,7 +241,7 @@ describe("the proxy's decision point enforces the run's MCP set (review HIGH-1)"
       db: f.fx.replica(0).deps.database.db,
       policy: undefined as never,
       runContext: createDbRunContextSource(),
-      envelope: must(loadEnvelope({ KOBE_ENVELOPE_KEY: "e".repeat(48) }), "envelope"),
+      envelope: must(loadEnvelope({ KAIJU_ENVELOPE_KEY: "e".repeat(48) }), "envelope"),
     });
   const call = (
     principal: { sandboxId: string; teamId: string; userId: string },

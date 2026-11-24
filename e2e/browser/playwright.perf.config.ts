@@ -3,14 +3,14 @@ import { STORAGE_STATE } from "./tests/support/constants.js";
 
 /**
  * The web measurement run (KOBE-525): `npm run perf:measure` against a deployment, on demand only
- * (not part of the browser suite or CI). Same environment as the suite: KOBE_BASE_URL, KOBE_USER,
- * KOBE_PW (signed in once by tests/auth.setup.ts), KOBE_BROWSER_MAP; plus the KOBE_PERF_*
+ * (not part of the browser suite or CI). Same environment as the suite: KAIJU_BASE_URL, KAIJU_USER,
+ * KAIJU_PW (signed in once by tests/auth.setup.ts), KAIJU_BROWSER_MAP; plus the KAIJU_PERF_*
  * variables in perf/measure.perf.ts.
  */
-const baseURL = process.env["KOBE_BASE_URL"];
-if (!baseURL) throw new Error("KOBE_BASE_URL is required (the deployment's https URL)");
+const baseURL = process.env["KAIJU_BASE_URL"];
+if (!baseURL) throw new Error("KAIJU_BASE_URL is required (the deployment's https URL)");
 
-const map = process.env["KOBE_BROWSER_MAP"];
+const map = process.env["KAIJU_BROWSER_MAP"];
 const launchOptions = map
   ? { args: [`--host-resolver-rules=MAP ${new URL(baseURL).hostname} ${map}`] }
   : {};

@@ -52,7 +52,7 @@ def _load_agent(path: Path):
 def _model_id(settings: Settings, agent) -> str:
     model = settings.model_override or agent.model
     if not model:
-        raise SettingsError("no model: the export has none (alias dropped) and KOBE_EVAL_MODEL is unset")
+        raise SettingsError("no model: the export has none (alias dropped) and KAIJU_EVAL_MODEL is unset")
     return model
 
 

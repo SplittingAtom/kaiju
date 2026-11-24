@@ -100,7 +100,7 @@ to executing in Pi. Agent without the new capability: Pi runs as today (negotiat
 What it closes: signals to Pi, `/proc/<pi>/*` (environ, maps, cmdline: cross-uid, measured refused
 toward uid 1000), writes to `agent/` (planting `models.json`/`settings.json`), reading `model.json`
 (group is Pi's own, `T` is not in it), Pi's session cache and auth store. It also removes
-`PI_CODING_AGENT_DIR`, `KOBE_MODEL_FILE`, `KOBE_POLICY_FD` from the tools' environment (the
+`PI_CODING_AGENT_DIR`, `KAIJU_MODEL_FILE`, `KAIJU_POLICY_FD` from the tools' environment (the
 executor builds its own allow-list), and KOBE-71 residual risk 3 disappears.
 
 ### C. seccomp / Landlock / ptrace restrictions inside gVisor

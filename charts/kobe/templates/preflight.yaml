@@ -80,7 +80,7 @@ spec:
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           command: ["node", "dist/cli/preflight.js"]
           env:
-            - name: KOBE_RUNTIME_CLASS
+            - name: KAIJU_RUNTIME_CLASS
               value: {{ .Values.isolation.runtimeClassName | quote }}
           {{- include "kobe.containerSecurityContext" . | nindent 10 }}
           terminationMessagePolicy: FallbackToLogsOnError

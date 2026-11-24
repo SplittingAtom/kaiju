@@ -201,8 +201,8 @@ describe("embeddings.local (enabled by default)", () => {
   it("hands the server its URL and model, which the server config accepts", () => {
     const vars = env(ms, "kobe-server");
     const get = (n: string) => vars.find((v) => v.name === n)?.value;
-    expect(get("KOBE_EMBEDDINGS_LOCAL_URL")).toBe("http://kobe-embeddings:8080");
-    expect(get("KOBE_EMBEDDINGS_LOCAL_MODEL")).toBe("nomic-embed-text");
+    expect(get("KAIJU_EMBEDDINGS_LOCAL_URL")).toBe("http://kobe-embeddings:8080");
+    expect(get("KAIJU_EMBEDDINGS_LOCAL_MODEL")).toBe("nomic-embed-text");
     const resolved = Object.fromEntries(
       vars.map((v, i) => [v.name, v.value ?? `${String(i).padStart(2, "0")}${"s".repeat(46)}`]),
     );
@@ -224,7 +224,7 @@ describe("embeddings.local.enabled=false", () => {
     );
     expect(left).toEqual([]);
     expect(JSON.stringify(find(ms, "NetworkPolicy", "kobe-bifrost"))).not.toContain("embeddings");
-    expect(env(ms, "kobe-server").map((v) => v.name)).not.toContain("KOBE_EMBEDDINGS_LOCAL_URL");
+    expect(env(ms, "kobe-server").map((v) => v.name)).not.toContain("KAIJU_EMBEDDINGS_LOCAL_URL");
   });
 
   it("keeps external models configured through the gateway as before", () => {

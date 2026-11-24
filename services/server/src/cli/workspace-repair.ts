@@ -20,14 +20,14 @@ async function main(): Promise<number> {
     console.error(args);
     return 2;
   }
-  const databaseUrl = process.env.KOBE_DATABASE_URL;
+  const databaseUrl = process.env.KAIJU_DATABASE_URL;
   if (!databaseUrl) {
-    console.error("KOBE_DATABASE_URL is not set");
+    console.error("KAIJU_DATABASE_URL is not set");
     return 2;
   }
   const s3 = loadS3Settings(process.env);
   if (!s3) {
-    console.error("object storage is not configured (KOBE_S3_BUCKET)");
+    console.error("object storage is not configured (KAIJU_S3_BUCKET)");
     return 2;
   }
   const database = createDb(databaseUrl, { max: 2 });

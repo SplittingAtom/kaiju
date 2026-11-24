@@ -43,7 +43,7 @@ export type SandboxProviderRuntime = Omit<SandboxRuntime, "sessionKeys" | "sessi
 
 /**
  * The sandbox provider wired to the in-cluster API, or undefined when the chart did not configure
- * sandboxes (KOBE_SANDBOX_CONFIG unset). Invalid configuration throws (fail fast at startup).
+ * sandboxes (KAIJU_SANDBOX_CONFIG unset). Invalid configuration throws (fail fast at startup).
  */
 export function createSandboxRuntime(
   env: Readonly<Record<string, string | undefined>>,
@@ -69,7 +69,7 @@ export function createSandboxRuntime(
 ): SandboxRuntime | SandboxProviderRuntime | undefined {
   const config = options?.providerOnly ? providerOnlyConfig(env) : loadSandboxConfig(env);
   if (!config) return undefined;
-  const runtimeClassName = env.KOBE_RUNTIME_CLASS?.trim();
+  const runtimeClassName = env.KAIJU_RUNTIME_CLASS?.trim();
   const kube = createKubeClient();
   const provider = createSandboxProvider({
     kube,

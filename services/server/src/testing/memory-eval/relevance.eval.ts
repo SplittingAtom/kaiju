@@ -24,13 +24,13 @@ import {
 
 /**
  * `e2e/memory-eval.sh relevance` (KOBE-387): seeds e2e/fixtures/memory-relevance/items.json into a
- * throwaway database (createTestDatabase: created and dropped on KOBE_TEST_DATABASE_URL's server)
+ * throwaway database (createTestDatabase: created and dropped on KAIJU_TEST_DATABASE_URL's server)
  * over the split tables (Workspace + person: semantic_memory_items, portable_memory_items,
  * site_memory_items), asks the KOBE-382 selector's own store read (`readRunCandidates`) about every
  * query in queries.json as a run's message, and reports recall@8. Not part of `pnpm verify`
- * (vitest.eval.config.ts). Writes the report as JSON to KOBE_EVAL_OUT when set.
+ * (vitest.eval.config.ts). Writes the report as JSON to KAIJU_EVAL_OUT when set.
  *
- * KOBE-409 hybrid mode: with KOBE_EVAL_EMBED_URL and KOBE_EVAL_EMBED_MODEL (embed-endpoint.ts)
+ * KOBE-409 hybrid mode: with KAIJU_EVAL_EMBED_URL and KAIJU_EVAL_EMBED_MODEL (embed-endpoint.ts)
  * every statement is embedded once (with the model's document prefix) and each query too (timed:
  * per-message embed latency), and the report compares keyword-only with hybrid (the selector's
  * vector leg, `startVectorLeg`, given the query vector) on the same candidates code.
@@ -220,7 +220,7 @@ describe("memory relevance eval (KOBE-387)", () => {
           `query embed latency p50 ${quantile(latencies, 0.5).toFixed(1)} ms, p95 ${quantile(latencies, 0.95).toFixed(1)} ms\n\n${formatRelevanceReport(hybridReport)}\n`,
       );
     }
-    const out = process.env.KOBE_EVAL_OUT;
+    const out = process.env.KAIJU_EVAL_OUT;
     if (out) {
       mkdirSync(dirname(out), { recursive: true });
       writeFileSync(

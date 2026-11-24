@@ -26,12 +26,12 @@ async function main(): Promise<number> {
     return 2;
   }
   const isolation = createIsolationGate({
-    runtimeClassName: process.env.KOBE_RUNTIME_CLASS?.trim() || undefined,
+    runtimeClassName: process.env.KAIJU_RUNTIME_CLASS?.trim() || undefined,
     listRuntimeClasses,
   });
   const runtime = createSandboxRuntime(process.env, isolation);
   if (!runtime) {
-    console.error("KOBE_SANDBOX_CONFIG is not set: sandboxes are disabled");
+    console.error("KAIJU_SANDBOX_CONFIG is not set: sandboxes are disabled");
     return 1;
   }
   const handle = await runtime.provider.ensureSandbox({ id: teamId, slug }, userId);

@@ -60,17 +60,17 @@ describe("isolation gate: startup check", () => {
     expect(status.state === "missing" && status.message).toMatch(/does not exist.*install-gvisor/);
   });
 
-  it("is permanently missing when KOBE_RUNTIME_CLASS is not set, without calling the API", async () => {
+  it("is permanently missing when KAIJU_RUNTIME_CLASS is not set, without calling the API", async () => {
     const list = vi.fn(async () => GVISOR);
     const { g } = gate({ runtimeClassName: undefined, listRuntimeClasses: list });
     expect(g.status().state).toBe("missing");
     const status = await g.check();
-    expect(status.state === "missing" && status.message).toMatch(/KOBE_RUNTIME_CLASS is not set/);
+    expect(status.state === "missing" && status.message).toMatch(/KAIJU_RUNTIME_CLASS is not set/);
     expect(list).not.toHaveBeenCalled();
     await expect(g.require()).rejects.toBeInstanceOf(IsolationRuntimeMissingError);
   });
 
-  it("reports an unset KOBE_RUNTIME_CLASS once, for the operator log", async () => {
+  it("reports an unset KAIJU_RUNTIME_CLASS once, for the operator log", async () => {
     const onChange = vi.fn();
     const { g } = gate({ runtimeClassName: undefined, onChange });
     await g.start();

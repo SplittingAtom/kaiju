@@ -25,7 +25,7 @@
 export const EXTENSION_NAME = "kobe-tools";
 
 /** Env var naming the inherited channel fd. Read once at load and removed from `process.env`. */
-export const TOOLS_FD_ENV = "KOBE_TOOLS_FD";
+export const TOOLS_FD_ENV = "KAIJU_TOOLS_FD";
 export const TOOLS_FD = 4;
 export const TOOLS_TIMEOUT_MS = 30_000;
 
@@ -53,9 +53,9 @@ export const OPS = [
 ] as const;
 
 /** Env var set to `1` by an agent that announced the `memory` capability. Read once, removed. */
-export const TOOLS_MEMORY_ENV = "KOBE_TOOLS_MEMORY";
+export const TOOLS_MEMORY_ENV = "KAIJU_TOOLS_MEMORY";
 /** Env var naming the per-run memory file (memory-hooks.ts). Read once, removed. */
-export const MEMORY_FILE_ENV = "KOBE_MEMORY_FILE";
+export const MEMORY_FILE_ENV = "KAIJU_MEMORY_FILE";
 export const TOOL_REMEMBER = "remember";
 export const TOOL_RECALL = "recall";
 /** KOBE-399: shows one saved memory the run was given or recalled (read-only). */
@@ -68,7 +68,7 @@ export const MEMORY_RECALL_MAX_FILES = 20;
 export const MEMORY_RECALL_MAX_ITEMS = 8;
 
 /** Env var set to `1` by an agent that announced the `files` capability. Read once, removed. */
-export const TOOLS_FILES_ENV = "KOBE_TOOLS_FILES";
+export const TOOLS_FILES_ENV = "KAIJU_TOOLS_FILES";
 export const TOOL_SHARE_FILE = "share_file";
 /** Mirrors packages/protocol `files.ts` (pinned by a test). */
 export const SHARE_PATH_MAX = 1024;
@@ -79,7 +79,7 @@ export const SHARE_NAME_MAX = 255;
  * Env var set to `1` by an agent that announced the `projects` capability (KOBE-162). Read once,
  * removed. `commit_project` is registered only then; the server also checks the capability.
  */
-export const TOOLS_PROJECTS_ENV = "KOBE_TOOLS_PROJECTS";
+export const TOOLS_PROJECTS_ENV = "KAIJU_TOOLS_PROJECTS";
 /**
  * KOBE-580 (CM6): registered with the `projects` capability, active only in runs whose
  * `run.start.project.access` is `write` (the agent says so in the run's memory file).
@@ -94,7 +94,7 @@ export const PROJECT_COMMIT_TIMEOUT_MS = 5 * 60_000;
  * Env var set to `1` by an agent that announced the `skill_drafts` capability (KOBE-442). Read
  * once, removed. `save_skill_draft` is registered only then; the server also checks the capability.
  */
-export const TOOLS_SKILL_DRAFTS_ENV = "KOBE_TOOLS_SKILL_DRAFTS";
+export const TOOLS_SKILL_DRAFTS_ENV = "KAIJU_TOOLS_SKILL_DRAFTS";
 export const TOOL_SAVE_SKILL_DRAFT = "save_skill_draft";
 /** Mirrors packages/protocol `skill-package/layout.ts` SKILL_NAME_PATTERN (pinned by a test). */
 export const SKILL_NAME_RE = /^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?$/;
@@ -103,7 +103,7 @@ export const SKILL_NAME_RE = /^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?$/;
  * Env var set to `1` by an agent that announced the `file_edits` capability (KOBE-462). Read once,
  * removed. `propose_file_edit` is registered only then; the server also checks the capability.
  */
-export const TOOLS_FILE_EDITS_ENV = "KOBE_TOOLS_FILE_EDITS";
+export const TOOLS_FILE_EDITS_ENV = "KAIJU_TOOLS_FILE_EDITS";
 export const TOOL_PROPOSE_FILE_EDIT = "propose_file_edit";
 /** KOBE-484: registered with `propose_file_edit` (same capability and env var). */
 export const TOOL_OPEN_FILE = "open_file";
@@ -115,7 +115,7 @@ export const FILE_EDIT_SUMMARY_MAX = 500;
  * Env var set to `1` by an agent that announced the `notebooks` capability (KOBE-464). Read once,
  * removed. `run_python` is registered only then; the server also checks the capability.
  */
-export const TOOLS_NOTEBOOKS_ENV = "KOBE_TOOLS_NOTEBOOKS";
+export const TOOLS_NOTEBOOKS_ENV = "KAIJU_TOOLS_NOTEBOOKS";
 export const TOOL_RUN_PYTHON = "run_python";
 /** Mirror packages/protocol `notebooks.ts` (pinned by a test). */
 export const NOTEBOOK_CODE_MAX_BYTES = 256 * 1024;

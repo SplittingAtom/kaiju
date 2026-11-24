@@ -16,14 +16,14 @@ import { pageApi } from "./support/gate5.js";
  * The drag is real input (`page.mouse` down, moves in steps, up); a Playwright `dragTo` would
  * start a native drag, which the picker no longer uses. It needs the picker build that speaks
  * the contract (Catalyst CAT-247). Until that build is deployed and re-pinned, set
- * `KOBE_PICKER_HTML=<path to the built picker html>`: the frame route is intercepted as in
+ * `KAIJU_PICKER_HTML=<path to the built picker html>`: the frame route is intercepted as in
  * `app-frame.spec.ts` (the real response's status, headers and WebRTC guard script kept), and
- * only the template bytes are replaced by that file. `KOBE_APPS_PICKER` names the picker
+ * only the template bytes are replaced by that file. `KAIJU_APPS_PICKER` names the picker
  * (default "Lakehouse Picker"); without it live for the member the spec skips. Chromium by
- * default; Firefox with `KOBE_ALL_BROWSERS=1 --project firefox`.
+ * default; Firefox with `KAIJU_ALL_BROWSERS=1 --project firefox`.
  */
-const TITLE = process.env["KOBE_APPS_PICKER"] ?? "Lakehouse Picker";
-const PICKER_HTML = process.env["KOBE_PICKER_HTML"] ?? "";
+const TITLE = process.env["KAIJU_APPS_PICKER"] ?? "Lakehouse Picker";
+const PICKER_HTML = process.env["KAIJU_PICKER_HTML"] ?? "";
 
 interface App {
   readonly appId: string;

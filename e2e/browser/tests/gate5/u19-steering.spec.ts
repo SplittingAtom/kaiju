@@ -9,13 +9,13 @@ import { allowApproval, bashTurn, FAKE_MODEL, longAnswer, shareTurn } from "../s
  * Continue work from the panel; the panel has zero height when idle." Delete, reorder and the
  * keyboard grip are steering-panel.spec.ts; the walk, Edit, Steer, Retry and Continue are here.
  *
- * The interrupted state needs the member's sandbox lost mid-run: KOBE_GATE5_KILL_SANDBOX is a shell
+ * The interrupted state needs the member's sandbox lost mid-run: KAIJU_GATE5_KILL_SANDBOX is a shell
  * command that deletes its pod (e2e/gate5.sh sets it beside kubectl); without it that test skips.
  */
 const LONG = longAnswer(
   "No tools. Write a detailed 2000-word short story about a lighthouse keeper and a storm.",
 );
-const KILL = process.env["KOBE_GATE5_KILL_SANDBOX"];
+const KILL = process.env["KAIJU_GATE5_KILL_SANDBOX"];
 
 test("U19: idle → active → queued → waiting; a queued message is edited; Steer and Stop", async ({
   chat,
@@ -83,7 +83,7 @@ test("U19: interrupted (the sandbox lost mid-run): Retry, then Continue, from th
 }) => {
   test.skip(
     !KILL,
-    "set KOBE_GATE5_KILL_SANDBOX to a command that deletes the member's sandbox pod",
+    "set KAIJU_GATE5_KILL_SANDBOX to a command that deletes the member's sandbox pod",
   );
   test.setTimeout(4 * RUN_TIMEOUT_MS);
   const panel = chat.steering;

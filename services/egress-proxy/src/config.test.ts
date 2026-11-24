@@ -4,16 +4,16 @@ import { loadConfig } from "./config.js";
 
 const PAIR = generateSessionKeyPair();
 const base = {
-  KOBE_DATABASE_URL: "postgres://app@db/kobe",
-  KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PAIR.publicPem,
+  KAIJU_DATABASE_URL: "postgres://app@db/kobe",
+  KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY: PAIR.publicPem,
 };
 
 describe("loadConfig", () => {
   it("reads the query pool size (KOBE-736): default 10, 1..200", () => {
     expect(loadConfig(base).dbPoolMax).toBe(10);
-    expect(loadConfig({ ...base, KOBE_DB_POOL_MAX: "25" }).dbPoolMax).toBe(25);
-    expect(() => loadConfig({ ...base, KOBE_DB_POOL_MAX: "0" })).toThrow(/KOBE_DB_POOL_MAX/);
-    expect(() => loadConfig({ ...base, KOBE_DB_POOL_MAX: "x" })).toThrow(/KOBE_DB_POOL_MAX/);
+    expect(loadConfig({ ...base, KAIJU_DB_POOL_MAX: "25" }).dbPoolMax).toBe(25);
+    expect(() => loadConfig({ ...base, KAIJU_DB_POOL_MAX: "0" })).toThrow(/KAIJU_DB_POOL_MAX/);
+    expect(() => loadConfig({ ...base, KAIJU_DB_POOL_MAX: "x" })).toThrow(/KAIJU_DB_POOL_MAX/);
   });
 
   it("defaults: port 8080, HTTPS only, limits on", () => {
@@ -29,9 +29,9 @@ describe("loadConfig", () => {
     const c = loadConfig({
       ...base,
       PORT: "9090",
-      KOBE_EGRESS_ALLOWED_PORTS: "443, 8443",
-      KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: "10.43.200.200/32",
-      KOBE_EGRESS_DENIED_CIDRS: "11.0.0.0/8,fd00::/8",
+      KAIJU_EGRESS_ALLOWED_PORTS: "443, 8443",
+      KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS: "10.43.200.200/32",
+      KAIJU_EGRESS_DENIED_CIDRS: "11.0.0.0/8,fd00::/8",
     });
     expect(c.port).toBe(9090);
     expect(c.allowedPorts).toEqual([443, 8443]);
@@ -41,16 +41,16 @@ describe("loadConfig", () => {
 
   it("rejects invalid values with a clear error and never echoes the key", () => {
     expect(() => loadConfig({ ...base, PORT: "70000" })).toThrow(/PORT/);
-    expect(() => loadConfig({ ...base, KOBE_EGRESS_ALLOWED_PORTS: "0" })).toThrow(/ALLOWED_PORTS/);
-    expect(() => loadConfig({ ...base, KOBE_EGRESS_DENIED_CIDRS: "10.0.0.0/99" })).toThrow(
+    expect(() => loadConfig({ ...base, KAIJU_EGRESS_ALLOWED_PORTS: "0" })).toThrow(/ALLOWED_PORTS/);
+    expect(() => loadConfig({ ...base, KAIJU_EGRESS_DENIED_CIDRS: "10.0.0.0/99" })).toThrow(
       /DENIED_CIDRS/,
     );
-    expect(() => loadConfig({ KOBE_DATABASE_URL: "x" })).toThrow(
-      /KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY is required/,
+    expect(() => loadConfig({ KAIJU_DATABASE_URL: "x" })).toThrow(
+      /KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY is required/,
     );
     let message = "";
     try {
-      loadConfig({ ...base, KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PAIR.privatePem });
+      loadConfig({ ...base, KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY: PAIR.privatePem });
     } catch (err) {
       message = (err as Error).message;
     }
@@ -63,11 +63,11 @@ describe("loadConfig", () => {
     for (const cidr of ["0.0.0.0/0", "169.254.0.0/16", "127.0.0.0/8", "128.0.0.0/1", "::/0"]) {
       expect(
         () =>
-          loadConfig({ ...base, KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: `192.168.10.4/30,${cidr}` }),
+          loadConfig({ ...base, KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS: `192.168.10.4/30,${cidr}` }),
         cidr,
-      ).toThrow(/KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS.*never reachable/);
+      ).toThrow(/KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS.*never reachable/);
     }
-    const lan = loadConfig({ ...base, KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: "192.168.10.4/30" });
+    const lan = loadConfig({ ...base, KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS: "192.168.10.4/30" });
     expect(lan.allowedInternalCidrs).toEqual(["192.168.10.4/30"]);
   });
 
@@ -75,12 +75,12 @@ describe("loadConfig", () => {
     expect(loadConfig(base).internalTargets).toEqual([]);
     const c = loadConfig({
       ...base,
-      KOBE_EGRESS_INTERNAL_TARGETS: "192.0.2.10/32, fd12:3456::/48",
+      KAIJU_EGRESS_INTERNAL_TARGETS: "192.0.2.10/32, fd12:3456::/48",
     });
     expect(c.internalTargets).toEqual(["192.0.2.10/32", "fd12:3456::/48"]);
     for (const bad of ["192.0.2.0/33", "nope", "169.254.169.254/32", "127.0.0.1", "0.0.0.0/0"]) {
-      expect(() => loadConfig({ ...base, KOBE_EGRESS_INTERNAL_TARGETS: bad }), bad).toThrow(
-        /KOBE_EGRESS_INTERNAL_TARGETS/,
+      expect(() => loadConfig({ ...base, KAIJU_EGRESS_INTERNAL_TARGETS: bad }), bad).toThrow(
+        /KAIJU_EGRESS_INTERNAL_TARGETS/,
       );
     }
   });
@@ -90,8 +90,8 @@ describe("loadConfig", () => {
     const key = "k".repeat(40);
     const c = loadConfig({
       ...base,
-      KOBE_EGRESS_SERVER_URL: "http://kobe-server:8082",
-      KOBE_EGRESS_INTERNAL_KEY: key,
+      KAIJU_EGRESS_SERVER_URL: "http://kobe-server:8082",
+      KAIJU_EGRESS_INTERNAL_KEY: key,
     });
     expect(c.git).toMatchObject({
       serverUrl: "http://kobe-server:8082",
@@ -101,22 +101,22 @@ describe("loadConfig", () => {
       concurrentPerSandbox: 8,
     });
     expect(() =>
-      loadConfig({ ...base, KOBE_EGRESS_SERVER_URL: "http://kobe-server:8082" }),
+      loadConfig({ ...base, KAIJU_EGRESS_SERVER_URL: "http://kobe-server:8082" }),
     ).toThrow(/go together/);
-    expect(() => loadConfig({ ...base, KOBE_EGRESS_INTERNAL_KEY: key })).toThrow(/go together/);
+    expect(() => loadConfig({ ...base, KAIJU_EGRESS_INTERNAL_KEY: key })).toThrow(/go together/);
     expect(() =>
       loadConfig({
         ...base,
-        KOBE_EGRESS_SERVER_URL: "http://user:pw@kobe-server:8082/x",
-        KOBE_EGRESS_INTERNAL_KEY: key,
+        KAIJU_EGRESS_SERVER_URL: "http://user:pw@kobe-server:8082/x",
+        KAIJU_EGRESS_INTERNAL_KEY: key,
       }),
-    ).toThrow(/KOBE_EGRESS_SERVER_URL/);
+    ).toThrow(/KAIJU_EGRESS_SERVER_URL/);
     expect(() =>
       loadConfig({
         ...base,
-        KOBE_EGRESS_SERVER_URL: "http://kobe-server:8082",
-        KOBE_EGRESS_INTERNAL_KEY: "short",
+        KAIJU_EGRESS_SERVER_URL: "http://kobe-server:8082",
+        KAIJU_EGRESS_INTERNAL_KEY: "short",
       }),
-    ).toThrow(/KOBE_EGRESS_INTERNAL_KEY/);
+    ).toThrow(/KAIJU_EGRESS_INTERNAL_KEY/);
   });
 });

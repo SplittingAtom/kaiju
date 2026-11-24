@@ -3,7 +3,7 @@ import { fmt, type CaseResult, type ExtractorSummary } from "./score.js";
 
 /**
  * The extractor eval's results (KOBE-400): one JSON file (everything, including each case's raw
- * replies, so a run can be re-scored offline with `KOBE_EXTRACTOR_REPLAY`) and one Markdown page
+ * replies, so a run can be re-scored offline with `KAIJU_EXTRACTOR_REPLAY`) and one Markdown page
  * per prompt version and model, plus a row in docs/gates/gate-7b.md's results table.
  */
 

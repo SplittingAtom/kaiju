@@ -26,8 +26,8 @@ beforeAll(async () => {
     // A single sign-on provider from the chart (KOBE-626): upserted at every start.
     sso: {
       settings: loadSsoSettings({
-        KOBE_SSO_ENABLED: "true",
-        KOBE_SSO_PROVIDERS: JSON.stringify([
+        KAIJU_SSO_ENABLED: "true",
+        KAIJU_SSO_PROVIDERS: JSON.stringify([
           {
             slug: "entra",
             displayName: "Contoso",
@@ -36,7 +36,7 @@ beforeAll(async () => {
             clientId: "kaiju-app",
           },
         ]),
-        KOBE_SSO_CLIENT_SECRET_ENTRA: "helm-secret-value",
+        KAIJU_SSO_CLIENT_SECRET_ENTRA: "helm-secret-value",
       }),
     },
   });

@@ -7,12 +7,12 @@ metadata only unless `telemetry.captureContent` is true (an install-level opt-in
 {{- define "kobe.telemetryEnv" -}}
 {{- $t := .Values.telemetry | default dict -}}
 {{- if $t.endpoint }}
-- name: KOBE_OTEL_ENDPOINT
+- name: KAIJU_OTEL_ENDPOINT
   value: {{ $t.endpoint | quote }}
-- name: KOBE_OTEL_CAPTURE_CONTENT
+- name: KAIJU_OTEL_CAPTURE_CONTENT
   value: {{ ternary "true" "false" (eq (toString $t.captureContent) "true") | quote }}
 {{- if $t.headersSecret }}
-- name: KOBE_OTEL_HEADERS
+- name: KAIJU_OTEL_HEADERS
   valueFrom:
     secretKeyRef:
       name: {{ $t.headersSecret | quote }}

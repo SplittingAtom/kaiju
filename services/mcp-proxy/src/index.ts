@@ -65,7 +65,7 @@ const internalApp = createInternalApp(
 );
 if (config.routesKeyShared) {
   logger.warn(
-    "KOBE_MCP_ROUTES_KEY is not set: the internal key also authenticates the server's calls (add a routes-key to the internal key Secret)",
+    "KAIJU_MCP_ROUTES_KEY is not set: the internal key also authenticates the server's calls (add a routes-key to the internal key Secret)",
   );
 }
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {

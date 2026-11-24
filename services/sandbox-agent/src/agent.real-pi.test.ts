@@ -25,7 +25,7 @@ import { goodBundle, sha256 } from "./testing/zip.js";
  * ready. See testing/real-pi.ts for how Pi is found.
  */
 const startHarness = (options: { piBin: string }) =>
-  startHarnessWith({ ...options, env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION } });
+  startHarnessWith({ ...options, env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION } });
 
 let h: Harness | undefined;
 afterEach(async () => {

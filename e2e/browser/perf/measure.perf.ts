@@ -8,18 +8,18 @@ import { aggregate, renderTable, type Visit } from "./table.ts";
 
 /**
  * The web measurement run (KOBE-525 ac-1), on demand against a deployment, never in CI:
- * every page under apps/web/app is loaded KOBE_PERF_RUNS times (signed-out pages without the
+ * every page under apps/web/app is loaded KAIJU_PERF_RUNS times (signed-out pages without the
  * session), and a markdown table of p50 / p95 per metric and route is written with each route's
  * first-load JS from the local `next build`. See docs/perf-baseline-2026-10-30.md.
  */
-const APP_DIR = resolve(process.env["KOBE_PERF_APP_DIR"] ?? "../../apps/web");
-const RUNS = Number(process.env["KOBE_PERF_RUNS"] ?? 5);
+const APP_DIR = resolve(process.env["KAIJU_PERF_APP_DIR"] ?? "../../apps/web");
+const RUNS = Number(process.env["KAIJU_PERF_RUNS"] ?? 5);
 const OUT =
-  process.env["KOBE_PERF_OUT"] ?? `perf-results/web-${new Date().toISOString().slice(0, 10)}.md`;
+  process.env["KAIJU_PERF_OUT"] ?? `perf-results/web-${new Date().toISOString().slice(0, 10)}.md`;
 /** Optional filter: comma-separated routes. */
-const ONLY = process.env["KOBE_PERF_ROUTES"]?.split(",").filter((r) => r !== "");
+const ONLY = process.env["KAIJU_PERF_ROUTES"]?.split(",").filter((r) => r !== "");
 /** Optional JSON {"/me/agents/[id]": "/me/agents/<uuid>"}: concrete paths for dynamic routes. */
-const IDS = JSON.parse(process.env["KOBE_PERF_IDS"] ?? "{}") as Record<string, string>;
+const IDS = JSON.parse(process.env["KAIJU_PERF_IDS"] ?? "{}") as Record<string, string>;
 
 function bundles(): Record<string, BundleSize> {
   try {

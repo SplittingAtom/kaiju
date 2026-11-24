@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Kaiju k3d end-to-end suite (KOBE-7). Expects a cluster from scripts/dev-cluster.sh and the Kaiju
-# images available to it under ghcr.io/splittingatom/kobe-*:${KOBE_IMAGE_TAG} (e.g. via
+# images available to it under ghcr.io/splittingatom/kobe-*:${KAIJU_IMAGE_TAG} (e.g. via
 # `k3d image import`). Starts from clean state each run (dev Postgres, release, namespaces), installs
 # the chart with dev/values.yaml, then checks platform invariants. Later tickets add their stories.
-# Refuses to run against anything but a k3d context (or KOBE_E2E_CONTEXT, named explicitly).
+# Refuses to run against anything but a k3d context (or KAIJU_E2E_CONTEXT, named explicitly).
 set -euo pipefail
 E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # sections are sourced relative to this script
 cd "$(dirname "$0")/.."
@@ -39,7 +39,7 @@ fi # gate1-prep skips the sections above
 # client calls each provider kind through the model-gateway shim with its model-gateway session
 # token, and is refused without it, with another audience's token, and after revocation.
 echo "==> model gateway (KOBE-40)"
-if [[ -n "${KOBE_SANDBOX_IMAGE:-}" ]]; then
+if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" ]]; then
 # shellcheck source=run/40-model-gateway-setup.sh
 source "$E2E_DIR/run/40-model-gateway-setup.sh"
   if $KUBECTL -n "$TEAM_NS" wait --for=condition=Ready "pod/$MODEL_CLIENT" --timeout=240s >/dev/null 2>&1; then
@@ -62,9 +62,9 @@ source "$E2E_DIR/run/47-uploads-revocation.sh"
       -o jsonpath='{.status.phase} {.status.containerStatuses[0].state}' 2>&1)"
   fi
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "model gateway checks need KOBE_SANDBOX_IMAGE"
+  fail "model gateway checks need KAIJU_SANDBOX_IMAGE"
 else
-  echo "SKIP model gateway checks (KOBE_SANDBOX_IMAGE not set)"
+  echo "SKIP model gateway checks (KAIJU_SANDBOX_IMAGE not set)"
 fi
 
 # shellcheck source=run/50-request-access.sh

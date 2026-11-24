@@ -20,13 +20,13 @@ import {
 /**
  * Single sign-on settings from the chart (`auth.sso`, spec sso-oidc-scim §4, §11; KOBE-626):
  *
- * - `KOBE_SSO_ENABLED` — the kill switch. `false` hides every SSO route and console page and
+ * - `KAIJU_SSO_ENABLED` — the kill switch. `false` hides every SSO route and console page and
  *   refuses SSO sign-in, without a database change; local sign-in is unaffected. Unset: off.
- * - `KOBE_SSO_ALLOWED_INTERNAL_CIDRS`, `KOBE_SSO_ALLOWED_PORTS` — the SSRF guard's exceptions for an
+ * - `KAIJU_SSO_ALLOWED_INTERNAL_CIDRS`, `KAIJU_SSO_ALLOWED_PORTS` — the SSRF guard's exceptions for an
  *   on-premises IdP (private addresses, a port other than 443).
- * - `KOBE_SSO_PROVIDERS` — JSON array of the Helm-declared providers (no secrets), upserted at start
+ * - `KAIJU_SSO_PROVIDERS` — JSON array of the Helm-declared providers (no secrets), upserted at start
  *   as `managed_by: helm`.
- * - `KOBE_SSO_CLIENT_SECRET_<SLUG>` — each Helm provider's client secret, from the Kubernetes Secret
+ * - `KAIJU_SSO_CLIENT_SECRET_<SLUG>` — each Helm provider's client secret, from the Kubernetes Secret
  *   its values name; held in memory only, never copied into the database.
  */
 
@@ -67,7 +67,7 @@ export const SSO_OFF: SsoSettings = {
 
 /** The env var holding a Helm provider's client secret (slugs have no `_`, so this is 1:1). */
 export function secretEnvName(slug: string): string {
-  return `KOBE_SSO_CLIENT_SECRET_${slug.toUpperCase().replace(/-/g, "_")}`;
+  return `KAIJU_SSO_CLIENT_SECRET_${slug.toUpperCase().replace(/-/g, "_")}`;
 }
 
 const helmProviderSchema = z
@@ -143,28 +143,28 @@ function helmProvider(raw: unknown, index: number): HelmSsoProvider {
 }
 
 export function loadSsoSettings(env: Env): SsoSettings {
-  const flag = env.KOBE_SSO_ENABLED ?? "false";
-  if (flag !== "true" && flag !== "false") fail("KOBE_SSO_ENABLED must be true or false");
-  const cidrs = list(env.KOBE_SSO_ALLOWED_INTERNAL_CIDRS);
+  const flag = env.KAIJU_SSO_ENABLED ?? "false";
+  if (flag !== "true" && flag !== "false") fail("KAIJU_SSO_ENABLED must be true or false");
+  const cidrs = list(env.KAIJU_SSO_ALLOWED_INTERNAL_CIDRS);
   try {
     validateCidrs(cidrs);
     validateInternalTargets(cidrs);
   } catch {
-    fail("KOBE_SSO_ALLOWED_INTERNAL_CIDRS must be a comma-separated list of private CIDRs");
+    fail("KAIJU_SSO_ALLOWED_INTERNAL_CIDRS must be a comma-separated list of private CIDRs");
   }
-  const ports = list(env.KOBE_SSO_ALLOWED_PORTS).map(Number);
+  const ports = list(env.KAIJU_SSO_ALLOWED_PORTS).map(Number);
   if (ports.some((p) => !Number.isInteger(p) || p < 1 || p > 65535)) {
-    fail("KOBE_SSO_ALLOWED_PORTS must be ports (1-65535)");
+    fail("KAIJU_SSO_ALLOWED_PORTS must be ports (1-65535)");
   }
   let raw: unknown = [];
-  if (env.KOBE_SSO_PROVIDERS !== undefined && env.KOBE_SSO_PROVIDERS.trim() !== "") {
+  if (env.KAIJU_SSO_PROVIDERS !== undefined && env.KAIJU_SSO_PROVIDERS.trim() !== "") {
     try {
-      raw = JSON.parse(env.KOBE_SSO_PROVIDERS);
+      raw = JSON.parse(env.KAIJU_SSO_PROVIDERS);
     } catch {
-      fail("KOBE_SSO_PROVIDERS must be a JSON array");
+      fail("KAIJU_SSO_PROVIDERS must be a JSON array");
     }
   }
-  if (!Array.isArray(raw)) return fail("KOBE_SSO_PROVIDERS must be a JSON array");
+  if (!Array.isArray(raw)) return fail("KAIJU_SSO_PROVIDERS must be a JSON array");
   if (raw.length > 20) fail("auth.sso.providers: at most 20 providers");
   const helmProviders = raw.map((p, i) => helmProvider(p, i));
   const slugs = new Set<string>();

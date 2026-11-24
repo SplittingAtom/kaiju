@@ -3,7 +3,7 @@
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-TAG="${KOBE_IMAGE_TAG:?set KOBE_IMAGE_TAG (use a per-run tag so stale images cannot pass)}"
+TAG="${KAIJU_IMAGE_TAG:?set KAIJU_IMAGE_TAG (use a per-run tag so stale images cannot pass)}"
 NS=kobe-dev
 SANDBOX_NS=kaiju-e2e-sandbox
 TEAM_NS=kobe-team-e2e # KOBE-22: created by the server, not by this script
@@ -16,23 +16,23 @@ OTEL_SINK="http://otlp.$OTEL_NS.svc.cluster.local:4318"
 # The proxies and the gateway restrict egress: each may reach the sink (merged into later overrides).
 OTEL_RULE=$(printf '{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"%s"}}}],"ports":[{"protocol":"TCP","port":4318}]}' "$OTEL_NS")
 # CI runs the suite as parallel shards, each on its own cluster (.github/workflows/e2e.yml).
-# KOBE_E2E_TOOL_EXECUTOR=1 installs with sandbox.toolExecutor.enabled=true (KOBE-168): every section
+# KAIJU_E2E_TOOL_EXECUTOR=1 installs with sandbox.toolExecutor.enabled=true (KOBE-168): every section
 # then runs with Pi's tools in the paired-uid executor, plus the isolation checks of e2e/executor/.
 # Every shard installs from clean state and runs the checks section; then:
 #   all (default)  every section, in order
 #   suite          every section except the KOBE-25 cold-start trials
 #   cold-start     the sections up to and including KOBE-25 hibernate and wake, with its trials
 #   gate1-prep     only the KOBE-40 model setup e2e/gate1.sh needs; keeps the fake provider running
-SHARD="${KOBE_E2E_SHARD:-all}"
+SHARD="${KAIJU_E2E_SHARD:-all}"
 case "$SHARD" in
   all | suite | cold-start | gate1-prep) ;;
-  *) echo "unknown KOBE_E2E_SHARD '$SHARD' (all, suite, cold-start, gate1-prep)" >&2; exit 2 ;;
+  *) echo "unknown KAIJU_E2E_SHARD '$SHARD' (all, suite, cold-start, gate1-prep)" >&2; exit 2 ;;
 esac
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_E2E_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_E2E_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_E2E_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_E2E_CONTEXT=$context)" >&2
   exit 2
 fi
 

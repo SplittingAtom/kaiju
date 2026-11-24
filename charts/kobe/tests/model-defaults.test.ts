@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 
-// Render tests for server.modelDefaults (KOBE-259): chart values -> KOBE_MODEL_DEFAULT_*, on the
+// Render tests for server.modelDefaults (KOBE-259): chart values -> KAIJU_MODEL_DEFAULT_*, on the
 // server and on the scheduler (which starts scheduled runs and so sends run.start too).
 
 const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
@@ -19,9 +19,9 @@ const BASE: Record<string, string> = {
   "global.allowGeneratedSecretsOffline": "true",
 };
 const NAMES = [
-  "KOBE_MODEL_DEFAULT_MAX_OUTPUT_TOKENS",
-  "KOBE_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS",
-  "KOBE_MODEL_DEFAULT_CONTEXT_WINDOW",
+  "KAIJU_MODEL_DEFAULT_MAX_OUTPUT_TOKENS",
+  "KAIJU_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS",
+  "KAIJU_MODEL_DEFAULT_CONTEXT_WINDOW",
 ];
 
 type Manifest = { kind: string; metadata: { name: string }; [k: string]: any };

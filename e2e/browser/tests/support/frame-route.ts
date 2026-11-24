@@ -6,14 +6,14 @@ export const FRAME_GUARD = /<script>[^]*?RTCPeerConnection[^]*?<\/script>/;
 
 /**
  * The deployment's real answer to an intercepted request. `route.fetch()` runs in Node, which
- * does not see Chromium's `--host-resolver-rules`: with `KOBE_BROWSER_MAP` (a k3d port-forward,
+ * does not see Chromium's `--host-resolver-rules`: with `KAIJU_BROWSER_MAP` (a k3d port-forward,
  * e2e/gate-apps.sh) the request goes to the mapped address with the site's own Host header, the
  * way Chromium sends it; otherwise `route.fetch()` as is.
  */
 export async function fetchReal(
   route: Route,
 ): Promise<{ status: number; headers: Record<string, string>; body: string }> {
-  const map = process.env["KOBE_BROWSER_MAP"];
+  const map = process.env["KAIJU_BROWSER_MAP"];
   if (!map) {
     const response = await route.fetch();
     return { status: response.status(), headers: response.headers(), body: await response.text() };

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Sourced by e2e/run.sh (KOBE-728 split of the former single script); not run on its own.
 echo "==> chart upgrade reaches an awake sandbox (KOBE-116)"
-if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" ]]; then
+if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" ]]; then
   # Exit status = reachability, from the real agent container; --noproxy: the pod's HTTP_PROXY
   # would otherwise send the request through the egress proxy.
   sbx_reaches() { # url
@@ -57,8 +57,8 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" ]]; then
   contains "it is the same sandbox pod (not woken or recreated)" "^${sbx_pod_before}\\|${sbx_uid_before}\$" \
     "$(sandbox_pod_name)|$(sbx_uid)"
 elif [[ "${CI:-}" == "true" ]]; then
-  fail "the upgrade-reaches-sandbox check needs KOBE_SANDBOX_IMAGE and the e2e sandbox"
+  fail "the upgrade-reaches-sandbox check needs KAIJU_SANDBOX_IMAGE and the e2e sandbox"
 else
-  echo "SKIP upgrade-reaches-sandbox check (KOBE_SANDBOX_IMAGE not set)"
+  echo "SKIP upgrade-reaches-sandbox check (KAIJU_SANDBOX_IMAGE not set)"
 fi
 

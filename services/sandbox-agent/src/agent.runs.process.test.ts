@@ -32,7 +32,7 @@ describe("Pi process lifecycle", () => {
   });
 
   it("never exceeds the process cap when threads start concurrently", async () => {
-    h = await startHarness({ env: { KOBE_MAX_PI_PROCESSES: "1" } });
+    h = await startHarness({ env: { KAIJU_MAX_PI_PROCESSES: "1" } });
     const [a, b] = await Promise.all([
       h.server.command(runStart("hang")),
       h.server.command({ ...runStart("hang"), run_id: RUN_2, thread_id: THREAD_2 }),
@@ -61,7 +61,7 @@ describe("Pi process lifecycle", () => {
   });
 
   it("evicts the least recently used idle Pi at the process cap, never a busy one", async () => {
-    h = await startHarness({ env: { KOBE_MAX_PI_PROCESSES: "1" } });
+    h = await startHarness({ env: { KAIJU_MAX_PI_PROCESSES: "1" } });
     await h.server.command(runStart("say:one"));
     await h.server.waitFor(settled());
     // Thread 1 is idle: thread 2 takes its slot.
@@ -138,7 +138,7 @@ describe("kobe-policy channel (fd 3)", () => {
 
   it("starts no run when kobe-policy refuses to start (fail closed)", async () => {
     h = await startHarness({
-      env: { KOBE_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
     });
     const result = await h.server.command(runStart("say:hi"));
     expect(result).toMatchObject({
@@ -154,7 +154,7 @@ describe("kobe-policy channel (fd 3)", () => {
 
   it("starts no run when kobe-policy never reports ready (fail closed)", async () => {
     h = await startHarness({
-      env: { KOBE_POLICY_EXTENSION: "/opt/kobe/pi-extensions/silent/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/silent/index.js" },
       policyReadyTimeoutMs: 200,
     });
     const result = await h.server.command(runStart("say:hi"));
@@ -179,7 +179,7 @@ describe("kobe-policy channel (fd 3)", () => {
 
   it("gates pi.command on kobe-policy being ready", async () => {
     h = await startHarness({
-      env: { KOBE_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
     });
     const result = await h.server.command({
       type: "pi.command",
@@ -218,7 +218,7 @@ describe("what a tool started by Pi can reach", () => {
       // ... and the socket cannot be re-opened through /proc (Linux).
       procOpen: false,
       // The env var is inherited (harmless: it names an fd the tool does not have).
-      env: ["KOBE_POLICY_FD", "KOBE_TOOL_HOME", "KOBE_TOOL_TMPDIR"],
+      env: ["KAIJU_POLICY_FD", "KAIJU_TOOL_HOME", "KAIJU_TOOL_TMPDIR"],
     });
     await h.server.waitFor(settled());
     // The channel is intact: a real check still goes through.
@@ -236,16 +236,16 @@ describe("what a tool started by Pi can reach", () => {
       sameToolsChannel: false,
       fd4Write: false,
       procOpen4: false,
-      // KOBE_TOOLS_MEMORY, KOBE_MEMORY_FILE (KOBE-157) and KOBE_TOOLS_FILE_EDITS (KOBE-462) are
+      // KAIJU_TOOLS_MEMORY, KAIJU_MEMORY_FILE (KOBE-157) and KAIJU_TOOLS_FILE_EDITS (KOBE-462) are
       // removed by the real extension at load; the fake Pi keeps them.
       env: [
-        "KOBE_MEMORY_FILE",
-        "KOBE_POLICY_FD",
-        "KOBE_TOOLS_FD",
-        "KOBE_TOOLS_FILE_EDITS",
-        "KOBE_TOOLS_MEMORY",
-        "KOBE_TOOL_HOME",
-        "KOBE_TOOL_TMPDIR",
+        "KAIJU_MEMORY_FILE",
+        "KAIJU_POLICY_FD",
+        "KAIJU_TOOLS_FD",
+        "KAIJU_TOOLS_FILE_EDITS",
+        "KAIJU_TOOLS_MEMORY",
+        "KAIJU_TOOL_HOME",
+        "KAIJU_TOOL_TMPDIR",
       ],
     });
     await h.server.waitFor(settled());
@@ -373,7 +373,7 @@ describe("session.restore and branching (D13, D15)", () => {
 
   it("gates the Pi started after a restore on kobe-policy being ready", async () => {
     h = await startHarness({
-      env: { KOBE_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
+      env: { KAIJU_POLICY_EXTENSION: "/opt/kobe/pi-extensions/refuse/index.js" },
     });
     // The restore itself only writes the session file (no Pi) ...
     expect(await h.server.command(restore(0, true, [entry("a1", null)], { header }))).toMatchObject(

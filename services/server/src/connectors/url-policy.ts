@@ -10,7 +10,7 @@ import { AddressPolicy, type AddressChecker } from "@kaiju/address-policy";
  * later re-resolves elsewhere is still refused there.
  */
 export interface ConnectorUrlPolicy {
-  /** Dev only (`KOBE_MCP_ALLOW_INSECURE_HTTP`): accept `http://`. */
+  /** Dev only (`KAIJU_MCP_ALLOW_INSECURE_HTTP`): accept `http://`. */
   readonly allowHttp: boolean;
   readonly allowedPorts: readonly number[];
   /** Internal targets the operator allows (on-premises servers), as CIDRs. */

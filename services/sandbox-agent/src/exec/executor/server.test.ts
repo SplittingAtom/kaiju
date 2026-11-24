@@ -137,12 +137,12 @@ describe("exec", () => {
   });
 
   it("runs in the requested directory and gives the command only the executor's environment", async () => {
-    const t = setup({ PATH: process.env.PATH ?? "", KOBE_BASE: "base" });
+    const t = setup({ PATH: process.env.PATH ?? "", KAIJU_BASE: "base" });
     t.send({
       id: "e",
       op: "exec",
       cwd: dir,
-      command: 'pwd; echo "$KOBE_BASE|$PI_MODEL|$SECRET|$HOME_X"',
+      command: 'pwd; echo "$KAIJU_BASE|$PI_MODEL|$SECRET|$HOME_X"',
       env: { PI_MODEL: "m1", SECRET: "nope", PATH: "/evil" },
     });
     await t.final("e");

@@ -41,7 +41,7 @@ async function start(extensions: readonly string[] = []): Promise<Harness> {
   // credential store there before calling any model, the faux model included.
   h = await startHarness({
     piBin: PI_BIN,
-    env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+    env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
     extensions: [FAUX_MODEL_EXTENSION, ...extensions],
   });
   return h;
@@ -343,7 +343,7 @@ describe.skipIf(!PI_AVAILABLE)("kobe-policy in real Pi, through kobe-sandbox-age
 
   it("removes the channel variable before tools run", async () => {
     const t = await start();
-    await run(t, [bash("v1", 'echo "fd=${KOBE_POLICY_FD:-unset}"')]);
+    await run(t, [bash("v1", 'echo "fd=${KAIJU_POLICY_FD:-unset}"')]);
     answer(t, await nextCheck(t, 0), "allow");
     expect((await toolEnd(t, "v1")).text).toContain("fd=unset");
     await settled(t);
@@ -369,7 +369,7 @@ class DirectPi {
         PI_OFFLINE: "1",
         PI_TELEMETRY: "0",
         PI_SKIP_VERSION_CHECK: "1",
-        KOBE_POLICY_FD: "3",
+        KAIJU_POLICY_FD: "3",
         ...env,
       },
       stdio: ["pipe", "pipe", "ignore", "pipe"],
@@ -520,7 +520,7 @@ describe.skipIf(!PI_AVAILABLE)("kobe-policy in real Pi, against a fake channel p
   }, 60_000);
 
   it("blocks every call when Pi has no policy channel at all", async () => {
-    const p = await launch([FAUX_MODEL_EXTENSION, REAL_POLICY_EXTENSION], { KOBE_POLICY_FD: "" });
+    const p = await launch([FAUX_MODEL_EXTENSION, REAL_POLICY_EXTENSION], { KAIJU_POLICY_FD: "" });
     p.prompt([bash("n1", "echo x > x.txt")]);
     expect(await p.toolEnd("n1")).toMatchObject({
       isError: true,

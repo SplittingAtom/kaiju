@@ -182,16 +182,16 @@ describe("forwarding config", () => {
   it("is empty by default", () => {
     expect(loadAuditForwardingConfig({})).toEqual({});
     expect(
-      loadAuditForwardingConfig({ KOBE_AUDIT_SYSLOG_URL: "", KOBE_AUDIT_OTLP_URL: "" }),
+      loadAuditForwardingConfig({ KAIJU_AUDIT_SYSLOG_URL: "", KAIJU_AUDIT_OTLP_URL: "" }),
     ).toEqual({});
   });
 
   it("reads syslog and OTLP settings", () => {
     expect(
       loadAuditForwardingConfig({
-        KOBE_AUDIT_SYSLOG_URL: "tls://siem.example.test:6514",
-        KOBE_AUDIT_OTLP_URL: "https://otel.example.test:4318/v1/logs",
-        KOBE_AUDIT_OTLP_HEADERS: "authorization=Bearer%20x, x-team=a",
+        KAIJU_AUDIT_SYSLOG_URL: "tls://siem.example.test:6514",
+        KAIJU_AUDIT_OTLP_URL: "https://otel.example.test:4318/v1/logs",
+        KAIJU_AUDIT_OTLP_HEADERS: "authorization=Bearer%20x, x-team=a",
       }),
     ).toEqual({
       syslog: { host: "siem.example.test", port: 6514, tls: true, enterpriseNumber: "32473" },
@@ -203,29 +203,29 @@ describe("forwarding config", () => {
   });
 
   it("rejects bad values without echoing them", () => {
-    expect(() => loadAuditForwardingConfig({ KOBE_AUDIT_SYSLOG_URL: "udp://h:514" })).toThrow(
+    expect(() => loadAuditForwardingConfig({ KAIJU_AUDIT_SYSLOG_URL: "udp://h:514" })).toThrow(
       /tcp:\/\/ or tls:\/\//,
     );
-    expect(() => loadAuditForwardingConfig({ KOBE_AUDIT_SYSLOG_URL: "tcp://h" })).toThrow(/port/);
-    expect(() => loadAuditForwardingConfig({ KOBE_AUDIT_OTLP_URL: "ftp://x" })).toThrow(
-      /KOBE_AUDIT_OTLP_URL/,
+    expect(() => loadAuditForwardingConfig({ KAIJU_AUDIT_SYSLOG_URL: "tcp://h" })).toThrow(/port/);
+    expect(() => loadAuditForwardingConfig({ KAIJU_AUDIT_OTLP_URL: "ftp://x" })).toThrow(
+      /KAIJU_AUDIT_OTLP_URL/,
     );
   });
 
   it("reads the syslog enterprise number as digits only (KOBE-182)", () => {
     const syslog = (n: string | undefined) =>
       loadAuditForwardingConfig({
-        KOBE_AUDIT_SYSLOG_URL: "tcp://h:514",
-        KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER: n,
+        KAIJU_AUDIT_SYSLOG_URL: "tcp://h:514",
+        KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER: n,
       }).syslog?.enterpriseNumber;
     expect(syslog(undefined)).toBe("32473");
     expect(syslog("")).toBe("32473");
     expect(syslog("61234")).toBe("61234");
     for (const bad of ["abc", "12.3", "-1", "0", "0123", "12345678901", "1 2"]) {
-      expect(() => syslog(bad), bad).toThrow(/KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER/);
+      expect(() => syslog(bad), bad).toThrow(/KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER/);
     }
     // Validated even while syslog is off, so a typo shows before it is turned on.
-    expect(() => loadAuditForwardingConfig({ KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER: "x" })).toThrow(
+    expect(() => loadAuditForwardingConfig({ KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER: "x" })).toThrow(
       /ENTERPRISE_NUMBER/,
     );
   });

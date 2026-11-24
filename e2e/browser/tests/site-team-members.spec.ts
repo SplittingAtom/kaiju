@@ -4,17 +4,17 @@ import { pageApi, secondBrowser } from "./support/gate5.js";
 import { panelOf } from "./support/panel.js";
 
 /**
- * KOBE-638: a site admin (KOBE_USER, the gate1 Owner) manages a team's members in Site console ›
- * Teams without an invitation. Manage members of a team member2 (KOBE_USER2 / KOBE_PW2) is not in
- * (KOBE_SITE_MEMBERS_TEAM = its slug, else the first such team): search member2, add as Member
+ * KOBE-638: a site admin (KAIJU_USER, the gate1 Owner) manages a team's members in Site console ›
+ * Teams without an invitation. Manage members of a team member2 (KAIJU_USER2 / KAIJU_PW2) is not in
+ * (KAIJU_SITE_MEMBERS_TEAM = its slug, else the first such team): search member2, add as Member
  * (the row says "Added by a site admin" and member2 sees "… added you to this team" in that
  * team's notifications), change the role to Contributor, remove after confirming. The finally
  * block removes member2 from the team again if a step failed, so the site ends as it began. Spends
  * no model tokens. Run on gate1: `npx playwright test site-team-members`.
  */
-const USER2 = process.env["KOBE_USER2"];
-const PW2 = process.env["KOBE_PW2"];
-const WANTED = process.env["KOBE_SITE_MEMBERS_TEAM"];
+const USER2 = process.env["KAIJU_USER2"];
+const PW2 = process.env["KAIJU_PW2"];
+const WANTED = process.env["KAIJU_SITE_MEMBERS_TEAM"];
 
 interface Team {
   readonly id: string;
@@ -53,7 +53,7 @@ test("a site admin adds member2 to a team without an invitation, changes the rol
   page,
   browser,
 }) => {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 are required");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 are required");
   const panel = panelOf(page);
   await page.goto("/admin/site/teams");
   await expect(panel.getByRole("heading", { level: 1, name: "Teams" })).toBeVisible({
@@ -68,7 +68,7 @@ test("a site admin adds member2 to a team without an invitation, changes the rol
   expect(member2, "member2 is a Kaiju user").toBeTruthy();
   if (!member2) return;
   const team = await pickTeam(page, member2.id);
-  test.skip(!team, "No team without member2 (set KOBE_SITE_MEMBERS_TEAM).");
+  test.skip(!team, "No team without member2 (set KAIJU_SITE_MEMBERS_TEAM).");
   if (!team) return;
 
   try {

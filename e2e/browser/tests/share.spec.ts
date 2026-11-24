@@ -6,10 +6,10 @@ import { expect, test } from "./support/chat.js";
  * KOBE-221 (CE20): the author shares a thread with the team from its row's ⋯ menu; a second member
  * finds it under Shared with me, opens it read-only with "Shared by <author>", forks it into a
  * thread of their own; the author revokes it and the second member loses it. Needs a second
- * member of the same team with a password: KOBE_USER2 and KOBE_PW2 (skipped without them).
+ * member of the same team with a password: KAIJU_USER2 and KAIJU_PW2 (skipped without them).
  */
-const SECOND_USER = process.env["KOBE_USER2"];
-const SECOND_PW = process.env["KOBE_PW2"];
+const SECOND_USER = process.env["KAIJU_USER2"];
+const SECOND_PW = process.env["KAIJU_PW2"];
 const TEAM_KEY = "kobe.lastTeamId";
 
 /** A group of the Threads panel (KOBE-453). */
@@ -64,7 +64,7 @@ test("share with the team, read and fork as another member, then revoke", async 
   page,
   browser,
 }) => {
-  test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!SECOND_USER || !SECOND_PW, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const title = `Share ${Date.now().toString(36)}`;
 
   await chat.open();

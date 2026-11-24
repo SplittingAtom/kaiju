@@ -3,7 +3,7 @@ import type { TelemetryConfig } from "./config.js";
 /**
  * Trace scores (KOBE-275): a member's rating of an answer, sent to the tracing backend as a score
  * on the run's trace. OTLP has no scores, so this speaks Langfuse's public scores API with the
- * exporter's own endpoint and headers: on only when `KOBE_OTEL_ENDPOINT` is a Langfuse OTLP
+ * exporter's own endpoint and headers: on only when `KAIJU_OTEL_ENDPOINT` is a Langfuse OTLP
  * endpoint (`…/api/public/otel`), off for every other backend. The server calls it; nothing in a
  * sandbox holds the endpoint or the credential.
  *

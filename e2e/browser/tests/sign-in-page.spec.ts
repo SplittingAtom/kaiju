@@ -7,7 +7,7 @@ import { SHELL_TIMEOUT_MS } from "./support/constants.js";
  * password, Sign in and "Forgot your password?" first, then an "or" divider with one button per
  * enabled identity provider (for example Microsoft Entra ID) in the server's order and the passkey
  * button; a password sign-in still works. Screenshots of both schemes are attached to the report.
- * Needs KOBE_USER / KOBE_PW. No model tokens. Run: `npx playwright test sign-in-page`.
+ * Needs KAIJU_USER / KAIJU_PW. No model tokens. Run: `npx playwright test sign-in-page`.
  */
 type Scheme = "light" | "dark";
 
@@ -155,9 +155,9 @@ test("sign-in page at 360 px: the panel fits with a 16 px gutter, no sideways sc
 });
 
 test("password sign-in from the themed page lands in the app", async ({ browser }) => {
-  const user = process.env["KOBE_USER"];
-  const password = process.env["KOBE_PW"];
-  test.skip(!user || !password, "KOBE_USER and KOBE_PW are required");
+  const user = process.env["KAIJU_USER"];
+  const password = process.env["KAIJU_PW"];
+  test.skip(!user || !password, "KAIJU_USER and KAIJU_PW are required");
   const page = await signedOut(browser, "dark");
   try {
     await page.goto("/sign-in");

@@ -9,11 +9,11 @@ import { pageApi } from "./gate5.js";
  * side is in e2e/sso/gate1-mock-idp.sh; the variables are listed in README.md.
  */
 export const MOCK = {
-  issuer: process.env["KOBE_SSO_MOCK_ISSUER"] ?? "",
-  clientId: process.env["KOBE_SSO_MOCK_CLIENT_ID"] ?? "",
-  clientSecret: process.env["KOBE_SSO_MOCK_CLIENT_SECRET"] ?? "",
-  slug: process.env["KOBE_SSO_MOCK_SLUG"] ?? "e2e-mock",
-  name: process.env["KOBE_SSO_MOCK_NAME"] ?? "Mock IdP (e2e)",
+  issuer: process.env["KAIJU_SSO_MOCK_ISSUER"] ?? "",
+  clientId: process.env["KAIJU_SSO_MOCK_CLIENT_ID"] ?? "",
+  clientSecret: process.env["KAIJU_SSO_MOCK_CLIENT_SECRET"] ?? "",
+  slug: process.env["KAIJU_SSO_MOCK_SLUG"] ?? "e2e-mock",
+  name: process.env["KAIJU_SSO_MOCK_NAME"] ?? "Mock IdP (e2e)",
 } as const;
 
 /** The app role the spec maps to the team (only the mock's people carry it). */
@@ -58,7 +58,7 @@ export interface Provider {
 
 /**
  * A browser with no session. It accepts the mock's private CA: the mock is reached at its
- * in-cluster name, which Chromium maps to the ingress (KOBE_SSO_MOCK_MAP, playwright.config.ts).
+ * in-cluster name, which Chromium maps to the ingress (KAIJU_SSO_MOCK_MAP, playwright.config.ts).
  */
 export async function freshBrowser(browser: Browser): Promise<Page> {
   const context = await browser.newContext({ storageState: undefined, ignoreHTTPSErrors: true });
@@ -109,7 +109,7 @@ export async function passwordSignIn(page: Page, email: string, password: string
 }
 
 /**
- * Finds the mock provider, or registers it (console-managed) from KOBE_SSO_MOCK_*, and turns it on.
+ * Finds the mock provider, or registers it (console-managed) from KAIJU_SSO_MOCK_*, and turns it on.
  * Returns it and whether this run turned it on (and so turns it off again).
  */
 export async function ensureProvider(

@@ -30,42 +30,42 @@ export const S3_IDLE_TIMEOUT_MS = 60_000;
  */
 const settingsSchema = z
   .object({
-    KOBE_S3_BUCKET: z.string().trim().default(""),
-    KOBE_S3_ENDPOINT: z
+    KAIJU_S3_BUCKET: z.string().trim().default(""),
+    KAIJU_S3_ENDPOINT: z
       .string()
       .trim()
       .default("")
       .refine((v) => v === "" || /^https?:\/\/[^/@]+(\/.*)?$/.test(v), {
-        message: "KOBE_S3_ENDPOINT must be an http(s) URL without credentials",
+        message: "KAIJU_S3_ENDPOINT must be an http(s) URL without credentials",
       }),
-    KOBE_S3_REGION: z.string().trim().min(1).default("us-east-1"),
-    KOBE_S3_FORCE_PATH_STYLE: z
+    KAIJU_S3_REGION: z.string().trim().min(1).default("us-east-1"),
+    KAIJU_S3_FORCE_PATH_STYLE: z
       .enum(["true", "false", ""])
       .default("true")
       .transform((v) => v !== "false"),
-    KOBE_S3_PREFIX: z
+    KAIJU_S3_PREFIX: z
       .string()
       .trim()
       .default("")
       .refine((v) => v === "" || (/^[A-Za-z0-9!_.*'()/-]+\/$/.test(v) && !v.startsWith("/")), {
-        message: "KOBE_S3_PREFIX must be a relative key prefix ending in /",
+        message: "KAIJU_S3_PREFIX must be a relative key prefix ending in /",
       }),
     // KOBE-732: a store that accepts and never answers must not hang a caller (or a lock it holds).
-    KOBE_S3_CONNECT_TIMEOUT_MS: z.coerce
-      .number({ error: "KOBE_S3_CONNECT_TIMEOUT_MS must be a number" })
-      .int("KOBE_S3_CONNECT_TIMEOUT_MS must be an integer")
-      .min(1, "KOBE_S3_CONNECT_TIMEOUT_MS must be positive")
+    KAIJU_S3_CONNECT_TIMEOUT_MS: z.coerce
+      .number({ error: "KAIJU_S3_CONNECT_TIMEOUT_MS must be a number" })
+      .int("KAIJU_S3_CONNECT_TIMEOUT_MS must be an integer")
+      .min(1, "KAIJU_S3_CONNECT_TIMEOUT_MS must be positive")
       .default(S3_CONNECT_TIMEOUT_MS),
-    KOBE_S3_IDLE_TIMEOUT_MS: z.coerce
-      .number({ error: "KOBE_S3_IDLE_TIMEOUT_MS must be a number" })
-      .int("KOBE_S3_IDLE_TIMEOUT_MS must be an integer")
-      .min(1, "KOBE_S3_IDLE_TIMEOUT_MS must be positive")
+    KAIJU_S3_IDLE_TIMEOUT_MS: z.coerce
+      .number({ error: "KAIJU_S3_IDLE_TIMEOUT_MS must be a number" })
+      .int("KAIJU_S3_IDLE_TIMEOUT_MS must be an integer")
+      .min(1, "KAIJU_S3_IDLE_TIMEOUT_MS must be positive")
       .default(S3_IDLE_TIMEOUT_MS),
-    KOBE_S3_ACCESS_KEY_ID: z.string().default(""),
-    KOBE_S3_SECRET_ACCESS_KEY: z.string().default(""),
+    KAIJU_S3_ACCESS_KEY_ID: z.string().default(""),
+    KAIJU_S3_SECRET_ACCESS_KEY: z.string().default(""),
   })
-  .refine((e) => (e.KOBE_S3_ACCESS_KEY_ID === "") === (e.KOBE_S3_SECRET_ACCESS_KEY === ""), {
-    message: "KOBE_S3_ACCESS_KEY_ID and KOBE_S3_SECRET_ACCESS_KEY must be set together",
+  .refine((e) => (e.KAIJU_S3_ACCESS_KEY_ID === "") === (e.KAIJU_S3_SECRET_ACCESS_KEY === ""), {
+    message: "KAIJU_S3_ACCESS_KEY_ID and KAIJU_S3_SECRET_ACCESS_KEY must be set together",
   });
 
 export interface S3Settings {
@@ -104,19 +104,19 @@ export function loadS3Settings(
     throw new Error(`Invalid configuration: ${issues}`);
   }
   const e = parsed.data;
-  if (e.KOBE_S3_BUCKET === "") return undefined;
+  if (e.KAIJU_S3_BUCKET === "") return undefined;
   return {
-    bucket: e.KOBE_S3_BUCKET,
-    endpoint: e.KOBE_S3_ENDPOINT === "" ? undefined : e.KOBE_S3_ENDPOINT,
-    region: e.KOBE_S3_REGION,
-    forcePathStyle: e.KOBE_S3_FORCE_PATH_STYLE,
-    prefix: e.KOBE_S3_PREFIX,
+    bucket: e.KAIJU_S3_BUCKET,
+    endpoint: e.KAIJU_S3_ENDPOINT === "" ? undefined : e.KAIJU_S3_ENDPOINT,
+    region: e.KAIJU_S3_REGION,
+    forcePathStyle: e.KAIJU_S3_FORCE_PATH_STYLE,
+    prefix: e.KAIJU_S3_PREFIX,
     credentials:
-      e.KOBE_S3_ACCESS_KEY_ID === ""
+      e.KAIJU_S3_ACCESS_KEY_ID === ""
         ? null
-        : { accessKeyId: e.KOBE_S3_ACCESS_KEY_ID, secretAccessKey: e.KOBE_S3_SECRET_ACCESS_KEY },
-    connectTimeoutMs: e.KOBE_S3_CONNECT_TIMEOUT_MS,
-    idleTimeoutMs: e.KOBE_S3_IDLE_TIMEOUT_MS,
+        : { accessKeyId: e.KAIJU_S3_ACCESS_KEY_ID, secretAccessKey: e.KAIJU_S3_SECRET_ACCESS_KEY },
+    connectTimeoutMs: e.KAIJU_S3_CONNECT_TIMEOUT_MS,
+    idleTimeoutMs: e.KAIJU_S3_IDLE_TIMEOUT_MS,
   };
 }
 
@@ -128,7 +128,7 @@ export function loadS3Settings(
 export function plainHttpEndpointWarning(settings: S3Settings): string | undefined {
   if (!settings.endpoint?.toLowerCase().startsWith("http:")) return undefined;
   const host = new URL(settings.endpoint).host;
-  return `KOBE_S3_ENDPOINT is plain http (${host}): object-store traffic, including every workspace file, travels in clear`;
+  return `KAIJU_S3_ENDPOINT is plain http (${host}): object-store traffic, including every workspace file, travels in clear`;
 }
 
 /**

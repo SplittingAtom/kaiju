@@ -197,12 +197,12 @@ describe("skills at run start", () => {
 
 /**
  * KOBE-317: the former built-ins are Kaiju-published catalog skills and arrive as bundles like any
- * other; the image path (`builtin_skills`, `KOBE_BUILTIN_SKILLS_DIR`) is gone.
+ * other; the image path (`builtin_skills`, `KAIJU_BUILTIN_SKILLS_DIR`) is gone.
  */
 describe("former built-in skills", () => {
   it("never advertises builtin_skills, even with the old image variable set", async () => {
     const dir = await mkdtemp(path.join(tmpdir(), "kobe-builtin-gone-"));
-    h = await startHarness({ skills: store(), env: { KOBE_BUILTIN_SKILLS_DIR: dir } });
+    h = await startHarness({ skills: store(), env: { KAIJU_BUILTIN_SKILLS_DIR: dir } });
     expect(h.server.frames("hello").at(-1)?.capabilities).toEqual([
       "skill_bundles",
       "app_cards",

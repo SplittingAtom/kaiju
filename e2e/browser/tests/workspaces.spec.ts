@@ -6,8 +6,8 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-582 (Workspaces WS-7, spec docs/specs/workspaces.md), updated by KOBE-587 (every workspace
- * member reads every project, projects-in-conversations RV1-RV3): the owner (KOBE_USER, Team1
- * admin) creates a project with one file and adds nobody; member2 (KOBE_USER2 / KOBE_PW2, a plain
+ * member reads every project, projects-in-conversations RV1-RV3): the owner (KAIJU_USER, Team1
+ * admin) creates a project with one file and adds nobody; member2 (KAIJU_USER2 / KAIJU_PW2, a plain
  * member) is a reader by default. member2 converses in it: the Files panel lists the project under
  * Projects, read-only with "You can read this project, not change it.", and an upload is refused
  * (403). The owner promotes member2 to editor (PATCH adds the row); member2 checks the project out, edits the file in the
@@ -16,8 +16,8 @@ import { panelOf } from "./support/panel.js";
  * model turn (member2's first message). afterEach archives and deletes the project and moves the
  * threads to Trash; the spec skips when the deployment has no commit API or no second member.
  */
-const USER2 = process.env["KOBE_USER2"];
-const PW2 = process.env["KOBE_PW2"];
+const USER2 = process.env["KAIJU_USER2"];
+const PW2 = process.env["KAIJU_PW2"];
 
 const FILE = "notes.md";
 const BASE = "alpha\nbeta\n";
@@ -125,7 +125,7 @@ test("a reader converses and cannot upload; as editor they check out, edit, comm
   browser,
   page,
 }) => {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const stem = `kobe-582-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 
   // The owner: a project with one file; member2 has no row, so is a reader by default (RV1).

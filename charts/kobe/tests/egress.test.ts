@@ -61,16 +61,16 @@ describe("egress proxy Deployment", () => {
 
   it("gets only its own session public key, the app-role database URL, and waits for migrations", () => {
     const env = proxyEnv(ms);
-    const keys = env.filter((e) => e.name.startsWith("KOBE_SESSION_"));
+    const keys = env.filter((e) => e.name.startsWith("KAIJU_SESSION_"));
     expect(keys).toEqual([
       {
-        name: "KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY",
+        name: "KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY",
         valueFrom: {
           configMapKeyRef: { name: "kobe-sandbox-session-verify-keys", key: "egress-proxy" },
         },
       },
     ]);
-    expect(env.find((e) => e.name === "KOBE_DATABASE_URL")?.valueFrom.secretKeyRef.key).toBe(
+    expect(env.find((e) => e.name === "KAIJU_DATABASE_URL")?.valueFrom.secretKeyRef.key).toBe(
       "app-url",
     );
     expect(proxyPod(ms)?.initContainers.map((c: { name: string }) => c.name)).toEqual([
@@ -87,9 +87,9 @@ describe("egress proxy Deployment", () => {
     );
     const config = loadConfig({
       ...vars,
-      KOBE_DATABASE_URL: "postgres://x",
-      KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
-      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
+      KAIJU_DATABASE_URL: "postgres://x",
+      KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
+      KAIJU_EGRESS_INTERNAL_KEY: "k".repeat(48),
     });
     expect(config.allowedPorts).toEqual([443]);
     expect(config.allowedInternalCidrs).toEqual([]);
@@ -162,7 +162,7 @@ describe("egress proxy NetworkPolicy", () => {
 
   it("adds explicitly allowed internal targets to both the proxy config and its policy", () => {
     const ms = render({}, { "egressProxy.allowedInternalCidrs": ["10.43.200.200/32"] });
-    expect(proxyEnv(ms).find((e) => e.name === "KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS")?.value).toBe(
+    expect(proxyEnv(ms).find((e) => e.name === "KAIJU_EGRESS_ALLOWED_INTERNAL_CIDRS")?.value).toBe(
       "10.43.200.200/32",
     );
     expect(policy(ms)?.egress).toContainEqual({
@@ -194,7 +194,7 @@ describe("same-cluster hosts: clusterIngress (EA4, KOBE-603)", () => {
     ports: [8443],
   };
   const internalTargets = (ms: Manifest[]) =>
-    proxyEnv(ms).find((e) => e.name === "KOBE_EGRESS_INTERNAL_TARGETS")?.value;
+    proxyEnv(ms).find((e) => e.name === "KAIJU_EGRESS_INTERNAL_TARGETS")?.value;
   const configOf = (ms: Manifest[]) =>
     loadConfig({
       ...Object.fromEntries(
@@ -202,9 +202,9 @@ describe("same-cluster hosts: clusterIngress (EA4, KOBE-603)", () => {
           .filter((e) => e.value !== undefined)
           .map((e) => [e.name, e.value]),
       ),
-      KOBE_DATABASE_URL: "postgres://x",
-      KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
-      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
+      KAIJU_DATABASE_URL: "postgres://x",
+      KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
+      KAIJU_EGRESS_INTERNAL_KEY: "k".repeat(48),
     });
 
   it("is off by default: no internal targets and no rule to any ingress pod", () => {
@@ -278,7 +278,7 @@ describe("sandbox side", () => {
   it("team namespaces send sandboxes to the proxy pods on 8080 (server config)", () => {
     const server = find(render(), "Deployment", "kobe-server")?.spec.template.spec.containers[0];
     const cfg = JSON.parse(
-      server.env.find((e: { name: string }) => e.name === "KOBE_SANDBOX_CONFIG").value,
+      server.env.find((e: { name: string }) => e.name === "KAIJU_SANDBOX_CONFIG").value,
     );
     expect(cfg.endpoints.egressProxy).toMatchObject({
       service: "kobe-egress-proxy",
@@ -297,7 +297,7 @@ describe("header injection secret (KOBE-39)", () => {
       valueFrom?: any;
     }[];
   const headerVars = (env: { name: string; valueFrom?: any }[]) =>
-    env.filter((e) => e.name.startsWith("KOBE_EGRESS_HEADER_SECRET"));
+    env.filter((e) => e.name.startsWith("KAIJU_EGRESS_HEADER_SECRET"));
 
   it("is generated, kept, and given to the server and the egress proxy only", () => {
     const secret = find(ms, "Secret", "kobe-egress-headers");
@@ -305,11 +305,11 @@ describe("header injection secret (KOBE-39)", () => {
     expect((secret?.stringData as Record<string, string>).secret).toMatch(/^[A-Za-z0-9]{48}$/);
     const expected = [
       {
-        name: "KOBE_EGRESS_HEADER_SECRET",
+        name: "KAIJU_EGRESS_HEADER_SECRET",
         valueFrom: { secretKeyRef: { name: "kobe-egress-headers", key: "secret" } },
       },
       {
-        name: "KOBE_EGRESS_HEADER_SECRET_PREVIOUS",
+        name: "KAIJU_EGRESS_HEADER_SECRET_PREVIOUS",
         valueFrom: {
           secretKeyRef: { name: "kobe-egress-headers", key: "secret-previous", optional: true },
         },
@@ -340,10 +340,10 @@ describe("header injection secret (KOBE-39)", () => {
     );
     const config = loadConfig({
       ...vars,
-      KOBE_DATABASE_URL: "postgres://x",
-      KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
-      KOBE_EGRESS_HEADER_SECRET: "h".repeat(48),
-      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
+      KAIJU_DATABASE_URL: "postgres://x",
+      KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
+      KAIJU_EGRESS_HEADER_SECRET: "h".repeat(48),
+      KAIJU_EGRESS_INTERNAL_KEY: "k".repeat(48),
     });
     expect(config.headerSecrets).toEqual(["h".repeat(48)]);
     expect(config.upgrade).toEqual({
@@ -370,10 +370,10 @@ describe("git smart-HTTP for connected organizations (KOBE-763)", () => {
     expect((secret?.stringData as Record<string, string>).key).toMatch(/^[A-Za-z0-9]{48}$/);
     const ref = { secretKeyRef: { name: "kobe-egress-proxy-internal", key: "key" } };
     expect(
-      envOf("kobe-egress-proxy").find((e) => e.name === "KOBE_EGRESS_INTERNAL_KEY")?.valueFrom,
+      envOf("kobe-egress-proxy").find((e) => e.name === "KAIJU_EGRESS_INTERNAL_KEY")?.valueFrom,
     ).toEqual(ref);
     expect(
-      envOf("kobe-server").find((e) => e.name === "KOBE_EGRESS_PROXY_INTERNAL_KEY")?.valueFrom,
+      envOf("kobe-server").find((e) => e.name === "KAIJU_EGRESS_PROXY_INTERNAL_KEY")?.valueFrom,
     ).toEqual(ref);
     for (const other of ["kobe-scheduler", "kobe-mcp-proxy", "kobe-model-gateway", "kobe-web"]) {
       expect(JSON.stringify(envOf(other)), other).not.toContain("kobe-egress-proxy-internal");
@@ -393,9 +393,9 @@ describe("git smart-HTTP for connected organizations (KOBE-763)", () => {
     );
     const config = loadConfig({
       ...vars,
-      KOBE_DATABASE_URL: "postgres://x",
-      KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
-      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
+      KAIJU_DATABASE_URL: "postgres://x",
+      KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
+      KAIJU_EGRESS_INTERNAL_KEY: "k".repeat(48),
     });
     expect(config.git).toMatchObject({
       serverUrl: "http://kobe-server:8082",
@@ -413,7 +413,7 @@ describe("git smart-HTTP for connected organizations (KOBE-763)", () => {
         .filter((e: { value?: string }) => e.value !== undefined)
         .map((e: { name: string; value: string }) => [e.name, e.value]),
     );
-    expect(tunedVars.KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES).toBe("8589934592");
+    expect(tunedVars.KAIJU_EGRESS_GIT_MAX_RESPONSE_BYTES).toBe("8589934592");
   });
 
   it("lets the egress proxy reach the server's internal port, and the server admit it there", () => {

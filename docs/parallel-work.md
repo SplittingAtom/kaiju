@@ -27,7 +27,7 @@ The coordinator starts each ticket agent with a generated `BRIEF.md` in the work
 (`scripts/hadron.sh brief <N>`) and the prompt in [agent-prompt.md](agent-prompt.md), which also
 sets the model per job and the review level per diff. Ticket agents read the brief instead of the
 whole spec and other ledgers, run `pnpm verify` before pushing (it formats and, with
-`KOBE_TEST_DATABASE_URL` set, runs the DB tests), wait for CI with exactly one background
+`KAIJU_TEST_DATABASE_URL` set, runs the DB tests), wait for CI with exactly one background
 `gh pr checks <n> --watch` (never a loop around `pgrep` or `sleep`), and end with a report of at
 most 150 words that states their token use.
 
@@ -122,7 +122,7 @@ pnpm --filter @kaiju/db db:rebase --base origin/group-88-x # the same onto anoth
 pnpm --filter @kaiju/db db:rebase --apply
 ```
 
-The base also comes from a positional ref or `KOBE_DB_REBASE_BASE`; default `origin/main`. The
+The base also comes from a positional ref or `KAIJU_DB_REBASE_BASE`; default `origin/main`. The
 branch's own migrations are the journal entries neither the base nor the fork point has, so a
 branch stacked on one that was regenerated since leaves the old copies of that branch's
 migrations to it.
@@ -164,12 +164,12 @@ hand-written migration too; how to write one is in
 
 ## Shared environments
 
-- **Postgres for tests:** `KOBE_TEST_DATABASE_URL` points at a server, not a database. Each test
+- **Postgres for tests:** `KAIJU_TEST_DATABASE_URL` points at a server, not a database. Each test
   file or suite creates its own throwaway database and roles, so agents can share one server (the
   dev Postgres; URL in `CLAUDE.local.md`). Each worktree is a **test lane** (KOBE-482):
-  - **Picking the lane:** `KOBE_TEST_DB_LANE` (1-20 of `[a-z0-9]`; empty means no lane), else the
+  - **Picking the lane:** `KAIJU_TEST_DB_LANE` (1-20 of `[a-z0-9]`; empty means no lane), else the
     worktree directory name lowercased to `[a-z0-9]` without the leading `kobe` (`Kobe-wt482` →
-    `wt482`, `Kobe` → `kobe`). CI sets `CI`, so it has no lane unless `KOBE_TEST_DB_LANE` is set:
+    `wt482`, `Kobe` → `kobe`). CI sets `CI`, so it has no lane unless `KAIJU_TEST_DB_LANE` is set:
     one database per job, as before.
   - **What a lane changes:** every DB suite's global setup creates `kobe_lane_<lane>` if missing
     (`prepareTestLane`), tests reach the server through that database instead of `postgres`, and
@@ -179,22 +179,22 @@ hand-written migration too; how to write one is in
     other's objects.
   - **Connections:** lanes share the server's `max_connections` (100 on the dev Postgres) and a
     server DB file peaks at about 12. Two lanes running the full server suite at once with the
-    default `KOBE_DB_TEST_WORKERS=4` passed (2026-10-22, 10 min each); with three or more lanes on
-    the server suite at once, set `KOBE_DB_TEST_WORKERS=2` per lane.
+    default `KAIJU_DB_TEST_WORKERS=4` passed (2026-10-22, 10 min each); with three or more lanes on
+    the server suite at once, set `KAIJU_DB_TEST_WORKERS=2` per lane.
   - **Cleaning up:** a crashed run leaves its lane's databases behind. With the lane idle,
     `pnpm --filter @kaiju/db build` then `pnpm --filter @kaiju/db test:lanes` lists lanes with their
     database and role counts and `pnpm --filter @kaiju/db test:lanes drop <lane>` drops one (its
     `kobe_lane_<lane>` database, its throwaway databases and roles). Drop a worktree's lane when you
     remove the worktree. Leftovers named without a lane (`kobe_test_<hex>`) predate lanes or come
-    from runs with `KOBE_TEST_DB_LANE=""`. Every DB suite's setup also drops, on the
-    `KOBE_TEST_DATABASE_URL` server, up to 100 throwaway databases (`kobe_test_<hex>[_<lane>]`,
+    from runs with `KAIJU_TEST_DB_LANE=""`. Every DB suite's setup also drops, on the
+    `KAIJU_TEST_DATABASE_URL` server, up to 100 throwaway databases (`kobe_test_<hex>[_<lane>]`,
     `kobe_up_<hex>[_<lane>]`, any lane) created more than a day ago with no session connected (a
     plain `DROP DATABASE`, which Postgres refuses while anyone connects), and removes
     `kobe-upgrade-*` temp dirs older than an hour (KOBE-743). Leftover roles are not swept.
 - **Tilt against the real cluster:** each agent uses its own namespace and port-forward:
 
   ```bash
-  KOBE_DEV_NAMESPACE=kobe-dev-<N> KOBE_DEV_WEB_PORT=30<NN> tilt up --port 103<NN> ...
+  KAIJU_DEV_NAMESPACE=kobe-dev-<N> KAIJU_DEV_WEB_PORT=30<NN> tilt up --port 103<NN> ...
   ```
 
   The namespace must be `kobe-dev` or start with `kobe-dev-`. k3d dev stays on `kobe-dev`.

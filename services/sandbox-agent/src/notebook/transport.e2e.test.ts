@@ -8,10 +8,10 @@ import { describe, expect, it } from "vitest";
  * answered by the bridge's static code (a member's `__repr__` included: never called), so the
  * member's execution hooks (pre/post_execute, pre/post_run_cell), input transformers, `str`
  * formatter, warnings hook and autoreload record zero calls, and the execution count, history and
- * Out do not move. Needs a Python with ipykernel: set KOBE_TEST_KERNEL_PYTHON (the image runs the
+ * Out do not move. Needs a Python with ipykernel: set KAIJU_TEST_KERNEL_PYTHON (the image runs the
  * same probe in images/sandbox/test-image.sh).
  */
-const PYTHON = process.env.KOBE_TEST_KERNEL_PYTHON;
+const PYTHON = process.env.KAIJU_TEST_KERNEL_PYTHON;
 const BRIDGE = fileURLToPath(
   new URL("../../../../images/sandbox/kernel/kobe-kernel-bridge.py", import.meta.url),
 );
@@ -26,7 +26,7 @@ describe.skipIf(PYTHON === undefined)(
       const res = spawnSync(PYTHON ?? "python3", [PROBE, PYTHON ?? "python3", BRIDGE], {
         encoding: "utf8",
         timeout: 120_000,
-        env: { ...process.env, KOBE_PROBE_CWD: process.cwd() },
+        env: { ...process.env, KAIJU_PROBE_CWD: process.cwd() },
       });
       expect(res.status, res.stderr).toBe(0);
       expect(res.stdout.trim()).toBe(

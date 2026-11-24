@@ -7,10 +7,10 @@ import { uniqueWords } from "./support/unique.js";
 
 /**
  * Gate C (KOBE-407): a fact a member states in a conversation travels to the Site in two steps
- * and comes back as a Site memory. member2 (KOBE_USER2, a plain member) asks a no-tools question
+ * and comes back as a Site memory. member2 (KAIJU_USER2, a plain member) asks a no-tools question
  * that states a unique office fact (the name of a meeting room), runs Learn from this chat and proposes the candidate
  * to the Site with a justification (KOBE-404); My memory › Your Site proposals shows it waiting
- * for a Team admin. The owner (KOBE_USER, Team admin and Site admin) confirms it with an edit on
+ * for a Team admin. The owner (KAIJU_USER, Team admin and Site admin) confirms it with an edit on
  * Workspace console › Memory › To the Site; on Site console › Memory › Proposals the detail shows
  * statement, kind, justification, source Workspace and date and none of the conversation
  * (KOBE-405, KOBE-406), and the owner requests changes; the note and the round come back to To the
@@ -21,16 +21,16 @@ import { uniqueWords } from "./support/unique.js";
  * workspace, Learn, Members may propose to the Site) and a learning model. Spends one short model
  * turn and one learning pass: `npx playwright test site-proposals`.
  */
-const SECOND_USER = process.env["KOBE_USER2"];
-const SECOND_PW = process.env["KOBE_PW2"];
+const SECOND_USER = process.env["KAIJU_USER2"];
+const SECOND_PW = process.env["KAIJU_PW2"];
 /**
- * KOBE_USER3/KOBE_PW3 (k3d's Gate 7): another Team admin of the workspace who confirms at step 2.
- * Nobody decides a proposal they confirmed (KOBE-666), and KOBE_USER decides on the Site at steps
+ * KAIJU_USER3/KAIJU_PW3 (k3d's Gate 7): another Team admin of the workspace who confirms at step 2.
+ * Nobody decides a proposal they confirmed (KOBE-666), and KAIJU_USER decides on the Site at steps
  * 3 and 5, so without a third member the run would stop at the disabled Site actions and leave a
  * proposal only another Site curator can decide: the spec skips instead.
  */
-const THIRD_USER = process.env["KOBE_USER3"];
-const THIRD_PW = process.env["KOBE_PW3"];
+const THIRD_USER = process.env["KAIJU_USER3"];
+const THIRD_PW = process.env["KAIJU_PW3"];
 const TEAM_KEY = "kobe.lastTeamId";
 const PASS_TIMEOUT_MS = 180_000;
 /** The parts of member2's question that are not the fact: never shown to the Site. */
@@ -190,10 +190,10 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
   page,
   browser,
 }) => {
-  test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!SECOND_USER || !SECOND_PW, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   test.skip(
     !THIRD_USER || !THIRD_PW,
-    "KOBE_USER3 and KOBE_PW3 name another Team admin: whoever confirms may not decide (KOBE-666)",
+    "KAIJU_USER3 and KAIJU_PW3 name another Team admin: whoever confirms may not decide (KOBE-666)",
   );
   test.setTimeout(15 * 60_000);
   const [first = "", second = ""] = uniqueWords().split(" ");
@@ -234,7 +234,7 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
     await expect(mine).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
     await expect(mine).toContainText("A Team admin confirms it before it goes to the Site.");
 
-    // 2. the confirmer (KOBE_USER3): To the Site lists it with the justification; Edit and confirm.
+    // 2. the confirmer (KAIJU_USER3): To the Site lists it with the justification; Edit and confirm.
     const confirmed = `${proposed} (confirmed)`;
     let tab = await toTheSite(confirmer);
     let waiting = waitingCard(tab, first);

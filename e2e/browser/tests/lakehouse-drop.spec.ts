@@ -10,7 +10,7 @@ import { RUN_TIMEOUT_MS } from "./support/constants.js";
  * A native drag can't be started inside a cross-origin frame from a test, so the drag is the one
  * the picker starts, synthesized on the composer: a DataTransfer with the drag contract's two
  * types (`text/plain` and `application/x-catalyst-lakehouse+json`), then dragover and drop. No
- * Catalyst dependency. Chromium by default; Firefox with `KOBE_ALL_BROWSERS=1 --project firefox`.
+ * Catalyst dependency. Chromium by default; Firefox with `KAIJU_ALL_BROWSERS=1 --project firefox`.
  */
 const TYPE = "application/x-catalyst-lakehouse+json";
 const ITEM = {

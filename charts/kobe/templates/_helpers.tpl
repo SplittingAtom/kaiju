@@ -133,15 +133,15 @@ securityContext:
 {{- define "kobe.databaseEnv" -}}
 {{- $fullname := include "kobe.fullname" . -}}
 {{- if eq .Values.postgres.mode "cnpg" }}
-- name: KOBE_DB_PASSWORD
+- name: KAIJU_DB_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.cnpgAppSecretName" . }}
       key: password
-- name: KOBE_DATABASE_URL
-  value: {{ printf "postgres://kobe_app:$(KOBE_DB_PASSWORD)@%s-pg-rw:5432/kobe" $fullname | quote }}
+- name: KAIJU_DATABASE_URL
+  value: {{ printf "postgres://kobe_app:$(KAIJU_DB_PASSWORD)@%s-pg-rw:5432/kobe" $fullname | quote }}
 {{- else }}
-- name: KOBE_DATABASE_URL
+- name: KAIJU_DATABASE_URL
   valueFrom:
     secretKeyRef:
       name: {{ .Values.postgres.external.existingSecret }}
@@ -162,13 +162,13 @@ max_connections. An estimate: rollout surge pods, the migrate Job and `kaiju bac
 {{- $g := include "kobe.modelGatewayValues" . | fromJson -}}
 {{- $e := include "kobe.egressProxyValues" . | fromJson -}}
 {{- $peers := add (mul (int $sched.replicas) (add1 (int $sched.database.poolMax))) (mul (int $g.replicas) (add1 (add (int $g.database.poolMax) (int $g.database.ratePoolMax)))) (mul (int (default 1 $e.replicas)) (add1 (int $e.database.poolMax))) -}}
-- name: KOBE_DB_POOL_MAX
+- name: KAIJU_DB_POOL_MAX
   value: {{ int $s.poolMax | quote }}
-- name: KOBE_DB_STREAM_POOL_MAX
+- name: KAIJU_DB_STREAM_POOL_MAX
   value: {{ int $s.streamPoolMax | quote }}
-- name: KOBE_DB_BUDGET_SERVER_REPLICAS
+- name: KAIJU_DB_BUDGET_SERVER_REPLICAS
   value: {{ int .Values.server.replicas | quote }}
-- name: KOBE_DB_BUDGET_PEER_CONNECTIONS
+- name: KAIJU_DB_BUDGET_PEER_CONNECTIONS
   value: {{ $peers | quote }}
 {{- end -}}
 
@@ -188,27 +188,27 @@ max_connections. An estimate: rollout surge pods, the migrate Job and `kaiju bac
 {{/* Auth configuration: the API server only (the scheduler never gets these secrets). */}}
 {{/* KOBE-695: HSTS includeSubDomains for the server and the web (default off). */}}
 {{- define "kobe.hstsEnv" -}}
-- name: KOBE_HSTS_INCLUDE_SUBDOMAINS
+- name: KAIJU_HSTS_INCLUDE_SUBDOMAINS
   value: {{ ternary "true" "false" (((.Values.ingress).hsts).includeSubDomains | default false) | quote }}
 {{- end -}}
 
 {{- define "kobe.authEnv" -}}
-- name: KOBE_PUBLIC_URL
+- name: KAIJU_PUBLIC_URL
   value: {{ include "kobe.publicUrl" . | quote }}
 {{ include "kobe.hstsEnv" . }}
-- name: KOBE_INGRESS_RATE_LIMIT
+- name: KAIJU_INGRESS_RATE_LIMIT
   value: {{ include "kobe.ingress.rateLimitSource" . | quote }}
-- name: KOBE_AUTH_SECRET
+- name: KAIJU_AUTH_SECRET
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.authSecretName" . }}
       key: secret
-- name: KOBE_SETUP_TOKEN
+- name: KAIJU_SETUP_TOKEN
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.authSecretName" . }}
       key: setup-token
-- name: KOBE_TRUSTED_PROXIES
+- name: KAIJU_TRUSTED_PROXIES
   value: {{ join "," (default (list "10.42.0.0/16") (.Values.auth).trustedProxies) | quote }}
 {{ include "kobe.ssoEnv" . }}
 {{- end -}}
@@ -216,21 +216,21 @@ max_connections. An estimate: rollout surge pods, the migrate Job and `kaiju bac
 {{/* Outgoing email (KOBE-13): the API server only. Credentials come from a Secret, never values. */}}
 {{- define "kobe.smtpEnv" -}}
 {{- $smtp := .Values.smtp | default dict -}}
-- name: KOBE_SMTP_HOST
+- name: KAIJU_SMTP_HOST
   value: {{ required "smtp.host is required (spec D7: Kaiju sends invitations and password resets by email)" $smtp.host | quote }}
-- name: KOBE_SMTP_PORT
+- name: KAIJU_SMTP_PORT
   value: {{ $smtp.port | default 587 | quote }}
-- name: KOBE_SMTP_SECURITY
+- name: KAIJU_SMTP_SECURITY
   value: {{ $smtp.security | default "starttls" | quote }}
-- name: KOBE_SMTP_FROM
+- name: KAIJU_SMTP_FROM
   value: {{ required "smtp.from is required, e.g. \"Kaiju <kaiju@example.com>\"" $smtp.from | quote }}
 {{- with $smtp.existingSecret }}
-- name: KOBE_SMTP_USERNAME
+- name: KAIJU_SMTP_USERNAME
   valueFrom:
     secretKeyRef:
       name: {{ . }}
       key: username
-- name: KOBE_SMTP_PASSWORD
+- name: KAIJU_SMTP_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ . }}
@@ -255,22 +255,22 @@ existing Secret, unless explicitly allowed for throwaway environments (dev, CI).
 {{- end -}}
 
 {{- define "kobe.s3Env" -}}
-- name: KOBE_S3_ENDPOINT
+- name: KAIJU_S3_ENDPOINT
   value: {{ .Values.s3.endpoint | quote }}
-- name: KOBE_S3_REGION
+- name: KAIJU_S3_REGION
   value: {{ .Values.s3.region | quote }}
-- name: KOBE_S3_BUCKET
+- name: KAIJU_S3_BUCKET
   value: {{ .Values.s3.bucket | quote }}
-- name: KOBE_S3_FORCE_PATH_STYLE
+- name: KAIJU_S3_FORCE_PATH_STYLE
   value: {{ .Values.s3.forcePathStyle | quote }}
-- name: KOBE_S3_PREFIX
+- name: KAIJU_S3_PREFIX
   value: {{ .Values.s3.prefix | default "" | quote }}
-- name: KOBE_S3_ACCESS_KEY_ID
+- name: KAIJU_S3_ACCESS_KEY_ID
   valueFrom:
     secretKeyRef:
       name: {{ .Values.s3.existingSecret }}
       key: access-key-id
-- name: KOBE_S3_SECRET_ACCESS_KEY
+- name: KAIJU_S3_SECRET_ACCESS_KEY
   valueFrom:
     secretKeyRef:
       name: {{ .Values.s3.existingSecret }}
@@ -404,7 +404,7 @@ spec:
   imagePullPolicy: {{ .Values.global.imagePullPolicy }}
   command: ["node", "dist/cli/preflight.js"]
   env:
-    - name: KOBE_RUNTIME_CLASS
+    - name: KAIJU_RUNTIME_CLASS
       value: {{ .Values.isolation.runtimeClassName | quote }}
   {{- include "kobe.containerSecurityContext" . | nindent 2 }}
   terminationMessagePolicy: FallbackToLogsOnError
@@ -435,17 +435,17 @@ spec:
 {{- $syslog := $f.syslog | default dict -}}
 {{- $otlp := $f.otlp | default dict -}}
 {{- if $syslog.enabled }}
-- name: KOBE_AUDIT_SYSLOG_URL
+- name: KAIJU_AUDIT_SYSLOG_URL
   value: {{ printf "%s://%s:%d" (ternary "tls" "tcp" ($syslog.tls | default false)) (required "auditForwarding.syslog.host is required when syslog forwarding is enabled" $syslog.host) ($syslog.port | default 6514 | int) | quote }}
 {{- $pen := $syslog.enterpriseNumber | default 32473 }}
-- name: KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER
+- name: KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER
   value: {{ ternary $pen ($pen | int64 | toString) (kindIs "string" $pen) | quote }}
 {{- end }}
 {{- if $otlp.enabled }}
-- name: KOBE_AUDIT_OTLP_URL
+- name: KAIJU_AUDIT_OTLP_URL
   value: {{ required "auditForwarding.otlp.endpoint is required when OTLP forwarding is enabled" $otlp.endpoint | quote }}
 {{- with $otlp.headersSecret }}
-- name: KOBE_AUDIT_OTLP_HEADERS
+- name: KAIJU_AUDIT_OTLP_HEADERS
   valueFrom:
     secretKeyRef:
       name: {{ . }}
@@ -465,14 +465,14 @@ missing Secret leaves the mirror unable to push rather than the server down), an
 {{- define "kobe.skillMirrorEnv" -}}
 {{- $m := .Values.server.skillMirror | default dict -}}
 {{- $t := $m.tokenSecret | default dict -}}
-- name: KOBE_SKILL_MIRROR_USERNAME
+- name: KAIJU_SKILL_MIRROR_USERNAME
   value: {{ $m.username | default "x-access-token" | quote }}
-- name: KOBE_SKILL_MIRROR_AUTHOR_NAME
+- name: KAIJU_SKILL_MIRROR_AUTHOR_NAME
   value: {{ $m.authorName | default "Kaiju Registry" | quote }}
-- name: KOBE_SKILL_MIRROR_AUTHOR_EMAIL
+- name: KAIJU_SKILL_MIRROR_AUTHOR_EMAIL
   value: {{ $m.authorEmail | default "registry@kobe.invalid" | quote }}
 {{- if $t.name }}
-- name: KOBE_SKILL_MIRROR_TOKEN
+- name: KAIJU_SKILL_MIRROR_TOKEN
   valueFrom:
     secretKeyRef:
       name: {{ $t.name }}
@@ -517,23 +517,23 @@ missing Secret leaves the mirror unable to push rather than the server down), an
 {{/* Upload limits and the team storage quota (KOBE-143/185) as server env. */}}
 {{- define "kobe.uploadEnv" -}}
 {{- $u := .Values.server.uploads -}}
-- name: KOBE_UPLOAD_MAX_FILE_BYTES
+- name: KAIJU_UPLOAD_MAX_FILE_BYTES
   value: {{ printf "%d" (int64 $u.maxFileBytes) | quote }}
-- name: KOBE_UPLOAD_MAX_MESSAGE_BYTES
+- name: KAIJU_UPLOAD_MAX_MESSAGE_BYTES
   value: {{ printf "%d" (int64 $u.maxMessageBytes) | quote }}
-- name: KOBE_TEAM_STORAGE_QUOTA_BYTES
+- name: KAIJU_TEAM_STORAGE_QUOTA_BYTES
   value: {{ printf "%d" (int64 $u.teamStorageQuotaBytes) | quote }}
-- name: KOBE_UPLOAD_ORPHAN_HOURS
+- name: KAIJU_UPLOAD_ORPHAN_HOURS
   value: {{ printf "%d" (int64 $u.orphanHours) | quote }}
-- name: KOBE_TEAM_MAX_OBJECTS
+- name: KAIJU_TEAM_MAX_OBJECTS
   value: {{ printf "%d" (int64 ($u.teamMaxObjects | default 2000000)) | quote }}
-- name: KOBE_PROJECT_HISTORY_MAX_COMMITS
+- name: KAIJU_PROJECT_HISTORY_MAX_COMMITS
   value: {{ printf "%d" (int64 ($u.projectHistoryMaxCommits | default 1000)) | quote }}
 {{- if .Values.clamav.enabled }}
 # Scanning on: every upload is streamed to clamd; clamd unreachable refuses uploads (fail closed).
-- name: KOBE_CLAMAV_HOST
+- name: KAIJU_CLAMAV_HOST
   value: {{ printf "%s-clamav" (include "kobe.fullname" .) | quote }}
-- name: KOBE_CLAMAV_PORT
+- name: KAIJU_CLAMAV_PORT
   value: "3310"
 {{- end }}
 {{- end -}}
@@ -541,11 +541,11 @@ missing Secret leaves the mirror unable to push rather than the server down), an
 {{- /* Limits of catalog models without their own (KOBE-259): server and scheduler. */ -}}
 {{- define "kobe.modelDefaultsEnv" -}}
 {{- $d := .Values.server.modelDefaults -}}
-- name: KOBE_MODEL_DEFAULT_MAX_OUTPUT_TOKENS
+- name: KAIJU_MODEL_DEFAULT_MAX_OUTPUT_TOKENS
   value: {{ $d.maxOutputTokens | int | toString | quote }}
-- name: KOBE_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS
+- name: KAIJU_MODEL_DEFAULT_REASONING_MAX_OUTPUT_TOKENS
   value: {{ $d.reasoningMaxOutputTokens | int | toString | quote }}
-- name: KOBE_MODEL_DEFAULT_CONTEXT_WINDOW
+- name: KAIJU_MODEL_DEFAULT_CONTEXT_WINDOW
   value: {{ $d.contextWindow | int | toString | quote }}
 {{- end -}}
 
@@ -556,16 +556,16 @@ missing Secret leaves the mirror unable to push rather than the server down), an
 {{- $rn := $sw.readNotifications | default dict -}}
 {{- $ru := $sw.runUsage | default dict -}}
 {{- $eh := $sw.evalHistory | default dict -}}
-- name: KOBE_RETENTION_PAUSED
+- name: KAIJU_RETENTION_PAUSED
   value: {{ .Values.retention.paused | default false | toString | quote }}
 {{- /* Table sweeps (KOBE-741): the period, or 0 when the sweep is turned off. */}}
-- name: KOBE_RETENTION_EVENTS_DAYS
+- name: KAIJU_RETENTION_EVENTS_DAYS
   value: {{ ternary ($ev.days | default 30 | int) 0 (ne $ev.enabled false) | toString | quote }}
-- name: KOBE_RETENTION_READ_NOTIFICATIONS_DAYS
+- name: KAIJU_RETENTION_READ_NOTIFICATIONS_DAYS
   value: {{ ternary ($rn.days | default 180 | int) 0 (ne $rn.enabled false) | toString | quote }}
-- name: KOBE_RETENTION_RUN_USAGE_MONTHS
+- name: KAIJU_RETENTION_RUN_USAGE_MONTHS
   value: {{ ternary ($ru.months | default 13 | int) 0 (ne $ru.enabled false) | toString | quote }}
-- name: KOBE_RETENTION_EVAL_HISTORY_MONTHS
+- name: KAIJU_RETENTION_EVAL_HISTORY_MONTHS
   value: {{ ternary ($eh.months | default 12 | int) 0 (ne $eh.enabled false) | toString | quote }}
 {{- end -}}
 
@@ -573,15 +573,15 @@ missing Secret leaves the mirror unable to push rather than the server down), an
 {{- define "kobe.brandingEnv" -}}
 {{- $b := .Values.branding | default dict -}}
 {{- if $b.appName }}
-- name: KOBE_BRANDING_APP_NAME
+- name: KAIJU_BRANDING_APP_NAME
   value: {{ $b.appName | quote }}
 {{- end }}
 {{- if $b.preset }}
-- name: KOBE_BRANDING_PRESET
+- name: KAIJU_BRANDING_PRESET
   value: {{ $b.preset | quote }}
 {{- end }}
 {{- if eq (toString $b.showName) "false" }}
-- name: KOBE_BRANDING_SHOW_NAME
+- name: KAIJU_BRANDING_SHOW_NAME
   value: "false"
 {{- end }}
 {{- end -}}

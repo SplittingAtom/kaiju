@@ -31,7 +31,7 @@ import {
  * KOBE-549 (CT-8): the conversation tree in a real browser, part 1. One thread with two branches
  * under the first answer, made by Continue from here (support/tree.ts), shared by the tests in
  * order: the picker's versions, browsing as the owner (the bar, ✕, Make it current), a search hit
- * on the side branch, browsing as a reader of the shared thread (KOBE_USER2/KOBE_PW2, skipped
+ * on the side branch, browsing as a reader of the shared thread (KAIJU_USER2/KAIJU_PW2, skipped
  * without them), and labels. Each test leaves the leaf on the CHARLIE branch; the thread is
  * unshared and goes to Trash at the end. Part 2: conversation-tree-views.spec.ts.
  */

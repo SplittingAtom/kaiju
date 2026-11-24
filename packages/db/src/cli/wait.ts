@@ -7,11 +7,11 @@ import { waitForMigrations } from "../wait.js";
 const logger = pino({ base: { service: "kaiju-db-wait" } });
 
 const envSchema = z.object({
-  KOBE_DATABASE_URL: z.url({
+  KAIJU_DATABASE_URL: z.url({
     protocol: /^postgres(ql)?$/,
-    error: "KOBE_DATABASE_URL must be a postgres:// URL",
+    error: "KAIJU_DATABASE_URL must be a postgres:// URL",
   }),
-  KOBE_DB_WAIT_TIMEOUT_S: z.coerce.number().int().positive().default(600),
+  KAIJU_DB_WAIT_TIMEOUT_S: z.coerce.number().int().positive().default(600),
 });
 
 async function main(): Promise<void> {
@@ -20,8 +20,8 @@ async function main(): Promise<void> {
     throw new Error(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   }
   await waitForMigrations({
-    databaseUrl: parsed.data.KOBE_DATABASE_URL,
-    timeoutMs: parsed.data.KOBE_DB_WAIT_TIMEOUT_S * 1000,
+    databaseUrl: parsed.data.KAIJU_DATABASE_URL,
+    timeoutMs: parsed.data.KAIJU_DB_WAIT_TIMEOUT_S * 1000,
   });
   logger.info("migrations are current");
 }

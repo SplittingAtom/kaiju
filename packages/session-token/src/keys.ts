@@ -117,13 +117,13 @@ const audienceSuffix = (audience: string): string =>
     .replace(/-/g, "_")
     .toUpperCase();
 
-/** KOBE_SESSION_SIGNING_KEY_<AUDIENCE>: the audience's private key (server only). */
+/** KAIJU_SESSION_SIGNING_KEY_<AUDIENCE>: the audience's private key (server only). */
 export const signingKeyEnvName = (audience: string): string =>
-  `KOBE_SESSION_SIGNING_KEY_${audienceSuffix(audience)}`;
+  `KAIJU_SESSION_SIGNING_KEY_${audienceSuffix(audience)}`;
 
-/** KOBE_SESSION_VERIFY_KEY_<AUDIENCE>: the audience's public key bundle (each verifier). */
+/** KAIJU_SESSION_VERIFY_KEY_<AUDIENCE>: the audience's public key bundle (each verifier). */
 export const verifyKeyEnvName = (audience: string): string =>
-  `KOBE_SESSION_VERIFY_KEY_${audienceSuffix(audience)}`;
+  `KAIJU_SESSION_VERIFY_KEY_${audienceSuffix(audience)}`;
 
 type Env = Readonly<Record<string, string | undefined>>;
 

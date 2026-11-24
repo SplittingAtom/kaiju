@@ -4,14 +4,14 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-275 ac-3: the agent's Ratings section on its page in the Team console. Read-only: it
- * switches the period and checks what the server allowed it to show. `KOBE_AGENT_ID` names a team
- * agent whose builder-owner `KOBE_USER` is (or a team agent of a team `KOBE_USER` administers).
- * Spends no tokens. Run on gate1: `KOBE_AGENT_ID=… npx playwright test agent-ratings`.
+ * switches the period and checks what the server allowed it to show. `KAIJU_AGENT_ID` names a team
+ * agent whose builder-owner `KAIJU_USER` is (or a team agent of a team `KAIJU_USER` administers).
+ * Spends no tokens. Run on gate1: `KAIJU_AGENT_ID=… npx playwright test agent-ratings`.
  */
-const AGENT_ID = process.env["KOBE_AGENT_ID"];
+const AGENT_ID = process.env["KAIJU_AGENT_ID"];
 
 test("Ratings: fixed periods, counts only, withheld numbers say so", async ({ page }) => {
-  test.skip(!AGENT_ID, "set KOBE_AGENT_ID to a team agent KOBE_USER owns");
+  test.skip(!AGENT_ID, "set KAIJU_AGENT_ID to a team agent KAIJU_USER owns");
   const first = page.waitForResponse((r) => r.url().includes(`/feedback?window=30`));
   await page.goto(`/admin/team/agents/${AGENT_ID}`);
   expect((await first).status()).toBe(200);

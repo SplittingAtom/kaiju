@@ -208,7 +208,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     const api = (name: string) => (ai[name] as Fn)() as never;
     const { extension } = await loadThroughPi((piApi) =>
       registerKaijuModels(piApi as unknown as ModelsApi, {
-        env: { KOBE_MODEL_FILE: "/x/model.json" },
+        env: { KAIJU_MODEL_FILE: "/x/model.json" },
         readState: async () => state,
         pi: {
           createProvider: ai.createProvider as never,

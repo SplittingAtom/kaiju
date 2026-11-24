@@ -40,9 +40,9 @@ the keyless provider `kobe-local` (services/server/src/models/local-embedding.ts
 {{- define "kobe.embeddingsServerEnv" -}}
 {{- $e := include "kobe.embeddingsValues" . | fromJson -}}
 {{- if $e.enabled }}
-- name: KOBE_EMBEDDINGS_LOCAL_URL
+- name: KAIJU_EMBEDDINGS_LOCAL_URL
   value: {{ include "kobe.embeddingsUrl" . | quote }}
-- name: KOBE_EMBEDDINGS_LOCAL_MODEL
+- name: KAIJU_EMBEDDINGS_LOCAL_MODEL
   value: {{ $e.model.name | quote }}
 {{- end }}
 {{- end -}}

@@ -198,12 +198,12 @@ describe("server-call gateway client (KOBE-219 ac-4, ac-8)", () => {
 
   it("never sends a session token, run token, run id or provider key", async () => {
     reply = ok("Revenue drivers");
-    process.env.KOBE_MODELS_PROVIDER_KEY_SECRET = PROVIDER_KEY_SECRET;
+    process.env.KAIJU_MODELS_PROVIDER_KEY_SECRET = PROVIDER_KEY_SECRET;
     try {
       const client = createServerCallClient({ url: base, key: KEY });
       await client.complete(input());
     } finally {
-      delete process.env.KOBE_MODELS_PROVIDER_KEY_SECRET;
+      delete process.env.KAIJU_MODELS_PROVIDER_KEY_SECRET;
     }
     const [req] = seen;
     const names = Object.keys(req?.headers ?? {}).sort();
@@ -336,14 +336,14 @@ describe("server-call gateway client (KOBE-219 ac-4, ac-8)", () => {
   it("signs with the model-gateway Ed25519 private key only (KOBE-521)", () => {
     expect(serverCallKeyFromEnv({})).toBeUndefined();
     expect(
-      serverCallKeyFromEnv({ KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY: "not a pem" }),
+      serverCallKeyFromEnv({ KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY: "not a pem" }),
     ).toBeUndefined();
     // The retired shared master secret no longer yields a key.
     expect(
-      serverCallKeyFromEnv({ KOBE_SESSION_KEY_MODEL_GATEWAY: "m".repeat(48) }),
+      serverCallKeyFromEnv({ KAIJU_SESSION_KEY_MODEL_GATEWAY: "m".repeat(48) }),
     ).toBeUndefined();
     expect(
-      serverCallKeyFromEnv({ KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY: PAIR.privatePem })?.kid,
+      serverCallKeyFromEnv({ KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY: PAIR.privatePem })?.kid,
     ).toBe(KEY.kid);
   });
 

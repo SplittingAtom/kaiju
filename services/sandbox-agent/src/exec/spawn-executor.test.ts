@@ -22,12 +22,12 @@ describe("executorEnv", () => {
         TMPDIR: "/tmp",
         LANG: "C",
         PI_CODING_AGENT_DIR: "/run/kobe-pi/pi-x/agent",
-        KOBE_MODEL_FILE: "/run/kobe-pi/pi-x/model.json",
-        KOBE_POLICY_FD: "3",
-        KOBE_EXEC_FD: "5",
+        KAIJU_MODEL_FILE: "/run/kobe-pi/pi-x/model.json",
+        KAIJU_POLICY_FD: "3",
+        KAIJU_EXEC_FD: "5",
         PI_OFFLINE: "1",
       },
-      { BASH_ENV: "/opt/kobe/egress-env.sh", KOBE_EGRESS_PROXY: "http://egress:80" },
+      { BASH_ENV: "/opt/kobe/egress-env.sh", KAIJU_EGRESS_PROXY: "http://egress:80" },
     );
     expect(env).toEqual({
       PATH: "/usr/bin",
@@ -36,7 +36,7 @@ describe("executorEnv", () => {
       LANG: "C",
       NODE_OPTIONS: "--disable-sigusr1",
       BASH_ENV: "/opt/kobe/egress-env.sh",
-      KOBE_EGRESS_PROXY: "http://egress:80",
+      KAIJU_EGRESS_PROXY: "http://egress:80",
     });
   });
 });
@@ -47,7 +47,7 @@ async function echoProgram(): Promise<string> {
   await writeFile(
     file,
     `import fs from "node:fs";
-fs.writeFileSync(${JSON.stringify(path.join(dir, "seen.json"))}, JSON.stringify({ argv: process.argv.slice(2), env: process.env.KOBE_T ?? null }));
+fs.writeFileSync(${JSON.stringify(path.join(dir, "seen.json"))}, JSON.stringify({ argv: process.argv.slice(2), env: process.env.KAIJU_T ?? null }));
 process.stdin.pipe(process.stdout);
 process.stdin.on("end", () => process.exit(0));
 `,
@@ -61,7 +61,7 @@ describe("startExecutor", () => {
     const handle = await startExecutor({
       nodeBin: process.execPath,
       entry,
-      env: { KOBE_T: "yes", PATH: process.env.PATH ?? "" },
+      env: { KAIJU_T: "yes", PATH: process.env.PATH ?? "" },
       cwd: dir,
     });
     const out: Buffer[] = [];
@@ -113,7 +113,7 @@ exec "$@"
     const handle = await startExecutor({
       nodeBin: process.execPath,
       entry,
-      env: { KOBE_T: "yes", PATH: process.env.PATH ?? "", TMPDIR: "/tmp" },
+      env: { KAIJU_T: "yes", PATH: process.env.PATH ?? "", TMPDIR: "/tmp" },
       cwd: dir,
       runAs: { identities, identity: { uid: 2001, gid: 2001 } },
     });

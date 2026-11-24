@@ -9,7 +9,7 @@ import type { BundleFetcher } from "./store.js";
  * bytes are read, so a misbehaving server can't fill memory.
  */
 export interface SkillClientOptions {
-  /** KOBE_SERVER_URL (ws:// or wss://). */
+  /** KAIJU_SERVER_URL (ws:// or wss://). */
   readonly serverUrl: string;
   readonly readToken: () => Promise<string>;
   readonly timeoutMs?: number;

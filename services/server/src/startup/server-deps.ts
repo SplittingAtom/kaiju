@@ -85,7 +85,7 @@ export function loadProcessSettings(config: Config, env: ProcessEnv, log: Logger
       : undefined,
     // Run-bound model-gateway tokens (KOBE-118): signed with the model-gateway Ed25519 key (KOBE-521).
     runTokenKey: runTokenKeyFromEnv(env),
-    // Relayed sandbox spans (KOBE-274): `k_trace` from KOBE_TRACE_SPAN_KEY; unset: no span relay.
+    // Relayed sandbox spans (KOBE-274): `k_trace` from KAIJU_TRACE_SPAN_KEY; unset: no span relay.
     traceSpanKey: traceSpanKeyFromEnv(env, (message) => log.warn(message)),
     // The server's own model calls (KOBE-219 auto-titles): the gateway's address and the same
     // Ed25519 signing key (KOBE-521). Either unset: no titles (logged at start).
@@ -214,7 +214,7 @@ function apiServerDeps(
 function warnApiServerSettings(i: ProcessDepsInput, smtp: NonNullable<Config["smtp"]>): void {
   const { config, settings, log } = i;
   if (smtp.security === "none") {
-    log.warn({ smtpHost: smtp.host }, "KOBE_SMTP_SECURITY=none: email is sent unencrypted");
+    log.warn({ smtpHost: smtp.host }, "KAIJU_SMTP_SECURITY=none: email is sent unencrypted");
   }
   const publicUrl = config.auth?.publicUrl ?? "";
   const publicHost = publicUrl ? new URL(publicUrl).hostname : "";
@@ -224,7 +224,7 @@ function warnApiServerSettings(i: ProcessDepsInput, smtp: NonNullable<Config["sm
   ) {
     log.warn(
       { publicUrl },
-      "KOBE_PUBLIC_URL is plain http: session cookies are not Secure and passkeys need https",
+      "KAIJU_PUBLIC_URL is plain http: session cookies are not Secure and passkeys need https",
     );
   }
   const s3 = settings.s3;
@@ -280,11 +280,11 @@ export async function checkSealedKeysAtStart(
 /** Settings a server replica runs degraded without, logged once at start. */
 export function warnMissingServerSettings(settings: ProcessSettings, log: Logger): void {
   if (!settings.egressHeaderSecrets) {
-    log.warn("KOBE_EGRESS_HEADER_SECRET is not set: egress header injection is off");
+    log.warn("KAIJU_EGRESS_HEADER_SECRET is not set: egress header injection is off");
   }
   if (!settings.envelope) {
-    log.warn("KOBE_ENVELOPE_KEY is not set: connector credentials cannot be stored");
+    log.warn("KAIJU_ENVELOPE_KEY is not set: connector credentials cannot be stored");
   }
   if (!settings.models)
-    log.warn("KOBE_BIFROST_URL is not set: the model gateway is not configured");
+    log.warn("KAIJU_BIFROST_URL is not set: the model gateway is not configured");
 }

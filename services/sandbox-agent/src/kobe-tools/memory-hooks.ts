@@ -10,7 +10,7 @@ import {
 
 /**
  * Per-run memory and project wiring of the kobe-tools extension (KOBE-157, review of #205). The agent writes the
- * run's memory file (`KOBE_MEMORY_FILE`, memory/context-file.ts) before every prompt, so a change
+ * run's memory file (`KAIJU_MEMORY_FILE`, memory/context-file.ts) before every prompt, so a change
  * to memory never restarts Pi:
  *  - `tools`: whether memory is on for this run; `remember` / `recall` / `show_memory_item` are
  *    active only then;

@@ -5,12 +5,12 @@ import { expect, test } from "./support/chat.js";
 /**
  * KOBE-537 (TLF-6, TF7/TF8): the Threads panel's folder tree. The owner creates a folder inline,
  * files a thread from its row's ⋯ menu (Save to folder…), finds it under the folder and gone from
- * Current, deletes the folder and finds it back in Current. A second member (KOBE_USER2/KOBE_PW2,
+ * Current, deletes the folder and finds it back in Current. A second member (KAIJU_USER2/KAIJU_PW2,
  * skipped without them) sees the owner's folder and files a thread shared with them into it.
  * Each test deletes its folder and unshares in `finally`; the `chat` fixture trashes the threads.
  */
-const SECOND_USER = process.env["KOBE_USER2"];
-const SECOND_PW = process.env["KOBE_PW2"];
+const SECOND_USER = process.env["KAIJU_USER2"];
+const SECOND_PW = process.env["KAIJU_PW2"];
 const TEAM_KEY = "kobe.lastTeamId";
 
 /** Calls the API from the page (session cookie, Origin and team header as the chat sends them). */
@@ -170,7 +170,7 @@ test("a second member sees the folder and files a thread shared with them", asyn
   page,
   browser,
 }) => {
-  test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!SECOND_USER || !SECOND_PW, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const suffix = Date.now().toString(36);
   const title = `Shared filed ${suffix}`;
   const folder = `KOBE-537 shared ${suffix}`;

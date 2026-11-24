@@ -57,7 +57,7 @@ describe.skipIf(!PI_AVAILABLE)("app cards in real Pi 1.0.0 (KOBE-440)", () => {
   it("gives the model the card's text before the prompt; details stay out", async () => {
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
     });
     const harness = h;

@@ -33,7 +33,7 @@ async function setup(states: () => ModelFileState, selected: unknown[] = []) {
     },
   } as unknown as ExtensionApiLike;
   await registerKaijuModels(api, {
-    env: { KOBE_MODEL_FILE: "/x/model.json" },
+    env: { KAIJU_MODEL_FILE: "/x/model.json" },
     readState: async () => states(),
     pi: {
       createProvider: (o) => o as never,

@@ -26,11 +26,11 @@ describe("loadS3Settings", () => {
     expect(loadS3Settings({})).toBeUndefined();
     expect(
       loadS3Settings({
-        KOBE_S3_BUCKET: "kaiju",
-        KOBE_S3_ENDPOINT: "http://s3.kobe-deps:8333",
-        KOBE_S3_FORCE_PATH_STYLE: "true",
-        KOBE_S3_ACCESS_KEY_ID: "id",
-        KOBE_S3_SECRET_ACCESS_KEY: "secret",
+        KAIJU_S3_BUCKET: "kaiju",
+        KAIJU_S3_ENDPOINT: "http://s3.kobe-deps:8333",
+        KAIJU_S3_FORCE_PATH_STYLE: "true",
+        KAIJU_S3_ACCESS_KEY_ID: "id",
+        KAIJU_S3_SECRET_ACCESS_KEY: "secret",
       }),
     ).toEqual({
       bucket: "kaiju",
@@ -46,35 +46,35 @@ describe("loadS3Settings", () => {
 
   it("reads the client timeouts (KOBE-732)", () => {
     const s = loadS3Settings({
-      KOBE_S3_BUCKET: "b",
-      KOBE_S3_CONNECT_TIMEOUT_MS: "2000",
-      KOBE_S3_IDLE_TIMEOUT_MS: "90000",
+      KAIJU_S3_BUCKET: "b",
+      KAIJU_S3_CONNECT_TIMEOUT_MS: "2000",
+      KAIJU_S3_IDLE_TIMEOUT_MS: "90000",
     });
     expect(s).toMatchObject({ connectTimeoutMs: 2000, idleTimeoutMs: 90_000 });
     expect(s && s3RequestHandlerOptions(s)).toEqual({
       connectionTimeout: 2000,
       socketTimeout: 90_000,
     });
-    expect(() => loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_IDLE_TIMEOUT_MS: "0" })).toThrow(
-      /KOBE_S3_IDLE_TIMEOUT_MS/,
+    expect(() => loadS3Settings({ KAIJU_S3_BUCKET: "b", KAIJU_S3_IDLE_TIMEOUT_MS: "0" })).toThrow(
+      /KAIJU_S3_IDLE_TIMEOUT_MS/,
     );
   });
 
   it("refuses credentials in the endpoint and half-set keys, without echoing them", () => {
     const bad = () =>
-      loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_ENDPOINT: "http://user:hunter2@s3" });
+      loadS3Settings({ KAIJU_S3_BUCKET: "b", KAIJU_S3_ENDPOINT: "http://user:hunter2@s3" });
     expect(bad).toThrow(/without credentials/);
     expect(bad).not.toThrow(/hunter2/);
-    expect(() => loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_ACCESS_KEY_ID: "x" })).toThrow(
+    expect(() => loadS3Settings({ KAIJU_S3_BUCKET: "b", KAIJU_S3_ACCESS_KEY_ID: "x" })).toThrow(
       /set together/,
     );
-    expect(() => loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_PREFIX: "/abs/" })).toThrow();
+    expect(() => loadS3Settings({ KAIJU_S3_BUCKET: "b", KAIJU_S3_PREFIX: "/abs/" })).toThrow();
   });
 });
 
 describe("plainHttpEndpointWarning (KOBE-743)", () => {
   const settings = (endpoint: string) =>
-    loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_ENDPOINT: endpoint });
+    loadS3Settings({ KAIJU_S3_BUCKET: "b", KAIJU_S3_ENDPOINT: endpoint });
   it("warns for a plain-HTTP endpoint, naming the host only", () => {
     const s = settings("http://s3.lan.example:9000");
     expect(s && plainHttpEndpointWarning(s)).toMatch(/plain http.*in clear/);
@@ -83,7 +83,7 @@ describe("plainHttpEndpointWarning (KOBE-743)", () => {
   it("is quiet for https and for the SDK's default endpoint", () => {
     const https = settings("https://s3.example.com");
     expect(https && plainHttpEndpointWarning(https)).toBeUndefined();
-    const aws = loadS3Settings({ KOBE_S3_BUCKET: "b" });
+    const aws = loadS3Settings({ KAIJU_S3_BUCKET: "b" });
     expect(aws && plainHttpEndpointWarning(aws)).toBeUndefined();
   });
 });

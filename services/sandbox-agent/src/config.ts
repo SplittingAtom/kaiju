@@ -5,75 +5,75 @@ import { z } from "zod";
 const positiveInt = (fallback: number) => z.coerce.number().int().positive().default(fallback);
 
 const configSchema = z.object({
-  KOBE_SERVER_URL: z
-    .url({ protocol: /^wss?$/, error: "KOBE_SERVER_URL must be a ws:// or wss:// URL" })
+  KAIJU_SERVER_URL: z
+    .url({ protocol: /^wss?$/, error: "KAIJU_SERVER_URL must be a ws:// or wss:// URL" })
     .refine((url) => {
       const parsed = new URL(url);
       return parsed.username === "" && parsed.password === "";
-    }, "KOBE_SERVER_URL must not carry credentials"),
-  /** Required unless KOBE_BOOTSTRAP_TOKEN_FILE is set (then the server names the sandbox). */
-  KOBE_SANDBOX_ID: uuidSchema.optional(),
+    }, "KAIJU_SERVER_URL must not carry credentials"),
+  /** Required unless KAIJU_BOOTSTRAP_TOKEN_FILE is set (then the server names the sandbox). */
+  KAIJU_SANDBOX_ID: uuidSchema.optional(),
   /**
    * File holding the `kobe.sandbox-wire` session token (a projected/mounted secret). Re-read on every
    * dial so a rotated token is picked up. A file, not an env var, so it is never inherited by Pi.
    */
-  KOBE_SANDBOX_TOKEN_FILE: z.string().startsWith("/").default("/var/run/kobe/sandbox-wire/token"),
+  KAIJU_SANDBOX_TOKEN_FILE: z.string().startsWith("/").default("/var/run/kobe/sandbox-wire/token"),
   /**
    * Kaiju's sandbox pods (KOBE-22): the projected bootstrap token, traded at the server for the
    * sandbox id and its session tokens (session/exchange.ts). Takes precedence over the two above.
    */
-  KOBE_BOOTSTRAP_TOKEN_FILE: z.string().startsWith("/").optional(),
-  KOBE_WORKSPACE_DIR: z.string().startsWith("/").default("/workspace"),
+  KAIJU_BOOTSTRAP_TOKEN_FILE: z.string().startsWith("/").optional(),
+  KAIJU_WORKSPACE_DIR: z.string().startsWith("/").default("/workspace"),
   /** Pi session JSONL per thread; on the workspace volume so it survives hibernation (D13/D15). */
-  KOBE_SESSION_DIR: z.string().startsWith("/").default("/workspace/.kobe/sessions"),
-  KOBE_PI_BIN: z.string().min(1).default("pi"),
+  KAIJU_SESSION_DIR: z.string().startsWith("/").default("/workspace/.kobe/sessions"),
+  KAIJU_PI_BIN: z.string().min(1).default("pi"),
   /**
    * Where each Pi process gets its private runtime directory (its `PI_CODING_AGENT_DIR`, which Pi
    * 1.0.0 must be able to write, and its model file): created fresh per process, removed when it
    * exits. On the emptyDir that hibernation wipes (D12).
    */
-  KOBE_PI_RUNTIME_DIR: z.string().startsWith("/").default("/tmp/kobe-pi"),
+  KAIJU_PI_RUNTIME_DIR: z.string().startsWith("/").default("/tmp/kobe-pi"),
   /**
    * Where the run's effective skills are materialized (KOBE-82): a directory only the agent
    * writes, readable by the Pi uids. Kaiju's pod spec mounts a memory-backed volume (sticky root,
    * like the Pi runtime directories). Unset: this sandbox cannot materialize skills.
    */
-  KOBE_SKILLS_DIR: z.string().startsWith("/").optional(),
+  KAIJU_SKILLS_DIR: z.string().startsWith("/").optional(),
   /**
    * The model gateway (KOBE-40 shim) as sandbox pods see it; set by the server's pod spec when
    * the sandbox may reach models. Without it Pi has no model (runs fail `model_not_configured`).
    */
-  KOBE_MODEL_GATEWAY_URL: z
-    .url({ protocol: /^https?$/, error: "KOBE_MODEL_GATEWAY_URL must be an http(s) URL" })
+  KAIJU_MODEL_GATEWAY_URL: z
+    .url({ protocol: /^https?$/, error: "KAIJU_MODEL_GATEWAY_URL must be an http(s) URL" })
     .refine((url) => {
       const parsed = new URL(url);
       return parsed.username === "" && parsed.password === "" && parsed.pathname === "/";
-    }, "KOBE_MODEL_GATEWAY_URL must be a plain origin without credentials")
+    }, "KAIJU_MODEL_GATEWAY_URL must be a plain origin without credentials")
     .optional(),
   /**
    * The egress proxy as sandbox pods see it (KOBE-38; set by the server's pod spec, with the port).
    * With a bootstrap session, Pi's tools get it through the BASH_ENV script (KOBE-39).
    */
-  KOBE_EGRESS_PROXY_URL: z
-    .url({ protocol: /^http$/, error: "KOBE_EGRESS_PROXY_URL must be an http:// URL" })
+  KAIJU_EGRESS_PROXY_URL: z
+    .url({ protocol: /^http$/, error: "KAIJU_EGRESS_PROXY_URL must be an http:// URL" })
     .refine((url) => {
       const parsed = new URL(url);
       return parsed.username === "" && parsed.password === "" && parsed.pathname === "/";
-    }, "KOBE_EGRESS_PROXY_URL must be a plain origin without credentials")
+    }, "KAIJU_EGRESS_PROXY_URL must be a plain origin without credentials")
     .optional(),
   /**
    * The MCP proxy as sandbox pods see it (set by the server's pod spec, KOBE-111): with a bootstrap
    * session, Pi's per-session `mcp.json` points at it with the sandbox's mcp-proxy session token.
    */
-  KOBE_MCP_PROXY_URL: z
-    .url({ protocol: /^https?$/, error: "KOBE_MCP_PROXY_URL must be an http(s) URL" })
+  KAIJU_MCP_PROXY_URL: z
+    .url({ protocol: /^https?$/, error: "KAIJU_MCP_PROXY_URL must be an http(s) URL" })
     .refine((url) => {
       const parsed = new URL(url);
       return parsed.username === "" && parsed.password === "" && parsed.pathname === "/";
-    }, "KOBE_MCP_PROXY_URL must be a plain origin without credentials")
+    }, "KAIJU_MCP_PROXY_URL must be a plain origin without credentials")
     .optional(),
   /** The root-owned BASH_ENV script that exports the proxy variables from the token file. */
-  KOBE_EGRESS_ENV_SCRIPT: z.string().startsWith("/").default("/opt/kobe/egress-env.sh"),
+  KAIJU_EGRESS_ENV_SCRIPT: z.string().startsWith("/").default("/opt/kobe/egress-env.sh"),
   /** Hosts tools reach without the proxy (the pod's NO_PROXY); passed to Pi with the proxy. */
   NO_PROXY: z
     .string()
@@ -81,7 +81,7 @@ const configSchema = z.object({
     .regex(/^[A-Za-z0-9.,:*_-]*$/, "NO_PROXY must be a list of host names")
     .default("localhost,127.0.0.1"),
   /** kobe-models (KOBE-41): root-owned, read-only, loaded before kobe-policy when models are wired. */
-  KOBE_MODELS_EXTENSION: z
+  KAIJU_MODELS_EXTENSION: z
     .string()
     .startsWith("/")
     .default("/opt/kobe/pi-extensions/kobe-models/index.js"),
@@ -89,24 +89,24 @@ const configSchema = z.object({
    * kobe-tools (KOBE-128): root-owned, read-only, loaded before kobe-policy. Optional: unset, Pi
    * gets no fd 4 and the agent does not announce the `artifacts` capability (the image sets it).
    */
-  KOBE_TOOLS_EXTENSION: z.string().startsWith("/").optional(),
+  KAIJU_TOOLS_EXTENSION: z.string().startsWith("/").optional(),
   /**
    * kobe-exec (KOBE-167): root-owned, read-only, loaded before kobe-policy. Optional: unset, Pi runs
    * its own tools (development and tests outside the image; the image sets it).
    */
-  KOBE_EXEC_EXTENSION: z.string().startsWith("/").optional(),
+  KAIJU_EXEC_EXTENSION: z.string().startsWith("/").optional(),
   /**
    * KOBE-167 rollout switch (the chart's `sandbox.toolExecutor.enabled`, via the server's pod
    * spec): "true"/"1" routes every Pi's built-in tools to an executor under the partner uid of its
-   * Pi identity (needs KOBE_EXEC_EXTENSION); "false"/"0" leaves them in Pi. Unset: on outside
+   * Pi identity (needs KAIJU_EXEC_EXTENSION); "false"/"0" leaves them in Pi. Unset: on outside
    * Kaiju's pods (development and tests exercise the routing), off inside them (a server that does
    * not know the setting has not asked for it, and has not given the pod the partner groups).
    */
-  KOBE_TOOL_EXECUTOR: z
-    .enum(["true", "1", "false", "0"], { error: "KOBE_TOOL_EXECUTOR must be true or false" })
+  KAIJU_TOOL_EXECUTOR: z
+    .enum(["true", "1", "false", "0"], { error: "KAIJU_TOOL_EXECUTOR must be true or false" })
     .optional(),
   /** kobe-policy (KOBE-36): root-owned, read-only, loaded last into every Pi. No way to omit it. */
-  KOBE_POLICY_EXTENSION: z
+  KAIJU_POLICY_EXTENSION: z
     .string()
     .startsWith("/")
     .default("/opt/kobe/pi-extensions/kobe-policy/index.js"),
@@ -115,26 +115,26 @@ const configSchema = z.object({
    * a Pi identity of its own (the agent's supplementary groups 2000-2063), and the agent refuses
    * to start when it cannot do that. Unset (development, tests): Pi runs as the agent's uid.
    */
-  KOBE_PI_RUNAS: z.string().startsWith("/").optional(),
-  KOBE_MAX_PI_PROCESSES: positiveInt(8),
+  KAIJU_PI_RUNAS: z.string().startsWith("/").optional(),
+  KAIJU_MAX_PI_PROCESSES: positiveInt(8),
   /**
    * Notebooks (KOBE-464, docs/specs/notebooks.md NB10): the root-owned kernel bridge (the image sets
    * it). Unset: no kernels, no `notebooks` capability, no `run_python`.
    */
-  KOBE_KERNEL_BRIDGE: z.string().startsWith("/").optional(),
-  KOBE_KERNEL_PYTHON: z.string().startsWith("/").default("/usr/local/bin/python3"),
+  KAIJU_KERNEL_BRIDGE: z.string().startsWith("/").optional(),
+  KAIJU_KERNEL_PYTHON: z.string().startsWith("/").default("/usr/local/bin/python3"),
   /** Kernels per sandbox; each takes a Pi identity of its own (the pod has 16, Pi uses up to 8). */
-  KOBE_MAX_KERNELS: positiveInt(4),
-  KOBE_KERNEL_IDLE_MS: positiveInt(30 * 60_000),
-  KOBE_PI_IDLE_MS: positiveInt(10 * 60_000),
+  KAIJU_MAX_KERNELS: positiveInt(4),
+  KAIJU_KERNEL_IDLE_MS: positiveInt(30 * 60_000),
+  KAIJU_PI_IDLE_MS: positiveInt(10 * 60_000),
   /** Un-acked outbound pi.event bytes across all runs before the agent gives up on a run. */
-  KOBE_OUTBOX_MAX_BYTES: positiveInt(64 * 1024 * 1024),
-  KOBE_RESTORE_MAX_BYTES: positiveInt(512 * 1024 * 1024),
+  KAIJU_OUTBOX_MAX_BYTES: positiveInt(64 * 1024 * 1024),
+  KAIJU_RESTORE_MAX_BYTES: positiveInt(512 * 1024 * 1024),
   /**
    * KOBE-27: push /workspace changes to the server this often (and restore at start, pull before
    * runs). Set by the server's pod spec; 0 (the default outside Kaiju pods) turns sync off.
    */
-  KOBE_WORKSPACE_SYNC_INTERVAL_MS: z.coerce.number().int().min(0).max(3_600_000).default(0),
+  KAIJU_WORKSPACE_SYNC_INTERVAL_MS: z.coerce.number().int().min(0).max(3_600_000).default(0),
 });
 
 export interface Config {
@@ -191,55 +191,55 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     throw new Error(`Invalid configuration: ${issues}`);
   }
   const c = parsed.data;
-  if (c.KOBE_SANDBOX_ID === undefined && c.KOBE_BOOTSTRAP_TOKEN_FILE === undefined) {
+  if (c.KAIJU_SANDBOX_ID === undefined && c.KAIJU_BOOTSTRAP_TOKEN_FILE === undefined) {
     throw new Error(
-      "Invalid configuration: KOBE_SANDBOX_ID: required unless KOBE_BOOTSTRAP_TOKEN_FILE is set",
+      "Invalid configuration: KAIJU_SANDBOX_ID: required unless KAIJU_BOOTSTRAP_TOKEN_FILE is set",
     );
   }
-  const connect = new URL(SANDBOX_WS_PATH, c.KOBE_SERVER_URL);
+  const connect = new URL(SANDBOX_WS_PATH, c.KAIJU_SERVER_URL);
   return {
-    serverUrl: c.KOBE_SERVER_URL,
+    serverUrl: c.KAIJU_SERVER_URL,
     connectUrl: connect.toString(),
     // Bootstrap mode: replaced by the server-assigned id before the agent starts (index.ts).
-    sandboxId: c.KOBE_SANDBOX_ID ?? "",
-    tokenFile: c.KOBE_SANDBOX_TOKEN_FILE,
-    ...(c.KOBE_BOOTSTRAP_TOKEN_FILE === undefined
+    sandboxId: c.KAIJU_SANDBOX_ID ?? "",
+    tokenFile: c.KAIJU_SANDBOX_TOKEN_FILE,
+    ...(c.KAIJU_BOOTSTRAP_TOKEN_FILE === undefined
       ? {}
-      : { bootstrapTokenFile: c.KOBE_BOOTSTRAP_TOKEN_FILE }),
-    workspaceDir: c.KOBE_WORKSPACE_DIR,
-    sessionDir: c.KOBE_SESSION_DIR,
-    piBin: c.KOBE_PI_BIN,
-    piRuntimeDir: c.KOBE_PI_RUNTIME_DIR,
-    ...(c.KOBE_SKILLS_DIR === undefined ? {} : { skillsDir: c.KOBE_SKILLS_DIR }),
-    ...(c.KOBE_MODEL_GATEWAY_URL === undefined
+      : { bootstrapTokenFile: c.KAIJU_BOOTSTRAP_TOKEN_FILE }),
+    workspaceDir: c.KAIJU_WORKSPACE_DIR,
+    sessionDir: c.KAIJU_SESSION_DIR,
+    piBin: c.KAIJU_PI_BIN,
+    piRuntimeDir: c.KAIJU_PI_RUNTIME_DIR,
+    ...(c.KAIJU_SKILLS_DIR === undefined ? {} : { skillsDir: c.KAIJU_SKILLS_DIR }),
+    ...(c.KAIJU_MODEL_GATEWAY_URL === undefined
       ? {}
-      : { modelGatewayUrl: new URL(c.KOBE_MODEL_GATEWAY_URL).origin }),
-    modelsExtension: c.KOBE_MODELS_EXTENSION,
-    ...(c.KOBE_EGRESS_PROXY_URL === undefined
+      : { modelGatewayUrl: new URL(c.KAIJU_MODEL_GATEWAY_URL).origin }),
+    modelsExtension: c.KAIJU_MODELS_EXTENSION,
+    ...(c.KAIJU_EGRESS_PROXY_URL === undefined
       ? {}
-      : { egressProxyUrl: egressOrigin(c.KOBE_EGRESS_PROXY_URL) }),
-    egressEnvScript: c.KOBE_EGRESS_ENV_SCRIPT,
-    ...(c.KOBE_MCP_PROXY_URL === undefined
+      : { egressProxyUrl: egressOrigin(c.KAIJU_EGRESS_PROXY_URL) }),
+    egressEnvScript: c.KAIJU_EGRESS_ENV_SCRIPT,
+    ...(c.KAIJU_MCP_PROXY_URL === undefined
       ? {}
-      : { mcpProxyUrl: new URL(c.KOBE_MCP_PROXY_URL).origin }),
+      : { mcpProxyUrl: new URL(c.KAIJU_MCP_PROXY_URL).origin }),
     noProxy: c.NO_PROXY,
-    policyExtension: c.KOBE_POLICY_EXTENSION,
-    ...(c.KOBE_TOOLS_EXTENSION === undefined ? {} : { toolsExtension: c.KOBE_TOOLS_EXTENSION }),
-    ...(c.KOBE_EXEC_EXTENSION === undefined ? {} : { execExtension: c.KOBE_EXEC_EXTENSION }),
+    policyExtension: c.KAIJU_POLICY_EXTENSION,
+    ...(c.KAIJU_TOOLS_EXTENSION === undefined ? {} : { toolsExtension: c.KAIJU_TOOLS_EXTENSION }),
+    ...(c.KAIJU_EXEC_EXTENSION === undefined ? {} : { execExtension: c.KAIJU_EXEC_EXTENSION }),
     toolExecutor:
-      c.KOBE_TOOL_EXECUTOR === undefined
-        ? c.KOBE_BOOTSTRAP_TOKEN_FILE === undefined
-        : c.KOBE_TOOL_EXECUTOR === "true" || c.KOBE_TOOL_EXECUTOR === "1",
-    ...(c.KOBE_PI_RUNAS === undefined ? {} : { piRunAs: c.KOBE_PI_RUNAS }),
-    maxPiProcesses: c.KOBE_MAX_PI_PROCESSES,
-    ...(c.KOBE_KERNEL_BRIDGE === undefined ? {} : { kernelBridge: c.KOBE_KERNEL_BRIDGE }),
-    kernelPython: c.KOBE_KERNEL_PYTHON,
-    maxKernels: c.KOBE_MAX_KERNELS,
-    kernelIdleMs: c.KOBE_KERNEL_IDLE_MS,
-    piIdleMs: c.KOBE_PI_IDLE_MS,
-    outboxMaxBytes: c.KOBE_OUTBOX_MAX_BYTES,
-    restoreMaxBytes: c.KOBE_RESTORE_MAX_BYTES,
-    workspaceSyncIntervalMs: c.KOBE_WORKSPACE_SYNC_INTERVAL_MS,
+      c.KAIJU_TOOL_EXECUTOR === undefined
+        ? c.KAIJU_BOOTSTRAP_TOKEN_FILE === undefined
+        : c.KAIJU_TOOL_EXECUTOR === "true" || c.KAIJU_TOOL_EXECUTOR === "1",
+    ...(c.KAIJU_PI_RUNAS === undefined ? {} : { piRunAs: c.KAIJU_PI_RUNAS }),
+    maxPiProcesses: c.KAIJU_MAX_PI_PROCESSES,
+    ...(c.KAIJU_KERNEL_BRIDGE === undefined ? {} : { kernelBridge: c.KAIJU_KERNEL_BRIDGE }),
+    kernelPython: c.KAIJU_KERNEL_PYTHON,
+    maxKernels: c.KAIJU_MAX_KERNELS,
+    kernelIdleMs: c.KAIJU_KERNEL_IDLE_MS,
+    piIdleMs: c.KAIJU_PI_IDLE_MS,
+    outboxMaxBytes: c.KAIJU_OUTBOX_MAX_BYTES,
+    restoreMaxBytes: c.KAIJU_RESTORE_MAX_BYTES,
+    workspaceSyncIntervalMs: c.KAIJU_WORKSPACE_SYNC_INTERVAL_MS,
   };
 }
 

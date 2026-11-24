@@ -9,7 +9,7 @@ export { DEFAULT_BRANDING };
 
 /**
  * The site branding for the server render (theming plan TH5; server only: the root layout and
- * generateMetadata call it), from `GET ${KOBE_SERVER_URL}/v1/site/branding` with a 1 s timeout.
+ * generateMetadata call it), from `GET ${KAIJU_SERVER_URL}/v1/site/branding` with a 1 s timeout.
  *
  * Stale-while-revalidate per web process: the last validated value is kept; once it is 30 s old
  * the next render starts ONE background refresh and is served the kept value at once, so no

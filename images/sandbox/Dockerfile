@@ -104,14 +104,14 @@ COPY --from=agent /out/dist/kobe-models/*.js /opt/kobe/pi-extensions/kobe-models
 # to the agent over fd 4. Loaded before kobe-policy; root-owned and read-only like it; node builtins
 # and its own files only. The env var turns it on (and the `artifacts` capability with it).
 COPY --from=agent /out/dist/kobe-tools/*.js /opt/kobe/pi-extensions/kobe-tools/
-ENV KOBE_TOOLS_EXTENSION=/opt/kobe/pi-extensions/kobe-tools/index.js
+ENV KAIJU_TOOLS_EXTENSION=/opt/kobe/pi-extensions/kobe-tools/index.js
 # kobe-exec (KOBE-167): the Pi extension that replaces Pi's seven built-in tools with ones that run
 # in an executor process under the Pi identity's partner uid (the agent's dist/exec/executor, read
 # by those uids), over fd 5. Loaded right before kobe-policy; root-owned and read-only like it;
-# node builtins, Pi's own package and its own files only. KOBE_TOOL_EXECUTOR (the pod spec, from
+# node builtins, Pi's own package and its own files only. KAIJU_TOOL_EXECUTOR (the pod spec, from
 # the chart's sandbox.toolExecutor.enabled) switches the routing on or off per install.
 COPY --from=agent /out/dist/kobe-exec/*.js /opt/kobe/pi-extensions/kobe-exec/
-ENV KOBE_EXEC_EXTENSION=/opt/kobe/pi-extensions/kobe-exec/index.js
+ENV KAIJU_EXEC_EXTENSION=/opt/kobe/pi-extensions/kobe-exec/index.js
 # Egress for Pi's tools (KOBE-39): the BASH_ENV script that turns the agent's rotating egress
 # token file into HTTPS_PROXY for each bash tool call. Root-owned and read-only: it runs in every
 # tool's shell, so sandbox code must not be able to change it.
@@ -120,7 +120,7 @@ COPY images/sandbox/egress-env.sh /opt/kobe/egress-env.sh
 # under the kernel's own uid, over stdio. Root-owned and read-only like the extensions; it starts
 # ipykernel with the ZeroMQ ipc transport (unix sockets in a private directory, no TCP port).
 COPY images/sandbox/kernel/kobe-kernel-bridge.py /opt/kobe/kernel/kobe-kernel-bridge.py
-ENV KOBE_KERNEL_BRIDGE=/opt/kobe/kernel/kobe-kernel-bridge.py
+ENV KAIJU_KERNEL_BRIDGE=/opt/kobe/kernel/kobe-kernel-bridge.py
 # The former built-in gallery skills (KOBE-88) are Kaiju-published catalog skills (KOBE-317): the
 # server ships them (services/server/builtin-skills) and each run fetches them as skill bundles,
 # so the image carries none. Their helper scripts run on the Python stack above.

@@ -12,7 +12,7 @@ import type { ObjectStore } from "./object-store.js";
  * rewritten; `dryRun` only counts. Logs carry counts and ids, never paths or content.
  */
 export interface RepairOptions {
-  /** Object key prefix (KOBE_S3_PREFIX). */
+  /** Object key prefix (KAIJU_S3_PREFIX). */
   readonly prefix: string;
   readonly dryRun?: boolean;
   /** Only this team (all its workspaces, or `userId`'s). */

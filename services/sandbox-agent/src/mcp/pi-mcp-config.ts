@@ -35,7 +35,7 @@ const SAFE_PATH = /^\/[A-Za-z0-9_./-]+$/;
 const SAFE_THREAD_ID = /^[A-Za-z0-9-]{1,64}$/;
 
 export interface McpWiring {
-  /** `KOBE_MCP_PROXY_URL`: an http(s) origin, no credentials. */
+  /** `KAIJU_MCP_PROXY_URL`: an http(s) origin, no credentials. */
   readonly proxyUrl: string;
   /** The sandbox's rotating `kobe.mcp-proxy` session token. */
   readonly tokens: ModelTokenSource;

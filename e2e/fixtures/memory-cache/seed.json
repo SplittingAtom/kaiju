@@ -1,5 +1,5 @@
 {
-  "about": "KOBE-387 memory for the cache replay (docs/gates/gate-7a.md step 2): 3 Policy rules, 2 pinned Workspace memories, 12 more across the four places. Seed once per install (KOBE_EVAL_SEED=1) and keep it for both the before and the after replay. Policy needs a Site admin; the rest the replaying member (Workspace items: a curator).",
+  "about": "KOBE-387 memory for the cache replay (docs/gates/gate-7a.md step 2): 3 Policy rules, 2 pinned Workspace memories, 12 more across the four places. Seed once per install (KAIJU_EVAL_SEED=1) and keep it for both the before and the after replay. Policy needs a Site admin; the rest the replaying member (Workspace items: a curator).",
   "items": [
     {
       "scope": "site",

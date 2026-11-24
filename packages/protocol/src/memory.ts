@@ -202,7 +202,7 @@ export const memoryFailFields = { ok: z.literal(false), error: memoryErrorSchema
 
 // ----------------------------------------------------------------------------- kobe-tools channel
 
-/** Requests on the kobe-tools channel (KOBE_TOOLS_FD); dispatch on `op`. */
+/** Requests on the kobe-tools channel (KAIJU_TOOLS_FD); dispatch on `op`. */
 export const memoryToolsRequestSchema = z.union([
   z.strictObject({
     id: idSchema,

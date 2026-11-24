@@ -4,15 +4,15 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-835: connecting an OAuth connector from My connectors, end to end in a real browser. Needs
- * `KOBE_OAUTH_CONNECTOR`: the name of an OAuth connector enabled for `KOBE_USER`'s active
+ * `KAIJU_OAUTH_CONNECTOR`: the name of an OAuth connector enabled for `KAIJU_USER`'s active
  * workspace whose authorization server consents without a login page, such as the e2e fake
  * (`e2e/lib/fake-oauth-mcp.js`, KOBE-232) served where both the browser and the cluster reach it.
  * Skipped without it: the suite has no such server of its own, and a real provider (Massive) needs
  * a person to sign in. Spends no model tokens. Run: `npx playwright test connector-oauth`.
  */
-const NAME = process.env["KOBE_OAUTH_CONNECTOR"];
+const NAME = process.env["KAIJU_OAUTH_CONNECTOR"];
 
-test.skip(!NAME, "KOBE_OAUTH_CONNECTOR names no OAuth connector with a consent-at-once server");
+test.skip(!NAME, "KAIJU_OAUTH_CONNECTOR names no OAuth connector with a consent-at-once server");
 
 test("My connectors: Connect signs in at the service, comes back connected, and Disconnect", async ({
   page,

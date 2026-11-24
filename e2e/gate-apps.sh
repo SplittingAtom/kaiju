@@ -2,30 +2,30 @@
 # The Kaiju Explorer Gate (KOBE-441; MCP Apps host spec docs/specs/mcp-apps-host.md §11): an MCP App
 # in the conversation first, then from the rail, with the negative checks. API checks run in a
 # server pod (e2e/gate-apps/client.mjs); the browser checks are Playwright specs in a real Chromium
-# (e2e/browser/tests/gate-apps/explorer.spec.ts, app-frame.spec.ts with KOBE_REQUIRE_APP=1, and
+# (e2e/browser/tests/gate-apps/explorer.spec.ts, app-frame.spec.ts with KAIJU_REQUIRE_APP=1, and
 # app-item-chips.spec.ts, KOBE-490).
 # docs/gates/gate-apps.md says what each check proves.
 #
 #   e2e/gate-apps.sh                  on k3d after the gate1-prep install (CI): the fake MCP server
 #                                     serves a `ui://` test app, the scripted model calls its tool
-#   KOBE_GATEAPPS_BROWSER=0 ...       API checks only; prints the browser command to run elsewhere,
-#                                     whose report KOBE_GATEAPPS_RESULTS=<results.json> then judges
+#   KAIJU_GATEAPPS_BROWSER=0 ...       API checks only; prints the browser command to run elsewhere,
+#                                     whose report KAIJU_GATEAPPS_RESULTS=<results.json> then judges
 #
 # The gate install against Catalyst is the coordinator's run (docs/gates/gate-apps-runbook.md); it
 # uses the browser spec with the gate install's own connector and accounts, never this script's
-# k3d fixtures. This script refuses any context but k3d-* unless KOBE_GATEAPPS_CONTEXT names it.
+# k3d fixtures. This script refuses any context but k3d-* unless KAIJU_GATEAPPS_CONTEXT names it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KOBE_GATEAPPS_NS:-kobe-dev}"
-RELEASE="${KOBE_GATEAPPS_RELEASE:-kobe}"
-CHART="${KOBE_GATEAPPS_CHART:-charts/kobe}"
-OWNER_EMAIL="${KOBE_GATEAPPS_OWNER_EMAIL:-owner@e2e.test}"
-OWNER_PASSWORD="${KOBE_GATEAPPS_OWNER_PASSWORD:-e2e owner password}"
-MODEL_ALIAS="${KOBE_GATEAPPS_MODEL:-fast}"
-BROWSER="${KOBE_GATEAPPS_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
+NS="${KAIJU_GATEAPPS_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATEAPPS_RELEASE:-kobe}"
+CHART="${KAIJU_GATEAPPS_CHART:-charts/kobe}"
+OWNER_EMAIL="${KAIJU_GATEAPPS_OWNER_EMAIL:-owner@e2e.test}"
+OWNER_PASSWORD="${KAIJU_GATEAPPS_OWNER_PASSWORD:-e2e owner password}"
+MODEL_ALIAS="${KAIJU_GATEAPPS_MODEL:-fast}"
+BROWSER="${KAIJU_GATEAPPS_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
 TEAM_SLUG=gate-apps-a
 INFRA_NS=kobe-gate-apps-infra
 SERVER="deploy/$RELEASE-server"
@@ -37,11 +37,11 @@ APP_TOOL=mcp__e2e_apps__open_explorer
 failed=0
 
 context=$($KUBECTL config current-context)
-if [[ "$context" != k3d-* && "$context" != "${KOBE_GATEAPPS_CONTEXT:-}" ]]; then
-  echo "refusing to run against context '$context' (expected k3d-*, or set KOBE_GATEAPPS_CONTEXT=$context)" >&2
+if [[ "$context" != k3d-* && "$context" != "${KAIJU_GATEAPPS_CONTEXT:-}" ]]; then
+  echo "refusing to run against context '$context' (expected k3d-*, or set KAIJU_GATEAPPS_CONTEXT=$context)" >&2
   exit 2
 fi
-RESTORE_HELM="${KOBE_GATEAPPS_RESTORE_HELM:-$([[ "$context" == k3d-* ]] && echo 0 || echo 1)}"
+RESTORE_HELM="${KAIJU_GATEAPPS_RESTORE_HELM:-$([[ "$context" == k3d-* ]] && echo 0 || echo 1)}"
 
 # shellcheck source=lib/gate-common.sh
 source e2e/lib/gate-common.sh
@@ -103,14 +103,14 @@ step() { client "$(printf '{"mode":"%s","base":"%s","owner":%s,%s}' "$1" "$BASE"
 # Connectors reach a run only through its agent's list (resolver: agent list ∩ team-enabled ∩
 # user-connected; a thread with no agent gets none): the turns use the gallery agent Kobe
 # (`connectors: all`), as the chat preselects it for a new conversation (KOBE-124).
-KOBE_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
-[[ "$KOBE_AGENT" =~ ^[0-9a-f-]{36}$ ]] || { fail "the gallery agent Kobe exists"; exit 1; }
-AGENT_FIELD="\"agentId\":\"$KOBE_AGENT\""
+KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
+[[ "$KAIJU_AGENT" =~ ^[0-9a-f-]{36}$ ]] || { fail "the gallery agent Kobe exists"; exit 1; }
+AGENT_FIELD="\"agentId\":\"$KAIJU_AGENT\""
 
 # ---- the fake MCP Apps server and the proxies' allow-list ---------------------------------------------
 part_begin "setup: the fake MCP server serves ui://e2e/explorer; the connectors are pinned and enabled"
 SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-SANDBOX_IMAGE="${KOBE_GATEAPPS_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
+SANDBOX_IMAGE="${KAIJU_GATEAPPS_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
 $KUBECTL create namespace "$INFRA_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
 $KUBECTL -n "$INFRA_NS" delete pod fake-mcp --ignore-not-found >/dev/null
 $KUBECTL -n "$INFRA_NS" run fake-mcp --restart=Never --image="$SANDBOX_IMAGE" --image-pull-policy=IfNotPresent \
@@ -247,15 +247,15 @@ part_end nokey
 
 # ---- the browser checks -----------------------------------------------------------------------------
 SPECS=(gate-apps/explorer.spec.ts app-frame.spec.ts app-item-chips.spec.ts)
-PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KOBE_PUBLIC_URL 2>/dev/null || true)
+PUBLIC_URL=$($KUBECTL -n "$NS" exec "$SERVER" -c server -- printenv KAIJU_PUBLIC_URL 2>/dev/null || true)
 browser_env() { # the variables the specs read, except the password
-  printf 'KOBE_BASE_URL=%s KOBE_USER=gate-apps-ad@gate-apps.test KOBE_FAKE_MODEL=1 KOBE_APPS_CONNECTOR=e2e-apps KOBE_APPS_PROBES=1 KOBE_APPS_SECRET=%s KOBE_REQUIRE_APP=1 KOBE_APP_ID=%s' \
+  printf 'KAIJU_BASE_URL=%s KAIJU_USER=gate-apps-ad@gate-apps.test KAIJU_FAKE_MODEL=1 KAIJU_APPS_CONNECTOR=e2e-apps KAIJU_APPS_PROBES=1 KAIJU_APPS_SECRET=%s KAIJU_REQUIRE_APP=1 KAIJU_APP_ID=%s' \
     "$PUBLIC_URL" "$MEMBER_KEY" "$APP"
 }
-RESULTS="${KOBE_GATEAPPS_RESULTS:-}"
+RESULTS="${KAIJU_GATEAPPS_RESULTS:-}"
 if [[ "$BROWSER" == 1 ]]; then
   echo "==> browser: ${SPECS[*]} in Chromium against $PUBLIC_URL"
-  map="${KOBE_GATEAPPS_BROWSER_MAP:-}"
+  map="${KAIJU_GATEAPPS_BROWSER_MAP:-}"
   if [[ -z "$map" && "$context" == k3d-* ]]; then
     $KUBECTL -n kube-system port-forward svc/traefik 18081:80 >"$WORK/port-forward.log" 2>&1 &
     pf=$!
@@ -266,12 +266,12 @@ if [[ "$BROWSER" == 1 ]]; then
   fi
   RESULTS="$WORK/results.json"
   # shellcheck disable=SC2046 # browser_env is a list of NAME=value words
-  (cd e2e/browser && env $(browser_env) KOBE_PW="$USER_PASSWORD" KOBE_BROWSER_MAP="$map" \
-    KOBE_BROWSER_RESULTS="$RESULTS" npx playwright test "${SPECS[@]}" >"$WORK/playwright.log" 2>&1) || true
+  (cd e2e/browser && env $(browser_env) KAIJU_PW="$USER_PASSWORD" KAIJU_BROWSER_MAP="$map" \
+    KAIJU_BROWSER_RESULTS="$RESULTS" npx playwright test "${SPECS[@]}" >"$WORK/playwright.log" 2>&1) || true
   grep -E '✓|✘|-  |passed|failed|skipped|flaky' "$WORK/playwright.log" | tail -40 | sed 's/^/     /' || true
 elif [[ -z "$RESULTS" ]]; then
-  echo "skip browser checks (KOBE_GATEAPPS_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL, then judge with KOBE_GATEAPPS_RESULTS=<results.json>:"
-  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KOBE_PW=<the fixtures' password> KOBE_BROWSER_RESULTS=<results.json> npx playwright test ${SPECS[*]}"
+  echo "skip browser checks (KAIJU_GATEAPPS_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL, then judge with KAIJU_GATEAPPS_RESULTS=<results.json>:"
+  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KAIJU_PW=<the fixtures' password> KAIJU_BROWSER_RESULTS=<results.json> npx playwright test ${SPECS[*]}"
 fi
 
 # ---- after the browser: drift and export ------------------------------------------------------------

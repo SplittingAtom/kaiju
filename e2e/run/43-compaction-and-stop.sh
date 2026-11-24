@@ -17,7 +17,7 @@
     read -r -d '' COMPACT_JS <<'JS' || true
 const [team, threadId] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
 const headers = () => ({ origin, "content-type": "application/json", "x-kobe-team": team,
   cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") });
@@ -84,7 +84,7 @@ JS
     read -r -d '' STOP_EARLY_JS <<'JS' || true
 const [team, content] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
 const headers = () => ({ origin, "content-type": "application/json", "x-kobe-team": team,
   cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") });

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { CLEANUP_SIGNALS, makePrivateWorkDir, removeOnSignal } from "./workdir.js";
 
 describe("makePrivateWorkDir", () => {
-  it("creates a 0700 directory under the given base (KOBE_TMPDIR)", async () => {
+  it("creates a 0700 directory under the given base (KAIJU_TMPDIR)", async () => {
     const base = await mkdtemp(join(tmpdir(), "kaiju-base-"));
     const dir = await makePrivateWorkDir(base);
     expect(dir.startsWith(join(base, "kaiju-restore-"))).toBe(true);

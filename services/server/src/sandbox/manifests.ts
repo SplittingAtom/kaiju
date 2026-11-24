@@ -312,19 +312,19 @@ function sandboxEnv(s: SandboxSettings): { name: string; value: string }[] {
   ].join(",");
   return [
     // The agent dials out (D13); it trades the bootstrap token at the same host over HTTP.
-    { name: "KOBE_SERVER_URL", value: url("ws", SANDBOX_HOSTS.server, e.server.port, 80) },
+    { name: "KAIJU_SERVER_URL", value: url("ws", SANDBOX_HOSTS.server, e.server.port, 80) },
     {
-      name: "KOBE_MODEL_GATEWAY_URL",
+      name: "KAIJU_MODEL_GATEWAY_URL",
       value: url("http", SANDBOX_HOSTS.modelGateway, e.modelGateway.port, 80),
     },
-    { name: "KOBE_MCP_PROXY_URL", value: url("http", SANDBOX_HOSTS.mcpProxy, e.mcpProxy.port, 80) },
-    { name: "KOBE_EGRESS_PROXY_URL", value: egress },
-    { name: "KOBE_BOOTSTRAP_TOKEN_FILE", value: BOOTSTRAP_TOKEN_FILE },
+    { name: "KAIJU_MCP_PROXY_URL", value: url("http", SANDBOX_HOSTS.mcpProxy, e.mcpProxy.port, 80) },
+    { name: "KAIJU_EGRESS_PROXY_URL", value: egress },
+    { name: "KAIJU_BOOTSTRAP_TOKEN_FILE", value: BOOTSTRAP_TOKEN_FILE },
     // KOBE-71: every Pi process (and the tools it runs) under a uid of its own; the agent refuses
     // to start when it cannot do that.
-    { name: "KOBE_PI_RUNAS", value: PI_RUNAS_HELPER },
-    { name: "KOBE_PI_RUNTIME_DIR", value: PI_RUNTIME_DIR },
-    { name: "KOBE_SKILLS_DIR", value: SKILLS_DIR },
+    { name: "KAIJU_PI_RUNAS", value: PI_RUNAS_HELPER },
+    { name: "KAIJU_PI_RUNTIME_DIR", value: PI_RUNTIME_DIR },
+    { name: "KAIJU_SKILLS_DIR", value: SKILLS_DIR },
     { name: "HTTP_PROXY", value: egress },
     { name: "HTTPS_PROXY", value: egress },
     { name: "http_proxy", value: egress },
@@ -334,10 +334,10 @@ function sandboxEnv(s: SandboxSettings): { name: string; value: string }[] {
     { name: "HOME", value: "/home/kobe" },
     // KOBE-167: Pi's built-in tools in an executor under the partner uid (needs the partner
     // groups in the pod spec above); the agent refuses to start if it is on and they are missing.
-    { name: "KOBE_TOOL_EXECUTOR", value: String(s.toolExecutor.enabled) },
+    { name: "KAIJU_TOOL_EXECUTOR", value: String(s.toolExecutor.enabled) },
     // KOBE-27: how often the agent pushes /workspace changes (through the server); 0 = sync off.
     {
-      name: "KOBE_WORKSPACE_SYNC_INTERVAL_MS",
+      name: "KAIJU_WORKSPACE_SYNC_INTERVAL_MS",
       value: String(s.workspaceSync.enabled ? s.workspaceSync.pushIntervalSeconds * 1000 : 0),
     },
   ];

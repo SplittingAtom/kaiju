@@ -16,7 +16,7 @@
     read -r -d '' CHAT_JS <<'JS' || true
 const [team, content, timeoutMs, model, agentId, reuseThread, approveAll, fileIds, projectId, mentions] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const jar = new Map();
 const headers = () => ({ origin, "content-type": "application/json", "x-kobe-team": team,
   cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") });
@@ -244,5 +244,5 @@ SH
     contains "--kill-all clears an identity at its process limit" '^nproc_kill=0$' "$privsep"
     contains "nothing of it is left" '^nproc_left=0$' "$privsep"
     # KOBE-168: with the tool executor on, the isolation and workspace checks of the paired uid.
-    if [[ "${KOBE_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then source e2e/executor/isolation.sh; fi
+    if [[ "${KAIJU_E2E_TOOL_EXECUTOR:-}" == 1 ]]; then source e2e/executor/isolation.sh; fi
 

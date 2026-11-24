@@ -112,7 +112,7 @@ describe("auditForwarding.syslog.enterpriseNumber", () => {
   const pen = (values: Record<string, string>) =>
     envNamed(
       podSpec("kobe-server", { ...syslog, ...values }),
-      "KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER",
+      "KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER",
     )?.value;
 
   it("defaults to the documentation number 32473", () => {
@@ -125,7 +125,7 @@ describe("auditForwarding.syslog.enterpriseNumber", () => {
 
   it("is not set while syslog forwarding is off", () => {
     const spec = podSpec("kobe-server");
-    expect(envNamed(spec, "KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER")).toBeUndefined();
+    expect(envNamed(spec, "KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER")).toBeUndefined();
   });
 
   it("accepts digits only", () => {

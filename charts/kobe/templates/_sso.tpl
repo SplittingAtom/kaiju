@@ -1,7 +1,7 @@
 {{/*
 Single sign-on (KOBE-626, spec docs/specs/sso-oidc-scim.md): the API server only. The providers
 travel as JSON without secrets (services/server/src/sso/settings.ts); each provider's client
-secret comes from the Secret its values name, as KOBE_SSO_CLIENT_SECRET_<SLUG> (slug upper-cased,
+secret comes from the Secret its values name, as KAIJU_SSO_CLIENT_SECRET_<SLUG> (slug upper-cased,
 hyphens as underscores), and is never written to the database.
 */}}
 {{- define "kobe.ssoValues" -}}
@@ -20,16 +20,16 @@ hyphens as underscores), and is never written to the database.
 {{- range $s.providers }}
 {{- $providers = append $providers (omit . "clientSecretSecret") -}}
 {{- end }}
-- name: KOBE_SSO_ENABLED
+- name: KAIJU_SSO_ENABLED
   value: {{ $s.enabled | toString | quote }}
-- name: KOBE_SSO_ALLOWED_INTERNAL_CIDRS
+- name: KAIJU_SSO_ALLOWED_INTERNAL_CIDRS
   value: {{ join "," $s.allowedInternalCidrs | quote }}
-- name: KOBE_SSO_ALLOWED_PORTS
+- name: KAIJU_SSO_ALLOWED_PORTS
   value: {{ join "," $s.allowedPorts | quote }}
-- name: KOBE_SSO_PROVIDERS
+- name: KAIJU_SSO_PROVIDERS
   value: {{ toJson $providers | quote }}
 {{- range $s.providers }}
-- name: {{ printf "KOBE_SSO_CLIENT_SECRET_%s" (.slug | upper | replace "-" "_") }}
+- name: {{ printf "KAIJU_SSO_CLIENT_SECRET_%s" (.slug | upper | replace "-" "_") }}
   valueFrom:
     secretKeyRef:
       name: {{ required (printf "auth.sso.providers[%s].clientSecretSecret.name is required" .slug) (.clientSecretSecret).name }}

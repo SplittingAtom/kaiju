@@ -7,7 +7,7 @@ set -euo pipefail
 IMAGE="${1:?usage: $0 <image>}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FIX="$HERE/testing/fixtures"
-KOBE_EXPORT_FIXTURE="$HERE/../../services/server/src/agents/orbit/fixtures/full.yaml"
+KAIJU_EXPORT_FIXTURE="$HERE/../../services/server/src/agents/orbit/fixtures/full.yaml"
 RUN_ID="orbit-eval-test-$$"
 NET="$RUN_ID"
 TOKEN="session-token-$RANDOM$RANDOM"
@@ -94,14 +94,14 @@ print("ok")')"
 
 echo "== input and configuration errors"
 out="$(job noenv "$FIX/agent-bash.yaml" -- "${STDIN_YAML[@]}")"
-expect "refuses to run without a gateway URL" 'KOBE_MODEL_GATEWAY_URL must be an http\(s\) URL' "$out"
+expect "refuses to run without a gateway URL" 'KAIJU_MODEL_GATEWAY_URL must be an http\(s\) URL' "$out"
 expect "...exit code 2" 'rc=2$' "$out"
-out="$(job notoken "$FIX/agent-bash.yaml" KOBE_MODEL_GATEWAY_URL=http://x:1 -- "${STDIN_YAML[@]}")"
-expect "refuses to run without a session token" 'KOBE_MODEL_SESSION_TOKEN is required' "$out"
+out="$(job notoken "$FIX/agent-bash.yaml" KAIJU_MODEL_GATEWAY_URL=http://x:1 -- "${STDIN_YAML[@]}")"
+expect "refuses to run without a session token" 'KAIJU_MODEL_SESSION_TOKEN is required' "$out"
 out="$(job badyaml "$FIX/invalid-unknown-key.yaml" -- "${STDIN_YAML[@]}" --validate-only)"
 expect "Orbit's loader rejects an invalid export" 'invalid input' "$out"
 expect "...exit code 2" 'rc=2$' "$out"
-out="$(job validate "$KOBE_EXPORT_FIXTURE" -- "${STDIN_YAML[@]}" --validate-only)"
+out="$(job validate "$KAIJU_EXPORT_FIXTURE" -- "${STDIN_YAML[@]}" --validate-only)"
 expect "validates a KOBE-90 export fixture without model calls" 'ok: 5 scenarios, agent .sales-analyst. with 3 tools' "$out"
 
 echo "== evaluation against a fake model endpoint"
@@ -114,7 +114,7 @@ for _ in $(seq 1 30); do
     >/dev/null 2>&1 && break
   sleep 1
 done
-GATEWAY=(KOBE_MODEL_GATEWAY_URL="http://$RUN_ID-fake:8080" KOBE_MODEL_SESSION_TOKEN="$TOKEN")
+GATEWAY=(KAIJU_MODEL_GATEWAY_URL="http://$RUN_ID-fake:8080" KAIJU_MODEL_SESSION_TOKEN="$TOKEN")
 
 result_checks() { # name, text, expected-asr, expected-successes
   local json
@@ -133,16 +133,16 @@ PY
   then pass "$1"; else fail "$1" "${2:0:800}"; fi
 }
 
-out="$(job vuln "$KOBE_EXPORT_FIXTURE" "${GATEWAY[@]}" KOBE_EVAL_MODEL=fake-vulnerable -- "${STDIN_YAML[@]}")"
+out="$(job vuln "$KAIJU_EXPORT_FIXTURE" "${GATEWAY[@]}" KAIJU_EVAL_MODEL=fake-vulnerable -- "${STDIN_YAML[@]}")"
 expect "vulnerable model: exit code 0" 'rc=0$' "$out"
 result_checks "vulnerable model: attack success rate 1.0 over the 5 scenarios" "$out" 1.0 5
-out="$(job vuln2 "$KOBE_EXPORT_FIXTURE" "${GATEWAY[@]}" KOBE_EVAL_MODEL=fake-vulnerable -- \
+out="$(job vuln2 "$KAIJU_EXPORT_FIXTURE" "${GATEWAY[@]}" KAIJU_EVAL_MODEL=fake-vulnerable -- \
   "${STDIN_YAML[@]}" --output /output/result.json)"
 written="$(docker run --rm "${HARDENED[@]}" --entrypoint cat "$IMAGE" /output/result.json 2>&1 || true)"
 expect "result.json is written to the mounted output path" '"attack_success_rate": 1.0' "$written"
 expect "...and equals what was printed to stdout" '^same$' \
   "$(python3 -c 'import json,sys; a=json.loads(sys.argv[1]); b=json.loads("\n".join(l for l in sys.argv[2].splitlines() if not l.startswith("rc=")).strip()); print("same" if a==b else "differs")' "$written" "$out" 2>&1)"
-out="$(job safe "$FIX/agent-bash.yaml" "${GATEWAY[@]}" KOBE_EVAL_MODEL=fake-safe -- "${STDIN_YAML[@]}")"
+out="$(job safe "$FIX/agent-bash.yaml" "${GATEWAY[@]}" KAIJU_EVAL_MODEL=fake-safe -- "${STDIN_YAML[@]}")"
 expect "safe model: exit code 0" 'rc=0$' "$out"
 result_checks "safe model: attack success rate 0.0, reserved tool name aliased" "$out" 0.0 0
 expect "alias recorded for the reserved tool name" '"bash": "sim_bash"' "$out"
@@ -152,7 +152,7 @@ auth="$(docker exec "$RUN_ID-fake" cat /tmp/fake-model-auth.log)"
 expect "model calls go to /v1 on the gateway with the session token as bearer" \
   '^/v1/chat/completions Bearer '"$TOKEN"' fake-safe$' "$(sort -u <<<"$auth" | grep fake-safe)"
 out="$(job fromexport "$FIX/agent-bash.yaml" "${GATEWAY[@]}" -- "${STDIN_YAML[@]}")"
-expect "model id comes from the export when KOBE_EVAL_MODEL is unset" '"model": "openai/gpt-4o"' "$out"
+expect "model id comes from the export when KAIJU_EVAL_MODEL is unset" '"model": "openai/gpt-4o"' "$out"
 expect "...and reaches the gateway under that id" 'Bearer '"$TOKEN"' openai/gpt-4o$' \
   "$(docker exec "$RUN_ID-fake" cat /tmp/fake-model-auth.log)"
 out="$(job badpack "$FIX/agent-bash.yaml" "${GATEWAY[@]}" -- --orbit-yaml /nonexistent.yaml --pack /dev/stdin)"
@@ -182,7 +182,7 @@ rm -f "/tmp/$RUN_ID-badcases.json"
 expect "invalid shared cases are rejected" 'invalid shared cases' "$out"
 expect "...without quoting their text" '^none$' "$(grep -F 'secret prompt text' <<<"$out" >/dev/null && echo leaked || echo none)"
 expect "...exit code 2" 'rc=2$' "$out"
-out="$(job cases "$FIX/agent-bash.yaml" "${GATEWAY[@]}" KOBE_EVAL_MODEL=fake-safe -- "${STDIN_YAML[@]}" --gateway-cases)"
+out="$(job cases "$FIX/agent-bash.yaml" "${GATEWAY[@]}" KAIJU_EVAL_MODEL=fake-safe -- "${STDIN_YAML[@]}" --gateway-cases)"
 expect "an ungradeable case: exit code 1 (the server fails the eval closed)" 'rc=1$' "$out"
 expect "the cases come from the gateway with the session token" '^/kobe/eval-cases Bearer '"$TOKEN"' cases$' \
   "$(docker exec "$RUN_ID-fake" cat /tmp/fake-model-auth.log | grep -F /kobe/eval-cases | sort -u)"
@@ -197,7 +197,7 @@ assert [r["status"] for r in c["results"]] == ["passed", "failed", "error"], c["
 assert set(c["results"][0]) == {"id", "status"}
 PY
 then pass "cases pass with the replayed tool output, fail without it, error when ungradeable"; else fail "case results" "${out:0:800}"; fi
-out="$(job nocases "$FIX/agent-bash.yaml" KOBE_MODEL_GATEWAY_URL="http://$RUN_ID-fake:9" KOBE_MODEL_SESSION_TOKEN="$TOKEN" -- "${STDIN_YAML[@]}" --gateway-cases)"
+out="$(job nocases "$FIX/agent-bash.yaml" KAIJU_MODEL_GATEWAY_URL="http://$RUN_ID-fake:9" KAIJU_MODEL_SESSION_TOKEN="$TOKEN" -- "${STDIN_YAML[@]}" --gateway-cases)"
 expect "no cases from the gateway: the run fails (exit 3) without the token in the message" 'rc=3$' "$out"
 expect "...token not echoed" '^none$' "$(grep -F "$TOKEN" <<<"$out" >/dev/null && echo leaked || echo none)"
 expect "the result holds no case text" '^none$' \

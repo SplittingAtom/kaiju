@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 export type PgTool = "pg_dump" | "pg_restore" | "psql";
 
-/** Binary path: `binDir/name` when KOBE_PG_BIN_DIR is set, otherwise looked up on PATH. */
+/** Binary path: `binDir/name` when KAIJU_PG_BIN_DIR is set, otherwise looked up on PATH. */
 export function pgBinary(name: PgTool, binDir?: string): string {
   return binDir ? join(binDir, name) : name;
 }
@@ -131,7 +131,7 @@ export function waitForExit(
       reject(
         err.code === "ENOENT"
           ? new Error(
-              `${binary} not found: install the PostgreSQL client (17.6 or newer) or set KOBE_PG_BIN_DIR`,
+              `${binary} not found: install the PostgreSQL client (17.6 or newer) or set KAIJU_PG_BIN_DIR`,
             )
           : err,
       );
@@ -170,7 +170,7 @@ export async function checkToolVersion(
   const version = parseVersion(output);
   if (version.major < serverMajor) {
     throw new Error(
-      `${binary} is PostgreSQL ${version.major}; the server is ${serverMajor}. Install a PostgreSQL ${serverMajor}+ client or set KOBE_PG_BIN_DIR`,
+      `${binary} is PostgreSQL ${version.major}; the server is ${serverMajor}. Install a PostgreSQL ${serverMajor}+ client or set KAIJU_PG_BIN_DIR`,
     );
   }
   if (needRestrict && !supportsRestrict(version)) {

@@ -1,6 +1,6 @@
 /**
  * The origin the guide's Markdown outputs put in front of their links (KOBE-616): the deployment's
- * KOBE_PUBLIC_URL when set (the chart sets the same value as the server's), else the request's
+ * KAIJU_PUBLIC_URL when set (the chart sets the same value as the server's), else the request's
  * own host as the ingress forwarded it (`X-Forwarded-Proto`/`-Host`, then `Host`, then the URL).
  * A host that is not a plain `host[:port]` is ignored, so nothing odd reaches the text.
  */

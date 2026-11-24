@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 
-// KOBE-500 (theming plan TH5): the web gets KOBE_SERVER_URL, the server's in-cluster origin, for
+// KOBE-500 (theming plan TH5): the web gets KAIJU_SERVER_URL, the server's in-cluster origin, for
 // the site branding of every server render. Default: this release's server Service (port 80).
 
 const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
@@ -42,9 +42,9 @@ function envOf(
   return (dep?.spec.template.spec.containers[0].env ?? []) as EnvVar[];
 }
 
-const serverUrl = (env: EnvVar[]) => env.find((e) => e.name === "KOBE_SERVER_URL")?.value;
+const serverUrl = (env: EnvVar[]) => env.find((e) => e.name === "KAIJU_SERVER_URL")?.value;
 
-describe("web.serverUrl -> KOBE_SERVER_URL", () => {
+describe("web.serverUrl -> KAIJU_SERVER_URL", () => {
   it("defaults to this release's server Service", () => {
     expect(serverUrl(envOf("kobe-web"))).toBe("http://kobe-server");
     expect(serverUrl(envOf("other-web", {}, "other"))).toBe("http://other-server");
@@ -70,9 +70,9 @@ describe("web.serverUrl -> KOBE_SERVER_URL", () => {
   );
 });
 
-// KOBE-616: the web also gets KOBE_PUBLIC_URL (the server's value) for the guide's /llms.txt links.
-describe("KOBE_PUBLIC_URL on the web", () => {
-  const publicUrl = (env: EnvVar[]) => env.find((e) => e.name === "KOBE_PUBLIC_URL")?.value;
+// KOBE-616: the web also gets KAIJU_PUBLIC_URL (the server's value) for the guide's /llms.txt links.
+describe("KAIJU_PUBLIC_URL on the web", () => {
+  const publicUrl = (env: EnvVar[]) => env.find((e) => e.name === "KAIJU_PUBLIC_URL")?.value;
 
   it("follows the ingress host, or publicUrl when set", () => {
     expect(publicUrl(envOf("kobe-web"))).toBe(publicUrl(envOf("kobe-server")));

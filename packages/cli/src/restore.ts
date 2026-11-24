@@ -56,7 +56,7 @@ export interface RestoreOptions {
   /** Skip object verification (operator passed --no-objects; warned loudly). */
   readonly skipObjects: boolean;
   readonly pgBinDir?: string | undefined;
-  /** Where the decrypted dump lives during the restore (KOBE_TMPDIR; default: OS temp dir). */
+  /** Where the decrypted dump lives during the restore (KAIJU_TMPDIR; default: OS temp dir). */
   readonly tmpDir?: string | undefined;
   readonly log?: (message: string) => void;
   /** Who runs the restore, recorded in the restore's audit event (default: the OS user). */
@@ -87,7 +87,7 @@ function checkOwnership(tables: readonly TableInfo[]): void {
   const notOwned = tables.filter((t) => !t.ownedByCurrentUser).map((t) => t.name);
   if (notOwned.length > 0) {
     throw new Error(
-      `Restore must run as the owner role (KOBE_DB_MIGRATE_URL); the connected role does not own: ${notOwned.join(", ")}`,
+      `Restore must run as the owner role (KAIJU_DB_MIGRATE_URL); the connected role does not own: ${notOwned.join(", ")}`,
     );
   }
 }
@@ -135,7 +135,7 @@ async function checkObjects(
   if (options.skipObjects || !options.objects) {
     if (!options.skipObjects) {
       throw new Error(
-        `The backup lists ${expected.length} S3 objects but object storage is not configured: set KOBE_S3_* to verify them, or pass --no-objects to skip the check`,
+        `The backup lists ${expected.length} S3 objects but object storage is not configured: set KAIJU_S3_* to verify them, or pass --no-objects to skip the check`,
       );
     }
     log(`WARNING: --no-objects: ${expected.length} S3 objects are NOT verified`);

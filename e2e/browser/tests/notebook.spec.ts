@@ -4,7 +4,7 @@ import { RUN_TIMEOUT_MS } from "./support/constants.js";
 import { styleViolations, watchStyleViolations } from "./support/csp.js";
 
 /**
- * KOBE-465 (spec docs/specs/notebooks.md; run with KOBE_TEAM=team1): a notebook of the member's
+ * KOBE-465 (spec docs/specs/notebooks.md; run with KAIJU_TEAM=team1): a notebook of the member's
  * workspace opens in the artifact column; Start wakes the sandbox and starts the conversation's
  * kernel without running code (KOBE-477), then Restart takes its place; a cell is added and typed, and runs in the
  * conversation's kernel with state carried from the cell before (x = 1, then x + 1 gives 2); a
@@ -180,7 +180,7 @@ test("notebook: start, cells run with state, image and table outputs, interrupt,
 });
 
 /**
- * KOBE-804 / KOBE-805 (run with KOBE_TEAM=team1; needs a sandbox agent with KOBE-803's
+ * KOBE-804 / KOBE-805 (run with KAIJU_TEAM=team1; needs a sandbox agent with KOBE-803's
  * `notebook_inspect`): a `.py` file's run pane. Run splits the editor and the Run Output tab shows
  * the output; the Log lists the run with its duration; Variables shows `x` and a DataFrame's size,
  * and hides a token-like value until Show. An edit is saved by Run itself; a failing line is named

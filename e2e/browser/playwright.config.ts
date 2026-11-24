@@ -5,23 +5,23 @@ import { STORAGE_STATE } from "./tests/support/constants.js";
  * Browser suite for the chat surfaces (v1.1 Phase A/B), run against a deployment; in CI only as
  * Gate 5 (e2e/gate5.sh, KOBE-227) against k3d.
  * The deployment and the account come from the environment only (the repository is public):
- * KOBE_BASE_URL, KOBE_USER, KOBE_PW. See README.md.
+ * KAIJU_BASE_URL, KAIJU_USER, KAIJU_PW. See README.md.
  */
-const baseURL = process.env["KOBE_BASE_URL"];
-if (!baseURL) throw new Error("KOBE_BASE_URL is required (the deployment's https URL)");
+const baseURL = process.env["KAIJU_BASE_URL"];
+if (!baseURL) throw new Error("KAIJU_BASE_URL is required (the deployment's https URL)");
 
 /**
- * KOBE_BROWSER_MAP=host:port: Chromium connects there for the base URL's host (a port-forward to a
+ * KAIJU_BROWSER_MAP=host:port: Chromium connects there for the base URL's host (a port-forward to a
  * k3d ingress, e2e/gate5.sh), so the pages keep the deployment's own origin.
  */
-const map = process.env["KOBE_BROWSER_MAP"];
+const map = process.env["KAIJU_BROWSER_MAP"];
 /**
- * KOBE_SSO_MOCK_MAP=ip:port (KOBE-634, sso.spec.ts): Chromium reaches the mock identity provider's
- * in-cluster name (the host of KOBE_SSO_MOCK_ISSUER) through the cluster's ingress, so the
+ * KAIJU_SSO_MOCK_MAP=ip:port (KOBE-634, sso.spec.ts): Chromium reaches the mock identity provider's
+ * in-cluster name (the host of KAIJU_SSO_MOCK_ISSUER) through the cluster's ingress, so the
  * provider keeps one issuer for the server and the browser (e2e/sso/gate1-mock-idp.sh).
  */
-const ssoMap = process.env["KOBE_SSO_MOCK_MAP"];
-const ssoIssuer = process.env["KOBE_SSO_MOCK_ISSUER"];
+const ssoMap = process.env["KAIJU_SSO_MOCK_MAP"];
+const ssoIssuer = process.env["KAIJU_SSO_MOCK_ISSUER"];
 const resolverRules = [
   ...(map ? [`MAP ${new URL(baseURL).hostname} ${map}`] : []),
   ...(ssoMap && ssoIssuer ? [`MAP ${new URL(ssoIssuer).hostname} ${ssoMap}`] : []),
@@ -45,7 +45,7 @@ export default defineConfig({
   timeout: TEST_TIMEOUT_MS,
   expect: { timeout: 15_000 },
   // Every spec spends model tokens and starts a sandbox: one at a time unless asked otherwise.
-  workers: Number(process.env["KOBE_WORKERS"] ?? 1),
+  workers: Number(process.env["KAIJU_WORKERS"] ?? 1),
   fullyParallel: false,
   retries: 0,
   forbidOnly: true,
@@ -55,7 +55,7 @@ export default defineConfig({
   reporter: [
     ["list"],
     ["html", { open: "never" }],
-    ["json", { outputFile: process.env["KOBE_BROWSER_RESULTS"] ?? "test-results/results.json" }],
+    ["json", { outputFile: process.env["KAIJU_BROWSER_RESULTS"] ?? "test-results/results.json" }],
   ],
   use: {
     baseURL,
@@ -73,10 +73,10 @@ export default defineConfig({
       dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"], ...browserUse, storageState: STORAGE_STATE },
     },
-    // KOBE_ALL_BROWSERS=1: the MCP App frame spec also in Firefox and WebKit, to record what each
+    // KAIJU_ALL_BROWSERS=1: the MCP App frame spec also in Firefox and WebKit, to record what each
     // does with WebRTC (KOBE-437 review MEDIUM-2); the Lakehouse Picker drop (KOBE-551) and the
     // pointer drag from the picker frame (KOBE-553) also in Firefox. Chromium stays the default project.
-    ...(process.env["KOBE_ALL_BROWSERS"] === "1"
+    ...(process.env["KAIJU_ALL_BROWSERS"] === "1"
       ? (["firefox", "webkit"] as const).map((name) => ({
           name,
           testMatch:

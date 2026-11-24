@@ -11,7 +11,7 @@
 
 const config = JSON.parse(process.argv[1] ?? "{}");
 const BASE = config.base;
-const ORIGIN = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const ORIGIN = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const PASSWORD = config.password ?? "gate1 user password";
 const out = (key, value) => console.log(`${key}=${value}`);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -136,7 +136,7 @@ function expectedReply(prompt, words) {
 
 async function db() {
   const { createDb } = await import("/app/node_modules/@kaiju/db/dist/index.js");
-  return createDb(process.env.KOBE_DATABASE_URL, { max: 2 });
+  return createDb(process.env.KAIJU_DATABASE_URL, { max: 2 });
 }
 
 async function ensureUser(owner, ownerId, user, database) {
@@ -571,7 +571,7 @@ async function interruptRetry() {
  * One cold-start trial: the sandbox is hibernated (gate1.sh); time from sending a message to the
  * model's first token for the run (the first `text.delta` or `reasoning.delta`). Without a model
  * (Pi refuses the prompt for lack of a key, `run.failed` `pi_rejected`) it is the first event the
- * sandbox produced instead: everything up to the model request. With `KOBE_GATE1_WARM` the sandbox
+ * sandbox produced instead: everything up to the model request. With `KAIJU_GATE1_WARM` the sandbox
  * stays awake, which isolates the server, gateway and model share.
  */
 async function trial() {

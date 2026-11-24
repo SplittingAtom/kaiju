@@ -22,34 +22,34 @@ const emptyToUndefined = (v: unknown) => (typeof v === "string" && v.trim() === 
 
 const envSchema = z.object({
   // tcp://host:514 (plain) or tls://host:6514
-  KOBE_AUDIT_SYSLOG_URL: z.preprocess(
+  KAIJU_AUDIT_SYSLOG_URL: z.preprocess(
     emptyToUndefined,
     z
       .string()
       .refine(
         (v) => URL.canParse(v),
-        "KOBE_AUDIT_SYSLOG_URL must be tcp://host:port or tls://host:port",
+        "KAIJU_AUDIT_SYSLOG_URL must be tcp://host:port or tls://host:port",
       )
       .optional(),
   ),
   // IANA private enterprise number for the SD-ID: digits, no leading zero, at most 10 digits.
-  KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER: z.preprocess(
+  KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER: z.preprocess(
     emptyToUndefined,
     z
       .string()
       .regex(
         /^[1-9][0-9]{0,9}$/,
-        "KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER must be an IANA private enterprise number (digits)",
+        "KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER must be an IANA private enterprise number (digits)",
       )
       .optional(),
   ),
   // The collector's OTLP/HTTP logs endpoint, e.g. https://collector:4318/v1/logs
-  KOBE_AUDIT_OTLP_URL: z.preprocess(
+  KAIJU_AUDIT_OTLP_URL: z.preprocess(
     emptyToUndefined,
-    z.url({ protocol: /^https?$/, error: "KOBE_AUDIT_OTLP_URL must be an http(s) URL" }).optional(),
+    z.url({ protocol: /^https?$/, error: "KAIJU_AUDIT_OTLP_URL must be an http(s) URL" }).optional(),
   ),
   // "Name=value,Name2=value2" (OTEL_EXPORTER_OTLP_HEADERS style); from a Secret.
-  KOBE_AUDIT_OTLP_HEADERS: z.string().optional(),
+  KAIJU_AUDIT_OTLP_HEADERS: z.string().optional(),
 });
 
 function parseSyslog(
@@ -59,12 +59,12 @@ function parseSyslog(
   const url = new URL(raw);
   if (url.protocol !== "tcp:" && url.protocol !== "tls:") {
     throw new Error(
-      "Invalid configuration: KOBE_AUDIT_SYSLOG_URL must start with tcp:// or tls://",
+      "Invalid configuration: KAIJU_AUDIT_SYSLOG_URL must start with tcp:// or tls://",
     );
   }
   const port = Number(url.port);
   if (!url.hostname || !Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error("Invalid configuration: KOBE_AUDIT_SYSLOG_URL needs a host and a port");
+    throw new Error("Invalid configuration: KAIJU_AUDIT_SYSLOG_URL needs a host and a port");
   }
   return {
     host: url.hostname.replace(/^\[|\]$/g, ""),
@@ -93,18 +93,18 @@ export function loadAuditForwardingConfig(
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid configuration: ${issues}`);
   }
-  const { KOBE_AUDIT_SYSLOG_URL: syslog, KOBE_AUDIT_OTLP_URL: otlp } = parsed.data;
+  const { KAIJU_AUDIT_SYSLOG_URL: syslog, KAIJU_AUDIT_OTLP_URL: otlp } = parsed.data;
   return {
     ...(syslog
       ? {
           syslog: parseSyslog(
             syslog,
-            parsed.data.KOBE_AUDIT_SYSLOG_ENTERPRISE_NUMBER ?? DEFAULT_ENTERPRISE_NUMBER,
+            parsed.data.KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER ?? DEFAULT_ENTERPRISE_NUMBER,
           ),
         }
       : {}),
     ...(otlp
-      ? { otlp: { url: otlp, headers: parseOtlpHeaders(parsed.data.KOBE_AUDIT_OTLP_HEADERS) } }
+      ? { otlp: { url: otlp, headers: parseOtlpHeaders(parsed.data.KAIJU_AUDIT_OTLP_HEADERS) } }
       : {}),
   };
 }

@@ -392,7 +392,7 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
       await c.query("SELECT pg_notify($1, $2)", [LISTEN_PROBE_CHANNEL, nonce]);
       await withTimeout(
         heard,
-        "LISTEN connection does not receive notifications: KOBE_DATABASE_URL must reach " +
+        "LISTEN connection does not receive notifications: KAIJU_DATABASE_URL must reach " +
           "Postgres directly or through a session-mode pooler (not transaction mode)",
       );
     } finally {

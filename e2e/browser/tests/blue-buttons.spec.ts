@@ -127,7 +127,7 @@ for (const theme of THEMES) {
     context,
     baseURL,
   }) => {
-    if (!baseURL) throw new Error("KOBE_BASE_URL is required");
+    if (!baseURL) throw new Error("KAIJU_BASE_URL is required");
     await context.addCookies([{ name: THEME_COOKIE, value: theme, url: baseURL }]);
 
     await chat.open();

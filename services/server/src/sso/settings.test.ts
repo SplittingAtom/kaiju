@@ -20,10 +20,10 @@ describe("auth.sso settings (KOBE-626)", () => {
 
   it("reads the switch, the SSRF exceptions and the providers with their secrets", () => {
     const s = loadSsoSettings({
-      KOBE_SSO_ENABLED: "true",
-      KOBE_SSO_ALLOWED_INTERNAL_CIDRS: "10.20.0.0/16, 192.168.5.0/24",
-      KOBE_SSO_ALLOWED_PORTS: "443,8443",
-      KOBE_SSO_PROVIDERS: JSON.stringify([
+      KAIJU_SSO_ENABLED: "true",
+      KAIJU_SSO_ALLOWED_INTERNAL_CIDRS: "10.20.0.0/16, 192.168.5.0/24",
+      KAIJU_SSO_ALLOWED_PORTS: "443,8443",
+      KAIJU_SSO_PROVIDERS: JSON.stringify([
         entra,
         {
           slug: "key-cloak",
@@ -34,8 +34,8 @@ describe("auth.sso settings (KOBE-626)", () => {
           accessClaim: "groups",
         },
       ]),
-      KOBE_SSO_CLIENT_SECRET_CONTOSO: "s3cret",
-      KOBE_SSO_CLIENT_SECRET_KEY_CLOAK: "other",
+      KAIJU_SSO_CLIENT_SECRET_CONTOSO: "s3cret",
+      KAIJU_SSO_CLIENT_SECRET_KEY_CLOAK: "other",
     });
     expect(s.enabled).toBe(true);
     expect(s.allowedInternalCidrs).toEqual(["10.20.0.0/16", "192.168.5.0/24"]);
@@ -61,19 +61,19 @@ describe("auth.sso settings (KOBE-626)", () => {
   });
 
   it("maps a slug to its secret env var one to one", () => {
-    expect(secretEnvName("key-cloak")).toBe("KOBE_SSO_CLIENT_SECRET_KEY_CLOAK");
+    expect(secretEnvName("key-cloak")).toBe("KAIJU_SSO_CLIENT_SECRET_KEY_CLOAK");
   });
 
   it.each([
-    [{ KOBE_SSO_ENABLED: "yes" }, /KOBE_SSO_ENABLED/],
-    [{ KOBE_SSO_ALLOWED_INTERNAL_CIDRS: "0.0.0.0/0" }, /ALLOWED_INTERNAL_CIDRS/],
-    [{ KOBE_SSO_ALLOWED_INTERNAL_CIDRS: "nope" }, /ALLOWED_INTERNAL_CIDRS/],
-    [{ KOBE_SSO_ALLOWED_PORTS: "70000" }, /ALLOWED_PORTS/],
-    [{ KOBE_SSO_PROVIDERS: "{" }, /JSON array/],
-    [{ KOBE_SSO_PROVIDERS: JSON.stringify([{ ...entra, tenantId: "common" }]) }, /tenant-specific/],
+    [{ KAIJU_SSO_ENABLED: "yes" }, /KAIJU_SSO_ENABLED/],
+    [{ KAIJU_SSO_ALLOWED_INTERNAL_CIDRS: "0.0.0.0/0" }, /ALLOWED_INTERNAL_CIDRS/],
+    [{ KAIJU_SSO_ALLOWED_INTERNAL_CIDRS: "nope" }, /ALLOWED_INTERNAL_CIDRS/],
+    [{ KAIJU_SSO_ALLOWED_PORTS: "70000" }, /ALLOWED_PORTS/],
+    [{ KAIJU_SSO_PROVIDERS: "{" }, /JSON array/],
+    [{ KAIJU_SSO_PROVIDERS: JSON.stringify([{ ...entra, tenantId: "common" }]) }, /tenant-specific/],
     [
       {
-        KOBE_SSO_PROVIDERS: JSON.stringify([
+        KAIJU_SSO_PROVIDERS: JSON.stringify([
           {
             ...entra,
             tenantId: undefined,
@@ -85,12 +85,12 @@ describe("auth.sso settings (KOBE-626)", () => {
       /tenant-specific/,
     ],
     [
-      { KOBE_SSO_PROVIDERS: JSON.stringify([{ ...entra, issuer: "https://x.example.com" }]) },
+      { KAIJU_SSO_PROVIDERS: JSON.stringify([{ ...entra, issuer: "https://x.example.com" }]) },
       /tenantId, not issuer/,
     ],
-    [{ KOBE_SSO_PROVIDERS: JSON.stringify([entra, entra]) }, /appears twice/],
+    [{ KAIJU_SSO_PROVIDERS: JSON.stringify([entra, entra]) }, /appears twice/],
     [
-      { KOBE_SSO_PROVIDERS: JSON.stringify([{ ...entra, clientSecret: "inline" }]) },
+      { KAIJU_SSO_PROVIDERS: JSON.stringify([{ ...entra, clientSecret: "inline" }]) },
       /providers\[0\]/,
     ],
   ])("fails fast on %j", (env, message) => {
@@ -100,7 +100,7 @@ describe("auth.sso settings (KOBE-626)", () => {
   it("never echoes a value in its errors", () => {
     expect(() =>
       loadSsoSettings({
-        KOBE_SSO_PROVIDERS: JSON.stringify([{ ...entra, clientSecret: "do-not-print-me" }]),
+        KAIJU_SSO_PROVIDERS: JSON.stringify([{ ...entra, clientSecret: "do-not-print-me" }]),
       }),
     ).toThrow(expect.objectContaining({ message: expect.not.stringContaining("do-not-print-me") }));
   });

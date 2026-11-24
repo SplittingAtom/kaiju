@@ -12,18 +12,18 @@ describe("loadSkillMirrorConfig (KOBE-343)", () => {
   it("reads the token and user name, and refuses malformed values without echoing the token", () => {
     expect(
       loadSkillMirrorConfig({
-        KOBE_SKILL_MIRROR_TOKEN: "ghp_abcdefgh",
-        KOBE_SKILL_MIRROR_USERNAME: "kaiju",
+        KAIJU_SKILL_MIRROR_TOKEN: "ghp_abcdefgh",
+        KAIJU_SKILL_MIRROR_USERNAME: "kaiju",
       }).credentials,
     ).toEqual({ username: "kaiju", token: "ghp_abcdefgh" });
     let message = "";
     try {
-      loadSkillMirrorConfig({ KOBE_SKILL_MIRROR_TOKEN: "bad token:x" });
+      loadSkillMirrorConfig({ KAIJU_SKILL_MIRROR_TOKEN: "bad token:x" });
     } catch (err) {
       message = (err as Error).message;
     }
-    expect(message).toMatch(/KOBE_SKILL_MIRROR_TOKEN/);
+    expect(message).toMatch(/KAIJU_SKILL_MIRROR_TOKEN/);
     expect(message).not.toContain("bad token:x");
-    expect(() => loadSkillMirrorConfig({ KOBE_SKILL_MIRROR_USERNAME: "a b" })).toThrow();
+    expect(() => loadSkillMirrorConfig({ KAIJU_SKILL_MIRROR_USERNAME: "a b" })).toThrow();
   });
 });

@@ -4,16 +4,16 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-761 (spec docs/specs/workspace-git.md §7): the Git section of the Workspace admin console
- * and the members' read-only view, in a real browser against a deployment. `KOBE_USER` must be a
- * Workspace admin of the active team (`KOBE_TEAM` pins it).
+ * and the members' read-only view, in a real browser against a deployment. `KAIJU_USER` must be a
+ * Workspace admin of the active team (`KAIJU_TEAM` pins it).
  *
  * Self-contained: no git host is needed. The first two tests answer `/v1/team/git/connections*`
  * in the browser with a fake (Playwright `page.route`), so they check the page, the three-step
  * Connect dialog, focus, the live test result and that the credential is sent once in a request
  * body and never shown, in the deployment's real shell and theme. Nothing is stored. The third
- * test runs "Test" (test without saving) against a real host only when `KOBE_GIT_PROVIDER`
- * (github, gitea or forgejo), `KOBE_GIT_ORG`, `KOBE_GIT_TOKEN` and, for Gitea/Forgejo or GitHub
- * Enterprise Server, `KOBE_GIT_BASE_URL` are set; it is skipped otherwise. It saves nothing.
+ * test runs "Test" (test without saving) against a real host only when `KAIJU_GIT_PROVIDER`
+ * (github, gitea or forgejo), `KAIJU_GIT_ORG`, `KAIJU_GIT_TOKEN` and, for Gitea/Forgejo or GitHub
+ * Enterprise Server, `KAIJU_GIT_BASE_URL` are set; it is skipped otherwise. It saves nothing.
  * Spends no model tokens: `npx playwright test git-section`.
  */
 const BASE = "**/v1/team/git/connections";
@@ -176,16 +176,16 @@ test("My connectors: members see the Workspace's git organizations (fake host)",
 });
 
 const LIVE = {
-  provider: process.env["KOBE_GIT_PROVIDER"],
-  org: process.env["KOBE_GIT_ORG"],
-  token: process.env["KOBE_GIT_TOKEN"],
-  baseUrl: process.env["KOBE_GIT_BASE_URL"],
+  provider: process.env["KAIJU_GIT_PROVIDER"],
+  org: process.env["KAIJU_GIT_ORG"],
+  token: process.env["KAIJU_GIT_TOKEN"],
+  baseUrl: process.env["KAIJU_GIT_BASE_URL"],
 };
 
 test("Git section: Test against a real host, without saving", async ({ page }) => {
   test.skip(
     !LIVE.provider || !LIVE.org || !LIVE.token,
-    "set KOBE_GIT_PROVIDER, KOBE_GIT_ORG, KOBE_GIT_TOKEN (and KOBE_GIT_BASE_URL) to run",
+    "set KAIJU_GIT_PROVIDER, KAIJU_GIT_ORG, KAIJU_GIT_TOKEN (and KAIJU_GIT_BASE_URL) to run",
   );
   const label =
     LIVE.provider === "github"

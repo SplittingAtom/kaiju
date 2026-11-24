@@ -14,27 +14,27 @@ import { cacheShares, formatCacheShare, runUsageSchema } from "./score.js";
  * once on the KOBE-383 build ("after"). Everything comes from the environment (e2e/memory-eval.sh
  * lists it); nothing about an install is committed.
  *
- * KOBE-658: `KOBE_EVAL_PLACEMENTS=system,latest_user_keep,...` replays the same turns once per Site
+ * KOBE-658: `KAIJU_EVAL_PLACEMENTS=system,latest_user_keep,...` replays the same turns once per Site
  * memory placement (each in a new thread; the member must be a Site admin, and the Site's own
  * placement is put back at the end) and reports, per mode, the cache-read share and memory use:
  * how many answers used the memories they should have (e2e/fixtures/memory-cache/expect.json).
  */
 const env = z
   .object({
-    KOBE_EVAL_URL: z.url(),
-    KOBE_EVAL_EMAIL: z.string().optional(),
-    KOBE_EVAL_PASSWORD: z.string().optional(),
-    KOBE_EVAL_COOKIE: z.string().optional(),
-    KOBE_EVAL_TEAM_ID: z.uuid().optional(),
-    KOBE_EVAL_AGENT_ID: z.uuid().optional(),
-    KOBE_EVAL_MODEL: z.string().optional(),
-    KOBE_EVAL_SEED: z.enum(["0", "1"]).optional(),
-    KOBE_EVAL_LABEL: z.string().optional(),
-    KOBE_EVAL_OUT: z.string().optional(),
+    KAIJU_EVAL_URL: z.url(),
+    KAIJU_EVAL_EMAIL: z.string().optional(),
+    KAIJU_EVAL_PASSWORD: z.string().optional(),
+    KAIJU_EVAL_COOKIE: z.string().optional(),
+    KAIJU_EVAL_TEAM_ID: z.uuid().optional(),
+    KAIJU_EVAL_AGENT_ID: z.uuid().optional(),
+    KAIJU_EVAL_MODEL: z.string().optional(),
+    KAIJU_EVAL_SEED: z.enum(["0", "1"]).optional(),
+    KAIJU_EVAL_LABEL: z.string().optional(),
+    KAIJU_EVAL_OUT: z.string().optional(),
     /** KOBE-658: comma-separated Site memory placements to replay, one thread each. */
-    KOBE_EVAL_PLACEMENTS: z.string().optional(),
+    KAIJU_EVAL_PLACEMENTS: z.string().optional(),
     /** Per-turn limit in seconds (default 300). */
-    KOBE_EVAL_TURN_TIMEOUT_S: z.coerce.number().int().positive().optional(),
+    KAIJU_EVAL_TURN_TIMEOUT_S: z.coerce.number().int().positive().optional(),
   })
   .parse(process.env);
 
@@ -49,7 +49,7 @@ const seed = z
 const expectations = parseExpectations(read("expect.json"));
 if (expectations.length !== turns.length) throw new Error("expect.json needs one entry per turn");
 const placementSchema = z.enum(SEMANTIC_MEMORY_PLACEMENTS);
-const placements = (env.KOBE_EVAL_PLACEMENTS ?? "")
+const placements = (env.KAIJU_EVAL_PLACEMENTS ?? "")
   .split(",")
   .map((p) => p.trim())
   .filter((p) => p !== "")
@@ -58,7 +58,7 @@ const SITE_MEMORY = "/v1/memory/settings?level=site";
 
 const say = (text: string) => writeSync(1, `${text}\n`);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const BASE = env.KOBE_EVAL_URL.replace(/\/+$/, "");
+const BASE = env.KAIJU_EVAL_URL.replace(/\/+$/, "");
 const ORIGIN = new URL(BASE).origin;
 const TERMINAL = new Set<string>(TERMINAL_EVENT_TYPES);
 const USAGE_WAIT_MS = 60_000;
@@ -66,11 +66,11 @@ const USAGE_WAIT_MS = 60_000;
 /** A cookie-jar client of the public API (the browser's headers: Origin for the CSRF check). */
 function client() {
   const jar = new Map<string, string>();
-  for (const pair of (env.KOBE_EVAL_COOKIE ?? "").split(";")) {
+  for (const pair of (env.KAIJU_EVAL_COOKIE ?? "").split(";")) {
     const at = pair.indexOf("=");
     if (at > 0) jar.set(pair.slice(0, at).trim(), pair.slice(at + 1).trim());
   }
-  const team = env.KOBE_EVAL_TEAM_ID;
+  const team = env.KAIJU_EVAL_TEAM_ID;
   const headers = (extra: Record<string, string> = {}) => ({
     origin: ORIGIN,
     "content-type": "application/json",
@@ -137,10 +137,10 @@ function client() {
       }
     },
     async signIn() {
-      if (env.KOBE_EVAL_EMAIL && env.KOBE_EVAL_PASSWORD) {
+      if (env.KAIJU_EVAL_EMAIL && env.KAIJU_EVAL_PASSWORD) {
         const r = await self.call("POST", "/api/auth/sign-in/email", {
-          email: env.KOBE_EVAL_EMAIL,
-          password: env.KOBE_EVAL_PASSWORD,
+          email: env.KAIJU_EVAL_EMAIL,
+          password: env.KAIJU_EVAL_PASSWORD,
         });
         if (r.status !== 200)
           throw new Error(`sign-in failed: ${r.status} ${r.text.slice(0, 200)}`);
@@ -181,7 +181,7 @@ describe("memory cache-read replay (KOBE-387)", () => {
   it("replays 20 turns and reports the cache-read share", async () => {
     const c = client();
     await c.signIn();
-    if (env.KOBE_EVAL_SEED === "1") {
+    if (env.KAIJU_EVAL_SEED === "1") {
       for (const item of seed) {
         const body = item.scope === "portable" ? { ...item, confirm_portable: true } : item;
         const r = await c.call("POST", "/v1/memory/semantic/items", body);
@@ -191,7 +191,7 @@ describe("memory cache-read replay (KOBE-387)", () => {
       }
     }
     if (placements.length === 0) {
-      await replay(c, env.KOBE_EVAL_LABEL ?? null, env.KOBE_EVAL_OUT);
+      await replay(c, env.KAIJU_EVAL_LABEL ?? null, env.KAIJU_EVAL_OUT);
       return;
     }
     // KOBE-658: one thread per placement; the Site's own placement is put back at the end.
@@ -203,7 +203,7 @@ describe("memory cache-read replay (KOBE-387)", () => {
     try {
       for (const placement of placements) {
         await setPlacement(c, placement);
-        const label = [env.KOBE_EVAL_LABEL, placement].filter(Boolean).join(" ");
+        const label = [env.KAIJU_EVAL_LABEL, placement].filter(Boolean).join(" ");
         reports.push({ placement, ...(await replay(c, label, undefined)) });
       }
     } finally {
@@ -223,8 +223,8 @@ describe("memory cache-read replay (KOBE-387)", () => {
           `${s.memoryUse.used} of ${s.memoryUse.scored}`,
       );
     }
-    if (env.KOBE_EVAL_OUT)
-      writeReport(env.KOBE_EVAL_OUT, { label: env.KOBE_EVAL_LABEL ?? null, reports });
+    if (env.KAIJU_EVAL_OUT)
+      writeReport(env.KAIJU_EVAL_OUT, { label: env.KAIJU_EVAL_LABEL ?? null, reports });
   });
 });
 
@@ -238,8 +238,8 @@ async function replay(c: Client, labelText: string | null, out: string | undefin
   {
     const made = await c.call("POST", "/v1/threads", {
       title: `memory cache replay ${labelText ?? ""}`.trim(),
-      ...(env.KOBE_EVAL_AGENT_ID ? { agent_id: env.KOBE_EVAL_AGENT_ID } : {}),
-      ...(env.KOBE_EVAL_MODEL ? { model: env.KOBE_EVAL_MODEL } : {}),
+      ...(env.KAIJU_EVAL_AGENT_ID ? { agent_id: env.KAIJU_EVAL_AGENT_ID } : {}),
+      ...(env.KAIJU_EVAL_MODEL ? { model: env.KAIJU_EVAL_MODEL } : {}),
     });
     const threadId = made.json.thread_id;
     if (typeof threadId !== "string") {
@@ -248,7 +248,7 @@ async function replay(c: Client, labelText: string | null, out: string | undefin
     say(`thread ${threadId}`);
     const runIds: string[] = [];
     const answers: string[] = [];
-    const timeoutMs = (env.KOBE_EVAL_TURN_TIMEOUT_S ?? 300) * 1000;
+    const timeoutMs = (env.KAIJU_EVAL_TURN_TIMEOUT_S ?? 300) * 1000;
     for (const [i, content] of turns.entries()) {
       const sent = await c.call("POST", `/v1/threads/${threadId}/messages`, { content });
       const runId = sent.json.run_id;

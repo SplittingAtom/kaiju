@@ -13,7 +13,7 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-593 (projects-in-conversations PC-6, spec docs/specs/projects-in-conversations.md, §10).
- * Two projects with files are made through the API (the owner, KOBE_USER, is a Team1 admin).
+ * Two projects with files are made through the API (the owner, KAIJU_USER, is a Team1 admin).
  *
  * Owner: a new conversation drafted from project A reads "New conversation in A" (NC1); the project
  * control switches to B, removes the project ("New conversation", "Add to a project") and adds A
@@ -23,15 +23,15 @@ import { panelOf } from "./support/panel.js";
  * A's file (PE2); Accept commits it (PE4) and the History tab shows the commit. A My files folder
  * is promoted to a project from its menu (PF1-PF3) and shows under Projects and in the control.
  *
- * member2 (KOBE_USER2 / KOBE_PW2, a reader by default, RV1) sees both projects in Files, and the
+ * member2 (KAIJU_USER2 / KAIJU_PW2, a reader by default, RV1) sees both projects in Files, and the
  * agent's proposal to change A is refused ("You can read A but not change it.", PE1): no card, no
  * commit, and member2 cannot accept the owner's proposal either.
  *
- * Several short model turns; with KOBE_FAKE_MODEL=1 the fake's `tool:` line drives the proposals.
+ * Several short model turns; with KAIJU_FAKE_MODEL=1 the fake's `tool:` line drives the proposals.
  * Clean-up (finally) trashes the threads and archives and deletes the projects.
  */
-const USER2 = process.env["KOBE_USER2"];
-const PW2 = process.env["KOBE_PW2"];
+const USER2 = process.env["KAIJU_USER2"];
+const PW2 = process.env["KAIJU_PW2"];
 
 const PLAIN = "No tools. Reply with the single word OK.";
 const NOTES = "notes.md";
@@ -325,7 +325,7 @@ test("member2, a reader by default, sees every project and the proposal to chang
   page,
   browser,
 }) => {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   const stem = `kobe-593-${uniq()}`;
   const ids: string[] = [];
   await chat.open();

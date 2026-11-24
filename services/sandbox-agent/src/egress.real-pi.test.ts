@@ -43,7 +43,7 @@ describe.skipIf(!PI_AVAILABLE)("egress for tools with the real Pi (KOBE-39)", ()
     };
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
       egress,
     });

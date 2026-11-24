@@ -152,7 +152,7 @@ describe("who holds which secret", () => {
     ]);
     const previous = vars.filter((v) => v.name.endsWith("_PREVIOUS"));
     expect(previous.every((v) => v.valueFrom.secretKeyRef.optional === true)).toBe(true);
-    expect(vars).toContainEqual({ name: "KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS", value: "false" });
+    expect(vars).toContainEqual({ name: "KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS", value: "false" });
     expect(loadModelsConfig(resolved(vars))).toMatchObject({
       bifrostUrl: "http://kobe-bifrost:8080",
       adminUsername: "kobe",
@@ -173,14 +173,14 @@ describe("who holds which secret", () => {
     ]);
     // KOBE-513: the session-token key is public, from the verify-keys ConfigMap.
     expect(vars).toContainEqual({
-      name: "KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY",
+      name: "KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY",
       valueFrom: {
         configMapKeyRef: { name: "kobe-sandbox-session-verify-keys", key: "model-gateway" },
       },
     });
     const shimEnv = {
       ...resolved(vars.filter((v) => !v.name.endsWith("_PREVIOUS"))),
-      KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY: generateSessionKeyPair().publicPem,
+      KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY: generateSessionKeyPair().publicPem,
     };
     expect(loadShimConfig(shimEnv)).toMatchObject({
       bifrostUrl: "http://kobe-bifrost:8080",
@@ -212,11 +212,11 @@ describe("shim sizing", () => {
   it("the operator switch for unsafe endpoints reaches the server only", () => {
     const ms = render({ "bifrost.allowUnsafeProviderEndpoints": "true" });
     expect(env(ms, "kobe-server")).toContainEqual({
-      name: "KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS",
+      name: "KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS",
       value: "true",
     });
     expect(env(ms, "kobe-model-gateway").map((v) => v.name)).not.toContain(
-      "KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS",
+      "KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS",
     );
   });
 });
@@ -227,14 +227,14 @@ describe("server calls (KOBE-219)", () => {
   it("gives the server the gateway's in-cluster URL; its config accepts it", () => {
     const vars = env(ms, "kobe-server");
     expect(vars).toContainEqual({
-      name: "KOBE_MODEL_GATEWAY_URL",
+      name: "KAIJU_MODEL_GATEWAY_URL",
       value: "http://kobe-model-gateway",
     });
     // Server calls are signed with the model-gateway private key (KOBE-521).
-    expect(vars.map((v) => v.name)).toContain("KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY");
-    expect(vars.map((v) => v.name)).not.toContain("KOBE_SESSION_KEY_MODEL_GATEWAY");
+    expect(vars.map((v) => v.name)).toContain("KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY");
+    expect(vars.map((v) => v.name)).not.toContain("KAIJU_SESSION_KEY_MODEL_GATEWAY");
     // The scheduler starts no server calls: no gateway URL there.
-    expect(env(ms, "kobe-scheduler").map((v) => v.name)).not.toContain("KOBE_MODEL_GATEWAY_URL");
+    expect(env(ms, "kobe-scheduler").map((v) => v.name)).not.toContain("KAIJU_MODEL_GATEWAY_URL");
   });
 });
 

@@ -8,10 +8,10 @@ import { panelOf } from "./support/panel.js";
  * KOBE-624 (KA-7; spec docs/specs/kobe-admin-mcp.md): admin and docs from the conversation through
  * the built-in Kaiju connector.
  *
- * - `KOBE_USER` / `KOBE_PW`: a site admin who is also team admin of the active team (`KOBE_TEAM`
+ * - `KAIJU_USER` / `KAIJU_PW`: a site admin who is also team admin of the active team (`KAIJU_TEAM`
  *   pins it). Its default agent must name the `kobe` connector or `connectors: all` (the gallery
  *   agent Kobe does), else the admin tools are not attached.
- * - `KOBE_USER2` / `KOBE_PW2`: an ordinary member of that team (role `member`).
+ * - `KAIJU_USER2` / `KAIJU_PW2`: an ordinary member of that team (role `member`).
  *
  * Each test sets the site switch (`kobe_mcp.mode`) and the team's Kaiju level through the console
  * API, and puts both back as it found them in `finally`.
@@ -24,8 +24,8 @@ import { panelOf } from "./support/panel.js";
  * tools and cites a `/docs/` page, with no network fetch of the guide. (d) with the team at "docs
  * only", the owner's role change gets no admin tool either.
  */
-const USER2 = process.env["KOBE_USER2"];
-const PW2 = process.env["KOBE_PW2"];
+const USER2 = process.env["KAIJU_USER2"];
+const PW2 = process.env["KAIJU_PW2"];
 
 type Mode = "off" | "docs" | "admin";
 type Level = "docs" | "read" | "read_write";
@@ -168,7 +168,7 @@ test("the owner changes member2's role from the conversation: Admin change card,
   chat,
   page,
 }) => {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   test.setTimeout(3 * RUN_TIMEOUT_MS);
   await chat.open();
   const target = await memberByEmail(page, USER2 as string);
@@ -237,10 +237,10 @@ test("the owner changes member2's role from the conversation: Admin change card,
 });
 
 test("member2 gets no admin tool: the agent answers without one", async ({ page, browser }) => {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   test.setTimeout(2 * RUN_TIMEOUT_MS);
   await new Chat(page).open();
-  const owner = await memberByEmail(page, process.env["KOBE_USER"] ?? "");
+  const owner = await memberByEmail(page, process.env["KAIJU_USER"] ?? "");
 
   await withSwitches(page, { mode: "admin", level: "read_write" }, async () => {
     const other = await secondBrowser(browser, USER2, PW2);
@@ -295,7 +295,7 @@ test("with the team at docs only, the owner's role change gets no admin tool", a
   chat,
   page,
 }) => {
-  test.skip(!USER2 || !PW2, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(!USER2 || !PW2, "KAIJU_USER2 and KAIJU_PW2 name a second member");
   test.setTimeout(2 * RUN_TIMEOUT_MS);
   await chat.open();
   const target = await memberByEmail(page, USER2 as string);

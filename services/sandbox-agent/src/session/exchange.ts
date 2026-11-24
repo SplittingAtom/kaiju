@@ -7,7 +7,7 @@ import type { WireLogger } from "../wire/client.js";
 /**
  * Bootstrap → session tokens (KOBE-22 contract, wired in KOBE-25). A Kaiju sandbox pod gets one
  * credential: a projected ServiceAccount token (audience `kobe.sandbox-bootstrap`, rotated by the
- * kubelet, file at KOBE_BOOTSTRAP_TOKEN_FILE). The agent trades it at
+ * kubelet, file at KAIJU_BOOTSTRAP_TOKEN_FILE). The agent trades it at
  * `POST <server>/v1/sandbox/session` for its sandbox id and one short-lived session token per
  * audience, and trades again before they expire. Tokens are only ever held in memory and sent
  * in an Authorization header; never logged.
@@ -46,7 +46,7 @@ export interface SessionGrant {
 }
 
 export interface SessionClientOptions {
-  /** The server's sandbox listener (KOBE_SERVER_URL, ws:// or wss://). */
+  /** The server's sandbox listener (KAIJU_SERVER_URL, ws:// or wss://). */
   readonly serverUrl: string;
   readonly bootstrapTokenFile: string;
   readonly logger: WireLogger;

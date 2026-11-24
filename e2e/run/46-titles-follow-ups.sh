@@ -80,7 +80,7 @@
     read -r -d '' ORG_JS <<'JS' || true
 const [team, readerEmail, readerId, threadArg, marker] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
-const origin = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const origin = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const out = (k, v) => console.log(k + "=" + v);
 const session = async (email) => {
   const jar = new Map();

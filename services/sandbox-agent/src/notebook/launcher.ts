@@ -24,7 +24,7 @@ import type { BridgeLauncher, BridgeProcess } from "./session.js";
 export interface KernelLauncherOptions {
   /** The Python interpreter (absolute in the image: `/usr/local/bin/python3`). */
   readonly python: string;
-  /** The root-owned bridge program (`KOBE_KERNEL_BRIDGE`). */
+  /** The root-owned bridge program (`KAIJU_KERNEL_BRIDGE`). */
   readonly bridge: string;
   readonly workspaceDir: string;
   /** The tools' shared HOME. */

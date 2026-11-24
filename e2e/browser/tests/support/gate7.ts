@@ -2,10 +2,10 @@ import type { Page } from "@playwright/test";
 
 /**
  * Gate 7 (KOBE-675) browser helpers. The checks script the fake model (e2e/gate7.sh sets
- * KOBE_FAKE_MODEL=1 on k3d): its extractor turns "I prefer …" into a candidate, and
+ * KAIJU_FAKE_MODEL=1 on k3d): its extractor turns "I prefer …" into a candidate, and
  * `tool: <name> <json>` makes the agent call a tool.
  */
-export const FAKE_MODEL = process.env["KOBE_FAKE_MODEL"] === "1";
+export const FAKE_MODEL = process.env["KAIJU_FAKE_MODEL"] === "1";
 const TEAM_KEY = "kobe.lastTeamId";
 
 /** The signed-in person's active memories of `scope` whose statement contains `text`. */

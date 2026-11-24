@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 
 // KOBE-695: `ingress.hsts.includeSubDomains` (default off) reaches the server and the web as
-// KOBE_HSTS_INCLUDE_SUBDOMAINS; both send HSTS themselves when the public URL is https.
+// KAIJU_HSTS_INCLUDE_SUBDOMAINS; both send HSTS themselves when the public URL is https.
 
 const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
 const HELM = process.env.HELM_BIN ?? "helm";
@@ -36,10 +36,10 @@ function hstsEnv(deployment: string, values: Record<string, string> = {}): strin
     .filter((m): m is Manifest => m !== null);
   const dep = ms.find((m) => m.kind === "Deployment" && m.metadata.name === deployment);
   const env = (dep?.spec.template.spec.containers[0].env ?? []) as EnvVar[];
-  return env.find((e) => e.name === "KOBE_HSTS_INCLUDE_SUBDOMAINS")?.value;
+  return env.find((e) => e.name === "KAIJU_HSTS_INCLUDE_SUBDOMAINS")?.value;
 }
 
-describe("ingress.hsts.includeSubDomains -> KOBE_HSTS_INCLUDE_SUBDOMAINS", () => {
+describe("ingress.hsts.includeSubDomains -> KAIJU_HSTS_INCLUDE_SUBDOMAINS", () => {
   it("is off by default for the server and the web", () => {
     expect(hstsEnv("kobe-server")).toBe("false");
     expect(hstsEnv("kobe-web")).toBe("false");

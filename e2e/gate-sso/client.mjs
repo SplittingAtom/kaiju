@@ -7,7 +7,7 @@
 // Entra's provisioning service against Kaiju's SCIM endpoints. Every step prints `key=value` lines;
 // the database is read for evidence only (identities, session MFA records, user counts).
 
-const PUBLIC = new URL(process.env.KOBE_PUBLIC_URL).origin;
+const PUBLIC = new URL(process.env.KAIJU_PUBLIC_URL).origin;
 const ENTRA = "https://login.microsoftonline.com";
 
 /** A response's Set-Cookie pairs into a jar (name → value). */

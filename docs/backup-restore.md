@@ -56,7 +56,7 @@ the key, a backup cannot be restored.**
 
 ```bash
 openssl rand -base64 32 > kaiju-backup.key && chmod 600 kaiju-backup.key
-export KOBE_BACKUP_KEY_FILE=$PWD/kaiju-backup.key     # or KOBE_BACKUP_KEY=<the key>, never argv
+export KAIJU_BACKUP_KEY_FILE=$PWD/kaiju-backup.key     # or KAIJU_BACKUP_KEY=<the key>, never argv
 ```
 
 The key must be at least 32 bytes of random data, given as base64 or hex. Keys with fewer than 16
@@ -82,14 +82,14 @@ the script starts with `\restrict`. It also refuses to commit unless the script 
 matching `\unrestrict`.
 
 **Where the plaintext lives during a restore.** The decrypted dump sits in a private temporary
-directory for the length of the restore. That directory is `KOBE_TMPDIR` if set, otherwise the OS
+directory for the length of the restore. That directory is `KAIJU_TMPDIR` if set, otherwise the OS
 temp directory, and it is deleted:
 
 - at the end of the restore, whether it succeeds or fails;
 - on `SIGINT`, `SIGTERM` or `SIGHUP` (Ctrl-C, a Job deadline, pod deletion), after which `kaiju`
   exits non-zero and Postgres rolls back.
 
-A `SIGKILL` cannot be caught. Point `KOBE_TMPDIR` at memory-backed storage so the plaintext never
+A `SIGKILL` cannot be caught. Point `KAIJU_TMPDIR` at memory-backed storage so the plaintext never
 reaches a disk:
 
 - Linux: `/dev/shm`, or any tmpfs.
@@ -226,9 +226,9 @@ object storage is configured.
 ## Requirements
 
 - **PostgreSQL client 17.6 or newer** (`pg_dump`, `pg_restore`, `psql`), either on `PATH` or in the
-  directory named by `KOBE_PG_BIN_DIR`:
+  directory named by `KAIJU_PG_BIN_DIR`:
   - Debian/Ubuntu: `postgresql-client-17` from PGDG.
-  - macOS: `brew install libpq`, then `KOBE_PG_BIN_DIR=$(brew --prefix libpq)/bin`.
+  - macOS: `brew install libpq`, then `KAIJU_PG_BIN_DIR=$(brew --prefix libpq)/bin`.
 
   The client must not be older than the server, and a restore needs the same client as the backup
   or a newer one.
@@ -273,10 +273,10 @@ does not connect within 5 s or stays silent for 60 s.
 ```bash
 kubectl -n kobe port-forward svc/kobe-pg-rw 5432:5432 &   # CloudNativePG; or reach your Postgres
 
-export KOBE_BACKUP_KEY_FILE=/secure/kaiju-backup.key
-export KOBE_BACKUP_DATABASE_URL="postgres://kobe_backup:$(cat /secure/kobe-backup-db-password)@localhost:5432/kobe"
-export KOBE_S3_ENDPOINT=https://s3.example.com KOBE_S3_BUCKET=kobe KOBE_S3_REGION=us-east-1
-export KOBE_S3_ACCESS_KEY_ID=... KOBE_S3_SECRET_ACCESS_KEY=...   # read-only (List) is enough
+export KAIJU_BACKUP_KEY_FILE=/secure/kaiju-backup.key
+export KAIJU_BACKUP_DATABASE_URL="postgres://kobe_backup:$(cat /secure/kobe-backup-db-password)@localhost:5432/kobe"
+export KAIJU_S3_ENDPOINT=https://s3.example.com KAIJU_S3_BUCKET=kobe KAIJU_S3_REGION=us-east-1
+export KAIJU_S3_ACCESS_KEY_ID=... KAIJU_S3_SECRET_ACCESS_KEY=...   # read-only (List) is enough
 
 kaiju backup --out /backups/kaiju-$(date -u +%Y%m%dT%H%M%SZ)
 ```
@@ -372,10 +372,10 @@ target someone has already configured is not a fresh install.
    ```bash
    kubectl -n kobe port-forward svc/kobe-pg-rw 5432:5432 &
    # CloudNativePG owner credentials: secret kobe-pg-app (username, password)
-   export KOBE_BACKUP_KEY_FILE=/secure/kaiju-backup.key
-   export KOBE_DB_MIGRATE_URL="postgres://kobe_owner:$(kubectl -n kobe get secret kobe-pg-app -o jsonpath='{.data.password}' | base64 -d)@localhost:5432/kobe"
-   export KOBE_S3_ENDPOINT=... KOBE_S3_BUCKET=... KOBE_S3_ACCESS_KEY_ID=... KOBE_S3_SECRET_ACCESS_KEY=...
-   export KOBE_TMPDIR=/dev/shm          # memory-backed; the decrypted dump never touches disk
+   export KAIJU_BACKUP_KEY_FILE=/secure/kaiju-backup.key
+   export KAIJU_DB_MIGRATE_URL="postgres://kobe_owner:$(kubectl -n kobe get secret kobe-pg-app -o jsonpath='{.data.password}' | base64 -d)@localhost:5432/kobe"
+   export KAIJU_S3_ENDPOINT=... KAIJU_S3_BUCKET=... KAIJU_S3_ACCESS_KEY_ID=... KAIJU_S3_SECRET_ACCESS_KEY=...
+   export KAIJU_TMPDIR=/dev/shm          # memory-backed; the decrypted dump never touches disk
    kaiju restore --from /backups/kaiju-20261002T120000Z
    ```
 
@@ -383,7 +383,7 @@ target someone has already configured is not a fresh install.
    values you recorded when the backup was taken.
 
 5. **Pause every deleting job if the backup is older than the bucket or the cluster.** Set
-   `retention.paused: true` in your values (chart env `KOBE_RETENTION_PAUSED=true`, on the server
+   `retention.paused: true` in your values (chart env `KAIJU_RETENTION_PAUSED=true`, on the server
    and the scheduler) before you scale back up. The restored database knows nothing of what
    happened after the backup: objects written since (fork-copied entry bodies, staging objects,
    uploads, workspace blobs), members re-added since, volumes created since. Three jobs judge

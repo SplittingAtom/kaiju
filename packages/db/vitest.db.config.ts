@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 
 // Integration tests against a real Postgres 17: migrations, RLS catalog checks, cross-team probe.
-// Requires KOBE_TEST_DATABASE_URL (a superuser URL used only to create a throwaway database + roles).
+// Requires KAIJU_TEST_DATABASE_URL (a superuser URL used only to create a throwaway database + roles).
 export default defineConfig({
   test: {
     include: ["src/**/*.db.test.ts"],

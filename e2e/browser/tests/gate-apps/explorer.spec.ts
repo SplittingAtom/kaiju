@@ -9,32 +9,32 @@ import { launchFromPlusMenu } from "../support/plus-apps.js";
  * rail, in a real Chromium against a deployment (e2e/gate-apps.sh; the coordinator's runbook for
  * the gate install). One spec drives both runs:
  *
- * - k3d (`KOBE_FAKE_MODEL=1`): the fake MCP server's `ui://e2e/explorer` test app and the scripted
+ * - k3d (`KAIJU_FAKE_MODEL=1`): the fake MCP server's `ui://e2e/explorer` test app and the scripted
  *   model, which calls the opening tool when told `tool: <name> <json>` and echoes its prompt;
  * - the gate install: Catalyst's Lakehouse Explorer and a real model.
  *
  * The app and its path come from the environment (the repository is public; nothing here names a
- * host): `KOBE_APPS_CONNECTOR` (the connector's name), `KOBE_APPS_OPEN` (the prompt that makes the
- * model call the opening tool), `KOBE_APPS_PATH` (the tree items to click, comma separated, the
- * last one a table), `KOBE_APPS_USE_TEXT` (what "Use in chat" inserts), `KOBE_APPS_PROBES=1` (the
- * test app's probe buttons, k3d only) and `KOBE_APPS_SECRET` (a credential that must appear in no
+ * host): `KAIJU_APPS_CONNECTOR` (the connector's name), `KAIJU_APPS_OPEN` (the prompt that makes the
+ * model call the opening tool), `KAIJU_APPS_PATH` (the tree items to click, comma separated, the
+ * last one a table), `KAIJU_APPS_USE_TEXT` (what "Use in chat" inserts), `KAIJU_APPS_PROBES=1` (the
+ * test app's probe buttons, k3d only) and `KAIJU_APPS_SECRET` (a credential that must appear in no
  * response the browser sees).
  */
-const CONNECTOR = process.env["KOBE_APPS_CONNECTOR"] ?? "e2e-apps";
+const CONNECTOR = process.env["KAIJU_APPS_CONNECTOR"] ?? "e2e-apps";
 const OPEN =
-  process.env["KOBE_APPS_OPEN"] ??
+  process.env["KAIJU_APPS_OPEN"] ??
   (FAKE_MODEL
     ? 'tool: mcp__e2e_apps__open_explorer {"depth":"5"}'
     : "Open the lakehouse explorer.");
-const PATH = (process.env["KOBE_APPS_PATH"] ?? "c,c.n,c.n.t").split(",").map((s) => s.trim());
-const USE_TEXT = process.env["KOBE_APPS_USE_TEXT"] ?? "Use table `c.n.t`";
-const PROBES = process.env["KOBE_APPS_PROBES"] === "1";
+const PATH = (process.env["KAIJU_APPS_PATH"] ?? "c,c.n,c.n.t").split(",").map((s) => s.trim());
+const USE_TEXT = process.env["KAIJU_APPS_USE_TEXT"] ?? "Use table `c.n.t`";
+const PROBES = process.env["KAIJU_APPS_PROBES"] === "1";
 /** The ARIA role of a tree item to click in the app (the test app: button; Catalyst: see the runbook). */
-const ITEM_ROLE = (process.env["KOBE_APPS_ITEM_ROLE"] ?? "button") as
+const ITEM_ROLE = (process.env["KAIJU_APPS_ITEM_ROLE"] ?? "button") as
   "button" | "treeitem" | "link";
 /** The app's "Use in chat" control. */
-const USE_LABEL = process.env["KOBE_APPS_USE_LABEL"] ?? "Use in chat";
-const SECRET = process.env["KOBE_APPS_SECRET"] ?? "";
+const USE_LABEL = process.env["KAIJU_APPS_USE_LABEL"] ?? "Use in chat";
+const SECRET = process.env["KAIJU_APPS_SECRET"] ?? "";
 
 interface App {
   readonly appId: string;
@@ -44,7 +44,7 @@ interface App {
 
 /**
  * Everything the browser received from Kaiju in this file's earlier tests (for the key check; one
- * worker runs the file in order, KOBE_WORKERS=1, the config's default).
+ * worker runs the file in order, KAIJU_WORKERS=1, the config's default).
  */
 const bodies: string[] = [];
 
@@ -209,7 +209,7 @@ test("inside the app: a fetch out, ui/open-link and the write tool all fail", as
   chat,
   page,
 }) => {
-  test.skip(!PROBES, "the test app's probes (k3d, KOBE_APPS_PROBES=1)");
+  test.skip(!PROBES, "the test app's probes (k3d, KAIJU_APPS_PROBES=1)");
   await chat.open();
   const app = await theApp(page);
   await chat.ask(OPEN);
@@ -353,7 +353,7 @@ test("from the rail during a run: the launch waits as a chip and goes in after t
 });
 
 test("no credential reaches the browser or the frame", async ({ chat, page }) => {
-  test.skip(SECRET === "", "KOBE_APPS_SECRET names the credential to look for");
+  test.skip(SECRET === "", "KAIJU_APPS_SECRET names the credential to look for");
   // Every answer from Kaiju while the app opens from the rail and renders, frame document included.
   const seen: string[] = [];
   page.on("response", (r: Response) => {

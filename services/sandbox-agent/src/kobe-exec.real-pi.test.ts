@@ -44,7 +44,7 @@ async function start(
   h = await startHarness({
     ...(egress === undefined ? {} : { egress }),
     piBin: PI_BIN,
-    env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+    env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
     extensions: [FAUX_MODEL_EXTENSION],
     ...(withExec
       ? {
@@ -133,10 +133,10 @@ describe.skipIf(!PI_AVAILABLE || !EXECUTOR_BUILT)("kobe-exec in real Pi, through
     await run(t, [bash("b1", "env")]);
     const end = await toolEnd(t, "b1");
     for (const name of [
-      "KOBE_POLICY_FD",
-      "KOBE_EXEC_FD",
-      "KOBE_TOOLS_FD",
-      "KOBE_MODEL_FILE",
+      "KAIJU_POLICY_FD",
+      "KAIJU_EXEC_FD",
+      "KAIJU_TOOLS_FD",
+      "KAIJU_MODEL_FILE",
       "PI_CODING_AGENT_DIR",
       "PI_OFFLINE",
       "SECRET_IN_AGENT_ENV",

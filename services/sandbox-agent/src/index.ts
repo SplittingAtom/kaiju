@@ -186,8 +186,8 @@ async function main(): Promise<void> {
 }
 
 /**
- * The tool executor (KOBE-167), when switched on (`KOBE_TOOL_EXECUTOR`, default on) and the image
- * has the kobe-exec extension (`KOBE_EXEC_EXTENSION`): every Pi's built-in tools then run in an
+ * The tool executor (KOBE-167), when switched on (`KAIJU_TOOL_EXECUTOR`, default on) and the image
+ * has the kobe-exec extension (`KAIJU_EXEC_EXTENSION`): every Pi's built-in tools then run in an
  * executor under its partner uid. Fails closed: asked for under Pi identities without the partner
  * groups (a pod spec from before KOBE-166), the agent does not start rather than quietly run the
  * tools in Pi; the extension is held to the same root-owned check as the others.
@@ -197,7 +197,7 @@ async function toolExecutor(
   identities: PiIdentities | undefined,
 ): Promise<AgentDeps["exec"]> {
   if (!config.toolExecutor) {
-    logger.warn("KOBE_TOOL_EXECUTOR is off: Pi runs its tools in its own process and uid");
+    logger.warn("KAIJU_TOOL_EXECUTOR is off: Pi runs its tools in its own process and uid");
     return undefined;
   }
   if (config.execExtension === undefined) {
@@ -205,17 +205,17 @@ async function toolExecutor(
     // without (skew between the server and the sandbox image).
     if (config.bootstrapTokenFile !== undefined) {
       throw new Error(
-        "KOBE_TOOL_EXECUTOR is on but this image has no kobe-exec extension (KOBE_EXEC_EXTENSION): " +
-          "refusing to run the tools in Pi (set KOBE_TOOL_EXECUTOR=false to allow it)",
+        "KAIJU_TOOL_EXECUTOR is on but this image has no kobe-exec extension (KAIJU_EXEC_EXTENSION): " +
+          "refusing to run the tools in Pi (set KAIJU_TOOL_EXECUTOR=false to allow it)",
       );
     }
-    logger.warn("KOBE_EXEC_EXTENSION not set: Pi runs its tools in its own process and uid");
+    logger.warn("KAIJU_EXEC_EXTENSION not set: Pi runs its tools in its own process and uid");
     return undefined;
   }
   if (identities !== undefined && !identities.paired) {
     throw new Error(
-      "KOBE_TOOL_EXECUTOR is on but the pod gives the agent no partner (tool) uid groups " +
-        "3000-3063: refusing to run the tools in Pi (set KOBE_TOOL_EXECUTOR=false to allow it)",
+      "KAIJU_TOOL_EXECUTOR is on but the pod gives the agent no partner (tool) uid groups " +
+        "3000-3063: refusing to run the tools in Pi (set KAIJU_TOOL_EXECUTOR=false to allow it)",
     );
   }
   const extension = await checkExtensionFile(config.execExtension, "kobe-exec");
@@ -232,7 +232,7 @@ async function toolExecutor(
 
 /**
  * Thread kernels (KOBE-464, docs/specs/notebooks.md NB10), when the image has the bridge
- * (`KOBE_KERNEL_BRIDGE`). The bridge gets the same root-owned check as the extensions: kernels run
+ * (`KAIJU_KERNEL_BRIDGE`). The bridge gets the same root-owned check as the extensions: kernels run
  * it under their own uid, so sandbox code must not be able to change it.
  */
 async function kernelManager(
@@ -264,7 +264,7 @@ async function kernelManager(
 }
 
 /**
- * Pi identities (KOBE-71), when the pod asks for them (`KOBE_PI_RUNAS`): the helper must work,
+ * Pi identities (KOBE-71), when the pod asks for them (`KAIJU_PI_RUNAS`): the helper must work,
  * the pod must give the agent one identity group per Pi process, and Pi's runtime directories
  * must not be on the workspace volume (the agent's guard against a swapped workspace parent
  * relies on that, workspace/volume.ts). Any failure stops the agent (fail closed).
@@ -274,10 +274,10 @@ async function piIdentities(config: Config): Promise<PiIdentities | undefined> {
     // Kaiju's pods (bootstrap token) always ask for identities: never run them without.
     if (config.bootstrapTokenFile !== undefined) {
       throw new Error(
-        "KOBE_PI_RUNAS is required in a Kaiju sandbox pod (KOBE_BOOTSTRAP_TOKEN_FILE set)",
+        "KAIJU_PI_RUNAS is required in a Kaiju sandbox pod (KAIJU_BOOTSTRAP_TOKEN_FILE set)",
       );
     }
-    logger.warn("KOBE_PI_RUNAS not set: Pi and its tools run as the agent's own uid");
+    logger.warn("KAIJU_PI_RUNAS not set: Pi and its tools run as the agent's own uid");
     return undefined;
   }
   // The helper's start-up probe also proves a tool cannot ptrace or read the memory of its Pi
@@ -318,7 +318,7 @@ async function modelWiring(
 ): Promise<ModelWiring | undefined> {
   if (config.modelGatewayUrl === undefined) return undefined;
   if (session === undefined) {
-    logger.warn("KOBE_MODEL_GATEWAY_URL set without a bootstrap token: models stay off");
+    logger.warn("KAIJU_MODEL_GATEWAY_URL set without a bootstrap token: models stay off");
     return undefined;
   }
   const extension = await checkExtensionFile(config.modelsExtension, "kobe-models");

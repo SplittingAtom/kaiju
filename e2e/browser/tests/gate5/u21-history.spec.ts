@@ -17,9 +17,9 @@ import {
  * Gate 5, U21 (KOBE-227): "Reasoning, tool cards (with >64 KB output on expand), hover footers
  * and every system marker render for a recorded thread; the Detail toggle expands all and
  * persists per user." The real-model run needs a team default model that reasons
- * (KOBE_GATE5_REASONING=1); the fake model reasons on `think?`.
+ * (KAIJU_GATE5_REASONING=1); the fake model reasons on `think?`.
  */
-const REASONS = FAKE_MODEL || process.env["KOBE_GATE5_REASONING"] === "1";
+const REASONS = FAKE_MODEL || process.env["KAIJU_GATE5_REASONING"] === "1";
 const toggleOf = (l: Locator) => l.locator("button[aria-expanded]").first();
 
 test("U21: reasoning, a tool card, the hover footer and the run's markers render after a reload", async ({

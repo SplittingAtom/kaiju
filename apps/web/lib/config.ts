@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 /**
- * The web's server-side configuration (KOBE-500, theming plan TH5). An unset `KOBE_SERVER_URL`
+ * The web's server-side configuration (KOBE-500, theming plan TH5). An unset `KAIJU_SERVER_URL`
  * only means the site branding falls back to the built-in defaults (lib/theme/branding-server.ts),
  * with one warning at startup; an invalid one is a deployment error and fails startup with the
  * reason (fail fast, as every service's config). `instrumentation.ts` reads it once at startup.
  *
- * `KOBE_SERVER_URL` is the server's in-cluster origin (chart: `http://<fullname>-server`), set by
+ * `KAIJU_SERVER_URL` is the server's in-cluster origin (chart: `http://<fullname>-server`), set by
  * the deployment, never taken from a request.
  */
 export interface WebConfig {
@@ -15,7 +15,7 @@ export interface WebConfig {
   /** Why `serverUrl` is null, for the startup warning; null when it is set. */
   readonly problem: string | null;
   /**
-   * KOBE-616: the public origin (`KOBE_PUBLIC_URL`, the chart sets the server's value) for the
+   * KOBE-616: the public origin (`KAIJU_PUBLIC_URL`, the chart sets the server's value) for the
    * guide's absolute links in /llms.txt; null when unset (then the request's host is used).
    */
   readonly publicUrl: string | null;
@@ -34,38 +34,38 @@ const serverUrlSchema = z.url({ protocol: /^https?$/ }).refine((value) => {
 }, "must be an origin only (http(s)://host[:port], no path, query or credentials)");
 
 function parsePublicUrl(env: Readonly<Record<string, string | undefined>>): string | null {
-  const raw = env.KOBE_PUBLIC_URL?.trim() ?? "";
+  const raw = env.KAIJU_PUBLIC_URL?.trim() ?? "";
   if (raw === "") return null;
   const parsed = serverUrlSchema.safeParse(raw);
   if (!parsed.success) {
     const reason = parsed.error.issues[0]?.message ?? "invalid URL";
-    throw new Error(`KOBE_PUBLIC_URL is invalid: ${reason} (got ${JSON.stringify(raw)})`);
+    throw new Error(`KAIJU_PUBLIC_URL is invalid: ${reason} (got ${JSON.stringify(raw)})`);
   }
   return new URL(parsed.data).origin;
 }
 
 export function parseWebConfig(env: Readonly<Record<string, string | undefined>>): WebConfig {
   const publicUrl = parsePublicUrl(env);
-  const raw = env.KOBE_SERVER_URL?.trim() ?? "";
+  const raw = env.KAIJU_SERVER_URL?.trim() ?? "";
   if (raw === "") {
     return {
       publicUrl,
       serverUrl: null,
       problem:
-        "KOBE_SERVER_URL is not set: the site branding (name, logo, theme) falls back to the Kaiju defaults",
+        "KAIJU_SERVER_URL is not set: the site branding (name, logo, theme) falls back to the Kaiju defaults",
     };
   }
   const parsed = serverUrlSchema.safeParse(raw);
   if (!parsed.success) {
     const reason = parsed.error.issues[0]?.message ?? "invalid URL";
-    throw new Error(`KOBE_SERVER_URL is invalid: ${reason} (got ${JSON.stringify(raw)})`);
+    throw new Error(`KAIJU_SERVER_URL is invalid: ${reason} (got ${JSON.stringify(raw)})`);
   }
   return { serverUrl: new URL(parsed.data).origin, problem: null, publicUrl };
 }
 
 let cached: WebConfig | undefined;
 
-/** The process's configuration, read once; throws when KOBE_SERVER_URL is invalid. */
+/** The process's configuration, read once; throws when KAIJU_SERVER_URL is invalid. */
 export function webConfig(): WebConfig {
   cached ??= parseWebConfig(process.env);
   return cached;

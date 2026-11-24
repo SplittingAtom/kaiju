@@ -85,7 +85,7 @@ describe.skipIf(!PI_AVAILABLE)("sync conflicts in real Pi (KOBE-492)", () => {
     const ws = fakeWorkspace();
     h = await startHarness({
       piBin: PI_BIN,
-      env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
       toolsExtension: REAL_TOOLS_EXTENSION,
       workspace: () => ws.hooks,

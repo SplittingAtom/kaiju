@@ -133,7 +133,7 @@ export const validatorUser = (suffix: string, objectId = randomUUID()) => ({
 /** Registers the shared hooks; call once at the top level of each scim.*.db.test.ts file. */
 export function useScimHarness(): void {
   beforeAll(async () => {
-    h = await openHarness({ sso: { settings: loadSsoSettings({ KOBE_SSO_ENABLED: "true" }) } });
+    h = await openHarness({ sso: { settings: loadSsoSettings({ KAIJU_SSO_ENABLED: "true" }) } });
     ownerId = await h.createUser("owner@scim.test", "owner");
     adminId = await h.createUser("admin@scim.test", "admin");
     localId = await h.createUser("local@scim.test");

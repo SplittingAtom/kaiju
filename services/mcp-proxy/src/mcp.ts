@@ -394,7 +394,7 @@ async function decideAndForward(
   };
   // ONE deadline for the whole call (review F1): it starts before the server's decision and
   // covers the grant fetch, a forced refresh and the upstream call with its retry, so the call
-  // ends under Pi's 60 s MCP request timeout (KOBE_MCP_UPSTREAM_TIMEOUT_MS, 55 s by default).
+  // ends under Pi's 60 s MCP request timeout (KAIJU_MCP_UPSTREAM_TIMEOUT_MS, 55 s by default).
   const signal = AbortSignal.timeout(deps.limits.upstreamTimeoutMs);
   try {
     const decided = await deps.server.decide(ctx.token, {

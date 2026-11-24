@@ -20,7 +20,7 @@ afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 const identities = new PiIdentities(helper, [PI_UID_MIN], async () => ({ code: 0, stderr: "" }));
 const identity = { uid: PI_UID_MIN, gid: PI_UID_MIN };
-const env = { PATH: process.env.PATH ?? "/usr/bin:/bin", KOBE_PROBE: "tools-env" };
+const env = { PATH: process.env.PATH ?? "/usr/bin:/bin", KAIJU_PROBE: "tools-env" };
 
 describe("running a program as the tools (KOBE-767)", () => {
   it("goes through the helper as the partner uid, in timeout, with the tools' environment", async () => {
@@ -29,7 +29,7 @@ describe("running a program as the tools (KOBE-767)", () => {
       cwd: root,
       runAs: { identities, identity, partner: true },
     });
-    const out = await run("/bin/sh", ["-c", 'printf "%s %s" "$KOBE_PROBE" "$(pwd)"'], {
+    const out = await run("/bin/sh", ["-c", 'printf "%s %s" "$KAIJU_PROBE" "$(pwd)"'], {
       timeoutMs: 10_000,
       maxOutput: 1024,
     });

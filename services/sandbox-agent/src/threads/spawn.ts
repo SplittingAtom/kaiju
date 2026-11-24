@@ -139,7 +139,7 @@ export async function spawnPi(
     // The tools get the launch's HOME and TMPDIR (the shared ones); Pi gets private ones, as it
     // loads code from both. With the executor the tools are another uid; without it (KOBE-228)
     // they are Pi's own and inherit its environment, so the shared ones reach them through the
-    // BASH_ENV script (`KOBE_TOOL_HOME`/`KOBE_TOOL_TMPDIR`).
+    // BASH_ENV script (`KAIJU_TOOL_HOME`/`KAIJU_TOOL_TMPDIR`).
     // Known limit (KOBE-235): `~` in Pi's own read/write/edit tools is expanded inside Pi against
     // its private HOME, so a file written to `~/x` there is lost when Pi exits; bash tools and
     // the executor's file tools see the shared home. Not mapped: Pi's HOME must stay private
@@ -155,9 +155,9 @@ export async function spawnPi(
       // `~` in the file tools is resolved by Pi: tell kobe-exec where the tools' home is.
       if (toolEnvBase.HOME !== undefined) env[TOOL_HOME_ENV] = toolEnvBase.HOME;
     } else {
-      if (toolEnvBase.HOME !== undefined) env.KOBE_TOOL_HOME = toolEnvBase.HOME;
+      if (toolEnvBase.HOME !== undefined) env.KAIJU_TOOL_HOME = toolEnvBase.HOME;
       // No TMPDIR in the launch: the tools' scratch is /tmp, never Pi's private (deleted) one.
-      env.KOBE_TOOL_TMPDIR = toolEnvBase.TMPDIR ?? "/tmp";
+      env.KAIJU_TOOL_TMPDIR = toolEnvBase.TMPDIR ?? "/tmp";
       // The switch itself is the BASH_ENV script, whether or not egress is wired (KOBE-235);
       // with egress it sets the same variable below.
       if (threadEnv.toolEnvScript !== undefined) env.BASH_ENV = threadEnv.toolEnvScript;

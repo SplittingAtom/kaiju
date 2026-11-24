@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 
-// Render tests for the chart-seeded branding defaults (KOBE-503): branding.* -> KOBE_BRANDING_*
+// Render tests for the chart-seeded branding defaults (KOBE-503): branding.* -> KAIJU_BRANDING_*
 // on the API server only, and only the values that are set.
 
 const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
@@ -39,7 +39,7 @@ function brandingEnv(deployment: string, values: Record<string, string> = {}) {
     value?: string;
   }[];
   return Object.fromEntries(
-    env.filter((e) => e.name.startsWith("KOBE_BRANDING_")).map((e) => [e.name, e.value]),
+    env.filter((e) => e.name.startsWith("KAIJU_BRANDING_")).map((e) => [e.name, e.value]),
   );
 }
 
@@ -56,9 +56,9 @@ describe("branding.* (KOBE-503)", () => {
         "branding.showName": "false",
       }),
     ).toEqual({
-      KOBE_BRANDING_APP_NAME: "Acme Assist",
-      KOBE_BRANDING_PRESET: "tokyo-nights",
-      KOBE_BRANDING_SHOW_NAME: "false",
+      KAIJU_BRANDING_APP_NAME: "Acme Assist",
+      KAIJU_BRANDING_PRESET: "tokyo-nights",
+      KAIJU_BRANDING_SHOW_NAME: "false",
     });
   });
 

@@ -301,11 +301,11 @@ describe("ingress.rateLimit schema", () => {
   });
 });
 
-describe("KOBE_INGRESS_RATE_LIMIT for the Site console's health view", () => {
+describe("KAIJU_INGRESS_RATE_LIMIT for the Site console's health view", () => {
   const source = (values: Record<string, string>) => {
     const dep = must(render(values), "Deployment", "kobe-server");
     const env = dep.spec.template.spec.containers[0].env as { name: string; value?: string }[];
-    return env.find((e) => e.name === "KOBE_INGRESS_RATE_LIMIT")?.value;
+    return env.find((e) => e.name === "KAIJU_INGRESS_RATE_LIMIT")?.value;
   };
 
   it("is none while the chart's Ingress has no limit (default)", () => {
@@ -332,6 +332,6 @@ describe("KOBE_INGRESS_RATE_LIMIT for the Site console's health view", () => {
   it("is set on the API server only", () => {
     const web = must(render({}), "Deployment", "kobe-web");
     const env = web.spec.template.spec.containers[0].env as { name: string }[];
-    expect(env.some((e) => e.name === "KOBE_INGRESS_RATE_LIMIT")).toBe(false);
+    expect(env.some((e) => e.name === "KAIJU_INGRESS_RATE_LIMIT")).toBe(false);
   });
 });

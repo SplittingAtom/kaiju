@@ -42,7 +42,7 @@ export function createClientIpWatch(o: {
         warned.add(source);
         o.log.warn(
           { source },
-          "a request arrived without a client IP Kaiju can trust: per-address limits are shared by every such client. Check KOBE_TRUSTED_PROXIES (Helm auth.trustedProxies) against the proxies in front of the server",
+          "a request arrived without a client IP Kaiju can trust: per-address limits are shared by every such client. Check KAIJU_TRUSTED_PROXIES (Helm auth.trustedProxies) against the proxies in front of the server",
         );
       }
       const t = now();
@@ -72,6 +72,6 @@ export function warnTrustedProxies(
 ): void {
   if (trustedProxies.length > 0) return;
   log.warn(
-    "KOBE_TRUSTED_PROXIES is empty: behind a proxy chain the client IP can't be resolved, and per-address sign-in limits are then shared by every client",
+    "KAIJU_TRUSTED_PROXIES is empty: behind a proxy chain the client IP can't be resolved, and per-address sign-in limits are then shared by every client",
   );
 }

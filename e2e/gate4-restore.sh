@@ -15,10 +15,10 @@
 #             skill bundle and the project files are the same bytes, and the restored thread
 #             continues in a new sandbox with Pi's session rebuilt from Postgres
 #
-# Targets (KOBE_GATE4_RESTORE_TARGET):
+# Targets (KAIJU_GATE4_RESTORE_TARGET):
 #   k3d        (default on a k3d context; CI shard `restore`) the source is installed into this
 #              cluster; after the backup the whole k3d cluster is deleted and a new one created
-#              (scripts/dev-cluster.sh, e2e/load-images.sh with KOBE_IMAGE_ARCHIVES or a build); its
+#              (scripts/dev-cluster.sh, e2e/load-images.sh with KAIJU_IMAGE_ARCHIVES or a build); its
 #              S3 fixture goes with the cluster, so the bucket's objects are copied out and into the
 #              new one first (e2e/lib/s3-mirror.mjs: "a bucket that holds a copy of its objects")
 #   namespace  (a real cluster) source `<ns>-src` and target `<ns>`, each its own release with its
@@ -34,21 +34,21 @@ KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
 K3D="${K3D:-k3d}"
 context=$($KUBECTL config current-context)
-TARGET="${KOBE_GATE4_RESTORE_TARGET:-$([[ "$context" == k3d-* ]] && echo k3d || echo namespace)}"
-NS="${KOBE_GATE4_RESTORE_NS:-kobe-dev}"
-RELEASE="${KOBE_GATE4_RESTORE_RELEASE:-kobe}"
-CHART="${KOBE_GATE4_RESTORE_CHART:-charts/kobe}"
-VALUES="${KOBE_GATE4_RESTORE_VALUES:-dev/values.yaml}"
-TAG="${KOBE_IMAGE_TAG:-}"
-DEPS_NS="${KOBE_GATE4_RESTORE_DEPS_NS:-kobe-deps}" # where `deploy/pg` (superuser `postgres`) runs
+TARGET="${KAIJU_GATE4_RESTORE_TARGET:-$([[ "$context" == k3d-* ]] && echo k3d || echo namespace)}"
+NS="${KAIJU_GATE4_RESTORE_NS:-kobe-dev}"
+RELEASE="${KAIJU_GATE4_RESTORE_RELEASE:-kobe}"
+CHART="${KAIJU_GATE4_RESTORE_CHART:-charts/kobe}"
+VALUES="${KAIJU_GATE4_RESTORE_VALUES:-dev/values.yaml}"
+TAG="${KAIJU_IMAGE_TAG:-}"
+DEPS_NS="${KAIJU_GATE4_RESTORE_DEPS_NS:-kobe-deps}" # where `deploy/pg` (superuser `postgres`) runs
 MODEL_ALIAS=fast
 # shellcheck disable=SC2034 # read by e2e/lib/gate-turns.sh
 FAKE=1 # the scripted model (e2e/gate1's fake upstream): `bash: ...`, `tool: ...`, `history?`
-OWNER_EMAIL="${KOBE_GATE4_RESTORE_OWNER_EMAIL:-owner@gate4r.test}"
-OWNER_PASSWORD="${KOBE_GATE4_RESTORE_OWNER_PASSWORD:-gate4 restore owner password}"
-CLI="${KOBE_GATE4_RESTORE_CLI:-node packages/cli/dist/cli.js}"
-SETUP_BUDGET="${KOBE_GATE4_SETUP_BUDGET:-1200}" # spec §8: clean install → first chat ≤ 20 min
-SBX_WAIT="${KOBE_GATE4_RESTORE_SANDBOX_WAIT:-240}"
+OWNER_EMAIL="${KAIJU_GATE4_RESTORE_OWNER_EMAIL:-owner@gate4r.test}"
+OWNER_PASSWORD="${KAIJU_GATE4_RESTORE_OWNER_PASSWORD:-gate4 restore owner password}"
+CLI="${KAIJU_GATE4_RESTORE_CLI:-node packages/cli/dist/cli.js}"
+SETUP_BUDGET="${KAIJU_GATE4_SETUP_BUDGET:-1200}" # spec §8: clean install → first chat ≤ 20 min
+SBX_WAIT="${KAIJU_GATE4_RESTORE_SANDBOX_WAIT:-240}"
 LLM_NS=kaiju-e2e-llm
 LLM="http://llm.$LLM_NS.svc.cluster.local"
 TEAM_SLUG=gate4-r
@@ -59,22 +59,22 @@ failed=0
 case "$TARGET" in
   k3d)
     [[ "$context" == k3d-* ]] || { echo "target k3d needs a k3d context (got '$context')" >&2; exit 2; }
-    [[ -n "$TAG" ]] || { echo "set KOBE_IMAGE_TAG (the images loaded into the cluster)" >&2; exit 2; }
+    [[ -n "$TAG" ]] || { echo "set KAIJU_IMAGE_TAG (the images loaded into the cluster)" >&2; exit 2; }
     CLUSTER="${context#k3d-}"
     SRC_NS=$NS
     SRC_DB=kobe TGT_DB=kobe # dev/postgres.yaml's database, on each cluster's own Postgres
     ;;
   namespace)
-    [[ "$context" == "${KOBE_GATE4_RESTORE_CONTEXT:-}" ]] \
-      || { echo "refusing context '$context' (set KOBE_GATE4_RESTORE_CONTEXT=$context)" >&2; exit 2; }
-    [[ "$NS" != kobe-dev && -n "${KOBE_GATE4_RESTORE_NS:-}" ]] \
-      || { echo "target namespace needs KOBE_GATE4_RESTORE_NS (a new namespace)" >&2; exit 2; }
-    DB_SECRET="${KOBE_GATE4_RESTORE_DB_SECRET:?set KOBE_GATE4_RESTORE_DB_SECRET=<namespace>/<secret> with app-url and migrate-url}"
+    [[ "$context" == "${KAIJU_GATE4_RESTORE_CONTEXT:-}" ]] \
+      || { echo "refusing context '$context' (set KAIJU_GATE4_RESTORE_CONTEXT=$context)" >&2; exit 2; }
+    [[ "$NS" != kobe-dev && -n "${KAIJU_GATE4_RESTORE_NS:-}" ]] \
+      || { echo "target namespace needs KAIJU_GATE4_RESTORE_NS (a new namespace)" >&2; exit 2; }
+    DB_SECRET="${KAIJU_GATE4_RESTORE_DB_SECRET:?set KAIJU_GATE4_RESTORE_DB_SECRET=<namespace>/<secret> with app-url and migrate-url}"
     SRC_NS="$NS-src"
     SRC_DB="${NS//-/_}_src" TGT_DB="${NS//-/_}"
     S3_PREFIX="gate4-restore-$NONCE/"
     ;;
-  *) echo "KOBE_GATE4_RESTORE_TARGET: k3d or namespace (got '$TARGET')" >&2; exit 2 ;;
+  *) echo "KAIJU_GATE4_RESTORE_TARGET: k3d or namespace (got '$TARGET')" >&2; exit 2 ;;
 esac
 
 # shellcheck source=lib/gate-common.sh
@@ -165,7 +165,7 @@ if [[ "$TARGET" == namespace ]]; then
   BASE_MIGRATE_URL=$(secret_key "$DB_SECRET_NS" "$DB_SECRET_NAME" migrate-url)
   [[ -n "$BASE_APP_URL" && -n "$BASE_MIGRATE_URL" ]] || { echo "no app-url/migrate-url in $DB_SECRET" >&2; exit 2; }
 fi
-[[ -f packages/cli/dist/cli.js || -n "${KOBE_GATE4_RESTORE_CLI:-}" ]] \
+[[ -f packages/cli/dist/cli.js || -n "${KAIJU_GATE4_RESTORE_CLI:-}" ]] \
   || { echo "the kaiju CLI is not built: pnpm --filter @kaiju/cli... build" >&2; exit 2; }
 
 # ---- a site: Postgres database, Secrets, the chart ---------------------------------------------------
@@ -191,9 +191,9 @@ site_database() { # namespace database → the namespace, its database and the S
   DB_SECRET_OF_SITE="$RELEASE-gate4-db"
   copy_secrets "$ns"
 }
-copy_secrets() { # namespace → copies of the Secrets the values file names (KOBE_GATE4_RESTORE_COPY_SECRETS)
+copy_secrets() { # namespace → copies of the Secrets the values file names (KAIJU_GATE4_RESTORE_COPY_SECRETS)
   local ref
-  for ref in ${KOBE_GATE4_RESTORE_COPY_SECRETS:-}; do
+  for ref in ${KAIJU_GATE4_RESTORE_COPY_SECRETS:-}; do
     $KUBECTL -n "${ref%%/*}" get secret "${ref#*/}" -o json \
       | node -e 'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
           const x = JSON.parse(s);
@@ -217,7 +217,7 @@ chart_args() { # → the helm arguments every site installs with (after -n <name
   [[ -n "$TAG" ]] && extra+=(--set "global.imageTag=$TAG" --set global.imagePullPolicy=IfNotPresent)
   if [[ "$TARGET" == namespace ]]; then
     extra+=(--set "postgres.external.existingSecret=$DB_SECRET_OF_SITE" --set "s3.prefix=$S3_PREFIX")
-    [[ -n "${KOBE_GATE4_RESTORE_HOST:-}" ]] && extra+=(--set "ingress.host=$KOBE_GATE4_RESTORE_HOST")
+    [[ -n "${KAIJU_GATE4_RESTORE_HOST:-}" ]] && extra+=(--set "ingress.host=$KAIJU_GATE4_RESTORE_HOST")
   fi
   # Bifrost may reach the fake model upstream (a private address), as e2e/run.sh allows it.
   printf '%s\n' -f "$VALUES" "${extra[@]}" --set-json "bifrost.networkPolicy.extraEgress=$LLM_RULE" \
@@ -418,14 +418,14 @@ s3_env=()
 if [[ "$TARGET" == k3d ]]; then
   port_forward "$DEPS_NS" deploy/s3 8333
   s3_port=$PF_PORT
-  s3_env=(KOBE_S3_ENDPOINT="http://127.0.0.1:$s3_port" KOBE_S3_BUCKET=kobe KOBE_S3_ACCESS_KEY_ID=dev KOBE_S3_SECRET_ACCESS_KEY=dev)
+  s3_env=(KAIJU_S3_ENDPOINT="http://127.0.0.1:$s3_port" KAIJU_S3_BUCKET=kobe KAIJU_S3_ACCESS_KEY_ID=dev KAIJU_S3_SECRET_ACCESS_KEY=dev)
 else
-  # KOBE_S3_ENDPOINT, _BUCKET, _REGION, _ACCESS_KEY_ID, _SECRET_ACCESS_KEY come from the caller's environment.
-  s3_env=("KOBE_S3_PREFIX=$S3_PREFIX")
+  # KAIJU_S3_ENDPOINT, _BUCKET, _REGION, _ACCESS_KEY_ID, _SECRET_ACCESS_KEY come from the caller's environment.
+  s3_env=("KAIJU_S3_PREFIX=$S3_PREFIX")
 fi
 BACKUP_DIR="$WORK/backup-$NONCE"
-backup_out=$(env KOBE_BACKUP_KEY_FILE="$WORK/backup.key" \
-  KOBE_BACKUP_DATABASE_URL="postgres://kobe_gate4_backup:$BACKUP_PW@127.0.0.1:$pg_port/$SRC_DB" \
+backup_out=$(env KAIJU_BACKUP_KEY_FILE="$WORK/backup.key" \
+  KAIJU_BACKUP_DATABASE_URL="postgres://kobe_gate4_backup:$BACKUP_PW@127.0.0.1:$pg_port/$SRC_DB" \
   "${s3_env[@]}" $CLI backup --out "$BACKUP_DIR" 2>&1) || true
 sed 's/^/     /' <<<"$backup_out"
 contains "kaiju backup writes an encrypted, signed backup" 'manifest fingerprint sha256:[0-9a-f]{64}' "$backup_out"
@@ -442,8 +442,8 @@ if [[ "$TARGET" == k3d ]]; then
   server_image=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
   s3_pod() { # name → a pod with the server image and the k3d S3 fixture's settings
     $KUBECTL -n "$NS" run "$1" --restart=Never --image="$server_image" --image-pull-policy=IfNotPresent \
-      --env=KOBE_S3_ENDPOINT=http://s3.kobe-deps.svc.cluster.local:8333 --env=KOBE_S3_BUCKET=kobe \
-      --env=KOBE_S3_ACCESS_KEY_ID=dev --env=KOBE_S3_SECRET_ACCESS_KEY=dev --command -- sleep 900 >/dev/null
+      --env=KAIJU_S3_ENDPOINT=http://s3.kobe-deps.svc.cluster.local:8333 --env=KAIJU_S3_BUCKET=kobe \
+      --env=KAIJU_S3_ACCESS_KEY_ID=dev --env=KAIJU_S3_SECRET_ACCESS_KEY=dev --command -- sleep 900 >/dev/null
     PODS+=("-n $NS $1")
     $KUBECTL -n "$NS" wait --for=condition=Ready "pod/$1" --timeout=120s >/dev/null
   }
@@ -513,14 +513,14 @@ port_forward "$DEPS_NS" deploy/pg 5432
 pg_port=$PF_PORT
 if [[ "$TARGET" == k3d ]]; then
   port_forward "$DEPS_NS" deploy/s3 8333
-  s3_env=(KOBE_S3_ENDPOINT="http://127.0.0.1:$PF_PORT" KOBE_S3_BUCKET=kobe KOBE_S3_ACCESS_KEY_ID=dev KOBE_S3_SECRET_ACCESS_KEY=dev)
+  s3_env=(KAIJU_S3_ENDPOINT="http://127.0.0.1:$PF_PORT" KAIJU_S3_BUCKET=kobe KAIJU_S3_ACCESS_KEY_ID=dev KAIJU_S3_SECRET_ACCESS_KEY=dev)
 fi
 migrate_url=$(url_with "$(secret_key "$NS" "$DB_SECRET_OF_SITE" migrate-url)" 127.0.0.1 "$pg_port" "")
 mkdir -p "$WORK/tmp"
 head_args=()
 [[ "$SRC_HEAD" =~ ^[0-9]+:[0-9a-f]{64}$ ]] && head_args=(--expect-audit-head "$SRC_HEAD")
 kobe_restore() { # → the CLI's output (docs/backup-restore.md "Restore onto a fresh cluster", step 4)
-  env KOBE_BACKUP_KEY_FILE="$WORK/backup.key" KOBE_DB_MIGRATE_URL="$migrate_url" KOBE_TMPDIR="$WORK/tmp" \
+  env KAIJU_BACKUP_KEY_FILE="$WORK/backup.key" KAIJU_DB_MIGRATE_URL="$migrate_url" KAIJU_TMPDIR="$WORK/tmp" \
     "${s3_env[@]}" $CLI restore --from "$BACKUP_DIR" --operator gate4-restore ${head_args[@]+"${head_args[@]}"} 2>&1 || true
 }
 restore_out=$(kobe_restore)
@@ -626,7 +626,7 @@ if ((failed)); then
   exit 1
 fi
 if ((xfailed)); then
-  verdict "Gate 4 restore: backup → fresh site → restore round-trips, with $xfailed expected failures (filed; KOBE_GATE_STRICT=1 fails them)"
+  verdict "Gate 4 restore: backup → fresh site → restore round-trips, with $xfailed expected failures (filed; KAIJU_GATE_STRICT=1 fails them)"
 else
   verdict "Gate 4 restore: backup → fresh site → restore round-trips"
 fi
