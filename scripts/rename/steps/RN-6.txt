@@ -1,0 +1,30 @@
+# RN-6 (KOBE-750): chart charts/kaiju (name `kaiju`), images ghcr.io/splittingatom/kaiju-*,
+# in-sandbox paths and binaries, in-namespace object names, publish and e2e workflows (spec §3
+# changes 4 and 7). By hand: ghcr package visibility, Dependabot paths, chart version bump.
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-6: Chart directory, chart name and Helm template helpers
+** /\bcharts\/kobe\b/
+path charts/kobe/** /charts\/kobe/
+charts/** /\bkobe\.[a-zA-Z]\w*/
+charts/**/Chart.yaml /^name: kobe$/
+
+== RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries, the images' Unix user `kobe`
+** /\bghcr\.io\/splittingatom\/kobe-[\w-]+/
+** /(?<![\w.-])kobe-(?:server|web|sandbox|sandbox-agent|mcp-proxy|egress-proxy|model-gateway|orbit-eval|skill-scan|bifrost)(?::[\w.${}-]+)?(?![\w-])/
+** /\/opt\/kobe\b/
+** /\/run\/kobe-[\w-]*/
+** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
+images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
+
+== RN-6: Kubernetes object names (Service, Secret, ServiceAccount, quota, template, warm pool ...)
+** /\bkobe-team-(?:quota|member-quota)\b/
+** /\bkobe-sandbox-[\w-]+/
+** /\bkobe-skill-eval-quota\b/
+** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|vllm|embeddings|theme|default)\b/
+** /\bdeploy\/kobe\b/
+** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/

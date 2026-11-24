@@ -1,0 +1,25 @@
+# RN-8 (KOBE-752): repository rename, remotes, CI runner set and secrets, deploy script,
+# CLAUDE.md (spec §4 step 7). By hand: the GitHub rename itself, the runner scale set and its
+# GitHub App, repository variables, local remotes and the coordinator's notes.
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-8: Repository, worktree paths and remotes (GitHub redirects the old URL)
+** /\bSplittingAtom\/kobe(?![\w-])/i
+** /(?<![\w-])Kobe-(?:wt|g)(?=[\d<N])/
+** /\.\.\/Kobe\b/
+
+== RN-8: CI: runner scale set, its GitHub App, the runner variable and the shared setup action
+** /\bkobe-(?:k3s|ci-runners|arc-runners)\b/
+** /\bKOBE_RUNNER\b/
+** /\bsetup-kobe\b/
+path .github/actions/setup-kobe/** /kobe/
+
+== RN-8: Contributor instructions (CLAUDE.md) name the product
+CLAUDE.md /\bKobe\b/
+
+== RN-8: Root package name
+package.json /"name": "kobe"/

@@ -1,0 +1,13 @@
+# RN-7 (KOBE-751): team namespace prefix as configuration (spec §5). Mostly hand work: the chart
+# sets sandbox.teamNamespacePrefix from a lookup (default `kaiju-team-` on a fresh install), the
+# server refuses to start when namespaces with another prefix exist. The script renames the
+# literal defaults and examples below once that configuration exists.
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-7: Team namespace prefix (configuration: new default `kaiju-team-`, detected on existing installs)
+** /\bkobe-team-(?!quota\b|member-quota\b)/
+** /\bkobe-team\b(?!-)/
