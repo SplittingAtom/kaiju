@@ -83,6 +83,23 @@ without a reason:
   (now with its builder) still say Kobe to the model; renaming needs new skill versions and a
   prompt v3 with new recordings. [rename with the next prompt and skill versions]
 
+## Review round 1 (merge after fixes): what changed
+
+- **Self-test:** a step with no allowlist groups is done; the self-test and the guard fail when a
+  later step is done while an earlier one is not (the old test required RN-2's groups to exist).
+- **Memory headers:** the context viewer also labels notes and prompt parts that start with the
+  pre-rename "What Kobe knows" headers (`PRE_RENAME_HEADERS`, permanent entry, drop in KOBE-754).
+- **Site wording:** still flags "this Kobe install" (permanent entry with the reason).
+- **Gallery agent (KOBE-831):** fakes, seed fixtures and comments that named it "Kaiju" went back
+  to "Kobe" and joined Q13.
+- **RN-3 file-name entries:** now name tracked file and directory stems, case-sensitively. Test
+  URLs and runtime names fall to RN-3's Triage tails; the `/kobe/eval-cases` route and the in-pod
+  paths (`/var/run/secrets/kobe`, `/var/run/kobe`, `/etc/kobe`, `/usr/share/doc/kobe`) go to RN-6
+  as hand work. RN-3 dry run: 12,934 scripted / 1,710 hand before, 12,586 / 1,982 after, 78 paths
+  both times, no reference conflicts; self-test case fails on the old entry, passes on the new.
+- Not changed here: notification subjects that hard-code the product name instead of the Site's
+  app name (pre-existing; the coordinator files it).
+
 ## Notes for RN-3
 
 - RN-3's file-name entry (`/(?:\.{1,2}\/|\/)…kobe…/i`) also owns regex literals like `/Kobe found/`
@@ -112,7 +129,7 @@ names and identifiers in docs keep `kobe` until their steps (RN-3..RN-6), on pur
 
 ## Evidence
 
-- Guard ok (58,488 allowed, 155 entries); self-test 21/21; build, typecheck, lint, format:check ok.
+- Guard ok; self-test 23/23 (run after the last commit of round 1); build, typecheck, lint, format:check ok.
 - Unit suites: server 4,565 passed / 8 skipped (one test fixed, rerun green); web 4,288; protocol
   1,373; db 1,106; sandbox-agent 1,288 passed, 2 failed (the known `runtime-dir.test.ts` pair on
   this machine), 196 skipped; charts 395; cli 98; model-gateway 260; egress-proxy 180; mcp-proxy
