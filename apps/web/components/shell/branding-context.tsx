@@ -7,7 +7,7 @@ import { DEFAULT_BRANDING } from "../../lib/theme/branding-defaults";
 /**
  * The site branding for client components (theming plan TH5): the root layout fetches it on the
  * server (lib/theme/branding-server.ts) and provides it here, so the name and logo are in the
- * first HTML. Without a provider (tests, isolated renders) it is the Kobe defaults.
+ * first HTML. Without a provider (tests, isolated renders) it is the Kaiju defaults.
  */
 /**
  * The branding as pages see it: the server's, plus the inline logo's markup when the server render
@@ -31,7 +31,7 @@ export function useBranding(): ShellBranding {
   return useContext(BrandingContext);
 }
 
-/** The app name as text, for server components' copy ("Back to Kobe"). */
+/** The app name as text, for server components' copy ("Back to Kaiju"). */
 export function AppName(): string {
   return useBranding().appName;
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the Kobe images for the e2e suite and loads them into the k3d cluster's nodes.
+# Builds the Kaiju images for the e2e suite and loads them into the k3d cluster's nodes.
 # Usage: e2e/load-images.sh <cluster> <tag>
 #
 # With KOBE_IMAGE_ARCHIVES=<dir>, nothing is built: every <dir>/*.tar (image archives built once

@@ -87,7 +87,7 @@ const source: HistorySource = {
   },
 };
 const ada = { name: "Ada Lovelace", email: "ada@example.test" };
-const adaVia = { name: "Ada Lovelace via Kobe", email: "ada@example.test" };
+const adaVia = { name: "Ada Lovelace via Kaiju", email: "ada@example.test" };
 const bob = { name: "Bob", email: "1a2b3c4d5e+bob@users.noreply.kobe.test" };
 const plan: ConversionPlan = {
   v: 1,
@@ -109,7 +109,7 @@ const plan: ConversionPlan = {
       message: "Add the script\n\nWith a body line.\n",
       time: 1_700_000_100,
       author: bob,
-      committer: { ...bob, name: "Bob via Kobe" },
+      committer: { ...bob, name: "Bob via Kaiju" },
     },
     {
       kobeCommitId: "c3",
@@ -182,9 +182,9 @@ describe("conversion history on a real git server", () => {
       "main",
     ]).trim();
     expect(log.split("\n")).toEqual([
-      "Ada Lovelace|ada@example.test|Ada Lovelace via Kobe|ada@example.test|1700000000|1700000000|Start",
-      `Bob|${bob.email}|Bob via Kobe|${bob.email}|1700000100|1700000100|Add the script`,
-      "Ada Lovelace|ada@example.test|Ada Lovelace via Kobe|ada@example.test|1700000200|1700000200|Tidy up",
+      "Ada Lovelace|ada@example.test|Ada Lovelace via Kaiju|ada@example.test|1700000000|1700000000|Start",
+      `Bob|${bob.email}|Bob via Kaiju|${bob.email}|1700000100|1700000100|Add the script`,
+      "Ada Lovelace|ada@example.test|Ada Lovelace via Kaiju|ada@example.test|1700000200|1700000200|Tidy up",
     ]);
     expect(bare("acme/demo", ["log", "-1", "--format=%B", "main~1"]).trim()).toBe(
       "Add the script\n\nWith a body line.",

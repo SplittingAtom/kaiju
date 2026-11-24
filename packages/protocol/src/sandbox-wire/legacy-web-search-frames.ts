@@ -25,7 +25,7 @@ export const legacyWebSearchQueryFrameSchema = frame("web_search.query", {
 
 /** What the model of a legacy agent is told. */
 export const LEGACY_WEB_SEARCH_MESSAGE =
-  "Web search is not built into Kobe any more. Use a connector that offers search, if your team has one.";
+  "Web search is not built into Kaiju any more. Use a connector that offers search, if your team has one.";
 
 /** Server -> sandbox: always unavailable. */
 export const legacyWebSearchResultFrameSchema = frame("web_search.result", {

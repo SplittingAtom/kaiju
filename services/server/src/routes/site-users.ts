@@ -57,7 +57,7 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
   /**
    * Sign-in protection (KOBE-812): accounts whose failed sign-ins are being slowed down now (one
    * attempt a minute until `until`), and since when, in the last day, requests arrived without a
-   * client IP Kobe can trust (per-address limits are then shared). Ids only; the page has the
+   * client IP Kaiju can trust (per-address limits are then shared). Ids only; the page has the
    * names from the user list.
    */
   app.get("/sign-in-protection", async (c) => {
@@ -100,7 +100,7 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
       .from(users)
       .leftJoin(siteRoles, eq(siteRoles.userId, users.id))
       .where(eq(users.id, userId));
-    if (!target) return notFound(c, "user_not_found", "No Kobe user with that id.");
+    if (!target) return notFound(c, "user_not_found", "No Kaiju user with that id.");
     // Reactivating the Owner is allowed: a deactivated Owner would otherwise leave the Site with
     // no active Owner for good (KOBE-774 third review).
     if (target.role === "owner" && what !== "reactivation") {
@@ -118,7 +118,7 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
   /**
    * The optional body `{expectedState}` (KOBE-622): the state the caller saw. The change itself is
    * a conditional update, so when it changed nothing (someone else got there first) the call is
-   * refused 409 `changed_since_approval` instead of reporting success (the Kobe MCP tools send the
+   * refused 409 `changed_since_approval` instead of reporting success (the Kaiju MCP tools send the
    * approved before-state; the console sends no body).
    */
   async function expected(c: Context, want: "active" | "deactivated") {
@@ -219,7 +219,7 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
           remaining: outcome.remaining,
         });
       case "not_found":
-        return notFound(c, "user_not_found", "No Kobe user with that id.");
+        return notFound(c, "user_not_found", "No Kaiju user with that id.");
       case "active":
         return c.json(
           { code: "user_active", message: "Deactivate the account before purging its memories." },

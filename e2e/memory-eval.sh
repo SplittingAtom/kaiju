@@ -20,7 +20,7 @@
 #
 #   e2e/memory-eval.sh cache
 #     Replays the 20 messages of e2e/fixtures/memory-cache/turns.json in one new thread on a
-#     running Kobe (real model through the gateway) and prints the cache-read share from the
+#     running Kaiju (real model through the gateway) and prints the cache-read share from the
 #     thread's gateway usage (all turns, and turns 2-20). Environment (from the operator's shell,
 #     never committed):
 #       KOBE_EVAL_URL       the install's public URL, e.g. https://kobe.example.com (required)

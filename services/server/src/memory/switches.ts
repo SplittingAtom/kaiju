@@ -239,7 +239,7 @@ const sameWorkspace = (a: WorkspaceMemorySwitches, b: WorkspaceMemorySwitches) =
 
 /**
  * Saves the given Workspace values over the current ones. `expected` (KOBE-621): the Workspace's
- * values as the caller saw them (a Kobe MCP write's approved before-state); any other current
+ * values as the caller saw them (a Kaiju MCP write's approved before-state); any other current
  * state, read under the team's switch lock, changes nothing. Only the fields given are written.
  */
 export async function writeTeamSwitches(

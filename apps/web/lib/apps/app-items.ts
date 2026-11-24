@@ -20,7 +20,7 @@ export const ITEM_TITLE_MAX = 512;
 const REFUSED_SCHEMES = new Set(["javascript", "data", "vbscript"]);
 
 /**
- * One resource_link as Kobe keeps it: its kind is generic outside the vocabulary. The app's
+ * One resource_link as Kaiju keeps it: its kind is generic outside the vocabulary. The app's
  * `title` is not kept: the chip shows (and its hover spells out) exactly the name that is sent.
  */
 export interface LinkedItem {
@@ -45,7 +45,7 @@ const uriSchema = z
     return scheme !== undefined && !REFUSED_SCHEMES.has(scheme);
   }, "uri");
 
-/** A resource_link block (MCP 2025-06-18), every field Kobe reads bounded. */
+/** A resource_link block (MCP 2025-06-18), every field Kaiju reads bounded. */
 export const resourceLinkSchema = z.looseObject({
   type: z.literal("resource_link"),
   uri: uriSchema,
@@ -156,7 +156,7 @@ export class AppItemStore {
   refused(draft: string, from: string): void {
     this.#put(draft, {
       items: this.snapshot(draft).items,
-      note: `${from} sent items Kobe could not use.`,
+      note: `${from} sent items Kaiju could not use.`,
     });
   }
 

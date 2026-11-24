@@ -23,7 +23,7 @@ export const EXCLUDED_MARKERS = {
   reset: "RESET-TOKEN-PLAINTEXT-4a5b6c",
   jwks: "JWKS-PRIVATE-KEY-7d8e9f",
   rateLimit: "RATE-LIMIT-KEY-9e8d7c",
-  /** Kobe's own counters (KOBE-809), left out like Better Auth's. */
+  /** Kaiju's own counters (KOBE-809), left out like Better Auth's. */
   kobeRateLimit: "KOBE-RATE-LIMIT-KEY-3b2a1f",
   /** `session_sso_contexts.acr` (KOBE-625): per-session SSO state, left out with `sessions`. */
   ssoContext: "SSO-SESSION-CONTEXT-5c6d7e",
@@ -216,7 +216,7 @@ export async function serverStarted(url: string, agentId = randomUUID()): Promis
   return agentId;
 }
 
-/** A freshly installed target: migrated by Kobe, same schema, no data. */
+/** A freshly installed target: migrated by Kaiju, same schema, no data. */
 export async function freshTarget(server: string): Promise<TestDatabase> {
   const db = await createTestDatabase(server);
   await sql(db.ownerUrl, WIDGETS + GUARD_TRIGGER);

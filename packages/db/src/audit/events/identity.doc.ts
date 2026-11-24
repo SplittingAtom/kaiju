@@ -52,7 +52,7 @@ export const IDENTITY_EVENT_DOCS = {
   "identity.invitation.revoked": { fields: "`invitationId`", when: "Revoked" },
   "identity.member.added": {
     fields: "`userId`, `role`, `via` (skill_reviewer_grant, idp, site_admin), `providerId?`",
-    when: "Kobe added a Skill reviewer to the Registry team (KOBE-331, SK22), or an identity provider's access mapping granted the membership (KOBE-625), or a site admin added an existing user from the Site console (`site_admin`, KOBE-638; actor = the site admin)",
+    when: "Kaiju added a Skill reviewer to the Registry team (KOBE-331, SK22), or an identity provider's access mapping granted the membership (KOBE-625), or a site admin added an existing user from the Site console (`site_admin`, KOBE-638; actor = the site admin)",
   },
   "identity.member.removed": {
     fields: "`userId`, `role`, `via?` (skill_reviewer_grant, idp, site_admin), `providerId?`",
@@ -130,7 +130,7 @@ export const IDENTITY_EVENT_DOCS = {
   "identity.site_role.revoked": { fields: "`userId`, `role` (admin)", when: "Admin revoked" },
   "identity.sso.link.created": {
     fields: "`providerId`, `userId`, `method` (jit, local_proof, admin_expected, scim)",
-    when: "A Kobe user was linked to an identity at the provider",
+    when: "A Kaiju user was linked to an identity at the provider",
   },
   "identity.sso.link.removed": {
     fields: "`providerId`, `userId`, `by` (user, admin, scim), `sessionsEnded`?",

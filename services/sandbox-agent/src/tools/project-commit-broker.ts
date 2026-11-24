@@ -89,13 +89,13 @@ export class ProjectCommitBroker {
         tool: request.tool,
         input: request.input,
       };
-      if (!this.#deps.send(frame)) fail("unavailable", "Kobe server not reachable");
+      if (!this.#deps.send(frame)) fail("unavailable", "Kaiju server not reachable");
     } catch (error) {
       fail(
         "not_synced",
         error instanceof PushPathError
           ? error.message
-          : "the working copy could not be pushed to the Kobe server",
+          : "the working copy could not be pushed to the Kaiju server",
       );
     }
   }

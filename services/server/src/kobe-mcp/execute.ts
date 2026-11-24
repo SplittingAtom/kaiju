@@ -11,7 +11,7 @@ import {
 import { delegationEnv, type Delegation } from "./delegation.js";
 
 /**
- * The Kobe MCP executor (KOBE-619, spec §3): runs a tool's console route in process, as the
+ * The Kaiju MCP executor (KOBE-619, spec §3): runs a tool's console route in process, as the
  * delegated person, after the server decided the call `allow` for exactly this run, tool call and
  * input. Writes first re-read their before-state (§5); the answer is reduced to the tool's output
  * schema and capped before it reaches the model.
@@ -87,7 +87,7 @@ function routeError(answer: KobeRouteAnswer): { code: string; message: string } 
   const message =
     typeof body.message === "string"
       ? body.message.slice(0, 300)
-      : `Kobe answered ${answer.status}.`;
+      : `Kaiju answered ${answer.status}.`;
   return { code, message };
 }
 
@@ -114,7 +114,7 @@ export async function executeKobeTool(
       const state = await tool.before(parsed.data, call);
       if (state === "changed") return CHANGED;
       if (state !== "same") {
-        return { ok: false, code: state.code, message: `Kobe refused: ${state.message}` };
+        return { ok: false, code: state.code, message: `Kaiju refused: ${state.message}` };
       }
     }
     const answer = await call(tool.route(parsed.data));
@@ -122,7 +122,7 @@ export async function executeKobeTool(
       const error = routeError(answer);
       // The route's own conditional check (under its lock) found another before-state.
       if (error.code === "changed_since_approval") return CHANGED;
-      return { ok: false, code: error.code, message: `Kobe refused: ${error.message}` };
+      return { ok: false, code: error.code, message: `Kaiju refused: ${error.message}` };
     }
     const output = tool.output.parse(tool.reduce(answer.body, parsed.data)) as Record<
       string,
@@ -135,6 +135,6 @@ export async function executeKobeTool(
     return { ok: true, result: { content: [{ type: "text", text }], structuredContent: output } };
   } catch (err) {
     logger.error({ err, tool: tool.name, runId: delegation.runId }, "kobe-mcp: tool failed");
-    return { ok: false, code: "failed", message: "Kobe could not run this tool. Try again." };
+    return { ok: false, code: "failed", message: "Kaiju could not run this tool. Try again." };
   }
 }

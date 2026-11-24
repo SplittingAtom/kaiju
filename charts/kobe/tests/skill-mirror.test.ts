@@ -15,7 +15,7 @@ const BASE: Record<string, string> = {
   "s3.bucket": "kobe",
   "s3.existingSecret": "kobe-s3",
   "smtp.host": "smtp.example.com",
-  "smtp.from": "Kobe <kobe@example.com>",
+  "smtp.from": "Kaiju <kobe@example.com>",
   "global.allowGeneratedSecretsOffline": "true",
 };
 
@@ -42,7 +42,7 @@ describe("server.skillMirror", () => {
   it("defaults: identity only, no token", () => {
     expect(mirrorEnv(envOf(render({}), "kobe-server"))).toEqual([
       { name: "KOBE_SKILL_MIRROR_USERNAME", value: "x-access-token" },
-      { name: "KOBE_SKILL_MIRROR_AUTHOR_NAME", value: "Kobe Registry" },
+      { name: "KOBE_SKILL_MIRROR_AUTHOR_NAME", value: "Kaiju Registry" },
       { name: "KOBE_SKILL_MIRROR_AUTHOR_EMAIL", value: "registry@kobe.invalid" },
     ]);
   });

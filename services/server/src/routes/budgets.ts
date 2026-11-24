@@ -62,7 +62,7 @@ export const siteSchema = z
     user_requests_per_minute: rate.optional(),
     /**
      * The values the caller saw (KOBE-622): refused 409 `changed_since_approval` under the row
-     * lock when any named one differs now (the Kobe MCP tool sends the approved before-state).
+     * lock when any named one differs now (the Kaiju MCP tool sends the approved before-state).
      */
     expected: z
       .strictObject({

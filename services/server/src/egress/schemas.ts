@@ -34,7 +34,7 @@ export const ceilingFlagsBodySchema = z
     internal: z.boolean().optional(),
     /**
      * Whether the caller saw it in the ceiling (KOBE-622): refused `changed_since_approval` under
-     * the row lock when that changed (the Kobe MCP tool sends the approved before-state).
+     * the row lock when that changed (the Kaiju MCP tool sends the approved before-state).
      */
     expected_in_ceiling: z.boolean().optional(),
   })

@@ -39,7 +39,7 @@ export function TeamPolicyPage() {
       <Section
         id={MEMBER_RULES}
         title="Members' remembered approvals"
-        description="Approvals members asked Kobe to remember in this team. They only lift risk and mode prompts in the member's own interactive conversations; your deny and ask rules still apply. Revoking takes effect at the next tool call."
+        description="Approvals members asked Kaiju to remember in this team. They only lift risk and mode prompts in the member's own interactive conversations; your deny and ask rules still apply. Revoking takes effect at the next tool call."
       >
         <RememberedRules
           caption="Remembered approvals"

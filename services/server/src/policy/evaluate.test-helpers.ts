@@ -51,7 +51,7 @@ export function run(c: Omit<Case, "name" | "effect" | "codes">): PolicyDecision 
 export const bash = builtin("bash");
 export const read = builtin("read");
 export const write = builtin("write");
-/** A Kobe-scoped write that prompts in ask-on-write (artifacts are exempt; see settings.ts). */
+/** A Kaiju-scoped write that prompts in ask-on-write (artifacts are exempt; see settings.ts). */
 export const kobeWrite = builtin("share_file");
 export const jiraCreate = mcpTool("mcp__jira__create_issue", "write");
 export const jiraSearch = mcpTool("mcp__jira__search", "read");

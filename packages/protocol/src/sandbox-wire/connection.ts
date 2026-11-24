@@ -98,7 +98,7 @@
  *   `pi.event` with seq `s` is ONE transaction that starts with the compare-and-set
  *       UPDATE runs SET sandbox_seq = $s WHERE team_id = $t AND id = $r AND sandbox_seq = $s - 1
  *   which must affect exactly one row, then appends the resulting `run_events` / `thread_entries`
- *   rows (zero or more — Pi events and Kobe events are not 1:1, so `runs.last_seq` cannot stand in
+ *   rows (zero or more — Pi events and Kaiju events are not 1:1, so `runs.last_seq` cannot stand in
  *   for this cursor), then commits. Zero rows means: `s <= sandbox_seq` → duplicate, drop it (still
  *   `ack`); `s > sandbox_seq + 1` → gap: drop it and send `resend` with
  *   `from_seq = sandbox_seq + 1` on the same live socket (don't wait for a reconnect); the agent
@@ -111,7 +111,7 @@
  * - Server → sandbox commands are idempotent by `command_id`; the agent remembers recent ids and
  *   ignores duplicates. Every command gets exactly one `command.result` (`thread.compact`: exactly
  *   one `thread.compact_result` instead; `thread.branch_summary`: one `thread.branch_summary_result`).
- * - Outbound `seq` is NOT the Kobe Event Stream `seq`; the server assigns that when it writes
+ * - Outbound `seq` is NOT the Kaiju Event Stream `seq`; the server assigns that when it writes
  *   `run_events`.
  */
 

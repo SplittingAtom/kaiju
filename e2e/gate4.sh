@@ -97,7 +97,7 @@ steps_for() { # gate story → its steps for that story
 run_gate() { # log steps → runs that gate into $OUT/<log>.log (its exit status is kept in the log)
   local log=$1 steps=$2 rc=0 n=${1#gate}
   if [[ "$log" == restore && "$(${KUBECTL:-kubectl} config current-context)" != k3d-* ]]; then
-    # On a real cluster e2e/gate4-restore.sh is its own run (it needs other Kobe servers stopped):
+    # On a real cluster e2e/gate4-restore.sh is its own run (it needs other Kaiju servers stopped):
     # give its log as KOBE_GATE4_LOGS/restore.log (docs/gates/gate-4.md).
     echo "==> restore: not run here (e2e/gate4-restore.sh is run on its own on a real cluster)"
     return 0

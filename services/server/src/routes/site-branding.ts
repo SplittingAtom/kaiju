@@ -127,7 +127,7 @@ export function siteBrandingPublicRoutes(deps: ServerDeps): Hono {
 
 /**
  * The settings the caller saw (KOBE-622): the change is refused 409 `changed_since_approval` when
- * any named one differs now, checked under the branding lock (the Kobe MCP tool sends the approved
+ * any named one differs now, checked under the branding lock (the Kaiju MCP tool sends the approved
  * before-state; the console sends none).
  */
 const brandingExpectedSchema = z
@@ -327,7 +327,7 @@ export function siteBrandingRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
   });
 
   /**
-   * TH12: the name, the files and the style back to Kobe's, or to the chart's branding defaults
+   * TH12: the name, the files and the style back to Kaiju's, or to the chart's branding defaults
    * where set (KOBE-503), in one transaction.
    */
   app.post("/reset", async (c) => {

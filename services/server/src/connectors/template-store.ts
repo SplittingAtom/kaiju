@@ -177,7 +177,7 @@ export async function servedTemplateHash(
 }
 
 /**
- * The template Kobe may render: pinned (never drifted) and approved, of an active, not deleted
+ * The template Kaiju may render: pinned (never drifted) and approved, of an active, not deleted
  * connector.
  * Visibility to a member and the template's tool are checked by the callers (MA-4, MA-8).
  */

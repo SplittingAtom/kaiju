@@ -30,8 +30,8 @@ import {
 
 /**
  * Writing a refresh into the Repo (KOBE-766, G17), in one transaction under the lease and the
- * project row lock (the lock every Kobe write takes): when the host's files differ from the
- * project's head, one Kobe commit of them (so mounts, the Files panel, search and the commit
+ * project row lock (the lock every Kaiju write takes): when the host's files differ from the
+ * project's head, one Kaiju commit of them (so mounts, the Files panel, search and the commit
  * flow's conflict check see the host's state), the previous mirror commit dropped unless a
  * working copy is based on it or a legal hold covers the Workspace (the Repo's history lives on
  * the host, G17), the commit list replaced, and the mirror's head recorded. Nothing is written
@@ -47,7 +47,7 @@ export class MirrorHeld extends Error {
 export type ApplyOutcome =
   | { readonly kind: "applied"; readonly commitId: string | null; readonly changed: number }
   | { readonly kind: "gone" }
-  /** KOBE-767: Kobe's commit flow moved the mirror head since this refresh started. */
+  /** KOBE-767: Kaiju's commit flow moved the mirror head since this refresh started. */
   | { readonly kind: "stale" };
 
 async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
@@ -60,7 +60,7 @@ async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
 /**
  * Drops mirror commits nothing needs any more (review L1, KOBE-767): every commit written into the
  * Repo since it was linked to its repository (`linked_at`: the conversion or a relink; mirror
- * commits and direct commits from Kobe's commit flow, the previous mirror commit among them) that
+ * commits and direct commits from Kaiju's commit flow, the previous mirror commit among them) that
  * is neither the head nor the base of a working copy, so a
  * commit a checkout kept alive goes once that checkout moved on or ended. Never while a legal hold
  * covers the Workspace; never the project's history from before the conversion, nor an earlier
@@ -169,7 +169,7 @@ export async function applyMirror(
         await releaseLease(tx, lease);
         return { kind: "gone" };
       }
-      // KOBE-767: a direct commit from Kobe's commit flow writes Kobe's copy and moves the mirror
+      // KOBE-767: a direct commit from Kaiju's commit flow writes Kaiju's copy and moves the mirror
       // head under the same project row lock. A refresh that read the host before that commit
       // must not write the older files back: it stops and asks for a fresh refresh.
       const current = await tx.execute<{ mirror_head_sha: string | null }>(sql`

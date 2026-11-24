@@ -80,7 +80,7 @@ const enc = encodeURIComponent;
 const MALFORMED: ApiError = {
   status: 502,
   code: "malformed_response",
-  message: "The server sent an answer Kobe could not read.",
+  message: "The server sent an answer Kaiju could not read.",
 };
 
 export function createNotebookApi(teamId: string, fetchFn?: typeof fetch): NotebookApi {

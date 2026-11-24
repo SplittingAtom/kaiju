@@ -59,7 +59,7 @@ export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
     category: "auth-provider",
     reason:
       "Better Auth's own handler (sign-in, sessions, passkeys, SSO callbacks), mounted as one " +
-      "catch-all: its API is the library's, documented by Better Auth, not by Kobe.",
+      "catch-all: its API is the library's, documented by Better Auth, not by Kaiju.",
   })),
   ...SCIM_ROUTES.map((route): AllowlistEntry => ({
     route,
@@ -73,7 +73,7 @@ export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
     category: "oauth",
     reason:
       "OAuth Client ID Metadata Document, fetched by authorization servers, never by clients " +
-      "of the Kobe API.",
+      "of the Kaiju API.",
   },
   {
     route: "GET /v1/connector-grants/oauth/callback",
@@ -85,7 +85,7 @@ export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
   {
     route: "POST /v1/telemetry/web-vitals",
     category: "telemetry",
-    reason: "Web Vitals beacon from Kobe's own web app; not an API for other clients.",
+    reason: "Web Vitals beacon from Kaiju's own web app; not an API for other clients.",
   },
   {
     route: "POST /v1/site/gallery/agents/{id}/unarchive",

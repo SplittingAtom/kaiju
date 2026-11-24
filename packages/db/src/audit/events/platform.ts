@@ -17,8 +17,8 @@ import {
 export const PLATFORM_EVENTS = {
   // ── site: site-wide settings ──
   "site.settings.updated": event("site", {
-    /** `kobe_mcp_mode` (KOBE-623): the Kobe MCP site switch, value `off`, `docs` or `admin`.
-     * `kobe_reads_per_minute` / `kobe_writes_per_hour` (KOBE-814): the per-person Kobe admin limits, value 1-10000.
+    /** `kobe_mcp_mode` (KOBE-623): the Kaiju MCP site switch, value `off`, `docs` or `admin`.
+     * `kobe_reads_per_minute` / `kobe_writes_per_hour` (KOBE-814): the per-person Kaiju admin limits, value 1-10000.
      * `git_connections` (KOBE-757, Workspace git G3): the Site switch, value true or false.
      * `git_allowed_hosts` (KOBE-757): the host limit, value the number of patterns (0 = any host),
      * `hosts` the patterns themselves; `previous` / `previousHosts` the values before. */

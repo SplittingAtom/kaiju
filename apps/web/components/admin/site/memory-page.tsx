@@ -56,7 +56,7 @@ export function SiteMemoryPage() {
               </TabsList>
               <TabsContent value="memories">
                 <p className="m-0 mb-4 text-console-muted">
-                  Knowledge Kobe gives agents in every workspace that has Site memories on. Policy
+                  Knowledge Kaiju gives agents in every workspace that has Site memories on. Policy
                   reaches every workspace, always.
                   {canSetPolicy
                     ? " You can make a memory Policy and change Policy."

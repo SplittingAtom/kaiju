@@ -131,7 +131,7 @@ describe("remoteHead and fetchBranch", { timeout: 60_000 }, () => {
     expect(got.commits[0]?.message).toBe(`Commit ${GIT_MIRROR_LOG_MAX + 2}`);
   });
 
-  it("refuses too many files, a path Kobe cannot hold and an oversized object", async () => {
+  it("refuses too many files, a path Kaiju cannot hold and an oversized object", async () => {
     const name = fresh();
     const { http, url } = client(name);
     commitOnHost(server.root, `acme/${name}`, { "a.txt": "a", "b.txt": "b" }, "Two");

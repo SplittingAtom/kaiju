@@ -365,9 +365,9 @@ function branchPoints(tree: ThreadTree): { points: Set<string>; capped: boolean 
   return { points, capped: false };
 }
 
-const README = `# Your Kobe conversations
+const README = `# Your Kaiju conversations
 
-This archive holds the conversations you own in one Kobe team.
+This archive holds the conversations you own in one Kaiju team.
 
 - \`sessions/<thread id>.jsonl\`: each conversation as a Pi session file (session format v3: a
   header line, then every entry, including other branches, in the order they were written).
@@ -376,7 +376,7 @@ This archive holds the conversations you own in one Kobe team.
   message where it leaves the transcript (only for conversations with more than one branch).
 - \`artifacts/<artifact id>/v<n>.<ext>\`: every version of the artifacts the assistant made.
 - \`memory/<path>\`: your personal memory files (current versions).
-- \`memory-items.json\`: your own memories (short statements Kobe knows about you): yours in this
+- \`memory-items.json\`: your own memories (short statements Kaiju knows about you): yours in this
   workspace and your portable preferences, with every kept version you wrote, the conversation of
   yours each came from, and quotes of your own messages. Memories the workspace shares, Site
   memories and anything someone else wrote are not included; an item's \`notes\` says when
@@ -394,7 +394,7 @@ This archive holds the conversations you own in one Kobe team.
 - \`eval-cases.json\`: the answers you shared with agents' owners as eval cases, as shared.
 - \`threads.json\`: an index (id, title, dates, folder path when filed, file names).
 
-Entries marked \`kobe_unavailable\` had a large body Kobe could not read back from storage.
+Entries marked \`kobe_unavailable\` had a large body Kaiju could not read back from storage.
 `;
 
 /** Where the export writes: zip entries, and the compressed bytes ready to send. */

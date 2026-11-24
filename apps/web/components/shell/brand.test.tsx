@@ -23,15 +23,15 @@ const LOGO = "/v1/site/branding/assets/logo?v=ab";
 const DARK = "/v1/site/branding/assets/logo_dark?v=cd";
 
 describe("<Brand />", () => {
-  it("with nothing configured is the text Kobe and nothing else, as before branding", () => {
+  it("with nothing configured is the text Kaiju and nothing else, as before branding", () => {
     renderBrand();
-    expect(screen.getByTestId("h").innerHTML).toBe("Kobe");
+    expect(screen.getByTestId("h").innerHTML).toBe("Kaiju");
     render(
       <p data-testid="p">
         <Brand />
       </p>,
     );
-    expect(screen.getByTestId("p").innerHTML).toBe("Kobe");
+    expect(screen.getByTestId("p").innerHTML).toBe("Kaiju");
   });
 
   it("shows a configured name", () => {
@@ -152,13 +152,13 @@ describe("<Brand /> with the logo theme colour (KOBE-562)", () => {
 });
 
 describe("<AppName />", () => {
-  it("is the branding's name, Kobe without a provider", () => {
+  it("is the branding's name, Kaiju without a provider", () => {
     render(
       <p data-testid="a">
         Back to <AppName />
       </p>,
     );
-    expect(screen.getByTestId("a").textContent).toBe("Back to Kobe");
+    expect(screen.getByTestId("a").textContent).toBe("Back to Kaiju");
   });
 });
 
@@ -176,6 +176,6 @@ describe("server render (ac-4: no client flash)", () => {
     expect(html).toContain(`src="${LOGO}"`);
     expect(html).toContain(`src="${DARK}"`);
     expect(html).toContain(">Acme</span>");
-    expect(html).not.toContain("Kobe");
+    expect(html).not.toContain("Kaiju");
   });
 });

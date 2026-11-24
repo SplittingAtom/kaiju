@@ -139,7 +139,8 @@ export async function rememberOptions(
   else if (!limits.approve_all)
     approveAllReason = "Your team doesn't allow approving several at once.";
   else if (others.some((w) => !batchable(w, tools.get(w.tool)))) {
-    approveAllReason = "Some waiting calls can delete data or reach outside Kobe; decide each one.";
+    approveAllReason =
+      "Some waiting calls can delete data or reach outside Kaiju; decide each one.";
   }
 
   return {

@@ -173,7 +173,7 @@ export function resolveSkills(input: ResolveInput): {
   for (const s of input.team.requiredSkills ?? []) add(s, true);
   for (const o of input.team.requiredOmissions ?? []) omitClaimed(o.name, o.reason);
   // A named skill whose name a different Required skill holds (a Team admin's deliberate choice,
-  // e.g. the team's own `pdf` over Kobe's, KOBE-317 review S4) is left out with a notice.
+  // e.g. the team's own `pdf` over Kaiju's, KOBE-317 review S4) is left out with a notice.
   // Names are unique per source (catalog, team), so another source is another skill.
   const required = new Map((input.team.requiredSkills ?? []).map((s) => [s.name, s.source]));
   const shadowedByRequired = (s: SkillRef) =>

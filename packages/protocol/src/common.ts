@@ -2,7 +2,7 @@ import { z } from "zod";
 import { findJsonSafetyIssue } from "./json-safety.js";
 
 /**
- * Shared primitives for every Kobe contract. Wire format is JSON with snake_case keys (spec §6.2).
+ * Shared primitives for every Kaiju contract. Wire format is JSON with snake_case keys (spec §6.2).
  */
 
 /** Any JSON value (what `JSON.parse` can return). Tool inputs, Pi payloads, entry payloads. */
@@ -32,7 +32,7 @@ export const toolInputSchema: z.ZodType<JsonObject> = z
   .pipe(jsonObjectSchema);
 
 /**
- * Opaque identifier for ids Kobe does not mint: Pi entry ids (usually 8-char hex, may fall back to
+ * Opaque identifier for ids Kaiju does not mint: Pi entry ids (usually 8-char hex, may fall back to
  * a UUID; verified Pi 1.0.0), Pi tool-call ids, wire request/command ids. Non-empty, at most 128
  * chars (matches `thread_entries.entry_id`'s check), no control characters.
  */
@@ -51,7 +51,7 @@ export const threadTitleSchema = z
 export const idSchema = z.string().min(1).max(128).regex(NO_CONTROL_CHARS);
 
 /**
- * Ids Kobe mints are Postgres `uuid`s (KOBE-29 schema): team, user, thread, run, approval, agent,
+ * Ids Kaiju mints are Postgres `uuid`s (KOBE-29 schema): team, user, thread, run, approval, agent,
  * artifact, file, memory doc, project, connector, sandbox, tool rule. Lowercase canonical form.
  */
 export const uuidSchema = z.uuid().regex(/^[0-9a-f-]+$/, "lowercase uuid");

@@ -7,12 +7,12 @@ import { logger } from "../logger.js";
 import { createS3Client, type S3Settings } from "./s3.js";
 
 /**
- * KOBE-738: Kobe deletes objects with plain DeleteObject. On a versioned bucket that only adds a
+ * KOBE-738: Kaiju deletes objects with plain DeleteObject. On a versioned bucket that only adds a
  * delete marker, and the bytes stay as a noncurrent version until a lifecycle rule expires them
  * (docs/install.md, "Object storage (S3)": NoncurrentVersionExpiration, 30 days recommended). At
  * start the server reads the bucket's versioning and lifecycle configuration and warns when
  * versioning is on (or suspended, with old versions kept) and no enabled rule expires noncurrent
- * versions of Kobe's objects. Providers that do not implement either call, or credentials not
+ * versions of Kaiju's objects. Providers that do not implement either call, or credentials not
  * allowed to read them, give no warning: the check is advisory and never stops the server.
  */
 
@@ -96,7 +96,7 @@ export async function bucketLifecycleWarning(
   if (expiresNoncurrentVersions(rules, prefix)) return undefined;
   return (
     `bucket versioning is ${status.toLowerCase()} and no lifecycle rule expires noncurrent ` +
-    "versions: objects Kobe deletes stay in the bucket as noncurrent versions. Add a " +
+    "versions: objects Kaiju deletes stay in the bucket as noncurrent versions. Add a " +
     "NoncurrentVersionExpiration rule (30 days recommended; docs/install.md, Object storage)"
   );
 }

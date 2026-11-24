@@ -23,7 +23,7 @@ export async function hasLocalPassword(db: KobeDb | KobeTx, userId: string): Pro
 
 /**
  * Claims live in `kobe_rate_limits` (KOBE-809), not Better Auth's `rate_limits`, which the library
- * prunes after 60 s; expired ones go with Kobe's own prune (`rate-limit.ts`).
+ * prunes after 60 s; expired ones go with Kaiju's own prune (`rate-limit.ts`).
  */
 const sentKey = (userId: string) => `kobe:reset-sent:${userId}:`;
 

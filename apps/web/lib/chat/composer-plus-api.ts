@@ -17,7 +17,7 @@ export interface ChatConnector {
   readonly enabled: boolean;
   readonly problem: ChatConnectorProblem | null;
   /**
-   * The built-in Kobe connector (KOBE-623): always on (its docs tools are in every conversation),
+   * The built-in Kaiju connector (KOBE-623): always on (its docs tools are in every conversation),
    * so it has no toggle; `admin` is what the member's admin tools would be where the agent uses
    * it (the site's and team's switches and the member's role decide).
    */

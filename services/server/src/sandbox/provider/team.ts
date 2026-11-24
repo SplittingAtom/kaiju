@@ -85,7 +85,7 @@ export function createTeamOps(
       throw err;
     }
     throw new SandboxProvisioningError(
-      "Kobe's sandbox admission policies are not in effect (a dry-run namespace outside " +
+      "Kaiju's sandbox admission policies are not in effect (a dry-run namespace outside " +
         "kobe-team-* was allowed); refusing to provision sandboxes. Install the chart's " +
         "ValidatingAdmissionPolicies (Kubernetes >= 1.30).",
     );

@@ -40,7 +40,7 @@ import {
  * (`promote-check.ts`) and refuses with reasons, then submits: the package's bytes are copied to
  * the Site catalog's content-addressed store, and one transaction (in the source team's RLS
  * context) creates the catalog skill when the name is new, the `submitted` Registry version with
- * its Kobe-written provenance (scorecard numbers only), the review event, and the audit rows on
+ * its Kaiju-written provenance (scorecard numbers only), the review event, and the audit rows on
  * both sides (`skill.promoted` in the team, `registry.submitted` on the Site).
  */
 
@@ -78,7 +78,7 @@ async function buildersMayPromote(tx: KobeTx, teamId: string): Promise<boolean> 
 
 /**
  * A governed import's origin for provenance (KOBE-344, SK30): URL (with its host), commit or the
- * zip, Kobe's hash of what it fetched, and the folder. Only a stored origin that still parses.
+ * zip, Kaiju's hash of what it fetched, and the folder. Only a stored origin that still parses.
  */
 function originOf(origin: Record<string, unknown> | null): { origin?: SkillProvenance["origin"] } {
   const o = skillImportOriginSchema.safeParse(origin);
@@ -453,7 +453,7 @@ export async function requestPreview(deps: PromoteDeps, teamId: string, id: stri
   };
 }
 
-/** A Team admin's one-click confirm: the rules are checked again, then Kobe submits. */
+/** A Team admin's one-click confirm: the rules are checked again, then Kaiju submits. */
 export async function confirmRequest(
   deps: PromoteDeps,
   teamId: string,

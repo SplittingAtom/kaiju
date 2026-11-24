@@ -112,7 +112,7 @@ export function restorePrelude(plan: RestorePlan): string {
     ),
     // After NO FORCE, so team rows are visible to this check (a FORCE'd table looks empty).
     doBlock(
-      `DECLARE found text := '';\nBEGIN\n${nonEmptyChecks}\n  IF found <> '' THEN\n    RAISE EXCEPTION 'kobe restore: the target already has data in:%; restore only into a freshly installed Kobe. Nothing was restored', found;\n  END IF;\nEND`,
+      `DECLARE found text := '';\nBEGIN\n${nonEmptyChecks}\n  IF found <> '' THEN\n    RAISE EXCEPTION 'kobe restore: the target already has data in:%; restore only into a freshly installed Kaiju. Nothing was restored', found;\n  END IF;\nEND`,
     ),
     // Rows a migration or the server's start seeded on the fresh target give way to the backup's
     // (seeded.ts, @kobe/db startup-seeds.ts). Triggers are off, so audit_log's rows go too: the

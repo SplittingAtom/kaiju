@@ -3,7 +3,7 @@ import type { PiModelApi } from "@kobe/protocol/sandbox-wire";
 /**
  * Model wiring for the Pi processes of this sandbox (KOBE-41): where the model gateway is, the
  * kobe-models extension to load, and the sandbox's rotating `kobe.model-gateway` session token.
- * Absent when the pod has no model gateway access (or the agent runs outside Kobe's pods): Pi then
+ * Absent when the pod has no model gateway access (or the agent runs outside Kaiju's pods): Pi then
  * has no provider and refuses prompts, as before KOBE-41.
  */
 export interface ModelTokenSource {

@@ -119,12 +119,12 @@ describe("site single sign-on page (KOBE-626)", () => {
             ok: false,
             issuer: null,
             failure: "multi_tenant_issuer",
-            message: "Kobe accepts only a tenant-specific issuer.",
+            message: "Kaiju accepts only a tenant-specific issuer.",
             checks: [
               {
                 id: "tenant_pinned",
                 ok: false,
-                message: "Kobe accepts only a tenant-specific issuer.",
+                message: "Kaiju accepts only a tenant-specific issuer.",
               },
             ],
           },
@@ -137,7 +137,7 @@ describe("site single sign-on page (KOBE-626)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Test discovery" }));
     expect(await screen.findByText("Discovery failed")).toBeTruthy();
     const checks = screen.getByRole("list", { name: "Discovery checks" });
-    expect(checks.textContent).toContain("Failed: Kobe accepts only a tenant-specific issuer.");
+    expect(checks.textContent).toContain("Failed: Kaiju accepts only a tenant-specific issuer.");
     expect(body(calls, "POST")).toEqual({ kind: "entra", tenantId: "common" });
   });
 

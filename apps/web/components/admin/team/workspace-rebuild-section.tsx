@@ -27,7 +27,7 @@ export function WorkspaceRebuildSection() {
   return (
     <Section
       title="Rebuild a lost sandbox"
-      description="When the server holding a member's sandbox storage is gone, their sandbox can't start. Rebuild it from the last sync of their My files: Kobe checks that the storage is really lost and shows what will be lost before you confirm."
+      description="When the server holding a member's sandbox storage is gone, their sandbox can't start. Rebuild it from the last sync of their My files: Kaiju checks that the storage is really lost and shows what will be lost before you confirm."
     >
       <ResourceView state={roster.state} label="members">
         {(members) => {

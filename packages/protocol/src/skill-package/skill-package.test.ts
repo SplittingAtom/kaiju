@@ -131,7 +131,7 @@ describe("package layout (KOBE-309)", () => {
     ]);
   });
 
-  it("refuses an authored provenance.json; only a package Kobe assembled may carry one", () => {
+  it("refuses an authored provenance.json; only a package Kaiju assembled may carry one", () => {
     expect(checkPackagePaths(["SKILL.md", "provenance.json"])).toEqual([
       { path: "provenance.json", problem: "provenance_not_allowed" },
     ]);

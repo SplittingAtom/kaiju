@@ -4,7 +4,7 @@ import type { SandboxTarget } from "../sandbox-wire/types.js";
 /**
  * Dormant-volume reclaim (KOBE-733, review STO-1). Hibernation keeps a sandbox's claim and its
  * `/workspace` volume, and every volume counts against the team's PVC quota (50 by default), so a
- * team stops at about 48 members who ever used Kobe. When an install turns reclaim on
+ * team stops at about 48 members who ever used Kaiju. When an install turns reclaim on
  * (`sandbox.hibernation.reclaim`, off by default), the hibernation sweep deletes the sandbox and its
  * volume once it has been hibernated for `dormantDays` and its workspace copy in object storage is
  * **proven** complete; the next wake starts a new sandbox whose agent restores the workspace.

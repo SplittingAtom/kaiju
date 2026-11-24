@@ -1,4 +1,4 @@
-// Gate 3 (KOBE-3, Product) harness, client side. e2e/gate3.sh runs this inside a Kobe server pod
+// Gate 3 (KOBE-3, Product) harness, client side. e2e/gate3.sh runs this inside a Kaiju server pod
 // (`node --input-type=module -e`) after the Gate 1 client's helpers and the Gate 2 client's
 // helpers (everything above `const MODES` in e2e/gate1/client.mjs and e2e/gate2/client.mjs:
 // config, client(), readEvents(), db(), userClient(), ownerClient(), follow(), ...). It adds the

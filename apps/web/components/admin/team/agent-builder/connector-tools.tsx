@@ -33,11 +33,11 @@ function toolsOf(
     .flatMap((c) => c.tools.filter((t) => t.status === "pinned").map((t) => t.piName));
 }
 
-/** No built-in Kobe connector where the sources offer none (gallery agents). */
+/** No built-in Kaiju connector where the sources offer none (gallery agents). */
 const NO_KOBE = (): Promise<ApiResult<KobeTeamConnector>> =>
   Promise.resolve({ ok: false, error: { status: 404, code: "not_found", message: "" } });
 
-/** The built-in Kobe connector when it can be chosen (the site switch is not off). */
+/** The built-in Kaiju connector when it can be chosen (the site switch is not off). */
 function usableKobe(state: ReturnType<typeof useResource<KobeTeamConnector>>["state"]) {
   if (state.status !== "ready" || state.data.mode === "off" || state.data.name === null) {
     return undefined;
@@ -51,8 +51,8 @@ function usableKobe(state: ReturnType<typeof useResource<KobeTeamConnector>>["st
  * Denied and back with a button. Saved as `connectors`, `tools.deny` and, when the agent already
  * restricts its tools, `tools.allow` (lib/admin/agent-builder/tool-lists.ts).
  *
- * The built-in Kobe connector (KOBE-623) is offered by its name: choosing it adds Kobe's admin
- * tools (each person still gets only what their role and the switches allow), and Kobe's docs
+ * The built-in Kaiju connector (KOBE-623) is offered by its name: choosing it adds Kaiju's admin
+ * tools (each person still gets only what their role and the switches allow), and Kaiju's docs
  * tools, on for every agent, stay named whenever the allow list narrows anything.
  */
 export function ConnectorTools({
@@ -74,7 +74,7 @@ export function ConnectorTools({
   const chosen = splitLines(form.connectors);
   const replaced = form.connectorsAll ? chosen : [];
   const docs = kobe?.docsTools ?? [];
-  // Team connectors' pinned tools, plus Kobe's admin tools when it is among `names`.
+  // Team connectors' pinned tools, plus Kaiju's admin tools when it is among `names`.
   const toolsFor = (names: readonly string[] | typeof ALL_CONNECTORS) => [
     ...toolsOf(team, names),
     ...(kobe !== undefined && (names === ALL_CONNECTORS || names.includes(kobe.name))
@@ -129,7 +129,7 @@ export function ConnectorTools({
         options={[
           ...(kobe === undefined
             ? []
-            : [{ value: kobe.name, label: `${kobe.name} (Kobe's admin tools)` }]),
+            : [{ value: kobe.name, label: `${kobe.name} (Kaiju's admin tools)` }]),
           ...team.map((c) => ({ value: c.name, label: c.name })),
         ]}
         noun="connector"

@@ -91,7 +91,7 @@ const BREAK_GLASS_QUALS: Record<string, string> = {
     `((${g("user_id")} IS NULL) OR (added_by = ${g("user_id")})))`,
 };
 
-/** Schemas Kobe never creates objects in; everything else is scanned. */
+/** Schemas Kaiju never creates objects in; everything else is scanned. */
 const SYSTEM_SCHEMAS = ["pg_catalog", "information_schema", "pg_toast", "drizzle"];
 
 const owner = new pg.Pool({ connectionString: inject("ownerUrl") });

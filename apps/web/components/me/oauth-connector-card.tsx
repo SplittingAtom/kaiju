@@ -20,7 +20,7 @@ export function oauthStateOf(grant: ConnectorGrant | null, now: Date = new Date(
   if (grant === null || (grant.kind !== undefined && grant.kind !== "oauth")) {
     return "not_connected";
   }
-  // The access token running out is routine while Kobe can renew it (refreshable): still connected.
+  // The access token running out is routine while Kaiju can renew it (refreshable): still connected.
   const ranOut = grant.expiresAt ? new Date(grant.expiresAt).getTime() <= now.getTime() : false;
   return ranOut && grant.refreshable !== true ? "expired" : "connected";
 }
@@ -80,7 +80,7 @@ export function OauthConnectorCard({
       {
         title: `Disconnect your account from ${c.name}?`,
         description:
-          "Kobe deletes your sign-in for it in this workspace. Your runs can't use it until you connect again.",
+          "Kaiju deletes your sign-in for it in this workspace. Your runs can't use it until you connect again.",
         confirmLabel: "Disconnect",
       },
       trigger,
@@ -105,7 +105,7 @@ export function OauthConnectorCard({
           <span>Sign in with your own account at the service (OAuth). No key to copy.</span>
         ) : state === "expired" ? (
           <span>
-            Kobe cannot renew this sign-in by itself. Reconnect to use the connector again.
+            Kaiju cannot renew this sign-in by itself. Reconnect to use the connector again.
           </span>
         ) : grant ? (
           <span>

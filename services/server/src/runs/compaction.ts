@@ -31,7 +31,7 @@ import type { StopTarget } from "./dispatch.js";
  * queued), its `thread.compact` is delivered like a `run.start` (wake, entry sync or restore,
  * lease, run token), the delivering replica mirrors Pi's `compaction` entry and ends the run, and
  * the requester answers the member with the result or a fixed message per code (the sandbox's text
- * is logged only). Pi owns the summary; Kobe never summarizes.
+ * is logged only). Pi owns the summary; Kaiju never summarizes.
  */
 export class CompactionError extends Error {
   constructor(readonly code: CompactThreadErrorCode) {

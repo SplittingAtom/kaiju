@@ -91,7 +91,7 @@ const versionColumns = () => ({
   fromConversation: boolean().notNull().default(false),
   /**
    * Saved from a draft imported from git or a zip URL (KOBE-344, SK30): that draft's origin
-   * (URL, commit or zip SHA-256, Kobe's hash, importer), carried into the version's provenance at
+   * (URL, commit or zip SHA-256, Kaiju's hash, importer), carried into the version's provenance at
    * promotion. Set at insert (versions are immutable); null otherwise.
    */
   origin: jsonb().$type<Record<string, unknown>>(),

@@ -17,7 +17,7 @@ import {
 
 /**
  * Thread API wire schemas (spec §6.1). Keys are snake_case as in §6.1 and `@kobe/protocol`; ids
- * Kobe mints are uuids, Pi entry ids are opaque strings (1–128 chars, no control characters, the
+ * Kaiju mints are uuids, Pi entry ids are opaque strings (1–128 chars, no control characters, the
  * `thread_entries.entry_id` check). Request schemas are strict: unknown keys are a 400. Response
  * schemas document the shape for OpenAPI (see `openapi.ts`).
  */
@@ -297,7 +297,7 @@ export const threadEntrySchema = z.object({
   /** A tool output over 64 KB cut to a preview (KOBE-208); the full one via `.../output`. */
   payload_truncated: z.literal(true).optional(),
   /**
-   * A Kobe admin tool's output hidden from this reader of a shared thread (KOBE-623, KA6): the
+   * A Kaiju admin tool's output hidden from this reader of a shared thread (KOBE-623, KA6): the
    * payload's result reads "Admin result hidden".
    */
   admin_result_hidden: z.literal(true).optional(),
@@ -314,7 +314,7 @@ export const toolOutputSchema = z.object({
   text: z.string(),
   /** The output was longer than the route answers (1,000,000 characters). */
   truncated: z.boolean(),
-  /** A Kobe admin tool's output hidden from this reader (KOBE-623, KA6). */
+  /** A Kaiju admin tool's output hidden from this reader (KOBE-623, KA6). */
   admin_result_hidden: z.literal(true).optional(),
 });
 

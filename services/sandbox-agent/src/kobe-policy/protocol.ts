@@ -29,7 +29,7 @@ export const MSG_RESULT = "policy.result";
 export const POLICY_FD_ENV = "KOBE_POLICY_FD";
 
 /**
- * One request line. The Kobe server closes a sandbox connection on a `policy.check` frame over
+ * One request line. The Kaiju server closes a sandbox connection on a `policy.check` frame over
  * 1 MiB (KOBE-24), so the line stays below that with room for the agent's wire fields.
  */
 export const MAX_REQUEST_LINE_BYTES = 1024 * 1024 - 4096;

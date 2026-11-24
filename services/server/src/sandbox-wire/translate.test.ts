@@ -21,7 +21,7 @@ function translator() {
   return createRunTranslator({ teamId: TEAM, registry: createToolRegistry() });
 }
 
-describe("Pi → Kobe translation", () => {
+describe("Pi → Kaiju translation", () => {
   it("maps text and thinking deltas onto a message id derived from the wire seq", async () => {
     const t = translator();
     await t.translate(3, { type: "message_start", message: { role: "assistant" } } as never);

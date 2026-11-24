@@ -104,7 +104,7 @@ async function teamName(db: Reader, teamId: string): Promise<string | undefined>
 }
 
 /**
- * The card for a Kobe admin write (`piName` = `mcp__<kobe>__<tool>`), or undefined for anything
+ * The card for a Kaiju admin write (`piName` = `mcp__<kobe>__<tool>`), or undefined for anything
  * else (a read, a docs tool, an unknown tool). An input the tool's schema refuses still gets a card
  * (the call is refused after the approval anyway): its summary names the tool only.
  */

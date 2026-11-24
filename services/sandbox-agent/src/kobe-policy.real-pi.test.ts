@@ -22,7 +22,7 @@ import {
  * A scripted model (pi-ai's faux provider, testing/pi-extensions/faux-model.mjs) makes Pi issue
  * tool calls without credentials.
  *
- * 1. Through kobe-sandbox-agent and a fake Kobe server, which answers `policy.check` frames.
+ * 1. Through kobe-sandbox-agent and a fake Kaiju server, which answers `policy.check` frames.
  * 2. Pi spawned directly, the test playing the agent's end of the fd-3 channel (timeouts, closed or
  *    missing channel, wrong extension order).
  */
@@ -166,7 +166,7 @@ describe.skipIf(!PI_AVAILABLE)("kobe-policy in real Pi, through kobe-sandbox-age
     t.server.terminate();
     expect(await toolEnd(t, "d1")).toMatchObject({
       isError: true,
-      text: expect.stringMatching(/^policy\.denied: .*connection to Kobe server lost/),
+      text: expect.stringMatching(/^policy\.denied: .*connection to Kaiju server lost/),
     });
     expect(existsSync(path.join(t.workspace, "lost.txt"))).toBe(false);
   }, 60_000);

@@ -39,7 +39,7 @@ export const REJECTABLE_STATES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The version's state is not the one a Kobe MCP admin call was approved against (KOBE-623): the
+ * The version's state is not the one a Kaiju MCP admin call was approved against (KOBE-623): the
  * route checks it under the version's row lock, so nothing slips in between.
  */
 export const CHANGED_SINCE_APPROVAL: Problem = {

@@ -1,5 +1,5 @@
 /**
- * Kobe's own sentences for the git connection routes' typed errors (KOBE-760 failure mapping;
+ * Kaiju's own sentences for the git connection routes' typed errors (KOBE-760 failure mapping;
  * KOBE-758/759 adapter codes and reasons). Never the host's words: the server sends fixed text and
  * codes, and these say what to do about each. Unknown codes fall back to the server's message.
  */
@@ -81,7 +81,7 @@ export function gitErrorMessage(
     case "invalid_base_url":
       return `That address cannot be used: ${error.message.replace(/\.?$/, ".")}`;
     case "git_unavailable":
-      return "Kobe cannot store git credentials on this Site yet: it has no encryption key. Ask whoever runs Kobe to configure one.";
+      return "Kaiju cannot store git credentials on this Site yet: it has no encryption key. Ask whoever runs Kaiju to configure one.";
     case "credential_rejected":
       return REJECTED[reason ?? ""] ?? NOT_ACCEPTED;
     case "credential_forbidden":
@@ -95,21 +95,21 @@ export function gitErrorMessage(
     case "unsupported_host":
       if (reason === "version_too_old") return error.message;
       if (reason === "version_unreadable") {
-        return "The host did not say which version it runs, so Kobe cannot tell whether it supports it. Check that the address is the server's web address.";
+        return "The host did not say which version it runs, so Kaiju cannot tell whether it supports it. Check that the address is the server's web address.";
       }
       return `That address does not answer like a ${ctx.providerLabel ?? "git"} server. Check the address and the provider you chose.`;
     case "host_refused":
       if (reason === "not_reachable") {
-        return "Kobe cannot reach that host from this Site, or its address is not allowed here. Check the address; a server on a private network needs the Site's internal targets entry (ask a Site admin).";
+        return "Kaiju cannot reach that host from this Site, or its address is not allowed here. Check the address; a server on a private network needs the Site's internal targets entry (ask a Site admin).";
       }
       if (reason === "redirect") {
-        return "The host answered with a redirect Kobe does not follow. Use the address the server finally shows in your browser.";
+        return "The host answered with a redirect Kaiju does not follow. Use the address the server finally shows in your browser.";
       }
-      return "Kobe would not send the request to that address. A server on a private network needs the Site's internal targets entry (ask a Site admin).";
+      return "Kaiju would not send the request to that address. A server on a private network needs the Site's internal targets entry (ask a Site admin).";
     case "invalid_connection":
       return "The host refused the request as invalid. Check the organization name.";
     case "host_unreachable":
-      return "Kobe could not reach the host. Check the address; a server on a private network needs the Site's internal targets entry (ask a Site admin).";
+      return "Kaiju could not reach the host. Check the address; a server on a private network needs the Site's internal targets entry (ask a Site admin).";
     case "host_error":
       return "The host answered with an error. Try again in a few minutes.";
     case "host_rate_limited":
@@ -117,7 +117,7 @@ export function gitErrorMessage(
     case "credential_insufficient":
       return error.message;
     case "credential_unreadable":
-      return "Kobe could not open the stored credential (the Site's encryption key may have changed). Replace the credential.";
+      return "Kaiju could not open the stored credential (the Site's encryption key may have changed). Replace the credential.";
     case "internal_not_offered":
       return "Gitea and Forgejo have no internal repositories: choose Private.";
     case "unknown_agent":
@@ -135,14 +135,14 @@ const HEALTH_CODE: Readonly<Record<string, string>> = {
   forbidden: "The credential lost a permission it needs.",
   not_found: "The organization is gone, or the credential can no longer see it.",
   rate_limited: "The host's rate limit was used up at the last check.",
-  host_unreachable: "Kobe could not reach the host at the last check.",
+  host_unreachable: "Kaiju could not reach the host at the last check.",
   unsupported_host: "The host's version is no longer supported.",
-  host_refused: "Kobe would not send requests to the host's address.",
+  host_refused: "Kaiju would not send requests to the host's address.",
   "host_refused:not_reachable":
-    "Kobe could not reach the host at the last check, or its address is not allowed here.",
+    "Kaiju could not reach the host at the last check, or its address is not allowed here.",
   "host_refused:site_git_off": "Git connections are turned off for this Site.",
   "host_refused:site_host_limit": "The Site no longer allows this host.",
-  credential_unreadable: "Kobe could not open the stored credential.",
+  credential_unreadable: "Kaiju could not open the stored credential.",
 };
 
 /** A stored health code (`auth_failed:credential_rejected`) as a sentence. */

@@ -87,7 +87,7 @@ export interface SandboxWireOptions {
   readonly gitSiteHost?: string;
   /**
    * KOBE-767: what an agent's `commit_project` on a Repo needs to reach the git host (read on use);
-   * absent: a Repo refuses Kobe commits as before.
+   * absent: a Repo refuses Kaiju commits as before.
    */
   readonly repoCommit?: () => RepoCommitWiring;
   readonly tuning?: Partial<WireTuning>;
@@ -141,7 +141,7 @@ export interface SandboxWire {
   close(): Promise<void>;
 }
 
-/** Kobe v1 has no UI for Pi extension dialogs: dialogs are cancelled, notifications ignored. */
+/** Kaiju v1 has no UI for Pi extension dialogs: dialogs are cancelled, notifications ignored. */
 export const CANCEL_DIALOGS: UiBroker = {
   handle({ request }) {
     const dialog = ["select", "confirm", "input", "editor"].includes(request.method);

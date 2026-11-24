@@ -289,7 +289,7 @@ export type GitHostErrorCode =
   | "rate_limited"
   /** The thing to create already exists (repository name taken, pull request open). */
   | "conflict"
-  /** The host refused the input, or Kobe did before sending (bad name, internal not offered). */
+  /** The host refused the input, or Kaiju did before sending (bad name, internal not offered). */
   | "invalid_request"
   /** The address policy, a redirect to elsewhere or the Site's host limit refused the host. */
   | "host_refused"
@@ -350,7 +350,7 @@ export class GitHostError extends Error {
   }
 }
 
-/** Repository names Kobe sends to a host: one path segment, never `.` or `..` (§9). */
+/** Repository names Kaiju sends to a host: one path segment, never `.` or `..` (§9). */
 const REPOSITORY_NAME = /^[A-Za-z0-9._-]{1,100}$/;
 
 export function assertRepositoryName(name: string): string {
@@ -362,7 +362,7 @@ export function assertRepositoryName(name: string): string {
 
 const BRANCH = /^[^\s:~^?*[\\]{1,255}$/;
 
-/** Branch names Kobe sends: no `owner:branch` (a fork outside the organization), no `..`. */
+/** Branch names Kaiju sends: no `owner:branch` (a fork outside the organization), no `..`. */
 export function assertBranch(name: string): string {
   if (!BRANCH.test(name) || name.includes("..") || name.startsWith("-")) {
     throw new GitHostError("invalid_request", "That is not a valid branch name.");

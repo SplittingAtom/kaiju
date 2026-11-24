@@ -153,7 +153,7 @@ export async function world(level: "read" | "read_write" = "read_write"): Promis
   return { team, admin, owner, member, connectionId: res.json.connection.id as string };
 }
 
-/** A project owned by `owner` with commits written as Kobe writes them (blobs in the store). */
+/** A project owned by `owner` with commits written as Kaiju writes them (blobs in the store). */
 export async function project(
   w: World,
   commits: readonly { by: Person; message: string; files: Record<string, string> }[],

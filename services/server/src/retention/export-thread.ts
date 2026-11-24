@@ -15,7 +15,7 @@ import {
 import { entryMarkdown, threadHeader } from "./export-markdown.js";
 
 /**
- * One conversation as Markdown (`/export`, KOBE-450; Pi's `/export` mapped to Kobe): the owner's
+ * One conversation as Markdown (`/export`, KOBE-450; Pi's `/export` mapped to Kaiju): the owner's
  * thread in the active team, its active branch rendered as in the full export's transcripts
  * (D18). Owner only, like the full export: a project reader or anyone else gets "not found", and
  * nothing is read or recorded for them. Streamed one entry at a time.

@@ -2,13 +2,13 @@
  * The result of an OAuth connect (KOBE-835), as the server's callback hands it back in the query
  * (`?connector_oauth=connected|failed&connector=<id>&reason=<code>`). Only fixed values are read:
  * the result is one of two words, the connector an id the page looks up in its own list, and the
- * reason a code mapped to Kobe's own sentence. Nothing from the query is shown as given.
+ * reason a code mapped to Kaiju's own sentence. Nothing from the query is shown as given.
  */
 export interface OauthReturn {
   readonly ok: boolean;
   /** The connector's id, when it is a UUID; the page names it from its own list. */
   readonly connectorId: string | null;
-  /** The failure code, when it is one Kobe knows; otherwise null (a generic sentence). */
+  /** The failure code, when it is one Kaiju knows; otherwise null (a generic sentence). */
   readonly reason: OauthFailureReason | null;
 }
 
@@ -24,8 +24,8 @@ const REASONS = {
   iss_mismatch:
     "The answer did not come from the connector's own authorization server, so it was refused.",
   oauth_unreachable: "Could not reach the connector's authorization server. Try again later.",
-  oauth_unsupported: "This connector's authorization server cannot be used safely with Kobe.",
-  registration_failed: "The authorization server did not accept Kobe as a client.",
+  oauth_unsupported: "This connector's authorization server cannot be used safely with Kaiju.",
+  registration_failed: "The authorization server did not accept Kaiju as a client.",
   invalid_state: "The sign-in took too long or was started elsewhere. Connect again.",
   no_workspace:
     "Your active workspace changed, or you are no longer in it. Choose the workspace and connect again.",

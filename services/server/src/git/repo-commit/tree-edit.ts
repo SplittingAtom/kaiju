@@ -4,17 +4,17 @@ import { treeContent } from "./objects.js";
 /**
  * A commit to a Repo applies the member's changes, path by path, to the host's tree of the commit
  * the working copy started from (KOBE-767, G18): only the folders on a changed path are read from
- * the host and written again; every other entry (folders, links, submodules, files Kobe does not
+ * the host and written again; every other entry (folders, links, submodules, files Kaiju does not
  * show) keeps its id, so nothing the commit does not touch changes on the host.
  */
 
 /** A file the commit writes (its blob id and executable bit), or removes (`null`). */
 export type FileEdit = { readonly blob: string; readonly executable: boolean } | null;
 
-/** The host's tree and Kobe's copy disagree about a path (a folder where Kobe has a file). */
+/** The host's tree and Kaiju's copy disagree about a path (a folder where Kaiju has a file). */
 export class TreeMismatch extends Error {
   constructor(readonly path: string) {
-    super(`the repository does not match Kobe's copy at ${path}`);
+    super(`the repository does not match Kaiju's copy at ${path}`);
     this.name = "TreeMismatch";
   }
 }
@@ -65,7 +65,7 @@ export async function editTree(
   edits: ReadonlyMap<string, FileEdit>,
   io: TreeEditIo,
   /**
-   * Review H1, the three-way check: path → the blob id Kobe's base had there (null: the path was
+   * Review H1, the three-way check: path → the blob id Kaiju's base had there (null: the path was
    * not in the base). The host's entry must still be that (or already exactly the new content),
    * else someone else changed the same file and {@link TreeMismatch} is thrown: never an
    * overwrite of another person's change.

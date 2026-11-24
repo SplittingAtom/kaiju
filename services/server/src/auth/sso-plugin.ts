@@ -67,7 +67,7 @@ const notFound = () => new APIError("NOT_FOUND", { message: "Not found" });
 
 /**
  * The `sso_error` code the browser sees. "No access" and "an account with this address exists"
- * share one code, so the page never tells whether an address has a Kobe account (review finding
+ * share one code, so the page never tells whether an address has a Kaiju account (review finding
  * 9b); the audit log keeps the precise reason.
  */
 export function browserSsoError(failure: SsoFailure): string {
@@ -245,7 +245,7 @@ export function ssoPlugin(options: SsoPluginOptions) {
             });
             // MFA trust (§8, SSO3): the provider's mfa_rule decides whether the IdP proved MFA.
             // Not proven while the site requires 2FA → refused before any user or session is
-            // made; there is no fallback to Kobe TOTP for SSO sign-ins (SSO7).
+            // made; there is no fallback to Kaiju TOTP for SSO sign-ins (SSO7).
             const mfa = mfaEvidence(p.kind, p.mfaRule, identity);
             if (mfa === null && (await readRequireTwoFactorIn(o.db))) {
               throw new SsoFlowError("mfa_missing");

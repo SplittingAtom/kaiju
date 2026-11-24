@@ -46,7 +46,7 @@ export interface QueueDefaultSync {
   readonly kind: DefaultSyncKind;
   /** `add` and `move_major`: the major Default installs follow, and its newest version. */
   readonly target?: TargetVersion;
-  /** Who asked; null when Kobe itself did (its own skills' seed, KOBE-317). */
+  /** Who asked; null when Kaiju itself did (its own skills' seed, KOBE-317). */
   readonly requestedBy: string | null;
 }
 

@@ -75,7 +75,7 @@ describe("gateway failure classification", () => {
         }),
       ),
     ).toBe("model_budget_exhausted");
-    // A provider's own payment-required answer is not a Kobe budget.
+    // A provider's own payment-required answer is not a Kaiju budget.
     expect(code(gemini(402, "UNKNOWN"))).toBe("model_error");
     expect(code(openai(402, "insufficient_quota"))).toBe("model_error");
     expect(code(openai(402, "policy_budget_exceeded"))).toBe("model_budget_exhausted");

@@ -1,6 +1,6 @@
 # Bifrost request decoding and rewriting (KOBE-414)
 
-What Bifrost does to the bodies Kobe's model gateway (`services/model-gateway`) forwards: how it
+What Bifrost does to the bodies Kaiju's model gateway (`services/model-gateway`) forwards: how it
 decodes them, what it changes on the way upstream, and whether the upgrade from the pinned
 v2.2.5 (`sha256:65854fd1…f115`) to v2.5.1 (`sha256:5ec9873a…d3c8`, tag `transports/v2.5.1`)
 changes any of it. Measured on 2026-11-10 with both images and the harness in
@@ -19,7 +19,7 @@ PVC backup and the real-Bifrost integration test (see "Upgrade").
 Every inference route decodes the body with `sonic.Unmarshal`, which uses `sonic.ConfigDefault`
 (`Config{}`: `CaseSensitive` false). Paths at `transports/v2.2.5` (v2.5.1 in brackets; same code):
 
-| Route Kobe uses          | Decode                                                                                                                                                                                                                                                                                         |
+| Route Kaiju uses         | Decode                                                                                                                                                                                                                                                                                         |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/v1/chat/completions`   | `transports/bifrost-http/handlers/inference.go:78` [`:72`] `prepareRequest` → `sonic.Unmarshal(ctx.PostBody(), req)`; `ChatParameters.UnmarshalJSON` `core/schemas/chatcompletions.go:253` [`:274`] decodes through `schemas.Unmarshal` = `sonic.Unmarshal` (`core/schemas/json_native.go:25`) |
 | `/v1/responses`          | same `prepareRequest` (`inference.go:1114`, `prepareResponsesRequest`)                                                                                                                                                                                                                         |
@@ -54,7 +54,7 @@ they differ). v2.5.1 decodes the same way.
 Bodies were produced by the gateway's own functions (`make-cases.mjs` calls `applyThinking` and
 `withStreamUsage` from the built package) from Pi-style input that carried Pi's own reasoning
 fields (`thinking` budget 16,000, `reasoning_effort`/`reasoning.effort` `xhigh`,
-`reasoning.summary` `auto`). Kobe's levels are `off`, `low`, `medium`, `high` (`@kobe/protocol`
+`reasoning.summary` `auto`). Kaiju's levels are `off`, `low`, `medium`, `high` (`@kobe/protocol`
 `THINKING_LEVELS`; there is no `minimal`, `xhigh` or `max` level). Every case streamed except where
 noted. On every route Bifrost strips the `<provider>/` prefix from `model`, drops `stream: false`
 (omitempty) and re-serialises the body (key order changes). Below, "same" means the field went
@@ -109,9 +109,9 @@ went upstream verbatim, key order included, which is if anything closer to what 
 | OpenAI gpt-5.1 chat, `xhigh`                                                      | `"high"` (model does not accept xhigh)         | `"high"`        |
 | Anthropic via Chat Completions, `cache_control` on system and user content blocks | system moved to `system`, `cache_control` kept | same            |
 
-The gateway never writes `xhigh` (no such Kobe level), so the Ollama difference reaches only models
-without a control. The v2.5.0 `cache_control` fix concerns chat-message shapes Kobe does not send
-(Kobe calls Anthropic models through the Messages route); the plain shape above was already kept by
+The gateway never writes `xhigh` (no such Kaiju level), so the Ollama difference reaches only models
+without a control. The v2.5.0 `cache_control` fix concerns chat-message shapes Kaiju does not send
+(Kaiju calls Anthropic models through the Messages route); the plain shape above was already kept by
 v2.2.5. An empty `messages` array was refused with a 400 on both versions for chat, Ollama chat and
 Messages (the v2.5.1 crash fix concerns paths these shapes did not reach).
 
@@ -157,7 +157,7 @@ body, and keep the splice only for unparsed bodies (avoids a second `JSON.parse`
 ### Store migrations
 
 Bifrost runs its migrations at start on the config store (`/app/data/config.db`, the Bifrost
-PVC); Kobe keeps `logs_store` off, so log-store migrations create nothing it uses. Between the
+PVC); Kaiju keeps `logs_store` off, so log-store migrations create nothing it uses. Between the
 tags the config store gains 76 migrations (227 → 303 entries) (`framework/configstore/migrations.go`), among them
 `add_anthropic_workload_identity_column`, `add_cache_creation_above_12hr_pricing_columns`,
 `add_relays_tables`, `add_mcp_per_user_discoveries`, `add_agent_gateway_tables`, and two that change
@@ -171,7 +171,7 @@ columns. In practice the upgrade is one-way:
    without asking).
 2. A rollback is restoring that backup with the v2.2.5 image, not a downgrade in place. The server
    re-pushes providers, keys and virtual keys on its next reconcile, so a restored store converges.
-3. Because Kobe sets virtual-key `budgets`/`rate_limit` through the admin API
+3. Because Kaiju sets virtual-key `budgets`/`rate_limit` through the admin API
    (`services/server/src/models/bifrost-admin.ts`) and reads `rate_limit` back to compare, run the
    real-Bifrost integration test (`services/server/src/models/bifrost.int.test.ts`) against v2.5.1
    in the bump PR. The v2.5.1 create/update request still accepts both fields
@@ -179,16 +179,16 @@ columns. In practice the upgrade is one-way:
 
 ### Log identity (caller email and client IP)
 
-v2.5.0 adds `user_email` and `client_ip` columns to LLM, MCP and relay logs. Kobe's config
+v2.5.0 adds `user_email` and `client_ip` columns to LLM, MCP and relay logs. Kaiju's config
 (`kobe.bifrostConfig` in `charts/kobe/templates/_models.tpl`) records neither:
 
 - `logs_store.enabled: false` and `client.enable_logging: false`: no log rows are written at all,
   so neither column is ever filled.
 - `client_ip` is opt-in on top of that (`logs_store.capture_client_ip`, default false,
-  `framework/logstore/config.go:24`); Kobe does not set it. Even if it did, the caller Bifrost sees
+  `framework/logstore/config.go:24`); Kaiju does not set it. Even if it did, the caller Bifrost sees
   is the shim pod: the gateway forwards no `X-Forwarded-For`/`X-Real-IP` (header allowlist in
   `services/model-gateway/src/headers.ts`).
-- `user_email` comes from a request-context value set by Bifrost's user-auth flows; Kobe's calls
+- `user_email` comes from a request-context value set by Bifrost's user-auth flows; Kaiju's calls
   carry only a virtual key, which has no user email.
 
 The settings that keep them off are the two above (`logs_store.enabled: false`,

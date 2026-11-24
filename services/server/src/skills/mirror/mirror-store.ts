@@ -260,7 +260,7 @@ export interface WithdrawalPlan {
  * version this remote carries that is no longer published (revoked, withdrawn, suspended). One
  * never pushed here is marked `withdrawn` at once (so it is never pushed); one that may be listed
  * waits in `toCommit`. A commit and tag already pushed are kept in the record: they stay on the
- * remote, Kobe never rewrites history. A version published and unblocked again is pending again.
+ * remote, Kaiju never rewrites history. A version published and unblocked again is pending again.
  */
 export async function planWithdrawals(db: KobeDb, url: string, now: Date): Promise<WithdrawalPlan> {
   const res = await db.execute<{

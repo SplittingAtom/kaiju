@@ -53,7 +53,7 @@ function StatusSection() {
   const retention = useResource(getRetentionMaximum);
   return (
     <Section id="backup-status-heading" title="Status">
-      <Notice role="note" title="Kobe can't see your backups">
+      <Notice role="note" title="Kaiju can't see your backups">
         <p>
           <code>kobe backup</code> connects to Postgres with a read-only role and writes the backup
           elsewhere, so nothing on the site records it. When a backup finishes it prints its
@@ -178,7 +178,7 @@ function RestoreSection() {
     <Section
       id="backup-restore-heading"
       title="Restore"
-      description={`Into a newly installed site on the same Kobe version, never over a running site. Full details: ${DOCS}.`}
+      description={`Into a newly installed site on the same Kaiju version, never over a running site. Full details: ${DOCS}.`}
     >
       <Steps>
         <li>
@@ -188,7 +188,7 @@ function RestoreSection() {
           them. The envelope key must be the backed-up value.
         </li>
         <li>
-          Install the same Kobe version with <code>auth.existingSecret</code> and{" "}
+          Install the same Kaiju version with <code>auth.existingSecret</code> and{" "}
           <code>envelope.keySecret</code> set to those names, the same S3 bucket and the same public
           URL. Don&apos;t run first-run setup.
         </li>

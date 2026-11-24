@@ -17,7 +17,7 @@ import { WorkspaceSync } from "./workspace/sync.js";
 
 /**
  * KOBE-580 (Workspaces WS-5) against the REAL pinned Pi with the real kobe-policy and kobe-tools,
- * through kobe-sandbox-agent, a fake Kobe server (wire) and a fake workspace-sync server (HTTP;
+ * through kobe-sandbox-agent, a fake Kaiju server (wire) and a fake workspace-sync server (HTTP;
  * it lists the member's checkouts and accepts `projects/<slug>/` only for them, as KOBE-579's
  * server will):
  *  - ac-1: Pi's own tools write a checked-out project folder and the push carries it; the same

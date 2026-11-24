@@ -17,7 +17,7 @@ import { useMutation, useResource } from "../use-resource";
 import { ReprobeButton } from "./connector-reprobe";
 
 /**
- * "Your account" for an OAuth connector in the Site console (KOBE-835): Kobe lists and pins an
+ * "Your account" for an OAuth connector in the Site console (KOBE-835): Kaiju lists and pins an
  * OAuth server's tools with a site admin's own connected account (KOBE-784), so a new connector
  * that nobody connected has no tools. The admin connects here (the same per-member flow, coming
  * back to the registry), then Re-probes, which pins the tools with that account. The sign-in is
@@ -56,14 +56,14 @@ function Explanation({ connector: c }: { readonly connector: Connector }) {
   if (c.toolCount > 0 || c.driftedCount > 0) {
     return (
       <p className="m-0 text-sm text-console-muted">
-        Kobe checks this connector for changed tools with the connected account of the site admin
+        Kaiju checks this connector for changed tools with the connected account of the site admin
         who last pinned or approved them. Connect yours to check it with your account.
       </p>
     );
   }
   return (
     <p className="m-0 text-sm">
-      <Badge tone="attention">No tools yet</Badge> Kobe lists an OAuth server&apos;s tools with a
+      <Badge tone="attention">No tools yet</Badge> Kaiju lists an OAuth server&apos;s tools with a
       site admin&apos;s own connected account, and none was used yet. Connect your account, then
       press Re-probe to list and pin its tools.
     </p>
@@ -96,9 +96,9 @@ export function OauthConnectSection({
             mine.teamId !== null && (teams ?? []).some((t) => t.id === mine.teamId);
           const blocked =
             mine.teamId === null
-              ? "Choose a workspace with the workspace switcher first: Kobe keeps your sign-in in your active workspace."
+              ? "Choose a workspace with the workspace switcher first: Kaiju keeps your sign-in in your active workspace."
               : teams !== null && !enabledHere
-                ? `Kobe keeps your sign-in in your active workspace, ${mine.teamName ?? "this one"}, which has not enabled ${c.name}. Enable it there (Team console, Connectors) or switch to a workspace that has, then connect.`
+                ? `Kaiju keeps your sign-in in your active workspace, ${mine.teamName ?? "this one"}, which has not enabled ${c.name}. Enable it there (Team console, Connectors) or switch to a workspace that has, then connect.`
                 : null;
           return (
             <>

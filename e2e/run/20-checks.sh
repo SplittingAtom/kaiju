@@ -150,8 +150,8 @@ contains "password reset for an unknown address answers the same" 'HTTP/1.1 200'
   "$(ingress POST /api/auth/request-password-reset '{"email":"nobody@e2e.test"}')"
 mailbox=http://mailpit.kobe-deps:8025/api/v1/messages
 wait_endpoints kobe-deps mailpit
-mail=$(probe "$NS" "$(retry "$(answers $mailbox) | grep -q 'Reset your Kobe password'"); $(answers $mailbox)")
-contains "the server delivered the reset email over SMTP" 'Reset your Kobe password' "$mail"
+mail=$(probe "$NS" "$(retry "$(answers $mailbox) | grep -q 'Reset your Kaiju password'"); $(answers $mailbox)")
+contains "the server delivered the reset email over SMTP" 'Reset your Kaiju password' "$mail"
 contains "the reset email went to the account's address" 'owner@e2e.test' "$mail"
 if printf '%s' "$mail" | grep -q 'nobody@e2e.test'; then fail "no email for an unknown address"; else ok "no email for an unknown address"; fi
 contains "chart refuses a RuntimeClass that does not isolate" 'refuses to run agents' \

@@ -38,8 +38,8 @@ export const TEAM_ROLES: readonly TeamRole[] = ["team_admin", "contributor", "me
  * Team members and roles (spec D8; `/v1/team/members`). People join by accepting an invitation;
  * a Site admin can also add existing users from the Site console (KOBE-638), shown here.
  */
-/** A membership Kobe made for the Skill reviewer grant (KOBE-331 review H1b). */
-export const ADDED_BY_GRANT = "Added by Kobe: Skill reviewer";
+/** A membership Kaiju made for the Skill reviewer grant (KOBE-331 review H1b). */
+export const ADDED_BY_GRANT = "Added by Kaiju: Skill reviewer";
 
 /** A membership an identity provider's access mappings manage (KOBE-627, SSO10). */
 export const managedByLabel = (providerName: string) => `Managed by ${providerName}`;

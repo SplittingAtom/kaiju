@@ -108,7 +108,7 @@ async function listResources(
   return { ok: false, skipped: "too_large" };
 }
 
-// `ignoreBOM`: keep a leading BOM, so Kobe hashes the bytes the upstream hashed (review LOW-2).
+// `ignoreBOM`: keep a leading BOM, so Kaiju hashes the bytes the upstream hashed (review LOW-2).
 const strictUtf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 /** With the `u` flag a surrogate matches only when it is unpaired (not valid UTF-8). */
 const LONE_SURROGATE = /[\uD800-\uDFFF]/u;

@@ -35,7 +35,7 @@ smtp:
   host: mailpit.kobe-deps.svc.cluster.local
   port: 1025
   security: none
-  from: "Kobe Dev <kobe@kobe.localtest.me>"
+  from: "Kaiju Dev <kobe@kobe.localtest.me>"
 # The egress proxy reads allowlists from the dev Postgres (kobe-deps namespace).
 egressProxy:
   networkPolicy:

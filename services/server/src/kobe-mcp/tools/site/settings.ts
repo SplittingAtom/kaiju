@@ -6,7 +6,7 @@ import { changeLine, fromTo, readAs, sameValues } from "./shared.js";
 /**
  * Site console › Branding and appearance (`/v1/site/branding`, `site.settings.manage`) and ›
  * Budgets (`/v1/site/budget`, `site.budgets.manage`) (KOBE-622). Logo and favicon uploads, the
- * branding reset and the other site settings (sign-in, two-factor, the Kobe MCP switch) stay in the
+ * branding reset and the other site settings (sign-in, two-factor, the Kaiju MCP switch) stay in the
  * console.
  */
 

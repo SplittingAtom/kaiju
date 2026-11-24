@@ -15,7 +15,7 @@ const BASE: Record<string, string> = {
   "s3.bucket": "kobe",
   "s3.existingSecret": "kobe-s3",
   "smtp.host": "smtp.example.com",
-  "smtp.from": "Kobe <kobe@example.com>",
+  "smtp.from": "Kaiju <kobe@example.com>",
   "global.allowGeneratedSecretsOffline": "true",
 };
 const BUNDLE = "/etc/kobe/extra-ca/ca-bundle.pem";

@@ -71,7 +71,7 @@ export class MemoryBroker {
           ? { ...base, type: "memory.read", input: request.input }
           : { ...base, type: "memory.show", input: request.input };
     if (!this.#deps.send(frame)) {
-      this.#pending.fail(requestId, "unavailable", "Kobe server not reachable");
+      this.#pending.fail(requestId, "unavailable", "Kaiju server not reachable");
     }
   }
 

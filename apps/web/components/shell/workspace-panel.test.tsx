@@ -101,7 +101,7 @@ afterEach(() => {
 /** A console page with a form, a link to another section and an editor of its own. */
 function TestPage({ path }: { readonly path: string }) {
   if (path === "/docs" || path.startsWith("/docs/")) {
-    return <GuideView page={pageBySlug(path.slice("/docs/".length))} appName="Kobe" />;
+    return <GuideView page={pageBySlug(path.slice("/docs/".length))} appName="Kaiju" />;
   }
   if (path === "/admin/site") {
     return (
@@ -344,7 +344,7 @@ describe("the Docs panel (KOBE-616)", () => {
     expect(panel.getAttribute("aria-modal")).toBe("true");
     expect(panel.getAttribute("data-kobe-panel")).toBe("docs");
     expect(window.location.pathname).toBe("/docs");
-    expect(within(panel).getByRole("heading", { level: 1, name: "Kobe guide" })).toBeTruthy();
+    expect(within(panel).getByRole("heading", { level: 1, name: "Kaiju guide" })).toBeTruthy();
     expect(input.closest("[inert]")).not.toBeNull();
 
     // A page from the guide's nav, then a relative link in its body: both inside the panel.
@@ -501,10 +501,10 @@ describe("closing (KOBE-452 ac-3)", () => {
     expect(reload()).toBe(false);
   });
 
-  it("Back to Kobe in a panel closes it like Close: no new entry, edits asked about (L3)", async () => {
+  it("Back to Kaiju in a panel closes it like Close: no new entry, edits asked about (L3)", async () => {
     open("/admin/site");
     const panel = await dialog("Site console");
-    const back = await within(panel).findByRole("link", { name: "Back to Kobe" }, WAIT);
+    const back = await within(panel).findByRole("link", { name: "Back to Kaiju" }, WAIT);
     const before = nav.entries().length;
     await userEvent.setup().click(back);
     await waitFor(() => expect(panelEl()).toBeNull());
@@ -560,6 +560,6 @@ describe("permissions (KOBE-452 ac-4)", () => {
     ).toBeTruthy();
     expect(within(panel).queryByRole("heading", { level: 1, name: "Users" })).toBeNull();
     // In a panel the console leaves its brand (the way back) to the panel's Close.
-    expect(within(panel).queryByRole("link", { name: "Kobe" })).toBeNull();
+    expect(within(panel).queryByRole("link", { name: "Kaiju" })).toBeNull();
   });
 });

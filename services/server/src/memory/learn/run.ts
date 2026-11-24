@@ -115,19 +115,19 @@ export const SWITCH_REASONS: ReadonlySet<LearnUnavailableReason> = new Set([
 
 export const INPUT_MESSAGES: Readonly<Record<LearningInputRefusal | "no_completed_run", string>> = {
   thread_not_found: "Thread not found.",
-  read_only: "Only the thread's author can teach Kobe from it.",
+  read_only: "Only the thread's author can teach Kaiju from it.",
   thread_in_trash: "Restore the thread from Trash first.",
-  test_thread: "Kobe doesn't learn from test, Workbench or eval chats.",
-  break_glass: "Kobe doesn't learn during a break-glass read.",
+  test_thread: "Kaiju doesn't learn from test, Workbench or eval chats.",
+  break_glass: "Kaiju doesn't learn during a break-glass read.",
   not_current_branch: "Make this branch current first.",
   nothing_to_learn: "Nothing new to learn since the last pass.",
   no_completed_run: "Learn works once a reply on this branch has finished.",
 };
 
-export const RATE_LIMITED_MESSAGE = `You can teach Kobe ${LEARN_PASSES_PER_DAY} times a day in this workspace. Try again later.`;
+export const RATE_LIMITED_MESSAGE = `You can teach Kaiju ${LEARN_PASSES_PER_DAY} times a day in this workspace. Try again later.`;
 export const BUDGET_MESSAGE =
-  "A budget is used up, so Kobe can't learn from this chat until it resets or an admin raises it.";
-export const PASS_RUNNING_MESSAGE = "Kobe is already learning from this thread.";
+  "A budget is used up, so Kaiju can't learn from this chat until it resets or an admin raises it.";
+export const PASS_RUNNING_MESSAGE = "Kaiju is already learning from this thread.";
 export const THREAD_BUSY_MESSAGE = "The chat is busy right now. Try again in a moment.";
 export const SERVER_CALLS_OFF_MESSAGE = "This server has no model gateway for its own model calls.";
 

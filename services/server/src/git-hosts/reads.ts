@@ -55,7 +55,7 @@ export function listState(state: GitListState | undefined): GitListState {
 const CONTROL = /[\u0000-\u001f\u007f]/;
 
 /**
- * A repository file path Kobe sends: relative, `/`-separated, no empty, `.` or `..` segment, no
+ * A repository file path Kaiju sends: relative, `/`-separated, no empty, `.` or `..` segment, no
  * control character, at most 1000 characters. Returned percent-encoded per segment for the URL.
  */
 export function encodeFilePath(path: string): string {

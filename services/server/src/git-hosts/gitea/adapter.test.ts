@@ -152,7 +152,7 @@ for (const product of ["gitea", "forgejo"] as const) {
       const error = await caught(adapter.probe());
       expect(error).toMatchObject({ code: "unsupported_host", reason: "version_too_old" });
       const min = product === "gitea" ? "Gitea 1.26.0" : "Forgejo 15.0.0";
-      expect(error.message).toContain(`Kobe supports ${min} and later`);
+      expect(error.message).toContain(`Kaiju supports ${min} and later`);
       expect((await caught(adapter.getRepository({ name: "docs" }))).code).toBe("unsupported_host");
       expect(fake.apiHits().every((h) => h.path === "/api/v1/version")).toBe(true);
     });

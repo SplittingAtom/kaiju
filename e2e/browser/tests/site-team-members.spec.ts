@@ -65,7 +65,7 @@ test("a site admin adds member2 to a team without an invitation, changes the rol
     "/v1/site/users",
   );
   const member2 = users.json.users.find((u) => u.email === USER2?.toLowerCase());
-  expect(member2, "member2 is a Kobe user").toBeTruthy();
+  expect(member2, "member2 is a Kaiju user").toBeTruthy();
   if (!member2) return;
   const team = await pickTeam(page, member2.id);
   test.skip(!team, "No team without member2 (set KOBE_SITE_MEMBERS_TEAM).");

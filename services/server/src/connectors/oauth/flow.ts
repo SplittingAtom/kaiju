@@ -76,7 +76,7 @@ async function clientFor(
 /**
  * Where the browser lands after the callback (KOBE-835): My connectors, or the Site console's
  * connector registry for a site admin who connected from there. Sealed in the state as a name;
- * the callback maps it to a fixed path on Kobe's own origin, so it can never redirect elsewhere.
+ * the callback maps it to a fixed path on Kaiju's own origin, so it can never redirect elsewhere.
  */
 export type ReturnTarget = "me" | "site";
 

@@ -86,7 +86,7 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0
   write_call=$(mcp_rpc "$mcp_token" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"create_thing","arguments":{"title":"x"}}}')
   printf '     MCP write without approval: %s\n' "$(printf '%s' "$write_call" | tr '\n' ' ' | cut -c1-200)"
   contains "Gate 2: an MCP write without a signed approval is refused at the proxy" '"isError":true' "$write_call"
-  contains "Gate 2: the refusal is the server's policy decision" 'Kobe denied this call' "$write_call"
+  contains "Gate 2: the refusal is the server's policy decision" 'Kaiju denied this call' "$write_call"
   fake_log=$($KUBECTL -n "$MCP_NS" logs fake-mcp 2>&1 || true)
   contains "the remote server received the read call (exact input)" '^CALL get_thing \{"id":"7"\}$' "$fake_log"
   expect "Gate 2: the remote server never received the unapproved write" '^(CALL get_thing .*)?$' "$(printf '%s\n' "$fake_log" | grep '^CALL' || true)"

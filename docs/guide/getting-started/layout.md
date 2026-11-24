@@ -1,12 +1,12 @@
 ---
-title: The Kobe screen
+title: The Kaiju screen
 summary: What the top bar, the rail, the conversation column and the artifact column are for, and how the screen changes on a phone.
 section: Getting started
 order: 2
 audience: member
 ---
 
-Kobe's screen has four parts: a bar along the top, the rail on the left, the artifact column in
+Kaiju's screen has four parts: a bar along the top, the rail on the left, the artifact column in
 the centre (while something is open in it) and the conversation on the right. Each column is a
 floating card you can show or hide.
 This page tells you what lives where.

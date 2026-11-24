@@ -6,8 +6,8 @@ order: 4
 audience: member
 ---
 
-Kobe limits files, file counts and bytes. It does not limit folders: make as many as you like,
-nested as deep as you like. The numbers below are Kobe's defaults; your site can set different
+Kaiju limits files, file counts and bytes. It does not limit folders: make as many as you like,
+nested as deep as you like. The numbers below are Kaiju's defaults; your site can set different
 ones, and the workspace's own storage page shows what applies to you.
 
 ## At a glance
@@ -25,7 +25,7 @@ My files is your own volume, mounted at `/workspace` in every conversation's san
 
 - **Size:** 10 GiB per person.
 - **Files:** up to 100,000.
-- **Backup:** Kobe copies your files to the site's object storage about once a minute, after every
+- **Backup:** Kaiju copies your files to the site's object storage about once a minute, after every
   run and before your sandbox sleeps, so they come back when it wakes or moves to another machine.
   Files larger than 1 GiB (the site's limit, which can be at most 5 GiB) are not copied: they stay on the volume only and are lost if the volume
   is. Keep anything that large somewhere else as well.
@@ -79,14 +79,14 @@ socket or pipe, a file the backup refused (too large, unreadable) or a name it c
 (backslash, control character, longer than 1024 bytes) means the volume is kept. Your next message
 starts a new sandbox and restores My files from the backup. Not restored, by design: `.venv`,
 `node_modules` and `__pycache__` folders (rebuild them), empty folders, and the agent's own
-`.kobe/` folder (conversations are rebuilt from Kobe's records).
+`.kobe/` folder (conversations are rebuilt from Kaiju's records).
 
 ## When your sandbox's storage is lost
 
 Your site may keep each sandbox's My files volume on the disk of one server only (fast, but a
 single copy). If that server stops answering, your next message says so ("the server that holds
 its storage is not answering"): it may come back with your files, so wait and try again later. If
-it stays down for a while (30 minutes by default), Kobe counts the storage as lost: the message
+it stays down for a while (30 minutes by default), Kaiju counts the storage as lost: the message
 says so, and the conversation and the Files panel offer **Rebuild sandbox…**. The dialog shows
 the time of the **last sync** and what cannot come back: every change made after it, and what the
 backup never copies (`.venv`, `node_modules` and `__pycache__` folders, empty folders, and file
@@ -105,7 +105,7 @@ sleeps or restarts:
 - **`/tmp`**: **2 GiB** by default.
 
 Your site admin can change both (chart values `sandbox.homeSize` and `sandbox.tmpSize`). If either
-fills up, Kubernetes stops the sandbox; Kobe starts a fresh one on your next message and tells you
+fills up, Kubernetes stops the sandbox; Kaiju starts a fresh one on your next message and tells you
 it "ran out of temporary space". My files are never affected. Packages installed with a plain
 `pip install` and npm's download cache go to the home folder, so ask the agent to install packages
 inside My files instead (for example a Python virtual environment in `/workspace/.venv`): they then
@@ -117,11 +117,11 @@ copied).
 - **My files** live on your sandbox's own disk volume while you work, with the backup copy in the
   site's S3-compatible object storage.
 - **Projects** and **attachments** are stored in that object storage only, as content-addressed
-  objects (identical files are stored once); Kobe's database keeps their names, folders, versions
+  objects (identical files are stored once); Kaiju's database keeps their names, folders, versions
   and who may see them.
 
 Every workspace's objects are kept apart under the workspace's own prefix, and sandboxes never hold
-storage credentials: the Kobe server moves the bytes.
+storage credentials: the Kaiju server moves the bytes.
 
 ## Related
 

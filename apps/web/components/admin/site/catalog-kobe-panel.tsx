@@ -13,15 +13,15 @@ import { useMutation } from "../use-resource";
 import { ReviewDiff } from "./skill-review-diff";
 
 /**
- * A detached Kobe skill (KOBE-495): a Site admin's edit stopped the Kobe seed publishing it. When
- * Kobe ships a version above the one it was detached from, the console says so; Compare shows the
- * shipped files against the skill's newest version, and Reset to Kobe (asks first) re-attaches it
+ * A detached Kaiju skill (KOBE-495): a Site admin's edit stopped the Kaiju seed publishing it. When
+ * Kaiju ships a version above the one it was detached from, the console says so; Compare shows the
+ * shipped files against the skill's newest version, and Reset to Kaiju (asks first) re-attaches it
  * when the shipped version is above every Site version (the server says why when it isn't).
  */
 export function DetachedBadge({ kobe }: { readonly kobe: KobeState | null }) {
   if (!kobe?.detached) return null;
   return (
-    <Badge tone="accent" title="Edited by a Site admin: Kobe releases no longer update it">
+    <Badge tone="accent" title="Edited by a Site admin: Kaiju releases no longer update it">
       Detached
     </Badge>
   );
@@ -58,17 +58,17 @@ export function KobePanel({
   async function reset(trigger: HTMLElement | null): Promise<void> {
     const yes = await confirm(
       {
-        title: `Reset ${name} to Kobe?`,
+        title: `Reset ${name} to Kaiju?`,
         description:
-          "Kobe publishes its shipped version as the newest one and releases update the skill again. The Site's versions stay in the catalog; a site draft is discarded.",
-        confirmLabel: "Reset to Kobe",
+          "Kaiju publishes its shipped version as the newest one and releases update the skill again. The Site's versions stay in the catalog; a site draft is discarded.",
+        confirmLabel: "Reset to Kaiju",
       },
       trigger,
     );
     if (!yes) return;
     const done = await mutation.run(
       () => resetToKobe(skillId),
-      (r) => `Reset to Kobe: ${name} follows Kobe's ${r.shippedSemver} again.`,
+      (r) => `Reset to Kaiju: ${name} follows Kaiju's ${r.shippedSemver} again.`,
     );
     if (done) onReset();
   }
@@ -77,16 +77,16 @@ export function KobePanel({
     <Notice tone="info">
       <p className="m-0">
         {kobe.updateAvailable
-          ? `A newer Kobe version of ${name} is available (${kobe.shippedVersion ?? ""}; it was detached from ${kobe.detachedFromVersion ?? ""}).`
-          : `${name} is detached from Kobe (since ${kobe.detachedFromVersion ?? "its first edit"}): Kobe releases no longer update it.`}
+          ? `A newer Kaiju version of ${name} is available (${kobe.shippedVersion ?? ""}; it was detached from ${kobe.detachedFromVersion ?? ""}).`
+          : `${name} is detached from Kaiju (since ${kobe.detachedFromVersion ?? "its first edit"}): Kaiju releases no longer update it.`}
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         <Button size="sm" disabled={mutation.pending} onClick={() => void compare()}>
           {comparison ? "Hide comparison" : "Compare"}
-          <span className="sr-only"> {name} with Kobe&apos;s shipped version</span>
+          <span className="sr-only"> {name} with Kaiju&apos;s shipped version</span>
         </Button>
         <Button size="sm" disabled={mutation.pending} onClick={(e) => void reset(eventTrigger(e))}>
-          Reset to Kobe<span className="sr-only"> ({name})</span>
+          Reset to Kaiju<span className="sr-only"> ({name})</span>
         </Button>
       </div>
       {mutation.error && <ErrorNotice error={mutation.error} />}
@@ -94,9 +94,9 @@ export function KobePanel({
       {comparison && (
         <div className="mt-3">
           <p className="m-0 mb-2 text-sm">
-            Kobe ships {comparison.shipped.semver}; the newest version is{" "}
+            Kaiju ships {comparison.shipped.semver}; the newest version is{" "}
             {comparison.current.semver} ({comparison.current.publisher}). Added lines are
-            Kobe&apos;s.
+            Kaiju&apos;s.
           </p>
           <ReviewDiff
             diff={{

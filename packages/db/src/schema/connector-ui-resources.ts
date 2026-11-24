@@ -13,13 +13,13 @@ import type { ProposedUiResource, UiResourceMeta } from "../connectors/ui-resour
 import { users } from "./auth.js";
 import { connectors } from "./connectors.js";
 
-/** MCP Apps (KOBE-433, spec mcp-apps-host §5, MA9): the only template type Kobe pins. */
+/** MCP Apps (KOBE-433, spec mcp-apps-host §5, MA9): the only template type Kaiju pins. */
 export const UI_RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
-/** Largest template Kobe pins (MA9): 512 KiB of UTF-8. */
+/** Largest template Kaiju pins (MA9): 512 KiB of UTF-8. */
 export const UI_RESOURCE_MAX_BYTES = 512 * 1024;
-/** Longest `ui://` URI Kobe pins. */
+/** Longest `ui://` URI Kaiju pins. */
 export const UI_RESOURCE_URI_MAX = 2048;
-/** Largest declared `_meta.ui` Kobe stores (serialized JSON). */
+/** Largest declared `_meta.ui` Kaiju stores (serialized JSON). */
 export const UI_RESOURCE_META_MAX_BYTES = 16 * 1024;
 
 /** `drifted`: changed or new upstream; never rendered until a site admin approves (D27, MA-2). */
@@ -36,7 +36,7 @@ export type UiResourcePlacement = (typeof UI_RESOURCE_PLACEMENTS)[number];
 
 /**
  * Site-wide (†): the pinned `ui://` templates of a connector's tools (MCP Apps, KOBE-433). The
- * server's pin and refresh probes read them through mcp-proxy (never the sandbox) and Kobe hashes
+ * server's pin and refresh probes read them through mcp-proxy (never the sandbox) and Kaiju hashes
  * the bytes itself. Like `connectors.tools_snapshot`, a drifted row keeps the approved bytes and
  * carries the live ones in `proposed`; a new row is `drifted` with the live bytes and no
  * `proposed`. No team data; deleting the connector deletes its templates.
@@ -52,7 +52,7 @@ export const connectorUiResources = pgTable(
     mimeType: text().notNull(),
     /** The approved template (UTF-8 HTML); served only while `status` is `pinned`. */
     html: text().notNull(),
-    /** SHA-256 (hex) of `html`'s UTF-8 bytes, computed by Kobe. */
+    /** SHA-256 (hex) of `html`'s UTF-8 bytes, computed by Kaiju. */
     sha256: text().notNull(),
     /** The declared `_meta.ui` (csp, permissions, domain, prefersBorder) of the approved bytes. */
     meta: jsonb().$type<UiResourceMeta>().notNull().default({}),

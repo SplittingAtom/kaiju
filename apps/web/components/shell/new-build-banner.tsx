@@ -12,7 +12,7 @@ import {
 import { requestReload } from "../../lib/build/reload-draft";
 import styles from "./new-build-banner.module.css";
 
-export const RELOAD_NOTICE = "Kobe was updated. Reload to get the latest version.";
+export const RELOAD_NOTICE = "Kaiju was updated. Reload to get the latest version.";
 
 function defaultWatcher(): BuildWatcher {
   return createBuildWatcher({ current: CLIENT_BUILD_ID, fetchBuildId, now: () => Date.now() });

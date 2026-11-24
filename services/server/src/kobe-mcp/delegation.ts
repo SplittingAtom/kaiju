@@ -2,7 +2,7 @@ import type { Context } from "hono";
 
 /**
  * A delegated principal (KOBE-619, spec kobe-admin-mcp §3, KA1): "this person, in this run", with
- * which the Kobe MCP executor calls a console route in process. `requireSession` accepts it in
+ * which the Kaiju MCP executor calls a console route in process. `requireSession` accepts it in
  * place of a session and `requireTeam` uses its team; every permission middleware and handler then
  * runs unchanged, so a tool can do nothing the route would refuse the person in the browser.
  *

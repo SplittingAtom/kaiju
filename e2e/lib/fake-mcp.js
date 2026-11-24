@@ -4,7 +4,7 @@ const http = require("http");
 // `fake:<name>` and logs `CALL <name> <arguments>`. Its tools are pinned straight into Postgres by
 // those suites, so it lists none by default.
 //
-// FAKE_MCP_APPS=1 (the Kobe Explorer Gate, e2e/gate-apps.sh, KOBE-441) makes it an MCP Apps
+// FAKE_MCP_APPS=1 (the Kaiju Explorer Gate, e2e/gate-apps.sh, KOBE-441) makes it an MCP Apps
 // server: `tools/list` offers an opening tool whose `_meta.ui` names the `ui://e2e/explorer`
 // template (a default and an integer argument, so the gate can see what Pi sends), two read-only
 // tools apps may call (one app-only) and a write tool; `resources/list` and `resources/read`
@@ -144,7 +144,7 @@ document.getElementById("use").addEventListener("click", async () => {
   });
   log("message", answer.error ? "error" : "ok");
 });
-// KOBE-490: the item as a resource_link (a chip in Kobe's composer instead of the text), with
+// KOBE-490: the item as a resource_link (a chip in Kaiju's composer instead of the text), with
 // the parent namespace as a second link of another kind.
 document.getElementById("use-item").addEventListener("click", async () => {
   const parts = selected.split(".");

@@ -36,16 +36,16 @@ export type RegistryTagStatus = (typeof REGISTRY_TAG_STATUSES)[number];
 export const REGISTRY_TAG_PATTERN = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
 
 /**
- * Who publishes a catalog skill: Kobe (built-ins, reserved names) or its maintainers (SK24); and,
+ * Who publishes a catalog skill: Kaiju (built-ins, reserved names) or its maintainers (SK24); and,
  * for a version only, the Site (`site`: a Site admin's edit in the Site Console, KOBE-495).
  */
 export const REGISTRY_PUBLISHERS = ["kobe", "maintainer", "site"] as const;
 export type RegistryPublisher = (typeof REGISTRY_PUBLISHERS)[number];
 
 /**
- * The skills Kobe publishes (KOBE-317, SK4): the former built-ins, from the package set the
+ * The skills Kaiju publishes (KOBE-317, SK4): the former built-ins, from the package set the
  * server ships. Their catalog names are reserved for publisher `kobe` (SK24; a database check
- * mirrors this list), and an agent naming one always gets the Kobe skill, never a team or
+ * mirrors this list), and an agent naming one always gets the Kaiju skill, never a team or
  * personal skill of that name.
  */
 export const KOBE_SKILL_NAMES = [
@@ -152,7 +152,7 @@ export const teamSkillInstallSchema = z.strictObject({
   pinMode: z.enum(SKILL_PIN_MODES),
   access: z.enum(SKILL_ACCESS_MODES),
   origin: z.enum(SKILL_INSTALL_ORIGINS),
-  /** Who installed it; null when Kobe's own Default sync did (a Kobe-published skill, KOBE-317). */
+  /** Who installed it; null when Kaiju's own Default sync did (a Kaiju-published skill, KOBE-317). */
   installedBy: uuid.nullable(),
   updatedAt: z.string(),
   /** The skill carries the Default tag: the "Site default" badge (KOBE-314). */

@@ -1,12 +1,12 @@
 ---
 title: Retention and deletion
-summary: When Kobe deletes threads and memories, and how long deleted file contents can stay in the site's storage.
+summary: When Kaiju deletes threads and memories, and how long deleted file contents can stay in the site's storage.
 section: Reference
 order: 4
 audience: member
 ---
 
-## What Kobe deletes, and when
+## What Kaiju deletes, and when
 
 - **Threads you delete** go to Trash and are deleted for good after 30 days, or at once with
   **Delete forever** (see [Threads](../chat/threads-panel.md#archive-delete-and-restore)).
@@ -24,8 +24,8 @@ audience: member
 - **A sandbox's volume** may be freed after it has slept a long time, if your site turns this on
   (see [Storage limits](../files/storage-limits.md#when-your-volume-is-reclaimed)).
 
-- **Git repositories are outside Kobe's retention and erasure.** A Repo's history lives on the git
-  host, and Kobe never deletes or rewrites anything there: not when a thread is deleted, a member
+- **Git repositories are outside Kaiju's retention and erasure.** A Repo's history lives on the git
+  host, and Kaiju never deletes or rewrites anything there: not when a thread is deleted, a member
   leaves or a legal hold ends. Disconnecting a git organization deletes only its stored credential.
   Delete or archive repositories on the host itself (see
   [Git organizations](../admin/git-organizations.md)).
@@ -37,9 +37,9 @@ hold is left.
 
 ## When the bytes are gone
 
-A deletion removes the data at once from Kobe and its database. File contents in the site's object
-storage are removed by Kobe's nightly clean-up, so within about a day; longer if the clean-up
+A deletion removes the data at once from Kaiju and its database. File contents in the site's object
+storage are removed by Kaiju's nightly clean-up, so within about a day; longer if the clean-up
 falls behind or the site's operators have paused it (for example after restoring a backup). Many
 sites keep that storage versioned, so files deleted by mistake can be recovered: there, deleted
-contents stay recoverable by the site's operators for a set period after that (Kobe recommends
+contents stay recoverable by the site's operators for a set period after that (Kaiju recommends
 **30 days**; ask them which applies), then are erased.

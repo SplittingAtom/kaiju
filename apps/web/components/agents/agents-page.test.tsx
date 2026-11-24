@@ -115,7 +115,7 @@ describe("Agents page as a member (ac-1)", () => {
     stubApi({ [ROSTER("site")]: [200, page("site", [GALLERY])] });
     renderTeam(<Page search="tab=site" />, MEMBER);
     const kobe = await rowOf("Kobe");
-    expect(within(kobe).getByText("Kobe gallery")).toBeTruthy();
+    expect(within(kobe).getByText("Kaiju gallery")).toBeTruthy();
     expect(
       within(kobe)
         .getByRole("link", { name: /View\s+Kobe/ })

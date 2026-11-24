@@ -83,7 +83,7 @@ function thread() {
 
 /** The card's frame, with a stand-in window to talk as the app. */
 async function appWindow() {
-  // Once Kobe's bridge listens: a message posted before is lost (KOBE-415).
+  // Once Kaiju's bridge listens: a message posted before is lost (KOBE-415).
   const frame = await waitFor(
     () => {
       const f = must(screen.queryByTitle("Lakehouse Explorer (app from Catalyst)"));

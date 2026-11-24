@@ -6,7 +6,7 @@ order: 3
 audience: member
 ---
 
-Kobe runs Jupyter notebooks (`.ipynb`) and Python files (`.py`) in your own sandbox. Each
+Kaiju runs Jupyter notebooks (`.ipynb`) and Python files (`.py`) in your own sandbox. Each
 conversation has one live Python kernel that you and the agent share, so variables and imports
 carry from one run to the next. Code never runs on the server or in your browser.
 
@@ -80,7 +80,7 @@ there, such as new output or a failed run. This browser remembers the tab you ch
 - **Variables** shows what your code defined in the kernel, with each value's type and a short
   value: a DataFrame says its rows and columns, an array its shape and type, a list its length. Sort
   and filter by name, and open a row for the longer value and a DataFrame's columns. The values come
-  straight from your kernel when you look; Kobe does not store them, and the agent does not see
+  straight from your kernel when you look; Kaiju does not store them, and the agent does not see
   them. Values of names that look like credentials stay in your sandbox until you choose **Show**,
   which asks for that one variable. A name is split into words (at `_`, `-`, `.`, spaces and capital
   letters, so `apiKey`, `x-api-key` and `API_KEY` are the same) and counts as a credential when a
@@ -95,7 +95,7 @@ there, such as new output or a failed run. This browser remembers the tab you ch
   type. The list refreshes after each run and with **Refresh**; while code runs it shows the values
   from before the run.
 
-  Reading the variables runs none of your code. Kobe shows the value of numbers, strings, bytes,
+  Reading the variables runs none of your code. Kaiju shows the value of numbers, strings, bytes,
   lists, tuples, dicts and sets (up to 8 items, two levels deep and 200 characters; an object inside
   one shows as its type, such as `<Customer>`), ranges, dates, times, durations, decimals,
   fractions, UUIDs and paths from Python's standard library (a time with a time zone of your own
@@ -123,7 +123,7 @@ completion](file-editor.md#code-completion)). It offers:
 - DataFrame column names after `df.` or `df['`, only when pandas keeps the labels as Python
   objects. String column names in the sandbox's pandas are stored by PyArrow and are not offered.
 
-Kobe does not use IPython's completer. The request goes to the kernel as a completion or
+Kaiju does not use IPython's completer. The request goes to the kernel as a completion or
 inspection request, not as code to run, so none of your execution hooks (`pre_run_cell`,
 `post_execute` and the like, autoreload, matplotlib's), input transformers or display formatters
 run, and the execution count, history and `Out` stay as they are. A small resolver reads your
@@ -164,7 +164,7 @@ your review like any other file (see [Editing files](file-editor.md)).
   results to a file and open that.
 - **"Stopped: it ran past its time limit."** Make the code faster, or run it in parts with Run
   selection.
-- **Variables says they are "not available yet".** Your sandbox runs an older Kobe agent; they
+- **Variables says they are "not available yet".** Your sandbox runs an older Kaiju agent; they
   appear once it is updated. "The kernel is not running" means there is nothing to show: run the
   file or Start the kernel.
 - **The kernel lost my variables.** It restarted, went idle for 30 minutes, or the sandbox slept.

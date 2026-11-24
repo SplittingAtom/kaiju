@@ -5,7 +5,7 @@ import { SealedCookieBox, consumeOnce, rememberOnce } from "./state.js";
 
 /**
  * The link intent of the local-proof flow (spec sso-oidc-scim §6, KOBE-630): an SSO sign-in whose
- * identity is not linked (and whose address may belong to a Kobe account) leaves
+ * identity is not linked (and whose address may belong to a Kaiju account) leaves
  * `{provider, subject, email, nonce, exp}` sealed in an HttpOnly cookie for 10 minutes. The next
  * local sign-in in that browser (password, with TOTP when enrolled, or a passkey) consumes it: when
  * the signed-in user's address equals the intent's, the identity is linked (`local_proof`);

@@ -26,7 +26,7 @@ export interface DraftSummary {
   readonly ownerUserId: string;
   readonly startedFrom: DraftStart;
   readonly parentRef: Readonly<Record<string, unknown>> | null;
-  /** A governed import's origin (KOBE-344): URL, commit, Kobe's hash, importer. */
+  /** A governed import's origin (KOBE-344): URL, commit, Kaiju's hash, importer. */
   readonly origin?: SkillImportOrigin | null;
   readonly fromConversation: boolean;
   readonly coEdited: boolean;

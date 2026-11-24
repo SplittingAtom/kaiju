@@ -49,8 +49,8 @@ export function defaultNoticeMessage(
     to,
     subject:
       notice.kind === "removed"
-        ? `Kobe: ${name} is no longer a default skill`
-        : `Kobe: ${name} is now a default skill`,
+        ? `Kaiju: ${name} is no longer a default skill`
+        : `Kaiju: ${name} is now a default skill`,
     text: [...body, "", `Team skills: ${publicUrl}${CONSOLE_PATHS.teamSkills}`].join("\n"),
   };
 }

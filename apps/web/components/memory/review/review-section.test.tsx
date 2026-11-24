@@ -107,7 +107,7 @@ describe("To review", () => {
     const cards = await screen.findAllByRole("listitem");
     expect(screen.getByRole("heading", { name: "To review (2)" })).toBeTruthy();
     expect(screen.getByText("You said")).toBeTruthy();
-    expect(screen.getByText("Kobe noticed")).toBeTruthy();
+    expect(screen.getByText("Kaiju noticed")).toBeTruthy();
     expect(screen.getAllByText("High confidence (90%)")).toHaveLength(2);
     expect(screen.getAllByText("14 days left").length).toBeGreaterThan(0);
     const tea = must(cards.find((c) => within(c).queryByText("Likes tea")));
@@ -214,7 +214,7 @@ describe("To review", () => {
       }),
     ]);
     show(api);
-    expect(await screen.findByText(/changed since Kobe suggested this/)).toBeTruthy();
+    expect(await screen.findByText(/changed since Kaiju suggested this/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(api.save).toHaveBeenCalledWith("c1", { targetVersion: 3 }, {});
   });
@@ -237,7 +237,7 @@ describe("To review", () => {
         }) as never,
     );
     show(api);
-    expect(screen.queryByText(/changed since Kobe suggested this/)).toBeNull();
+    expect(screen.queryByText(/changed since Kaiju suggested this/)).toBeNull();
     await userEvent.click(await screen.findByRole("button", { name: "Save" }));
     expect(api.save).toHaveBeenCalledWith("c1", {}, {});
     await userEvent.click(await screen.findByRole("button", { name: "Reload" }));

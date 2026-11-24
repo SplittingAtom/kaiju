@@ -14,7 +14,7 @@ import {
 
 const context: RunGitContext = {
   author: { name: "Ada Lovelace", email: "ada@acme.test" },
-  committer: { name: "Ada Lovelace via Kobe", email: "ada@acme.test" },
+  committer: { name: "Ada Lovelace via Kaiju", email: "ada@acme.test" },
   remotes: [
     { base_url: "https://github.com", organization: "acme" },
     { base_url: "https://git.acme.test/forgejo", organization: "data" },
@@ -82,11 +82,11 @@ describe("gitConfigText", () => {
     expect(text).not.toMatch(/extraHeader|proxy\s*=|password|token/i);
   });
 
-  it("writes the member as author, 'via Kobe' as committer and one rewrite per organization", () => {
+  it("writes the member as author, 'via Kaiju' as committer and one rewrite per organization", () => {
     const text = gitConfigText(context);
     expect(text).toContain('[author]\n\tname = "Ada Lovelace"\n\temail = "ada@acme.test"\n');
     expect(text).toContain(
-      '[committer]\n\tname = "Ada Lovelace via Kobe"\n\temail = "ada@acme.test"\n',
+      '[committer]\n\tname = "Ada Lovelace via Kaiju"\n\temail = "ada@acme.test"\n',
     );
     expect(text).toContain('\tname = "Ada Lovelace"\n\temail = "ada@acme.test"\n');
     expect(text).toContain(

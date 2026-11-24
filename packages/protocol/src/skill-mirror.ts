@@ -2,9 +2,9 @@ import { z } from "zod";
 
 /**
  * The catalog's optional one-way git mirror (KOBE-343, spec SK29, U36). Each approved catalog
- * version becomes a commit under `skills/<name>/` (the package layout, with Kobe's
+ * version becomes a commit under `skills/<name>/` (the package layout, with Kaiju's
  * `provenance.json`) and an annotated tag `<name>/v<semver>`, and `catalog.json` at the root is
- * regenerated. Kobe only appends: never a rewrite or a force-push, and it never reads the mirror
+ * regenerated. Kaiju only appends: never a rewrite or a force-push, and it never reads the mirror
  * back as a source.
  */
 
@@ -22,7 +22,7 @@ export const registryVersionMirrorSchema = z.strictObject({
   url: z.string().max(512),
   /**
    * `withdrawn`: on the site skill blocklist. Never pushed (again), and left out of `catalog.json`
-   * from the next commit on; a commit or tag already pushed stays (Kobe never rewrites history).
+   * from the next commit on; a commit or tag already pushed stays (Kaiju never rewrites history).
    */
   status: z.enum(["pushed", "failed", "withdrawn"]),
   /** The commit whose `skills/<name>/` tree is this version, and the tag object naming it. */

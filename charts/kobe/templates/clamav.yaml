@@ -3,7 +3,7 @@
 {{- $sel := dict "root" . "component" "clamav" -}}
 {{- $limit := max (int64 .Values.server.uploads.maxFileBytes) (int64 .Values.server.uploads.maxMessageBytes) -}}
 # Optional upload scanning (spec D26, KOBE-146). GPL-2.0 ClamAV runs as its own service image
-# (docker.io/clamav/clamav), not bundled into any Kobe image. It runs non-root: the image's
+# (docker.io/clamav/clamav), not bundled into any Kaiju image. It runs non-root: the image's
 # /init-unprivileged entrypoint as its `clamav` user (uid 100, gid 101), no capabilities, read-only
 # root filesystem; the signature database lives in an emptyDir (downloaded by freshclam at start,
 # which needs egress to database.clamav.net; scanning stays refused, fail closed, until clamd is up).

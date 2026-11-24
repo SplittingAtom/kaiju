@@ -99,7 +99,7 @@ const summaryColumns = {
 };
 
 /**
- * The caller's grants (masked) plus, for each OAuth grant, whether Kobe can renew it by itself
+ * The caller's grants (masked) plus, for each OAuth grant, whether Kaiju can renew it by itself
  * (KOBE-835): it holds a refresh token and `canRefresh` (this server has an OAuth client wired).
  * The sealed bundle is opened only to read that one fact; nothing from it is returned.
  */

@@ -16,7 +16,7 @@ import { visibleDraft } from "./records.js";
 import { prepareDraftTest, UNAVAILABLE_MESSAGE } from "./test-bundle.js";
 
 /**
- * A Workbench test chat's start (KOBE-323, SK13): a conversation with the general-purpose Kobe
+ * A Workbench test chat's start (KOBE-323, SK13): a conversation with the general-purpose Kaiju
  * agent about a draft the creator can see (theirs, or one shared with them), in the same team.
  * The thread is ordinary otherwise; its runs load only the draft (`withDraftTests`).
  */

@@ -108,7 +108,7 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
         "post",
         "/v1/projects/{id}/repo/detach",
         "Turn a Repo back into an ordinary project",
-        "Workspace admins. One commit of the mirrored files starts its Kobe history again; the repository stays on the host. Rate limited.",
+        "Workspace admins. One commit of the mirrored files starts its Kaiju history again; the repository stays on the host. Rate limited.",
       ],
     ],
   },

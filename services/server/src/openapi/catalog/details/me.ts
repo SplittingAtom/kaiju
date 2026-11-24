@@ -203,7 +203,7 @@ const grantSummary = obj({
   created_at: dateTime,
   updated_at: dateTime,
 });
-/** The list adds whether Kobe renews an OAuth grant by itself (KOBE-835). */
+/** The list adds whether Kaiju renews an OAuth grant by itself (KOBE-835). */
 const listedGrant = obj({
   connector_id: uuid,
   hint: str,

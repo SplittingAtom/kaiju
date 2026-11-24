@@ -6,7 +6,7 @@ order: 1
 audience: admin
 ---
 
-Site admins run one Kobe site for the whole organization: they invite people, create teams, connect
+Site admins run one Kaiju site for the whole organization: they invite people, create teams, connect
 model providers and connectors, set the limits every team works within, and look after branding,
 audit and backups. This page is a map of the **Site console** (`/admin/site`), opened from **Site
 console** in the top bar.
@@ -22,7 +22,7 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 ## People
 
-- **Users**: everyone with a Kobe account: site role, two-factor status, deactivate and reactivate.
+- **Users**: everyone with a Kaiju account: site role, two-factor status, deactivate and reactivate.
   Deactivating keeps the person's memories that follow them across workspaces, so reactivating
   restores them unchanged. It deletes their connector keys in every workspace: after reactivation
   they enter them again. On a deactivated account, **Purge memories** deletes those memories for
@@ -37,16 +37,16 @@ read a person's portable preferences either; reading them needs its own break-gl
   verified domains (once, within 14 days). The Owner and Admins link only by signing in themselves.
   **Sign-in protection** notices at the top: an account that had 10 failed password or
   authenticator-code attempts in 15 minutes (from any address, counted together) gets one attempt
-  a minute until the 15 minutes are over, and shows **Sign-in slowed**. Kobe never locks an
+  a minute until the 15 minutes are over, and shows **Sign-in slowed**. Kaiju never locks an
   account; passkeys and single sign-on still work. A password reset, or signing in with the
   password (and code) or through single sign-on, clears it; a passkey sign-in does not, since
   anyone holding a session could add a passkey. Each time an account starts being slowed down the audit log records
   `auth.sign_in.throttled` (once per 15 minutes, not per attempt; no email is sent). Addresses
   with no account are slowed down the same way, so the answer never tells whether an account
   exists. A second notice appears when, in the last day, sign-in or SCIM requests arrived without
-  a client address Kobe can trust: per-address limits are then shared by everyone. Fix the trusted
+  a client address Kaiju can trust: per-address limits are then shared by everyone. Fix the trusted
   proxies (`auth.trustedProxies` in the Helm values, `KOBE_TRUSTED_PROXIES`) so they name the
-  proxies in front of Kobe; the server also warns in its log.
+  proxies in front of Kaiju; the server also warns in its log.
 - **Single sign-on** and **SSO access mappings**: let people sign in with Microsoft Entra ID or
   another OpenID Connect provider, decide which app roles or groups give which team role,
   create SCIM tokens so the provider provisions and deactivates accounts, and **Require single
@@ -64,7 +64,7 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 ## Teams and agents
 
-- **Teams**: create teams (workspaces) with their first team admin and rename them (Kobe has no
+- **Teams**: create teams (workspaces) with their first team admin and rename them (Kaiju has no
   way to delete a workspace; see [Legal hold on Site memory](../memory.md#legal-hold-on-site-memory)
   for what a deletion would have to respect). **Manage
   members** opens a team's members: name, email, team role, how they joined (invitation, site
@@ -72,7 +72,7 @@ read a person's portable preferences either; reading them needs its own break-gl
   there you can:
   - **Add existing users** without an invitation: search by name or email, tick one or several,
     choose a team role (Member, Contributor or Team admin) and **Add**. They are in the team at
-    once and are told in Kobe (and by email); a pending invitation of theirs to the team is
+    once and are told in Kaiju (and by email); a pending invitation of theirs to the team is
     withdrawn. Deactivated users and accounts whose email address isn't verified (for example a
     single sign-on account whose provider didn't vouch for the address) can't be added: invite
     those people instead.
@@ -84,7 +84,7 @@ read a person's portable preferences either; reading them needs its own break-gl
 
   You can't add yourself or change your own membership here: site admins reach team content only
   through break-glass. Site roles never change here. Every change is in the team's own audit log
-  under your name, marked as made by a site admin, and the team's admins are told in Kobe (and by
+  under your name, marked as made by a site admin, and the team's admins are told in Kaiju (and by
   email) each time.
 
 - **Gallery agents**: the site's agents on the Agents page's Site tab: edit, set memory, compare
@@ -101,7 +101,7 @@ read a person's portable preferences either; reading them needs its own break-gl
 - **Connector registry**: register MCP servers teams may enable, their credentials (a site key or
   each member's own key), pinned tools, and where their apps open (in the conversation, the
   artifact column or the rail). Select a connector's name to open its details at the side: server
-  URL, authentication and whose key it uses (never the key itself), status and when Kobe last
+  URL, authentication and whose key it uses (never the key itself), status and when Kaiju last
   checked it for changes, which teams enabled it and with what exposure, its app templates
   (`ui://`) with their approval and where each opens, and every tool under **Read only** or
   **Write** with its description, risk hints (destructive, idempotent, open world), inputs, whether
@@ -110,22 +110,22 @@ read a person's portable preferences either; reading them needs its own break-gl
   each column scrolls on its own. The details are read-only, apart from **Your account** for an
   OAuth connector (below); **Review**, **Re-probe**, **Enable**/**Disable** and **Site key** stay
   in the row. Escape or **Close** returns to the list.
-- **Adding a connector that uses OAuth.** Kobe lists an OAuth server's tools with a site admin's
+- **Adding a connector that uses OAuth.** Kaiju lists an OAuth server's tools with a site admin's
   own connected account, so a new one has **No tools yet: connect an account** in the list until
-  someone connects. The server is reached through Kobe's connector policy like any other.
+  someone connects. The server is reached through Kaiju's connector policy like any other.
   1. Register it with **Authentication** set to **OAuth**.
-  2. Have a team enable it (Team console → **Connectors**). Kobe keeps your sign-in in your
+  2. Have a team enable it (Team console → **Connectors**). Kaiju keeps your sign-in in your
      active workspace, so that workspace must be one that enabled it; otherwise **Your account**
      says so and **Connect your account** is off.
   3. Press **Connect your account** in the row (or open its details), sign in at the service, and
      you come back to the registry with the connector's details open and "Connected your account
      to _connector_.".
-  4. Press **Re-probe** under **Your account**: Kobe lists the server's tools with your sign-in and
+  4. Press **Re-probe** under **Your account**: Kaiju lists the server's tools with your sign-in and
      pins them ("Pinned 120 tools.").
      Members then connect their own accounts at **Profile → My connectors**. A team admin who picks
      **Chosen tools** for a long list can filter it and use **Choose all shown** and **Clear all
      shown**.
-- **How Kobe checks a connector's tools.** Pinning, **Re-probe** and the periodic check for
+- **How Kaiju checks a connector's tools.** Pinning, **Re-probe** and the periodic check for
   changed tools ask the server for its tool list with a credential when the server wants one:
   the site-wide key if the connector has one, else your own key (when you pin or re-probe) or the
   key of the site admin who last pinned or approved its tools (the periodic check); never a
@@ -133,13 +133,13 @@ read a person's portable preferences either; reading them needs its own break-gl
   connected account: before you can pin one whose server asks for sign-in, connect your own
   account for it (**Connect your account** in its details, or **Profile → My connectors**, in a
   workspace that enabled it), then **Re-probe** (the pin otherwise fails with "connect your own
-  account first"). Kobe uses
+  account first"). Kaiju uses
   that sign-in only to list the server's tools and app templates, never to run a tool or in a
   sandbox, and renews it when it runs out. The **Audit** shows which was used
   (`mcp.connector.probe_credential`: `site_key`, `admin_key`, `admin_oauth` or `none`).
 - **Changing a connector's server URL or authentication** (none, API key, OAuth) deletes every
   member's stored key or sign-in for it, in every team (audited as `mcp.grant.removed`), and the
-  OAuth client Kobe registered with its server; switching back does not bring them back. Members
+  OAuth client Kaiju registered with its server; switching back does not bring them back. Members
   add their key or sign in again.
 
 ## Safety
@@ -159,7 +159,7 @@ read a person's portable preferences either; reading them needs its own break-gl
   audit forwarding. A short note above the events says so.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
-- **Retention maximum**: the longest retention any team may choose. What else Kobe deletes on its
+- **Retention maximum**: the longest retention any team may choose. What else Kaiju deletes on its
   own is in [Retention and deletion](../reference/retention-and-deletion.md).
 - **Legal hold**: suspend purges for a team or user, or hold the Site's own memory with a
   **Site-wide hold** (each needs two people). See
@@ -176,7 +176,7 @@ read a person's portable preferences either; reading them needs its own break-gl
   with thumbs-down runs and the **Check this** and **Not used lately** flags (filterable), and
   Learn's numbers per workspace and in total, numbers only (see
   [Memory quality](../memory.md#memory-quality)); nothing is archived by them. **Import and export** works as on a workspace's Memory page
-  ([Workspace memories](team-admin.md#workspace-memories)): Markdown bullets, CSV or a Kobe
+  ([Workspace memories](team-admin.md#workspace-memories)): Markdown bullets, CSV or a Kaiju
   export, at most 200 rows, a preview that checks every row with no model, then the new rows
   only; a Policy row imports only for Site admins and only while Policy has room. Exports are
   audited. Your own workspace's memory switches don't limit what you curate here (they decide
@@ -228,15 +228,15 @@ read a person's portable preferences either; reading them needs its own break-gl
   workspace), charged to you in your active workspace or, with none, to each workspace for its own
   memories: choose a provider your
   organization may send that to (the in-cluster model keeps it in your cluster). See
-  [Search by meaning](../memory.md#search-by-meaning). The **Kobe connector** setting is **Off**, **Docs only** (the
+  [Search by meaning](../memory.md#search-by-meaning). The **Kaiju connector** setting is **Off**, **Docs only** (the
   default) or **Docs and admin tools**; see below. It does not affect agents' git host tools,
-  which follow **Git connections**. **Kobe admin limits** set how many admin reads
+  which follow **Git connections**. **Kaiju admin limits** set how many admin reads
   per minute (default 60) and admin changes per hour (default 30) one person's agents may make,
   1 to 10,000 each; they apply to the next call, and every change is audited. **Git
   connections**: whether Workspaces may connect git organizations (on by default; off stops every
   connection without deleting it) and the **allowed git hosts** (empty allows any host); see
   [Git organizations](git-organizations.md#site-admins-allow-git-connections-and-limit-hosts).
-- **Isolation**: whether agents can run. Kobe refuses to run agents unless the cluster offers a
+- **Isolation**: whether agents can run. Kaiju refuses to run agents unless the cluster offers a
   gVisor or Kata sandbox runtime; this page shows the check and how to fix it.
 - **Backup and restore**: how to back up and restore the site, and the last restore.
 - **Audit forwarding**: whether audit events reach your security monitoring system (SIEM).
@@ -246,15 +246,15 @@ read a person's portable preferences either; reading them needs its own break-gl
 ### Ingress rate limit
 
 The Site console's overview page shows an information notice when nothing limits how many requests
-one address may send through Kobe's ingress. Kobe still limits sign-in, uploads and other costly
+one address may send through Kaiju's ingress. Kaiju still limits sign-in, uploads and other costly
 requests itself; the notice is not an error and nothing stops working.
 
-- **No rate limit at the ingress**: Kobe's Helm chart manages the ingress and its optional rate
+- **No rate limit at the ingress**: Kaiju's Helm chart manages the ingress and its optional rate
   limit is off (the default).
 - **Ingress rate limit unknown**: the ingress is not managed by the chart (your organization runs
-  its own), so Kobe can't tell.
+  its own), so Kaiju can't tell.
 
-Either way it is a deployment setting, not a Site console one: ask whoever installed Kobe. They can
+Either way it is a deployment setting, not a Site console one: ask whoever installed Kaiju. They can
 turn on the chart's limit (`ingress.rateLimit.enabled`), or, when a load balancer, firewall or
 their own ingress already limits requests per address, declare it with
 `ingress.rateLimit.external: true`; the notice then goes away. The install guide's section "Rate
@@ -262,8 +262,8 @@ limit at the ingress" has the details.
 
 ## From a conversation
 
-The built-in **Kobe** connector gives every agent the guide's docs tools. Its admin tools are off
-until you choose **Docs and admin tools** under **Settings → Kobe connector**; each team admin then
+The built-in **Kaiju** connector gives every agent the guide's docs tools. Its admin tools are off
+until you choose **Docs and admin tools** under **Settings → Kaiju connector**; each team admin then
 chooses a level for their team (**Docs only**, **Read** or **Read and write**). In a team at Read
 and write, a site admin can ask the agent to deactivate or reactivate a user, create a team, add
 people to a team, change their team role or remove them, invite someone, update the model catalog, change a connector's status, edit the egress ceiling,

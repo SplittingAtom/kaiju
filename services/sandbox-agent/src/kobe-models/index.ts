@@ -9,7 +9,7 @@ import { registerKobeModels, type ExtensionApiLike } from "./register.js";
 import { readModelState } from "./state-file.js";
 
 /**
- * kobe-models: the Pi 1.0.x extension that gives Pi the run's model through the Kobe model
+ * kobe-models: the Pi 1.0.x extension that gives Pi the run's model through the Kaiju model
  * gateway (spec D30; KOBE-41). kobe-sandbox-agent loads it with `--extension <root-owned path>`
  * (before kobe-policy) into every `pi --mode rpc` it starts with a model, together with
  * `--model kobe/<gateway model>` and the model file (`KOBE_MODEL_FILE`, see protocol.ts).

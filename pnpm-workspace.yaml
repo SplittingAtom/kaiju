@@ -14,7 +14,7 @@ minimumReleaseAgeExclude:
   - globals@17.13.0
   - turbo@2.11.6
 
-# sharp ships LGPL libvips binaries (license policy, spec D3). Kobe serves images unoptimized.
+# sharp ships LGPL libvips binaries (license policy, spec D3). Kaiju serves images unoptimized.
 ignoredOptionalDependencies:
   - sharp
   # pdfjs-dist (KOBE-801) runs only in the browser; its optional native canvas is for Node rendering.

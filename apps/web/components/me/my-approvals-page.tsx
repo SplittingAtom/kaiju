@@ -31,7 +31,7 @@ export function MyApprovalsPage() {
     <>
       <PageHeader
         title="Approvals"
-        description="Approvals you asked Kobe to remember in this team. A remembered approval lets that tool run without asking, only in your own interactive conversations: never in scheduled or auto runs, and never past your team's deny or ask rules."
+        description="Approvals you asked Kaiju to remember in this team. A remembered approval lets that tool run without asking, only in your own interactive conversations: never in scheduled or auto runs, and never past your team's deny or ask rules."
       />
       <Section id={HEADING} title="Remembered approvals">
         <RememberedRules

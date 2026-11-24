@@ -36,7 +36,7 @@ export const WORKSPACE_VOLUME_LOST_MESSAGE =
  * grace period yet: it may come back with the files. Same text as `FAILURE_MESSAGES`.
  */
 export const WORKSPACE_VOLUME_UNREACHABLE_MESSAGE =
-  "Your workspace could not be started because the server that holds its storage is not answering. It may come back with your files; if it stays down, Kobe offers to rebuild the workspace from the last sync. Try again later.";
+  "Your workspace could not be started because the server that holds its storage is not answering. It may come back with your files; if it stays down, Kaiju offers to rebuild the workspace from the last sync. Try again later.";
 
 /** KOBE-739: a confirmed rebuild is still removing the old storage. Same text as `FAILURE_MESSAGES`. */
 export const WORKSPACE_REBUILDING_MESSAGE =

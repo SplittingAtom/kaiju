@@ -13,7 +13,7 @@ export const UNKNOWN_IP_NOTICE_MS = 24 * 60 * 60_000;
 const RECORD_EVERY_MS = 60_000;
 
 export interface ClientIpWatch {
-  /** A request reached an IP-keyed limit without a client address Kobe can trust. */
+  /** A request reached an IP-keyed limit without a client address Kaiju can trust. */
   unknown(source: UnknownIpSource): void;
   /** Since when sightings have been recorded (the last day), or null when there were none. */
   seen(): Promise<{ readonly since: number } | null>;
@@ -42,7 +42,7 @@ export function createClientIpWatch(o: {
         warned.add(source);
         o.log.warn(
           { source },
-          "a request arrived without a client IP Kobe can trust: per-address limits are shared by every such client. Check KOBE_TRUSTED_PROXIES (Helm auth.trustedProxies) against the proxies in front of the server",
+          "a request arrived without a client IP Kaiju can trust: per-address limits are shared by every such client. Check KOBE_TRUSTED_PROXIES (Helm auth.trustedProxies) against the proxies in front of the server",
         );
       }
       const t = now();

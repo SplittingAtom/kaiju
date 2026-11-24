@@ -27,8 +27,8 @@ Open **Skills** in the top bar (`/me/skills`). It has four tabs:
 In a conversation, **+** → **Skills** shows the skills available to you there. An agent can also
 name the skills it loads (see [Agents](agents.md)).
 
-Kobe installs its own skills in every team, **On by default**. One of them, **kobe-guide**, makes
-the agent answer questions about Kobe from this guide (read through the built-in Kobe connector's
+Kaiju installs its own skills in every team, **On by default**. One of them, **kobe-guide**, makes
+the agent answer questions about Kaiju from this guide (read through the built-in Kaiju connector's
 docs tools, with no internet access) and cite the pages it used. Ask "How do I…" in any
 conversation.
 
@@ -76,10 +76,10 @@ decide.
 
 ## Why isn't my skill showing up?
 
-Kobe leaves a skill out of a run, without an error, when the version is not cleared for your team.
+Kaiju leaves a skill out of a run, without an error, when the version is not cleared for your team.
 Check these in order.
 
-**1. It is waiting for review.** Kobe scans every saved version and gives it a verdict:
+**1. It is waiting for review.** Kaiju scans every saved version and gives it a verdict:
 
 - **Pass**: nothing the scanner flags;
 - **Caution**: findings a reviewer must acknowledge before the team can use the version;
@@ -88,23 +88,23 @@ Check these in order.
 Every new version of a **team skill** waits for a team admin's approval, whatever its verdict. Until
 then runs keep using the newest approved version, or leave the skill out if none is approved yet.
 A **personal skill** with a Pass verdict runs in every team without review. A Caution or Block
-verdict, or a version not scanned yet, needs the approval of each team's admin. Kobe adds the
+verdict, or a version not scanned yet, needs the approval of each team's admin. Kaiju adds the
 version to that team's queue the first time one of your runs meets it.
 
-When a version's scan can't finish (for example while the server is busy), Kobe saves the version
+When a version's scan can't finish (for example while the server is busy), Kaiju saves the version
 as **not scanned yet**, never as Block, and scans it again in the background, usually within a
 minute. Until a scan finishes, a team admin can reject the version but not approve it, and a
 personal version needs each team's approval. You don't need to save it again.
 
 Team admins approve or reject in the Team console under **Agents and skills → Skill review**. A
 Caution version needs its findings acknowledged (**Approve anyway**). Versions never change once
-saved, so each new version you save is reviewed again. Where the team turned on Kobe's admin tools,
+saved, so each new version you save is reviewed again. Where the team turned on Kaiju's admin tools,
 a team admin can also ask the agent to list the queue and approve, request changes on or reject a
 version; the decision shows an **Admin change** card first (see
 [Admin from a conversation](../admin/admin-from-a-conversation.md)). Site Skill reviewers can claim,
 comment on and decide Site Registry reviews the same way.
 
-**2. It was suspended or blocked.** A later rescan can turn an approved version into Block. Kobe
+**2. It was suspended or blocked.** A later rescan can turn an approved version into Block. Kaiju
 then suspends it until a team admin decides again. When the scanner's rules change and the rescan
 of a version keeps failing to finish, the version stays usable for a while (24 hours unless your
 site changed it) and is then suspended too, with the same notice. It comes back by itself once a

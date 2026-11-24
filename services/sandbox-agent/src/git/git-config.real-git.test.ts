@@ -29,7 +29,7 @@ const PROXY_AUTH = `Basic ${Buffer.from(`${THREAD}:${TOKEN}`).toString("base64")
 
 const context: RunGitContext = {
   author: { name: "Ada Lovelace", email: "ada@acme.test" },
-  committer: { name: "Ada Lovelace via Kobe", email: "ada@acme.test" },
+  committer: { name: "Ada Lovelace via Kaiju", email: "ada@acme.test" },
   remotes: [{ base_url: "https://github.com", organization: "acme" }],
 };
 
@@ -260,7 +260,7 @@ describe.skipIf(backend === undefined)(
       expect(cloned).not.toContain(TOKEN);
     });
 
-    it("commits as the member with 'via Kobe' in the committer and pushes a branch", async () => {
+    it("commits as the member with 'via Kaiju' in the committer and pushes a branch", async () => {
       const app = path.join(root, "app");
       const out = await tool(
         "git switch -q -c agent/change && echo more >> README.md && git commit -qam 'more' && " +
@@ -276,7 +276,7 @@ describe.skipIf(backend === undefined)(
           encoding: "utf8",
         },
       ).trim();
-      expect(log).toBe("Ada Lovelace <ada@acme.test>|Ada Lovelace via Kobe <ada@acme.test>");
+      expect(log).toBe("Ada Lovelace <ada@acme.test>|Ada Lovelace via Kaiju <ada@acme.test>");
       expect(seen.some((s) => s.url.endsWith("/git-receive-pack"))).toBe(true);
     });
 

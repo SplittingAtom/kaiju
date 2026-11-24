@@ -319,7 +319,7 @@ function EditProviderForm({
         <Notice tone="warn" role="alert">
           <p>
             You changed the endpoint of a provider with a stored key. Enter the API key again to
-            send it to the new endpoint: Kobe never moves a stored key to another address.
+            send it to the new endpoint: Kaiju never moves a stored key to another address.
           </p>
         </Notice>
       )}

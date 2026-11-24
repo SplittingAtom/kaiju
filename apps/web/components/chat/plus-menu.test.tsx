@@ -116,7 +116,7 @@ describe("the + menu (ac-1)", { timeout: 30_000 }, () => {
 });
 
 describe("Connectors (ac-2, ac-3, ac-6)", { timeout: 30_000 }, () => {
-  it("lists the built-in Kobe connector as always on, with the member's admin tools (KOBE-623)", async () => {
+  it("lists the built-in Kaiju connector as always on, with the member's admin tools (KOBE-623)", async () => {
     fake.chatConnectors.unshift({
       connector_id: "6b6f6265-0000-4000-8000-000000000001",
       name: "kobe",

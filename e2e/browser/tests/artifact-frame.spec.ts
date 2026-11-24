@@ -25,7 +25,7 @@ interface Report {
 /** WebRTC blocked, from a probe that ran: the same check for both frames. */
 const BLOCKED: Report = { probe: PROBE, rtc: "undefined", dc: "undefined" };
 
-/** Loads `src` in an iframe of Kobe's page (as the panel does) and waits for the probe. */
+/** Loads `src` in an iframe of Kaiju's page (as the panel does) and waits for the probe. */
 async function probeFrame(page: Page, src: string): Promise<Report> {
   return (await page.evaluate(
     ({ src, probe }) =>

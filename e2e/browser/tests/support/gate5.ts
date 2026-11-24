@@ -31,7 +31,7 @@ export function toolTurn(tool: string, args: Record<string, unknown>): string {
 }
 
 /**
- * A turn whose write asks for an approval in ask-on-write: share_file (a Kobe write) of a file in
+ * A turn whose write asks for an approval in ask-on-write: share_file (a Kaiju write) of a file in
  * the member's workspace, made first with a {@link bashTurn}. create_artifact never asks (the
  * server's PROMPT_EXEMPT_KOBE_TOOLS, a decision of 2026-10-06).
  */

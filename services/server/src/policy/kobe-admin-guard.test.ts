@@ -16,7 +16,7 @@ import {
   type KobeAdminGuard,
 } from "./kobe-admin-guard.js";
 
-/** KOBE-619 (spec kobe-admin-mcp §6, KA2): Kobe admin writes ask in every mode. */
+/** KOBE-619 (spec kobe-admin-mcp §6, KA2): Kaiju admin writes ask in every mode. */
 const NOW = new Date("2026-11-11T10:00:00.000Z");
 const kobe = (risk: ToolDescriptor["risk"]): ToolDescriptor => ({
   name: "mcp__kobe__team_members_set_role",

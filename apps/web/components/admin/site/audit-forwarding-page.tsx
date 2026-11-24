@@ -57,7 +57,7 @@ export function AuditForwardingPage() {
     <>
       <PageHeader
         title="Audit forwarding"
-        description="Kobe sends every audit event to your SIEM over syslog or OTLP. A destination that fails is retried with a growing wait (up to 15 minutes) and never skips an event."
+        description="Kaiju sends every audit event to your SIEM over syslog or OTLP. A destination that fails is retried with a growing wait (up to 15 minutes) and never skips an event."
         actions={
           <Button onClick={reload} disabled={state.status === "loading"}>
             Refresh

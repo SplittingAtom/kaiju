@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gate 3 (KOBE-3, Product) against an installed Kobe, the five criteria end to end (KOBE-231):
+# Gate 3 (KOBE-3, Product) against an installed Kaiju, the five criteria end to end (KOBE-231):
 #   ac-1 versions  a Builder publishes agent v2 while a thread started on v1 stays pinned to v1; the
 #                  thread shows v2 is available and switches in one call; rollback republishes v1 as
 #                  a new version (KOBE-46)
@@ -358,7 +358,7 @@ if [[ "$STEPS" == *" data "* ]] && sbx_need "ac-5 (data)"; then
   CSV=$'region,amount\nnorth,120.5\nsouth,80\nnorth,30\neast,50.25\n'
   start=$(turn "$U_M1" "gate3 data $NONCE" "\"agentId\":\"$KOBE_AGENT\",\"title\":\"gate3 data\"")
   T_DATA=$(field thread "$start")
-  contains "a thread with Kobe starts" '^terminal=run.completed$' "$start"
+  contains "a thread with Kaiju starts" '^terminal=run.completed$' "$start"
   up=$(step upload "\"user\":$U_M1,\"threadId\":\"$T_DATA\",\"name\":\"sales.csv\",\"text\":$(json_str "$CSV")")
   show "upload" "$up"
   UPLOAD=$(field file_id "$up")
@@ -488,7 +488,7 @@ if ((MODELS)) && [[ -n "${ARTIFACT:-}${T_MEMORY:-}${PINNED_THREAD:-}" ]]; then
     map="${KOBE_GATE3_BROWSER_MAP:-}"
     if [[ -z "$map" && "$context" == k3d-* ]]; then
       # The browser runs beside kubectl: it reaches the ingress through a port-forward and resolves
-      # the public host to it, so it talks to Kobe under its own origin.
+      # the public host to it, so it talks to Kaiju under its own origin.
       $KUBECTL -n kube-system port-forward svc/traefik 18080:80 >"$WORK/port-forward.log" 2>&1 &
       pf=$!
       UNDO+=("kill $pf")

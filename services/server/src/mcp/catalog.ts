@@ -160,7 +160,7 @@ export function createDbMcpCatalog(db: KobeDb): McpToolCatalog & ConnectorStateS
         .from(connectors)
         .where(sql`replace(${connectors.name}, '-', '_') = ${parsed.server_segment}`);
       if (!row) return undefined;
-      // The built-in Kobe connector (KOBE-619): its tools come from Kobe's own catalog.
+      // The built-in Kaiju connector (KOBE-619): its tools come from Kaiju's own catalog.
       // KOBE-762: the built-in git connector's from the git tools' catalog.
       const tools =
         row.builtin === "kobe"
@@ -186,7 +186,7 @@ export function createDbMcpCatalog(db: KobeDb): McpToolCatalog & ConnectorStateS
       }
       if (connectorId === KOBE_BUILTIN_CONNECTOR_ID) {
         // Enabled while the site switch is not off; `custom` over what the switches allow (the
-        // person's own permission is the Kobe MCP service's check, which knows the person).
+        // person's own permission is the Kaiju MCP service's check, which knows the person).
         const row = await loadKobeBuiltin(db);
         if (!row) return undefined;
         const switches = await loadKobeSwitches(db, teamId);

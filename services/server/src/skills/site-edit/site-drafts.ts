@@ -17,7 +17,7 @@ import {
  * seeded from a chosen version's package and changed file by file under the Workbench's rules
  * (package paths, file count, SKILL.md cap, 5 MiB in all) with the same compare-and-set revision.
  * Every call re-checks that the caller is an active Site admin inside its transaction (the route
- * checks the session's role too). Starting a draft of a Kobe-shipped skill detaches it, in the same
+ * checks the session's role too). Starting a draft of a Kaiju-shipped skill detaches it, in the same
  * transaction, under the skill's row lock (the seed takes that lock too). Blocklisted skills and
  * retired ones (Deprecated, Archived: Restore first) can't be edited.
  */
@@ -242,7 +242,7 @@ async function versionState(db: KobeDb, versionId: string): Promise<string | nul
 
 /**
  * Starts the site draft of `skillId` from `versionId`'s package. One draft per skill: an existing
- * one is answered `draft_exists` unless `replace`. A Kobe skill is detached here.
+ * one is answered `draft_exists` unless `replace`. A Kaiju skill is detached here.
  */
 export async function startSiteDraft(
   deps: { readonly db: KobeDb; readonly blobs: BlobStore },
@@ -304,7 +304,7 @@ export async function startSiteDraft(
     for (const [path, bytes] of files)
       if (!READ_ONLY_PATHS.has(path)) await putFile(tx, id, path, bytes, userId);
     await bump(tx, id, userId);
-    // The first edit of a Kobe skill detaches it, with the draft (KOBE-494 review pattern).
+    // The first edit of a Kaiju skill detaches it, with the draft (KOBE-494 review pattern).
     await detachInTx(tx, skillId, userId);
     const draft = await draftOf(tx, skillId);
     if (!draft) throw new Error("site draft vanished");
@@ -347,7 +347,7 @@ export function writeSiteDraftFile(
   return asSiteAdmin(db, userId, async (tx) => {
     const draft = await lockedAt(tx, skillId, rev);
     if (READ_ONLY_PATHS.has(path))
-      refuse({ error: "invalid_path", message: `${path}: Kobe writes provenance.json itself.` });
+      refuse({ error: "invalid_path", message: `${path}: Kaiju writes provenance.json itself.` });
     const files = await draftFiles(tx, draft.id);
     const problem = draftPathProblem(
       path,
@@ -394,7 +394,7 @@ export function deleteSiteDraftFile(
   });
 }
 
-/** Discards the draft (the skill stays detached until Reset to Kobe). */
+/** Discards the draft (the skill stays detached until Reset to Kaiju). */
 export function discardSiteDraft(
   db: KobeDb,
   userId: string,

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Kobe web app: Next.js + assistant-ui",
+  "description": "Kaiju web app: Next.js + assistant-ui",
   "type": "module",
   "scripts": {
     "dev": "node scripts/copy-pdfjs-assets.mjs && next dev",

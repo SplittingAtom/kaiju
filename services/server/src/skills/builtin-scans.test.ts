@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { loadKobePackages } from "./kobe-packages.js";
 
 /**
- * Pins each builtin Kobe skill's scan (verdict and finding rule ids), scanned exactly as the seed
+ * Pins each builtin Kaiju skill's scan (verdict and finding rule ids), scanned exactly as the seed
  * does (the canonical zip's files). A scanner rule change that flips a builtin skill's verdict or
  * adds or drops a finding fails here, so it is seen and decided (KOBE-379 re-review). Update the
  * table deliberately, with the reason in the ticket's ledger.

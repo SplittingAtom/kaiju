@@ -29,7 +29,7 @@ const ID = "11111111-1111-4111-8111-111111111111";
 
 const context: RunGitContext = {
   author: { name: "Ada Lovelace", email: "ada@acme.test" },
-  committer: { name: "Ada Lovelace via Kobe", email: "ada@acme.test" },
+  committer: { name: "Ada Lovelace via Kaiju", email: "ada@acme.test" },
   remotes: [{ base_url: "https://github.com", organization: "acme" }],
 };
 

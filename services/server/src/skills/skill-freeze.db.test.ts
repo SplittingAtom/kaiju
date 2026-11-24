@@ -12,7 +12,7 @@ import { RunFixture } from "../testing/run-fixture.js";
  * KOBE-318 (SK28): publishing a team agent freezes the exact local skill versions it names; runs
  * of that version load them and nothing newer until a republish. A frozen version that is later
  * blocklisted, suspended by a rescan or no longer approved is omitted with a notice, never
- * swapped; a republish freezes the newest valid version. Catalog skills (Kobe's too) are never
+ * swapped; a republish freezes the newest valid version. Catalog skills (Kaiju's too) are never
  * frozen: they follow the team install. The builder lists skill updates and frozen notices.
  */
 const f = new RunFixture();
@@ -357,7 +357,7 @@ describe("frozen versions next to Required, archive, catalog and the cap", () =>
     expect(await resolvedOf(w.team, w.owner.id, agent, v1)).toEqual([`${name}@1.1.0:catalog`]);
   });
 
-  it("a team skill named like a Kobe skill is never frozen", async () => {
+  it("a team skill named like a Kaiju skill is never frozen", async () => {
     const w = await f.world();
     const skill = await seed.teamSkill(w.team, w.owner.id, "pdf");
     await seed.addVersion(w.team, w.owner.id, skill, "pdf", 1);

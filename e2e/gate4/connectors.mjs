@@ -45,7 +45,7 @@ async function u7Start() {
   return { c, url: r.json.authorization_url };
 }
 
-/** Kobe's callback, with the user's session, from the URL the authorization server redirected to. */
+/** Kaiju's callback, with the user's session, from the URL the authorization server redirected to. */
 async function finishCallback(c, callbackUrl) {
   const u = new URL(callbackUrl);
   const r = await c.raw("GET", `${u.pathname}${u.search}`, undefined, {}, { redirect: "manual" });
@@ -61,7 +61,7 @@ async function finishCallback(c, callbackUrl) {
   out("grant", g ? `${g.kind}` : "none");
 }
 
-/** The fake authorization server consents at once: start, follow it, then Kobe's callback. */
+/** The fake authorization server consents at once: start, follow it, then Kaiju's callback. */
 async function u7Connect() {
   const { c, url } = await u7Start();
   if (!url) return;

@@ -166,7 +166,7 @@ async function createJitUser(
         .values({
           email: identity.email,
           name: identity.name ?? identity.email.split("@")[0] ?? identity.email,
-          // The token's own evidence; Kobe never treats it as proof of identity (§6).
+          // The token's own evidence; Kaiju never treats it as proof of identity (§6).
           emailVerified: identity.emailVerified,
         })
         .returning({ id: users.id });

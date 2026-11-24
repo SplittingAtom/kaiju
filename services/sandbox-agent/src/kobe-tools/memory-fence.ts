@@ -93,7 +93,7 @@ export function untrustedMemoryBlock(
 }
 
 /**
- * A fenced list (KOBE-383, "What Kobe knows"): a label line, then one line per entry, each
+ * A fenced list (KOBE-383, "What Kaiju knows"): a label line, then one line per entry, each
  * sanitised to a single line so an entry can neither close the fence nor fake another entry.
  */
 export function untrustedLinesBlock(

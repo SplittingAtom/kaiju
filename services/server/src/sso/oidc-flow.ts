@@ -207,7 +207,7 @@ export interface StartParams {
   readonly codeChallenge: string;
 }
 
-/** The `max_age` Kobe asks for: a minute under the age it accepts (`AUTH_TIME_MAX_AGE_S`). */
+/** The `max_age` Kaiju asks for: a minute under the age it accepts (`AUTH_TIME_MAX_AGE_S`). */
 export const MAX_AGE_REQUESTED_S = AUTH_TIME_MAX_AGE_S - 60;
 
 export function authorizationUrl(config: oidc.Configuration, p: SsoProvider, s: StartParams): URL {

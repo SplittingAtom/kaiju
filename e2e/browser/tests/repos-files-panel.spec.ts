@@ -17,7 +17,7 @@ import { pageApi } from "./support/gate5.js";
  * The second test needs a git connection at Read and write in the active Workspace and goes
  * through the dialog on a real project up to, not including, the start. Only with
  * `KOBE_GIT_E2E_CONVERT=1` (opt-in, off by default, review H1) does it also convert: that creates
- * a private repository named `<prefix>kobe-e2e-<unique>` in the organization, which Kobe never
+ * a private repository named `<prefix>kobe-e2e-<unique>` in the organization, which Kaiju never
  * deletes (remove it on the host afterwards). Spends no model tokens:
  * `npx playwright test repos-files-panel`.
  */
@@ -149,7 +149,7 @@ async function fakeRepos(page: Page): Promise<{ started: string[] }> {
     return json(route, 422, {
       code: "too_large_to_mirror",
       message:
-        "The project's current files (300 MiB) are more than a Repo's mirror can show (256 MiB): after converting, Kobe could not show the repository's changes. Remove large files before converting.",
+        "The project's current files (300 MiB) are more than a Repo's mirror can show (256 MiB): after converting, Kaiju could not show the repository's changes. Remove large files before converting.",
       limit_bytes: 268435456,
       size_bytes: 314572800,
     });
@@ -237,7 +237,7 @@ test("Convert to repo on a real project (needs a git connection at Read and writ
     page,
     "POST",
     "/v1/projects",
-    { name: `Kobe e2e ${unique}`, slug: `kobe-e2e-${unique}` },
+    { name: `Kaiju e2e ${unique}`, slug: `kobe-e2e-${unique}` },
   );
   expect(made.status, JSON.stringify(made.json)).toBe(201);
   const uploaded = await page.evaluate(async (id) => {

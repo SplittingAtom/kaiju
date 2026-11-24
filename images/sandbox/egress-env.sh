@@ -1,4 +1,4 @@
-# Kobe egress for the tools Pi runs (KOBE-39). Root-owned and read-only; Pi's environment names it
+# Kaiju egress for the tools Pi runs (KOBE-39). Root-owned and read-only; Pi's environment names it
 # in BASH_ENV, so every non-interactive bash (each bash tool call) sources it before the command.
 #
 # It reads the sandbox's current egress token from the file kobe-sandbox-agent rotates

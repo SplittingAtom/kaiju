@@ -31,7 +31,7 @@ updates:
     schedule: { interval: weekly }
     open-pull-requests-limit: 10
     ignore:
-      # Kobe runs on Node 24 (images and CI); the types follow the runtime's major version.
+      # Kaiju runs on Node 24 (images and CI); the types follow the runtime's major version.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
   # Pi has its own entry (KOBE-511): while it shared the root's, the root's bumps kept that entry at

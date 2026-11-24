@@ -14,7 +14,7 @@ import {
 
 /**
  * KOBE-157 against the REAL pinned Pi 1.0.0 with the real kobe-policy and kobe-tools extensions,
- * through kobe-sandbox-agent and a fake Kobe server: `remember` / `recall` are listed, kobe-policy
+ * through kobe-sandbox-agent and a fake Kaiju server: `remember` / `recall` are listed, kobe-policy
  * checks each call before `memory.put` / `memory.read` leave, and the `run.start.memory` index
  * reaches the model fenced as untrusted data. A scripted model makes Pi call the tools.
  */
@@ -162,7 +162,7 @@ describe.skipIf(!PI_AVAILABLE)("memory tools in real Pi, through kobe-sandbox-ag
     expect(t.server.frames("policy.check")).toEqual([]);
   }, 120_000);
 
-  it("announces semantic memory with memory, and renders What Kobe knows (KOBE-383)", async () => {
+  it("announces semantic memory with memory, and renders What Kaiju knows (KOBE-383)", async () => {
     const t = await start();
     const caps = (t.server.frames("hello")[0] as { capabilities?: string[] }).capabilities ?? [];
     expect(caps).toContain("semantic_memory");
@@ -180,7 +180,7 @@ describe.skipIf(!PI_AVAILABLE)("memory tools in real Pi, through kobe-sandbox-ag
     const prompt = await systemPromptOf(t, {
       memory: { scopes: [], indexes: [], semantic: { items: [policy], omitted_count: 0 } },
     });
-    expect(prompt).toContain("## What Kobe knows");
+    expect(prompt).toContain("## What Kaiju knows");
     expect(prompt).toContain("organization policy, set by the Site");
     expect(prompt).toContain("policy-marker");
     expect(prompt).not.toContain("Look up saved memory");

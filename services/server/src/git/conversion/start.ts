@@ -34,10 +34,10 @@ import { activeConversion, conversionView, latestConversion, type ConversionRow 
 /**
  * Starting, retrying and abandoning a conversion (KOBE-765, G16, GQ13), for the routes. The
  * project's owner and Workspace admins (`manage`) may do all three; every member who views the
- * project may read the attempt. A start checks everything Kobe can know without the host (G16:
+ * project may read the attempt. A start checks everything Kaiju can know without the host (G16:
  * "refused ... and the dialog says which"), freezes the commit plan and inserts the attempt under
- * the project row lock, the lock every Kobe write takes, so no commit slips in between: from then
- * on the project takes no Kobe writes until the attempt completes (a Repo) or is abandoned.
+ * the project row lock, the lock every Kaiju write takes, so no commit slips in between: from then
+ * on the project takes no Kaiju writes until the attempt completes (a Repo) or is abandoned.
  */
 export type Viewer = { readonly teamId: string; readonly userId: string };
 
@@ -202,7 +202,7 @@ async function check(
       limitBytes: GIT_CONVERSION_MAX_FILE_BYTES,
     };
   }
-  // KOBE-766 review R3-M1: the Repo's mirror must be able to hold the current files, or Kobe
+  // KOBE-766 review R3-M1: the Repo's mirror must be able to hold the current files, or Kaiju
   // could never show the host's changes after conversion.
   const current = await tx.execute<{
     files: string;
@@ -420,7 +420,7 @@ export async function retryConversion(
 
 /**
  * Abandon: a failed attempt ends; the project stays an ordinary project and takes commits again.
- * A repository the host created for it stays on the host (Kobe deletes nothing there, §9): the
+ * A repository the host created for it stays on the host (Kaiju deletes nothing there, §9): the
  * answer names it, and it stays listed in the Git section's repositories.
  */
 export async function abandonConversion(

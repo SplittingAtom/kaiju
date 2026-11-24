@@ -300,7 +300,7 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
         unknownClientIp: {
           ...nullable(obj({ since: dateTime })),
           description:
-            "Since when (in the last day) requests arrived without a client IP Kobe can trust; null when none did.",
+            "Since when (in the last day) requests arrived without a client IP Kaiju can trust; null when none did.",
         },
       }),
     ),
@@ -598,7 +598,7 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
     response: SiteHealth,
     responseDescription:
       "Install checks. `info` is a notice, not an error: `ingress_rate_limit` is `none` when the " +
-      "chart's Ingress has no per-client rate limit, `unknown` when Kobe's Ingress is not managed " +
+      "chart's Ingress has no per-client rate limit, `unknown` when Kaiju's Ingress is not managed " +
       "by the chart and no edge limit was declared.",
   },
   "post /v1/site/isolation/check": {

@@ -196,7 +196,7 @@ describe("skills at run start", () => {
 });
 
 /**
- * KOBE-317: the former built-ins are Kobe-published catalog skills and arrive as bundles like any
+ * KOBE-317: the former built-ins are Kaiju-published catalog skills and arrive as bundles like any
  * other; the image path (`builtin_skills`, `KOBE_BUILTIN_SKILLS_DIR`) is gone.
  */
 describe("former built-in skills", () => {

@@ -8,7 +8,7 @@ import {
 import { hiddenToolsFrom, applyHiddenTools } from "./hidden-tools.js";
 
 /**
- * kobe-policy: the Pi 1.0.x extension that asks the Kobe server about every tool call (spec D13,
+ * kobe-policy: the Pi 1.0.x extension that asks the Kaiju server about every tool call (spec D13,
  * D29; KOBE-36). kobe-sandbox-agent loads it with `--extension <root-owned path>`, last, into every
  * `pi --mode rpc` it starts, with the policy channel on fd 3 (`KOBE_POLICY_FD`).
  *

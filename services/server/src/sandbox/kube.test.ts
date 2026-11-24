@@ -7,7 +7,7 @@ import { KUBE_API_TIMEOUT_MS, createKubeClient, statusMessage } from "./kube.js"
 
 describe("statusMessage", () => {
   const denied =
-    "namespaces \"kobe-admission-probe\" is forbidden: ValidatingAdmissionPolicy 'x' denied request: Kobe may only manage kobe-team-* namespaces, not kobe-admission-probe";
+    "namespaces \"kobe-admission-probe\" is forbidden: ValidatingAdmissionPolicy 'x' denied request: Kaiju may only manage kobe-team-* namespaces, not kobe-admission-probe";
 
   it("reads the message of a Status sent as raw JSON text (client-node v2)", () => {
     expect(

@@ -36,7 +36,7 @@ export async function listTables(client: pg.ClientBase): Promise<TableInfo[]> {
   return rows.map((r) => ({ name: r.name, forcedRls: r.forced, ownedByCurrentUser: r.owned }));
 }
 
-/** Applied Kobe migrations, oldest first; empty when the database was never migrated. */
+/** Applied Kaiju migrations, oldest first; empty when the database was never migrated. */
 export async function readJournal(client: pg.ClientBase): Promise<MigrationRecord[]> {
   const exists = await client.query<{ present: boolean }>(
     `SELECT to_regclass('drizzle.__drizzle_migrations') IS NOT NULL AS present`,
@@ -112,7 +112,7 @@ export async function serverInfo(client: pg.ClientBase): Promise<ServerInfo> {
 
 /**
  * Fails when data exists that a data-only dump of `public` would silently skip: tables, partitioned
- * tables, materialized views or foreign tables in any other schema (except Kobe's own migration
+ * tables, materialized views or foreign tables in any other schema (except Kaiju's own migration
  * bookkeeping in `drizzle`), materialized views or foreign tables in `public`, and large objects.
  */
 export async function assertCoverage(client: pg.ClientBase): Promise<void> {
@@ -142,7 +142,7 @@ export async function assertCoverage(client: pg.ClientBase): Promise<void> {
   ];
   if (problems.length > 0) {
     throw new Error(
-      `Refusing to back up: data outside what a Kobe backup covers (tables in public) would be skipped: ${problems.join(", ")}`,
+      `Refusing to back up: data outside what a Kaiju backup covers (tables in public) would be skipped: ${problems.join(", ")}`,
     );
   }
 }

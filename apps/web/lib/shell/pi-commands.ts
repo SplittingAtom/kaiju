@@ -1,9 +1,9 @@
 /**
- * Pi's built-in commands and what Kobe does with each (KOBE-450). The sandbox pins Pi 1.4.0
+ * Pi's built-in commands and what Kaiju does with each (KOBE-450). The sandbox pins Pi 1.4.0
  * (`images/sandbox/pi/package.json`); the list is its `BUILTIN_SLASH_COMMANDS`
- * (`dist/core/slash-commands.js`), plus `/llama`, which its docs list. Kobe runs Pi in RPC mode,
- * where these words are no commands at all, so none is ever passed to Pi: each is a Kobe command
- * (the same word, or Kobe's own word for it) or not offered, with the reason. The `/` menu shows
+ * (`dist/core/slash-commands.js`), plus `/llama`, which its docs list. Kaiju runs Pi in RPC mode,
+ * where these words are no commands at all, so none is ever passed to Pi: each is a Kaiju command
+ * (the same word, or Kaiju's own word for it) or not offered, with the reason. The `/` menu shows
  * a not-offered word as one disabled row with its reason, so it is never sent as a message either.
  */
 import { COMMANDS, type CommandId } from "./commands";
@@ -11,9 +11,9 @@ import { COMMANDS, type CommandId } from "./commands";
 export const PI_VERSION = "1.4.0";
 
 export type PiMapping =
-  /** Kobe has a command with this very word. */
+  /** Kaiju has a command with this very word. */
   | { readonly kind: "same"; readonly command: CommandId }
-  /** Kobe's command for it has another word; typing Pi's word offers Kobe's command. */
+  /** Kaiju's command for it has another word; typing Pi's word offers Kaiju's command. */
   | { readonly kind: "alias"; readonly command: CommandId }
   | { readonly kind: "not-offered"; readonly reason: string };
 
@@ -29,14 +29,14 @@ const alias = (command: CommandId): PiMapping => ({ kind: "alias", command });
 const no = (reason: string): PiMapping => ({ kind: "not-offered", reason });
 
 const NO_KEYS =
-  "Pi's provider sign-in stores keys in the sandbox; Kobe keeps secrets out of it and reaches models through its own gateway.";
+  "Pi's provider sign-in stores keys in the sandbox; Kaiju keeps secrets out of it and reaches models through its own gateway.";
 
 export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
   {
     word: "settings",
     pi: "Open settings menu",
     mapping: no(
-      "It edits Pi's own settings file in its terminal menu; your Kobe settings are in your profile and the consoles.",
+      "It edits Pi's own settings file in its terminal menu; your Kaiju settings are in your profile and the consoles.",
     ),
   },
   { word: "model", pi: "Select model", mapping: same("choose-model") },
@@ -44,7 +44,7 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
     word: "tree",
     pi: "Navigate session tree (switch branches)",
     mapping: no(
-      "It is Pi's terminal tree view; in Kobe each message shows its other versions, and Fork starts a new branch.",
+      "It is Pi's terminal tree view; in Kaiju each message shows its other versions, and Fork starts a new branch.",
     ),
   },
   { word: "thinking", pi: "Set thinking level", mapping: same("choose-thinking") },
@@ -52,7 +52,7 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
     word: "scoped-models",
     pi: "Enable/disable models for Ctrl+P cycling",
     mapping: no(
-      "It configures model cycling in Pi's terminal; Kobe's models are your team's, chosen per conversation with /model.",
+      "It configures model cycling in Pi's terminal; Kaiju's models are your team's, chosen per conversation with /model.",
     ),
   },
   {
@@ -64,10 +64,10 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
     word: "import",
     pi: "Import and resume a session from a JSONL file",
     mapping: no(
-      "It reads a session file from a path outside your files into Pi; Kobe keeps every conversation on its server.",
+      "It reads a session file from a path outside your files into Pi; Kaiju keeps every conversation on its server.",
     ),
   },
-  // Kobe shares within the team (never a public gist); Pi's upload is not offered.
+  // Kaiju shares within the team (never a public gist); Pi's upload is not offered.
   {
     word: "share",
     pi: "Share session via a Radius artifact or a GitHub gist",
@@ -77,7 +77,7 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
     word: "bug",
     pi: "Report a bug to the Pi developers",
     mapping: no(
-      "It sends a report outside Kobe; rate the answer with thumbs down to tell the agent's owner.",
+      "It sends a report outside Kaiju; rate the answer with thumbs down to tell the agent's owner.",
     ),
   },
   { word: "copy", pi: "Copy last agent message to clipboard", mapping: same("copy-thread") },
@@ -86,7 +86,7 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
   {
     word: "changelog",
     pi: "Show changelog entries",
-    mapping: no("It shows Pi's release notes, which are not Kobe's."),
+    mapping: no("It shows Pi's release notes, which are not Kaiju's."),
   },
   { word: "hotkeys", pi: "Show all keyboard shortcuts", mapping: alias("keyboard-shortcuts") },
   {
@@ -94,7 +94,7 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
     pi: "Create a new fork from a previous user message",
     mapping: same("fork-thread"),
   },
-  // Kobe's /fork forks at the latest answer, which is Pi's /clone.
+  // Kaiju's /fork forks at the latest answer, which is Pi's /clone.
   {
     word: "clone",
     pi: "Duplicate the current session at the current position",
@@ -104,7 +104,7 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
     word: "trust",
     pi: "Save project trust decision for future sessions",
     mapping: no(
-      "It writes Pi's project trust file; in Kobe the server decides every tool call under your team's policy.",
+      "It writes Pi's project trust file; in Kaiju the server decides every tool call under your team's policy.",
     ),
   },
   { word: "login", pi: "Configure provider authentication", mapping: no(NO_KEYS) },
@@ -116,19 +116,19 @@ export const PI_BUILTIN_COMMANDS: readonly PiCommand[] = [
     word: "reload",
     pi: "Reload keybindings, extensions, skills, prompts, themes, and context files",
     mapping: no(
-      "It reloads Pi's local extensions, skills and context files; Kobe's server sets each run's skills and tools.",
+      "It reloads Pi's local extensions, skills and context files; Kaiju's server sets each run's skills and tools.",
     ),
   },
   {
     word: "quit",
     pi: "Quit Pi",
-    mapping: no("It ends the Pi process, which Kobe's server runs; use /stop to stop a run."),
+    mapping: no("It ends the Pi process, which Kaiju's server runs; use /stop to stop a run."),
   },
   {
     word: "llama",
     pi: "Manage models on the configured llama.cpp router",
     mapping: no(
-      "It manages a llama.cpp router from Pi's own config; Kobe's models are set up in the Site console.",
+      "It manages a llama.cpp router from Pi's own config; Kaiju's models are set up in the Site console.",
     ),
   },
 ];
@@ -149,15 +149,15 @@ export function piAliasesOf(id: CommandId): readonly string[] {
   );
 }
 
-/** The `/` menu's row for a word Kobe doesn't offer. */
+/** The `/` menu's row for a word Kaiju doesn't offer. */
 export function notOfferedLabel(word: string, reason: string): string {
-  return `/${word} isn't offered in Kobe: ${reason}`;
+  return `/${word} isn't offered in Kaiju: ${reason}`;
 }
 
 const FIRST_WORD = /^\/([^\s/]+)(?:\s|$)/u;
 
 /**
- * Why `text` can't be sent (KOBE-450 review LOW-5): it starts with a Pi command Kobe doesn't
+ * Why `text` can't be sent (KOBE-450 review LOW-5): it starts with a Pi command Kaiju doesn't
  * offer (`/login …`), so sending it would look like running that command. Null otherwise. A
  * member who means the text deliberately escapes it: a leading space (or any edit of the word).
  */

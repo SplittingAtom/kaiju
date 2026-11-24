@@ -81,7 +81,7 @@ export type CommitResult =
       readonly branch: string;
       readonly commitSha: string;
       readonly number: number;
-      /** The pull request on the host; "" when the host gave no link Kobe could keep. */
+      /** The pull request on the host; "" when the host gave no link Kaiju could keep. */
       readonly url: string;
       readonly opened: boolean;
       /** Direct commits were allowed but the host refused the default branch. */

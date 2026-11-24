@@ -117,7 +117,7 @@ export function parseQuery<T>(c: Context, schema: z.ZodType<T>): T | undefined {
 }
 
 /**
- * One page of entries as `viewer` may see them: a reader of a shared thread gets Kobe admin
+ * One page of entries as `viewer` may see them: a reader of a shared thread gets Kaiju admin
  * results they lack the permission for replaced (KOBE-623, KA6); the owner sees everything.
  */
 export async function readableEntries(

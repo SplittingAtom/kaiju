@@ -231,7 +231,7 @@ export const runsDetails: Readonly<Record<string, CatalogDetail>> = {
     },
     produces: "text/event-stream",
     responseDescription:
-      "Kobe Event Stream (types in `@kobe/protocol` `events.ts`); 204 when the run has ended " +
+      "Kaiju Event Stream (types in `@kobe/protocol` `events.ts`); 204 when the run has ended " +
       "and nothing is left to send.",
     errors: ["404"],
   },

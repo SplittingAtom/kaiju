@@ -82,7 +82,7 @@ describe("extractor output schema (KOBE-390 ac-1)", () => {
 });
 
 describe("pass events (KOBE-390)", () => {
-  it("are Kobe event types after the epilogue's", () => {
+  it("are Kaiju event types after the epilogue's", () => {
     expect(KOBE_EVENT_TYPES.slice(-3)).toEqual([...MEMORY_PASS_EVENT_TYPES]);
   });
 

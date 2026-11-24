@@ -103,7 +103,7 @@ function startupJobs(c: ProcessJobsContext, isolationSettled: IsolationSettled):
       return () => c.isolation.stop();
     }),
   ];
-  // Kobe's own catalog skills seed (KOBE-317) retries until it gets through; started by
+  // Kaiju's own catalog skills seed (KOBE-317) retries until it gets through; started by
   // `seedAtStart` before the jobs, stopped with them.
   const seeds = c.startSeeds;
   if (seeds) jobs.push(job("kobe-skills-seed", () => () => seeds.stop()));

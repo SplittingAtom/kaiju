@@ -1,9 +1,9 @@
 /**
  * Rows the server writes into a fresh site when it starts, before anyone signs up (KOBE-422):
- * the gallery agents (`services/server/src/gallery/seed.ts`, at every start), Kobe's own catalog
+ * the gallery agents (`services/server/src/gallery/seed.ts`, at every start), Kaiju's own catalog
  * skills (`services/server/src/skills/kobe-seed.ts`, KOBE-317) with their Default tags and sync
  * jobs, the chart's branding defaults (KOBE-503, `services/server/src/branding/defaults.ts`,
- * written only while each key is unset), the built-in Kobe MCP connector row (KOBE-618), the
+ * written only while each key is unset), the built-in Kaiju MCP connector row (KOBE-618), the
  * single sign-on providers the chart declares (`auth.sso.providers`, `managed_by = 'helm'`,
  * KOBE-626), the audit events of that seeding, and the background
  * jobs' own bookkeeping in `site_settings` (retention, PII erasure, SIEM forwarding). The catalog
@@ -35,7 +35,7 @@ const GALLERY_AUDIT_ACTIONS = [
   "agent.unarchived",
 ] as const;
 
-/** The Default sync's system events (KOBE-314); only those for Kobe's own skills are seeds. */
+/** The Default sync's system events (KOBE-314); only those for Kaiju's own skills are seeds. */
 const DEFAULT_SYNC_AUDIT_ACTIONS = [
   "skill.default.synced",
   "skill.default.sync_failed",
@@ -53,7 +53,7 @@ const HELM_SSO_AUDIT_ACTIONS = [
   "identity.sso.provider.disabled",
 ] as const;
 
-/** Kobe's own catalog skills (publisher `kobe`, KOBE-317), as a subquery of their ids. */
+/** Kaiju's own catalog skills (publisher `kobe`, KOBE-317), as a subquery of their ids. */
 const KOBE_SKILL_IDS = "SELECT id FROM public.registry_skills WHERE publisher = 'kobe'";
 
 /** `site_settings` keys only background jobs write: where a pass or a sweep stands. */
@@ -100,23 +100,23 @@ export const STARTUP_SEEDED_ROWS: Readonly<Record<string, StartupSeed>> = {
     rows: "published_by IS NULL AND agent_id IN (SELECT id FROM public.site_agents WHERE gallery_key IS NOT NULL)",
   },
   registry_skills: {
-    why: "Kobe's own catalog skills, published at every server start (KOBE-317)",
+    why: "Kaiju's own catalog skills, published at every server start (KOBE-317)",
     rows: "publisher = 'kobe'",
   },
   registry_versions: {
-    why: "the versions of Kobe's catalog skills the seed publishes (no person submits them)",
+    why: "the versions of Kaiju's catalog skills the seed publishes (no person submits them)",
     rows: "publisher = 'kobe'",
   },
   registry_skill_tags: {
-    why: "the Default tags the Kobe skills seed adds (no person adds them)",
+    why: "the Default tags the Kaiju skills seed adds (no person adds them)",
     rows: "by_kobe",
   },
   skill_default_syncs: {
-    why: "the Default sync jobs the Kobe skills seed queues (no person requests them)",
+    why: "the Default sync jobs the Kaiju skills seed queues (no person requests them)",
     rows: "by_kobe",
   },
   team_skill_installs: {
-    why: "installs Kobe's own Default sync makes (none on a fresh site: it has no teams)",
+    why: "installs Kaiju's own Default sync makes (none on a fresh site: it has no teams)",
     rows: "by_kobe",
   },
   skill_rescan_runs: {
@@ -128,7 +128,7 @@ export const STARTUP_SEEDED_ROWS: Readonly<Record<string, StartupSeed>> = {
     rows: "true",
   },
   audit_log: {
-    why: "the system's audit events of the gallery, Kobe skills, branding defaults and Helm SSO provider seeds, and of the Default sync of Kobe's skills",
+    why: "the system's audit events of the gallery, Kaiju skills, branding defaults and Helm SSO provider seeds, and of the Default sync of Kaiju's skills",
     rows:
       `actor_kind = 'system' AND actor_id IS NULL AND (` +
       `(team_id IS NULL AND action IN (${list(GALLERY_AUDIT_ACTIONS)}) AND target ->> 'scope' = 'gallery')` +
@@ -142,7 +142,7 @@ export const STARTUP_SEEDED_ROWS: Readonly<Record<string, StartupSeed>> = {
       `)`,
   },
   connectors: {
-    why: "the built-in Kobe MCP connector row seeded at every server start (KOBE-618)",
+    why: "the built-in Kaiju MCP connector row seeded at every server start (KOBE-618)",
     rows: "builtin IS NOT NULL",
   },
   sso_providers: {

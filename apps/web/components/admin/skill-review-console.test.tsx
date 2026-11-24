@@ -311,7 +311,7 @@ describe("the review screen (ac-1, ac-2)", () => {
     ).toBeTruthy();
     expect(screen.getByText(/PROMPT INJECTION detected by YARA/)).toBeTruthy();
     expect(screen.getByText("critical")).toBeTruthy();
-    // A Caution one is acknowledged like Kobe's own; an info one needs nothing.
+    // A Caution one is acknowledged like Kaiju's own; an info one needs nothing.
     expect(
       screen.getByRole("button", {
         name: "Acknowledge cisco:YARA_prompt_injection_generic in SKILL.md line 2",

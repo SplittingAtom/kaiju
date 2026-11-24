@@ -1,5 +1,5 @@
 /**
- * `@kobe/guide` (KOBE-620): the Kobe user guide (docs/guide) built into typed pages at package
+ * `@kobe/guide` (KOBE-620): the Kaiju user guide (docs/guide) built into typed pages at package
  * build time, and the texts made from it: `/llms.txt`, `/llms-full.txt`, `/docs/<slug>.md` and
  * the docs search. Used by the web routes and the server's docs tools, so both serve identical
  * bytes from the same release. `@kobe/guide/headings` is the viewer's heading-anchor step.

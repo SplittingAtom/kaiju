@@ -37,7 +37,7 @@ export function clientDetailsVisible(at: string, hours: number | null, now: numb
 }
 
 export function actorLabel(e: SiteAuditEvent): string {
-  if (e.actor.kind === "system") return "Kobe (system)";
+  if (e.actor.kind === "system") return "Kaiju (system)";
   if (e.actor.kind === "agent") return `Agent ${e.actor.id ?? ""}`.trim();
   return e.actor.name ?? e.actor.id ?? "Unknown";
 }

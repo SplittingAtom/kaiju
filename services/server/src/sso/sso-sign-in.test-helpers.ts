@@ -133,7 +133,7 @@ export function useSsoSignInHarness(): void {
       clientId: "corp-app",
       clientSecret: CORP_SECRET,
       tenantId: TENANT,
-      // Entra supports S256 without advertising it; it also lists algorithms Kobe never accepts.
+      // Entra supports S256 without advertising it; it also lists algorithms Kaiju never accepts.
       discovery: {
         code_challenge_methods_supported: undefined,
         id_token_signing_alg_values_supported: ["RS256", "HS256", "none"],

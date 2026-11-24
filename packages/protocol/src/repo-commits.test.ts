@@ -66,7 +66,7 @@ describe("commits to a Repo (KOBE-767)", () => {
 describe("Repo working copy on the wire (KOBE-767)", () => {
   const base = {
     author: { name: "Ada", email: "ada@acme.test" },
-    committer: { name: "Ada via Kobe", email: "ada@acme.test" },
+    committer: { name: "Ada via Kaiju", email: "ada@acme.test" },
     remotes: [{ base_url: "https://github.com", organization: "acme" }],
   };
   const repo = {

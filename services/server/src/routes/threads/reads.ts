@@ -110,7 +110,7 @@ export function threadReadRoutes(kit: ThreadKit): Hono<{ Variables: TeamVariable
       if (!thread) return { found: { kind: "thread_not_found" as const }, gate: undefined };
       return {
         found: await findToolOutput(tx, viewer.teamId, id, entryId.data),
-        // KOBE-623 (KA6): a reader without the tool's permission gets no Kobe admin output.
+        // KOBE-623 (KA6): a reader without the tool's permission gets no Kaiju admin output.
         gate: await loadAdminResultGate(tx, viewer, thread.thread.ownerUserId),
       };
     });

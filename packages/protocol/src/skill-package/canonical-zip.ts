@@ -1,5 +1,5 @@
 /**
- * The canonical skill zip (KOBE-309, spec SK14): the only bytes Kobe ever hashes for a skill. Two
+ * The canonical skill zip (KOBE-309, spec SK14): the only bytes Kaiju ever hashes for a skill. Two
  * tools that hold the same files produce the same bytes, in every timezone, so the hash is an
  * identity. It is byte-for-byte what the server's canonical repack has written since KOBE-78
  * (fflate `zipSync`, stored): for a stored bundle without the reserved root names (`evals/`,
@@ -95,7 +95,7 @@ export function canonicalZip(files: ReadonlyMap<string, Uint8Array>): Uint8Array
 
 /**
  * The same byte layout for any file set the caller has checked itself (KOBE-345 exports: a
- * package under a `<name>/` folder, with Kobe's `provenance.json`): reproducible bytes, so an
+ * package under a `<name>/` folder, with Kaiju's `provenance.json`): reproducible bytes, so an
  * export's SHA-256 is stable. Only `canonicalZip` makes the zips that skill hashes name.
  */
 export function deterministicZip(files: ReadonlyMap<string, Uint8Array>): Uint8Array {

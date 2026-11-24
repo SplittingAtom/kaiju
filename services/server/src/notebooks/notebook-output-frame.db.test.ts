@@ -12,7 +12,7 @@ import { createWorkspaceSync } from "../workspace-sync/index.js";
 /**
  * The notebook output frame (KOBE-465, docs/specs/notebooks.md NB4): a fixed shell document with
  * the artifact frame's headers, which shows the HTML its parent page posts to it. Kernel HTML is
- * never served from or injected into Kobe's page: it lands only in this opaque, network-less frame.
+ * never served from or injected into Kaiju's page: it lands only in this opaque, network-less frame.
  */
 const fx = new EventStreamFixture();
 const silent = { error: () => {}, warn: () => {}, info: () => {} };

@@ -52,7 +52,7 @@ export const LATE_CASES: readonly Case[] = [
     codes: ["risk_read"],
   },
   {
-    name: "auto denies a Kobe write that is not allow-listed",
+    name: "auto denies a Kaiju write that is not allow-listed",
     tool: kobeWrite,
     options: { mode: "auto" },
     effect: "deny",

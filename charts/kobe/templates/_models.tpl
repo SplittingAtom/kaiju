@@ -152,7 +152,7 @@ only (never provider keys, Bifrost's admin password or any key that mints a cred
 {{- end -}}
 
 {{/*
-Bifrost's config.json (no secrets: values come from env). Kobe owns this Bifrost: the server
+Bifrost's config.json (no secrets: values come from env). Kaiju owns this Bifrost: the server
 pushes providers, keys, the customer/team/virtual-key hierarchy (KOBE-40). Inference requires a
 virtual key; no direct provider keys from callers; no request/response logging (prompts never
 stored in Bifrost); admin API behind the admin password.

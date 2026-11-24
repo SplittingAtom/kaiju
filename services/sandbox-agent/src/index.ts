@@ -72,7 +72,7 @@ async function main(): Promise<void> {
     }).env,
     PI_CODING_AGENT_DIR: probeDir,
   };
-  // Kobe's pods carry a bootstrap token only: trade it for the sandbox id and session tokens
+  // Kaiju's pods carry a bootstrap token only: trade it for the sandbox id and session tokens
   // (retried until the server assigns this pod) before dialling the wire. In parallel with the
   // version probes: both sit on the cold-start path (D14).
   const session =
@@ -201,7 +201,7 @@ async function toolExecutor(
     return undefined;
   }
   if (config.execExtension === undefined) {
-    // In Kobe's pods the server asked for it: an image that cannot provide it must not run quietly
+    // In Kaiju's pods the server asked for it: an image that cannot provide it must not run quietly
     // without (skew between the server and the sandbox image).
     if (config.bootstrapTokenFile !== undefined) {
       throw new Error(
@@ -271,10 +271,10 @@ async function kernelManager(
  */
 async function piIdentities(config: Config): Promise<PiIdentities | undefined> {
   if (config.piRunAs === undefined) {
-    // Kobe's pods (bootstrap token) always ask for identities: never run them without.
+    // Kaiju's pods (bootstrap token) always ask for identities: never run them without.
     if (config.bootstrapTokenFile !== undefined) {
       throw new Error(
-        "KOBE_PI_RUNAS is required in a Kobe sandbox pod (KOBE_BOOTSTRAP_TOKEN_FILE set)",
+        "KOBE_PI_RUNAS is required in a Kaiju sandbox pod (KOBE_BOOTSTRAP_TOKEN_FILE set)",
       );
     }
     logger.warn("KOBE_PI_RUNAS not set: Pi and its tools run as the agent's own uid");
@@ -308,7 +308,7 @@ async function piIdentities(config: Config): Promise<PiIdentities | undefined> {
 
 /**
  * Model gateway wiring (KOBE-41): only with a model gateway URL (the pod spec sets it when the
- * sandbox may reach models) and a session to trade tokens with (Kobe's pods). The kobe-models
+ * sandbox may reach models) and a session to trade tokens with (Kaiju's pods). The kobe-models
  * file gets the same root-owned check as kobe-policy; the keeper trades the first token now (on
  * the cold-start path, in parallel with the other startup work) and rotates it before expiry.
  */
@@ -346,7 +346,7 @@ async function toolEnvScript(config: ReturnType<typeof loadConfig>): Promise<str
 
 /**
  * Egress for Pi's tools (KOBE-39): only with the egress proxy URL and a session to trade tokens
- * with (Kobe's pods). The BASH_ENV script gets the same root-owned check as the extensions: a
+ * with (Kaiju's pods). The BASH_ENV script gets the same root-owned check as the extensions: a
  * script the sandbox user could edit would run in every tool's shell.
  */
 async function egressWiring(

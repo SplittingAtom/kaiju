@@ -159,7 +159,7 @@ export type AddCatalogInput = z.infer<typeof addCatalogSchema>;
 
 /**
  * The values the caller saw (KOBE-622): the update is refused `changed_since_approval` under the
- * row lock when any named one differs now (the Kobe MCP tool sends the approved before-state).
+ * row lock when any named one differs now (the Kaiju MCP tool sends the approved before-state).
  */
 export const catalogExpectedSchema = z
   .strictObject({
@@ -196,7 +196,7 @@ export const teamModelSchema = z.strictObject({
   thinking_max: teamThinkingMaxSchema.optional(),
   /**
    * KOBE-621: the team's setting as the caller saw it; another one is a 409
-   * `changed_since_approval` (a Kobe MCP write's approved before-state).
+   * `changed_since_approval` (a Kaiju MCP write's approved before-state).
    */
   expected: z
     .strictObject({

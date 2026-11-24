@@ -301,7 +301,7 @@ describe("teams using a connector (KOBE-641)", () => {
     expect((await root.get(`${BASE}/${id}/teams`)).json).toEqual({ teams: [] });
   });
 
-  it("404s the built-in Kobe connector like every other registry route (review L3)", async () => {
+  it("404s the built-in Kaiju connector like every other registry route (review L3)", async () => {
     await seedKobeBuiltinConnector(h.deps.database.db);
     const res = await root.get(`${BASE}/${KOBE_BUILTIN_CONNECTOR_ID}/teams`);
     expect(res.status).toBe(404);
@@ -404,7 +404,7 @@ describe("probe and pin (KOBE-101)", () => {
     expect((await pinRows(id)).tools_snapshot[0].name).toBe("create_issue");
   });
 
-  it("pins nothing for a tool list Kobe cannot pin unambiguously", async () => {
+  it("pins nothing for a tool list Kaiju cannot pin unambiguously", async () => {
     probeAnswer = () => ({
       ok: true,
       tools: [

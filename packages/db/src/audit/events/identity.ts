@@ -111,7 +111,7 @@ export const IDENTITY_EVENTS = {
     providerId: id.optional(),
   }),
   /**
-   * `via`: Kobe removed a membership the Skill reviewer grant made when the grant was taken, or
+   * `via`: Kaiju removed a membership the Skill reviewer grant made when the grant was taken, or
    * the provider's access mappings no longer grant it (`idp`, KOBE-625, with `providerId`), or a
    * Site admin removed it from the Site console (`site_admin`, KOBE-638, actor = them).
    */
@@ -122,7 +122,7 @@ export const IDENTITY_EVENTS = {
     providerId: id.optional(),
   }),
   /**
-   * Kobe added someone to the team on its own (KOBE-331): a Skill reviewer joins the Registry
+   * Kaiju added someone to the team on its own (KOBE-331): a Skill reviewer joins the Registry
    * team as a member when granted, or when the team becomes the Registry team (SK22); or an
    * identity provider's access mapping grants the membership (`idp`, KOBE-625, with `providerId`);
    * or a Site admin added an existing user from the Site console (`site_admin`, KOBE-638, actor =

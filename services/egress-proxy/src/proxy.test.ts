@@ -240,7 +240,7 @@ describe("default deny", () => {
   it("blocks a domain the team has not enabled (403, request access offered) and records it", async () => {
     const { head } = await openConnect("pypi.org:443", basic(THREAD, token()));
     expect(status(head)).toBe(
-      "HTTP/1.1 403 Kobe egress blocked: pypi.org is not enabled for this team",
+      "HTTP/1.1 403 Kaiju egress blocked: pypi.org is not enabled for this team",
     );
     expect(head).toContain("Request access");
     expect(audit).toMatchObject([
@@ -264,7 +264,7 @@ describe("default deny", () => {
   it("blocks a domain outside the site ceiling and offers request access to site admins (EA1)", async () => {
     const { head } = await openConnect("example.org:443", auth());
     expect(status(head)).toMatch(
-      /403 Kobe egress blocked: example.org is not allowed on this site/,
+      /403 Kaiju egress blocked: example.org is not allowed on this site/,
     );
     expect(blocked[0]).toMatchObject({ reason: "not_in_ceiling", requestAccess: true });
   });
@@ -291,7 +291,7 @@ describe("default deny", () => {
     );
     const [data] = (await once(socket, "data")) as [Buffer];
     expect(data.toString().split("\r\n")[0]).toBe(
-      "HTTP/1.1 403 Kobe egress blocked: plain HTTP is not allowed",
+      "HTTP/1.1 403 Kaiju egress blocked: plain HTTP is not allowed",
     );
     socket.destroy();
     expect(connectCalls).toEqual([]);
@@ -311,7 +311,7 @@ describe("internal addresses (SSRF, DNS rebinding)", () => {
   it("refuses an allowed name that resolves to a private address", async () => {
     const { head } = await openConnect("internal.example.com:443", auth());
     expect(status(head)).toMatch(
-      /403 Kobe egress blocked: internal.example.com resolves to an internal address/,
+      /403 Kaiju egress blocked: internal.example.com resolves to an internal address/,
     );
     expect(connectCalls).toEqual([]);
     expect(blocked[0]).toMatchObject({
@@ -400,7 +400,7 @@ describe("internal patterns and internal targets (EA4, KOBE-603)", () => {
     await startInternal();
     const { head } = await openConnect("plain.example.com:443", basic(THREAD, token()));
     expect(status(head)).toMatch(
-      /403 Kobe egress blocked: plain.example.com resolves to an internal/,
+      /403 Kaiju egress blocked: plain.example.com resolves to an internal/,
     );
     expect(head).toContain("Request access");
     expect(connectCalls).toEqual([]);
@@ -708,7 +708,7 @@ describe("limits", () => {
     expect([a, b, c].map((o) => status(o.head))).toEqual([
       "HTTP/1.1 200 Connection Established",
       "HTTP/1.1 200 Connection Established",
-      "HTTP/1.1 429 Kobe egress: too many connections",
+      "HTTP/1.1 429 Kaiju egress: too many connections",
     ]);
     a.socket.write(hello);
     await readExactly(a.socket, hello.length);

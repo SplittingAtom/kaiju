@@ -13,7 +13,7 @@
  *   URL isn't safe.
  * - Code blocks have a Copy button.
  *
- * `variant="guide"` (the Kobe guide at /docs, KOBE-616): the same, plus same-tab links to the
+ * `variant="guide"` (the Kaiju guide at /docs, KOBE-616): the same, plus same-tab links to the
  * app's own paths (`/docs/...`, `#anchor`) and ids on h2–h4 with an anchor link each.
  */
 import { useState, type ReactNode } from "react";

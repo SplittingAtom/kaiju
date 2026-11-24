@@ -25,7 +25,7 @@ import { runStatusSchema, type RunStatus, type RunTransitionCause } from "./runs
  * - One active run (`running` | `waiting_approval`) per thread, enforced with a Postgres advisory
  *   lock across replicas (D17). Other submissions queue in `queue_pos` order.
  * - Every status change follows `RUN_TRANSITIONS` (runs.ts) and is written in the same transaction
- *   as its Kobe Event Stream event (`run.*`) in `run_events`.
+ *   as its Kaiju Event Stream event (`run.*`) in `run_events`.
  * - All calls run under `withTeam(actor.team_id)`; a run of another team is "not found".
  * - Interrupted runs are never retried automatically (D14), and an interrupted thread does not
  *   start its queued runs until the user retries or continues (`queueMayAdvance`, runs.ts).

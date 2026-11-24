@@ -20,8 +20,8 @@ import { teams } from "./teams.js";
 // Models and the model gateway (KOBE-40, spec D6, D30). Site admins own the **providers** (with
 // their API keys) and the **model catalog** (aliases such as `fast`, `smart`, `local` mapped to a
 // provider's model); team admins enable a subset of the catalog with one default (`team_models`).
-// Kobe is the source of truth: the server reconciles Bifrost (the gateway) from these rows, and
-// sandboxes reach Bifrost only through Kobe's model-gateway shim with their session token, which
+// Kaiju is the source of truth: the server reconciles Bifrost (the gateway) from these rows, and
+// sandboxes reach Bifrost only through Kaiju's model-gateway shim with their session token, which
 // the shim swaps for the (team, user) Bifrost virtual key in `model_gateway_keys`.
 
 /** Provider kinds (D30): any OpenAI-compatible endpoint, Anthropic native, Gemini, local Ollama. */
@@ -196,7 +196,7 @@ export const modelCatalog = pgTable(
     reasoning: boolean().notNull().default(false),
     /**
      * How the gateway sets this model's thinking (KOBE-260; `THINKING_CONTROLS`), chosen by an
-     * admin for the provider, never guessed from the model name. `none`: Kobe sends nothing.
+     * admin for the provider, never guessed from the model name. `none`: Kaiju sends nothing.
      */
     thinkingControl: text().$type<ThinkingControlValue>().notNull().default("none"),
     /** Thinking may be on (false: every run thinks `off`; needs a control that can turn it off). */

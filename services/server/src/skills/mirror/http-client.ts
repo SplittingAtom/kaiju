@@ -168,7 +168,7 @@ export function mirrorHttpClient(options: MirrorHttpOptions): HttpClient {
     const body = await collect(req.body);
     const https = url.protocol === "https:";
     const port = Number(url.port || (https ? 443 : 80));
-    // Only Kobe's own credentials: whatever git put in an Authorization header is dropped.
+    // Only Kaiju's own credentials: whatever git put in an Authorization header is dropped.
     const headers: Record<string, string> = {
       ...Object.fromEntries(
         Object.entries(req.headers ?? {}).filter(([k]) => k.toLowerCase() !== "authorization"),

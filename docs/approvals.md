@@ -2,7 +2,7 @@
 
 Member guide: [Approvals](guide/internet-and-approvals/approvals.md). This page is the engineering reference.
 
-How Kobe asks a person before a tool call runs (spec D29; built in KOBE-37). The server decides
+How Kaiju asks a person before a tool call runs (spec D29; built in KOBE-37). The server decides
 every tool call. An approval is signed so that exactly the approved input runs, once. There is no
 bypass mode: the one exception, an admin-only agent mode **Dangerous** (decision AC1 in
 [`specs/agent-creator.md`](specs/agent-creator.md), approved by Chris 2026-10-22), is itself a
@@ -16,7 +16,7 @@ when:
 
 - an **ask rule** (site floor or team) matches it, or
 - its **risk class** prompts in the run's mode: in `ask-on-write` (the default), writes and deletes
-  outside the sandbox (MCP tools, Kobe's own artifacts, shared files and project memory), or
+  outside the sandbox (MCP tools, Kaiju's own artifacts, shared files and project memory), or
 - the run's mode is **`ask-all`**.
 
 A user's remember-rule removes a risk-class or mode prompt. It never removes an ask rule. In `auto`
@@ -27,7 +27,7 @@ by a site or team admin who still is one), the site floor is `auto` and the run 
 (`ask-on-write` or `ask-all`), a tool the agent's `tools.allow` names one by one is allowed without
 a card where its risk class or mode would ask (reason `dangerous_mode`; audit
 `policy.dangerous_mode.applied`). Deny rules, the agent's `tools.deny` (refused in every mode),
-connector exposure, ask rules, Kobe-scoped write prompts and `auto`/scheduled refusals still win,
+connector exposure, ask rules, Kaiju-scoped write prompts and `auto`/scheduled refusals still win,
 at the sandbox check and again at the MCP proxy.
 
 **The viewed file** (KOBE-493). When the run carries a viewed file (`runs.viewing`, set when the
@@ -54,7 +54,7 @@ the audit log bound them (D29). To ask for them, a team admin adds an ask rule, 
 `{"effect": "ask", "tool_glob": "bash"}` in `POST /v1/team/policy/rules`, or a site admin adds
 one to the site floor. The site switch `promptSandboxWrites` (`PUT
 /v1/site/policy/settings`, default `false`) is the explicit opt-in to prompting every sandbox
-write. Kobe seeds no rules.
+write. Kaiju seeds no rules.
 
 ## The flow
 
@@ -162,7 +162,7 @@ client:
 - **Only this exact action** (`exact: true`). The server derives `arg_pattern` from the approval's
   stored canonical input as the engine sees it (validated, paths canonical), each value a literal
   glob (`*`, `?` and `\` escaped; no regular expressions), shown before saving (`GET
-/v1/approvals/{id}/remember`). For MCP and Kobe tools it pins **every** top-level argument and
+/v1/approvals/{id}/remember`). For MCP and Kaiju tools it pins **every** top-level argument and
   the rule matches only an input with exactly the same keys (`exact_keys`: no extra or missing
   argument). For a built-in file tool it pins only the path: the card says "Only this path", and
   the content may differ. Not offered when no pattern fits (`exact_unavailable`). A pattern sent
@@ -217,7 +217,7 @@ mac = base64url(HMAC-SHA256(KOBE_APPROVAL_KEY,
 - **The tuple:** D29 names run, tool call and canonical input. `tool` stops an approval for one tool
   from authorising another tool with the same ids. `team_id` adds defence in depth. `expires_at` is
   the token's own lifetime: 10 minutes from the decision, ISO 8601 with milliseconds. The domain tag
-  keeps the MAC from being replayed as any other Kobe HMAC.
+  keeps the MAC from being replayed as any other Kaiju HMAC.
 - **Canonical JSON** (`canonical-json.ts`) is RFC 8785 (JCS) with these rules:
   - Only JSON values are allowed: no `undefined`, functions, symbols, bigints, `NaN`/`±Infinity`,
     class instances, sparse arrays or `__proto__` keys, and nesting is at most 128 deep.
@@ -235,7 +235,7 @@ mac = base64url(HMAC-SHA256(KOBE_APPROVAL_KEY,
   The `kid` is `a-` plus the first 12 hex digits of HMAC-SHA256(key, "kid") (no offline guess check on a weak key), so a token from a rotated
   key fails as `unknown_key`. Without the key, every call that needs approval is denied.
 - **Never in the sandbox:** the `policy.result` the sandbox gets carries no token; the row holds it.
-- **Single use:** built-in and Kobe tools have no verifier after the server, because the
+- **Single use:** built-in and Kaiju tools have no verifier after the server, because the
   `policy.result` itself authorises them. Their approval is marked used (`consumed_at`) when it is
   allowed. An MCP approval stays usable exactly once, by the MCP proxy.
 

@@ -30,7 +30,7 @@ import type { Learn } from "./use-learn";
 
 /** Before the first message there is nothing to learn from. */
 export const NOT_STARTED_LEARN =
-  "Kobe learns from a conversation once a reply has finished. Send a message first.";
+  "Kaiju learns from a conversation once a reply has finished. Send a message first.";
 /** The one-time "New" hint on Memory (per browser), until the member opens it once. */
 export const LEARN_HINT_KEY = "kobe.learn-hint.v1";
 
@@ -60,7 +60,7 @@ export function plusIndicator(state: LearnState | null): {
 } {
   const ind = learnIndicator(state);
   if (ind.kind === "running")
-    return { description: "Kobe is learning from this chat", mark: "spinner" };
+    return { description: "Kaiju is learning from this chat", mark: "spinner" };
   if (ind.kind === "candidates")
     return {
       description: `${ind.count === 1 ? "1 memory suggestion" : `${ind.count} memory suggestions`} to review (Memory)`,
@@ -156,7 +156,7 @@ export function useLearnBindings(learn: Learn, threadId: string | null): void {
               state === null
                 ? null
                 : (state.blocker?.message ??
-                  (state.running === null ? null : "Kobe is already learning from this chat.")),
+                  (state.running === null ? null : "Kaiju is already learning from this chat.")),
             choices: [
               {
                 key: "new",

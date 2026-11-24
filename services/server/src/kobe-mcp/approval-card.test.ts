@@ -23,7 +23,7 @@ function fakeDb(names: Record<string, string>) {
   } as unknown as Parameters<typeof resolveNames>[0] & { seen: string[]; statements: string[] };
 }
 
-describe("Kobe admin approval card (KOBE-623)", () => {
+describe("Kaiju admin approval card (KOBE-623)", () => {
   it("builds the team card with the person's and the team's names", async () => {
     const db = fakeDb({ [ANA]: "Ana Lee", [TEAM]: "Research" });
     const card = await kobeAdminApprovalCard(db, TEAM, "mcp__kobe__team_members_set_role", {

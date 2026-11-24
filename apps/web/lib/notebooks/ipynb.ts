@@ -77,7 +77,7 @@ export function withCellIds(
   return { notebook: { ...notebook, cells, nbformat_minor: Math.max(minor, 5) }, added };
 }
 
-/** nbformat stores multi-line text as lists of lines; Kobe writes it that way too. */
+/** nbformat stores multi-line text as lists of lines; Kaiju writes it that way too. */
 function lines(text: string): string[] {
   const parts = text.split(/(?<=\n)/u);
   return parts.length === 1 && parts[0] === "" ? [] : parts;

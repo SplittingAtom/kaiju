@@ -8,7 +8,7 @@ import type { RepoCommitWiring } from "./dispatch.js";
 
 /**
  * What a commit to a Repo needs from the server (KOBE-767), with the Repo mirror wired in
- * (KOBE-766): after a direct commit, or when the default branch moved, Kobe's copy is refreshed
+ * (KOBE-766): after a direct commit, or when the default branch moved, Kaiju's copy is refreshed
  * at once (`kickMirrorRefresh`); after a pull request push the mirror job is asked for a pass.
  */
 export function repoCommitWiring(deps: {

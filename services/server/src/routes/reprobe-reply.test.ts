@@ -34,7 +34,7 @@ describe("reprobeReply (KOBE-430)", () => {
     );
   });
 
-  it("uses Kobe's own sentence per failure, never the remote's text", () => {
+  it("uses Kaiju's own sentence per failure, never the remote's text", () => {
     const fail = (reason: string, source = "member") =>
       reprobeReply({ kind: "done", outcome: { status: "failed", reason } }, source);
     expect(fail("timeout")).toEqual({

@@ -23,7 +23,7 @@ export function useOauthReturn(): OauthReturn | null {
   return result;
 }
 
-/** The result as a notice: success, or an error with Kobe's own sentence for the reason. */
+/** The result as a notice: success, or an error with Kaiju's own sentence for the reason. */
 export function OauthReturnNotice({
   result,
   name,

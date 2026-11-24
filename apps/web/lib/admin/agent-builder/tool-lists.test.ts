@@ -46,7 +46,7 @@ describe("connector tools: Allowed and Denied (KOBE-476 AC4)", () => {
   });
 });
 
-describe("Kobe's docs tools stay on (KOBE-623)", () => {
+describe("Kaiju's docs tools stay on (KOBE-623)", () => {
   const DOCS = ["mcp__kobe__docs_index", "mcp__kobe__docs_page"];
 
   it("are named once the allow list narrows to anything else", () => {

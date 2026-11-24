@@ -5,7 +5,7 @@ import { expect, test } from "./support/chat.js";
  * KOBE-450 ac-4. The Agent, Model and Thinking selectors sit in the composer's toolbar for a new
  * conversation and move to the line below it, before the right-aligned context gauge, once the
  * thread has its first prompt. Then a sample of the slash commands for Pi's built-ins: /session
- * (details and usage), /export (the server's Markdown download), /name (offers Kobe's /rename)
+ * (details and usage), /export (the server's Markdown download), /name (offers Kaiju's /rename)
  * and /login (not offered: a disabled row with the reason, nothing sent). Light, dark and phone
  * screenshots of the composer are attached. Spends one short model turn.
  */
@@ -60,7 +60,7 @@ test("the selectors move below the composer after the first prompt; Pi's command
   const [file] = await Promise.all([page.waitForEvent("download"), chat.composer.press("Enter")]);
   expect(file.suggestedFilename()).toMatch(/\.md$/);
 
-  // /name: Kobe calls it /rename.
+  // /name: Kaiju calls it /rename.
   await chat.composer.pressSequentially("/name");
   await expect(actions.getByRole("option")).toHaveCount(1);
   await expect(actions.getByRole("option", { name: /^\/rename, Rename/ })).toBeVisible();
@@ -73,7 +73,7 @@ test("the selectors move below the composer after the first prompt; Pi's command
   const row = actions.getByRole("option");
   await expect(row).toHaveCount(1);
   await expect(row).toHaveAttribute("aria-disabled", "true");
-  await expect(row).toContainText("/login isn't offered in Kobe");
+  await expect(row).toContainText("/login isn't offered in Kaiju");
   await chat.composer.press("Enter");
   await expect(chat.composer).toHaveValue("/login");
   expect(await chat.userMessages.count()).toBe(before);

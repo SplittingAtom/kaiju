@@ -218,7 +218,7 @@ async function planFork(
   }
   // Every fork has a fork point, so it can always say it is one (even once its source is gone).
   if (path.length === 0) return { ok: false, error: "nothing_to_fork" };
-  // KOBE-623 (KA6): a reader's copy keeps Kobe admin results hidden as they were to the reader.
+  // KOBE-623 (KA6): a reader's copy keeps Kaiju admin results hidden as they were to the reader.
   const gate = await loadAdminResultGate(tx, viewer, source.ownerUserId);
   const copied = path.map((row) => {
     const payload = redactEntryPayload(row.payload, gate);

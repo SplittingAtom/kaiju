@@ -43,7 +43,7 @@ function makePki(dir: string): { ca: string; key: Buffer; cert: Buffer } {
     "-out",
     p("ca.pem"),
     "-subj",
-    "/CN=Kobe Test Private CA",
+    "/CN=Kaiju Test Private CA",
     "-addext",
     "basicConstraints=critical,CA:TRUE",
     "-addext",

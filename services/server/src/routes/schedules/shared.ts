@@ -19,7 +19,7 @@ import {
  * Only the server writes a skill line or app context into a run's input (KOBE-439, KOBE-451
  * review LOW-7): a schedule's prompt that imitates them is refused when it is saved.
  */
-export const MARKERS_REFUSED = "A prompt can't contain Kobe's skill or app-context markers.";
+export const MARKERS_REFUSED = "A prompt can't contain Kaiju's skill or app-context markers.";
 export const serverMarkers = (prompt: string) =>
   imitatesSkillRequest(prompt) || imitatesAppContext(prompt);
 

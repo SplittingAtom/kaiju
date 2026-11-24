@@ -64,7 +64,7 @@ Archiving or deleting a thread also ends the approvals you remembered for "this 
 
 ## Which files a thread used
 
-Kobe records a link whenever a thread's agent reads or writes a file in My files or in a project
+Kaiju records a link whenever a thread's agent reads or writes a file in My files or in a project
 with its file tools, and when a file is attached, uploaded or shared in that thread. Shell commands
 are not looked at, so a file the agent only touched through `bash` has no link.
 

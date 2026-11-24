@@ -6,7 +6,7 @@ import { gitNoReplyEmail, loadRunGitContext } from "./sandbox-git.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
- * KOBE-764: the member's `run.start.git` read from the database: name and Kobe email (or the
+ * KOBE-764: the member's `run.start.git` read from the database: name and Kaiju email (or the
  * Workspace's no-reply form, GQ10), and the connections the sandbox's git may use. The sealed
  * credential is never read and never in the result.
  */
@@ -80,14 +80,14 @@ afterAll(async () => {
 });
 
 describe("loadRunGitContext (KOBE-764)", () => {
-  it("gives the member as author with their Kobe email and this Workspace's connections only", async () => {
+  it("gives the member as author with their Kaiju email and this Workspace's connections only", async () => {
     const git = must(
       await loadRunGitContext(h.deps.database.db, { teamId: team, userId: member }, "kobe.test"),
     );
     const name = email.split("@")[0] as string;
     expect(git).toEqual({
       author: { name, email },
-      committer: { name: `${name} via Kobe`, email },
+      committer: { name: `${name} via Kaiju`, email },
       remotes: [{ base_url: "https://git.example.test/forgejo", organization: "acme" }],
     });
     expect(runGitContextSchema.safeParse(git).success).toBe(true);

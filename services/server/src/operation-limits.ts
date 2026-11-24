@@ -21,7 +21,7 @@ const MINUTE = 60_000;
 /**
  * Limits on operations that had none (KOBE-813, decided 2026-11-22; fixed in code, not
  * configurable). Counted per member across Workspaces (the key is the user id alone, as every
- * other per-member Kobe limit), per Site admin for SCIM tokens, and per client IP for the setup
+ * other per-member Kaiju limit), per Site admin for SCIM tokens, and per client IP for the setup
  * token. Values are generous: normal use never meets them. Inventory: docs/rate-limits.md.
  */
 export const OPERATION_LIMITS = {

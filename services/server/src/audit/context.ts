@@ -16,7 +16,7 @@ import { delegationOf } from "../kobe-mcp/delegation.js";
 export interface RequestAuditContext {
   readonly actor?: AuditActor;
   /**
-   * The person acts through an agent (KOBE-619, spec kobe-admin-mcp §7): set from a Kobe MCP
+   * The person acts through an agent (KOBE-619, spec kobe-admin-mcp §7): set from a Kaiju MCP
    * delegation, recorded with every event the request's person causes.
    */
   readonly via?: AuditVia;
@@ -106,7 +106,7 @@ export function auditSystemContext(deps: ServerDeps): MiddlewareHandler {
 
 /**
  * The signed-in user as the actor of everything audited in this request. After requireSession. A
- * Kobe MCP delegation (KOBE-619) records the person "via agent" with its thread, run and tool call;
+ * Kaiju MCP delegation (KOBE-619) records the person "via agent" with its thread, run and tool call;
  * it has no client of its own, so no address or user agent.
  */
 export function auditUserContext(deps: ServerDeps) {

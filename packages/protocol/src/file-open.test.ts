@@ -18,7 +18,7 @@ const RUN = "3f2c1d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f";
 const THREAD = "4a3b2c1d-6e5f-4a7b-9c8d-1e2f3a4b5c6d";
 
 describe("open_file contract (KOBE-484)", () => {
-  it("is a built-in read on Kobe's side, checked by path", () => {
+  it("is a built-in read on Kaiju's side, checked by path", () => {
     expect(OPEN_FILE_TOOL).toBe("open_file");
     expect(BUILTIN_TOOLS.open_file).toEqual({
       source: "kobe",

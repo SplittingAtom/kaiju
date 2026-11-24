@@ -40,7 +40,7 @@ export const GITHUB_PERMISSIONS: readonly PermissionRow[] = [
   {
     name: "Administration",
     level: "Read and write",
-    why: "Only if agents may create repositories. GitHub requires it for that; it would also allow deleting repositories, which Kobe never does.",
+    why: "Only if agents may create repositories. GitHub requires it for that; it would also allow deleting repositories, which Kaiju never does.",
   },
 ];
 

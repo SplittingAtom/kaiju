@@ -59,7 +59,7 @@ export function MyConnectorsPage() {
     <>
       <PageHeader
         title="My connectors"
-        description="Some connectors act as you: connect your own account (OAuth) or add your own API key. Kobe stores it encrypted, uses it only for your runs, and never shows it again."
+        description="Some connectors act as you: connect your own account (OAuth) or add your own API key. Kaiju stores it encrypted, uses it only for your runs, and never shows it again."
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
       {/* One notice, shown once the list has loaded so its text (the name) never changes after it

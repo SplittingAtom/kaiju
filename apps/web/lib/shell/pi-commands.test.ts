@@ -7,7 +7,7 @@ import { NOT_HERE, SLASH_NO_MATCH, slashEntries, slashItems, slashOutcome } from
 
 /**
  * KOBE-450: Pi's built-in commands (the sandbox pins Pi 1.0.0; `BUILTIN_SLASH_COMMANDS` in its
- * `dist/core/slash-commands.js`, plus `/llama`, which its docs list) each map to a Kobe command
+ * `dist/core/slash-commands.js`, plus `/llama`, which its docs list) each map to a Kaiju command
  * or are not offered, with the reason. Nothing typed is ever run by Pi as a command.
  */
 const PI_BUILTINS = [
@@ -56,7 +56,7 @@ describe("the Pi command mapping (ac-2, ac-6)", () => {
     expect(PI_BUILTIN_COMMANDS.map((c) => c.word).sort()).toEqual([...PI_BUILTINS, "llama"].sort());
   });
 
-  it("a mapped word names a Kobe command with a / word: the same word, or Kobe's own", () => {
+  it("a mapped word names a Kaiju command with a / word: the same word, or Kaiju's own", () => {
     for (const pi of PI_BUILTIN_COMMANDS) {
       const m = pi.mapping;
       if (m.kind === "not-offered") continue;
@@ -92,7 +92,7 @@ describe("the Pi command mapping (ac-2, ac-6)", () => {
     }
   });
 
-  it("the new Kobe commands for Pi's words: /thinking, /session, /export", () => {
+  it("the new Kaiju commands for Pi's words: /thinking, /session, /export", () => {
     for (const word of ["thinking", "session", "export"]) {
       expect(piCommand(word)?.mapping.kind).toBe("same");
       expect(slashWords).toContain(word);
@@ -101,7 +101,7 @@ describe("the Pi command mapping (ac-2, ac-6)", () => {
 });
 
 describe("the / menu knows Pi's words (ac-3, ac-6)", () => {
-  it("a Pi word Kobe names differently offers Kobe's command", () => {
+  it("a Pi word Kaiju names differently offers Kaiju's command", () => {
     expect(items("name").map((i) => i.label)).toEqual(["/rename"]);
     expect(items("clone").map((i) => i.label)).toEqual(["/fork"]);
     expect(items("hotkeys").map((i) => i.label)).toEqual(["/shortcuts"]);
@@ -110,27 +110,27 @@ describe("the / menu knows Pi's words (ac-3, ac-6)", () => {
     expect(slashOutcome(pick, entries)).toEqual({ kind: "run", run });
   });
 
-  it("a Pi word Kobe doesn't offer keeps one disabled row with the reason; nothing is sent", () => {
+  it("a Pi word Kaiju doesn't offer keeps one disabled row with the reason; nothing is sent", () => {
     for (const word of ["login", "settings", "trust", "reload", "quit", "import"]) {
       const rows = items(word);
       expect(rows).toHaveLength(1);
       const row = must(rows[0]);
       expect(row.type).toBe(SLASH_NO_MATCH);
-      expect(row.label).toMatch(new RegExp(`^/${word} isn't offered in Kobe: `));
+      expect(row.label).toMatch(new RegExp(`^/${word} isn't offered in Kaiju: `));
       expect(slashOutcome(row, entries)).toEqual({ kind: "blocked", reason: row.label });
       // With an argument too (`/login anthropic`).
       expect(items(word, "anthropic").map((i) => i.type)).toEqual([SLASH_NO_MATCH]);
     }
   });
 
-  it("where Kobe's command isn't bound, the Pi word still shows it, blocked (review LOW-6)", () => {
+  it("where Kaiju's command isn't bound, the Pi word still shows it, blocked (review LOW-6)", () => {
     const unbound = slashEntries({}, { readOnly: false });
     const rows = slashItems({ offset: 0, name: "name", arg: undefined }, unbound);
     expect(rows.map((r) => [r.label, r.metadata?.["blocker"]])).toEqual([["/rename", NOT_HERE]]);
     expect(slashOutcome(must(rows[0]), unbound).kind).toBe("blocked");
   });
 
-  it("a prefix still lists Kobe's own commands only", () => {
+  it("a prefix still lists Kaiju's own commands only", () => {
     expect(items("log").map((i) => i.label)).toEqual([]);
     expect(items("se").map((i) => i.label)).toEqual(["/session", "/search"]);
   });
@@ -152,13 +152,13 @@ function must<T>(v: T | undefined): T {
 describe("refusedPiCommand: a message starting with a not-offered Pi word (review LOW-5)", () => {
   it("refuses /login and /login with text, with the reason and the way to send it anyway", () => {
     expect(refusedPiCommand("/login")).toMatch(
-      /^\/login isn't offered in Kobe: .*Start with a space/,
+      /^\/login isn't offered in Kaiju: .*Start with a space/,
     );
     expect(refusedPiCommand("/LOGIN anthropic")).toMatch(/^\/login isn't offered/);
     expect(refusedPiCommand("/trust\nplease")).toMatch(/^\/trust isn't offered/);
   });
 
-  it("lets through a leading space, Kobe's words, mapped Pi words, unknown words and paths", () => {
+  it("lets through a leading space, Kaiju's words, mapped Pi words, unknown words and paths", () => {
     for (const text of [
       " /login",
       "/loginx",

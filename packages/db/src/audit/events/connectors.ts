@@ -30,8 +30,8 @@ export const CONNECTORS_EVENTS = {
     grants: z.number().int().nonnegative().optional(),
   }),
   /**
-   * Kobe probed a connector and pinned its tools (KOBE-101); the hash covers all pinned tools.
-   * `templates`: the MCP Apps `ui://` templates pinned with them and Kobe's SHA-256 of each
+   * Kaiju probed a connector and pinned its tools (KOBE-101); the hash covers all pinned tools.
+   * `templates`: the MCP Apps `ui://` templates pinned with them and Kaiju's SHA-256 of each
    * (KOBE-433); URIs and hashes only, never the template.
    */
   "mcp.connector.pinned": event("site", {
@@ -98,7 +98,7 @@ export const CONNECTORS_EVENTS = {
     connectorId: id,
     name: z.string().max(64),
     tools: z.array(z.string().max(128)).max(500),
-    /** MCP Apps templates approved (KOBE-434): URI and Kobe's SHA-256 of the approved bytes. */
+    /** MCP Apps templates approved (KOBE-434): URI and Kaiju's SHA-256 of the approved bytes. */
     templates: z
       .array(z.strictObject({ uri: uiUri, sha256: z.string().regex(/^[0-9a-f]{64}$/) }))
       .max(64)

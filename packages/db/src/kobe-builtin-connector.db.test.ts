@@ -55,7 +55,7 @@ describe("the built-in kobe connector row", () => {
     });
   });
 
-  it("seeds the built-in git connector once, apart from the Kobe one (KOBE-762)", async () => {
+  it("seeds the built-in git connector once, apart from the Kaiju one (KOBE-762)", async () => {
     const results = await Promise.all(
       Array.from({ length: 4 }, () => seedGitBuiltinConnector(app.db)),
     );
@@ -68,7 +68,7 @@ describe("the built-in kobe connector row", () => {
         .insert(connectors)
         .values({ name: `fake-${randomUUID().slice(0, 8)}`, url: GIT_BUILTIN_CONNECTOR_URL }),
     ).rejects.toSatisfy((e) => pgCodeOf(e) === "23514");
-    // The git row never carries the Kobe URL, nor the Kobe id.
+    // The git row never carries the Kaiju URL, nor the Kaiju id.
     await expect(
       app.db.transaction((tx) =>
         tx.execute(

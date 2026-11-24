@@ -1,4 +1,4 @@
-// Gate 4, U16's backup half (KOBE-233), client side. e2e/gate4-restore.sh runs this inside a Kobe
+// Gate 4, U16's backup half (KOBE-233), client side. e2e/gate4-restore.sh runs this inside a Kaiju
 // server pod (`node --input-type=module -e`) after the Gate 1-3 clients' helpers (everything above
 // `const MODES` in e2e/gate1/client.mjs, e2e/gate2/client.mjs and e2e/gate3/client.mjs: config,
 // client(), readEvents(), db(), userClient(), ownerClient(), signedInAs(), turn(), state(), ...).

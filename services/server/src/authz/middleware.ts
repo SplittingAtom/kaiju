@@ -57,7 +57,7 @@ export async function readActiveTeamId(
 }
 
 /**
- * Whether the request names a team: the team header, a Kobe MCP admin tool's delegation (its
+ * Whether the request names a team: the team header, a Kaiju MCP admin tool's delegation (its
  * run's team, KOBE-619) or the session's active team (spec D9). For routes where a team is
  * optional (memory items of the portable and Site scopes, KOBE-378); `requireTeam` then resolves it.
  */
@@ -80,7 +80,7 @@ export function requireTeam(deps: ServerDeps) {
     // Already resolved for this request by an enclosing router (e.g. /team and /team/invites).
     if (c.var.team !== undefined) return next();
     const claimed = c.req.header(TEAM_HEADER);
-    // A Kobe MCP admin tool's in-process call (KOBE-619): the run's team, never another; the team
+    // A Kaiju MCP admin tool's in-process call (KOBE-619): the run's team, never another; the team
     // header is implied (a different one is refused), membership re-checked as for a session.
     const delegation = delegationOf(c);
     if (delegation !== undefined) {

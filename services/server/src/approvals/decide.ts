@@ -169,7 +169,7 @@ function approvedCall(row: ApprovalRow, tool: ToolDescriptor | undefined): Appro
   if (isViewedFileAsk(row.reasons)) {
     throw new ApprovalError("remember_not_allowed", 403, VIEWED_FILE_NOT_REMEMBERED);
   }
-  // KOBE-619: a Kobe admin change is asked every time.
+  // KOBE-619: a Kaiju admin change is asked every time.
   if (isKobeAdminAsk(row.reasons)) {
     throw new ApprovalError("remember_not_allowed", 403, KOBE_ADMIN_NOT_REMEMBERED);
   }

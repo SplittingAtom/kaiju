@@ -41,7 +41,7 @@ export async function notifySubmitter(deps: ReviewNotifyDeps, change: StateChang
     .from(users)
     .where(eq(users.id, change.submittedBy));
   if (!to || to.deactivatedAt) return;
-  const subject = `Kobe: ${oneLine(change.name, 64)} ${change.semver} ${words}`;
+  const subject = `Kaiju: ${oneLine(change.name, 64)} ${change.semver} ${words}`;
   const text = [
     `Your submission ${oneLine(change.name, 64)} ${change.semver} to the Site Skills Registry ${words}.`,
     ...(change.note ? ["", "The reviewer wrote:", oneLine(change.note, 1000)] : []),

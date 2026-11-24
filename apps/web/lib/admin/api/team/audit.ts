@@ -16,7 +16,7 @@ export interface TeamAuditEvent {
   };
   readonly action: string;
   readonly target: Record<string, unknown>;
-  /** Done through a Kobe MCP admin tool (KOBE-623): thread, run, tool call. */
+  /** Done through a Kaiju MCP admin tool (KOBE-623): thread, run, tool call. */
   readonly viaAgent?: ViaAgent;
 }
 

@@ -24,7 +24,7 @@ export const thinkingLevelSchema = z.enum(THINKING_LEVELS, {
 /**
  * How a provider turns thinking on, off and up (the request fields the gateway writes):
  *
- * - `none`: the provider offers no control; Kobe sends nothing and records no level.
+ * - `none`: the provider offers no control; Kaiju sends nothing and records no level.
  * - `reasoning_effort`: OpenAI-style `reasoning_effort` (`none` for off). OpenAI, Ollama (its
  *   OpenAI-compatible API maps `none` to `think: false`) and OpenAI-compatible servers that
  *   honour it.
@@ -95,7 +95,7 @@ export function lowestThinking(policy: Pick<ThinkingPolicy, "control" | "lowest"
 /**
  * A model's thinking settings. `allowed` false (only for a model that can turn it off): thinking
  * is off for every run. `allowed` true: runs use `default` unless the member picks another level,
- * at most `max`, never below `lowest`. `control: "none"`: Kobe does not control it (`allowed`
+ * at most `max`, never below `lowest`. `control: "none"`: Kaiju does not control it (`allowed`
  * false, levels null, lowest off).
  */
 export interface ThinkingPolicy {

@@ -1,12 +1,12 @@
 ---
-title: Working inside a Kobe sandbox
-summary: What an AI agent running in a Kobe sandbox can and cannot do, which tools it has, how the server decides every call, and the rules for files, projects and memory.
+title: Working inside a Kaiju sandbox
+summary: What an AI agent running in a Kaiju sandbox can and cannot do, which tools it has, how the server decides every call, and the rules for files, projects and memory.
 section: For agents
 order: 3
 audience: agent
 ---
 
-You are an AI agent running inside a Kobe sandbox on behalf of one user. This page tells you what
+You are an AI agent running inside a Kaiju sandbox on behalf of one user. This page tells you what
 your environment is, which tools you have, what the server enforces, and what to do when you need
 something you do not have. Follow it as operating instructions. Where your own system prompt or
 tool list is more specific, that wins: it reflects this site's and this team's actual settings.
@@ -37,7 +37,7 @@ tool list is more specific, that wins: it reflects this site's and this team's a
 
 ## Every tool call is decided by the server
 
-Before any tool runs, Kobe's server checks it against the site's and team's deny, ask and allow
+Before any tool runs, Kaiju's server checks it against the site's and team's deny, ask and allow
 rules, your agent's tool lists and the run's approval mode. The result is one of:
 
 - **Allowed**: the call runs.
@@ -73,7 +73,7 @@ truth.
 | `list_mcp_resources`, `read_mcp_resource` | Read a connector's resources.                                                                                                                                            |
 | `tool_search`                             | Find a tool by description.                                                                                                                                              |
 
-Questions about Kobe itself: read the Kobe guide with the kobe connector's docs tools
+Questions about Kaiju itself: read the Kaiju guide with the kobe connector's docs tools
 (`docs_index`, `docs_page`, `docs_search`, `docs_full`), which every agent has and which need no
 internet access; see [The kobe connector](#the-kobe-connector) below and
 [How AI agents should read these docs](reading-the-docs.md).
@@ -83,13 +83,13 @@ You have no built-in web search or URL-reading tool. To fetch from the web, use 
 
 ## The kobe connector
 
-The built-in **kobe** connector is Kobe's own MCP server, reached through the MCP proxy like any
+The built-in **kobe** connector is Kaiju's own MCP server, reached through the MCP proxy like any
 other connector (no internet access, no key). Its tools are named `mcp__kobe__<tool>`
 (`mcp__kobe_builtin__<tool>` on a site where the name `kobe` was taken).
 
 - **Docs tools** (`docs_index`, `docs_page`, `docs_search`, `docs_full`) are always available,
   whatever your agent's connector list, in every run including scheduled ones. Use them for any
-  question about using or administering Kobe; the **kobe-guide** skill says how.
+  question about using or administering Kaiju; the **kobe-guide** skill says how.
 - **Admin tools** (`team_<area>_<verb>`, `site_<area>_<verb>`) do Team console and Site console
   work. Use them only when they are in your tool list: they are listed only when the site and the
   team turned them on, your agent uses the kobe connector, and the user's role allows them. Never
@@ -105,10 +105,10 @@ other connector (no internet access, no key). Its tools are named `mcp__kobe__<t
   writes an hour per person): do not retry; tell the user. `changed_since_approval`: the setting
   changed after the user approved, nothing was changed; read it again and, if the user still wants
   it, call again for a new approval. `not_a_member`: the person you named is not in this team.
-  `Kobe refused: …`: the console's own refusal (for example the last team admin cannot be
+  `Kaiju refused: …`: the console's own refusal (for example the last team admin cannot be
   demoted); explain it, do not work around it.
 - Some actions have no tool (break-glass, ownership transfer, site roles, legal hold, retention,
-  deletions, registering connectors, injected headers, the Kobe switches themselves). Explain them
+  deletions, registering connectors, injected headers, the Kaiju switches themselves). Explain them
   from the guide and point the user to the console page.
 
 ## Files and projects
@@ -140,11 +140,11 @@ other connector (no internet access, no key). Its tools are named `mcp__kobe__<t
   also returns the user's matching saved memories first (up to 8, best first, read-only, each with
   its place, kind and `id`), then matching notes; with `scope` or `path` it reads notes only. Saved
   memories are found by words and, when the site has an embedding model, by meaning too (the same
-  ranking as What Kobe knows), so a query in your own words can find a memory that shares none of
+  ranking as What Kaiju knows), so a query in your own words can find a memory that shares none of
   them; when meaning search is unavailable you get the word matches. Notes files are matched by
   text only. No saved memories come back when your agent version's memory setting is **Notes
   only**.
-- `show_memory_item {id}` shows the user one saved memory you were given (What Kobe knows) or found
+- `show_memory_item {id}` shows the user one saved memory you were given (What Kaiju knows) or found
   with `recall`, with an **Open in Memory** link; other ids are refused. It changes nothing.
 - You cannot write, change or archive saved memories. When the user asks you to forget or change
   one, find it with `recall`, show it with `show_memory_item`, and tell them to archive or edit it

@@ -44,9 +44,9 @@ function setup(
 }
 
 describe("getSiteBranding loader", () => {
-  it("defaults are Kobe, the name shown, no assets, the default preset", () => {
+  it("defaults are Kaiju, the name shown, no assets, the default preset", () => {
     expect(DEFAULT_BRANDING).toEqual({
-      appName: "Kobe",
+      appName: "Kaiju",
       showName: true,
       logo: null,
       favicon: null,
@@ -124,7 +124,7 @@ describe("getSiteBranding loader", () => {
     expect(await load()).toEqual(DEFAULT_BRANDING);
     expect(performance.now() - started).toBeLessThan(1000);
     expect(lines).toEqual([
-      "[kobe-web] site branding unavailable (timed out); serving the Kobe defaults",
+      "[kobe-web] site branding unavailable (timed out); serving the Kaiju defaults",
     ]);
   });
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compact Hadron client for the Kobe coordinator and ticket agents. Prints only what a session
+# Compact Hadron client for the Kaiju coordinator and ticket agents. Prints only what a session
 # needs, so raw API responses never land in an agent's context.
 #
 # Connection settings (HADRON_API_URL, HADRON_PROJECT, HADRON_API_KEY) come from the environment or

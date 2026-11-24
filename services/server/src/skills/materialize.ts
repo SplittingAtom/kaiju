@@ -27,7 +27,7 @@ import { blockedAmong, isBlocked } from "./blocklist.js";
 /**
  * Ref list for `run.start` from the resolver's effective skills, blocklist re-checked here.
  * `unavailable` names the catalog skills (KOBE-315) whose runtime bundle this server does not hold:
- * Kobe's own versions always have theirs (KOBE-317), maintainer submissions until their packages
+ * Kaiju's own versions always have theirs (KOBE-317), maintainer submissions until their packages
  * are stored (KOBE-333) do not. The caller reports them as omitted, never silently.
  */
 export async function bundleRefsFor(

@@ -6,7 +6,7 @@ This is the Acme Chat user guide for agents and people. Each link below is one p
 
 ## For agents
 
-- [Using \[Kobe\]](https://chat.example.com/docs/agents/use.md): How agents read the guide.
+- [Using \[Kaiju\]](https://chat.example.com/docs/agents/use.md): How agents read the guide.
 
 ## Getting started
 
@@ -18,4 +18,4 @@ This is the Acme Chat user guide for agents and people. Each link below is one p
 
 ## Reference
 
-- [Glossary](https://chat.example.com/docs/glossary.md): Words Kobe uses.
+- [Glossary](https://chat.example.com/docs/glossary.md): Words Kaiju uses.

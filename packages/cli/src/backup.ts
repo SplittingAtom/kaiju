@@ -177,7 +177,7 @@ async function snapshotAndDump(
 
       const migrations = await readJournal(client);
       if (migrations.length === 0) {
-        throw new Error("This database has no Kobe migrations applied; nothing to back up");
+        throw new Error("This database has no Kaiju migrations applied; nothing to back up");
       }
       await assertCoverage(client);
       const all = await listTables(client);

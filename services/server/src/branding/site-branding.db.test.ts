@@ -102,7 +102,7 @@ describe("GET /v1/site/branding (public, TH6)", () => {
     const res = await as.anon.get("/v1/site/branding");
     expect(res.status).toBe(200);
     expect(res.json).toEqual({
-      appName: "Kobe",
+      appName: "Kaiju",
       showName: true,
       logo: null,
       favicon: null,
@@ -145,7 +145,7 @@ describe("GET /v1/site/branding (public, TH6)", () => {
          ('branding.show_name', 'maybe'), ('branding.app_name', '')`,
     );
     expect((await as.anon.get("/v1/site/branding")).json).toMatchObject({
-      appName: "Kobe",
+      appName: "Kaiju",
       showName: true,
       theme: { preset: "default" },
     });
@@ -499,7 +499,7 @@ describe("POST /v1/site/branding/reset (TH12)", () => {
     const res = await as.owner.post("/v1/site/branding/reset");
     expect(res.status).toBe(200);
     expect(res.json).toEqual({
-      appName: "Kobe",
+      appName: "Kaiju",
       showName: true,
       logo: null,
       favicon: null,
@@ -507,7 +507,7 @@ describe("POST /v1/site/branding/reset (TH12)", () => {
       logoThemeColor: false,
     });
     expect((await brandingEvents()).slice(before)).toEqual([
-      { setting: "app_name", value: "Kobe" },
+      { setting: "app_name", value: "Kaiju" },
       { setting: "show_name", value: "true" },
       { setting: "theme", value: "theme:default" },
       { setting: "logo_theme_color", value: "false" },
@@ -610,6 +610,6 @@ describe("mail uses the configured name (ac-4)", () => {
     expect(invite?.subject).toMatch(/invited you to Acme Data$/);
     const reset = h.mailer.to("alice@brand.test").at(-1);
     expect(reset?.subject).toBe("Reset your Acme Data password");
-    for (const m of [invite, reset]) expect(`${m?.subject}\n${m?.text}`).not.toContain("Kobe");
+    for (const m of [invite, reset]) expect(`${m?.subject}\n${m?.text}`).not.toContain("Kaiju");
   });
 });

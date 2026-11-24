@@ -140,7 +140,7 @@ describe("AppItemStore (KOBE-490)", () => {
   it("shows a note when an app sent nothing usable; the next change clears it", () => {
     const store = new AppItemStore();
     store.refused("t", FROM);
-    expect(store.snapshot("t").note).toBe("Lakehouse Picker sent items Kobe could not use.");
+    expect(store.snapshot("t").note).toBe("Lakehouse Picker sent items Kaiju could not use.");
     store.add("t", [item("a")]);
     expect(store.snapshot("t").note).toBeUndefined();
   });

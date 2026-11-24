@@ -59,7 +59,7 @@ export function connectorGrantRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
       c.get("user").id,
       deps.mcp.oauthRefresh !== undefined,
     );
-    // `refreshable` (KOBE-835): an OAuth grant Kobe renews by itself, so a past `expires_at` is
+    // `refreshable` (KOBE-835): an OAuth grant Kaiju renews by itself, so a past `expires_at` is
     // not an expired sign-in. Always false for API keys.
     return c.json({
       grants: grants.map((g) => ({ ...summaryBody(g), refreshable: g.refreshable })),

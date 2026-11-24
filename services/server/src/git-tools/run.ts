@@ -9,7 +9,7 @@ import { gitPinnedTool, loadGitBuiltin } from "./pinned.js";
 /**
  * The built-in git connector in a run's `run.start.mcp` (KOBE-762): the git host tools the run may
  * use now (`listing.ts`: a usable connection, the member's role, the Site's Git switch), filtered
- * by the agent's tool globs. Independent of the Kobe connector and its switches (owner decision
+ * by the agent's tool globs. Independent of the Kaiju connector and its switches (owner decision
  * 2026-11-22) and of the agent's connector list (GQ8). Undefined: no git server for the run. The
  * MCP proxy's re-check decides every call again.
  */

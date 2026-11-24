@@ -37,7 +37,7 @@ describe("Git section: states (KOBE-761)", () => {
     });
     renderTeam(<TeamGitPage />, ADMIN);
     expect(screen.getByRole("status").textContent).toMatch(/Loading git connections/);
-    await screen.findByText(/Kobe had a problem/);
+    await screen.findByText(/Kaiju had a problem/);
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     await screen.findByText("No git organization is connected");
     expect(summary(calls).filter((c) => c === `GET ${GIT_BASE}`)).toHaveLength(2);
@@ -227,7 +227,7 @@ describe("Git section: states (KOBE-761)", () => {
 });
 
 describe("Git section: per-connection actions (KOBE-761)", () => {
-  it("Check now reports a pass, or the failure in Kobe's words", async () => {
+  it("Check now reports a pass, or the failure in Kaiju's words", async () => {
     const calls = stubApi({
       [`GET ${GIT_BASE}`]: [200, list([adminConnection()])],
       [`POST ${GIT_BASE}/${ID}/check`]: [
@@ -309,7 +309,7 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
     const push = dialog.getByRole("spinbutton", { name: /Push size limit/ });
     await userEvent.clear(push);
     await userEvent.type(push, "2048");
-    // KOBE-767: Kobe's commit dialog enforces it (off by default: pull requests).
+    // KOBE-767: Kaiju's commit dialog enforces it (off by default: pull requests).
     const direct = dialog.getByRole("checkbox", { name: /straight to the default branch/ });
     expect((direct as HTMLInputElement).checked).toBe(false);
     await userEvent.click(direct);
@@ -412,9 +412,9 @@ describe("Commit author email (KOBE-761, G13, GQ10)", () => {
     });
     renderTeam(<TeamGitPage />, ADMIN);
     const form = within(await screen.findByRole("form", { name: "Commit author email" }));
-    const member = form.getByRole("radio", { name: "Member's Kobe email" });
+    const member = form.getByRole("radio", { name: "Member's Kaiju email" });
     expect(member).toHaveProperty("checked", true);
-    expect(form.getByText(/email they sign in to Kobe with/)).toBeTruthy();
+    expect(form.getByText(/email they sign in to Kaiju with/)).toBeTruthy();
     expect(form.getByText(EXAMPLE)).toBeTruthy();
     expect(screen.getByText(/keep it in their history for good/)).toBeTruthy();
     expect(form.getByRole("button", { name: "Save commit email" })).toHaveProperty(

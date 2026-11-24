@@ -6,14 +6,14 @@ export interface SiteSettings {
   /** Hours audit events keep the client IP and user agent (KOBE-17): 1-8760, default 12. */
   readonly auditPiiRetentionHours?: number;
   /**
-   * The Kobe MCP site switch (KOBE-623, spec kobe-admin-mcp §6, KA5): `off` (no Kobe connector),
+   * The Kaiju MCP site switch (KOBE-623, spec kobe-admin-mcp §6, KA5): `off` (no Kaiju connector),
    * `docs` (docs tools only; the default) or `admin` (docs plus the admin tools each team turns
    * on). Absent from servers that predate it.
    */
   readonly kobeMcpMode?: KobeMcpMode;
-  /** Per-person Kobe admin reads per minute (KOBE-814): 1-10000, default 60. Absent on older servers. */
+  /** Per-person Kaiju admin reads per minute (KOBE-814): 1-10000, default 60. Absent on older servers. */
   readonly kobeReadsPerMinute?: number;
-  /** Per-person Kobe admin writes per hour (KOBE-814): 1-10000, default 30. Absent on older servers. */
+  /** Per-person Kaiju admin writes per hour (KOBE-814): 1-10000, default 30. Absent on older servers. */
   readonly kobeWritesPerHour?: number;
   /** Workspace git (KOBE-757, spec G3): Git connections allowed on this Site (default true). */
   readonly gitConnectionsEnabled?: boolean;
@@ -21,7 +21,7 @@ export interface SiteSettings {
   readonly gitAllowedHosts?: readonly string[];
 }
 
-/** Bounds and defaults of the Kobe admin limits (the server validates them again). */
+/** Bounds and defaults of the Kaiju admin limits (the server validates them again). */
 export const KOBE_LIMITS = {
   min: 1,
   max: 10_000,

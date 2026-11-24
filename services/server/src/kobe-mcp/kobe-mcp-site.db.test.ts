@@ -37,7 +37,7 @@ import {
 import { MemoryObjects } from "../testing/memory-objects.js";
 
 /**
- * The Site console tools of the built-in Kobe MCP server end to end (KOBE-622, spec
+ * The Site console tools of the built-in Kaiju MCP server end to end (KOBE-622, spec
  * kobe-admin-mcp §5 Site list, §6, §8; KA-5 ac-1..5): the real MCP proxy app talks HTTP to the real
  * internal listener, which decides and runs each console route in process as the person, on a real
  * Postgres.
@@ -606,7 +606,7 @@ describe("site catalog contract (ac-5)", () => {
     site_grants_take: async ({ w }) => ({ user_id: w.reviewer.id, grant: "skill_reviewer" }),
     site_branding_get: async () => ({}),
     site_branding_set: async () => ({
-      change: { from: { app_name: "Kobe" }, to: { app_name: "Kobe Lab" } },
+      change: { from: { app_name: "Kaiju" }, to: { app_name: "Kaiju Lab" } },
     }),
     site_budget_get: async () => ({}),
     site_memory_settings_get: async () => ({}),
@@ -624,7 +624,7 @@ describe("site catalog contract (ac-5)", () => {
     site_usage_read: async () => ({}),
     site_audit_list: async () => ({ limit: 5 }),
   };
-  /** Read routes that are public or looser than the page (refused by the Kobe layer instead). */
+  /** Read routes that are public or looser than the page (refused by the Kaiju layer instead). */
   const LOOSER_ROUTE = new Set(["site_branding_get"]);
 
   it("names a sample for every site tool", () => {

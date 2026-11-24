@@ -90,7 +90,7 @@ export function driftMessage(
     event.tools.length === 0
       ? []
       : [
-          `The tools of the ${name} connector changed upstream. These tools are disabled in Kobe until`,
+          `The tools of the ${name} connector changed upstream. These tools are disabled in Kaiju until`,
           "a site admin reviews and re-approves them:",
           ...bullets(event.tools),
           "",
@@ -99,7 +99,7 @@ export function driftMessage(
     templates.length === 0
       ? []
       : [
-          `These app templates of the ${name} connector changed upstream or are new. Kobe shows`,
+          `These app templates of the ${name} connector changed upstream or are new. Kaiju shows`,
           "their tools' results as text until a site admin reviews and approves them:",
           ...bullets(templates),
           "",
@@ -108,7 +108,7 @@ export function driftMessage(
     invalid.length === 0
       ? []
       : [
-          `These app templates of the ${name} connector cannot be pinned, so Kobe does not show them:`,
+          `These app templates of the ${name} connector cannot be pinned, so Kaiju does not show them:`,
           ...bullets(
             invalid.map((t) => `${t.uri} (${INVALID_REASONS[t.reason] ?? oneLine(t.reason)})`),
           ),
@@ -144,7 +144,7 @@ export function skippedMessage(
       ]
     : event.source === "site"
       ? [
-          `The ${name} connector uses a site-wide key, and it has none Kobe can use (not set, or`,
+          `The ${name} connector uses a site-wide key, and it has none Kaiju can use (not set, or`,
           "its server URL changed since it was set). Set (or re-enter) its site-wide key.",
         ]
       : [
@@ -155,7 +155,7 @@ export function skippedMessage(
     to,
     subject: `Connector ${name}: tools are not checked for changes`,
     text: [
-      `The ${name} connector asks for credentials, and Kobe has none to check its tools with:`,
+      `The ${name} connector asks for credentials, and Kaiju has none to check its tools with:`,
       ...(oauth
         ? [
             "the site admin who last pinned or approved its tools has no usable connected account",
@@ -183,13 +183,13 @@ export function templatesSkippedMessage(
   const name = oneLine(event.name);
   const why =
     event.reason === "proxy_outdated"
-      ? "Kobe's MCP proxy is older than this server and cannot read app templates: upgrade it."
+      ? "Kaiju's MCP proxy is older than this server and cannot read app templates: upgrade it."
       : `The server's app templates could not be read (${oneLine(event.reason ?? "unknown")}).`;
   return {
     to,
     subject: `Connector ${name}: app templates are not checked for changes`,
     text: [
-      `Kobe checks the tools of the ${name} connector but not its app templates (ui://).`,
+      `Kaiju checks the tools of the ${name} connector but not its app templates (ui://).`,
       "Only templates a site admin approved are shown; changes on the server are not noticed.",
       "",
       why,

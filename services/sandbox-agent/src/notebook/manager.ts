@@ -312,22 +312,22 @@ export class KernelManager {
     if (kernel.session.inspecting && !(await this.#endInspection(kernel, waiting))) {
       kernel.waiting.delete(waiting);
       limiter.note(
-        "[Kobe: the kernel was stuck showing its variables and was restarted; run it again]\n",
+        "[Kaiju: the kernel was stuck showing its variables and was restarted; run it again]\n",
       );
       return { status: "restarted", execution_count: null, ...limiter.finish() };
     }
     kernel.waiting.delete(waiting);
     if (waiting.cancelled) {
-      limiter.note("[Kobe: not run: interrupted, or its run ended, before it started]\n");
+      limiter.note("[Kaiju: not run: interrupted, or its run ended, before it started]\n");
       return { status: "interrupted", execution_count: null, ...limiter.finish() };
     }
     const remaining = waiting.deadlineAt - Date.now();
     if (remaining <= 0) {
-      limiter.note("[Kobe: not run: its time ran out while it waited for the kernel]\n");
+      limiter.note("[Kaiju: not run: its time ran out while it waited for the kernel]\n");
       return { status: "timeout", execution_count: null, ...limiter.finish() };
     }
     if (!kernel.session.alive) {
-      limiter.note("[Kobe: the kernel stopped before this cell ran; run it again]\n");
+      limiter.note("[Kaiju: the kernel stopped before this cell ran; run it again]\n");
       return { status: "restarted", execution_count: null, ...limiter.finish() };
     }
     kernel.current = { runId: frame.run_id, execId: frame.exec_id };
@@ -350,7 +350,7 @@ export class KernelManager {
       );
       if (result.kind === "done") {
         const status: ExecStatus = timedOut ? "timeout" : result.status;
-        if (timedOut) limiter.note(`[Kobe: the cell ran past its ${frame.timeout_ms / 1000} s]\n`);
+        if (timedOut) limiter.note(`[Kaiju: the cell ran past its ${frame.timeout_ms / 1000} s]\n`);
         ran = { status, execution_count: result.executionCount, ...limiter.finish() };
         snapshot = !timedOut;
       } else {
@@ -537,7 +537,7 @@ export class KernelManager {
 }
 
 function stopNote(status: ExecStatus): string {
-  if (status === "restarted") return "[Kobe: the kernel was restarted; its state is lost]\n";
-  if (status === "timeout") return "[Kobe: the cell timed out and the kernel was stopped]\n";
-  return "[Kobe: the kernel stopped unexpectedly; its state is lost]\n";
+  if (status === "restarted") return "[Kaiju: the kernel was restarted; its state is lost]\n";
+  if (status === "timeout") return "[Kaiju: the cell timed out and the kernel was stopped]\n";
+  return "[Kaiju: the kernel stopped unexpectedly; its state is lost]\n";
 }

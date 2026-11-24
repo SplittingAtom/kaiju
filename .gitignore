@@ -32,7 +32,7 @@ e2e/browser/console-shots/
 e2e/browser/perf-results/
 e2e/browser-results/
 
-# The Kobe guide compiled from docs/guide (KOBE-616, packages/guide/scripts/generate-guide.mjs)
+# The Kaiju guide compiled from docs/guide (KOBE-616, packages/guide/scripts/generate-guide.mjs)
 packages/guide/src/generated/
 
 # The server's OpenAPI document, generated (KOBE-815): `pnpm --filter @kobe/server openapi`; CI

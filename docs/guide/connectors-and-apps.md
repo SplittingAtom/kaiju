@@ -6,7 +6,7 @@ order: 1
 audience: member
 ---
 
-Connectors link Kobe to other systems (a ticket tracker, a data platform, an internal API) through
+Connectors link Kaiju to other systems (a ticket tracker, a data platform, an internal API) through
 the Model Context Protocol (MCP). Each connector gives the agent a set of tools. Some connectors
 also bring apps: small interactive views that appear in the conversation. This page explains how to
 use both.
@@ -19,15 +19,15 @@ the team in the team console's **Connectors** page and choose which of its tools
 That page lists each connector's tools under **Read only** and **Write**; a tool that opens an app
 card is marked **MCP-UI**.
 
-The agent never holds the connector's credentials. Its calls go through Kobe's MCP proxy, which
+The agent never holds the connector's credentials. Its calls go through Kaiju's MCP proxy, which
 adds the credential on the way out, checks the call against your team's rules and records it.
 
-## The built-in Kobe connector
+## The built-in Kaiju connector
 
-Every site has one connector it did not have to register: **Kobe**, Kobe's own. It needs no key
+Every site has one connector it did not have to register: **Kaiju**, Kaiju's own. It needs no key
 and no internet access, and it cannot be turned off for a conversation. Its docs tools let any
 agent read this guide, so you can ask "How do I…" anywhere. Where a site admin and your team admin
-turned them on, its admin tools let the agent read or change Kobe settings as you, within your own
+turned them on, its admin tools let the agent read or change Kaiju settings as you, within your own
 permissions, and every change asks you first with an **Admin change** card. In the composer,
 **+** → **Connectors** lists it first, with "Docs always on" and which admin tools you have. In
 the agent creator you can name **kobe** among an agent's connectors to give it the admin tools.
@@ -45,7 +45,7 @@ A connector that uses OAuth asks you to sign in at the service with your own acc
 key to copy. Its card shows **Not connected**, **Connected** (with when you first connected) or
 **Sign-in expired, reconnect**.
 
-1. Press **Connect**. Kobe sends you to the service's own sign-in page.
+1. Press **Connect**. Kaiju sends you to the service's own sign-in page.
 2. Sign in there and allow access.
 3. The service sends you back to **My connectors**, which says "Connected your account to
    _connector_." If it did not work, it says why ("The sign-in was cancelled or refused at the
@@ -56,21 +56,21 @@ key to copy. Its card shows **Not connected**, **Connected** (with when you firs
 **Reconnect** signs in again (for example with another account). **Disconnect** deletes your
 sign-in for that connector in this workspace (audited as `mcp.grant.removed`); your runs can't use
 the connector until you connect again. Disconnecting does not sign you out at the service itself:
-to revoke Kobe's access there too, use the service's own account settings.
+to revoke Kaiju's access there too, use the service's own account settings.
 
-Kobe keeps the sign-in on the server, encrypted, and uses it only for your runs: the browser and
+Kaiju keeps the sign-in on the server, encrypted, and uses it only for your runs: the browser and
 your agent never see it. It renews the sign-in by itself when it runs out, and also when the
 connector's server turns it down before then (the call is then tried once more), so the card
-stays **Connected** while Kobe can renew it. **Sign-in expired, reconnect** appears only for a
-sign-in Kobe cannot renew (the service gave no renewal token and the sign-in ran out); press
-**Reconnect**. If the service ends a sign-in for good, Kobe deletes it and the card shows **Not
+stays **Connected** while Kaiju can renew it. **Sign-in expired, reconnect** appears only for a
+sign-in Kaiju cannot renew (the service gave no renewal token and the sign-in ran out); press
+**Reconnect**. If the service ends a sign-in for good, Kaiju deletes it and the card shows **Not
 connected** again. Starting a connection is limited to 30 tries in 10
 minutes per person ("Too many connection attempts. Try again in a few minutes.").
 
 ### Connectors that need an API key
 
 - A connector that needs your key shows **No key added**; press **Add key**, paste your **API
-  key** and save. Kobe stores it encrypted, uses it only for your runs and never shows it again.
+  key** and save. Kaiju stores it encrypted, uses it only for your runs and never shows it again.
 - **Replace key** and **Remove key** change or delete it.
 - "Provided by your organization: you need no key of your own." means a site-wide key is used.
 
@@ -81,7 +81,7 @@ one."). An app that is missing only your key shows **Add your key**, linking to 
 
 Your keys (and sign-ins for connectors that use OAuth) belong to one workspace. When you are
 removed from a workspace, your account is deactivated, or your identity provider removes your
-access, Kobe deletes them for that workspace (each deletion is in the workspace's **Audit** as
+access, Kaiju deletes them for that workspace (each deletion is in the workspace's **Audit** as
 `mcp.grant.removed`). If you are added back, add your keys and sign in again. The same happens
 when a site admin changes a connector's server address or how it signs in: add your key or sign
 in again. A sign-in you finish after the connector's address changed is refused (**Connect**
@@ -97,8 +97,8 @@ enters your sandbox. With **Read** your sandbox can fetch (clone and pull) there
 write** it can also push, if your role is Contributor or above (and, for a Repo, you are an editor
 or owner of its project).
 
-Agents also get **git host tools** for these organizations from Kobe's built-in **git** connector
-(listed under **+** → **Connectors**, always on, apart from the Kobe connector), run by Kobe's
+Agents also get **git host tools** for these organizations from Kaiju's built-in **git** connector
+(listed under **+** → **Connectors**, always on, apart from the Kaiju connector), run by Kaiju's
 server: reading
 repositories, branches, files, pull requests and issues (at **Read**), and creating branches,
 repositories, pull requests, issues and comments (at **Read and write**, with the same role rules as
@@ -120,7 +120,7 @@ on); connect it from **My connectors** in the meantime.
 ## Connector tool calls and approvals
 
 Connector tools are marked by the system that provides them as reading or changing data. By
-default Kobe asks you before a connector tool that changes something runs; read-only tools run
+default Kaiju asks you before a connector tool that changes something runs; read-only tools run
 without asking. Your team's rules can ask more often, and a tool whose definition changed since a
 site admin approved it is turned off until it is approved again. See
 [Approvals](internet-and-approvals/approvals.md).
@@ -128,10 +128,10 @@ site admin approved it is turned off until it is approved again. See
 ## Apps in answers
 
 Some connector tools return an app: an interactive card (a table explorer, a picker, a chart)
-rendered right in the answer. Apps run in a locked-down frame and can only talk to Kobe, which
+rendered right in the answer. Apps run in a locked-down frame and can only talk to Kaiju, which
 checks every call they make like any other tool call.
 
-- **Show response.** When an answer includes an app, Kobe shows only the app card. Everything else
+- **Show response.** When an answer includes an app, Kaiju shows only the app card. Everything else
   in that answer (the text, reasoning steps, other tool cards, the "Used skill" line) is behind a
   collapsed **Show response** toggle under the card; open it to read it in its original order.
   Approval cards, problems and blocked-site cards are never hidden. **Copy** still copies the

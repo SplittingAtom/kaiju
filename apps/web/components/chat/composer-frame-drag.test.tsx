@@ -14,7 +14,7 @@ import { chatRequests, composer, openApp } from "./testing";
 
 /**
  * KOBE-553 (DRAG-CONTRACT.md): a Lakehouse Picker row dragged out of the rail frame with captured
- * pointer events, told to Kobe over the bridge. Kobe draws the ghost chip at the page point,
+ * pointer events, told to Kaiju over the bridge. Kaiju draws the ghost chip at the page point,
  * lights the composer while the point is over its panel, and on release there inserts exactly
  * the click's state: the chip from the app's title, `references` on send, no text.
  */

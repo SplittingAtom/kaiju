@@ -118,7 +118,7 @@ describe("OutputLimiter (NB9)", () => {
     const out = sent[0]?.output;
     expect(out?.output_type).toBe("stream");
     expect(out?.output_type === "stream" && out.text).toMatch(
-      /^\[Kobe: output truncated.*<Figure>/su,
+      /^\[Kaiju: output truncated.*<Figure>/su,
     );
     expect(limiter.finish().truncated).toBe(false);
   });

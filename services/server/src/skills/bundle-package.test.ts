@@ -27,7 +27,7 @@ const asMap = (files: Record<string, string>) =>
   new Map(Object.entries(files).map(([k, v]) => [k, strToU8(v)]));
 
 describe("authored packages today's rules refuse", () => {
-  it("refuses a root provenance.json: only Kobe writes one", () => {
+  it("refuses a root provenance.json: only Kaiju writes one", () => {
     expect(failure({ "provenance.json": "{}" })).toMatchObject({ code: "reserved_path" });
   });
 

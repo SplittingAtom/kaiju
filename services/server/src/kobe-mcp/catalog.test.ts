@@ -4,7 +4,7 @@ import { kobePinnedTool } from "./pinned.js";
 import { KOBE_ADMIN_TOOLS } from "./tools/index.js";
 import { teamMembersSetRole } from "./tools/team-members.js";
 
-describe("Kobe MCP catalog (KOBE-619)", () => {
+describe("Kaiju MCP catalog (KOBE-619)", () => {
   it("names every tool <area>_<verb>, with strict inputs and a console permission", () => {
     const names = KOBE_ADMIN_TOOLS.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);

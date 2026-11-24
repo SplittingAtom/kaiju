@@ -49,7 +49,7 @@ describe("pgBinary", () => {
 });
 
 describe("childEnv", () => {
-  it("passes only what libpq and the OS need, never S3 or Kobe secrets", () => {
+  it("passes only what libpq and the OS need, never S3 or Kaiju secrets", () => {
     const env = childEnv(
       {
         PATH: "/usr/bin",
@@ -98,7 +98,7 @@ describe("safeToolErrors", () => {
 });
 
 describe("safePsqlErrors", () => {
-  it("shows Kobe's own checks, and only the SQLSTATE for other errors", () => {
+  it("shows Kaiju's own checks, and only the SQLSTATE for other errors", () => {
     const stderr = [
       "psql:<stdin>:12: ERROR:  P0001: kobe restore: widgets has 3 rows, the backup has 4; nothing was restored",
       'psql:<stdin>:40: ERROR:  23505: duplicate key value violates unique constraint "users_email_unique"',

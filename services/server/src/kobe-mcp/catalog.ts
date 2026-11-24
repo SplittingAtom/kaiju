@@ -2,12 +2,12 @@ import { z } from "zod";
 import type { SitePermission, SkillReviewAction, TeamPermission } from "../authz/permissions.js";
 
 /**
- * The Kobe MCP tool catalog framework (KOBE-619, spec kobe-admin-mcp §5, KA3). Each admin tool is
+ * The Kaiju MCP tool catalog framework (KOBE-619, spec kobe-admin-mcp §5, KA3). Each admin tool is
  * one Team console or Site console action: the console page's permission, and the console's own
  * route, which the executor calls in process as the person (`delegation.ts`), so there is one
  * implementation of every action and a tool can do nothing its route refuses the person.
  *
- * The catalog is code, shipped and hashed with the release: no pinning, no drift (a Kobe upgrade
+ * The catalog is code, shipped and hashed with the release: no pinning, no drift (a Kaiju upgrade
  * is the review). Names are `<area>_<verb>`; Pi sees `mcp__<connector>__<name>`.
  */
 

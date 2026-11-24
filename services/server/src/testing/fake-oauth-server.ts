@@ -45,7 +45,7 @@ export interface FakeOauthOptions {
   readonly refreshDelayAfterRotateMs?: number;
   /** Leave `expires_in` out of token responses (it is only RECOMMENDED, RFC 6749 5.1). */
   readonly omitExpiresIn?: boolean;
-  /** Issue no refresh token from the authorization code (a sign-in Kobe cannot renew). */
+  /** Issue no refresh token from the authorization code (a sign-in Kaiju cannot renew). */
   readonly omitRefreshToken?: boolean;
 }
 
@@ -96,7 +96,7 @@ export class FakeOauthServer {
     return new Promise((r) => this.server.close(() => r()));
   }
 
-  /** Plays the browser at /authorize: returns the redirect Kobe's callback should receive. */
+  /** Plays the browser at /authorize: returns the redirect Kaiju's callback should receive. */
   async authorize(authorizationUrl: string): Promise<URL> {
     const res = await fetch(authorizationUrl, { redirect: "manual" });
     const location = res.headers.get("location");

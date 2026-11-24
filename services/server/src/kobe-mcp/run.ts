@@ -8,7 +8,7 @@ import { allowListOffers } from "../policy/agent-allow.js";
 import { kobePinnedTool } from "./pinned.js";
 
 /**
- * The built-in Kobe connector in a run's `run.start.mcp` (KOBE-619, spec §3, KA7):
+ * The built-in Kaiju connector in a run's `run.start.mcp` (KOBE-619, spec §3, KA7):
  *
  * - the **docs tools** (KOBE-620) are on every run whatever the agent's connector list: runs
  *   without an agent, scheduled runs, skill evals and test chats included;
@@ -17,7 +17,7 @@ import { kobePinnedTool } from "./pinned.js";
  *   tools the person may use now (switches and permission).
  *
  * Both are filtered by the agent's tool globs, and nothing is attached while the site switch is
- * `off` or when the owner turned the connector off for the thread. Undefined: the run gets no Kobe
+ * `off` or when the owner turned the connector off for the thread. Undefined: the run gets no Kaiju
  * server. The MCP proxy's re-check decides every call again.
  */
 export async function kobeRunServer(

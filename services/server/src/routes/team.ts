@@ -55,7 +55,7 @@ export function teamRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }>
   app.delete("/members/:userId", requireTeamPermission("team.members.manage"), async (c) => {
     const userId = param(c, "userId", idSchema);
     // `?expectedRole=` (KOBE-621): remove only while the member still has this role (the before-state
-    // a Kobe MCP removal was approved with), checked under the change's row lock.
+    // a Kaiju MCP removal was approved with), checked under the change's row lock.
     const expectedRaw = c.req.query("expectedRole");
     const expected = expectedRaw === undefined ? undefined : teamRoleSchema.safeParse(expectedRaw);
     if (!userId.success || (expected !== undefined && !expected.success)) return invalidRequest(c);

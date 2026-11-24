@@ -39,9 +39,9 @@ import {
 /**
  * KOBE-767 (GIT-11, spec workspace-git G18, GQ11) on a real Postgres with a real `git
  * http-backend` behind the Forgejo fake (`testing/git-conversion-fixture.ts`). ac-1: a commit from
- * Kobe's commit dialog to a Repo becomes a git commit authored as the member, on a branch of its
+ * Kaiju's commit dialog to a Repo becomes a git commit authored as the member, on a branch of its
  * own, with a pull request into the default branch; the next commit from the same working copy is
- * added to it. ac-2: with direct commits allowed it goes straight to the default branch (Kobe's
+ * added to it. ac-2: with direct commits allowed it goes straight to the default branch (Kaiju's
  * copy and the checkout move on); a branch moved on the host is refused (`repo_moved`) and nothing
  * is overwritten; a host that refuses the default branch gets a pull request instead; a read-only
  * connection and readers are refused.
@@ -168,7 +168,7 @@ describe("a commit from the Commit dialog on a Repo (ac-1)", () => {
     );
     const owner = must(rows[0]);
     expect(bare(r.full, ["log", "-1", "--format=%an|%ae|%cn|%P|%s", branch]).trim()).toBe(
-      `${owner.name}|${owner.email}|${owner.name} via Kobe|${main}|Explain more`,
+      `${owner.name}|${owner.email}|${owner.name} via Kaiju|${main}|Explain more`,
     );
     expect(bare(r.full, ["show", `${branch}:README.md`])).toBe("# Hi\n\nMore.\n");
     expect(bare(r.full, ["show", `${branch}:docs/new.md`])).toBe("new\n");
@@ -177,9 +177,9 @@ describe("a commit from the Commit dialog on a Repo (ac-1)", () => {
     expect(prs).toHaveLength(1);
     expect(prs[0]).toMatchObject({ number: 1, title: "Explain more", head: branch, base: "main" });
     expect(prs[0]?.body).toMatch(
-      /^The readme was short\.\n\n---\nCommitted by .+ with Kobe's commit dialog$/,
+      /^The readme was short\.\n\n---\nCommitted by .+ with Kaiju's commit dialog$/,
     );
-    // Nothing of Kobe's own history moved: the Repo's record is the host.
+    // Nothing of Kaiju's own history moved: the Repo's record is the host.
     const info = await as(w.owner, w.team).request("GET", `/v1/projects/${r.id}/repo-status`);
     expect(info.status).toBe(200);
     expect(repoCommitInfoSchema.parse(info.json)).toMatchObject({
@@ -233,7 +233,7 @@ describe("a commit from the Commit dialog on a Repo (ac-1)", () => {
 });
 
 describe("direct commits and conflicts (ac-2)", () => {
-  it("commits straight to the default branch when the connection allows it; Kobe's copy follows", async () => {
+  it("commits straight to the default branch when the connection allows it; Kaiju's copy follows", async () => {
     const w = await world();
     const r = await repo(w);
     const patch = await as(w.admin, w.team).request(
@@ -327,7 +327,7 @@ describe("direct commits and conflicts (ac-2)", () => {
     ).toBe(200);
     const res = await commit(as(w.owner, w.team), r.id, "Mine");
     expect(res.status, res.text).toBe(200);
-    // Kobe's copy stood on an older head, so it is not written now: the mirror brings it in.
+    // Kaiju's copy stood on an older head, so it is not written now: the mirror brings it in.
     expect(res.json).toMatchObject({ status: "pushed", branch: "main", seq: null });
     expect(bare(r.full, ["log", "-1", "--format=%P", "main"]).trim()).toBe(moved);
     expect(bare(r.full, ["show", "main:docs/a.md"])).toBe("theirs\n");
@@ -509,7 +509,7 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
       message: "Mine",
       author: { userId: w.owner.id, kind: "user" as const },
     };
-    // The same file changes on the host after Kobe planned the commit: refused, nothing written.
+    // The same file changes on the host after Kaiju planned the commit: refused, nothing written.
     const same = await commitToRepo(
       repoDeps({
         afterPlan: async () => {
@@ -611,7 +611,7 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
     });
     expect(res).toMatchObject({ status: "refused", error: "repo_unavailable" });
     expect(res.status === "refused" && res.detail).toMatch(/limited to chosen agents/);
-    // Review R2-L1: an agent's commit approved for Kobe's own copy never pushes to the host.
+    // Review R2-L1: an agent's commit approved for Kaiju's own copy never pushes to the host.
     const asKobe = await commitToRepo(repoDeps(), {
       owner: { teamId: w.team, userId: w.owner.id },
       projectId: r.id,
@@ -621,7 +621,7 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
       approvedAs: "commit_project",
     });
     expect(asKobe).toMatchObject({ status: "refused", error: "repo_unavailable" });
-    expect(asKobe.status === "refused" && asKobe.detail).toMatch(/approved for Kobe's own copy/);
+    expect(asKobe.status === "refused" && asKobe.detail).toMatch(/approved for Kaiju's own copy/);
   });
 
   it("answers 429 with Retry-After past the limit before any host call (L2, N1)", async () => {
@@ -690,7 +690,7 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
   });
 });
 
-describe("the Repo mirror and Kobe's commit flow together (KOBE-766 wiring)", () => {
+describe("the Repo mirror and Kaiju's commit flow together (KOBE-766 wiring)", () => {
   it("a refresh that read the host before a direct commit does not write it back", async () => {
     const w = await world();
     const r = await repo(w);
@@ -709,7 +709,7 @@ describe("the Repo mirror and Kobe's commit flow together (KOBE-766 wiring)", ()
       const head = await headOf(tx, w.team, r.id);
       return loadTree(tx, w.team, head?.id ?? null);
     });
-    // ...then a direct commit lands and Kobe's copy takes it...
+    // ...then a direct commit lands and Kaiju's copy takes it...
     expect(
       (await save(as(w.owner, w.team), `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# New\n"))
         .status,
@@ -777,7 +777,7 @@ describe("the Repo mirror and Kobe's commit flow together (KOBE-766 wiring)", ()
     expect(await refreshRepository(mdeps, w.team, repositoryId)).toBe("unchanged");
     expect(await exists(m1)).toBe(false);
     expect(await exists(m2)).toBe(true);
-    // Kobe's history from before the conversion stays.
+    // Kaiju's history from before the conversion stays.
     expect(await exists(converted)).toBe(true);
   });
 });

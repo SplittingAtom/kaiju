@@ -104,7 +104,7 @@ describe("My connectors: OAuth (KOBE-835)", () => {
     [
       422,
       "oauth_unsupported",
-      "This connector's authorization server cannot be used safely with Kobe.",
+      "This connector's authorization server cannot be used safely with Kaiju.",
     ],
     [429, "rate_limited", "Too many connection attempts. Try again in a few minutes."],
     [502, "oauth_unreachable", "Could not reach the connector's authorization server."],
@@ -144,7 +144,7 @@ describe("My connectors: OAuth (KOBE-835)", () => {
     expect(calls.some((c) => c.method === "DELETE")).toBe(true);
   });
 
-  it("stays Connected after the access token ran out while Kobe can renew it, showing when it connected", async () => {
+  it("stays Connected after the access token ran out while Kaiju can renew it, showing when it connected", async () => {
     routes([grant(PAST, true)]);
     renderTeam(<MyConnectorsPage />, MEMBER);
     expect(await screen.findByText("Connected")).toBeTruthy();
@@ -153,7 +153,7 @@ describe("My connectors: OAuth (KOBE-835)", () => {
     expect(since.querySelector("time")?.getAttribute("datetime")).toBe("2026-11-20T10:00:00Z");
   });
 
-  it("says the sign-in expired only when Kobe cannot renew it, and offers Reconnect", async () => {
+  it("says the sign-in expired only when Kaiju cannot renew it, and offers Reconnect", async () => {
     routes([grant(PAST, false)], { [START]: [200, { authorization_url: AUTHORIZE }] });
     renderTeam(<MyConnectorsPage />, MEMBER);
     expect(await screen.findByText("Sign-in expired, reconnect")).toBeTruthy();
@@ -179,7 +179,7 @@ describe("the sign-in result (KOBE-835)", () => {
     expect(screen.getAllByText(/Connected your account/)).toHaveLength(1);
   });
 
-  it("shows a failure with Kobe's own sentence for a known reason", async () => {
+  it("shows a failure with Kaiju's own sentence for a known reason", async () => {
     window.history.replaceState(
       null,
       "",

@@ -101,7 +101,7 @@ describe("Re-probe (KOBE-430)", () => {
     expect(screen.queryByRole("article")).toBeNull();
   });
 
-  it("shows the failure reason in Kobe's words (a 502 from the remote)", async () => {
+  it("shows the failure reason in Kaiju's words (a 502 from the remote)", async () => {
     stubApi({
       [`GET ${BASE}`]: [200, { connectors: [connector()] }],
       [`POST ${BASE}/c-1/refresh`]: [
@@ -125,7 +125,7 @@ describe("Re-probe (KOBE-430)", () => {
       [`GET ${BASE}`]: [200, { connectors: [connector()] }],
       [`POST ${BASE}/c-1/refresh`]: [
         [429, { code: "rate_limited", message: "This connector was re-probed several times." }],
-        [409, { code: "refresh_running", message: "Kobe is checking this connector right now." }],
+        [409, { code: "refresh_running", message: "Kaiju is checking this connector right now." }],
       ],
     });
     renderSite(<ConnectorsPage />);

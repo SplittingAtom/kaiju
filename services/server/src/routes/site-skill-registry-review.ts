@@ -51,7 +51,7 @@ export const decisionSchema = z
     note: noteSchema.optional(),
     checklist: checklistSchema.optional(),
     /**
-     * KOBE-623: the version's state as the caller saw it (a Kobe MCP call's approved
+     * KOBE-623: the version's state as the caller saw it (a Kaiju MCP call's approved
      * before-state); another one is a 409 `changed_since_approval`, checked under the row lock.
      */
     expected_state: z.enum(["submitted", "in_review", "changes_requested"]).optional(),

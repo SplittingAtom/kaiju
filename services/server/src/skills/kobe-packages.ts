@@ -5,14 +5,14 @@ import { KOBE_SKILL_NAMES, canonicalZip, type KobeSkillManifest } from "@kobe/pr
 import { validateZipBundle, type ValidBundle } from "./bundle.js";
 
 /**
- * The package set of Kobe's own catalog skills (KOBE-317, SK4): the former built-ins, one
+ * The package set of Kaiju's own catalog skills (KOBE-317, SK4): the former built-ins, one
  * directory per skill under `services/server/builtin-skills/<name>/`, shipped with the server
- * image (so a Kobe release updates them without a sandbox image rebuild). Each holds the skill's
+ * image (so a Kaiju release updates them without a sandbox image rebuild). Each holds the skill's
  * files and a `kobe.skill.yaml` whose `version` is the catalog semver: changing a skill's files
  * means raising it (`kobe-packages.test.ts` holds each version's hash).
  *
  * Every package goes through the upload's own checks (`validateZipBundle`: limits, paths,
- * SKILL.md, manifest), so a Kobe skill is held to the rules a member's upload is.
+ * SKILL.md, manifest), so a Kaiju skill is held to the rules a member's upload is.
  */
 export const KOBE_PACKAGES_DIR = fileURLToPath(new URL("../../builtin-skills", import.meta.url));
 
@@ -25,7 +25,7 @@ export interface KobePackage {
 
 export class KobePackageError extends Error {
   constructor(message: string) {
-    super(`skills: Kobe package set: ${message}`);
+    super(`skills: Kaiju package set: ${message}`);
     this.name = "KobePackageError";
   }
 }

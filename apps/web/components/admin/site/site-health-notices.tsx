@@ -12,7 +12,7 @@ type InfoCheck = Extract<SiteHealthCheck, { level: "info" }>;
 
 /**
  * Install checks on the Site console overview (KOBE-811), for site admins. Informational only:
- * nothing here stops Kobe working. Today: whether requests are limited per client at the ingress
+ * nothing here stops Kaiju working. Today: whether requests are limited per client at the ingress
  * (off by default in the chart).
  */
 export function SiteHealthNotices() {
@@ -54,13 +54,13 @@ function IngressRateLimitNotice({ state }: { readonly state: InfoCheck["state"] 
     >
       {state === "none" ? (
         <p>
-          Kobe limits sign-in, uploads and other costly requests itself, but nothing limits how many
-          requests one address sends through the ingress. Your operator can turn on the chart&apos;s
-          limit (install guide, &ldquo;Rate limit at the ingress&rdquo;).
+          Kaiju limits sign-in, uploads and other costly requests itself, but nothing limits how
+          many requests one address sends through the ingress. Your operator can turn on the
+          chart&apos;s limit (install guide, &ldquo;Rate limit at the ingress&rdquo;).
         </p>
       ) : (
         <p>
-          Kobe&apos;s ingress is not managed by its Helm chart, so Kobe can&apos;t tell whether
+          Kaiju&apos;s ingress is not managed by its Helm chart, so Kaiju can&apos;t tell whether
           requests are limited per address in front of it. If your edge limits them, your operator
           can set <code>ingress.rateLimit.external</code> to hide this notice (install guide,
           &ldquo;Rate limit at the ingress&rdquo;).

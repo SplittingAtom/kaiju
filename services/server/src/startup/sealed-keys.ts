@@ -101,7 +101,7 @@ export function sealedFamilies(keys: {
         site: kidCount(sql`${connectorSiteKeys.sealed}`, sql`${connectorSiteKeys}`),
       },
       {
-        // KOBE-784: the OAuth client Kobe registered per connector (dynamic client registration).
+        // KOBE-784: the OAuth client Kaiju registered per connector (dynamic client registration).
         name: "connector OAuth client registrations",
         secret: envelope,
         keyIds: keys.envelopeKeyIds,

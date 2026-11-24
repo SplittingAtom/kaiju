@@ -32,7 +32,7 @@ export function rancherRefusal(namespace: string): string {
   );
 }
 
-/** A bootstrap token did not prove a live Kobe sandbox pod. Detail is for logs only. */
+/** A bootstrap token did not prove a live Kaiju sandbox pod. Detail is for logs only. */
 export class SandboxAuthError extends Error {
   readonly code = "unauthorized";
   constructor(readonly detail: string) {

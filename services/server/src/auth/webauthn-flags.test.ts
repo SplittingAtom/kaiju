@@ -6,7 +6,7 @@ describe("isUserVerified", () => {
   const a = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
   const reg = a.register({
     challenge: "c",
-    rp: { name: "Kobe", id: "kobe.test" },
+    rp: { name: "Kaiju", id: "kobe.test" },
     user: { id: "u", name: "u" },
   });
 

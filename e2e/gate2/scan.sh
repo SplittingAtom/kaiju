@@ -12,11 +12,11 @@
 # reported by the secret's label and the file it was found in, never by value.
 
 SCAN_MIN_LEN=12
-# Files of the sandbox that legitimately hold Kobe's own session tokens (see docs/gates/gate-2.md).
+# Files of the sandbox that legitimately hold Kaiju's own session tokens (see docs/gates/gate-2.md).
 JWT_RE='eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}'
-# Generic key shapes; label=regex (PCRE: `grep -P`). Kobe session tokens (JWT shape) are judged
+# Generic key shapes; label=regex (PCRE: `grep -P`). Kaiju session tokens (JWT shape) are judged
 # separately. The provider-key shape starts at a boundary: `sk-` is also a substring of random
-# base64url, and a Kobe session token once carried one (CI 2026-10-30, the sandbox's mcp-token).
+# base64url, and a Kaiju session token once carried one (CI 2026-10-30, the sandbox's mcp-token).
 GENERIC_PATTERNS=(
   'openai-or-anthropic-key=(?<![A-Za-z0-9_-])sk-[A-Za-z0-9_-]{20,}'
   'aws-access-key=AKIA[0-9A-Z]{16}'
@@ -89,7 +89,7 @@ done
 find $roots -xdev -type f -size -2048k -not -path "/var/lib/apt/*" -not -path "/var/cache/*" -print0 2>/dev/null | tar --null -T - -cf - 2>/dev/null'
 
 # Allowed shapes (each reviewed, see docs/gates/gate-2.md):
-# - `Bearer <jwt>` and `scheme://user:<jwt>@`: Kobe's own session tokens; every JWT in the sandbox
+# - `Bearer <jwt>` and `scheme://user:<jwt>@`: Kaiju's own session tokens; every JWT in the sandbox
 #   is judged by jwt_class, so these shapes add nothing here. The egress token reaches Pi's tools
 #   as HTTPS_PROXY=http://<thread id>:<token>@<proxy> (KOBE-39; "egress token visible in env
 #   output" is accepted LOW in docs/ledger/KOBE-39.md).
@@ -107,7 +107,7 @@ generic_unexpected_by_kind() {
     bearer-credential) grep -a -v -E 'Bearer eyJ' || true ;;
     basic-url-credential) grep -a -v -E '^[^:]*fs/opt/kobe/egress-env\.sh:|://[^:/]+:eyJ' || true ;;
     # The skills store's directories are `sk-<sha256>` (sandbox-agent skills/store.ts): since
-    # Kobe's catalog skills (KOBE-317) every run's prompt, so Pi's session files, names them. A
+    # Kaiju's catalog skills (KOBE-317) every run's prompt, so Pi's session files, names them. A
     # provider key is never 64 lowercase hex digits, and the real keys are matched by value above.
     openai-or-anthropic-key) grep -a -v -E ':sk-[0-9a-f]{64}$' || true ;;
     *) cat ;;
@@ -217,7 +217,7 @@ run_secret_scan() {
   done <"$dir/labels"
   ((hits == 0)) && scan_ok "no secret value of the install (internal keys, credentials, provider keys) is in the sandbox: $(wc -l <"$dir/labels" | tr -d ' ') values searched in $(find "$dir/files" -type f | wc -l | tr -d ' ') files, every process's environment and command line"
 
-  # 6. Generic key shapes, and which Kobe tokens the sandbox holds.
+  # 6. Generic key shapes, and which Kaiju tokens the sandbox holds.
   local entry pat name generic=0 matches
   for entry in "${GENERIC_PATTERNS[@]}"; do
     name=${entry%%=*}
@@ -233,8 +233,8 @@ run_secret_scan() {
     class=$(jwt_class "$tok")
     if [[ "$class" == own* ]]; then auds+="${class#own } "; else tokens_ok=0; echo "     unexpected token in $tokfile: $class"; fi
   done < <(grep -raoE -- "$JWT_RE" "$dir/files" 2>/dev/null | sed "s#^$dir/files/##" | grep -a -v -E "$FIXTURE_RE" | sort -u -t: -k2,2)
-  if ((tokens_ok)); then scan_ok "every JWT in the sandbox is Kobe's own session token for this user and team (audiences: ${auds:-none found})"
-  else fail "${SCAN_LABEL:-ac-5}: a JWT in the sandbox is not Kobe's session token for this sandbox's user and team"; fi
+  if ((tokens_ok)); then scan_ok "every JWT in the sandbox is Kaiju's own session token for this user and team (audiences: ${auds:-none found})"
+  else fail "${SCAN_LABEL:-ac-5}: a JWT in the sandbox is not Kaiju's session token for this sandbox's user and team"; fi
 
   # 7. Mounted secrets: the pod spec mounts no Secret and injects none into an environment.
   scan_check "no Secret volume is mounted into the sandbox pod (volumes: $($KUBECTL -n "$TNS" get pod "$pod" -o jsonpath='{range .spec.volumes[*]}{.name}{" "}{end}' 2>/dev/null || true))" '^$' \

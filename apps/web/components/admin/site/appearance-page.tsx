@@ -146,7 +146,7 @@ function AppearanceEditor({
   async function onReset(e: { currentTarget: EventTarget | null }) {
     const yes = await confirm(
       {
-        title: "Reset the appearance to Kobe's defaults?",
+        title: "Reset the appearance to Kaiju's defaults?",
         description:
           "This removes the name, the logos, the favicon and the style. Every page shows the built-in look again, or the defaults your site's chart values set.",
         confirmLabel: "Reset",

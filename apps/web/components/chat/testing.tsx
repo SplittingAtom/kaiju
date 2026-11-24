@@ -141,7 +141,7 @@ export function crushedIconButtons(root: ParentNode = document): string[] {
 
 /**
  * Lists and paragraphs under `root` that keep the browser's spacing (KOBE-269): the chat has no
- * Tailwind preflight, so Kobe chrome resets its own (`m-0`; lists also `list-none ps-0`), while
+ * Tailwind preflight, so Kaiju chrome resets its own (`m-0`; lists also `list-none ps-0`), while
  * message Markdown and notices keep theirs. Returns the offenders' tag names and text.
  */
 export function browserSpaced(root: ParentNode): string[] {

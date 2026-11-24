@@ -14,7 +14,7 @@ import {
 /**
  * KOBE-765 review M1: the names git's own `fsck --strict` refuses (what GitHub, Gitea and
  * Forgejo run on receive) are exactly the ones `paths.ts` refuses, checked against the real git.
- * `.gitmodules` is refused by Kobe outright (submodules are not carried), so it is listed apart.
+ * `.gitmodules` is refused by Kaiju outright (submodules are not carried), so it is listed apart.
  */
 const root = mkdtempSync(path.join(tmpdir(), "kobe-paths-test-"));
 let probes = 0;
@@ -83,7 +83,7 @@ const NAMES = [
 ];
 
 describe("paths a host's fsck refuses", () => {
-  it.each(NAMES)("%s: Kobe and git fsck agree", (name) => {
+  it.each(NAMES)("%s: Kaiju and git fsck agree", (name) => {
     expect(componentRefusal(name) !== undefined).toBe(fsckRefuses(name));
   });
 

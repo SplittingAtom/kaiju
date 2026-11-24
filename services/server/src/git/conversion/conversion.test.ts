@@ -73,10 +73,10 @@ describe("authorship (G13, GQ10)", () => {
     email: "ada@x.test",
     left: false,
   };
-  it("an active member: their Kobe email, or the no-reply form when the Workspace says so", () => {
+  it("an active member: their Kaiju email, or the no-reply form when the Workspace says so", () => {
     expect(conversionIdentity(ada, ada.id, "member", "kobe.test")).toEqual({
       author: { name: "Ada", email: "ada@x.test" },
-      committer: { name: "Ada via Kobe", email: "ada@x.test" },
+      committer: { name: "Ada via Kaiju", email: "ada@x.test" },
     });
     const noreply = conversionIdentity(ada, ada.id, "noreply", "kobe.test");
     expect(noreply.author.email).toMatch(/^[0-9a-f]{10}\+ada@users\.noreply\.kobe\.test$/);
@@ -85,7 +85,7 @@ describe("authorship (G13, GQ10)", () => {
     const left = conversionIdentity({ ...ada, left: true }, ada.id, "member", "kobe.test");
     expect(left.author.name).toBe("Ada");
     expect(left.author.email).not.toContain("ada@x.test");
-    expect(left.committer.name).toBe("Ada via Kobe");
+    expect(left.committer.name).toBe("Ada via Kaiju");
     const gone = conversionIdentity(undefined, ada.id, "member", "kobe.test");
     expect(gone.author.name).toBe(FORMER_MEMBER);
     expect(gone.author.email).toMatch(/@users\.noreply\.kobe\.test$/);
@@ -175,21 +175,21 @@ describe("the requester's email", () => {
   it("says where the history went, or why it stopped, without host text", () => {
     const done = conversionMessage({
       to: "a@x.test",
-      appName: "Kobe",
+      appName: "Kaiju",
       projectName: "Docs",
       row: { ...base, status: "completed" },
       appUrl: "https://kobe.test/",
     });
-    expect(done.subject).toBe("Docs is now a Repo (Kobe)");
+    expect(done.subject).toBe("Docs is now a Repo (Kaiju)");
     expect(done.text).toContain("acme/docs on git.example.test");
     const failed = conversionMessage({
       to: "a@x.test",
-      appName: "Kobe",
+      appName: "Kaiju",
       projectName: "Docs",
       row: { ...base, status: "failed", lastError: "content_missing", lastErrorDetail: "a.txt" },
       appUrl: "https://kobe.test/",
     });
-    expect(failed.subject).toBe("Converting Docs to a Repo failed (Kobe)");
+    expect(failed.subject).toBe("Converting Docs to a Repo failed (Kaiju)");
     expect(failed.text).toContain(FAILURE_MESSAGES.content_missing);
     expect(failed.text).toContain("a.txt");
   });

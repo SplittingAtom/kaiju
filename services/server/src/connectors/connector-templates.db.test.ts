@@ -12,7 +12,7 @@ import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-433 (MA-1, spec mcp-apps-host §5): a connector's `ui://` templates are pinned with its
- * tools, hashed by Kobe, drift like tools (changed and new ones are not served until approved,
+ * tools, hashed by Kaiju, drift like tools (changed and new ones are not served until approved,
  * removed ones go), are named in the drift event, email and notice, and are probed with the
  * KOBE-431 credential, so an `auth_required` skip leaves them as they were.
  */
@@ -127,7 +127,7 @@ async function register(name: string, up: Upstream) {
 }
 
 describe("pinning templates (ac-1)", () => {
-  it("stores each named template with Kobe's own SHA-256 and audits URI and hash", async () => {
+  it("stores each named template with Kaiju's own SHA-256 and audits URI and hash", async () => {
     const html = "<!doctype html><p>Explorer</p>";
     const { id, pin } = await register("apps-pin", {
       tools: [appTool("open_explorer", "ui://apps/explorer"), { name: "plain", inputSchema: {} }],

@@ -47,7 +47,7 @@ import { prepareInput } from "./tool-inputs.js";
  *   server lists in `agent.dangerous_tools` the tools an admin's published Dangerous agent names
  *   one by one (never a glob or an empty list). Only such a tool, in an interactive (not `auto`)
  *   run, that passed every deny stage, matched no ask rule and would otherwise ask by risk class
- *   or mode, is allowed (reason `dangerous_mode`). Floors win: Kobe-scoped writes (project memory,
+ *   or mode, is allowed (reason `dangerous_mode`). Floors win: Kaiju-scoped writes (project memory,
  *   shared project files; U10, D23, D24) keep their prompt, `auto` and scheduled runs keep
  *   their refusals (D29, D32), and the agent's own `tools.deny` is a deny like any other.
  *
@@ -219,7 +219,7 @@ function allow(ctx: Prepared, reasons: PolicyReason[]): PolicyDecision {
 
 /**
  * An admin's Dangerous agent (AC1): the tool is one the agent names explicitly, in an interactive
- * run, and not Kobe-scoped (those prompts are floors). Undefined otherwise.
+ * run, and not Kaiju-scoped (those prompts are floors). Undefined otherwise.
  */
 function dangerousAllow(ctx: Prepared): PolicyReason | undefined {
   if (ctx.input.actor.kind !== "user" || ctx.tool.scope === "kobe") return undefined;

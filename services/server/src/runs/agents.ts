@@ -177,7 +177,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
     const floor = await readApprovalFloor(tx);
     if (input.agentId === null || input.agentScope === null) {
       const required = await requiredOnly(tx, input);
-      // KOBE-620 (KA7): a run without an agent still gets the Kobe docs tools.
+      // KOBE-620 (KA7): a run without an agent still gets the Kaiju docs tools.
       const kobe = await kobeRunServer(tx, {
         teamId: input.teamId,
         userId: input.ownerUserId,
@@ -185,7 +185,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
         frontmatter: undefined,
         off: await connectorsOffIn(tx, input.teamId, input.threadId),
       });
-      // KOBE-762: the built-in git connector, apart from the Kobe connector.
+      // KOBE-762: the built-in git connector, apart from the Kaiju connector.
       const git = await gitRunServer(tx, {
         teamId: input.teamId,
         userId: input.ownerUserId,
@@ -263,7 +263,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
     const { value } = resolved;
     // Per-session MCP config (KOBE-111): the effective connectors with the tools the agent may see.
     const teamMcp = buildRunMcp(connectorRows, value.connectors, frontmatter.tools);
-    // KOBE-619/620: the built-in Kobe connector: docs tools on every run (KA7), admin tools for a
+    // KOBE-619/620: the built-in Kaiju connector: docs tools on every run (KA7), admin tools for a
     // run its person can answer when the agent names the connector.
     const kobe = await kobeRunServer(tx, {
       teamId: input.teamId,
@@ -277,7 +277,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
       frontmatter,
       off,
     });
-    // KOBE-762: the built-in git connector, on its own: the Kobe switches never reach it.
+    // KOBE-762: the built-in git connector, on its own: the Kaiju switches never reach it.
     const git = await gitRunServer(tx, {
       teamId: input.teamId,
       userId: input.ownerUserId,
@@ -310,7 +310,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
             value.skills,
           );
     // A connector the owner turned off here is no "connect it" notice (review LOW-4): left out.
-    // The built-in Kobe connector is never a "connect it" notice (KOBE-619): it has no team row.
+    // The built-in Kaiju connector is never a "connect it" notice (KOBE-619): it has no team row.
     const builtinName = await kobeBuiltinName(tx);
     const omissions = [
       ...value.omissions.filter(

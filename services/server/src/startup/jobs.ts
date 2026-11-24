@@ -91,7 +91,7 @@ export interface ServerJobsOptions {
   readonly models?: { readonly config: ModelsConfig; readonly admin: BifrostAdmin } | undefined;
 }
 
-/** The start's seeds still at work: the Kobe skills seed retries until it gets through. */
+/** The start's seeds still at work: the Kaiju skills seed retries until it gets through. */
 export interface StartSeeds {
   stop(): void;
 }
@@ -100,7 +100,7 @@ export interface StartSeeds {
  * Work awaited before the server serves (and so before {@link serverJobs} start the Default
  * sync), at every start, so install and upgrade alike; idempotent, and a failure is logged and
  * never stops the server: the gallery (KOBE-87), the chart's branding defaults while their keys
- * are unset (KOBE-503), then the first attempt of Kobe's own catalog
+ * are unset (KOBE-503), then the first attempt of Kaiju's own catalog
  * skills (KOBE-317, SK4: the former built-ins) from the package set the server ships. A failed
  * attempt (the object store or Postgres briefly away) is retried with backoff until it gets
  * through (review-317 S3); `stop` ends those retries.
@@ -109,24 +109,24 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
   await seedGalleryAgents(deps.database.db).catch((err: unknown) =>
     logger.error({ err }, "gallery agents could not be seeded"),
   );
-  // The built-in Kobe MCP connector row (KOBE-618/619): one row however many replicas start.
+  // The built-in Kaiju MCP connector row (KOBE-618/619): one row however many replicas start.
   await seedKobeBuiltinConnector(deps.database.db)
     .then((seeded) => {
       if (seeded.outcome === "seeded" && seeded.fallback) {
         logger.warn(
           { name: seeded.name },
-          "a connector named kobe exists: the built-in Kobe connector is kobe-builtin",
+          "a connector named kobe exists: the built-in Kaiju connector is kobe-builtin",
         );
       } else if (seeded.outcome === "names_taken") {
         logger.error(
-          "connectors named kobe and kobe-builtin exist: the built-in Kobe connector is not available",
+          "connectors named kobe and kobe-builtin exist: the built-in Kaiju connector is not available",
         );
       }
     })
     .catch((err: unknown) =>
-      logger.error({ err }, "the built-in Kobe connector could not be seeded"),
+      logger.error({ err }, "the built-in Kaiju connector could not be seeded"),
     );
-  // The built-in git connector row (KOBE-762), apart from the Kobe connector.
+  // The built-in git connector row (KOBE-762), apart from the Kaiju connector.
   await seedGitBuiltinConnector(deps.database.db)
     .then((seeded) => {
       if (seeded.outcome === "seeded" && seeded.fallback) {
@@ -203,7 +203,7 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
     })
     .catch((err: unknown) => logger.error({ err }, "branding defaults could not be seeded"));
   if (!deps.blobs) {
-    logger.warn("no object storage (s3.*): Kobe's catalog skills are not published");
+    logger.warn("no object storage (s3.*): Kaiju's catalog skills are not published");
     return { stop: () => undefined };
   }
   const kobe = startKobeSeed({ db: deps.database.db, blobs: deps.blobs, log: logger });
@@ -540,7 +540,7 @@ function skillJobs(o: ServerJobsOptions): ServerJob[] {
   const { deps } = o;
   const log = o.logger;
   const notify = { mailer: deps.mailer, publicUrl: deps.publicUrl };
-  // Default sync jobs (KOBE-314, SK8): queued by Default tag changes (and the Kobe skills seed),
+  // Default sync jobs (KOBE-314, SK8): queued by Default tag changes (and the Kaiju skills seed),
   // run one at a time by the replica holding the lease; checked every 10 s, resumed after a crash.
   const sync = { database: deps.database, log, ...notify };
   const jobs: ServerJob[] = [

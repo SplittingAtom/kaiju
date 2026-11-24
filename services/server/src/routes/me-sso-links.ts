@@ -14,7 +14,7 @@ import { invalidRequest, notFound, param } from "../http/request.js";
  * that provider (this one too, when it is one of them) and is refused when the link is the only
  * way to sign in. `/v1/me/sso/pending-link` is the confirmation step of a local proof (review
  * M1): GET names the provider and address staged for this session, POST `/confirm` links it,
- * DELETE drops it. State changes are same-origin only (the API's CSRF check); a delegated (Kobe
+ * DELETE drops it. State changes are same-origin only (the API's CSRF check); a delegated (Kaiju
  * MCP) session never sees or confirms one. With `auth.sso.enabled: false` every route answers 404.
  */
 export function meSsoLinkRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
@@ -30,7 +30,7 @@ export function meSsoLinkRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
 
   app.get("/links", async (c) => c.json({ links: await listLinks(db, c.get("user").id) }));
 
-  /** The browser session's own id; undefined for a delegated (Kobe MCP) session. */
+  /** The browser session's own id; undefined for a delegated (Kaiju MCP) session. */
   const browserSession = (c: { get(key: "sessionId"): string }) => {
     const id = c.get("sessionId");
     return id.startsWith(DELEGATED_SESSION_PREFIX) ? undefined : id;
@@ -95,7 +95,7 @@ export function meSsoLinkRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
           {
             code: "last_sign_in_method",
             message:
-              "This is your only way to sign in to Kobe, so it can't be unlinked. Ask a site admin.",
+              "This is your only way to sign in to Kaiju, so it can't be unlinked. Ask a site admin.",
           },
           409,
         );

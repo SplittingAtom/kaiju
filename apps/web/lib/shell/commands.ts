@@ -225,7 +225,7 @@ const LIST = [
     href: consoleHref("site"),
     available: (ctx) => ctx.consoles.includes("site"),
   },
-  // KOBE-616: the Kobe guide, a page of its own (same tab); agents read it at /llms.txt.
+  // KOBE-616: the Kaiju guide, a page of its own (same tab); agents read it at /llms.txt.
   {
     id: "docs",
     name: "Docs",

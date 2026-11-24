@@ -4,7 +4,7 @@ import { sql, type KobeTx } from "@kobe/db";
  * Team storage quota (D26, KOBE-143): bytes in `files` plus the live bytes of the team's
  * workspaces. Serialized per team by a transaction-scoped advisory lock: the check and the
  * `files` insert happen under it, so two uploads that each fit alone can't both commit past the
- * limit. (Volume sizes are not counted: they are provisioned per sandbox, not stored by Kobe.)
+ * limit. (Volume sizes are not counted: they are provisioned per sandbox, not stored by Kaiju.)
  */
 export async function lockTeamStorage(tx: KobeTx, teamId: string): Promise<void> {
   await tx.execute(

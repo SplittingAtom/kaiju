@@ -113,7 +113,7 @@ export function toOrganization(
   return { id, login, name: str(o.name), kind, webUrl: safeWebUrl(o.html_url, webBase) };
 }
 
-/** Permissions Kobe may ask an App for (G5); anything else granted is reported as excess (G4). */
+/** Permissions Kaiju may ask an App for (G5); anything else granted is reported as excess (G4). */
 export const APP_PERMISSIONS_USED = new Set([
   "metadata",
   "contents",
@@ -143,7 +143,7 @@ export function appCapabilities(
   return { capabilities, excess };
 }
 
-/** Classic token scopes Kobe's work needs; any other granted scope is excess (G4). */
+/** Classic token scopes Kaiju's work needs; any other granted scope is excess (G4). */
 const CLASSIC_SCOPES_USED = new Set(["repo", "read:org", "read:user"]);
 
 /** Capabilities and excess from a classic token's `x-oauth-scopes`. */

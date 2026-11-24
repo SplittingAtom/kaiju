@@ -24,15 +24,15 @@ export const oauthStartBodySchema = z.strictObject({
   return_to: z.enum(["me", "site"]).optional(),
 });
 const startSchema = z.union([z.null(), oauthStartBodySchema]);
-/** The fixed page per return target, on Kobe's own origin (never taken from the request). */
+/** The fixed page per return target, on Kaiju's own origin (never taken from the request). */
 const RETURN_PATHS: Readonly<Record<ReturnTarget, string>> = {
   me: "/me/connectors",
   site: "/admin/site/connectors",
 };
 const MESSAGES = {
-  oauth_unsupported: "This connector's authorization server cannot be used safely with Kobe.",
+  oauth_unsupported: "This connector's authorization server cannot be used safely with Kaiju.",
   oauth_unreachable: "Could not reach the connector's authorization server.",
-  registration_failed: "The authorization server did not accept Kobe as a client.",
+  registration_failed: "The authorization server did not accept Kaiju as a client.",
 } as const;
 
 function flowDeps(deps: ServerDeps): OauthFlowDeps | undefined {
@@ -50,7 +50,7 @@ function flowDeps(deps: ServerDeps): OauthFlowDeps | undefined {
  * The callback's refusals before a state opens, as pages a browser can use (KOBE-835): signed out
  * (401) goes to the sign-in page; a state that does not open, or no usable active workspace (the
  * member switched in another tab, lost the team: 400, 403, 409), goes to My connectors with a fixed
- * reason and no connector. Both targets are fixed paths on Kobe's own origin; nothing from the
+ * reason and no connector. Both targets are fixed paths on Kaiju's own origin; nothing from the
  * request is carried over. Mounted on the app ahead of the session check, for the callback only.
  */
 const CALLBACK_REFUSALS: Readonly<Record<number, string>> = {

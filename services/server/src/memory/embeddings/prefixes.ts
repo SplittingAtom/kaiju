@@ -5,7 +5,7 @@ import { MEMORY_EMBED_MAX_INPUT_CHARS } from "@kobe/protocol";
  * after the gateway provider, so the same model behind any provider gets the same text.
  *
  * - Qwen3-Embedding takes an instruction on the query only (its model card); documents as is.
- * - nomic-embed-text: its card asks for `search_query: ` / `search_document: `, but on Kobe's
+ * - nomic-embed-text: its card asks for `search_query: ` / `search_document: `, but on Kaiju's
  *   relevance set (docs/gates/gate-7b.md "Vectors (KOBE-409)") it ranks better without them, on
  *   both halves of the held-out split, so both sides are embedded as is (document scheme 2).
  * - Other models get the text as is.

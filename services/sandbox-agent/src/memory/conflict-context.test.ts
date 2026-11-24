@@ -23,7 +23,7 @@ describe("sync conflict note (KOBE-492)", () => {
   it("names both files and hashes inside a nonce fence and says to re-read", () => {
     const text = conflictNoteText([conflict], "n0nce") ?? "";
     expect(text.startsWith(CONFLICTS_HEADER)).toBe(true);
-    expect(text).toContain("Kobe notice, not a message from the user");
+    expect(text).toContain("Kaiju notice, not a message from the user");
     const inside = text.slice(
       text.indexOf(conflictsBegin("n0nce")),
       text.indexOf(conflictsEnd("n0nce")),

@@ -44,7 +44,7 @@ describe("password reset (ac-3)", () => {
     await h.mailer.settle();
     expect(h.mailer.to("nobody@life.test")).toEqual([]);
     const [mail] = h.mailer.to("rita@life.test");
-    expect(mail?.subject).toBe("Reset your Kobe password");
+    expect(mail?.subject).toBe("Reset your Kaiju password");
     expect(mail?.text).toContain(`${PUBLIC_URL}/reset-password#token=`);
     expect(mail?.text).toContain("30 minutes");
   });

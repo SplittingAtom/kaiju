@@ -80,7 +80,7 @@ describe.skipIf(!PI_AVAILABLE)("session continuity in real Pi 1.0.0 (KOBE-258)",
     // The run's config differs from a bare Pi's launch: before KOBE-258 this restarted Pi.
     const prompt = fauxScript([{ thinking: "<html>…", stopReason: "length" }]);
     const started = await harness.server.command(
-      runStart(prompt, { config: { system_prompt: "You are Kobe." } }),
+      runStart(prompt, { config: { system_prompt: "You are Kaiju." } }),
       30_000,
     );
     expect(started, JSON.stringify(started)).toMatchObject({ ok: true });
@@ -101,7 +101,7 @@ describe.skipIf(!PI_AVAILABLE)("session continuity in real Pi 1.0.0 (KOBE-258)",
     const second = await harness.server.command(
       {
         ...runStart(fauxScript([{ echoUsers: true }]), {
-          config: { system_prompt: "You are Kobe, again." },
+          config: { system_prompt: "You are Kaiju, again." },
         }),
         run_id: RUN_2,
       },

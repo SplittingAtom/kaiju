@@ -77,7 +77,7 @@ export function Composer({
   const running = isThreadRunning(state);
   const inTrash = state.summary?.deletedAt != null;
   const empty = text.trim() === "";
-  // A message starting with a Pi command Kobe doesn't offer is never sent (KOBE-450, LOW-5).
+  // A message starting with a Pi command Kaiju doesn't offer is never sent (KOBE-450, LOW-5).
   const piRefusal = refusedPiCommand(text);
   const dictation = useComposerDictation();
   const { steer, unavailable } = useSteer(extras);

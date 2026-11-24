@@ -82,7 +82,7 @@ export async function readBrandingSettings(db: KobeDb | KobeTx): Promise<Brandin
   };
 }
 
-/** The configured app name (mail, titles), "Kobe" when unset or unreadable. */
+/** The configured app name (mail, titles), "Kaiju" when unset or unreadable. */
 export async function readAppName(db: KobeDb | KobeTx): Promise<string> {
   const [row] = await db
     .select({ value: siteSettings.value })

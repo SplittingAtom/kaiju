@@ -19,7 +19,7 @@ import { GIT_TOOLS, gitToolByName } from "./catalog.js";
  * KOBE-762 (GQ3, G9; ac-1): the git host tools' default decisions through the ordinary policy
  * engine: reads allowed, `git_create_branch` allowed, the four other writes ask in interactive runs
  * and are denied unattended unless allow-listed; rules change the defaults as for any tool; the
- * Kobe admin guard leaves them alone.
+ * Kaiju admin guard leaves them alone.
  */
 const CONN = "55555555-0000-4000-8000-000000000005";
 
@@ -140,8 +140,8 @@ describe("rules change the defaults as for any tool", () => {
   });
 });
 
-describe("the Kobe admin guard does not apply", () => {
-  it("git tools are not Kobe admin tools: no forced ask, not denied in scheduled runs", () => {
+describe("the Kaiju admin guard does not apply", () => {
+  it("git tools are not Kaiju admin tools: no forced ask, not denied in scheduled runs", () => {
     for (const t of GIT_TOOLS) expect(isKobeAdminTool(descriptor(t.name))).toBe(false);
     const tool = descriptor("git_create_branch");
     const allowed = decide("git_create_branch", {

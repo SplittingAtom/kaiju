@@ -4,9 +4,9 @@ import type { Schema } from "../kobe-mcp/catalog.js";
 
 /**
  * The git host tools (spec workspace-git G9, G10, G12, G13, §9; KOBE-762): one set for every
- * provider, served by the server on the built-in Kobe connector (so the MCP proxy's re-check,
+ * provider, served by the server on the built-in Kaiju connector (so the MCP proxy's re-check,
  * the policy engine, signed approvals and the `mcp.tool_call` audit row decide and record every
- * call exactly as for the Kobe admin tools; `kobe-mcp/service.ts`). The catalog is code, hashed
+ * call exactly as for the Kaiju admin tools; `kobe-mcp/service.ts`). The catalog is code, hashed
  * with the release like the rest of the built-in connector.
  *
  * Reads are allowed by default at **Read**; `git_create_branch` is a write that runs without asking
@@ -23,7 +23,7 @@ import type { Schema } from "../kobe-mcp/catalog.js";
 
 /** Longest title of a pull request or issue (GitHub's own limit). */
 export const GIT_TITLE_MAX = 256;
-/** Longest body Kobe posts (pull request, issue, comment), before its footer. */
+/** Longest body Kaiju posts (pull request, issue, comment), before its footer. */
 export const GIT_BODY_MAX = 20_000;
 export const GIT_DESCRIPTION_MAX = 350;
 export const GIT_PATH_MAX = 1000;
@@ -201,7 +201,7 @@ export const GIT_TOOLS: readonly GitToolDef[] = [
     name: "git_open_pull_request",
     title: "Open a pull request",
     description:
-      "Opens a pull request from head into base in one repository of the organization (no forks). Kobe adds a last line naming the member and the conversation. Asks the member for approval by default.",
+      "Opens a pull request from head into base in one repository of the organization (no forks). Kaiju adds a last line naming the member and the conversation. Asks the member for approval by default.",
     input: z.strictObject({
       connection,
       repository,
@@ -217,7 +217,7 @@ export const GIT_TOOLS: readonly GitToolDef[] = [
     name: "git_comment",
     title: "Comment on an issue or pull request",
     description:
-      "Adds a comment to an issue or a pull request. Kobe adds a last line naming the member and the conversation. Asks the member for approval by default.",
+      "Adds a comment to an issue or a pull request. Kaiju adds a last line naming the member and the conversation. Asks the member for approval by default.",
     input: z.strictObject({
       connection,
       repository,
@@ -231,7 +231,7 @@ export const GIT_TOOLS: readonly GitToolDef[] = [
     name: "git_create_issue",
     title: "Create an issue",
     description:
-      "Creates an issue in a repository. Kobe adds a last line naming the member and the conversation. Asks the member for approval by default.",
+      "Creates an issue in a repository. Kaiju adds a last line naming the member and the conversation. Asks the member for approval by default.",
     input: z.strictObject({ connection, repository, title, body }),
     ...write(true),
   }),

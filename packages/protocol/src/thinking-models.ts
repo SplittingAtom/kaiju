@@ -1,7 +1,7 @@
 import type { ThinkingLowest, ThinkingPolicy } from "./thinking.js";
 
 /**
- * What Kobe knows about well-known model families' thinking (KOBE-260 review S2): which cannot
+ * What Kaiju knows about well-known model families' thinking (KOBE-260 review S2): which cannot
  * turn thinking off, and which refuse Anthropic's `budget_tokens`. Used as the default when a site
  * admin adds a model, and to refuse a catalog entry that would make every "off" run fail. The site
  * admin still chooses the control and the lowest level for anything not listed here.

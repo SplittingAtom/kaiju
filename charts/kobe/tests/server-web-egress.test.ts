@@ -15,7 +15,7 @@ const BASE: Record<string, string> = {
   "s3.bucket": "kobe",
   "s3.existingSecret": "kobe-s3",
   "smtp.host": "smtp.example.com",
-  "smtp.from": "Kobe <kobe@example.com>",
+  "smtp.from": "Kaiju <kobe@example.com>",
   "global.allowGeneratedSecretsOffline": "true",
 };
 
@@ -88,7 +88,7 @@ describe("server and web egress (KOBE-698)", () => {
     expect(policy(ms, "kobe-web-egress")).toBeUndefined();
   });
 
-  it("restricts the server to DNS, Postgres, Kobe's own services, the API server, public 443 and SMTP", () => {
+  it("restricts the server to DNS, Postgres, Kaiju's own services, the API server, public 443 and SMTP", () => {
     const spec = policy(render(ON), "kobe-server-egress");
     expect(spec.podSelector).toEqual({
       matchLabels: { ...release, "app.kubernetes.io/component": "server" },

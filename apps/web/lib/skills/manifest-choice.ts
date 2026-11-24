@@ -1,5 +1,5 @@
 /**
- * What a member chooses when Kobe writes a kobe.skill.yaml for them (KOBE-564): the model that
+ * What a member chooses when Kaiju writes a kobe.skill.yaml for them (KOBE-564): the model that
  * drafts it (a team-enabled catalog alias; undefined: the team default) and their license, which
  * is the author's statement and never the model's.
  */

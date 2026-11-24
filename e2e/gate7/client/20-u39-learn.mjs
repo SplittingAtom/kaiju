@@ -37,7 +37,7 @@ async function u39() {
     out("save_click", `${s.status}:${s.json.item?.scope ?? s.json.code ?? "-"}`);
   }
   out("saved_after_click", (await items(m2, "user", `Gate7 ${N} fact`)).items.length);
-  // A Team admin reading the shared thread may not teach Kobe from it.
+  // A Team admin reading the shared thread may not teach Kaiju from it.
   const share = await m2.call("POST", `/v1/threads/${t.threadId}/share`, { visibility: "team" });
   out("share", share.status);
   const ad = await as("ad");

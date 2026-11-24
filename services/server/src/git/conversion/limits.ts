@@ -1,7 +1,7 @@
 import type { RateLimitRule } from "../../rate-limit.js";
 
 /**
- * Limits of Convert to repo (KOBE-765). Kobe projects hold at most 500 files of at most 50 MiB
+ * Limits of Convert to repo (KOBE-765). Kaiju projects hold at most 500 files of at most 50 MiB
  * each and at most 1000 commits (the history cap), so a conversion is bounded; these keep one
  * conversion's memory and time bounded on the server too.
  */
@@ -21,7 +21,7 @@ export const GIT_CONVERSION_MAX_BYTES = 2 * 1024 * 1024 * 1024;
  * folder one object at a time and streamed from disk (`pack.ts`). The largest single object is one
  * file, at most {@link GIT_CONVERSION_MAX_FILE_BYTES}; with zlib's buffers a conversion holds about
  * three of them (the stored bytes, the loose object, its packed form), ≈ 300 MiB at worst, within
- * the server's 1 GiB memory limit with one conversion per replica. Kobe's own file cap (50 MiB)
+ * the server's 1 GiB memory limit with one conversion per replica. Kaiju's own file cap (50 MiB)
  * keeps it nearer 150 MiB today.
  */
 export const GIT_CONVERSION_MAX_FILE_BYTES = 100 * 1024 * 1024;

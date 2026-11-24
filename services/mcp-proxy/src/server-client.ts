@@ -67,7 +67,7 @@ const decisionSchema = z.discriminatedUnion("decision", [
 export type CallDecision = z.infer<typeof decisionSchema>;
 
 /**
- * The built-in Kobe connector's call answer (KOBE-619): the server decided and executed the call
+ * The built-in Kaiju connector's call answer (KOBE-619): the server decided and executed the call
  * in one request; the proxy only relays it. `result` is an MCP `tools/call` result.
  */
 const kobeCallSchema = z.discriminatedUnion("outcome", [
@@ -115,7 +115,7 @@ export type BuiltinServer = "kobe" | "git";
 export interface PolicyServer {
   listTools(token: string, connectorId: string): Promise<ServerAnswer<ToolsResponse>>;
   /**
-   * A built-in connector's tools for the sandbox's person: the Kobe connector (KOBE-619), or the
+   * A built-in connector's tools for the sandbox's person: the Kaiju connector (KOBE-619), or the
    * git connector (`builtin: "git"`, KOBE-762).
    */
   kobeList(token: string, builtin?: BuiltinServer): Promise<ServerAnswer<ToolsResponse>>;

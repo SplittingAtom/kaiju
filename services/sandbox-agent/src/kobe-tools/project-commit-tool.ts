@@ -65,13 +65,13 @@ export function commitOutcomeText(outcome: ProjectCommitOutcome): string {
     case "pull_request": {
       const link = outcome.url === "" ? "" : ` (${outcome.url})`;
       return outcome.opened
-        ? `Committed to the Repo on branch ${outcome.branch} and opened pull request #${outcome.number}${link}. Someone merges it on the git host; Kobe's copy follows after that.`
+        ? `Committed to the Repo on branch ${outcome.branch} and opened pull request #${outcome.number}${link}. Someone merges it on the git host; Kaiju's copy follows after that.`
         : `Committed to the Repo: added to the open pull request #${outcome.number}${link} on branch ${outcome.branch}.`;
     }
     case "pushed":
       return outcome.seq === null
-        ? `Committed to the Repo and pushed straight to ${outcome.branch}. Kobe's copy follows at its next refresh.`
-        : `Committed to the Repo and pushed straight to ${outcome.branch} (Kobe's copy is #${outcome.seq}).`;
+        ? `Committed to the Repo and pushed straight to ${outcome.branch}. Kaiju's copy follows at its next refresh.`
+        : `Committed to the Repo and pushed straight to ${outcome.branch} (Kaiju's copy is #${outcome.seq}).`;
   }
 }
 

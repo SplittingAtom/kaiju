@@ -1,6 +1,6 @@
 import { SCIM_DEFAULT_COUNT, SCIM_MAX_RESULTS, SCIM_STRING_MAX, USER_SCHEMA } from "./schemas.js";
 
-/** The one filter shape Kobe serves (what Entra sends): `<attribute> eq "<value>"`. */
+/** The one filter shape Kaiju serves (what Entra sends): `<attribute> eq "<value>"`. */
 export interface UserFilter {
   readonly attribute: "userName" | "externalId" | "id";
   readonly value: string;
@@ -31,14 +31,14 @@ export function parseUserFilter(raw: string | undefined): FilterResult {
     return {
       ok: false,
       detail:
-        'Kobe supports only filters of the form userName eq "…", externalId eq "…" or id eq "…".',
+        'Kaiju supports only filters of the form userName eq "…", externalId eq "…" or id eq "…".',
     };
   }
   const name = (m[1] ?? "").toLowerCase();
   const prefix = `${USER_SCHEMA.toLowerCase()}:`;
   const attribute = ATTRIBUTES[name.startsWith(prefix) ? name.slice(prefix.length) : name];
   if (!attribute) {
-    return { ok: false, detail: `Kobe can't filter Users on "${m[1] ?? ""}".` };
+    return { ok: false, detail: `Kaiju can't filter Users on "${m[1] ?? ""}".` };
   }
   const value = (m[2] ?? "").replace(/\\(.)/g, "$1");
   if (value.length > SCIM_STRING_MAX) return { ok: false, detail: "The filter value is too long." };

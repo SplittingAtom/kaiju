@@ -44,7 +44,7 @@ import {
 } from "./constants.js";
 
 /**
- * Pure builders for everything Kobe puts into a team namespace (spec D11, D12). No I/O: the
+ * Pure builders for everything Kaiju puts into a team namespace (spec D11, D12). No I/O: the
  * provider applies them. Anything that builds a pod spec takes a VerifiedIsolation (KOBE-9
  * binding requirement), never a RuntimeClass name string.
  */
@@ -124,7 +124,7 @@ export function namespaceManifest(team: TeamRef): KubeObject {
         "pod-security.kubernetes.io/enforce": POD_SECURITY_LEVEL,
         "pod-security.kubernetes.io/enforce-version": "latest",
         // KOBE-71: enforced "baseline" (SETUID/SETGID for Pi identities); everything beyond that is
-        // still reported against "restricted" (and Kobe's admission policy enforces the rest).
+        // still reported against "restricted" (and Kaiju's admission policy enforces the rest).
         "pod-security.kubernetes.io/warn": "restricted",
         "pod-security.kubernetes.io/warn-version": "latest",
         "pod-security.kubernetes.io/audit": "restricted",
@@ -151,12 +151,12 @@ export function serverRoleBindingManifest(namespace: string, s: SandboxSettings)
   };
 }
 
-/** Kobe services sandboxes may open connections to (the model gateway only with modelGatewayAccess). */
+/** Kaiju services sandboxes may open connections to (the model gateway only with modelGatewayAccess). */
 export const sandboxEgressEndpoints = (s: SandboxSettings): KobeEndpoint[] =>
   KOBE_ENDPOINTS.filter((e) => e !== "modelGateway" || s.modelGatewayAccess);
 
 /**
- * Default deny (spec D11, D28): no ingress at all; egress only to the Kobe server, the model
+ * Default deny (spec D11, D28): no ingress at all; egress only to the Kaiju server, the model
  * gateway, the MCP proxy and the egress proxy pods, on their pod ports. No DNS (see SANDBOX_HOSTS).
  * Selects every pod in the namespace, so warm-pool pods and future Jobs are covered too.
  */
@@ -293,7 +293,7 @@ export function pullSecretManifest(namespace: string, source: KubeObject): KubeO
   };
 }
 
-/** ClusterIPs of the Kobe Services, by endpoint (for /etc/hosts in sandboxes). */
+/** ClusterIPs of the Kaiju Services, by endpoint (for /etc/hosts in sandboxes). */
 export type EndpointAddresses = Readonly<Record<KobeEndpoint, string>>;
 
 const url = (scheme: string, host: string, port: number, defaultPort: number): string =>
@@ -371,7 +371,7 @@ export function sandboxPodSpec(
     hostNetwork: false,
     hostPID: false,
     hostIPC: false,
-    // No DNS: Kobe's services resolve through /etc/hosts; everything else goes via the egress proxy.
+    // No DNS: Kaiju's services resolve through /etc/hosts; everything else goes via the egress proxy.
     dnsPolicy: "None",
     dnsConfig: {
       nameservers: ["127.0.0.1"],
@@ -465,7 +465,7 @@ export function sandboxTemplateManifest(
     metadata: { name: SANDBOX_TEMPLATE, namespace, labels: managedLabels },
     spec: {
       // The controller's "Managed" default adds a policy allowing internet egress, which would
-      // widen our default deny (NetworkPolicies are additive). Kobe owns the namespace's policy.
+      // widen our default deny (NetworkPolicies are additive). Kaiju owns the namespace's policy.
       networkPolicyManagement: "Unmanaged",
       envVarsInjectionPolicy: "Disallowed",
       volumeClaimTemplatesPolicy: "Disallowed",

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Acceptance checks for the Kobe sandbox image (KOBE-21). Usage: test-image.sh <image>
+# Acceptance checks for the Kaiju sandbox image (KOBE-21). Usage: test-image.sh <image>
 # Runs the image like a sandbox pod: uid 1000, read-only root filesystem, all capabilities dropped,
 # no-new-privileges, with writable /tmp, $HOME and (where a check needs it) /workspace.
 set -euo pipefail
@@ -444,9 +444,9 @@ check "no skills baked into the image (they arrive as bundles)" '^none$' run sh 
 # package set (services/server/builtin-skills) is streamed in as a tar, as a run's bundle would be.
 SKILLS_SRC="$(cd "$(dirname "$0")/../../services/server/builtin-skills" && pwd)"
 offline_skills() { tar -C "$SKILLS_SRC" -cf - . | docker run -i "${HARDENED[@]}" --network none --workdir /tmp --entrypoint "$1" "$IMAGE" "${@:2}"; }
-check "Kobe skills: the seven packages with a matching SKILL.md name" '^ok$' offline_skills sh -c \
+check "Kaiju skills: the seven packages with a matching SKILL.md name" '^ok$' offline_skills sh -c \
   'mkdir /tmp/sk && tar -xf - -C /tmp/sk && for n in data-analysis charts docx pdf xlsx code-review skill-creator; do grep -q "^name: $n\$" /tmp/sk/$n/SKILL.md || { echo "bad $n"; exit 1; }; done; echo ok'
-check "Kobe skills: no skill script needs the network or a writable skill dir (--network none)" '^ok$' offline_skills sh -c '
+check "Kaiju skills: no skill script needs the network or a writable skill dir (--network none)" '^ok$' offline_skills sh -c '
 set -e; mkdir /tmp/sk; tar -xf - -C /tmp/sk; chmod -R a-w /tmp/sk; S=/tmp/sk; mkdir /tmp/w; cd /tmp/w; export PYTHONDONTWRITEBYTECODE=1
 python $S/data-analysis/scripts/describe.py $S/data-analysis/scripts/sample.csv | grep -q "rows: 6"
 python $S/data-analysis/scripts/sql.py "select region, sum(amount) a from s group by 1 order by 1" --table s=$S/data-analysis/scripts/sample.csv --out r.csv | grep -q "310.35"

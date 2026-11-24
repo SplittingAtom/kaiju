@@ -13,10 +13,10 @@ export interface ConnectorGrant {
   readonly hint: string;
   /** `oauth` for a connected account; older servers omit it (API keys only then). */
   readonly kind?: "api_key" | "oauth";
-  /** OAuth: when the access token runs out (Kobe renews it when it can); null for API keys. */
+  /** OAuth: when the access token runs out (Kaiju renews it when it can); null for API keys. */
   readonly expiresAt?: string | null;
   /**
-   * OAuth: Kobe renews the sign-in by itself (it holds a refresh token), so a past `expiresAt` is
+   * OAuth: Kaiju renews the sign-in by itself (it holds a refresh token), so a past `expiresAt` is
    * not an expired sign-in (KOBE-835). Always false for API keys; older servers omit it.
    */
   readonly refreshable?: boolean;

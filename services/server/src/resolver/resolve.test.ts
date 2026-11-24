@@ -107,7 +107,7 @@ describe("skills", () => {
     expect(r.ok && r.value.omissions).toEqual([]);
   });
 
-  // KOBE-317: the former built-ins are Kobe's catalog skills: an agent naming one gets it as a named
+  // KOBE-317: the former built-ins are Kaiju's catalog skills: an agent naming one gets it as a named
   // catalog skill (step 2), with a hash, blocklistable, and holding its name like the built-in did.
   const kobe = (name: string) => ({ ...sk(name, `kobe-${name}`), source: "catalog" as const });
 
@@ -125,7 +125,7 @@ describe("skills", () => {
     ]);
   });
 
-  it("a team's own Required skill of a Kobe name wins, and the named Kobe one says so (review S4)", () => {
+  it("a team's own Required skill of a Kaiju name wins, and the named Kaiju one says so (review S4)", () => {
     const r = resolveEffective(
       with_({
         agent: { catalogSkills: [kobe("pdf"), kobe("docx")] },
@@ -144,7 +144,7 @@ describe("skills", () => {
     expect(same.ok && same.value.omissions).toEqual([]);
   });
 
-  it("an exclusive agent keeps the Kobe skills it names", () => {
+  it("an exclusive agent keeps the Kaiju skills it names", () => {
     const excl = resolveEffective(
       with_({
         agent: { catalogSkills: [kobe("pdf")], exclusiveSkills: true },
@@ -157,7 +157,7 @@ describe("skills", () => {
     ]);
   });
 
-  it("a personal skill named like a named Kobe skill is shadowed by it", () => {
+  it("a personal skill named like a named Kaiju skill is shadowed by it", () => {
     const r = resolveEffective(
       with_({
         agent: { catalogSkills: [kobe("xlsx")] },
@@ -299,7 +299,7 @@ describe("team skills offered to all agents (KOBE-297)", () => {
     expect(r.ok && r.value.omissions).toEqual([]);
   });
 
-  it("is deduplicated with the agent's named skills, Kobe skills and the user's skills", () => {
+  it("is deduplicated with the agent's named skills, Kaiju skills and the user's skills", () => {
     expect(
       names(
         with_({

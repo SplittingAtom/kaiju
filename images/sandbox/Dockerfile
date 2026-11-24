@@ -1,4 +1,4 @@
-# Kobe sandbox image (spec D12, KOBE-21): the one image every agent sandbox runs under gVisor.
+# Kaiju sandbox image (spec D12, KOBE-21): the one image every agent sandbox runs under gVisor.
 # Build from the repository root: docker build -f images/sandbox/Dockerfile .
 # Every input is pinned (base digests, npm, Pi lockfile, hashed pip lock); bump deliberately.
 # No `# syntax=` directive: dockerd's built-in frontend parses this file, so builds don't start
@@ -28,7 +28,7 @@ RUN pnpm install --offline --frozen-lockfile \
 # tools it runs) under its own uid; static, so the runtime image needs no compiler.
 # Linked statically against musl (MIT, KOBE-375) instead of glibc (LGPL): Debian's musl-gcc, the
 # kernel UAPI headers (linux/, asm/; libc-independent) and only musl's start files and libc.a,
-# without GCC's crtbegin/crtend or libgcc, so the binary holds Kobe's code and musl only. A
+# without GCC's crtbegin/crtend or libgcc, so the binary holds Kaiju's code and musl only. A
 # missing symbol fails the link rather than pulling in another runtime.
 FROM ${PYTHON_IMAGE} AS runas
 RUN apt-get update \
@@ -96,7 +96,7 @@ COPY images/sandbox/runas/kobe-reclaim.sh /opt/kobe/bin/kobe-reclaim
 # agent with --extension, last; root-owned and read-only so sandbox code cannot replace it. Only the
 # compiled .js files (it imports nothing but node builtins and its own files).
 COPY --from=agent /out/dist/kobe-policy/*.js /opt/kobe/pi-extensions/kobe-policy/
-# kobe-models (KOBE-41): the Pi extension that serves the run's model through the Kobe model
+# kobe-models (KOBE-41): the Pi extension that serves the run's model through the Kaiju model
 # gateway with the sandbox's session token. Loaded right before kobe-policy; root-owned and
 # read-only; imports node builtins, Pi's own pi-ai and its own files only.
 COPY --from=agent /out/dist/kobe-models/*.js /opt/kobe/pi-extensions/kobe-models/
@@ -121,7 +121,7 @@ COPY images/sandbox/egress-env.sh /opt/kobe/egress-env.sh
 # ipykernel with the ZeroMQ ipc transport (unix sockets in a private directory, no TCP port).
 COPY images/sandbox/kernel/kobe-kernel-bridge.py /opt/kobe/kernel/kobe-kernel-bridge.py
 ENV KOBE_KERNEL_BRIDGE=/opt/kobe/kernel/kobe-kernel-bridge.py
-# The former built-in gallery skills (KOBE-88) are Kobe-published catalog skills (KOBE-317): the
+# The former built-in gallery skills (KOBE-88) are Kaiju-published catalog skills (KOBE-317): the
 # server ships them (services/server/builtin-skills) and each run fetches them as skill bundles,
 # so the image carries none. Their helper scripts run on the Python stack above.
 
@@ -169,7 +169,7 @@ RUN groupadd --gid 1000 kobe \
  && setcap cap_setuid,cap_setgid=ep /opt/kobe/bin/kobe-runas \
  && chmod 0644 /etc/passwd /etc/group && chmod 0640 /etc/shadow
 
-# Kobe's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
+# Kaiju's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
 COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kobe/
 USER 1000:1000
 WORKDIR /workspace

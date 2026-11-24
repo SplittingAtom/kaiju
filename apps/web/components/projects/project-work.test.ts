@@ -12,7 +12,7 @@ describe("commit outcomes and hints on a Repo", () => {
         seq: 5,
         commitId: "c",
       }),
-    ).toEqual({ text: "Committed to main on the git host (#5 in Kobe)." });
+    ).toEqual({ text: "Committed to main on the git host (#5 in Kaiju)." });
     expect(
       commitNotice("App", {
         status: "pull_request",

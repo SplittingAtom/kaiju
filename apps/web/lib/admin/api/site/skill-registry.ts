@@ -24,7 +24,7 @@ export function putRegistrySettings(
   return apiRequest(PATH, { method: "PUT", json: update });
 }
 
-/** Kobe creates the dedicated Registry team (never an existing team; KOBE-330 review). */
+/** Kaiju creates the dedicated Registry team (never an existing team; KOBE-330 review). */
 export function createRegistryTeam(
   input: RegistryTeamCreate,
 ): Promise<ApiResult<RegistrySettings>> {

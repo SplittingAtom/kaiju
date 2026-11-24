@@ -10,7 +10,7 @@ import { MirrorSession, MirrorVersionError, type MirrorVersionInput } from "./gi
 
 const enc = (s: string) => new TextEncoder().encode(s);
 const CREDS = { username: "x-access-token", token: "tok-secret-123" };
-const AUTHOR = { name: "Kobe Registry", email: "registry@kobe.invalid" };
+const AUTHOR = { name: "Kaiju Registry", email: "registry@kobe.invalid" };
 
 function version(name: string, semver: string, body: string, id: string): MirrorVersionInput {
   const files = new Map<string, Uint8Array>([
@@ -96,17 +96,17 @@ describe("MirrorSession (KOBE-343)", () => {
       ).toBe(r.tree);
     }
     expect(a.tag).toBe("quarterly-report/v1.0.0");
-    // Kobe's line-ending rule for everything under skills/.
+    // Kaiju's line-ending rule for everything under skills/.
     expect(server.git("catalog", ["show", "main:skills/.gitattributes"], { bare: true })).toBe(
       "* -text\n",
     );
-    // A linear, append-only history authored by Kobe; catalog.json lists all three.
+    // A linear, append-only history authored by Kaiju; catalog.json lists all three.
     const log = server
       .git("catalog", ["log", "--format=%H %an <%ae>", "main"], { bare: true })
       .trim()
       .split("\n");
     expect(log.map((l) => l.split(" ")[0])).toEqual([c.commit, b.commit, a.commit]);
-    expect(log[0]).toContain("Kobe Registry <registry@kobe.invalid>");
+    expect(log[0]).toContain("Kaiju Registry <registry@kobe.invalid>");
     const catalog = JSON.parse(
       server.git("catalog", ["show", "main:catalog.json"], { bare: true }),
     );

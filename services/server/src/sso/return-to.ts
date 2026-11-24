@@ -1,6 +1,6 @@
 /**
  * Where an SSO sign-in lands afterwards (spec sso-oidc-scim §5.3, §13 open redirect): only a
- * relative path on Kobe's own origin. Anything else (`//host`, `/\host`, a scheme, an encoded
+ * relative path on Kaiju's own origin. Anything else (`//host`, `/\host`, a scheme, an encoded
  * slash or backslash, control characters, an overlong value) becomes `/`.
  */
 

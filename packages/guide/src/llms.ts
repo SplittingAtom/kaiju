@@ -11,7 +11,7 @@ import { ORIGIN_TOKEN, SECTIONS, type GuidePage, type GuideSection } from "./loa
  */
 
 export interface LlmsContext {
-  /** The site branding's app name ("Kobe" by default). */
+  /** The site branding's app name ("Kaiju" by default). */
   readonly appName: string;
   /** The public origin, no trailing slash. */
   readonly origin: string;

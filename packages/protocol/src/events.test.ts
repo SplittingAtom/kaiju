@@ -21,7 +21,7 @@ import {
 } from "./index.js";
 import { EVENT_PAYLOAD_EXAMPLES, EXAMPLE_IDS, createInMemoryEventLog } from "./testing/index.js";
 
-describe("Kobe Event Stream types", () => {
+describe("Kaiju Event Stream types", () => {
   it("lists every event type from the spec (§6.2) and the epilogue (KOBE-234)", () => {
     expect(KOBE_EVENT_TYPES).toEqual([
       "run.queued",
@@ -399,7 +399,7 @@ describe("payload id and input rules", () => {
     expect(() => parseEventPayload("run.started", { ...base, model_source: "user" })).toThrow();
   });
 
-  it("requires uuids for Kobe ids", () => {
+  it("requires uuids for Kaiju ids", () => {
     const payload = { ...EVENT_PAYLOAD_EXAMPLES["run.queued"], thread_id: "thr_1" };
     expect(() => parseEventPayload("run.queued", payload)).toThrow();
   });

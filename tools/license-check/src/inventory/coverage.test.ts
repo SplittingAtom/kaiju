@@ -66,7 +66,7 @@ describe("textImages", () => {
     ]);
   });
 
-  it("ignores Kobe's own images and reports the rest without a row", () => {
+  it("ignores Kaiju's own images and reports the rest without a row", () => {
     const refs = textImages(
       ["image: ghcr.io/splittingatom/kobe-server:1", "image: new/thing:2", "image: node:24"].join(
         "\n",

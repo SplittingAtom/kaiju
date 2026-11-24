@@ -86,7 +86,7 @@ export const teamInvitesCreate = kobeTool({
   title: "Invite someone to the team",
   description:
     "Invites an email address into the conversation's team with a role, or renews its invitation " +
-    "(Team console › Invites). Kobe emails the address; they join by accepting while signed in. " +
+    "(Team console › Invites). Kaiju emails the address; they join by accepting while signed in. " +
     "Give from_role: the address's current invitation role from team_invites_list, or null for " +
     "none. The person is always asked to approve; never retry a refused or denied call.",
   scope: "team",

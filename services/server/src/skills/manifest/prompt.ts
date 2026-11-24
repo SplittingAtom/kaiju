@@ -29,7 +29,7 @@ export const MANIFEST_PROMPT_MAX_PATHS = 200;
 const MAX_TAGS_LISTED = 200;
 
 export const MANIFEST_SYSTEM_PROMPT = [
-  "You write the registry metadata of a skill package for Kobe, a conversational agent platform.",
+  "You write the registry metadata of a skill package for Kaiju, a conversational agent platform.",
   "A skill is a folder with a SKILL.md (instructions an agent follows) and optional scripts, references and assets.",
   "Answer with ONE JSON object and nothing else: no prose, no Markdown fence. Keys:",
   '- "summary": one or two plain sentences, 1 to 280 characters, saying what the skill does and when an agent should use it. No Markdown, no quotes around it.',

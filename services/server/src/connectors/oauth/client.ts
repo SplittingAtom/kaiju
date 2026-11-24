@@ -3,14 +3,14 @@ import type { AuthServerInfo } from "./discovery.js";
 import { OauthError, oauthRequest, type OauthIo } from "./http.js";
 import { challengeOf } from "./pkce.js";
 
-/** The OAuth client Kobe presents to an authorization server for one connect flow. */
+/** The OAuth client Kaiju presents to an authorization server for one connect flow. */
 export interface ClientRegistration {
   readonly clientId: string;
   /** Only for a dynamically registered confidential client; sealed with the tokens. */
   readonly clientSecret: string | undefined;
 }
 
-/** Where Kobe publishes its Client ID Metadata Document, and its callback, on its own origin. */
+/** Where Kaiju publishes its Client ID Metadata Document, and its callback, on its own origin. */
 export const CLIENT_METADATA_PATH = "/v1/oauth/client-metadata.json";
 export const CALLBACK_PATH = "/v1/connector-grants/oauth/callback";
 
@@ -33,7 +33,7 @@ export function kobeOrigin(publicUrl: string): KobeOrigin {
 export function clientMetadataDocument(kobe: KobeOrigin) {
   return {
     client_id: kobe.clientMetadataUrl,
-    client_name: "Kobe",
+    client_name: "Kaiju",
     client_uri: kobe.origin,
     redirect_uris: [kobe.redirectUri],
     grant_types: ["authorization_code", "refresh_token"],
@@ -48,7 +48,7 @@ const registrationSchema = z.object({
 });
 
 /**
- * CIMD when the server supports it and Kobe is served over https (the metadata document must be
+ * CIMD when the server supports it and Kaiju is served over https (the metadata document must be
  * fetchable by the server); otherwise Dynamic Client Registration (RFC 7591), asking for a
  * confidential client when the server offers a secret-based method.
  */
@@ -72,7 +72,7 @@ export async function obtainClient(
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        client_name: "Kobe",
+        client_name: "Kaiju",
         client_uri: kobe.origin,
         redirect_uris: [kobe.redirectUri],
         grant_types: ["authorization_code", "refresh_token"],

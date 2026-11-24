@@ -65,11 +65,11 @@ function toolError(id: JsonRpcId, text: string) {
 }
 
 const UPSTREAM_MESSAGES: Readonly<Record<UpstreamFailure, string>> = {
-  url_not_allowed: "The connector's address is not allowed by this Kobe site.",
-  forbidden_address: "The connector's server resolves to an address Kobe may not reach.",
+  url_not_allowed: "The connector's address is not allowed by this Kaiju site.",
+  forbidden_address: "The connector's server resolves to an address Kaiju may not reach.",
   unreachable: "The connector's server could not be reached.",
   timeout: "The connector's server did not answer in time.",
-  auth_required: "The connector's server refused the credentials. Reconnect it in Kobe settings.",
+  auth_required: "The connector's server refused the credentials. Reconnect it in Kaiju settings.",
   http_error: "The connector's server answered with an error.",
   protocol_error: "The connector's server did not answer as an MCP server.",
   too_large: "The connector's answer was too large.",
@@ -206,11 +206,11 @@ function serverFailure(id: JsonRpcId, failure: string): Answer {
   if (failure === "not_available") {
     return [rpcError(id, JSONRPC_ERRORS.invalidRequest, "This connector is not available."), 403];
   }
-  return [rpcError(id, JSONRPC_ERRORS.internal, "Kobe could not be reached; try again."), 503];
+  return [rpcError(id, JSONRPC_ERRORS.internal, "Kaiju could not be reached; try again."), 503];
 }
 
 /**
- * The built-in Kobe connector (KOBE-619, spec kobe-admin-mcp §3): hosted by the server, never an
+ * The built-in Kaiju connector (KOBE-619, spec kobe-admin-mcp §3): hosted by the server, never an
  * upstream. Its tools are listed and its calls decided and executed by the server's internal
  * listener; the proxy attaches no credential and contacts nothing else.
  */
@@ -338,7 +338,7 @@ async function callKobe(
     if (!answered.ok) {
       log("refused", answered.failure);
       if (answered.failure === "unavailable") {
-        return [toolError(id, "Kobe could not check this call, so it was not run. Try again.")];
+        return [toolError(id, "Kaiju could not check this call, so it was not run. Try again.")];
       }
       return serverFailure(id, answered.failure);
     }
@@ -352,7 +352,7 @@ async function callKobe(
       toolError(
         id,
         answer.outcome === "denied"
-          ? `Kobe denied this call: ${answer.message}`
+          ? `Kaiju denied this call: ${answer.message}`
           : `${answer.message} (${answer.code})`,
       ),
     ];
@@ -407,14 +407,14 @@ async function decideAndForward(
     if (!decided.ok) {
       log({ outcome: "refused", reason: decided.failure });
       if (decided.failure === "unavailable") {
-        return [toolError(id, "Kobe could not check this call, so it was not run. Try again.")];
+        return [toolError(id, "Kaiju could not check this call, so it was not run. Try again.")];
       }
       return serverFailure(id, decided.failure);
     }
     const decision = decided.value;
     if (decision.decision === "deny") {
       log({ outcome: "denied", reason: decision.code, approvalFailure: decision.approval_failure });
-      return [toolError(id, `Kobe denied this call: ${decision.message}`)];
+      return [toolError(id, `Kaiju denied this call: ${decision.message}`)];
     }
     // Defence in depth: the allow must be for exactly this connector, tool and input.
     if (
@@ -423,7 +423,7 @@ async function decideAndForward(
       decision.input_sha256 !== sha256(canonical)
     ) {
       deps.log.error({ sandboxId: ctx.sandboxId }, "mcp: server allowed a different call; refused");
-      return [toolError(id, "Kobe could not check this call, so it was not run.")];
+      return [toolError(id, "Kaiju could not check this call, so it was not run.")];
     }
     // The server's own record of the tool: now the name is metadata, not model text.
     annotate({}, { "kobe.tool.name": decision.tool.name });
@@ -440,7 +440,7 @@ async function decideAndForward(
       log({ outcome: "refused", reason: credentials.code, approvalId: decision.approval_id });
       const why =
         credentials.code === "not_connected"
-          ? `Connect your account for ${decision.connector.name} in Kobe settings first.`
+          ? `Connect your account for ${decision.connector.name} in Kaiju settings first.`
           : "Your connector credentials are unavailable right now. Try again.";
       // The server consumed the approval when it allowed the call (review L3: credentials are
       // resolved here, after the decision). Say so, so the model asks again instead of retrying.

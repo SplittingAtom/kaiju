@@ -10,7 +10,7 @@ import { compareSemver } from "./semver.js";
 import { sha256Hex } from "./storage.js";
 
 /**
- * Every Kobe skill version ever published, by name and semver, with its bytes (KOBE-317, review
+ * Every Kaiju skill version ever published, by name and semver, with its bytes (KOBE-317, review
  * S5). **Append only: never edit or remove a line.** A Site that holds a version refuses other
  * bytes under it (kobe-seed.ts `version_reused`), so changing a published version's files would
  * leave Sites with different content under one name@semver. To change a skill: raise `version`
@@ -75,7 +75,7 @@ const PUBLISHED: Record<string, Record<string, { runtime: string; package: strin
   },
 };
 
-describe("the Kobe package set (KOBE-317)", () => {
+describe("the Kaiju package set (KOBE-317)", () => {
   it("holds exactly the former built-ins and kobe-guide (KOBE-620), each named like its directory", async () => {
     const set = await loadKobePackages();
     expect(set.map((p) => p.name)).toEqual([...KOBE_SKILL_NAMES]);

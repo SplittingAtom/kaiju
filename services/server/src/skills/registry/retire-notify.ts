@@ -203,7 +203,7 @@ export async function emailRetirement(
     try {
       await deps.mailer.send({
         to,
-        subject: `Kobe: ${what} ${SUBJECT[r.act]}`,
+        subject: `Kaiju: ${what} ${SUBJECT[r.act]}`,
         text,
       });
     } catch (err) {

@@ -24,7 +24,7 @@ describe("evaluatePolicy: Dangerous mode (AC1, KOBE-476)", () => {
     }
   });
 
-  it("never lifts a Kobe-scoped write's prompt, even when named (U10, D23, D24)", () => {
+  it("never lifts a Kaiju-scoped write's prompt, even when named (U10, D23, D24)", () => {
     for (const mode of interactive) {
       const decision = run({
         tool: kobeWrite,

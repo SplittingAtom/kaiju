@@ -12,7 +12,7 @@ import {
 
 /**
  * KOBE-551 ac-2, ac-3: a Lakehouse Picker item dragged out of its frame carries the item as JSON.
- * Kobe never trusts it: only a well-formed item becomes the same `ui/message` content a click on
+ * Kaiju never trusts it: only a well-formed item becomes the same `ui/message` content a click on
  * the picker sends, and both go through the bridge's one `appMessageOf`.
  */
 const TABLE = {

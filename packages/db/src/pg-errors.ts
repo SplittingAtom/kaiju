@@ -4,7 +4,7 @@
  * every "is this a lock timeout / this constraint" check reads the chain the same way.
  */
 
-/** Postgres SQLSTATEs Kobe reacts to by name. */
+/** Postgres SQLSTATEs Kaiju reacts to by name. */
 export const PG_LOCK_NOT_AVAILABLE = "55P03";
 export const PG_DEADLOCK_DETECTED = "40P01";
 export const PG_FOREIGN_KEY_VIOLATION = "23503";

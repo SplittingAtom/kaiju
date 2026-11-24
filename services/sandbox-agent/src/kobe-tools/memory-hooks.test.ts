@@ -178,7 +178,7 @@ describe("installMemoryHooks", () => {
     });
   });
 
-  it("orders What Kobe knows for caching: stable part, Notes, project, picks, then viewing and conflicts (KOBE-383)", () => {
+  it("orders What Kaiju knows for caching: stable part, Notes, project, picks, then viewing and conflicts (KOBE-383)", () => {
     const pi = fakePi([]);
     installMemoryHooks(pi.api, "/f", () =>
       JSON.stringify({
@@ -196,7 +196,7 @@ describe("installMemoryHooks", () => {
     });
   });
 
-  it("keeps What Kobe knows with Notes off (Policy reaches every agent, KOBE-383)", () => {
+  it("keeps What Kaiju knows with Notes off (Policy reaches every agent, KOBE-383)", () => {
     const pi = fakePi(["bash", "remember", "recall"]);
     installMemoryHooks(pi.api, "/f", () =>
       JSON.stringify({ tools: false, text: "NOTES", known: "KNOWN", picks: "" }),
@@ -208,7 +208,7 @@ describe("installMemoryHooks", () => {
     });
   });
 
-  it("fails closed on a malformed What Kobe knows field", () => {
+  it("fails closed on a malformed What Kaiju knows field", () => {
     const pi = fakePi([]);
     installMemoryHooks(pi.api, "/f", () => JSON.stringify({ tools: true, text: "N", known: 1 }));
     expect(pi.fire("before_agent_start", { systemPrompt: "base" })).toBeUndefined();

@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 /**
- * zod schemas for what an MCP App may send Kobe's host bridge (KOBE-437, spec T4 and §7), after
+ * zod schemas for what an MCP App may send Kaiju's host bridge (KOBE-437, spec T4 and §7), after
  * the ext-apps specification (protocol 2026-01-26). Unknown fields are tolerated (forward
- * compatibility), but every field Kobe reads is typed and bounded.
+ * compatibility), but every field Kaiju reads is typed and bounded.
  */
 export const PROTOCOL_VERSION = "2026-01-26";
 
@@ -24,7 +24,7 @@ export const notificationSchema = z.object({
   params: z.unknown().optional(),
 });
 
-/** The app's answer to a request Kobe sent (only `ui/resource-teardown`). */
+/** The app's answer to a request Kaiju sent (only `ui/resource-teardown`). */
 export const responseSchema = z.object({
   jsonrpc: z.literal("2.0"),
   id,
@@ -70,7 +70,7 @@ export const sizeChangedParams = z.object({
 });
 
 /**
- * Kobe's host extension for pointer drags from an app frame (KOBE-553, DRAG-CONTRACT.md): the
+ * Kaiju's host extension for pointer drags from an app frame (KOBE-553, DRAG-CONTRACT.md): the
  * pointer in the frame's viewport, CSS pixels, finite (it may be negative or beyond the frame).
  * The item is only checked to be a plain object here (its size by the bridge); the composer
  * validates it as it does a native drop.

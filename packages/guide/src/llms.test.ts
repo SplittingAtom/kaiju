@@ -15,7 +15,7 @@ const PAGES = buildGuide([
   { path: "glossary.md", content: `${fm("Glossary", "Reference")}\nWords.\n` },
   {
     path: "agents/use.md",
-    content: `${fm("Using [Kobe]", "For agents", "audience: agent\n")}\nHow.\n`,
+    content: `${fm("Using [Kaiju]", "For agents", "audience: agent\n")}\nHow.\n`,
   },
 ]);
 const CTX = { appName: "Acme Chat", origin: "https://chat.example.com" };
@@ -33,7 +33,7 @@ describe("llmsTxt", () => {
       "- [Getting started](https://chat.example.com/docs/getting-started.md): About Getting started.",
     );
     expect(text).toContain(
-      "- [Using \\[Kobe\\]](https://chat.example.com/docs/agents/use.md): About Using [Kobe].",
+      "- [Using \\[Kaiju\\]](https://chat.example.com/docs/agents/use.md): About Using [Kaiju].",
     );
     expect(text.endsWith("\n")).toBe(true);
   });
@@ -55,7 +55,7 @@ describe("llmsFullTxt", () => {
     const titles = text.split("\n").filter((l) => /^# /.test(l));
     expect(titles).toEqual([
       "# Acme Chat user guide",
-      "# Using [Kobe]",
+      "# Using [Kaiju]",
       "# Getting started",
       "# Glossary",
     ]);

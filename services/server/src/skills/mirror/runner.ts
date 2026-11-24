@@ -246,7 +246,7 @@ export class SkillMirror {
   }
 
   /**
-   * The version's package files plus Kobe's provenance.json, checked against both hashes the
+   * The version's package files plus Kaiju's provenance.json, checked against both hashes the
    * version records: what goes under `skills/<name>/` is exactly the reviewed package.
    */
   private async packageFiles(v: PendingVersion): Promise<Map<string, Uint8Array>> {

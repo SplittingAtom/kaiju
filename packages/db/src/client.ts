@@ -20,7 +20,7 @@ export const APP_STATEMENT_TIMEOUT_MS = 120_000;
 /**
  * Default `idle_in_transaction_session_timeout` of app-role connections (KOBE-732): a transaction
  * that waits this long on something other than Postgres (an object store or Kubernetes call that
- * hangs) is ended by Postgres, releasing its locks. The calls Kobe makes inside a transaction are
+ * hangs) is ended by Postgres, releasing its locks. The calls Kaiju makes inside a transaction are
  * bounded well below this (object deletes 30 s + 10 s, Kubernetes 10 s per call).
  */
 export const APP_IDLE_IN_TRANSACTION_TIMEOUT_MS = 300_000;

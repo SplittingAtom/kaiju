@@ -9,7 +9,7 @@ import { panelOf } from "./support/panel.js";
  * reloads (the draft persisted), publishes it with the suggested version, and checks that the
  * active team's catalog now lists the new version as the newest (Default sync and Track installs
  * take it from there). A team-published skill is used (KOBE_CATALOG_SKILL, else the first one the
- * catalog lists): a Kobe skill would stay detached. Versions are immutable, so the restore at the
+ * catalog lists): a Kaiju skill would stay detached. Versions are immutable, so the restore at the
  * end withdraws the version the spec published (Site admins only; installs fall back to the one
  * before) and discards any draft left. Spends no model tokens. Run on gate1:
  * `npx playwright test site-catalog-edit`.

@@ -14,7 +14,7 @@ if ((${#logs[@]} == 0)); then
   exit 1
 fi
 # The verdict lines the harnesses print (e2e/lib/gate-common.sh `verdict`).
-VERDICT='^(Gate [0-9]( suite| stories| restore)?|Kobe (Explorer|SSO) Gate( \(k3d\))?): '
+VERDICT='^(Gate [0-9]( suite| stories| restore)?|Kaiju (Explorer|SSO) Gate( \(k3d\))?): '
 bad=0
 for log in "${logs[@]}"; do
   name=$(basename "$log" .log)

@@ -172,7 +172,7 @@ export function ConvertDialog({
         {`Convert ${project.name} to a repo`}
       </p>
       <p id={`${id}-h`} className="text-muted-foreground m-0">
-        The project moves to a new repository on the git host, which becomes its record: Kobe then
+        The project moves to a new repository on the git host, which becomes its record: Kaiju then
         shows a read-only mirror of the default branch, and commits go to the host. This cannot be
         undone here.
       </p>
@@ -183,7 +183,7 @@ export function ConvertDialog({
       ) : attempt === "unreadable" ? (
         <>
           <p role="alert" className="m-0">
-            Kobe could not read whether this project has a conversion. Try again in a moment.
+            Kaiju could not read whether this project has a conversion. Try again in a moment.
           </p>
           <div className="flex justify-end gap-2">
             <button
@@ -392,7 +392,7 @@ function ConvertForm({
         </label>
       )}
       <p className="text-muted-foreground m-0">
-        Commits carry each author&apos;s Kobe email, or a no-reply address if the Workspace uses
+        Commits carry each author&apos;s Kaiju email, or a no-reply address if the Workspace uses
         one. Files under .github/workflows/ run on the host if it runs Actions. The conversion runs
         in the background and you get an email when it ends.
       </p>
@@ -475,7 +475,7 @@ function Progress({
       </p>
       {lost && status === "running" && (
         <p role="alert" className="m-0">
-          Kobe could not read the conversion&apos;s progress. It goes on in the background: close
+          Kaiju could not read the conversion&apos;s progress. It goes on in the background: close
           this and open Convert to repo… again later, or wait for the email.
         </p>
       )}

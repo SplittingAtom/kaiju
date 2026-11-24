@@ -16,7 +16,7 @@ import { users } from "./auth.js";
 import { teams } from "./teams.js";
 
 // MCP connectors (spec D6, D27, §5.4). Site admins register remote (Streamable HTTP) servers
-// and Kobe pins each tool (`connectors`, site-wide); team admins enable a connector for their
+// and Kaiju pins each tool (`connectors`, site-wide); team admins enable a connector for their
 // team with an exposure (`team_connectors`, a team table). The MCP proxy (KOBE-58) lists and calls
 // only pinned tools of connectors enabled in the caller's team. This is the minimal model the proxy
 // core needs; KOBE-59 (registry, pinning, drift), KOBE-60 (enablement UI) and KOBE-61 (grants) add
@@ -51,7 +51,7 @@ export const CONNECTOR_NAME_PATTERN = "^[a-z0-9]+([-_][a-z0-9]+)*$";
 export const CONNECTOR_URL_MAX = 2048;
 
 /**
- * Built-in connectors hosted by Kobe itself (KOBE-618, spec kobe-admin-mcp §3): `kobe`, the Kobe
+ * Built-in connectors hosted by Kaiju itself (KOBE-618, spec kobe-admin-mcp §3): `kobe`, the Kaiju
  * MCP server (docs and admin tools). Its row is seeded by the server at start
  * ({@link seedKobeBuiltinConnector}); the MCP proxy routes it to the server's internal listener,
  * never to its URL, which only marks the row (a check ties the two together, so no registered
@@ -71,7 +71,7 @@ export const KOBE_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/
 
 /**
  * The `git` built-in (KOBE-762, owner decision 2026-11-22): the git host tools as their own
- * connector, so the Kobe MCP switch and the Kobe connector's thread toggle never reach them; the
+ * connector, so the Kaiju MCP switch and the Kaiju connector's thread toggle never reach them; the
  * Site's Git switch and each connection's settings are their ceiling. Fixed id ("kobe" in hex,
  * tail 2) and an internal marker URL, as for `kobe`.
  */
@@ -79,7 +79,7 @@ export const GIT_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000002";
 export const GIT_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/git";
 
 /**
- * Site switch of the Kobe MCP server (`site_settings`, spec §6, KA5): `off` (no `kobe` connector),
+ * Site switch of the Kaiju MCP server (`site_settings`, spec §6, KA5): `off` (no `kobe` connector),
  * `docs` (docs tools only; the default, also when unset or unreadable), `admin` (docs plus the
  * admin tools each team turns on).
  */
@@ -162,15 +162,15 @@ export const connectors = pgTable(
      */
     templatesSkipped: text(),
     /**
-     * Built-in connector hosted by Kobe (KOBE-618): `kobe`, or NULL for a registered remote server.
+     * Built-in connector hosted by Kaiju (KOBE-618): `kobe`, or NULL for a registered remote server.
      * A built-in row has no credential, no pinned snapshot, and is skipped by the probe, pinning,
-     * the periodic refresh and drift: its tools come from Kobe's own catalog.
+     * the periodic refresh and drift: its tools come from Kaiju's own catalog.
      */
     builtin: text().$type<BuiltinConnector>(),
     /**
-     * The OAuth client Kobe registered at the connector's authorization server (dynamic client
+     * The OAuth client Kaiju registered at the connector's authorization server (dynamic client
      * registration, KOBE-784): issuer, redirect URI, client id and secret as KOBE-107 envelope
-     * text bound to the connector and its URL. One per connector (for Kobe's one redirect URI),
+     * text bound to the connector and its URL. One per connector (for Kaiju's one redirect URI),
      * reused by every member's connect flow; cleared when the URL or auth kind changes. Never
      * returned by any API.
      */

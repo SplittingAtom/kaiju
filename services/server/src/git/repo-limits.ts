@@ -7,7 +7,7 @@ import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kobe/protocol";
  * (KOBE-765) refuses up front a project whose current files already exceed them, so a new Repo
  * can always be mirrored. Every other mirror size (the pack it downloads, what it inflates, what
  * it puts on disk) is derived from these (review R4-M1), so content within them always fits.
- * The file count and file size are Kobe's own project limits; the content total is the
+ * The file count and file size are Kaiju's own project limits; the content total is the
  * coordinator's number pending the owner (2026-11-23).
  */
 export interface RepoLimits {

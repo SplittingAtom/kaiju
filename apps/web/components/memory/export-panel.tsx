@@ -21,7 +21,7 @@ function saveFile(bytes: Uint8Array, name: string, type: string): void {
 }
 
 /**
- * Export for curators (KOBE-385, SM21): one scope as JSON (a Kobe export, which imports again as
+ * Export for curators (KOBE-385, SM21): one scope as JSON (a Kaiju export, which imports again as
  * it was) or CSV. Every export is recorded in the audit log.
  */
 export function ExportPanel({

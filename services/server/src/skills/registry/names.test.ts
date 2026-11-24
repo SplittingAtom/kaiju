@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { editDistance, isReservedName, similarNames } from "./names.js";
 
 describe("catalog names (KOBE-332, SK24)", () => {
-  it("reserves Kobe's built-in names", () => {
+  it("reserves Kaiju's built-in names", () => {
     for (const n of ["skill-creator", "pdf", "xlsx", "data-analysis"])
       expect(isReservedName(n), n).toBe(true);
     expect(isReservedName("pdf-tools")).toBe(false);

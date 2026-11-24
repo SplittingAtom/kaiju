@@ -78,12 +78,12 @@ function Broken({ connector }: { readonly connector: ChatConnector }) {
 
 const KOBE_ADMIN_TEXT = {
   off: "Docs always on. No admin tools for you here.",
-  read: "Docs always on. Admin tools: read, as you, when the agent uses Kobe.",
+  read: "Docs always on. Admin tools: read, as you, when the agent uses Kaiju.",
   read_write:
-    "Docs always on. Admin tools: read and change, as you, when the agent uses Kobe; each change asks you first.",
+    "Docs always on. Admin tools: read and change, as you, when the agent uses Kaiju; each change asks you first.",
 } as const;
 
-/** The built-in git connector (KOBE-762): its own group, apart from Kobe's switches. */
+/** The built-in git connector (KOBE-762): its own group, apart from Kaiju's switches. */
 const GIT_TEXT = {
   off: "Always on. No git tools for you here.",
   read: "Always on. Git tools: read the connected git organizations.",
@@ -92,7 +92,7 @@ const GIT_TEXT = {
 } as const;
 
 /**
- * The built-in Kobe connector (KOBE-623, spec kobe-admin-mcp KA7): no toggle, its docs tools are
+ * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp KA7): no toggle, its docs tools are
  * in every conversation; the line says which admin tools the member has, as the server decided.
  */
 function BuiltinKobe({ connector }: { readonly connector: ChatConnector }) {

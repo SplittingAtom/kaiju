@@ -170,7 +170,7 @@
     },
     {
       "id": "ws-approval-threshold",
-      "description": "A business rule on purchase approvals (not about Kobe's approvals).",
+      "description": "A business rule on purchase approvals (not about Kaiju's approvals).",
       "transcript": [
         ["person", "Does this 12k laptop order need sign-off?"],
         ["assistant", "I don't know your purchasing policy."],

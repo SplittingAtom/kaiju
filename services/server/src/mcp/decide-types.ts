@@ -52,7 +52,7 @@ export type McpCallDecision =
       readonly approval_id?: string;
       /**
        * The run the call was decided for and the tool call id it was decided under (KOBE-619: the
-       * Kobe MCP executor's delegation). Server-internal: the proxy's schema ignores them.
+       * Kaiju MCP executor's delegation). Server-internal: the proxy's schema ignores them.
        */
       readonly run_id?: string;
       readonly tool_call_id?: string;
@@ -82,7 +82,7 @@ export interface McpDecideDeps {
   /** Signs MCP Apps capture tickets (KOBE-438); unset: results are never captured. */
   readonly captureKey?: Buffer;
   /**
-   * The connector as enabled in the team (default `loadTeamConnector`, catalog.ts). The built-in Kobe
+   * The connector as enabled in the team (default `loadTeamConnector`, catalog.ts). The built-in Kaiju
    * connector (KOBE-619) supplies its catalog here instead of a pinned snapshot.
    */
   readonly loadConnector?: (
@@ -90,7 +90,7 @@ export interface McpDecideDeps {
     connectorId: string,
   ) => Promise<EnabledConnector | undefined>;
   /**
-   * A refusal decided before any run is looked at (KOBE-619: the person's permission, the Kobe
+   * A refusal decided before any run is looked at (KOBE-619: the person's permission, the Kaiju
    * switches, the admin limits); audited like every deny.
    */
   readonly refuse?: (
@@ -98,7 +98,7 @@ export interface McpDecideDeps {
     descriptor: ToolDescriptor,
   ) => Promise<{ readonly code: PolicyReasonCode; readonly message: string } | undefined>;
   /**
-   * Applied to each run's engine decision before they are combined (KOBE-619: the Kobe admin
+   * Applied to each run's engine decision before they are combined (KOBE-619: the Kaiju admin
    * guard, which asks for writes in every mode and denies where nobody can be asked).
    */
   readonly guard?: (

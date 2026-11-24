@@ -5,10 +5,10 @@ import { urlSha256 } from "../site-key.js";
 import type { ClientRegistration } from "./client.js";
 
 /**
- * The OAuth client Kobe registered for a connector (KOBE-784, review P2-31). Dynamic client
+ * The OAuth client Kaiju registered for a connector (KOBE-784, review P2-31). Dynamic client
  * registration (RFC 7591) used to run on every "Connect" click, leaving a new client at the
  * authorization server each time; now the first registration is kept in `connectors.oauth_client`
- * and reused by every member's flow while it was made for the same issuer and Kobe's current
+ * and reused by every member's flow while it was made for the same issuer and Kaiju's current
  * redirect URI (a new public URL registers again and replaces it). Sealed with the site envelope,
  * bound to the connector and its URL, so a URL changed by any path leaves nothing usable; the
  * registry also clears it on a URL or auth-kind change. Never returned by any API or logged.

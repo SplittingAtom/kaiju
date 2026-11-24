@@ -196,7 +196,7 @@ describe("expiry email (G6)", () => {
     };
     const m = gitExpiryMessage({
       to: "a@example.com",
-      appName: "Kobe",
+      appName: "Kaiju",
       teamName: "Team1",
       connection,
       consoleUrl: "http://kobe.test/admin/team/git",
@@ -207,7 +207,7 @@ describe("expiry email (G6)", () => {
     expect(m.text).toContain("http://kobe.test/admin/team/git");
     const lapsed = gitExpiryMessage({
       to: "a@example.com",
-      appName: "Kobe",
+      appName: "Kaiju",
       teamName: "Team1",
       connection: { ...connection, credentialExpiresAt: new Date(now - 1) },
       consoleUrl: "x",

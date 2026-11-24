@@ -68,7 +68,7 @@ export function requestMessage(
       to,
       subject: `Access request: ${detail.pattern} for the ${team} team (site ceiling)`,
       text: [
-        `${requester} asked to allow ${detail.pattern} for the ${team} team's sandboxes on Kobe.`,
+        `${requester} asked to allow ${detail.pattern} for the ${team} team's sandboxes on Kaiju.`,
         `A request to ${detail.domain} was blocked: it is outside the site's egress ceiling or resolved to an internal address, so a site admin decides.`,
         ...(detail.threadId ? [`Thread: ${detail.threadId}`] : []),
         "",
@@ -81,7 +81,7 @@ export function requestMessage(
       to,
       subject: `Access request: ${detail.pattern} for the ${team} team`,
       text: [
-        `${requester} asked to enable ${detail.pattern} for the ${team} team's sandboxes on Kobe.`,
+        `${requester} asked to enable ${detail.pattern} for the ${team} team's sandboxes on Kaiju.`,
         `A request to ${detail.domain} was blocked by the team's egress policy.`,
         ...(detail.threadId ? [`Thread: ${detail.threadId}`] : []),
         "",

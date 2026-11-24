@@ -3,7 +3,7 @@ import { uuidSchema } from "../common.js";
 
 /**
  * Error answers of the semantic memory API and tools (KOBE-377): `{code, message}` like every
- * Kobe error, plus the details a client needs to offer "Save anyway".
+ * Kaiju error, plus the details a client needs to offer "Save anyway".
  */
 export const SEMANTIC_MEMORY_ERROR_CODES = [
   /**

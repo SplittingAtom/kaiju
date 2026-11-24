@@ -131,11 +131,11 @@ export type MaintainerResult =
 const fail = (code: Extract<MaintainerResult, { ok: false }>["code"], message: string) =>
   ({ ok: false, code, message }) as const;
 
-/** Checks every change shares: the skill exists, isn't Kobe's, and the actor may manage it. */
+/** Checks every change shares: the skill exists, isn't Kaiju's, and the actor may manage it. */
 async function guard(tx: KobeTx, skillId: string, actor: Actor) {
   const skill = await skillOf(tx, skillId, true);
   if (!skill) return fail("not_found", "No catalog skill with that id.");
-  if (skill.publisher === "kobe") return fail("kobe_skill", "Kobe maintains its own skills.");
+  if (skill.publisher === "kobe") return fail("kobe_skill", "Kaiju maintains its own skills.");
   const list = await listMaintainers(tx, skillId);
   if (!mayManage(list, actor))
     return fail("forbidden", "Only its maintainers or a Site admin can change its maintainers.");
@@ -255,7 +255,7 @@ export type SubmissionRight =
 
 /**
  * May `userId` submit a version named `name` (KOBE-332, SK24; the promotion ticket calls it)?
- * A new name: yes (`skill: null`), unless it is Kobe's. An existing catalog skill: only its active
+ * A new name: yes (`skill: null`), unless it is Kaiju's. An existing catalog skill: only its active
  * maintainers; before its first approval (no maintainers yet) only whoever has a submission open
  * under it, and anyone once every submission was rejected (KOBE-334). Anyone else is told who
  * maintains it.
@@ -274,10 +274,10 @@ export async function submissionRight(
     })
     .from(registrySkills)
     .where(eq(registrySkills.name, name));
-  // Kobe's names are Kobe's; only a skill that held a name before Kobe reserved it (KOBE-620,
+  // Kaiju's names are Kaiju's; only a skill that held a name before Kaiju reserved it (KOBE-620,
   // `KOBE_SKILL_NAMES_ADDED_LATER`) keeps working under it.
   if (isReservedName(name) && (row === undefined || row.publisher === "kobe"))
-    return { ok: false, code: "reserved", message: `${name} is reserved for Kobe's own skill.` };
+    return { ok: false, code: "reserved", message: `${name} is reserved for Kaiju's own skill.` };
   if (!row) return { ok: true, skill: null };
   const skill = { id: row.id, name: row.name, status: row.status };
   if (skill.status === "archived")
@@ -392,7 +392,7 @@ export async function notifyUnmaintained(
     try {
       await deps.mailer.send({
         to: admin.email,
-        subject: "Kobe: catalog skills unmaintained",
+        subject: "Kaiju: catalog skills unmaintained",
         text,
       });
       sent += 1;

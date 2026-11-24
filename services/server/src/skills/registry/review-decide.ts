@@ -35,7 +35,7 @@ async function locked(
   db: KobeDb,
   versionId: string,
   fn: (tx: KobeTx, v: VersionRow) => Promise<{ version: VersionRow; changed: boolean }>,
-  /** The state the caller saw (a Kobe MCP call's approved before-state), checked under the lock. */
+  /** The state the caller saw (a Kaiju MCP call's approved before-state), checked under the lock. */
   expectedState?: string,
 ): Promise<ReviewResult> {
   try {

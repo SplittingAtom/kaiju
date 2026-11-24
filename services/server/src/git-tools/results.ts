@@ -225,7 +225,7 @@ export function writeResult(
     ...(record.visibility === "public"
       ? {
           warning:
-            "The git host made this repository PUBLIC although Kobe asked for a private one. Tell the user now: a Workspace admin should make it private on the host.",
+            "The git host made this repository PUBLIC although Kaiju asked for a private one. Tell the user now: a Workspace admin should make it private on the host.",
         }
       : {}),
     ...(record.url === undefined || record.url === "" ? {} : { web_url: record.url }),

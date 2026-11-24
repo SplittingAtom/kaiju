@@ -57,7 +57,7 @@ function pkt(line: string): Buffer {
   return Buffer.concat([Buffer.from((body.length + 4).toString(16).padStart(4, "0")), body]);
 }
 
-/** Capabilities Kobe asks for, of those the host advertised. */
+/** Capabilities Kaiju asks for, of those the host advertised. */
 export function wantedCapabilities(advertised: readonly string[]): string[] {
   const has = new Set(advertised.map((c) => c.split("=")[0]));
   return ["ofs-delta", "no-progress", "shallow"].filter((c) => has.has(c));

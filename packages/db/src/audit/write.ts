@@ -21,7 +21,7 @@ export interface AuditRequestContext {
 }
 
 /**
- * The person acted through an agent (KOBE-618, spec kobe-admin-mcp §7): a Kobe MCP admin tool ran
+ * The person acted through an agent (KOBE-618, spec kobe-admin-mcp §7): a Kaiju MCP admin tool ran
  * the console's own action for them in a run. Accepted on every action, recorded in the target
  * under {@link AUDIT_VIA_AGENT_KEY} (so the hash chain covers it), and only with a user actor.
  */
@@ -192,7 +192,7 @@ export async function audit(tx: KobeTx, event: AuditEvent): Promise<AuditRecordR
 }
 
 /**
- * Records an event in a transaction of its own. Only for actions whose write Kobe doesn't control
+ * Records an event in a transaction of its own. Only for actions whose write Kaiju doesn't control
  * (Better Auth's sign-in and credential endpoints), for reads (export) and for system observations
  * (isolation state): the action has already happened, so this is best effort by nature.
  */

@@ -1,7 +1,7 @@
 # Browser suite (against a deployment)
 
 Playwright specs for the chat surfaces of v1.1 Phase A/B, run in a real browser against a running
-Kobe: scroll follow, the steering panel, the context gauge, Compact now, root edit, Regenerate
+Kaiju: scroll follow, the steering panel, the context gauge, Compact now, root edit, Regenerate
 with another model, Fork to a new thread, the theme toggle with its popups, the rail's
 row menus with the header rename (KOBE-292), auto-titles with the rail's hover card
 (KOBE-219), pin, archive and move to project (KOBE-220; it creates a project, so the member
@@ -114,10 +114,10 @@ remember limits allowing "this conversation"; a few short model turns:
 
 ## MCP App frame isolation (KOBE-437)
 
-`app-frame.spec.ts` loads one of the member's live MCP Apps through Kobe's member frame route in
+`app-frame.spec.ts` loads one of the member's live MCP Apps through Kaiju's member frame route in
 a `sandbox="allow-scripts"` iframe, keeps the deployment's real response (status and the header
 CSP) and replaces only its body with a hostile probe (`tests/support/app-frame-probe.ts`). From
-inside the frame, `fetch` (remote and Kobe), `XMLHttpRequest`, `WebSocket`, a remote image, a
+inside the frame, `fetch` (remote and Kaiju), `XMLHttpRequest`, `WebSocket`, a remote image, a
 form post, `window.open`, top navigation, `document.cookie`, storage and the parent's DOM must
 all fail, and each network attempt must be a CSP violation (not just an unreachable host). It
 needs an app the member can open (`KOBE_APP_ID`, or the first of `GET /v1/team/apps`) and skips
@@ -133,7 +133,7 @@ drag with the picker's two types) and checks the chip (no text, as for a click),
 invalid item and the `references` of the send; one short model run. In Firefox too with
 `KOBE_ALL_BROWSERS=1 npx playwright test lakehouse-drop --project chromium --project firefox`.
 
-## The Kobe Explorer Gate (KOBE-441)
+## The Kaiju Explorer Gate (KOBE-441)
 
 `gate-apps/explorer.spec.ts` drives an MCP App in the conversation (the model's call renders it in
 the tool card; one app call per click; the context chip; "Use in chat" inserts and never sends;
@@ -164,7 +164,7 @@ of the active team: `npx playwright test console-sections`.
 `h1` and `document.title` follow; the server-rendered HTML of a fresh load already has the name),
 uploads a generated 1×1 PNG as logo and favicon (the header's `<img>`, `<link rel="icon">`), has
 a `<script>` SVG refused with its reason, picks the Plum preset (AA in light and dark on a console
-page and on the chat, `support/colours.ts`) and resets to Kobe's defaults, also when a step fails.
+page and on the chat, `support/colours.ts`) and resets to Kaiju's defaults, also when a step fails.
 The web caches the branding for 30 s, so checks poll a fresh render. `KOBE_USER` must be the site
 Owner or an Admin. No tokens: `npx playwright test appearance`. The page is in the console
 screenshots too; its first `consoles` run needs `--update-snapshots` for its new baseline.
@@ -259,7 +259,7 @@ variables below). The spec registers the provider through the API when it is mis
 provider, needs the envelope key), turns it on for the run and off again, adds and deletes the
 mapping, and creates and revokes a SCIM token. `KOBE_USER` must be the Owner (or a site admin) and
 a team admin of its active team (`KOBE_TEAM`). Each run leaves two deactivated `sso-e2e-*`
-accounts (Kobe never deletes users).
+accounts (Kaiju never deletes users).
 
 | Variable                      | Meaning                                                                                 |
 | ----------------------------- | --------------------------------------------------------------------------------------- |

@@ -206,7 +206,7 @@ const providerBody = (spec: ProviderSpec): Json => ({
 export const vkActive = (spec: Pick<VirtualKeySpec, "models">): boolean =>
   Object.values(spec.models).some((m) => m.length > 0);
 
-/** Every provider config of a VK may use all of its provider's keys (Kobe has one per provider). */
+/** Every provider config of a VK may use all of its provider's keys (Kaiju has one per provider). */
 const vkBody = (spec: VirtualKeySpec): Json => ({
   name: spec.name,
   team_id: spec.teamId,

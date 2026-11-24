@@ -3,7 +3,7 @@
 Member guide: [Editing files](guide/files/file-editor.md), [Notebooks and Python](guide/files/notebooks.md) and
 [Workspaces, My files and projects](guide/files/workspaces-and-projects.md). This page is the engineering view.
 
-How a member and the agent create and edit workspace files together in Kobe's code editor: the
+How a member and the agent create and edit workspace files together in Kaiju's code editor: the
 file tab in the artifact column, with CodeMirror for raw text. Audience: engineers and the product
 owner. Contract and decisions FE1–FE13: `docs/specs/file-editor.md`; protocol types:
 `packages/protocol/src/file-editor.ts` and `packages/protocol/src/file-open.ts`.
@@ -52,7 +52,7 @@ flowchart LR
   end
 
   subgraph Server["Server: services/server, Hono"]
-    SSE["GET /v1/runs/:id/events<br/>Kobe Event Stream, SSE"]
+    SSE["GET /v1/runs/:id/events<br/>Kaiju Event Stream, SSE"]
     MSG["POST /v1/threads/:id/messages"]
     POL["policy.check engine<br/>approvals broker"]
     WIRE["sandbox-wire connection<br/>file-edit-propose.ts, file-open.ts"]

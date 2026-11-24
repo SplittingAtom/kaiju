@@ -9,7 +9,7 @@ import {
 } from "./fields.js";
 
 /**
- * Learning passes (KOBE-390 contract, spec SM14/SM15, Phase B). A thread author asks Kobe to learn
+ * Learning passes (KOBE-390 contract, spec SM14/SM15, Phase B). A thread author asks Kaiju to learn
  * from a conversation; the server runs one **pass** on BackgroundTasks: it reads the thread up to
  * the leaf, asks the Workspace's learning model (a Site setting with Workspace override, like the
  * eval judge's; never a fallback to another model: `memory_learning_model_unavailable`) for

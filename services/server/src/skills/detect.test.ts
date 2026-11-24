@@ -21,7 +21,7 @@ describe("matchSkillRead (KOBE-297)", () => {
     expect(read(`/run/kobe-skills/store/sk-${B}/SKILL.md`)).toEqual(refs[1]);
   });
 
-  it("names a Kobe skill (a former built-in) by its bundle directory, like any other (KOBE-317)", () => {
+  it("names a Kaiju skill (a former built-in) by its bundle directory, like any other (KOBE-317)", () => {
     expect(read(`/run/kobe-skills/store/sk-${C}/SKILL.md`)).toEqual(refs[2]);
   });
 

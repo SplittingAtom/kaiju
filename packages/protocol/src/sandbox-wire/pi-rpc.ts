@@ -17,7 +17,7 @@ import { z } from "zod";
  * (`looseObject`), so a Pi release adding fields does not break the bridge. Only the commands
  * the server may issue are admitted (no `bash`, `switch_session`, `export_html`, `fork`, `compact`, ...).
  * `fork` is excluded because it moves Pi to a new session file with fresh history (verified 1.0.0),
- * which would split the thread from the session file Kobe mirrors; edit-and-regenerate branches
+ * which would split the thread from the session file Kaiju mirrors; edit-and-regenerate branches
  * with `run.start.parent_entry_id` instead (KOBE-23 refused it before the contract dropped it).
  */
 export const PI_PINNED_VERSION = "1.4.0";

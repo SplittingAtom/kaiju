@@ -14,7 +14,7 @@ import { z } from "zod";
  * The transcript is the conversation as the learner sees it, oldest first. Each entry keeps the
  * thread entry's id (evidence quotes cite it) and says who produced the text:
  *
- * - `person`: the thread's author, the person teaching Kobe. Only their words can support a
+ * - `person`: the thread's author, the person teaching Kaiju. Only their words can support a
  *   candidate.
  * - `assistant`: the agent's replies. A person may confirm what it said; on its own it proves
  *   nothing.

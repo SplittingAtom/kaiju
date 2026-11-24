@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Kobe chart values",
+  "title": "Kaiju chart values",
   "$defs": {
     "internalCidr": {
       "type": "string",

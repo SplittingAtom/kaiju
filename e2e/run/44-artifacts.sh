@@ -56,7 +56,7 @@
     contains "artifacts: version 2 holds the revised content" 'Sales chart v2' \
       "$(art_fetch "/v1/artifacts/$art_id/versions/2/content")"
 
-    # KOBE-152 (54f of KOBE-54): Kobe writes a file in the Owner's sandbox, then the
+    # KOBE-152 (54f of KOBE-54): Kaiju writes a file in the Owner's sandbox, then the
     # fake model calls share_file; file.shared carries the file, the thread's reader downloads it
     # (attachment, nosniff), another member of the team gets 404, and the file outlives its workspace
     # copy (deleted from the browser API, which is audited).

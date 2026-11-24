@@ -142,7 +142,7 @@ describe("FileShareBroker", { timeout: SETTLE_MS + 5_000 }, () => {
   it("returns a clear not_synced error when the push fails, and sends nothing", async () => {
     const t = setup({
       push: async () => {
-        throw new PushPathError("out/report.csv could not be pushed to the Kobe server");
+        throw new PushPathError("out/report.csv could not be pushed to the Kaiju server");
       },
     });
     t.broker.share(THREAD, RUN, request({ path: "out/report.csv" }), t.reply);
@@ -154,7 +154,7 @@ describe("FileShareBroker", { timeout: SETTLE_MS + 5_000 }, () => {
         ok: false,
         error: {
           code: "not_synced",
-          message: "out/report.csv could not be pushed to the Kobe server",
+          message: "out/report.csv could not be pushed to the Kaiju server",
         },
       },
     ]);
@@ -236,7 +236,7 @@ describe("FileShareBroker", { timeout: SETTLE_MS + 5_000 }, () => {
     const t = setup();
     t.broker.share(THREAD, RUN, request({ path: "out/report.csv" }), t.reply);
     await t.settle();
-    t.broker.failAll("connection to Kobe server lost");
+    t.broker.failAll("connection to Kaiju server lost");
     expect(t.replies).toHaveLength(1);
     expect(t.broker.onResult(okResult("fs_1"))).toBe(false);
     expect(t.replies).toHaveLength(1);

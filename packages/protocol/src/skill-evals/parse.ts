@@ -81,7 +81,7 @@ export interface ParseSkillEvalSuiteOptions {
 
 type Segment = string | number;
 
-const UNKNOWN_KEY = "unknown key. Kobe refuses what it does not know rather than skip a check.";
+const UNKNOWN_KEY = "unknown key. Kaiju refuses what it does not know rather than skip a check.";
 
 function pathText(path: readonly Segment[]): string {
   return path.reduce<string>(

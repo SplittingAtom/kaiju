@@ -1,5 +1,5 @@
 /**
- * A valid input for every Site console Kobe MCP tool (KOBE-622), for tests that only need the
+ * A valid input for every Site console Kaiju MCP tool (KOBE-622), for tests that only need the
  * route a tool calls (`kobe-mcp/session-contract.test.ts`). Ids are placeholders.
  */
 const ID = "00000000-0000-4000-8000-000000000001";

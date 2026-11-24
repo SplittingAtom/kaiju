@@ -100,7 +100,7 @@ export function ApprovalCard({
   const [confirmAll, setConfirmAll] = useState(false);
   const approvalId = requested.approval_id;
   const card = useRef<HTMLElement>(null);
-  // A Kobe admin write (KOBE-623): never remembered, never in "Approve all waiting".
+  // A Kaiju admin write (KOBE-623): never remembered, never in "Approve all waiting".
   const admin = requested.admin;
   const expired = Date.parse(requested.expires_at) <= now();
   const askable = resolved === undefined && !expired && !readOnly;

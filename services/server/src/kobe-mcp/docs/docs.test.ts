@@ -10,7 +10,7 @@ import {
 } from "./index.js";
 
 /**
- * KOBE-620 (KA-3, spec kobe-admin-mcp §4, KA4): the docs tools of the built-in Kobe connector
+ * KOBE-620 (KA-3, spec kobe-admin-mcp §4, KA4): the docs tools of the built-in Kaiju connector
  * answer the guide the web serves, byte for byte, for the deployment's origin and app name.
  */
 const CTX = { appName: "Acme Chat", origin: "https://chat.example.com" };

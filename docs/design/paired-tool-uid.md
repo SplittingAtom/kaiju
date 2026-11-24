@@ -79,12 +79,12 @@ How Pi 1.0.0 allows this without patching it (verified in the 1.0.0 package):
   documented Gondolin extension (`examples/extensions/gondolin`, `docs/containerization.md`) does
   exactly this for all seven tools to run them in a micro-VM, and `docs/containerization.md` says
   other extension tools still run on the host unless they delegate too.
-- Kobe already loads root-owned extensions with `-e` (kobe-models, kobe-tools, kobe-policy), so a
+- Kaiju already loads root-owned extensions with `-e` (kobe-models, kobe-tools, kobe-policy), so a
   fourth, `kobe-exec`, needs no change to Pi. `kobe-policy` stays the last `-e`; it checks
   `tool_call` by tool name before `execute`, so overriding the implementation does not bypass it
   (**[unverified]**: needs a real-Pi test that policy still sees the overridden tools).
 - Pi's own internal spawns (git for version info, clipboard, models.json `!command`, MCP stdio
-  servers if ever enabled) stay in Pi. Kobe's pin disables most (`PI_OFFLINE`, `--no-extensions`);
+  servers if ever enabled) stay in Pi. Kaiju's pin disables most (`PI_OFFLINE`, `--no-extensions`);
   `builtin:mcp` (KOBE-62) goes through mcp-proxy. Inventory of remaining `spawn` sites in Pi is a
   task in T2. The RPC `bash` command is driven only by the agent, which never sends it **[unverified]**.
 
@@ -163,9 +163,9 @@ KOBE-27), can read and write them. Paired uids keep exactly this:
 ## Pi 1.0.x constraints (summary)
 
 - Redirect without patching: yes, through `registerTool` + `operations`, as above (verified in the
-  1.0.0 package; end-to-end behaviour under Kobe's lockdown flags **[unverified]**).
+  1.0.0 package; end-to-end behaviour under Kaiju's lockdown flags **[unverified]**).
 - Tool names, schemas and output limits must match the built-ins so models and `kobe-policy` see no
-  difference; reuse Pi's `create*Tool` with Kobe operations rather than reimplementing.
+  difference; reuse Pi's `create*Tool` with Kaiju operations rather than reimplementing.
 - `grep`/`find` accept custom operations (Gondolin supplies them); the `rg --pre` risk in the KOBE-71
   note disappears because `rg` then runs as `T`.
 - Pi pin stays `1.0.0` (`images/sandbox/pi/package.json`); any 1.0.x bump re-runs the real-Pi suite.
@@ -185,21 +185,21 @@ KOBE-27), can read and write them. Paired uids keep exactly this:
 ## Recommendation
 
 **Do it, via option B, and do not weaken `no_new_privs` (reject A).** Gate the priority on T1: if a
-planted `models.json` can redirect the Kobe provider, the paired uid is the only structural fix for
+planted `models.json` can redirect the Kaiju provider, the paired uid is the only structural fix for
 the run-token and per-run-stop guarantees and should precede turning on `requireRunToken` by default;
 if not, schedule it as hardening after the gate tickets. Keep the tripwire either way.
 
 ### Follow-up tickets
 
-| #   | Title                                                          | Scope (one line)                                                                                                                                                                                            | Migration                    | Depends on            |
-| --- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------- |
-| T1  | Real-Pi test: can a tool redirect the Kobe provider via agent/ | Plant `models.json`/`settings.json` from a tool uid during a run and after `set_model`; assert the run token never reaches a tool-owned listener (red test first).                                          | no                           | KOBE-118              |
-| T2  | kobe-exec: Pi tools routed through an executor extension       | Extension overriding the seven tools with remote operations, executor program, framing, relay in the agent on fd 5, fail-closed; Pi spawn-site inventory.                                                   | no                           | T3 (or stub), KOBE-71 |
-| T3  | Paired uid pool and helper support                             | `kobe-runas` second range and fd 5, pair allocation/reclaim in `pi/identities.ts`, passwd/group entries, `supplementalGroups`, git safe.directory, image checks.                                            | no (pod spec reconcile only) | KOBE-71               |
-| T4  | Paired uid: end-to-end isolation tests and rollout             | Real-helper and e2e (gVisor) tests: tool cannot signal Pi, read `model.json`, write `agent/`; workspace sharing and KOBE-27 sync; cold-start budget; seccomp inside the executor as defence in depth; docs. | no                           | T2, T3                |
+| #   | Title                                                           | Scope (one line)                                                                                                                                                                                            | Migration                    | Depends on            |
+| --- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------- |
+| T1  | Real-Pi test: can a tool redirect the Kaiju provider via agent/ | Plant `models.json`/`settings.json` from a tool uid during a run and after `set_model`; assert the run token never reaches a tool-owned listener (red test first).                                          | no                           | KOBE-118              |
+| T2  | kobe-exec: Pi tools routed through an executor extension        | Extension overriding the seven tools with remote operations, executor program, framing, relay in the agent on fd 5, fail-closed; Pi spawn-site inventory.                                                   | no                           | T3 (or stub), KOBE-71 |
+| T3  | Paired uid pool and helper support                              | `kobe-runas` second range and fd 5, pair allocation/reclaim in `pi/identities.ts`, passwd/group entries, `supplementalGroups`, git safe.directory, image checks.                                            | no (pod spec reconcile only) | KOBE-71               |
+| T4  | Paired uid: end-to-end isolation tests and rollout              | Real-helper and e2e (gVisor) tests: tool cannot signal Pi, read `model.json`, write `agent/`; workspace sharing and KOBE-27 sync; cold-start budget; seccomp inside the executor as defence in depth; docs. | no                           | T2, T3                |
 
 If T1 shows the bridge is not exploitable, a cheaper interim step is to close it in the agent
-(re-assert the Kobe provider after each reload and treat any `models.json` entry as `runtime_tampered`
+(re-assert the Kaiju provider after each reload and treat any `models.json` entry as `runtime_tampered`
 mid-run, not only before prompts); that interim is not proposed as a replacement.
 
 ## Open questions for the user
@@ -220,7 +220,7 @@ What was built, where it differs from the proposal, and the inventory T2 asked f
 - **Helper: no change.** KOBE-166's helper already keeps fd 3, 4 and 5 for a Pi and stdio only for a
   partner uid; the executor's channel is its stdio, the agent relays between the two sockets.
 - **Tool semantics.** Pi's own tool definitions are reused (schema, prompt text, renderers,
-  truncation, details) with Kobe `operations` for bash, read, write, edit, ls. Pi's grep and find
+  truncation, details) with Kaiju `operations` for bash, read, write, edit, ls. Pi's grep and find
   spawn `rg`/`fd` from Pi even with custom operations, so those two re-implement `execute` from
   Pi's source with the executor running the program. `tools.pi-parity.test.ts` runs the same
   operations through Pi's tool and the routed one and compares results and error messages.
@@ -240,17 +240,17 @@ What was built, where it differs from the proposal, and the inventory T2 asked f
 
 Pinned by `kobe-exec/pi-spawn-sites.test.ts` (it fails when an upgrade adds, moves or drops one).
 
-| Site (module under `dist/`)                                                                                   | Starts                                                | In a Kobe launch                                                                                                                                                                                         |
+| Site (module under `dist/`)                                                                                   | Starts                                                | In a Kaiju launch                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `core/tools/{bash,grep,find}.js`, `utils/shell.js`                                                            | shell, `rg`, `fd`, `which`                            | Replaced by kobe-exec; none runs in Pi any more. RPC `bash` and user `!` commands go through `user_bash` to the executor (tested against real Pi).                                                       |
 | `core/resolve-config-value.js`                                                                                | `!command` config values                              | **Stays in Pi's uid.** Inputs are `models.json`/`settings.json` (agent-written placeholders, 0440) and `auth.json` (Pi's own store) in `agent/`, which no tool can write now. The tripwire still checks. |
-| `core/exec.js` (`pi.exec`)                                                                                    | any program                                           | Not reachable: only Kobe's root-owned extensions load (`--no-extensions`) and none calls it.                                                                                                             |
-| `extensions/mcp` (`builtin:mcp`) via pi-mcp `StdioTransport`                                                  | MCP stdio servers                                     | Servers come from `mcp.json` in the agent dir (not writable by tools); Kobe wires MCP over HTTP through mcp-proxy (KOBE-62), no stdio server is written.                                                 |
+| `core/exec.js` (`pi.exec`)                                                                                    | any program                                           | Not reachable: only Kaiju's root-owned extensions load (`--no-extensions`) and none calls it.                                                                                                            |
+| `extensions/mcp` (`builtin:mcp`) via pi-mcp `StdioTransport`                                                  | MCP stdio servers                                     | Servers come from `mcp.json` in the agent dir (not writable by tools); Kaiju wires MCP over HTTP through mcp-proxy (KOBE-62), no stdio server is written.                                                |
 | `core/package-manager.js`, `package-manager-cli.js`, `config.js`                                              | npm, git                                              | Package install/update and self-update: `settings.json` is guarded, `PI_OFFLINE=1`, `PI_SKIP_VERSION_CHECK=1`, no such RPC command.                                                                      |
 | `core/footer-data-provider.js`                                                                                | `git symbolic-ref`                                    | TUI footer; RPC mode builds none (the resource loader only reads `.git` files).                                                                                                                          |
 | `utils/clipboard-command.js`, `utils/open-browser.js`, `modes/interactive/*`, `rpc-client.js`                 | clipboard tools, `xdg-open`, `$EDITOR`, `gh`, `trash` | Interactive mode / OAuth / client library only; not constructed in `--mode rpc`.                                                                                                                         |
 | `utils/tools-manager.js`, `utils/paths.js`                                                                    | `rg --version`, downloads, `xattr`                    | Called by the replaced grep/find, interactive start-up and the package manager only.                                                                                                                     |
-| Bundled provider SDKs (AWS `credential_process`, Google external-account executables, Anthropic helper shell) | credential helpers                                    | Only when a Bedrock/Vertex/Anthropic-SDK model is selected; Kobe's model is the `kobe` provider, `set_model` is not allowed over the wire (KOBE-169) and `run.start` names a gateway model.              |
+| Bundled provider SDKs (AWS `credential_process`, Google external-account executables, Anthropic helper shell) | credential helpers                                    | Only when a Bedrock/Vertex/Anthropic-SDK model is selected; Kaiju's model is the `kobe` provider, `set_model` is not allowed over the wire (KOBE-169) and `run.start` names a gateway model.             |
 | Built-in `codemode` extension (model-written JS in a worker inside Pi)                                        | -                                                     | Not loaded: built-ins load only as explicit `builtin:<name>` paths and the agent passes none but (later) `builtin:mcp`. Enabling it would put model code in Pi's process; do not.                        |
 
 The residual in-Pi site is therefore the `!command` resolver, and it is only as steerable as the

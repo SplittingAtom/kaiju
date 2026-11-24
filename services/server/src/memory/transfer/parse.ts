@@ -75,10 +75,10 @@ function readJson(content: string): RawRow[] {
     throw unreadable("The file is not valid JSON.");
   }
   if (doc === null || typeof doc !== "object" || Array.isArray(doc))
-    throw unreadable(`The file is not a Kobe memory export (${SEMANTIC_MEMORY_EXPORT_FORMAT}).`);
+    throw unreadable(`The file is not a Kaiju memory export (${SEMANTIC_MEMORY_EXPORT_FORMAT}).`);
   const { format, items } = doc as { format?: unknown; items?: unknown };
   if (format !== SEMANTIC_MEMORY_EXPORT_FORMAT || !Array.isArray(items))
-    throw unreadable(`The file is not a Kobe memory export (${SEMANTIC_MEMORY_EXPORT_FORMAT}).`);
+    throw unreadable(`The file is not a Kaiju memory export (${SEMANTIC_MEMORY_EXPORT_FORMAT}).`);
   // Before any per-row work (review-385 I-1).
   if (items.length > SEMANTIC_MEMORY_IMPORT_MAX_ROWS) throw tooLarge();
   return items.map((i: unknown) =>

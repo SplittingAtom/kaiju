@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 
 /**
  * Composer dictation with the browser's speech recognition (Web Speech API). The browser does the
- * transcription (Chrome and Edge send the audio to their vendor's service), so Kobe's server never
+ * transcription (Chrome and Edge send the audio to their vendor's service), so Kaiju's server never
  * sees audio. Spoken text is appended to the prompt as typed when dictation started.
  */
 interface RecognitionResultList {

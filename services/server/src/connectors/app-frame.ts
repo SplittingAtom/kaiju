@@ -2,12 +2,12 @@ import { createHash } from "node:crypto";
 import { isSameSiteFrameRequest } from "../artifacts/serve.js";
 
 /**
- * How Kobe serves an MCP Apps template to a frame (spec MA4 as amended 2026-10-19, coordinator
- * decision on KOBE-434 Q1): like D25 artifacts, from a Kobe frame route, `text/html` only with
+ * How Kaiju serves an MCP Apps template to a frame (spec MA4 as amended 2026-10-19, coordinator
+ * decision on KOBE-434 Q1): like D25 artifacts, from a Kaiju frame route, `text/html` only with
  * this header CSP. `sandbox allow-scripts` (no `allow-same-origin`) gives the document an opaque
- * origin even when opened top-level, so it never runs as Kobe's origin; nothing but inline
+ * origin even when opened top-level, so it never runs as Kaiju's origin; nothing but inline
  * script and style may run, and it reaches no network. No meta CSP and no `srcdoc`: a `srcdoc`
- * document inherits Kobe's page CSP, which blocks the template's inline scripts.
+ * document inherits Kaiju's page CSP, which blocks the template's inline scripts.
  *
  * Used by the site-admin review preview (KOBE-434) and the member frame route (KOBE-437,
  * `GET /v1/team/apps/:appId/frame`), which serves only pinned, approved templates. The two
@@ -33,9 +33,9 @@ export const APP_FRAME_HEADERS: Readonly<Record<string, string>> = {
 
 /**
  * Whether a request may load an app frame (shared by the admin preview and the member route):
- * from Kobe's own page (`isSameSiteFrameRequest`), and, when the browser says what it loads,
+ * from Kaiju's own page (`isSameSiteFrameRequest`), and, when the browser says what it loads,
  * only as an iframe (KOBE-436 review LOW-1: a top-level copy would show upstream bytes under
- * Kobe's URL and could navigate itself anywhere).
+ * Kaiju's URL and could navigate itself anywhere).
  */
 export function mayLoadAppFrame(headers: Headers, publicUrl: string): boolean {
   const dest = headers.get("sec-fetch-dest");

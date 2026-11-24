@@ -347,7 +347,7 @@ export const runs = pgTable(
 );
 
 /**
- * The live Kobe Event Stream (D16, §6.2), written before fan-out. `seq` is assigned by a trigger
+ * The live Kaiju Event Stream (D16, §6.2), written before fan-out. `seq` is assigned by a trigger
  * that increments `runs.last_seq` under the run's row lock: gapless, monotonic per run, and
  * committed in seq order, so a reader resuming after seq n never skips an event. `type` is the
  * event type from `@kobe/protocol` (validated there; text here so new types need no migration).

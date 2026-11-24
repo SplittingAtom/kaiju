@@ -28,7 +28,7 @@ export function IdentityFields({
     <>
       <Field
         label="Site name"
-        hint="Shown in the header, in browser tabs, at sign-in and in Kobe's emails."
+        hint="Shown in the header, in browser tabs, at sign-in and in Kaiju's emails."
         error={error}
         required
       >

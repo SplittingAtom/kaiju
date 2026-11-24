@@ -97,7 +97,7 @@ JS
   fi
   e_thread=$(printf '%s\n' "$first" | sed -n 's/^thread=//p')
   contains "the tool's run completed (Pi ran curl through its bash tool)" '^terminal=run.completed$' "$first"
-  contains "the tool was blocked by the egress proxy (no team enablement yet)" '^text=.*(403|Kobe egress)' "$first"
+  contains "the tool was blocked by the egress proxy (no team enablement yet)" '^text=.*(403|Kaiju egress)' "$first"
   contains "the blocked request reached the run as egress.blocked with request access" \
     "^blocked=.*${UPSTREAM_HOST}:true" "$first"
   contains "the proxy attributed the blocked request to the thread (BASH_ENV proxy user = thread id)" '^[1-9][0-9]*$' \

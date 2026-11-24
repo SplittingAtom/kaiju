@@ -52,7 +52,7 @@ export function parseWebConfig(env: Readonly<Record<string, string | undefined>>
       publicUrl,
       serverUrl: null,
       problem:
-        "KOBE_SERVER_URL is not set: the site branding (name, logo, theme) falls back to the Kobe defaults",
+        "KOBE_SERVER_URL is not set: the site branding (name, logo, theme) falls back to the Kaiju defaults",
     };
   }
   const parsed = serverUrlSchema.safeParse(raw);

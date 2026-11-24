@@ -37,7 +37,7 @@ function RunStatus({
       {state.connection === "lost" && (
         <div className={styles.banner} role="alert">
           Live updates stopped. The run goes on without you; nothing is lost. This can happen when
-          too many Kobe tabs or devices follow runs at once (each person can follow 16 per server):
+          too many Kaiju tabs or devices follow runs at once (each person can follow 16 per server):
           close some, then reconnect.{" "}
           <button type="button" onClick={controller.reconnect}>
             Reconnect

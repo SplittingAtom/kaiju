@@ -36,7 +36,7 @@ export function bumpText(b: BumpSuggestion, destination: Destination): string {
 
 /**
  * Save version (KOBE-321, SK11, SK14): the author picks the destination (a team skill, which goes
- * to review, or their personal skill), Kobe suggests the number from what changed, and the
+ * to review, or their personal skill), Kaiju suggests the number from what changed, and the
  * changelog line is required. Pending edits are saved first, and the save names that revision.
  */
 interface FormProps {

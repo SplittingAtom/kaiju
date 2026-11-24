@@ -23,7 +23,7 @@ export function SiteModelsPage() {
     <>
       <PageHeader
         title="Models and providers"
-        description="Add the model providers your site may use, then publish their models in the catalog under short aliases. Sandboxes reach models only through Kobe's model gateway, with a session token of their own; provider keys never enter a sandbox."
+        description="Add the model providers your site may use, then publish their models in the catalog under short aliases. Sandboxes reach models only through Kaiju's model gateway, with a session token of their own; provider keys never enter a sandbox."
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
       <ResourceView state={state} label="models">
@@ -100,7 +100,7 @@ export function GatewayStatusView({
         {gateway.inSync
           ? "In sync: the gateway has every change."
           : failing
-            ? "Not in sync: the last attempt to update the gateway failed. Kobe keeps retrying."
+            ? "Not in sync: the last attempt to update the gateway failed. Kaiju keeps retrying."
             : "Catching up: the latest change reaches the gateway within seconds."}
       </p>
       {details}

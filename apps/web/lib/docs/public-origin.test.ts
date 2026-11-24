@@ -14,10 +14,10 @@ describe("publicOrigin", () => {
   it("uses the forwarded host and proto, then Host", () => {
     expect(
       publicOrigin(
-        req({ "x-forwarded-host": "Kobe.Example.com", "x-forwarded-proto": "https" }),
+        req({ "x-forwarded-host": "Kaiju.Example.com", "x-forwarded-proto": "https" }),
         null,
       ),
-    ).toBe("https://kobe.example.com");
+    ).toBe("https://kaiju.example.com");
     expect(publicOrigin(req({ host: "localhost:3000" }), null)).toBe("http://localhost:3000");
   });
   it("ignores a host that is not a plain host[:port]", () => {

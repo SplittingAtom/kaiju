@@ -41,7 +41,7 @@ import { KIND_LABELS } from "./item-fields";
 const FORMAT_LABELS: Readonly<Record<ImportFormat, string>> = {
   markdown: "Markdown bullets",
   csv: "CSV",
-  json: "Kobe export (JSON)",
+  json: "Kaiju export (JSON)",
 };
 
 const TONE: Readonly<Record<RowClass, BadgeTone>> = {
@@ -60,7 +60,7 @@ type Previewed = { readonly file: ImportFile; readonly preview: ImportPreview };
 
 /**
  * Import for curators (KOBE-385, SM21): paste or choose Markdown bullets (`- [kind] statement
- * #tag`), CSV (`statement,kind,tags,pinned`) or a Kobe export, at most 200 rows. **Preview**
+ * #tag`), CSV (`statement,kind,tags,pinned`) or a Kaiju export, at most 200 rows. **Preview**
  * classifies every row with the deterministic save checks (new, near-duplicate, conflicts with
  * Policy, blocked by Policy rules, secret, flagged by checks; no learning model, Q10) and stores
  * nothing; **Import** saves the clean (new) rows only, all or nothing. Rows left out can be added
@@ -148,7 +148,7 @@ export function ImportPanel({
     <Card title={`Import into ${label}`} level={2}>
       <p className="m-0 mb-3 text-sm text-console-muted">
         One memory per line as <code>- [fact] statement #tag</code>, a CSV with the columns{" "}
-        <code>statement,kind,tags,pinned</code> (tags separated by <code>;</code>), or a Kobe
+        <code>statement,kind,tags,pinned</code> (tags separated by <code>;</code>), or a Kaiju
         export. At most {IMPORT_UI_MAX_ROWS} rows. Preview checks every row; only new rows are
         imported.
       </p>

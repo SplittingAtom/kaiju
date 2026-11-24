@@ -18,7 +18,7 @@ export const CONNECTORS_EVENT_DOCS = {
   },
   "mcp.connector.pinned": {
     fields: "`connectorId`, `name`, `tools`, `hash`, `templates` (ui:// URI and SHA-256, KOBE-433)",
-    when: "Kobe probed a connector's `tools/list` and pinned every tool (SHA-256 over name, description, input schema; KOBE-101)",
+    when: "Kaiju probed a connector's `tools/list` and pinned every tool (SHA-256 over name, description, input schema; KOBE-101)",
   },
   "mcp.connector.probe_credential": {
     fields:

@@ -13,7 +13,7 @@ import { idSchema, uuidSchema } from "./common.js";
  *   `get_issue` must not authorise `delete_issue` with the same ids), `team_id` (defence in depth
  *   across teams) and `expires_at` (a token is short-lived).
  * - `canonicalJson` is the RFC 8785 rule in canonical-json.ts. One canonical JSON array makes the
- *   encoding injective; the domain tag stops a MAC being replayed as any other Kobe HMAC. Changing
+ *   encoding injective; the domain tag stops a MAC being replayed as any other Kaiju HMAC. Changing
  *   the tuple or the tag is a contract change.
  * - `input` is the tool input as decided, validated by `toolInputSchema`. **The executor forwards
  *   exactly `JSON.parse(canonicalJson(input))`** — never the original object or text — so executed

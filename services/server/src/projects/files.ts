@@ -47,7 +47,7 @@ export type ProjectFileFailure =
   | "project_full"
   | "archived"
   | "storage_failed"
-  /** KOBE-765: a Repo (G17) or a project being converted takes no file changes from Kobe. */
+  /** KOBE-765: a Repo (G17) or a project being converted takes no file changes from Kaiju. */
   | "repo"
   | "converting";
 

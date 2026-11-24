@@ -18,7 +18,7 @@ afterEach(cleanup);
 function renderConsole(nav?: boolean) {
   return render(
     <ConsoleLayout
-      brand={<a href="/">Kobe</a>}
+      brand={<a href="/">Kaiju</a>}
       headerStart={<button type="button">Team</button>}
       headerEnd={<ConsoleWho>Ada · Owner</ConsoleWho>}
       {...(nav
@@ -54,7 +54,7 @@ describe("ConsoleLayout", () => {
     expect(skip.getAttribute("href")).toBe("#console-main");
     expect(root.firstElementChild).toBe(skip);
     const header = screen.getByRole("banner");
-    expect(within(header).getByRole("link", { name: "Kobe" })).toBeTruthy();
+    expect(within(header).getByRole("link", { name: "Kaiju" })).toBeTruthy();
     expect(within(header).getByRole("button", { name: "Team" })).toBeTruthy();
     expect(within(header).getByText("Ada · Owner")).toBeTruthy();
     const main = screen.getByRole("main");
@@ -66,7 +66,7 @@ describe("ConsoleLayout", () => {
     const { container } = render(
       <ConsoleLayout
         panel
-        brand={<a href="/">Kobe</a>}
+        brand={<a href="/">Kaiju</a>}
         headerStart={<button type="button">Team</button>}
         headerEnd={<ConsoleWho>Ada · Owner</ConsoleWho>}
       >
@@ -79,7 +79,7 @@ describe("ConsoleLayout", () => {
     expect(root.hasAttribute("data-kobe-console")).toBe(true);
     expect(root.className).toContain("min-h-full");
     expect(root.className).not.toContain("min-h-screen");
-    expect(screen.queryByRole("link", { name: "Kobe" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Kaiju" })).toBeNull();
     // The panel's own header is the dialog's; no second banner inside it.
     expect(screen.queryByRole("banner")).toBeNull();
     expect(screen.getByRole("button", { name: "Team" })).toBeTruthy();

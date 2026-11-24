@@ -13,7 +13,7 @@ import {
 /**
  * KOBE-625 (spec docs/specs/sso-oidc-scim.md §4–§10, SSO-1): the single sign-on and SCIM tables as
  * an upgrade runs them (the owner role) over a populated database at the previous migration
- * (teams, users, a session, memberships including a Kobe-managed one). The new tables start empty;
+ * (teams, users, a session, memberships including a Kaiju-managed one). The new tables start empty;
  * existing rows survive; the checks hold; the app role gets exactly the registry's grants
  * (`scim_tokens`: no DELETE, UPDATE only on `last_used_at`/`revoked_at`); `team_members.added_via`
  * now also takes `idp:<uuid>`.

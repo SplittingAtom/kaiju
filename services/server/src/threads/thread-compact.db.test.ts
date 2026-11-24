@@ -118,12 +118,12 @@ describe("POST /v1/threads/{id}/compact (KOBE-213)", () => {
     // Busy while compacting: the thread runs, a second compaction is refused.
     expect(await f.threadStatus(w.team, threadId)).toBe("running");
     expectError(await compact(w, threadId), "thread_busy", 409);
-    const entryId = ws.compacted(frame, { summary: "The user asked; Kobe answered." });
+    const entryId = ws.compacted(frame, { summary: "The user asked; Kaiju answered." });
     const res = await pending;
     expect(res.status, JSON.stringify(res.json)).toBe(200);
     expect(res.json).toEqual({
       thread_id: threadId,
-      summary: "The user asked; Kobe answered.",
+      summary: "The user asked; Kaiju answered.",
       first_kept_entry_id: expect.any(String),
       tokens_before: 4242,
       estimated_tokens_after: 512,

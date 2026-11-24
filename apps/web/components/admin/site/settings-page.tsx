@@ -29,7 +29,7 @@ import { MemorySwitchesSection } from "./memory-switches";
 
 /**
  * Site settings (`/v1/site/settings`): required two-factor authentication (D7), how long audit
- * events keep the client IP address and user agent (KOBE-17), the Kobe MCP switch (KOBE-623) and
+ * events keep the client IP address and user agent (KOBE-17), the Kaiju MCP switch (KOBE-623) and
  * Workspace git connections (KOBE-757, KOBE-761).
  */
 export function SettingsPage() {
@@ -101,7 +101,7 @@ function SettingsForm({
           hint={
             locked
               ? "Only the Owner can turn this off."
-              : "Everyone must enrol an authenticator app before they can use Kobe. Single sign-on counts only when your organization's sign-in proves multi-factor authentication; otherwise it is refused."
+              : "Everyone must enrol an authenticator app before they can use Kaiju. Single sign-on counts only when your organization's sign-in proves multi-factor authentication; otherwise it is refused."
           }
           checked={requireTwoFactor}
           disabled={locked}
@@ -173,14 +173,14 @@ function AuditPrivacyForm({
 }
 
 const KOBE_MCP_HINTS: Readonly<Record<KobeMcpMode, string>> = {
-  off: "No Kobe connector: agents get neither the docs tools nor admin tools. Agents' git tools are not affected: they follow Git connections.",
-  docs: "Agents can read the Kobe user guide. No admin tools in any team.",
+  off: "No Kaiju connector: agents get neither the docs tools nor admin tools. Agents' git tools are not affected: they follow Git connections.",
+  docs: "Agents can read the Kaiju user guide. No admin tools in any team.",
   admin:
     "Each team admin may also turn on admin tools for their team. Agents then act as the person in the conversation, within that person's own permissions, and every change asks that person first.",
 };
 
 /**
- * The Kobe MCP switch (`kobeMcpMode`, KOBE-623, spec kobe-admin-mcp §6, KA5): off, docs only (the
+ * The Kaiju MCP switch (`kobeMcpMode`, KOBE-623, spec kobe-admin-mcp §6, KA5): off, docs only (the
  * default) or docs and admin tools. A team still chooses its own level in Team console ›
  * Connectors; this caps it for the whole site. Audited by the server.
  */
@@ -198,15 +198,15 @@ function KobeMcpForm({
     e.preventDefault();
     const done = await mutation.run(
       () => putSiteSettings({ kobeMcpMode: choice }),
-      (saved) => `Kobe connector: ${KOBE_MCP_MODE_LABELS[saved.kobeMcpMode ?? choice]}.`,
+      (saved) => `Kaiju connector: ${KOBE_MCP_MODE_LABELS[saved.kobeMcpMode ?? choice]}.`,
     );
     if (done) onSaved();
   }
 
   return (
-    <form onSubmit={onSubmit} aria-label="Kobe connector">
+    <form onSubmit={onSubmit} aria-label="Kaiju connector">
       <ChoiceGroup
-        legend="Kobe connector (docs and admin from a conversation)"
+        legend="Kaiju connector (docs and admin from a conversation)"
         stacked
         className="my-4"
       >
@@ -223,7 +223,7 @@ function KobeMcpForm({
         ))}
       </ChoiceGroup>
       <Button type="submit" variant="primary" disabled={mutation.pending || choice === mode}>
-        Save Kobe connector
+        Save Kaiju connector
       </Button>
       <MutationStatus error={mutation.error} notice={mutation.notice} />
     </form>
@@ -231,7 +231,7 @@ function KobeMcpForm({
 }
 
 /**
- * The per-person Kobe admin limits (KOBE-814): admin reads per minute and writes per hour. Each
+ * The per-person Kaiju admin limits (KOBE-814): admin reads per minute and writes per hour. Each
  * applies to every person on their next call; no restart. Audited by the server.
  */
 function KobeLimitsForm({
@@ -256,18 +256,18 @@ function KobeLimitsForm({
           kobeWritesPerHour: Number(writesText),
         }),
       (saved) =>
-        `Kobe admin limits now ${saved.kobeReadsPerMinute ?? readsText} reads per minute and ${saved.kobeWritesPerHour ?? writesText} writes per hour.`,
+        `Kaiju admin limits now ${saved.kobeReadsPerMinute ?? readsText} reads per minute and ${saved.kobeWritesPerHour ?? writesText} writes per hour.`,
     );
     if (done) onSaved();
   }
 
   const bounds = { min: KOBE_LIMITS.min, max: KOBE_LIMITS.max, step: 1 } as const;
   return (
-    <form onSubmit={onSubmit} aria-label="Kobe admin limits">
-      <ChoiceGroup legend="Kobe admin limits (per person)" stacked className="my-4">
+    <form onSubmit={onSubmit} aria-label="Kaiju admin limits">
+      <ChoiceGroup legend="Kaiju admin limits (per person)" stacked className="my-4">
         <Field
           label="Admin reads per person per minute"
-          hint={`How many Kobe admin reads one person's agents may make a minute. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.readsDefault}.`}
+          hint={`How many Kaiju admin reads one person's agents may make a minute. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.readsDefault}.`}
         >
           <TextInput
             type="number"
@@ -280,7 +280,7 @@ function KobeLimitsForm({
         </Field>
         <Field
           label="Admin writes per person per hour"
-          hint={`How many Kobe admin changes one person's agents may make an hour. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.writesDefault}.`}
+          hint={`How many Kaiju admin changes one person's agents may make an hour. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.writesDefault}.`}
         >
           <TextInput
             type="number"
@@ -299,7 +299,7 @@ function KobeLimitsForm({
           mutation.pending || (Number(readsText) === reads && Number(writesText) === writes)
         }
       >
-        Save Kobe limits
+        Save Kaiju limits
       </Button>
       <MutationStatus error={mutation.error} notice={mutation.notice} />
     </form>

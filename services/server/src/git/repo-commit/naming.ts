@@ -3,7 +3,7 @@ import { conversationLink, markdownName } from "../../git-tools/posted.js";
 import { gitNoReplySlug } from "../sandbox-git.js";
 
 /**
- * Names and text of a commit to a Repo (KOBE-767, G13, G18): the branch Kobe pushes a pull
+ * Names and text of a commit to a Repo (KOBE-767, G13, G18): the branch Kaiju pushes a pull
  * request's commits to, and the pull request's title and body. Built by the server only.
  */
 
@@ -38,7 +38,7 @@ export function pullRequestBranch(memberName: string, message: string, commitSha
 /** The pull request's title: the message's first line, at most 256 characters. */
 export function pullRequestTitle(message: string): string {
   const first = (message.split("\n", 1)[0] ?? "").trim();
-  return (first === "" ? "Changes from Kobe" : first).slice(0, TITLE_MAX);
+  return (first === "" ? "Changes from Kaiju" : first).slice(0, TITLE_MAX);
 }
 
 /**
@@ -54,8 +54,8 @@ export function pullRequestBody(input: {
   const rest = input.message.split("\n").slice(1).join("\n").trim();
   const via =
     input.threadId === undefined
-      ? `Committed by ${markdownName(input.memberName)} with Kobe's commit dialog`
-      : `Committed by ${markdownName(input.memberName)} via Kobe, from conversation ${conversationLink(input.publicUrl, input.threadId)}`;
+      ? `Committed by ${markdownName(input.memberName)} with Kaiju's commit dialog`
+      : `Committed by ${markdownName(input.memberName)} via Kaiju, from conversation ${conversationLink(input.publicUrl, input.threadId)}`;
   // The message is cut, never the last line.
   const kept = rest.slice(0, Math.max(0, BODY_MAX - via.length - 6));
   return kept === "" ? via : `${kept}\n\n---\n${via}`;

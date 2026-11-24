@@ -64,13 +64,13 @@ export async function handleGit(call: GitCall): Promise<GitHandled> {
   ) => {
     ctx.finish(attempt, "blocked", reason);
     recordPush(call, attempt, "blocked", pushReason);
-    reply(call.res, status, `Kobe egress: git request refused`, message);
+    reply(call.res, status, `Kaiju egress: git request refused`, message);
   };
   if (!git.rate.take(sandboxId)) {
     refuse(
       "rate_limited",
       429,
-      "Kobe egress: too many git requests from this sandbox; retry shortly.",
+      "Kaiju egress: too many git requests from this sandbox; retry shortly.",
     );
     return "handled";
   }
@@ -78,7 +78,7 @@ export async function handleGit(call: GitCall): Promise<GitHandled> {
     refuse(
       "credentials_in_request",
       403,
-      "Kobe egress: do not send credentials with git requests; Kobe adds the Workspace's credential itself.",
+      "Kaiju egress: do not send credentials with git requests; Kaiju adds the Workspace's credential itself.",
     );
     return "handled";
   }
@@ -91,7 +91,7 @@ export async function handleGit(call: GitCall): Promise<GitHandled> {
     refuse(
       "encoded_request",
       400,
-      "Kobe egress: push bodies must not be compressed (git does not compress them).",
+      "Kaiju egress: push bodies must not be compressed (git does not compress them).",
     );
     return "handled";
   }
@@ -100,7 +100,7 @@ export async function handleGit(call: GitCall): Promise<GitHandled> {
     refuse(
       "connection_limit",
       429,
-      "Kobe egress: this sandbox has too many git requests running; wait for one to finish.",
+      "Kaiju egress: this sandbox has too many git requests running; wait for one to finish.",
     );
     return "handled";
   }
@@ -126,7 +126,7 @@ async function decideAndRelay(
       refuse(
         "inactive_member",
         403,
-        "Kobe egress: this sandbox's user is not an active member of its team.",
+        "Kaiju egress: this sandbox's user is not an active member of its team.",
       );
       return "handled";
     }
@@ -136,7 +136,7 @@ async function decideAndRelay(
       refuse(
         "not_in_ceiling",
         403,
-        `Kobe egress: ${host} is not in this site's egress ceiling; a site admin must add it first (Request access).`,
+        `Kaiju egress: ${host} is not in this site's egress ceiling; a site admin must add it first (Request access).`,
       );
       return "handled";
     }
@@ -155,7 +155,7 @@ async function decideAndRelay(
       refuse(
         "rate_limited",
         429,
-        "Kobe egress: too many different repositories asked for from this sandbox; retry in a minute.",
+        "Kaiju egress: too many different repositories asked for from this sandbox; retry in a minute.",
       );
       return "handled";
     }
@@ -167,8 +167,8 @@ async function decideAndRelay(
     reply(
       call.res,
       503,
-      "Kobe egress: unavailable",
-      "Kobe egress: git access could not be checked; try again shortly.",
+      "Kaiju egress: unavailable",
+      "Kaiju egress: git access could not be checked; try again shortly.",
     );
     return "handled";
   }
@@ -178,20 +178,20 @@ async function decideAndRelay(
       decision.status === 429 ? "rate_limited" : "policy_unavailable",
       status,
       decision.status === 401
-        ? "Kobe egress: this sandbox may not use the Workspace's git connections."
-        : "Kobe egress: git access could not be checked; try again shortly.",
+        ? "Kaiju egress: this sandbox may not use the Workspace's git connections."
+        : "Kaiju egress: git access could not be checked; try again shortly.",
     );
     return "handled";
   }
   if (decision.decision === "deny") {
     if (decision.code === "no_connection") return "not_connected";
-    refuse("git_refused", 403, `Kobe egress: ${decision.message}`, decision.code);
+    refuse("git_refused", 403, `Kaiju egress: ${decision.message}`, decision.code);
     return "handled";
   }
   const allow = decision;
   // Review L1: the server's answer must be for this service (read for fetch, write for push).
   if (allow.access !== accessOf(request.service)) {
-    refuse("git_refused", 403, "Kobe egress: git access could not be confirmed for this request.");
+    refuse("git_refused", 403, "Kaiju egress: git access could not be confirmed for this request.");
     return "handled";
   }
   const canonical: UpgradeAttempt = {
@@ -216,7 +216,7 @@ async function relayAllowed(
   const refuse = (reason: ConnectionReason, status: number, message: string) => {
     ctx.finish(attempt, "blocked", reason);
     recordPush(call, attempt, "blocked", reason, allow.connection_id);
-    reply(call.res, status, `Kobe egress: git request refused`, message);
+    reply(call.res, status, `Kaiju egress: git request refused`, message);
   };
   const declared = call.req.headers["content-length"];
   const length = declared === undefined ? undefined : Number(declared);
@@ -228,7 +228,7 @@ async function relayAllowed(
     refuse(
       "request_too_large",
       413,
-      `Kobe egress: git requests to this connection are limited to ${requestLimit} bytes.`,
+      `Kaiju egress: git requests to this connection are limited to ${requestLimit} bytes.`,
     );
     return "handled";
   }
@@ -243,8 +243,8 @@ async function relayAllowed(
       reply(
         call.res,
         502,
-        `Kobe egress: cannot resolve ${host}`,
-        `Kobe egress: ${host} does not resolve.`,
+        `Kaiju egress: cannot resolve ${host}`,
+        `Kaiju egress: ${host} does not resolve.`,
       );
       return "handled";
     }
@@ -253,7 +253,7 @@ async function relayAllowed(
       refuse(
         "forbidden_address",
         403,
-        `Kobe egress: ${host} resolves to an internal or reserved address, which sandboxes may not reach unless a site admin marks it internal (Request access).`,
+        `Kaiju egress: ${host} resolves to an internal or reserved address, which sandboxes may not reach unless a site admin marks it internal (Request access).`,
       );
       return "handled";
     }

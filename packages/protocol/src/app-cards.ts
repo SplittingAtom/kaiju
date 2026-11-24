@@ -3,7 +3,7 @@ import { idSchema, timestampSchema, uuidSchema } from "./common.js";
 
 /**
  * MCP App cards (KOBE-440, spec MA11, T14): a member launches an app from the Workspace Rail and
- * Kobe inserts an **app card** into the thread, a thread entry with no model turn. In Postgres
+ * Kaiju inserts an **app card** into the thread, a thread entry with no model turn. In Postgres
  * (and in Pi's session, which the sandbox agent catches up at the next run start, behind
  * {@link CAPABILITY_APP_CARDS}) it is a Pi 1.0.x `custom_message` entry of custom type
  * {@link APP_CARD_CUSTOM_TYPE}. Pi turns a `custom_message` into a user message of its

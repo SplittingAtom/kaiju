@@ -34,7 +34,7 @@ export function sendError(
               code: status,
               message,
               status: GEMINI_STATUS[status] ?? "UNKNOWN",
-              // Gemini carries no string code: Kobe's goes in an ErrorInfo detail.
+              // Gemini carries no string code: Kaiju's goes in an ErrorInfo detail.
               details: [
                 {
                   "@type": "type.googleapis.com/google.rpc.ErrorInfo",

@@ -1,7 +1,7 @@
 // Copies a bucket's objects out of one S3 store and into another, for e2e/gate4-restore.sh
 // (KOBE-233) on k3d, where the old cluster's S3 test fixture goes with the cluster: the restore
 // then runs against "a bucket that holds a copy of its objects" (docs/backup-restore.md), as
-// bucket replication would give a real site. Runs in a pod with the Kobe server image (its
+// bucket replication would give a real site. Runs in a pod with the Kaiju server image (its
 // @aws-sdk/client-s3); reads KOBE_S3_ENDPOINT, _BUCKET, _REGION, _PREFIX, _ACCESS_KEY_ID,
 // _SECRET_ACCESS_KEY from the environment.
 //   export   prints one line per object: `obj <key base64> <size> <etag> <body base64>`

@@ -105,7 +105,7 @@ describe("Site audit log (KOBE-291)", () => {
       /10.*Bob.*bob@x\.io.*Site.*identity\.member\.removed.*userId:.*203\.0\.113\.7.*Firefox\/140/,
     );
     expect(must(rows[2]).textContent).toMatch(
-      /9.*Kobe \(system\).*Finance.*sandbox\.runtime_tampered.*sandboxId: sb-1.*runKind: message/,
+      /9.*Kaiju \(system\).*Finance.*sandbox\.runtime_tampered.*sandboxId: sb-1.*runKind: message/,
     );
     expect(within(must(rows[2])).getByText("Not shown")).toBeTruthy();
     expect(screen.getByText(/shown for 12 hours after each event/)).toBeTruthy();

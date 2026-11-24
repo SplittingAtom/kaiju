@@ -29,7 +29,7 @@ const ERRORS = {
 const exporting = new Set<string>();
 /** Exports streaming at once on one replica (each holds a DB connection per page and S3 reads). */
 export const MAX_EXPORTS_PER_REPLICA = 4;
-/** Browsers mark a navigation another site started; a download must come from Kobe's own page. */
+/** Browsers mark a navigation another site started; a download must come from Kaiju's own page. */
 const SAME_SITE_FETCH = new Set(["same-origin", "none"]);
 
 /**
@@ -155,7 +155,7 @@ const DOWNLOAD_HEADERS = {
 
 /** The Markdown export's last line when reading it failed part way (the error is logged). */
 const INCOMPLETE_MARKDOWN = new TextEncoder().encode(
-  "\n\n_Export incomplete: Kobe could not read the rest of this conversation._\n",
+  "\n\n_Export incomplete: Kaiju could not read the rest of this conversation._\n",
 );
 
 /** One export at a time per user, and at most `MAX_EXPORTS_PER_REPLICA` on this replica. */

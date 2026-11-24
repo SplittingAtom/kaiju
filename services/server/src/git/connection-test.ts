@@ -13,7 +13,7 @@ export type GitCapabilityName = keyof GitCapabilities;
 /** A warning shown with a passing test (G4): accepted, but the admin should know. */
 export type GitTestWarning =
   | {
-      /** The host names permissions beyond what Kobe needs (delete, organization admin, ...). */
+      /** The host names permissions beyond what Kaiju needs (delete, organization admin, ...). */
       readonly code: "excess_permissions";
       readonly permissions: readonly string[];
     }

@@ -12,11 +12,11 @@ import {
  * The two hashes of a skill package (KOBE-309, spec SK14), lowercase hex SHA-256 of canonical
  * zips (skill-package/canonical-zip.ts):
  *  - runtime hash: of the runtime payload (no `evals/`, `kobe.skill.yaml`, `provenance.json`).
- *    For a bundle with none of those it equals the `content_hash` Kobe has stored since KOBE-78.
+ *    For a bundle with none of those it equals the `content_hash` Kaiju has stored since KOBE-78.
  *  - package hash: of everything but `provenance.json`.
  * Every function checks the whole file set first (`checkPackagePaths`, with `options`) and throws
  * `SkillPackageError` for an invalid package: a `provenance.json` is accepted only with
- * `{ kobeProvenance: true }` (a package Kobe assembled), never in authored content.
+ * `{ kobeProvenance: true }` (a package Kaiju assembled), never in authored content.
  */
 export interface SkillPackageHashes {
   readonly runtimeHash: string;

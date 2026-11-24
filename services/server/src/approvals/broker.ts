@@ -272,7 +272,7 @@ export class ApprovalBrokerImpl implements ApprovalBroker {
         return { kind: "replay" as const };
       }
       const input = parseCanonicalInput({ inputCanonical: canonical });
-      // KOBE-623: a Kobe admin write's card says what changes, by name, and where.
+      // KOBE-623: a Kaiju admin write's card says what changes, by name, and where.
       const admin = isKobeAdminAsk(req.decision.reasons)
         ? await kobeAdminApprovalCard(tx, teamId, req.tool, input)
         : undefined;

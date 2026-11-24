@@ -27,7 +27,7 @@ const THREAD = "4a3b2c1d-6e5f-4a7b-9c8d-1e2f3a4b5c6d";
 const input = { path: "/workspace/notes.md", content: "new\n", summary: "Fix the typo" };
 
 describe("propose_file_edit contract (KOBE-462)", () => {
-  it("is a built-in read on Kobe's side: not prompted, still policy-checked by path", () => {
+  it("is a built-in read on Kaiju's side: not prompted, still policy-checked by path", () => {
     expect(BUILTIN_TOOLS.propose_file_edit).toEqual({
       source: "kobe",
       risk: "read",
