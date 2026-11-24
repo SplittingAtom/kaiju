@@ -10,4 +10,4 @@
 # dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
 
 == RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
-** /\bKobe\b/
+** /\bKobe\b(?!@)/

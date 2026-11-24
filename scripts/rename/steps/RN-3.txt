@@ -13,6 +13,9 @@
 ** /\bdata-kobe[\w-]*/
 ** /\bfetch_kobe\b/
 ** /\bcm-kobe-[\w-]+/
+** /\bkobe\.acme\.test\b/
+** /\bkobe\d+[\w-]*/
+** /[\w.+-]*kobe[\w.+-]*@[\w-]+(?:\.[\w-]+)+/i
 ** /\bkobe_live_value\b/
 
 == RN-3: Workspace packages and their imports; binaries (`kobe` operator CLI, `kobe-migrate`, `kobe-db-wait`)
@@ -40,8 +43,7 @@ packages/cli/package.json /"kobe": "/
 path ** /kobe/i
 ** /(?:\.{1,2}\/|\/)(?:[\w.-]+\/)*[\w.-]*kobe[\w.-]*/i
 ** /\b[\w-]*kobe[\w.*-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
-** /\b[\w-]*kobe[\w-]*\/[\w./*-]+/
-** /\bkobe_rules\b/
+** /\b[\w-]*kobe[\w-]*\/(?:[\w.*-]+\/)*[\w.*-]+\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|css)\b/
 ** /\bkobe-mcp(?=: )/
 
 == RN-3: Server modules named after the product (admin MCP, its guard, the seed)

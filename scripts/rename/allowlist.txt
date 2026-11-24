@@ -51,9 +51,12 @@ scripts/rename/** docs/specs/rename-kaiju.md /kobe/i
 ** /\bkobe-guide\b/
 ** /\bkobe-server\.internal\/internal\/v1\/mcp\/(?:kobe|git)\b/
 
-== permanent: Values held outside the database that existing installs read back: git-mirror commit trailers in members' repositories, the Bifrost customer names
+== permanent: Values held outside the database that existing installs read back: git-mirror commit trailers in members' repositories, the Bifrost customer and provider names
 ** /\bKobe-(?:Registry-Version|Runtime-Hash|Package-Hash)\b/
 ** /\bkobe-(?:site|install)(?![\w-])/
+** /\bkobe-\$\{providerId\}/
+** /\bkobe-vllm\b/
+services/server/src/models/** /\bkobe-(?:mac-mini|ollama[\w-]*)\b/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations
 ** /\bkobe:(?:hand-written|no-transaction)\b/
@@ -69,12 +72,13 @@ docs/specs/** /kobe/i
 == provisional: (Q2) Skill package manifest file name, inside packages that already exist outside the database (like kobe.dev/skill/v1)
 ** /\bkobe\.skill\.yaml\b/i
 
-== provisional: (Q3) Built-in connector: id `kobe`, its MCP tool names, routes and the site settings keys stored in the database
+== provisional: (Q3) Built-in connector: id `kobe`, its MCP tool names, API routes (`/v1/team/connectors/kobe`, a catalog skill's `/kobe/compare` and `/kobe/reset`, server and web client together) and the site settings keys stored in the database
 ** /\bmcp__kobe__\w*/
 ** /\bkobe_mcp(?:\.\w+|_mode)?\b/
 ** /\bkobe_(?:reads_per_minute|writes_per_hour|admin_write|admin_not_allowed|admin_rate_limited|omitted)\b/
 ** /\bkobe-builtin\b/
 ** /\/connectors\/kobe\b/
+** /(?<=[\w}"'`])\/kobe(?=["'`]|\/(?:compare|reset)\b)/
 
 == provisional: (Q4) Names persisted in workspace volumes and Pi session files: the `.kobe/` folder, custom entry types, the Pi provider id
 ** /(?<![\w-])\.kobe\b(?!-)/
@@ -105,7 +109,7 @@ images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
 ** /\bkobe\.splittingatom\.io\b(?:\/[\w-]*)?/
 
 == provisional: (Q10) Workspace git branch prefix `kobe/<member>/...` pushed to members' repositories
-** /\bkobe\/(?=[a-z]+\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<)/
+** /\bkobe\/(?=[a-z-]+\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)/
 
 == provisional: (Q11) Agent file (orbit) export section `kobe:`, read back from files outside the database
 services/server/src/agents/orbit/** /^\s*kobe:/
@@ -138,7 +142,14 @@ THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b
 ** /\bdata-kobe[\w-]*/
 ** /\bfetch_kobe\b/
 ** /\bcm-kobe-[\w-]+/
+** /\bkobe\.acme\.test\b/
+** /\bkobe\d+[\w-]*/
+** /[\w.+-]*kobe[\w.+-]*@[\w-]+(?:\.[\w-]+)+/i
 ** /\bkobe_live_value\b/
+
+== RN-2: Built-in skill packages and versioned model prompts: their bytes are pinned (skill package hashes, prompt fixtures), so renaming in them needs a new skill version or prompt version with new recordings. Hand work (not in the step list)
+services/server/builtin-skills/** services/server/src/memory/learn/prompt/v*/** /kobe/i
+path services/server/builtin-skills/** services/server/src/memory/learn/prompt/v*/** /kobe/i
 
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
@@ -192,7 +203,7 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 
 == RN-6: Kubernetes object names in the release namespace and the e2e clusters (Services, Secrets, Deployments ...)
 ** /\bkobe-sandbox-(?!token\b)[\w-]+/
-** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|vllm|embeddings|theme|default)(?![\w-])/
+** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|theme|default)(?![\w-])/
 ** /\bdeploy\/kobe\b/
 ** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/
 
@@ -238,15 +249,14 @@ packages/cli/package.json /"kobe": "/
 path ** /kobe/i
 ** /(?:\.{1,2}\/|\/)(?:[\w.-]+\/)*[\w.-]*kobe[\w.-]*/i
 ** /\b[\w-]*kobe[\w.*-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
-** /\b[\w-]*kobe[\w-]*\/[\w./*-]+/
-** /\bkobe_rules\b/
+** /\b[\w-]*kobe[\w-]*\/(?:[\w.*-]+\/)*[\w.*-]+\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|css)\b/
 ** /\bkobe-mcp(?=: )/
 
 == RN-3: Server modules named after the product (admin MCP, its guard, the seed)
 ** /\bkobe-(?:admin-mcp|admin-guard|seed)\b/
 
 == RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
-** /\bKobe\b/
+** /\bKobe\b(?!@)/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area

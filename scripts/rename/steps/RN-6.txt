@@ -38,6 +38,6 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 
 == RN-6: Kubernetes object names in the release namespace and the e2e clusters (Services, Secrets, Deployments ...)
 ** /\bkobe-sandbox-(?!token\b)[\w-]+/
-** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|vllm|embeddings|theme|default)(?![\w-])/
+** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|theme|default)(?![\w-])/
 ** /\bdeploy\/kobe\b/
 ** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/
