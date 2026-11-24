@@ -118,7 +118,7 @@ names and identifiers in docs keep `kobe` until their steps (RN-3..RN-6), on pur
   this machine), 196 skipped; charts 395; cli 98; model-gateway 260; egress-proxy 180; mcp-proxy
   170; license-check 86; guide 33; address-policy 16; skill-scanner 180 (untouched; timed out only
   under turbo's parallel load).
-- DB suites: see the PR description (`@kobe/server test:db`, `@kobe/db test:db`).
+- DB suites: `@kobe/server test:db` 3,739 passed; `@kobe/db test:db` 2,180 passed.
 - `check-site-wording.mjs`, `check-public-hygiene.sh` ok; gate2's generic secret patterns and JWT
   shape match none of the lines added under `services/sandbox-agent`, `images`, `packages/protocol`.
 - Not run here: the browser suite and e2e gate scripts (changed: listed in the coordinator report).
