@@ -27,6 +27,7 @@ import { useTeamAccess } from "../console-context";
 import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";
 import { McpUiBadge, ToolColumns } from "../connector-tools";
+import { ToolFilterField, useToolFilter } from "../tool-filter";
 import { useMutation, useResource, type Mutation } from "../use-resource";
 import { KaijuConnectorCard } from "./kaiju-connector-card";
 
@@ -127,6 +128,13 @@ function ConnectorCard({
 
   const toggleTick = (piName: string) =>
     setTicked((cur) => (cur.includes(piName) ? cur.filter((t) => t !== piName) : [...cur, piName]));
+  // Choose or clear many at once (KOBE-835: long tool lists), e.g. every tool the filter shows.
+  const tickMany = (piNames: readonly string[], on: boolean) =>
+    setTicked((cur) =>
+      on
+        ? [...cur, ...piNames.filter((p) => !cur.includes(p))]
+        : cur.filter((t) => !piNames.includes(t)),
+    );
 
   return (
     <article
@@ -176,6 +184,7 @@ function ConnectorCard({
           choosing={!blocked && exposure === "custom"}
           ticked={ticked}
           onToggle={toggleTick}
+          onTickMany={tickMany}
           disabled={mutation.pending}
         />
         <div className="mt-3 flex flex-wrap gap-2">
@@ -209,10 +218,12 @@ function ToolList({
   choosing,
   ticked,
   onToggle,
+  onTickMany,
   disabled,
 }: {
   readonly connectorName: string;
   readonly tools: readonly TeamConnectorTool[];
+  readonly onTickMany: (piNames: readonly string[], on: boolean) => void;
   /** The team's saved exposure; null while the connector is not enabled. */
   readonly saved: Exposure | null;
   /** The exposure as chosen in the form, maybe not saved yet. */
@@ -222,9 +233,30 @@ function ToolList({
   readonly onToggle: (piName: string) => void;
   readonly disabled: boolean;
 }) {
+  const filter = useToolFilter(tools, (t) => [t.name, t.title]);
   if (tools.length === 0) return <p className={`m-0 my-2 ${HINT}`}>No tools are approved yet.</p>;
+  // Only tools that can be chosen (not waiting for re-approval, not app-only).
+  const choosable = filter.shown
+    .filter((t) => t.status !== "drifted" && t.modelVisible !== false)
+    .map((t) => t.piName);
+  const scope = filter.shown.length === tools.length ? "all" : "all shown";
   return (
     <>
+      <ToolFilterField
+        filter={filter}
+        total={tools.length}
+        label={`Filter tools of ${connectorName}`}
+      />
+      {choosing && choosable.length > 1 ? (
+        <div className="my-2 flex flex-wrap gap-2">
+          <Button size="sm" disabled={disabled} onClick={() => onTickMany(choosable, true)}>
+            Choose {scope} ({choosable.length})
+          </Button>
+          <Button size="sm" disabled={disabled} onClick={() => onTickMany(choosable, false)}>
+            Clear {scope}
+          </Button>
+        </div>
+      ) : null}
       <p className={`m-0 my-2 ${HINT}`}>
         A tool that doesn&apos;t declare itself read-only is treated as able to change data, and one
         that doesn&apos;t say otherwise as able to reach outside systems. Read-only exposure offers
@@ -232,7 +264,8 @@ function ToolList({
       </p>
       <ToolColumns
         connectorName={connectorName}
-        tools={tools}
+        tools={filter.shown}
+        long={filter.offered}
         isReadOnly={(t) => t.readOnly}
         toolName={(t) => t.name}
         renderTool={(t) => (

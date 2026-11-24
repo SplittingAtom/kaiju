@@ -9,20 +9,24 @@ import {
   listConnectorTools,
   type Connector,
   type ConnectorTeamUse,
+  type ReprobeOutcome,
   type TemplateReview,
 } from "../../../lib/admin/api/site/connectors";
+import type { OauthReturn } from "../../../lib/connectors/oauth-return";
 import { EXPOSURE_LABELS } from "../../../lib/admin/api/team/connectors";
 import { Badge, Section, SidePanel } from "../../ui/console";
 import { DateTime, ResourceView } from "../parts";
 import { useResource } from "../use-resource";
 import { ConnectorDetailTools } from "./connector-detail-tools";
+import { OauthConnectSection } from "./connector-oauth-connect";
 import { RefreshSkipped } from "./connector-refresh-skipped";
 
 /**
  * A connector's details in the Site connector registry (KOBE-641), opened from its name: what it
- * is, which teams enabled it and how, its MCP Apps templates and every pinned tool. Read-only:
- * actions (Review, Re-probe, Enable/Disable, Site key) stay in the registry row. Never shows a
- * credential: for a site-wide key only whether it is set, not even its hint.
+ * is, which teams enabled it and how, its MCP Apps templates and every pinned tool. Read-only,
+ * except for an OAuth connector's "Your account" (KOBE-835: connect the admin's own account, then
+ * Re-probe); the other actions (Review, Enable/Disable, Site key) stay in the registry row. Never
+ * shows a credential: for a site-wide key only whether it is set, not even its hint.
  */
 const PLACEMENT_LABELS: Readonly<Record<string, string>> = {
   chat: "Chat card",
@@ -128,10 +132,15 @@ export function ConnectorDetailPanel({
   connector: c,
   onClose,
   returnFocus,
+  returned = null,
+  onReprobed = () => undefined,
 }: {
   readonly connector: Connector;
   readonly onClose: () => void;
   readonly returnFocus: () => HTMLElement | null;
+  /** The admin's OAuth sign-in result for this connector, when they just came back (KOBE-835). */
+  readonly returned?: OauthReturn | null;
+  readonly onReprobed?: (connector: Connector, outcome: ReprobeOutcome) => void;
 }) {
   const tools = useResource(() => listConnectorTools(c.id)).state;
   const templates = useResource(() => listConnectorTemplates(c.id)).state;
@@ -146,6 +155,14 @@ export function ConnectorDetailPanel({
       returnFocus={returnFocus}
     >
       <About connector={c} />
+      {c.authKind === "oauth" ? (
+        <OauthConnectSection
+          connector={c}
+          teams={teams.status === "ready" ? teams.data : null}
+          returned={returned}
+          onReprobed={onReprobed}
+        />
+      ) : null}
       <Section level={3} title={`Teams using ${c.name}`} className="mt-4">
         <ResourceView state={teams} label="teams">
           {(list) => <Teams teams={list} />}

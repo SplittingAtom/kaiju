@@ -45,8 +45,8 @@ afterEach(() => {
 
 const card = (name: string) => within(screen.getByRole("article", { name }));
 
-describe("My connector keys (KOBE-105)", () => {
-  it("lists only enabled, active api_key connectors", async () => {
+describe("My connectors: API keys (KOBE-105)", () => {
+  it("lists only enabled, active api_key and oauth connectors", async () => {
     stubApi({
       ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [
@@ -57,6 +57,7 @@ describe("My connector keys (KOBE-105)", () => {
             connector({ id: "c-2", name: "off", enabled: false }),
             connector({ id: "c-3", name: "oauthy", auth_kind: "oauth" }),
             connector({ id: "c-4", name: "gone", status: "disabled" }),
+            connector({ id: "c-5", name: "open", auth_kind: "none" }),
           ],
         },
       ],
@@ -65,8 +66,9 @@ describe("My connector keys (KOBE-105)", () => {
     renderTeam(<MyConnectorsPage />, MEMBER);
     await screen.findByRole("article", { name: "jira" });
     expect(screen.queryByRole("article", { name: "off" })).toBeNull();
-    expect(screen.queryByRole("article", { name: "oauthy" })).toBeNull();
+    expect(screen.getByRole("article", { name: "oauthy" })).toBeTruthy();
     expect(screen.queryByRole("article", { name: "gone" })).toBeNull();
+    expect(screen.queryByRole("article", { name: "open" })).toBeNull();
     expect(card("jira").getByText("No key added")).toBeTruthy();
   });
 
@@ -147,14 +149,16 @@ describe("My connector keys (KOBE-105)", () => {
     expect(document.body.textContent).not.toContain(KEY);
   });
 
-  it("says when no connector needs a key", async () => {
+  it("says when no connector needs an account or a key", async () => {
     stubApi({
       ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [200, { connectors: [] }],
       [`GET ${GRANTS}`]: [200, { grants: [] }],
     });
     renderTeam(<MyConnectorsPage />, MEMBER);
-    expect(await screen.findByText(/No connector in this team needs your own key/)).toBeTruthy();
+    expect(
+      await screen.findByText(/No connector in this workspace needs your own account or key/),
+    ).toBeTruthy();
   });
 });
 

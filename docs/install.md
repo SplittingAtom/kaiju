@@ -858,7 +858,7 @@ Limits per proxy replica: `mcpProxy.limits.callsPerSandbox` (8 concurrent), `req
 `upstreamTimeoutSeconds` (55).
 
 **Credentials.** An `api_key` connector uses either **each member's own key** (the default:
-members add it at My connector keys) or one **site-wide key** (KOBE-303): in Site console →
+members add it at My connectors) or one **site-wide key** (KOBE-303): in Site console →
 Connectors choose "Whose key: Site-wide key", then "Site key" to enter, replace or remove it.
 Every member of a team that enabled the connector then calls it with that key and needs no setup
 (their page says "Provided by your organization"); members cannot add their own, and switching a
@@ -899,7 +899,7 @@ are active and still a site admin. A member's key is never used. Which credentia
 audited (`mcp.connector.probe_credential`, never the value). When no key is usable the refresh is
 skipped: the registry page shows "Not checked for changes: needs a key", and site admins get an
 in-app notice and an email (`mcp.connector.refresh_skipped`). To fix it, add your own key for the
-connector at My connector keys (in a team that enabled it) and pin or approve its tools, or give
+connector at My connectors (in a team that enabled it) and pin or approve its tools, or give
 it a site-wide key.
 
 ## Single sign-on (Microsoft Entra ID or OIDC)

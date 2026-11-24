@@ -441,7 +441,9 @@ describe("refresh skips (KOBE-431)", () => {
     expect(
       await screen.findByText("Not checked for changes: needs a connected account"),
     ).toBeTruthy();
-    expect(screen.getByText(/Connect your own account for it at My connectors/)).toBeTruthy();
+    expect(
+      screen.getByText(/Open its details, press Connect your account, then Re-probe/),
+    ).toBeTruthy();
   });
 
   it("tells admins when the app templates were not checked (KOBE-433)", async () => {
@@ -566,6 +568,6 @@ describe("site-wide key review follow-ups", () => {
     });
     renderSite(<ConnectorsPage />);
     expect(await screen.findByText(/Set the site-wide key\./)).toBeTruthy();
-    expect(screen.queryByText(/My connector keys/)).toBeNull();
+    expect(screen.queryByText(/My connectors/)).toBeNull();
   });
 });

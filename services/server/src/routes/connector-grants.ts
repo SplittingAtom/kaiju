@@ -2,7 +2,7 @@ import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import {
-  listGrants,
+  listGrantsWithRefresh,
   putGrant,
   putGrantSchema,
   removeGrant,
@@ -34,7 +34,8 @@ const notAvailable = (c: Context) =>
  * credentials). The key goes in on PUT and never comes back: responses carry a masked hint and
  * timestamps only. Every request acts on the caller's own grants in the active team.
  *
- * GET    /                 → 200 `{grants: [{connector_id, hint, created_at, updated_at}]}`
+ * GET    /                 → 200 `{grants: [{connector_id, hint, kind, expires_at, refreshable,
+ *                          created_at, updated_at}]}`
  * PUT    /{connector_id}   `{api_key}` → 200 `{grant}` (201 when new); 404 not enabled;
  *                          422 `not_api_key`; 409 `provided_by_site` (the connector uses
  *                          its site-wide key, KOBE-303); 503 when the site has no envelope key
@@ -51,8 +52,18 @@ export function connectorGrantRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
   });
 
   app.get("/", async (c) => {
-    const grants = await listGrants(db, c.get("team").id, c.get("user").id);
-    return c.json({ grants: grants.map(summaryBody) });
+    const grants = await listGrantsWithRefresh(
+      db,
+      deps.envelope,
+      c.get("team").id,
+      c.get("user").id,
+      deps.mcp.oauthRefresh !== undefined,
+    );
+    // `refreshable` (KOBE-835): an OAuth grant Kaiju renews by itself, so a past `expires_at` is
+    // not an expired sign-in. Always false for API keys.
+    return c.json({
+      grants: grants.map((g) => ({ ...summaryBody(g), refreshable: g.refreshable })),
+    });
   });
 
   app.put("/:connectorId", async (c) => {

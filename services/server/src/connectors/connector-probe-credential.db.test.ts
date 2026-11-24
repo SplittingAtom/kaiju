@@ -368,7 +368,7 @@ describe("site admins are told about an auth_required skip (ac-3)", () => {
       credentialSource: "site",
     });
     expect(created.json.pin.message).toMatch(/site-wide key/);
-    expect(created.json.pin.message).not.toMatch(/My connector keys/);
+    expect(created.json.pin.message).not.toMatch(/My connectors/);
     const id = created.json.connector.id as string;
     await h.admin.query(`UPDATE connectors SET tools_hash = $1 WHERE id = $2`, [
       "0".repeat(64),
@@ -379,6 +379,6 @@ describe("site admins are told about an auth_required skip (ac-3)", () => {
     const mail = h.mailer.to("root@probe.test").filter((m) => m.subject.includes("notify-site"));
     expect(mail).toHaveLength(1);
     expect(must(mail[0]).text).toMatch(/Set \(or re-enter\) its site-wide key/);
-    expect(must(mail[0]).text).not.toMatch(/My connector keys/);
+    expect(must(mail[0]).text).not.toMatch(/My connectors/);
   });
 });

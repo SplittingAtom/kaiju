@@ -9,6 +9,7 @@ import {
 } from "../../../lib/admin/api/site/connectors";
 import { Button, Card, Section } from "../../ui/console";
 import { ResourceView } from "../parts";
+import { ToolFilterField, useToolFilter } from "../tool-filter";
 import { useResource, type Mutation } from "../use-resource";
 import { TemplateReviewSection } from "./connector-template-review";
 
@@ -86,52 +87,81 @@ export function ToolReviewPanel({
       actions={<Button onClick={onClose}>Close</Button>}
     >
       <ResourceView state={state} label="tools">
-        {(tools) => {
-          const pending = tools.filter((t) => t.status === "drifted");
-          return (
-            <>
-              <p className="m-0 mb-3 text-sm text-console-muted">
-                Changed and new tools are disabled for every team until you approve them. Tools the
-                server no longer lists are no longer offered.
-              </p>
-              {pending.length === 0 ? <p>No tools are waiting for approval.</p> : null}
-              <div className="flex flex-col gap-3">
-                {pending.map((t) => (
-                  <Card key={t.name} role="article" aria-label={t.name}>
-                    <h3 className="m-0 mb-2 text-base font-semibold">
-                      <code>{t.name}</code> {t.change === "added" ? "(new)" : "(changed)"}
-                    </h3>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {t.approved ? <Definition label="Approved" def={t.approved} /> : null}
-                      {t.live ? <Definition label="Now" def={t.live} /> : null}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      className="mt-3"
-                      disabled={mutation.pending}
-                      onClick={() => void approve([t])}
-                    >
-                      Approve<span className="sr-only"> {t.name}</span>
-                    </Button>
-                  </Card>
-                ))}
-              </div>
-              {pending.length > 1 ? (
-                <Button
-                  variant="primary"
-                  className="mt-3"
-                  disabled={mutation.pending}
-                  onClick={() => void approve(pending)}
-                >
-                  Approve all {pending.length}
-                </Button>
-              ) : null}
-            </>
-          );
-        }}
+        {(tools) => (
+          <PendingTools
+            connectorName={connector.name}
+            pending={tools.filter((t) => t.status === "drifted")}
+            mutation={mutation}
+            onApprove={(list) => void approve(list)}
+          />
+        )}
       </ResourceView>
       <TemplateReviewSection connector={connector} mutation={mutation} onChanged={onChanged} />
     </Section>
+  );
+}
+
+/**
+ * The tools waiting for approval, one card each; from {@link TOOL_FILTER_MIN} on a filter narrows
+ * the cards (KOBE-835: a server may list hundreds). "Approve all" approves every waiting tool,
+ * shown or not, as before.
+ */
+function PendingTools({
+  connectorName,
+  pending,
+  mutation,
+  onApprove,
+}: {
+  readonly connectorName: string;
+  readonly pending: readonly ToolReview[];
+  readonly mutation: Mutation;
+  readonly onApprove: (tools: readonly ToolReview[]) => void;
+}) {
+  const filter = useToolFilter(pending, (t) => [t.name, t.live?.title, t.live?.description]);
+  return (
+    <>
+      <p className="m-0 mb-3 text-sm text-console-muted">
+        Changed and new tools are disabled for every team until you approve them. Tools the server
+        no longer lists are no longer offered.
+      </p>
+      {pending.length === 0 ? <p>No tools are waiting for approval.</p> : null}
+      <ToolFilterField
+        filter={filter}
+        total={pending.length}
+        label={`Filter tools waiting for approval of ${connectorName}`}
+      />
+      <div className="flex flex-col gap-3">
+        {filter.shown.map((t) => (
+          <Card key={t.name} role="article" aria-label={t.name}>
+            <h3 className="m-0 mb-2 text-base font-semibold">
+              <code>{t.name}</code> {t.change === "added" ? "(new)" : "(changed)"}
+            </h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              {t.approved ? <Definition label="Approved" def={t.approved} /> : null}
+              {t.live ? <Definition label="Now" def={t.live} /> : null}
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              className="mt-3"
+              disabled={mutation.pending}
+              onClick={() => onApprove([t])}
+            >
+              Approve<span className="sr-only"> {t.name}</span>
+            </Button>
+          </Card>
+        ))}
+      </div>
+      {pending.length > 1 ? (
+        <Button
+          variant="primary"
+          className="mt-3"
+          disabled={mutation.pending}
+          onClick={() => onApprove(pending)}
+        >
+          Approve all {pending.length}
+        </Button>
+      ) : null}
+    </>
   );
 }

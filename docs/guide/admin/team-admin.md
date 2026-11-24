@@ -133,7 +133,10 @@ what the team gets: while the saved exposure is **Read-only tools**, the Write c
 marked **Not offered to the team**; choosing **Read-only tools** without saving marks them **Would
 not be offered under Read-only tools**. A tool only an app may call (not the agent) is marked
 **Not offered (app only)** under every exposure and cannot be ticked. Under **Chosen tools**, tick
-tools in either column. On a narrow window the columns stack. A tool changed upstream shows
+tools in either column, or use **Choose all** and **Clear all**. A connector with 12 tools or more
+gets a **Filter tools** field (by name or title, "10 of 140 tools"); the buttons then read
+**Choose all shown** and **Clear all shown** and act on the filtered tools only, and each column
+scrolls on its own. On a narrow window the columns stack. A tool changed upstream shows
 **Unavailable** until a site admin approves it again. A tool that opens an app card (an MCP Apps
 `ui://` template) carries an **MCP-UI** badge; hover or focus it to see the template and whether a
 site admin has approved it (an app that is not approved yet does not open).

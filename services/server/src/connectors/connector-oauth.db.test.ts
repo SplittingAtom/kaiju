@@ -231,6 +231,177 @@ describe("connecting an OAuth connector", () => {
   });
 });
 
+describe("where the callback sends the browser (KOBE-835)", () => {
+  let dave: TestBrowser;
+  let siteAdmin: TestBrowser;
+
+  beforeAll(async () => {
+    const daveId = await h.createUser("dave@oauth.test");
+    const adminId = await h.createUser("siteadmin@oauth.test", "admin");
+    for (const user of [daveId, adminId]) {
+      await h.admin.query(
+        `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
+        [teamT, user],
+      );
+    }
+    dave = await h.signIn("dave@oauth.test");
+    siteAdmin = await h.signIn("siteadmin@oauth.test");
+    for (const who of [dave, siteAdmin]) {
+      expect((await who.put("/v1/me/teams/active", { teamId: teamT })).status).toBe(200);
+      who.team = teamT;
+    }
+  });
+
+  async function connectVia(who: TestBrowser, body?: unknown): Promise<URL> {
+    const started = await who.post(`${BASE}/${oauthConnector}/oauth/start`, body);
+    expect(started.status, started.text).toBe(200);
+    const back = await fake.authorize(
+      (started.json as { authorization_url: string }).authorization_url,
+    );
+    const done = await who.get(callbackPath(back));
+    expect(done.status, done.text).toBe(303);
+    const location = new URL(must(done.headers.get("location") ?? undefined));
+    await who.delete(`${BASE}/${oauthConnector}`);
+    return location;
+  }
+
+  it("returns to My connectors on Kaiju's own origin, with the result and connector only", async () => {
+    const back = await connectVia(dave);
+    expect(back.origin).toBe("http://kaiju.test");
+    expect(back.pathname).toBe("/me/connectors");
+    expect([...back.searchParams.keys()].sort()).toEqual(["connector", "connector_oauth"]);
+    expect(back.searchParams.get("connector_oauth")).toBe("connected");
+    expect(back.searchParams.get("connector")).toBe(oauthConnector);
+  });
+
+  it("returns a site admin who connected from the Site console to the connector registry", async () => {
+    const back = await connectVia(siteAdmin, { return_to: "site" });
+    expect(back.origin).toBe("http://kaiju.test");
+    expect(back.pathname).toBe("/admin/site/connectors");
+    expect(back.searchParams.get("connector_oauth")).toBe("connected");
+  });
+
+  it("sends a member who asks for the Site console to My connectors instead", async () => {
+    const back = await connectVia(dave, { return_to: "site" });
+    expect(back.pathname).toBe("/me/connectors");
+  });
+
+  it("refuses any other return target, never a URL", async () => {
+    for (const body of [{ return_to: "https://evil.example/" }, { return_to: "/x" }, { x: 1 }]) {
+      const res = await dave.post(`${BASE}/${oauthConnector}/oauth/start`, body);
+      expect(res.status, res.text).toBe(400);
+    }
+  });
+
+  it("says why a sign-in failed with a fixed reason code", async () => {
+    const started = await dave.post(`${BASE}/${oauthConnector}/oauth/start`);
+    const back = await fake.authorize(
+      (started.json as { authorization_url: string }).authorization_url,
+    );
+    const res = await dave.get(
+      `${CALLBACK}?error=access_denied&error_description=%3Cb%3Ehi%3C%2Fb%3E&state=${back.searchParams.get("state")}`,
+    );
+    const location = new URL(must(res.headers.get("location") ?? undefined));
+    expect(location.pathname).toBe("/me/connectors");
+    expect(location.searchParams.get("reason")).toBe("access_denied");
+    expect(location.toString()).not.toContain("hi");
+  });
+
+  it("sends a member without a usable active workspace to My connectors with a fixed reason", async () => {
+    const started = await dave.post(`${BASE}/${oauthConnector}/oauth/start`);
+    const back = await fake.authorize(
+      (started.json as { authorization_url: string }).authorization_url,
+    );
+    const daveId = must(
+      (await h.admin.query<{ id: string }>(`SELECT id FROM users WHERE email = 'dave@oauth.test'`))
+        .rows[0]?.id,
+    );
+    await h.admin.query(`DELETE FROM team_members WHERE team_id = $1 AND user_id = $2`, [
+      teamT,
+      daveId,
+    ]);
+    try {
+      const res = await dave.get(callbackPath(back));
+      expect(res.status).toBe(303);
+      const to = new URL(must(res.headers.get("location") ?? undefined));
+      expect(to.pathname).toBe("/me/connectors");
+      expect(Object.fromEntries(to.searchParams)).toEqual({
+        connector_oauth: "failed",
+        reason: "no_workspace",
+      });
+    } finally {
+      await h.admin.query(
+        `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
+        [teamT, daveId],
+      );
+    }
+  });
+
+  it("says whether Kaiju renews an OAuth sign-in by itself (refreshable)", async () => {
+    const connectOnce = async () => {
+      const started = await dave.post(`${BASE}/${oauthConnector}/oauth/start`);
+      const back = await fake.authorize(
+        (started.json as { authorization_url: string }).authorization_url,
+      );
+      await dave.get(callbackPath(back));
+    };
+    await connectOnce();
+    // The access token ran out: still renewable, so not an expired sign-in.
+    await h.admin.query(
+      `UPDATE connector_grants SET expires_at = now() - interval '1 minute' WHERE connector_id = $1`,
+      [oauthConnector],
+    );
+    expect((await dave.get(BASE)).json).toMatchObject({
+      grants: [{ connector_id: oauthConnector, kind: "oauth", refreshable: true }],
+    });
+    await dave.delete(`${BASE}/${oauthConnector}`);
+    fake.options = { omitRefreshToken: true };
+    try {
+      await connectOnce();
+    } finally {
+      fake.options = {};
+    }
+    const listed = await dave.get(BASE);
+    expect(listed.json).toMatchObject({
+      grants: [{ connector_id: oauthConnector, kind: "oauth", refreshable: false }],
+    });
+    expect(listed.text).not.toContain("rt-secret");
+    await dave.delete(`${BASE}/${oauthConnector}`);
+  });
+
+  it("disconnects: removes the grant and audits it", async () => {
+    const started = await dave.post(`${BASE}/${oauthConnector}/oauth/start`);
+    const back = await fake.authorize(
+      (started.json as { authorization_url: string }).authorization_url,
+    );
+    await dave.get(callbackPath(back));
+    expect((await dave.get(BASE)).json).toMatchObject({
+      grants: [{ connector_id: oauthConnector, kind: "oauth" }],
+    });
+    const before = Number(
+      (
+        await h.admin.query<{ n: string }>(
+          `SELECT count(*) AS n FROM audit_log WHERE action = 'mcp.grant.removed' AND team_id = $1`,
+          [teamT],
+        )
+      ).rows[0]?.n,
+    );
+    expect((await dave.delete(`${BASE}/${oauthConnector}`)).status).toBe(204);
+    expect((await dave.get(BASE)).json).toEqual({ grants: [] });
+    const after = Number(
+      (
+        await h.admin.query<{ n: string }>(
+          `SELECT count(*) AS n FROM audit_log WHERE action = 'mcp.grant.removed' AND team_id = $1`,
+          [teamT],
+        )
+      ).rows[0]?.n,
+    );
+    expect(after - before).toBe(1);
+    // Nothing left to disconnect.
+    expect((await dave.delete(`${BASE}/${oauthConnector}`)).status).toBe(404);
+  });
+});
+
 describe("a connector pointed at another server", () => {
   const evil = "https://evil.example/mcp";
   it("never sends a token issued for the old server (refused and audited)", async () => {
@@ -414,31 +585,42 @@ describe("client metadata", () => {
 });
 
 describe("refusals", () => {
+  /** A refusal before the state opens: a 303 to My connectors with a fixed reason, nothing else. */
+  const refusedTo = (res: { status: number; headers: Headers }, reason: string) => {
+    expect(res.status).toBe(303);
+    const to = new URL(must(res.headers.get("location") ?? undefined));
+    expect(to.origin + to.pathname).toBe("http://kaiju.test/me/connectors");
+    expect(Object.fromEntries(to.searchParams)).toEqual({ connector_oauth: "failed", reason });
+  };
+
   it("refuses a state tampered with", async () => {
     const { back } = await authorizeFor(alice);
     back.searchParams.set("state", `${back.searchParams.get("state")}x`);
-    const res = await alice.get(callbackPath(back));
-    expect(res.status).toBe(400);
-    expect(res.json).toMatchObject({ code: "invalid_state" });
+    refusedTo(await alice.get(callbackPath(back)), "invalid_state");
   });
 
   it("refuses a state minted for another user", async () => {
     const { back } = await authorizeFor(alice);
-    const res = await bob.get(callbackPath(back));
-    expect(res.status).toBe(400);
-    expect(res.json).toMatchObject({ code: "invalid_state" });
+    refusedTo(await bob.get(callbackPath(back)), "invalid_state");
     expect((await bob.get(BASE)).json).toEqual({ grants: [] });
   });
 
   it("refuses a state used in another team", async () => {
     const { back } = await authorizeFor(alice);
-    const res = await carol.get(callbackPath(back));
-    expect(res.status).toBe(400);
+    refusedTo(await carol.get(callbackPath(back)), "invalid_state");
   });
 
   it("refuses a callback without a state or with an unknown one", async () => {
-    expect((await alice.get(`${CALLBACK}?code=abc`)).status).toBe(400);
-    expect((await alice.get(`${CALLBACK}?code=abc&state=nonsense`)).status).toBe(400);
+    refusedTo(await alice.get(`${CALLBACK}?code=abc`), "invalid_state");
+    refusedTo(await alice.get(`${CALLBACK}?code=abc&state=nonsense`), "invalid_state");
+  });
+
+  it("sends a signed-out browser to the sign-in page, keeping nothing of the request", async () => {
+    const { back } = await authorizeFor(alice);
+    const res = await h.app.request(`http://kaiju.test${callbackPath(back)}`);
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("http://kaiju.test/sign-in");
+    expect((await alice.get(BASE)).json).toEqual({ grants: [] });
   });
 
   it("refuses a mismatching or missing iss (RFC 9207)", async () => {

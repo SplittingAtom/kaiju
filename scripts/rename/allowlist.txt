@@ -290,6 +290,7 @@ charts/**/Chart.yaml /^name: kobe$/
 ** /\/opt\/kobe\b/
 ** /\/run\/kobe-[\w-]*/
 ** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
+services/sandbox-agent/scripts/test-identities.sh /(?<=-D)KOBE_(?:AGENT_UID|WORKSPACE_GID)\b/
 ** /\/tmp\/kobe-pi\b[\w-]*|(?<=PI_PRIVATE_PREFIX = )"kobe-pi-"/
 scripts/check-images.sh /(?:ghcr\.io\/splittingatom\/|:-)kobe-/
 services/sandbox-agent/src/egress/egress-wiring.test.ts /(?<=")kobe(?=: the sandbox's egress token)/

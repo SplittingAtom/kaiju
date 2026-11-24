@@ -396,3 +396,40 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
     expect(screen.queryByRole("article", { name: "Kaiju" })).toBeNull();
   });
 });
+
+describe("a connector with many tools (KOBE-835)", () => {
+  const many = Array.from({ length: 40 }, (_, i) =>
+    tool(i < 10 ? `stocks_quote_${i}` : `options_chain_${i}`, { read_only: i % 2 === 0 }),
+  );
+
+  it("filters the list, chooses all shown and clears them, sending only the chosen tools", async () => {
+    const calls = stubApi({
+      [`GET ${BASE}`]: [200, { connectors: [connector({ tools: many })] }],
+      [`PUT ${BASE}/c-1`]: [200, { connector: connector({ enabled: true, exposure: "custom" }) }],
+    });
+    renderTeam(<TeamConnectorsPage />);
+    await screen.findByRole("article", { name: "jira" });
+    const jira = card("jira");
+    expect(jira.getByText("40 tools")).toBeTruthy();
+    await userEvent.type(jira.getByRole("searchbox", { name: "Filter tools of jira" }), "STOCKS");
+    expect(jira.getByText("10 of 40 tools")).toBeTruthy();
+    expect(jira.queryByRole("listitem", { name: "options_chain_12 tool" })).toBeNull();
+    await userEvent.click(jira.getByLabelText(/Chosen tools/));
+    await userEvent.click(jira.getByRole("button", { name: "Choose all shown (10)" }));
+    await userEvent.click(jira.getByRole("button", { name: "Clear all shown" }));
+    await userEvent.click(jira.getByRole("button", { name: "Choose all shown (10)" }));
+    await userEvent.click(jira.getByRole("button", { name: /Enable/ }));
+    const put = calls.find((c) => c.method === "PUT");
+    const sent = JSON.parse(String(put?.body)) as { enabled_tools: string[] };
+    expect(sent.enabled_tools.sort()).toEqual(
+      Array.from({ length: 10 }, (_, i) => `jira__stocks_quote_${i}`).sort(),
+    );
+  });
+
+  it("offers no filter for a short list", async () => {
+    stubApi({ [`GET ${BASE}`]: [200, { connectors: [connector()] }] });
+    renderTeam(<TeamConnectorsPage />);
+    await screen.findByRole("article", { name: "jira" });
+    expect(card("jira").queryByRole("searchbox")).toBeNull();
+  });
+});

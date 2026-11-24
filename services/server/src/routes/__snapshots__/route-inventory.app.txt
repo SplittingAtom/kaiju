@@ -13,6 +13,7 @@ GET /v1/site/branding (anonymous)
 GET /v1/site/branding/assets/:kind (anonymous)
 GET /v1/site/branding/assets/:kind (anonymous)
 GET /v1/oauth/client-metadata.json (anonymous)
+ALL /v1/connector-grants/oauth/callback (anonymous)
 ALL /v1/scim/v2/* (anonymous)
 ALL /v1/scim/v2/* (anonymous)
 ALL /v1/scim/v2/* bodyLimit
