@@ -16,9 +16,9 @@
 
 == RN-5: Cookies and browser storage keys (members are signed out once)
 ** /__Host-kobe[\w-]*/
-** /\bkobe\.(?:last\w*|scroll|agents\.tab|fileEditor\.\w+|chat\.\w+|workbench\.\w+|web\.\w+|retentionNotice\.\w+|lastTeamId)\b/
+** /(?<=["'`])kobe\.(?:last\w*|scroll|agents\.tab|fileEditor\.\w+|chat\.\w+|workbench\.\w+|web\.\w+|retentionNotice\.\w+|lastTeamId)\b/
 ** /\bkobe-(?:invitation|threads)\b/
 
 == RN-5: Telemetry attribute and span names, logger names, OTLP audit attributes
-** /\bkobe\.(?:tool|run|turn|upstream|memory|workspace|sandbox|session|agent|audit|model|research|embeddings|ingress|egress|sso|setup_ms|retention|published|sync|pod|node|container|stop_reason|outcome|wake|thread_id|run_id|run_token|sandbox_id|web_vital|team_level_changed|frontmatter)(?![\w-])(?:[.:][\w.-]*)?/
-** /\bkobe\.(?:sandbox-relay|server|skill-eval)\b/
+** /(?<=["'`])kobe\.(?:tool|run|turn|upstream|memory|workspace|sandbox|session|agent|audit|model|research|embeddings|ingress|egress|sso|setup_ms|retention|published|sync|pod|node|container|stop_reason|outcome|wake|thread_id|run_id|run_token|sandbox_id|web_vital|team_level_changed|frontmatter)(?![\w-])(?:[.:][\w.-]*)?/
+** /(?<=["'`])kobe\.(?:sandbox-relay|server|skill-eval)\b/
