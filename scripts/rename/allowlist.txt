@@ -253,7 +253,7 @@ docs/agent-prompt.md docs/parallel-work.md /\bkobe-(?=<N>-<slug>)|leading `kobe`
 
 == RN-8: CI: runner scale set, its GitHub App, the runner variable and the shared setup action
 ** /\bkobe-(?:k3s|ci-runners|arc-runners)\b/
-** /\bKOBE_RUNNER\b/
+** /\bKOBE_(?:BUILD_)?RUNNER\b/
 ** /\bsetup-kobe\b/
 path .github/actions/setup-kobe/** /kobe/
 
@@ -290,7 +290,9 @@ charts/**/Chart.yaml /^name: kobe$/
 ** /\/opt\/kobe\b/
 ** /\/run\/kobe-[\w-]*/
 ** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
+# The runas helper's compile-time macros and their -D flags: not environment variables (RN-4 leaves them).
 services/sandbox-agent/scripts/test-identities.sh /(?<=-D)KOBE_(?:AGENT_UID|WORKSPACE_GID)\b/
+images/sandbox/runas/kobe-runas.c /\bKOBE_[A-Z0-9_]+\b/
 ** /\/tmp\/kobe-pi\b[\w-]*|(?<=PI_PRIVATE_PREFIX = )"kobe-pi-"/
 scripts/check-images.sh /(?:ghcr\.io\/splittingatom\/|:-)kobe-/
 services/sandbox-agent/src/egress/egress-wiring.test.ts /(?<=")kobe(?=: the sandbox's egress token)/
