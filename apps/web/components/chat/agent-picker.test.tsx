@@ -94,7 +94,9 @@ describe("agent picker", () => {
     ]);
     // Screen readers hear the origin with the name, and the slug where the origin is shared.
     expect(within(await group()).getByRole("radio", { name: "Kaiju, Built-in" })).toBeTruthy();
-    expect(within(await group()).getByRole("radio", { name: "Kaiju, Team, kobe-ops" })).toBeTruthy();
+    expect(
+      within(await group()).getByRole("radio", { name: "Kaiju, Team, kobe-ops" }),
+    ).toBeTruthy();
     const user = userEvent.setup();
     await user.click(within(await group()).getByRole("radio", { name: "Kaiju, Team, kobe-team1" }));
     expect(

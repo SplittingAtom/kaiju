@@ -54,9 +54,9 @@ function IngressRateLimitNotice({ state }: { readonly state: InfoCheck["state"] 
     >
       {state === "none" ? (
         <p>
-          Kaiju limits sign-in, uploads and other costly requests itself, but nothing limits how many
-          requests one address sends through the ingress. Your operator can turn on the chart&apos;s
-          limit (install guide, &ldquo;Rate limit at the ingress&rdquo;).
+          Kaiju limits sign-in, uploads and other costly requests itself, but nothing limits how
+          many requests one address sends through the ingress. Your operator can turn on the
+          chart&apos;s limit (install guide, &ldquo;Rate limit at the ingress&rdquo;).
         </p>
       ) : (
         <p>

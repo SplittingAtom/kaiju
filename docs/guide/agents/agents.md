@@ -69,11 +69,11 @@ creates a new version, after a safety check. Each published version is kept in *
 
 The builder's **Memory** section sets how much memory the agent uses, per published version:
 
-| Setting        | What the agent gets                                                                      |
-| -------------- | ---------------------------------------------------------------------------------------- |
+| Setting        | What the agent gets                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------- |
 | **All memory** | Memory notes (My memory, project memory) and any other memories Kaiju keeps. The default. |
-| **Notes only** | Memory notes and Site Policy.                                                            |
-| **Off**        | Site Policy only: no memory index, no **remember** or **recall** tools.                  |
+| **Notes only** | Memory notes and Site Policy.                                                             |
+| **Off**        | Site Policy only: no memory index, no **remember** or **recall** tools.                   |
 
 **Site Policy** (the site's rules) reaches every run whatever this setting says; only the site's
 **Allow memory** switch stops it.

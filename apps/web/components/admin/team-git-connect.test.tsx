@@ -342,7 +342,9 @@ describe("Connect: checks and errors (KOBE-761)", () => {
     const big = `-----BEGIN RSA PRIVATE KEY-----\n${"A".repeat(9000)}\n-----END RSA PRIVATE KEY-----`;
     await userEvent.click(d.getByRole("textbox", { name: "Private key" }));
     await userEvent.paste(big);
-    expect(await d.findByText(/too long for a private key: Kaiju accepts up to 8 KiB/)).toBeTruthy();
+    expect(
+      await d.findByText(/too long for a private key: Kaiju accepts up to 8 KiB/),
+    ).toBeTruthy();
     await userEvent.click(d.getByRole("button", { name: "Next" }));
     expect(d.getByRole("heading", { name: /Step 2 of 3/ })).toBeTruthy();
     await userEvent.clear(d.getByRole("textbox", { name: "Private key" }));

@@ -170,7 +170,8 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
               // The docs tools (KOBE-620): no team or user data, no permission, no admin limit.
               if (name !== undefined && isKobeDocsToolName(name)) return undefined;
               const def = name === undefined ? undefined : kobeToolByName(name);
-              if (def === undefined) return { code: "unknown_tool", message: "Unknown Kaiju tool." };
+              if (def === undefined)
+                return { code: "unknown_tool", message: "Unknown Kaiju tool." };
               // Checked before anyone is asked: an approval is only ever for a well-formed change.
               if (!def.input.safeParse(request.arguments ?? {}).success) {
                 return { code: "invalid_input", message: `The input of ${def.name} is not valid.` };

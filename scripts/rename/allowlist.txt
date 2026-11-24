@@ -15,6 +15,9 @@ CLAUDE.md /(?<=project `)kobe(?=`)/
 == permanent: Past ledgers, gate documents, release notes and reviews keep the name they were written under (spec §3 stays 6)
 docs/ledger/** docs/gates/** docs/releases/** docs/RUN-LEDGER.md docs/review-*.md docs/perf-baseline-*.md /kobe/i
 
+== permanent: The guide's rename note names the old name on purpose, like the line at the top of docs/releases/ (spec §8.1)
+docs/guide/whats-new.md /^## Kobe is now Kaiju$/
+
 == permanent: Applied migrations (contents and file names, which the journal names) and their snapshots are never edited; database objects and the Drizzle properties that map to their columns keep their names (spec §3 stays 2, §5 no migration)
 packages/db/drizzle/** /kobe/i
 packages/db/src/schema/** /\bkobe[A-Z]\w*(?=\s*:)/
@@ -135,15 +138,12 @@ services/server/src/gallery/** services/server/src/apps/app-launch-agent.db.test
 docs/install.md /\(key `kobe`\)/
 
 # ---------------------------------------------------------------------------------------------
-# To rename. Specific steps sit above the generic ones (RN-3 identifiers, RN-2 prose), so the
+# To rename. Specific steps sit above the generic ones (the RN-3 tails last), so the
 # order of work reads bottom-up.
 # ---------------------------------------------------------------------------------------------
 
 == RN-3: Generated: pnpm-lock.yaml package names; `pnpm install` rewrites them after the step (not in the step's pattern list)
 pnpm-lock.yaml /@kobe\/[\w.-]*/
-
-== RN-2: Generated: the product name in THIRD_PARTY_LICENSES.md and NOTICE; `pnpm licenses:update` rewrites it from tools/license-check (not in the step's pattern list)
-THIRD_PARTY_LICENSES.md NOTICE /\bKobe\b/
 
 == RN-6: Generated: image paths and binaries in the licence inventories; `pnpm licenses:update` and the images' third-party-licenses.json refresh rewrite them (not in the step's pattern list)
 THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b|\bkobe-(?:sandbox-agent|runas|reclaim)\b/
@@ -274,10 +274,6 @@ path ** /kobe/i
 
 == RN-3: Server modules named after the product (admin MCP, its guard, the seed)
 ** /\bkobe-(?:admin-mcp|admin-guard|seed)\b/
-
-== RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
-** /\bKobe\b(?!@)/
-docs/** **/*.md /(?<=#what-)kobe(?=-checks-before)|(?<=#created-by-)kobe(?=-on-request)|(?<=https:\/\/<)kobe(?=>)/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area

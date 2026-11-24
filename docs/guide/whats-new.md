@@ -8,6 +8,11 @@ audience: member
 
 What changed in the latest release, in short, with a link to the page that explains each part.
 
+## Kobe is now Kaiju
+
+The product has a new name: the app, its emails, the sign-in page and this guide now say
+**Kaiju**. A site that set its own name under **Site admin → Appearance** keeps showing that name.
+
 ## v1.4: git organizations
 
 A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub

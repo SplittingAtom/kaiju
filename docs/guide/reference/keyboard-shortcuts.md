@@ -23,25 +23,25 @@ sheet.
 
 "Mod" is **Cmd** on a Mac and **Ctrl** elsewhere.
 
-| Keys                               | Action                                                               |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| Mod+K                              | Search actions, threads and files                                    |
-| ?                                  | Keyboard shortcuts                                                   |
+| Keys                               | Action                                                                |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| Mod+K                              | Search actions, threads and files                                     |
+| ?                                  | Keyboard shortcuts                                                    |
 | Mod+Shift+O                        | New conversation (Mod+N also works when Kaiju is installed as an app) |
-| Mod+B                              | Collapse or expand the rail                                          |
-| Mod+Shift+F                        | Show the files                                                       |
-| Mod+Shift+A                        | Show or hide the artifact column                                     |
-| Mod+Shift+D                        | Show or hide all details in the answers                              |
-| Mod+[ and Mod+]                    | Previous and next conversation                                       |
-| Mod+/                              | Go to the message box                                                |
-| Enter                              | Send (queued while the agent works)                                  |
-| Shift+Enter                        | New line                                                             |
-| Mod+Shift+Enter                    | Steer now: pass the message to the running agent                     |
-| Mod+.                              | Stop                                                                 |
-| Mod+Shift+E, or Up in an empty box | Edit your last message                                               |
-| Mod+Shift+L                        | Learn from this chat (new messages since the last pass)              |
-| @                                  | Mention one of your files in the message                             |
-| /                                  | Slash commands, at the start of the message box                      |
+| Mod+B                              | Collapse or expand the rail                                           |
+| Mod+Shift+F                        | Show the files                                                        |
+| Mod+Shift+A                        | Show or hide the artifact column                                      |
+| Mod+Shift+D                        | Show or hide all details in the answers                               |
+| Mod+[ and Mod+]                    | Previous and next conversation                                        |
+| Mod+/                              | Go to the message box                                                 |
+| Enter                              | Send (queued while the agent works)                                   |
+| Shift+Enter                        | New line                                                              |
+| Mod+Shift+Enter                    | Steer now: pass the message to the running agent                      |
+| Mod+.                              | Stop                                                                  |
+| Mod+Shift+E, or Up in an empty box | Edit your last message                                                |
+| Mod+Shift+L                        | Learn from this chat (new messages since the last pass)               |
+| @                                  | Mention one of your files in the message                              |
+| /                                  | Slash commands, at the start of the message box                       |
 
 ## In the code editor
 

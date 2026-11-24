@@ -31,7 +31,7 @@ const SCOPE_WORDING = [
     "i",
   ),
   new RegExp(`\\binstall${APOSTROPHE}s\\b`, "i"),
-  /\b(?:this|your|that|each|every|one|per) (?:kobe )?install\b/i,
+  /\b(?:this|your|that|each|every|one|per) (?:kaiju )?install\b/i,
   /\b(?:a|an|the) (?:new|fresh|test|existing|throwaway|large|single-admin|real) install\b/i,
   /\bsingle-admin install\b/i,
   /\binstall-(?:wide|level)\b/i,

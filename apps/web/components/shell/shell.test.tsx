@@ -236,7 +236,9 @@ describe("return to the last thread (CE4)", () => {
     rememberLastThread(fake.teamId, t);
     render(<ChatReturnLink>Kaiju</ChatReturnLink>);
     await waitFor(() =>
-      expect(screen.getByRole("link", { name: "Kaiju" }).getAttribute("href")).toBe(`/?thread=${t}`),
+      expect(screen.getByRole("link", { name: "Kaiju" }).getAttribute("href")).toBe(
+        `/?thread=${t}`,
+      ),
     );
     cleanup();
     rememberLastThread("team-a", t); // e.g. another tab switched the session's team since

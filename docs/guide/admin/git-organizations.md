@@ -47,12 +47,12 @@ target.
 Create a GitHub App in the organization (**Settings → Developer settings → GitHub Apps → New
 GitHub App**) with these **repository permissions** and no organization or account permissions:
 
-| Permission     | Level          | Why                                                                                                                               |
-| -------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Metadata       | Read           | Required by GitHub; listing and reading repositories.                                                                             |
-| Contents       | Read and write | Clone and fetch (read), push (write).                                                                                             |
-| Pull requests  | Read and write | Open pull requests and comment.                                                                                                   |
-| Issues         | Read and write | Create issues and comment.                                                                                                        |
+| Permission     | Level          | Why                                                                                                                                |
+| -------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Metadata       | Read           | Required by GitHub; listing and reading repositories.                                                                              |
+| Contents       | Read and write | Clone and fetch (read), push (write).                                                                                              |
+| Pull requests  | Read and write | Open pull requests and comment.                                                                                                    |
+| Issues         | Read and write | Create issues and comment.                                                                                                         |
 | Administration | Read and write | Only if agents may create repositories. GitHub requires it for that; it also allows deleting repositories, which Kaiju never does. |
 
 At **Read**, Read is enough for Contents, Pull requests and Issues, and Administration is not

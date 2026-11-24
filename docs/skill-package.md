@@ -143,7 +143,7 @@ keys and aliases are refused (`MANIFEST_YAML_OPTIONS` for eemeli/yaml). Unknown 
 | `summary`                            | 1–280 characters (UTF-16 code units, as everywhere in this contract)                 |
 | `tags`                               | ≤ 10 unique topic slugs (unknown ones are proposals)                                 |
 | `license`                            | SPDX expression or `Proprietary`; required at submission (SK20), not in a draft      |
-| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kaiju sets maintainers on approval (SK24)       |
+| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kaiju sets maintainers on approval (SK24)      |
 | `capabilities.egress`                | ≤ 50 exact lowercase hosts (no wildcard, no port), checked against the team's egress |
 | `capabilities.packages.pip` / `.npm` | ≤ 50 requirement strings each, no whitespace                                         |
 | `compatibility.kobe` / `.pi`         | short version ranges, informational                                                  |
@@ -188,7 +188,7 @@ its records on every export. Its fields are of three kinds:
 | Kind                                                    | Fields                                                                        |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Verifiable against the package (`provenanceMismatches`) | `name`, `version`, `hashes`, `scorecard.packageHash` (freshness)              |
-| Kaiju-attested: authoritative only in Kaiju's records     | `source`, `submitter`, `confirmedBy`, `scan`, the scorecard numbers, `origin` |
+| Kaiju-attested: authoritative only in Kaiju's records   | `source`, `submitter`, `confirmedBy`, `scan`, the scorecard numbers, `origin` |
 | Informational                                           | `fromConversation`, `createdAt`                                               |
 
 `apiVersion: kobe.dev/skill-provenance/v1`, `name`, `version`, `hashes {runtime, package}`,

@@ -19,7 +19,7 @@ review. Licensed under Apache-2.0.
 | `services/sandbox-agent` | Sandbox main process: dial-out WSS, Pi RPC bridge                      |
 | `services/mcp-proxy`     | Credential-holding MCP proxy                                           |
 | `services/egress-proxy`  | Default-deny egress proxy                                              |
-| `packages/protocol`      | Kaiju Event Stream schema shared by server and web                      |
+| `packages/protocol`      | Kaiju Event Stream schema shared by server and web                     |
 | `packages/db`            | Drizzle schema, migrations, RLS policies, cross-team probe suite       |
 | `tools/license-check`    | Dependency license policy check                                        |
 | `images/sandbox`         | The one sandbox image agents run in (gVisor)                           |

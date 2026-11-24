@@ -117,7 +117,9 @@ describe.skipIf(!PI_AVAILABLE)("only the current run's viewed file in real Pi (K
     const runtimeDirs = () => readdir(path.join(t.dir, "pi-runtime"));
     const before = await runtimeDirs();
     expect(
-      await counts(t, RUNS[3] as string, { config: { system_prompt: "You are Kaiju, restarted." } }),
+      await counts(t, RUNS[3] as string, {
+        config: { system_prompt: "You are Kaiju, restarted." },
+      }),
     ).toEqual({ fence: 0, header: 0, alpha: 0, beta: 0 });
     const after = await runtimeDirs();
     expect(after.length).toBeGreaterThan(0);

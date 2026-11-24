@@ -240,8 +240,8 @@ describe("Convert to repo", () => {
     ).toBe("The git host would reject this file. Files: .gitmodules (commit #2).");
     // A generic fallback (no server words) still says what to do.
     expect(refusalText({ status: 503, code: "git_unavailable", message: "x" })).toBe("x");
-    expect(refusalText({ status: 502, code: "server_error", message: "Kaiju had a problem." })).toBe(
-      "Kaiju had a problem.",
-    );
+    expect(
+      refusalText({ status: 502, code: "server_error", message: "Kaiju had a problem." }),
+    ).toBe("Kaiju had a problem.");
   });
 });

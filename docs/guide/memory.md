@@ -182,8 +182,8 @@ The **+** button shows where Learn is:
 
 | On the + button | Meaning                                                                     |
 | --------------- | --------------------------------------------------------------------------- |
-| A dot           | New messages since Kaiju last learned from this conversation                 |
-| A spinner       | Kaiju is learning from it now; you can keep chatting                         |
+| A dot           | New messages since Kaiju last learned from this conversation                |
+| A spinner       | Kaiju is learning from it now; you can keep chatting                        |
 | A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
 
 **The nudge.** The dot pulses once, as a reminder, after about 10 of your messages since Kaiju last

@@ -111,7 +111,7 @@ encryption. The test suite seeds such tokens and asserts exactly this. Inside th
 | --------------------------------------------- | ---------------------------------------------------------- |
 | Passwords                                     | scrypt hashes (`accounts.password`)                        |
 | TOTP secrets and backup codes                 | ciphertext under the **auth secret** (`two_factors`)       |
-| SSO: identity-provider tokens                 | none: Kaiju stores no access, refresh or ID tokens          |
+| SSO: identity-provider tokens                 | none: Kaiju stores no access, refresh or ID tokens         |
 | SSO: client secrets (console providers)       | ciphertext under the **envelope key** (`sso_providers`)    |
 | SSO: SCIM tokens                              | SHA-256 hashes (`scim_tokens`)                             |
 | OAuth tokens in `accounts` (none today)       | **as stored** (plaintext inside the encrypted dump)        |

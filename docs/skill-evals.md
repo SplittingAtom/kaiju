@@ -57,7 +57,7 @@ cases: # 1 to 25
 | `prompt`                 | 1–8000 characters, trimmed; no control characters but tab and line breaks                                                            |
 | `files`                  | `fixtures/<path>`, a valid package path below `evals/fixtures/` that exists in the package; copied to `/workspace/<path>`            |
 | `expect.triggers`        | `true` / `false`: whether the skill was read, from the run's recorded skill uses (`runs.skills_used`, KOBE-297); with the skill only |
-| `expect.outputs`         | 1–10 globs (Kaiju glob grammar, `*` crosses `/`) relative to `/workspace`; each matches a file the run produced (below)               |
+| `expect.outputs`         | 1–10 globs (Kaiju glob grammar, `*` crosses `/`) relative to `/workspace`; each matches a file the run produced (below)              |
 | `expect.contains`        | a text or 1–10 texts (≤ 500 characters each, never trimmed), all in the final answer, case-sensitive                                 |
 | `expect.matches`         | a pattern or 1–10 of them; a pattern is a string or `{pattern, flags}` (flags from `i m s`; `u` always on), ≤ 256 characters         |
 | `expect.judge`           | a rubric of 1–2000 characters for the judge model (SK17), trimmed                                                                    |
