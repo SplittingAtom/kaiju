@@ -105,6 +105,9 @@ this repository is public, so infrastructure details never go into tracked files
   or migration that names the setting, including names built up from parts (its defining
   migration `0239_run_usage_retention.sql` and tests excluded; `secret-box.ts` is allowlisted
   only because its label `kobe.${purpose}` matches the name pattern).
+- (KOBE-823) Both guards above scan the whole repo from inside `@kobe/db`, so `@kobe/db#test` is
+  never cached (`turbo.json`, pinned by `packages/db/src/repo-guards-uncached.test.ts`): a cached
+  pass would hide a violation planted outside `packages/db`. Do not re-enable its cache.
 - Server decides every tool call; approvals are HMAC-signed over (run_id, tool_call_id, canonical input).
   No approval bypass.
 - Pi `1.4.x` in RPC mode behind `kobe-sandbox-agent`, which dials out over WSS; sandboxes accept no
