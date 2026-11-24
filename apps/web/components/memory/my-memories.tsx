@@ -169,7 +169,7 @@ export function MyMemories({ teamId }: { readonly teamId: string }) {
   return (
     <>
       <p className="m-0 mb-4 text-console-muted">
-        Short statements Kobe knows about you, given to your agents at the start of each run.
+        Short statements Kaiju knows about you, given to your agents at the start of each run.
         Nothing here is ever deleted: archive what you no longer want used.
       </p>
       {/* On the page from the start, so the change's message is announced when it appears. */}

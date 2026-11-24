@@ -19,7 +19,7 @@ const MESSAGES: Readonly<Record<PackageProblemCode, string>> = {
   reserved_name_case:
     "Only SKILL.md, evals/ and kobe.skill.yaml are special: spell them exactly so.",
   reserved_directory: "evals is a folder: put files inside it.",
-  provenance_not_allowed: "Kobe writes provenance.json itself.",
+  provenance_not_allowed: "Kaiju writes provenance.json itself.",
   skill_md_missing: "",
 };
 

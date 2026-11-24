@@ -54,7 +54,7 @@ export const EXCLUSION_REASONS = [
   "agent_tools_allow",
   "site_deny_rule",
   "team_deny_rule",
-  /** Not available in this version of Kobe (MCP resource tools, gates.ts). */
+  /** Not available in this version of Kaiju (MCP resource tools, gates.ts). */
   "unavailable",
 ] as const;
 

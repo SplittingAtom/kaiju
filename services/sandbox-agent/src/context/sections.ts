@@ -11,7 +11,7 @@ import { CONFLICTS_HEADER } from "../memory/conflict-context.js";
 
 /** kobe-tools' picks note (KOBE-658, kobe-tools/memory-hooks.ts `MEMORY_PICKS_TYPE`). */
 const PICKS_NOTE_TYPE = "kobe-memory-picks";
-const PICKS_LABEL = "What Kobe knows for this message";
+const PICKS_LABEL = "What Kaiju knows for this message";
 
 /**
  * A model call's context as ordered sections (KOBE-470, CV3). Takes what kobe-models captured

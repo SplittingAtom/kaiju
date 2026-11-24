@@ -130,7 +130,7 @@ export function helloCapabilities(deps: AgentDeps): string[] {
           CAPABILITY_NOTEBOOK_COMPLETE,
         ]),
     ...(caps.memory ? [CAPABILITY_MEMORY] : []),
-    // What Kobe knows (KOBE-383): rendered from run.start.memory.semantic, so only with memory.
+    // What Kaiju knows (KOBE-383): rendered from run.start.memory.semantic, so only with memory.
     ...(caps.memory ? [CAPABILITY_SEMANTIC_MEMORY] : []),
     // Memory placement (KOBE-658): picks beside the newest user message, held picks.
     ...(caps.memory ? [CAPABILITY_SEMANTIC_MEMORY_PLACEMENT] : []),

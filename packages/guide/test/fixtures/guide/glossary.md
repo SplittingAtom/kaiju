@@ -1,6 +1,6 @@
 ---
 title: Glossary
-summary: Words Kobe uses.
+summary: Words Kaiju uses.
 section: Reference
 ---
 

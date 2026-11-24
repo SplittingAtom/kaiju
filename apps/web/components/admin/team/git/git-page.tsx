@@ -52,7 +52,7 @@ export function TeamGitPage() {
     <>
       <PageHeader
         title="Git"
-        description="Connect this Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo. Agents then work in that organization's repositories through Kobe: the credential is stored encrypted on the server and never enters a sandbox, a browser or a model."
+        description="Connect this Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo. Agents then work in that organization's repositories through Kaiju: the credential is stored encrypted on the server and never enters a sandbox, a browser or a model."
       />
       {state.status === "loading" ? <p role="status">Loading git connections…</p> : null}
       {state.status === "error" ? (
@@ -144,7 +144,7 @@ function ManagedConnections({
     const yes = await confirm(
       {
         title: `Disconnect ${c.displayName}?`,
-        description: `Kobe deletes the stored credential and agents lose access to ${c.organization} on ${hostOf(c.baseUrl)}. Nothing on the host is changed: repositories there stay. Sandboxes already working with the organization may keep their access for up to 30 seconds.`,
+        description: `Kaiju deletes the stored credential and agents lose access to ${c.organization} on ${hostOf(c.baseUrl)}. Nothing on the host is changed: repositories there stay. Sandboxes already working with the organization may keep their access for up to 30 seconds.`,
         confirmLabel: "Disconnect",
       },
       from,
@@ -190,7 +190,7 @@ function ManagedConnections({
         <Notice tone="warn" title="Credentials cannot be stored yet">
           <p className="m-0">
             This Site has no encryption key for stored credentials, so nothing can be connected. Ask
-            whoever runs Kobe to configure one.
+            whoever runs Kaiju to configure one.
           </p>
         </Notice>
       ) : null}

@@ -10,7 +10,7 @@ import { assertOnVolume, shareOnVolume } from "../workspace/volume.js";
 import { PI_MAX_LINE_BYTES } from "./pi-process.js";
 
 /**
- * Pi session JSONL files, one per Kobe thread, on the workspace volume. Postgres is the record
+ * Pi session JSONL files, one per Kaiju thread, on the workspace volume. Postgres is the record
  * (D15); these files are a rebuildable copy (`session.restore`, D13). The agent writes a thread's
  * file only while no Pi process runs for that thread.
  */

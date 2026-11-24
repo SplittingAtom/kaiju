@@ -18,7 +18,7 @@ export interface RosterMember {
   readonly role: "team_admin" | "contributor" | "member";
   readonly joinedAt: string;
   /**
-   * Kobe added them to the Registry team for the Skill reviewer grant (KOBE-331), or an identity
+   * Kaiju added them to the Registry team for the Skill reviewer grant (KOBE-331), or an identity
    * provider's access mappings manage the row (`idp`, KOBE-627), or a Site admin added them from
    * the Site console (`site_admin`, KOBE-638). Null: an invitation (or the first team admin).
    * Older servers omit it.

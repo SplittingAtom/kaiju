@@ -57,7 +57,7 @@ export const skillImportRequestSchema = z.discriminatedUnion("kind", [
 export type SkillImportRequest = z.infer<typeof skillImportRequestSchema>;
 
 /**
- * `skill_drafts.origin`: where an imported draft came from. `fetchedSha256` is Kobe's own hash of
+ * `skill_drafts.origin`: where an imported draft came from. `fetchedSha256` is Kaiju's own hash of
  * what it fetched (a zip's bytes; for git, the canonical zip of the imported files).
  */
 export const skillImportOriginSchema = z.strictObject({

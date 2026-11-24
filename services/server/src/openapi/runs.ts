@@ -127,7 +127,7 @@ export function runsOpenApiPaths(): Record<string, Record<string, unknown>> {
           "422": json(
             "Error",
             "`attachments_unavailable` (this site has no workspace storage) or " +
-              "`invalid_parent_entry` (`parent_entry_id` is a note from Kobe, not a message), or " +
+              "`invalid_parent_entry` (`parent_entry_id` is a note from Kaiju, not a message), or " +
               "`invalid_mention` (a `mentions` path is outside `/workspace`, holds invisible, " +
               "format or shell characters, or is not a file in the workspace).",
           ),

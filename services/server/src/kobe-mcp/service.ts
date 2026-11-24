@@ -29,11 +29,11 @@ import { kobeConnector, kobePinnedTool } from "./pinned.js";
 import { KOBE_ADMIN_TOOLS, kobeToolByName } from "./tools/index.js";
 
 /**
- * The Kobe MCP server, hosted by the server itself (KOBE-619, spec kobe-admin-mcp §3 design (b)).
+ * The Kaiju MCP server, hosted by the server itself (KOBE-619, spec kobe-admin-mcp §3 design (b)).
  * The MCP proxy routes the built-in connector here (`/internal/v1/mcp/kobe/{list,calls}`); each
  * call is decided and executed in this one request: the sandbox token is authenticated by the
  * route, the run leased to the sandbox for the claimed thread is resolved, `decideMcpCall` decides
- * (policy engine, Kobe admin guard, signed approval verified and consumed, audit), and only an
+ * (policy engine, Kaiju admin guard, signed approval verified and consumed, audit), and only an
  * `allow` for exactly this run, tool call and input reaches the executor. Nothing is minted for
  * the sandbox; the principal is re-derived from server state on every call.
  *
@@ -170,7 +170,7 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
               // The docs tools (KOBE-620): no team or user data, no permission, no admin limit.
               if (name !== undefined && isKobeDocsToolName(name)) return undefined;
               const def = name === undefined ? undefined : kobeToolByName(name);
-              if (def === undefined) return { code: "unknown_tool", message: "Unknown Kobe tool." };
+              if (def === undefined) return { code: "unknown_tool", message: "Unknown Kaiju tool." };
               // Checked before anyone is asked: an approval is only ever for a well-formed change.
               if (!def.input.safeParse(request.arguments ?? {}).success) {
                 return { code: "invalid_input", message: `The input of ${def.name} is not valid.` };
@@ -181,15 +181,15 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
               if (!switchesAllow(def, access) || !personAllows(def, access)) {
                 return {
                   code: KOBE_ADMIN_NOT_ALLOWED_REASON,
-                  message: `${pinned.pi_name} is not available to you in this team (your role, or the Kobe admin switches).`,
+                  message: `${pinned.pi_name} is not available to you in this team (your role, or the Kaiju admin switches).`,
                 };
               }
               if (!(await withinKobeLimit(db, principal.userId, def.readOnly ? "read" : "write"))) {
                 return {
                   code: "kobe_admin_rate_limited",
                   message: def.readOnly
-                    ? "Too many Kobe admin reads in the last minute; try again shortly."
-                    : "Too many Kobe admin changes in the last hour; try again later.",
+                    ? "Too many Kaiju admin reads in the last minute; try again shortly."
+                    : "Too many Kaiju admin changes in the last hour; try again later.",
                 };
               }
               return undefined;
@@ -209,7 +209,7 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
         return {
           outcome: "denied",
           code: "kobe_admin_rate_limited",
-          message: "Kobe is busy with your other admin calls; try again shortly.",
+          message: "Kaiju is busy with your other admin calls; try again shortly.",
         };
       }
       const decided = locked.value;
@@ -225,7 +225,7 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
         api === undefined
       ) {
         logger.error({ sandboxId: principal.sandboxId }, "kobe-mcp: allow without a run; refused");
-        return { outcome: "error", code: "failed", message: "Kobe could not run this tool." };
+        return { outcome: "error", code: "failed", message: "Kaiju could not run this tool." };
       }
       if (docs !== undefined) {
         const answered = runKobeDocsTool(
@@ -238,7 +238,7 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
           : { outcome: "error", code: answered.code, message: answered.message };
       }
       if (tool === undefined) {
-        return { outcome: "error", code: "failed", message: "Kobe could not run this tool." };
+        return { outcome: "error", code: "failed", message: "Kaiju could not run this tool." };
       }
       const toolCallId =
         decided.tool_call_id !== undefined && PLAIN_ID.test(decided.tool_call_id)

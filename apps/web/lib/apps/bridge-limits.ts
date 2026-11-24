@@ -1,5 +1,5 @@
 /**
- * Per-frame budgets of Kobe's host bridge (KOBE-437, spec T4; review LOW-1 to LOW-3).
+ * Per-frame budgets of Kaiju's host bridge (KOBE-437, spec T4; review LOW-1 to LOW-3).
  */
 
 /** A sliding one-second window: `take()` is false once `limit` events fell in the last second. */

@@ -6,7 +6,7 @@ import {
   canonicalJsonBytes,
 } from "./index.js";
 
-describe("canonicalJson (RFC 8785 + Kobe strictness)", () => {
+describe("canonicalJson (RFC 8785 + Kaiju strictness)", () => {
   it("matches the RFC 8785 §3.2.2 example byte for byte", () => {
     const input = JSON.parse(String.raw`{
       "numbers": [333333333.33333329, 1E30, 4.50, 2e-3, 0.000000000000000000000000001],

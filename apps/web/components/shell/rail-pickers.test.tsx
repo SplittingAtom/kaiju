@@ -91,7 +91,7 @@ const settled = () =>
   );
 /** Lets React finish the work a sent message or a click started (no fixed wait). */
 const flush = () => act(async () => {});
-/** Waits until an app frame is up and Kobe's bridge listens to it: its opening is done. */
+/** Waits until an app frame is up and Kaiju's bridge listens to it: its opening is done. */
 const bridgeUp = (title: string) =>
   waitFor(
     () => expect(must(screen.queryByTitle(title)).hasAttribute(BRIDGE_ATTACHED_ATTR)).toBe(true),
@@ -100,7 +100,7 @@ const bridgeUp = (title: string) =>
 
 /** The picker's frame, with a stand-in window to talk as the app. */
 async function pickerWindow() {
-  // Once Kobe's bridge listens: a message posted before is lost (KOBE-415).
+  // Once Kaiju's bridge listens: a message posted before is lost (KOBE-415).
   const frame = await waitFor(
     () => {
       const f = must(screen.queryByTitle(PICKER_FRAME));

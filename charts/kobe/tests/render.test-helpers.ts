@@ -14,7 +14,7 @@ export const BASE: Record<string, string> = {
   "s3.bucket": "kobe",
   "s3.existingSecret": "kobe-s3",
   "smtp.host": "smtp.example.com",
-  "smtp.from": "Kobe <kobe@example.com>",
+  "smtp.from": "Kaiju <kobe@example.com>",
   "global.imagePullSecrets[0].name": "ghcr-pull",
   // helm template renders offline; production renders either reach the cluster or use existingSecrets.
   "global.allowGeneratedSecretsOffline": "true",

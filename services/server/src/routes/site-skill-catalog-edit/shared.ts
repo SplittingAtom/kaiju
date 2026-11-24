@@ -48,7 +48,7 @@ export const draftJson = (d: SiteDraftRecord) => ({
 
 export type CatalogEditKit = ReturnType<typeof catalogEditKit>;
 
-/** What the catalog editor's route groups share: storage, the Kobe sync deps and the replies. */
+/** What the catalog editor's route groups share: storage, the Kaiju sync deps and the replies. */
 export function catalogEditKit(deps: ServerDeps) {
   const db = deps.database.db;
   const blobsOr = (_c: Ctx) => deps.blobs ?? null;

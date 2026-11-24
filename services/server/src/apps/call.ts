@@ -79,7 +79,7 @@ const MESSAGES: Readonly<Record<AppCallReason, string>> = {
   tool_not_app_visible: "That tool is not offered to apps.",
   connector_exposure: "Your team does not expose that tool.",
   invalid_arguments: "The tool's arguments are not valid.",
-  validation_busy: "Kobe is still checking this app's previous call. Try again in a moment.",
+  validation_busy: "Kaiju is still checking this app's previous call. Try again in a moment.",
   site_deny_rule: "Site policy blocks that tool.",
   team_deny_rule: "Team policy blocks that tool.",
   app_no_prompt: "That tool needs an approval, and apps cannot ask for one.",

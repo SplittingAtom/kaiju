@@ -104,7 +104,7 @@ export function SuggestionsReview({
       {!toReview && !list.canDecide && (
         <p className="m-0 text-sm text-console-muted">
           The project&apos;s editors, owners and Team admins decide what goes into its notes. As a
-          reader, use Suggest to editors on a memory Kobe found in a conversation of this project.
+          reader, use Suggest to editors on a memory Kaiju found in a conversation of this project.
         </p>
       )}
       {!toReview && list.mine.length > 0 && (

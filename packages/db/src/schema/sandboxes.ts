@@ -13,7 +13,7 @@ import { users } from "./auth.js";
 import { teams } from "./teams.js";
 
 // Sandbox lifecycle (KOBE-25, spec D11, D14, §5.4). Kubernetes is the record of what exists
-// (KOBE-22: claims, Sandboxes, pods); this row is the record of what Kobe decided — awake or
+// (KOBE-22: claims, Sandboxes, pods); this row is the record of what Kaiju decided — awake or
 // hibernated — and of the last activity the idle policy measures. Every activity touch and every
 // hibernate/wake decision takes this row's lock, which orders hibernation against wake across
 // replicas (docs/ledger/KOBE-25.md).

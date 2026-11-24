@@ -1,6 +1,6 @@
 /**
  * The panels over the workspace (KOBE-452): the Team and Site consoles, Agents, Skills, the
- * rest of the My area and the Kobe guide (KOBE-616) open as one large overlay over the chat instead of leaving it. Each keeps
+ * rest of the My area and the Kaiju guide (KOBE-616) open as one large overlay over the chat instead of leaving it. Each keeps
  * its own address (`/admin/team/...`, `/me/skills`, ...), so a link, a reload and Back work; the
  * root layout keeps the workspace mounted under it (components/shell/workspace-host.tsx).
  */
@@ -22,7 +22,7 @@ export type PanelId =
   | "context-viewer"
   /** The Conversation tree (CT4, KOBE-546): every branch of the thread on screen, at `/tree`. */
   | "conversation-tree"
-  /** The Kobe guide (KOBE-616): `/docs` and `/docs/<slug>`, from the bar's Docs icon. */
+  /** The Kaiju guide (KOBE-616): `/docs` and `/docs/<slug>`, from the bar's Docs icon. */
   | "docs";
 
 export interface Panel {

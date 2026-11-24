@@ -48,7 +48,7 @@ describe("My sign-in methods (KOBE-630)", () => {
       "GET /v1/me/sso/links": [200, { links: [LINK] }],
       "DELETE /v1/me/sso/links/p-1": [
         409,
-        { code: "last_sign_in_method", message: "This is your only way to sign in to Kobe." },
+        { code: "last_sign_in_method", message: "This is your only way to sign in to Kaiju." },
       ],
     });
     renderTeam(<MySignInMethodsPage />, MEMBER);

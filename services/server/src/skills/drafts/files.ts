@@ -30,7 +30,7 @@ const PROBLEM_TEXT: Partial<Record<PackageProblemCode, string>> = {
   file_and_directory: "it is both a file and a folder",
   reserved_name_case: "only SKILL.md, evals/ and kobe.skill.yaml, spelled exactly so, are special",
   reserved_directory: "evals is a folder",
-  provenance_not_allowed: "Kobe writes provenance.json itself",
+  provenance_not_allowed: "Kaiju writes provenance.json itself",
 };
 
 /**

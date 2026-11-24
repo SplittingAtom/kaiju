@@ -14,7 +14,7 @@ import { liveTemplates, pinTemplates } from "./templates.js";
  * drift re-approval flow (later tickets).
  *
  * The `ui://` templates the tools name (MCP Apps, KOBE-433) are pinned in the same transaction,
- * hashed by Kobe; a template that fails validation (size, type, encoding, a `contentHash` that
+ * hashed by Kaiju; a template that fails validation (size, type, encoding, a `contentHash` that
  * does not match) fails the whole pin with its code, like a tool that cannot be pinned.
  */
 export type PinOutcome =

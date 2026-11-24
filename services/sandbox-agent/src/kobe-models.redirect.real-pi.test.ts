@@ -39,7 +39,7 @@ import {
 
 /**
  * KOBE-165 (T1 of KOBE-74, design: KOBE-119): can a tool, which runs as Pi's own uid, redirect the
- * Kobe model provider by writing Pi's writable `agent/` directory (models.json, settings.json,
+ * Kaiju model provider by writing Pi's writable `agent/` directory (models.json, settings.json,
  * auth.json), so that Pi sends the run-bound gateway token (x-kobe-run-token, KOBE-118) and the
  * session token to a listener the tool owns? Asked of the REAL pinned Pi 1.0.0 with the real
  * kobe-models and kobe-policy, started the way the agent starts it but WITHOUT the agent's
@@ -181,7 +181,7 @@ function expectNothingLeaked(listener: Listener, legit: Listener): void {
 }
 
 describe.skipIf(!PI_AVAILABLE)(
-  "a tool cannot redirect the Kobe provider through Pi's agent/ dir",
+  "a tool cannot redirect the Kaiju provider through Pi's agent/ dir",
   () => {
     const names = Object.keys(variants("http://x"));
     const SAFE = names.filter((n) => !LEAKING.includes(n));
@@ -247,7 +247,7 @@ describe.skipIf(!PI_AVAILABLE)(
 const HELPER = process.env.KOBE_TEST_PI_RUNAS;
 
 describe.runIf(PI_AVAILABLE && EXECUTOR_BUILT && HELPER !== undefined)(
-  "a tool in the paired executor cannot redirect the Kobe provider through Pi's agent/ dir (KOBE-167)",
+  "a tool in the paired executor cannot redirect the Kaiju provider through Pi's agent/ dir (KOBE-167)",
   () => {
     let identities: PiIdentities;
     let identity: PiIdentity;

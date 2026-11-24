@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "The Kobe user guide (docs/guide) built into typed pages, with the llms.txt, llms-full.txt and page Markdown renderers shared by the web routes and the server's docs tools",
+  "description": "The Kaiju user guide (docs/guide) built into typed pages, with the llms.txt, llms-full.txt and page Markdown renderers shared by the web routes and the server's docs tools",
   "type": "module",
   "files": [
     "dist"

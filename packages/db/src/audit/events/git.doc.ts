@@ -79,12 +79,12 @@ export const GIT_EVENT_DOCS = {
   "git.repo.commit_attempted": {
     fields:
       "`projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `commitSha`",
-    when: "Kobe is about to push a member's commit to a Repo (written before the push, so a push whose outcome Kobe could not record is still on record by its commit id) (KOBE-767)",
+    when: "Kaiju is about to push a member's commit to a Repo (written before the push, so a push whose outcome Kaiju could not record is still on record by its commit id) (KOBE-767)",
   },
   "git.repo.commit_failed": {
     fields:
       "`projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `failure`",
-    when: "A commit to a Repo from Kobe's commit flow was refused, by Kobe (a name the host would refuse, storage, a file changed on the host since the member's copy) or by the git host (the default branch moved, a hook or size limit, the repository gone); nothing changed (KOBE-767)",
+    when: "A commit to a Repo from Kaiju's commit flow was refused, by Kaiju (a name the host would refuse, storage, a file changed on the host since the member's copy) or by the git host (the default branch moved, a hook or size limit, the repository gone); nothing changed (KOBE-767)",
   },
   "git.repo.committed": {
     fields:
@@ -93,7 +93,7 @@ export const GIT_EVENT_DOCS = {
   },
   "git.repo.detached": {
     fields: "`repositoryId`, `projectId`, `commitId`",
-    when: "A Workspace admin turned a Repo back into an ordinary project: one commit of the mirrored files starts its Kobe history again; the repository stays on the host (KOBE-766)",
+    when: "A Workspace admin turned a Repo back into an ordinary project: one commit of the mirrored files starts its Kaiju history again; the repository stays on the host (KOBE-766)",
   },
   "git.repo.host_state_changed": {
     fields:
@@ -112,16 +112,16 @@ export const GIT_EVENT_DOCS = {
   "git.repository.created": {
     fields:
       "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`, `public` if the host made it so), `url?`",
-    when: "An agent created a repository with `git_create_repository` (KOBE-762); Kobe also records it among the Workspace's repositories",
+    when: "An agent created a repository with `git_create_repository` (KOBE-762); Kaiju also records it among the Workspace's repositories",
   },
   "git.settings.updated": {
     fields: "`setting` (`commit_email`), `value`, `previous` (`member` or `noreply`)",
-    when: "A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kobe email or the no-reply form (KOBE-761)",
+    when: "A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kaiju email or the no-reply form (KOBE-761)",
   },
   "git.write.attempted": {
     fields:
       "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool`",
-    when: "Kobe is about to send a git host tool write (KOBE-762); committed first, so a repeat of the same call that finds no completion reports the outcome unknown instead of acting again",
+    when: "Kaiju is about to send a git host tool write (KOBE-762); committed first, so a repeat of the same call that finds no completion reports the outcome unknown instead of acting again",
   },
   "git.write.failed": {
     fields:

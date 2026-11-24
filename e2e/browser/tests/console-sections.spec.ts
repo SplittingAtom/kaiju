@@ -62,7 +62,7 @@ test("Site audit log: events, filters and the chain status", async ({ page }) =>
 test("Site backup and restore: status and steps", async ({ page }) => {
   await open(page, "/admin/site/backup", "Backup and restore");
   await expect(
-    panelOf(page).getByRole("note").filter({ hasText: "Kobe can't see your backups" }),
+    panelOf(page).getByRole("note").filter({ hasText: "Kaiju can't see your backups" }),
   ).toBeVisible();
   await expect(
     panelOf(page)

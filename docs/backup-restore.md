@@ -1,6 +1,6 @@
 # Backup and restore
 
-`kobe backup` and `kobe restore` (spec D31) back up Kobe's durable record (Postgres) together
+`kobe backup` and `kobe restore` (spec D31) back up Kaiju's durable record (Postgres) together
 with a manifest of the objects in the external S3 bucket. Sandbox volumes are not backed up because
 they are rebuildable working copies (spec D15).
 
@@ -26,7 +26,7 @@ with the operator's backup key. There is no plaintext mode.
   Site branding is therefore included: the logo, dark logo and favicon (`site_branding_assets`)
   and the `branding.*` rows of `site_settings` (name, `show_name`, style, `logo_theme_color`).
 - **Coverage is checked.** The backup refuses to run when data exists that a dump of `public`
-  would skip: tables, materialized views or foreign tables in other schemas (apart from Kobe's
+  would skip: tables, materialized views or foreign tables in other schemas (apart from Kaiju's
   migration bookkeeping in `drizzle`), and large objects. The manifest records that this check
   ran.
 - **Not backed up (by design):**
@@ -42,7 +42,7 @@ with the operator's backup key. There is no plaintext mode.
   | `session_sso_contexts` | how a session signed in through SSO (provider, MFA proof); it references `sessions`, so its rows could not be restored |
 
 - **Schema, grants and the migration journal are not in the dump.** The target gets them from
-  Kobe's own migrations (`helm install`). Objects therefore stay owned by the owner role, and the
+  Kaiju's own migrations (`helm install`). Objects therefore stay owned by the owner role, and the
   app role keeps exactly the grants matrix and RLS policies of that release.
 - **Snapshot consistency.** Row counts, the migration journal, blob references and the dump all
   come from one exported Postgres snapshot. The bucket is listed right after that snapshot is
@@ -102,7 +102,7 @@ reaches a disk:
 ### Secrets
 
 A backup file never holds plaintext, because everything is encrypted under the backup key. Once
-decrypted, the dump contains every backed-up table, **including `accounts`**. Kobe's single
+decrypted, the dump contains every backed-up table, **including `accounts`**. Kaiju's single
 sign-on stores no identity-provider tokens there (or anywhere); should a future sign-in method
 store OAuth tokens in `accounts`, they would be in the dump too, protected only by the backup
 encryption. The test suite seeds such tokens and asserts exactly this. Inside the encryption:
@@ -111,7 +111,7 @@ encryption. The test suite seeds such tokens and asserts exactly this. Inside th
 | --------------------------------------------- | ---------------------------------------------------------- |
 | Passwords                                     | scrypt hashes (`accounts.password`)                        |
 | TOTP secrets and backup codes                 | ciphertext under the **auth secret** (`two_factors`)       |
-| SSO: identity-provider tokens                 | none: Kobe stores no access, refresh or ID tokens          |
+| SSO: identity-provider tokens                 | none: Kaiju stores no access, refresh or ID tokens          |
 | SSO: client secrets (console providers)       | ciphertext under the **envelope key** (`sso_providers`)    |
 | SSO: SCIM tokens                              | SHA-256 hashes (`scim_tokens`)                             |
 | OAuth tokens in `accounts` (none today)       | **as stored** (plaintext inside the encrypted dump)        |
@@ -200,10 +200,10 @@ can be recovered, **with lifecycle rules** that expire noncurrent versions after
 expired delete markers and abort incomplete multipart uploads after a few days (the rules and an
 example are in [install.md, Object storage](install.md#object-storage-s3)).
 
-The trade-off: Kobe's deletes (thread purges, Trash, offboarding, retention periods) are plain
+The trade-off: Kaiju's deletes (thread purges, Trash, offboarding, retention periods) are plain
 `DeleteObject` calls, so on a versioned bucket the bytes stay recoverable as noncurrent versions
 for the noncurrent period, and are erased from storage only when it ends. Without a
-noncurrent-version expiry they are never erased, which defeats Kobe's retention and erasure
+noncurrent-version expiry they are never erased, which defeats Kaiju's retention and erasure
 promises; the server logs a warning at start when it finds that configuration. A restore within
 the period can recover objects deleted after the backup was taken (restore their noncurrent
 version), which is the point of the window.
@@ -293,7 +293,7 @@ recorded fingerprint can.
 
 ## Restore onto a fresh cluster
 
-A restore goes into a **freshly installed Kobe of the same version** (same migrations). It refuses
+A restore goes into a **freshly installed Kaiju of the same version** (same migrations). It refuses
 a target whose applied migrations differ or that already has data, and it never deletes anything
 except rows every new site has before anyone signs up, which the backup's rows replace in the same
 transaction:
@@ -334,7 +334,7 @@ target someone has already configured is not a fresh install.
    span-id linkage across the change is lost):
    `kubectl -n kobe patch secret kobe-sandbox-session-keys-restored --type merge -p "{\"stringData\":{\"trace-span\":\"$(openssl rand -base64 36)\"}}"`.
 
-2. Install the Kobe version the backup was taken with (see [install.md](install.md)), and:
+2. Install the Kaiju version the backup was taken with (see [install.md](install.md)), and:
    - point each values key of the [Secrets](#secrets) table at its restored Secret (and
      `postgres.cnpg.existingAppSecret` with CNPG):
 
@@ -443,13 +443,13 @@ How restore works:
 
    Any error rolls everything back, and so does the CLI dying.
 
-5. Error output names Kobe's own checks in full. Any other server error appears only as its
+5. Error output names Kaiju's own checks in full. Any other server error appears only as its
    SQLSTATE, because Postgres messages and DETAIL/CONTEXT lines can quote row data. Look up the
    full error in the Postgres server log.
 
 ### Limits
 
-- Only same-version restores are supported. To move a backup to a newer Kobe, restore it on its
+- Only same-version restores are supported. To move a backup to a newer Kaiju, restore it on its
   own version and then run `helm upgrade`, which runs the migrations as usual.
   For example, a backup taken before KOBE-256 (migration `0091_site_rename`) names the old
   `install_*` tables: a site on a newer release refuses it ("schema does not match the backup")

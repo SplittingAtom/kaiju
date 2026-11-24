@@ -7,8 +7,8 @@ import { must } from "../../lib/testing/must";
 import { chatRequests, composer, openApp } from "./testing";
 
 /**
- * KOBE-450 ac-3/ac-6: the commands Kobe adds for Pi's built-ins (/thinking, /session, /export),
- * Pi's words Kobe names differently (/name offers /rename), and the ones Kobe doesn't offer: a
+ * KOBE-450 ac-3/ac-6: the commands Kaiju adds for Pi's built-ins (/thinking, /session, /export),
+ * Pi's words Kaiju names differently (/name offers /rename), and the ones Kaiju doesn't offer: a
  * disabled row with the reason, and nothing is sent.
  */
 let fake: FakeKobe;
@@ -217,7 +217,7 @@ describe("/export (Pi's /export)", { timeout: 30_000 }, () => {
 });
 
 describe("Pi's words in the / menu", { timeout: 30_000 }, () => {
-  it("/name offers Kobe's /rename", async () => {
+  it("/name offers Kaiju's /rename", async () => {
     const input = await opened(conversation());
     const user = userEvent.setup();
     await user.type(input, "/name");
@@ -231,7 +231,7 @@ describe("Pi's words in the / menu", { timeout: 30_000 }, () => {
     await user.type(input, "/login");
     const [row] = within(await menu()).getAllByRole("option");
     expect(row?.getAttribute("aria-disabled")).toBe("true");
-    expect(row?.textContent).toMatch(/^\/login isn't offered in Kobe: .*secrets out of it/);
+    expect(row?.textContent).toMatch(/^\/login isn't offered in Kaiju: .*secrets out of it/);
     await user.keyboard("{Enter}");
     expect(input).toHaveProperty("value", "/login");
     expect(messagePosts()).toEqual([]);
@@ -247,7 +247,7 @@ describe("Pi's words in the / menu", { timeout: 30_000 }, () => {
     await user.keyboard("{Enter}");
     expect(input).toHaveProperty("value", "/login anthropic");
     expect(
-      (await screen.findByText(/^\/login isn't offered in Kobe: .*Start with a space/)).closest(
+      (await screen.findByText(/^\/login isn't offered in Kaiju: .*Start with a space/)).closest(
         "[role=status]",
       ),
     ).toBeTruthy();

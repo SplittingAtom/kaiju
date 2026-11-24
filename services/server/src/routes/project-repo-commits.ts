@@ -10,7 +10,7 @@ import { loadAccess } from "../projects/access.js";
 
 /**
  * `GET /v1/projects/{id}/repo-status` (KOBE-767, spec workspace-git G18, G19): for a Repo, where
- * the caller's commits from Kobe's commit flow go (a pull request, or straight to the default
+ * the caller's commits from Kaiju's commit flow go (a pull request, or straight to the default
  * branch when the connection allows it), whether the caller may commit there now, their open
  * pull request and their sandbox's working copy (branch, ahead/behind). `repo` null for an
  * ordinary project. Every member who views the project; only the caller's own rows.

@@ -11,7 +11,7 @@ import {
 } from "./host-bridge";
 
 /**
- * KOBE-437 (MA-5): Kobe's own host bridge for MCP Apps (spec T4, §7): the source window and the
+ * KOBE-437 (MA-5): Kaiju's own host bridge for MCP Apps (spec T4, §7): the source window and the
  * opaque origin are checked, every method is parsed with zod, the §7 table is followed, and each
  * frame is limited.
  */
@@ -210,7 +210,7 @@ describe("the §7 method table (ac-3)", () => {
     expect(t.reply(2)?.result).toEqual({ tools: [{ name: "t" }] });
   });
 
-  it("turns a refused call into a JSON-RPC error with Kobe's code", async () => {
+  it("turns a refused call into a JSON-RPC error with Kaiju's code", async () => {
     const t = setup({
       callTool: vi.fn(async () => ({
         ok: false as const,

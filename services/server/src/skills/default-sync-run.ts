@@ -170,7 +170,7 @@ async function syncTeam(
     await auditApplied(tx, team.id, skill, changesOf(result), version?.semver ?? null);
     return result;
   });
-  // Kobe's own skills (KOBE-317) were there before the upgrade as built-ins: nothing to tell.
+  // Kaiju's own skills (KOBE-317) were there before the upgrade as built-ins: nothing to tell.
   const notice = job.byKobe ? null : noticeOf(job.kind, step);
   if (notice && deps.mailer && deps.publicUrl) {
     await notifyTeamAdmins(

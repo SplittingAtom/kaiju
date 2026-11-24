@@ -57,7 +57,7 @@ describe("what an outputs glob matches (KOBE-324 B1, S-R1, S-R2)", () => {
     });
   });
 
-  it("never lets a wildcard reach Kobe's or Pi's state", () => {
+  it("never lets a wildcard reach Kaiju's or Pi's state", () => {
     const all = after(
       walk([
         file(".kobe/sessions/run.jsonl"),

@@ -1,12 +1,12 @@
 ---
 title: Keyboard shortcuts and the command palette
-summary: Every keyboard shortcut in Kobe and how to use the command palette (Ctrl+K or Cmd+K) to search actions, threads and files.
+summary: Every keyboard shortcut in Kaiju and how to use the command palette (Ctrl+K or Cmd+K) to search actions, threads and files.
 section: Reference
 order: 1
 audience: member
 ---
 
-Almost everything in Kobe can be done from the keyboard. The command palette finds any action,
+Almost everything in Kaiju can be done from the keyboard. The command palette finds any action,
 thread or file by name, and a set of fixed shortcuts covers the most common actions. Shortcuts
 cannot be changed.
 
@@ -27,7 +27,7 @@ sheet.
 | ---------------------------------- | -------------------------------------------------------------------- |
 | Mod+K                              | Search actions, threads and files                                    |
 | ?                                  | Keyboard shortcuts                                                   |
-| Mod+Shift+O                        | New conversation (Mod+N also works when Kobe is installed as an app) |
+| Mod+Shift+O                        | New conversation (Mod+N also works when Kaiju is installed as an app) |
 | Mod+B                              | Collapse or expand the rail                                          |
 | Mod+Shift+F                        | Show the files                                                       |
 | Mod+Shift+A                        | Show or hide the artifact column                                     |

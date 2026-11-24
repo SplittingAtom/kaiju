@@ -98,7 +98,7 @@ export const gitConnections = pgTable(
     repoNamePrefix: text().notNull().default(""),
     defaultBranch: text().notNull().default("main"),
     pushLimitBytes: bigint({ mode: "number" }).notNull().default(GIT_PUSH_LIMIT_DEFAULT_BYTES),
-    /** G18, GQ11: commits from Kobe's commit flow may go straight to the default branch. */
+    /** G18, GQ11: commits from Kaiju's commit flow may go straight to the default branch. */
     directCommits: boolean().notNull().default(false),
     /** GQ8: the agents that may use the connection (no foreign key: team or personal agents). */
     agentIds: uuid().array(),
@@ -251,9 +251,9 @@ export const gitRepositories = pgTable(
      */
     linkedAt: timestamp({ withTimezone: true }),
     /**
-     * KOBE-766: the Kobe commit (project_commits.id) the mirror last wrote, so the next refresh
+     * KOBE-766: the Kaiju commit (project_commits.id) the mirror last wrote, so the next refresh
      * may drop it once it is no longer the head (the Repo's history lives on the host). Null
-     * while the project's head is Kobe's own commit (straight after conversion). No key: a pruned
+     * while the project's head is Kaiju's own commit (straight after conversion). No key: a pruned
      * or detached commit leaves a stale id that matches nothing.
      */
     mirrorCommitId: uuid(),

@@ -119,7 +119,7 @@ export function memoryRunFileContent(
   const tools = memory !== undefined && memory.scopes.length > 0;
   const note = conflictNoteText(conflicts);
   const fence = nonce ?? newNonce();
-  // What Kobe knows (KOBE-383): independent of Notes, so Policy reaches agents set to Notes only
+  // What Kaiju knows (KOBE-383): independent of Notes, so Policy reaches agents set to Notes only
   // or Off (Chris 2026-11-12). `recall` is listed only with Notes on.
   const known = semanticContextText(memory?.semantic, fence, { recall: tools });
   return {

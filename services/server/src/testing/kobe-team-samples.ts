@@ -1,5 +1,5 @@
 /**
- * A valid input for every Team console Kobe MCP tool (KOBE-621, KOBE-650), for tests that only need
+ * A valid input for every Team console Kaiju MCP tool (KOBE-621, KOBE-650), for tests that only need
  * the route a tool calls (`kobe-mcp/session-contract.test.ts`, `tools/memory-items.test.ts`). Ids
  * are placeholders.
  */

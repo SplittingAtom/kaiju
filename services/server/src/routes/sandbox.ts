@@ -105,7 +105,7 @@ export function createSandboxApp(deps: SandboxRoutesDeps): Hono {
  *   `Prefer: wait=<s>` the request is first held (long-poll, `SESSION_WAIT` in
  *   sandbox/session-hold.ts) and the 409 then carries `Preference-Applied: wait=<s>`. These
  *   routine answers are not traced (KOBE-417).
- * - 401 `unauthorized`: not a live Kobe sandbox pod's token.
+ * - 401 `unauthorized`: not a live Kaiju sandbox pod's token.
  * - 503 `isolation_runtime_missing` / `sandbox_unavailable`.
  */
 export function sandboxRoutes(deps: SandboxRoutesDeps): Hono {
@@ -204,7 +204,7 @@ export function sandboxRoutes(deps: SandboxRoutesDeps): Hono {
     } catch (err) {
       if (err instanceof SandboxAuthError) {
         logger.warn({ reason: err.detail }, "sandbox bootstrap token refused");
-        return c.json({ code: "unauthorized", message: "Not a Kobe sandbox." }, 401);
+        return c.json({ code: "unauthorized", message: "Not a Kaiju sandbox." }, 401);
       }
       if (err instanceof IsolationRuntimeMissingError) {
         logger.error({ err: err.message }, "sandbox session refused: isolation runtime missing");

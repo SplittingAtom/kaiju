@@ -90,7 +90,7 @@ export interface DefaultTarget {
   readonly major: number;
   /**
    * Who tagged it (or last moved its major): the installer a Default install names. Null when
-   * Kobe tagged its own skill (KOBE-317).
+   * Kaiju tagged its own skill (KOBE-317).
    */
   readonly requestedBy: string | null;
 }

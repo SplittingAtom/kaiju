@@ -42,7 +42,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 
 /**
  * The model a session branch is on, the way Pi 1.0.0 restores it on resume (`getBranchSelection`,
- * without virtual models, which Kobe never registers): the latest `model_change` or answer on the
+ * without virtual models, which Kaiju never registers): the latest `model_change` or answer on the
  * branch, whichever is nearer the leaf. Undefined when the branch records none.
  */
 export function branchModel(branch: readonly unknown[]): RecordedModel | undefined {
@@ -112,7 +112,7 @@ export interface KobeModelsDeps {
  * Register the `kobe` provider from the model file and keep Pi's selected model in step with it:
  * the agent writes the run's model into the file before every prompt, and Pi runs `input`
  * handlers before it validates the selected model (verified Pi 1.0.0; the same hook the faux
- * model in Kobe's tests relies on), so a model change between runs needs no Pi restart.
+ * model in Kaiju's tests relies on), so a model change between runs needs no Pi restart.
  */
 /** Taken from the environment once per Pi process; a reload registers the same file again. */
 let modelFile: string | undefined;
@@ -196,7 +196,7 @@ export async function registerKobeModels(
     return undefined;
   });
   api.registerCommand?.(branchSummary.name, {
-    description: "Kobe: summarise the branch left (sandbox agent only)",
+    description: "Kaiju: summarise the branch left (sandbox agent only)",
     handler: (_args, ctx) => branchSummary.handle(ctx),
   });
   api.on("input", async (_event, ctx) => {

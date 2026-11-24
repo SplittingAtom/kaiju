@@ -3,7 +3,7 @@ import type { SandboxTarget } from "../sandbox-wire/types.js";
 import { TEAM_IDLE_MINUTES } from "./idle.js";
 
 /**
- * The `sandboxes` rows (KOBE-25): Kobe's record of awake vs hibernated and of the last activity.
+ * The `sandboxes` rows (KOBE-25): Kaiju's record of awake vs hibernated and of the last activity.
  * Every write that decides a sandbox's state, or proves it active, takes the row's lock, so a
  * hibernation decision (made and carried out under the lock) and a wake or command touch (which
  * update the row first) are ordered across replicas. Team table: every statement runs inside

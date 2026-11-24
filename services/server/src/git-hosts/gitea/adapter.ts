@@ -159,7 +159,7 @@ class GiteaAdapter implements GitHostAdapter {
         if (!verdict) {
           throw new GitHostError(
             "unsupported_host",
-            "The git host reports no version Kobe can read.",
+            "The git host reports no version Kaiju can read.",
             {
               reason: "version_unreadable",
             },
@@ -180,7 +180,7 @@ class GiteaAdapter implements GitHostAdapter {
       const name = v.product === "forgejo" ? "Forgejo" : "Gitea";
       throw new GitHostError(
         "unsupported_host",
-        `The git host runs ${name} ${v.version}; Kobe supports ${name} ${v.minimumVersion} and later.`,
+        `The git host runs ${name} ${v.version}; Kaiju supports ${name} ${v.minimumVersion} and later.`,
         { reason: "version_too_old" },
       );
     }

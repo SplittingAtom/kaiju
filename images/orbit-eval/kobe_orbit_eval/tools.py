@@ -11,7 +11,7 @@ from pydantic import Field
 from orbit.tools import ToolBindings
 
 # Orbit resolves its own tool names (real bash, submit, channels...) before our bindings, so a
-# colliding Kobe tool name is bound under a prefixed alias.
+# colliding Kaiju tool name is bound under a prefixed alias.
 ALIAS_PREFIX = "sim_"
 
 

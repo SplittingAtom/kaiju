@@ -153,7 +153,7 @@ export function createBrandingLoader(options: BrandingLoaderOptions): BrandingLo
         good = await withInlineLogo(fetched);
       } catch (error) {
         rateLog(() => {
-          const serving = good === undefined ? "the Kobe defaults" : "the last known branding";
+          const serving = good === undefined ? "the Kaiju defaults" : "the last known branding";
           return `[kobe-web] site branding unavailable (${reasonOf(error)}); serving ${serving}`;
         });
       } finally {

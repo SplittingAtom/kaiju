@@ -21,7 +21,7 @@ import { SEMANTIC_MEMORY_RUN_MAX_ITEMS } from "./semantic-memory/run-context.js"
 export const CONTEXT_SECTION_KINDS = [
   /** Pi's own prompt: preamble, tool guidance, rules, docs, working directory. */
   "system_prompt",
-  /** The agent's instructions (Kobe's appended system prompt) and project instructions. */
+  /** The agent's instructions (Kaiju's appended system prompt) and project instructions. */
   "agent_instructions",
   /** The skills index Pi lists in the prompt. */
   "skills",

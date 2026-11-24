@@ -2,9 +2,9 @@ import { TEAM_HEADER } from "../teams";
 import type { ToolCallAnswer, ToolListAnswer } from "./host-bridge";
 
 /**
- * The host bridge's calls to Kobe (KOBE-437): the MA-4 endpoints under the member's session and
+ * The host bridge's calls to Kaiju (KOBE-437): the MA-4 endpoints under the member's session and
  * active team. Not `apiRequest`: that one camelizes keys, which would change an upstream tool's
- * result before the app sees it. Same-origin paths only; nothing here ever leaves Kobe.
+ * result before the app sees it. Same-origin paths only; nothing here ever leaves Kaiju.
  */
 const APP_ID = /^[0-9a-f]{64}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
@@ -16,7 +16,7 @@ type Failure = { readonly ok: false; readonly code: string; readonly message: st
 const NETWORK: Failure = {
   ok: false,
   code: "network_error",
-  message: "Kobe is unreachable. Check your connection and try again.",
+  message: "Kaiju is unreachable. Check your connection and try again.",
 };
 const FAILED: Failure = { ok: false, code: "call_failed", message: "The app's call failed." };
 
@@ -25,7 +25,7 @@ function appPath(appId: string, rest: string): string {
   return `/v1/team/apps/${appId}/${rest}`;
 }
 
-/** The document of an app's iframe: Kobe's member frame route (spec MA4 as amended). */
+/** The document of an app's iframe: Kaiju's member frame route (spec MA4 as amended). */
 export function appFrameUrl(appId: string, teamId: string, sha256: string): string {
   if (!UUID.test(teamId) || !SHA256.test(sha256)) throw new Error("not a frame request");
   const query = new URLSearchParams({ team: teamId, sha256 });

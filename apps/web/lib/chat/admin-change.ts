@@ -1,6 +1,6 @@
 /**
  * The "Admin change" approval card's before → after rows (KOBE-623, spec kobe-admin-mcp §5–§6),
- * read from the exact input being approved. A Kobe admin write names its target's before-state
+ * read from the exact input being approved. A Kaiju admin write names its target's before-state
  * in its input (`from_role` / `to_role`, `from` / `to`, `from_role` / `role`, …), so the card can
  * show the change side by side; the input itself is shown in full underneath, and the server's
  * summary line sits above. Pure: no names are guessed here (the server resolves them).

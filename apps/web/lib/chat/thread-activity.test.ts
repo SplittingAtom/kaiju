@@ -34,9 +34,9 @@ describe("thread activity (KOBE-301)", () => {
     expect(titlePrefix(["idle", "running"])).toBe("● ");
     expect(titlePrefix(["running", "approval"])).toBe("(!) ");
     expect(titlePrefix(["idle"])).toBe("");
-    expect(stripTitlePrefix("● Kobe")).toBe("Kobe");
-    expect(stripTitlePrefix("(!) Kobe")).toBe("Kobe");
-    expect(stripTitlePrefix("Kobe")).toBe("Kobe");
+    expect(stripTitlePrefix("● Kaiju")).toBe("Kaiju");
+    expect(stripTitlePrefix("(!) Kaiju")).toBe("Kaiju");
+    expect(stripTitlePrefix("Kaiju")).toBe("Kaiju");
   });
 
   it("a teammate's run on a thread shared with the member is not theirs to watch (S1)", () => {

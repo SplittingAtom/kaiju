@@ -187,7 +187,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "skill.detached": {
     fields: "`skillId`, `name`, `fromSemver`",
-    when: "A Site admin's first edit of a Kobe-shipped catalog skill detached it: the Kobe seed stops publishing it and only records the shipped version (KOBE-495)",
+    when: "A Site admin's first edit of a Kaiju-shipped catalog skill detached it: the Kaiju seed stops publishing it and only records the shipped version (KOBE-495)",
   },
   "skill.draft.created": {
     fields:
@@ -229,7 +229,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "skill.kobe.published": {
     fields: "`skillId`, `name`, `semver`, `runtimeHash`, `created`",
-    when: "Kobe published a version of one of its own catalog skills (the former built-ins) from the package set the server ships, at a server start (system actor, KOBE-317); `created`: new to this Site and tagged Default",
+    when: "Kaiju published a version of one of its own catalog skills (the former built-ins) from the package set the server ships, at a server start (system actor, KOBE-317); `created`: new to this Site and tagged Default",
   },
   "skill.maintainer.added": {
     fields: "`skillId`, `userId`",
@@ -245,7 +245,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "skill.manifest.generated": {
     fields: "`draftId`, `skillId?`, `scope?`, `version?`, `semver?`, `model`, `from` (model, seed)",
-    when: "Kobe drafted a kobe.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564)",
+    when: "Kaiju drafted a kobe.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564)",
   },
   "skill.member_add.added": {
     fields: "`skillId`, `name`, `semver`, `pinMode`",
@@ -274,7 +274,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "skill.promotion.confirmed": {
     fields: "`requestId`, `registryVersionId`",
-    when: "A Team admin confirmed a Builder's promotion; Kobe submitted it (KOBE-333)",
+    when: "A Team admin confirmed a Builder's promotion; Kaiju submitted it (KOBE-333)",
   },
   "skill.promotion.declined": {
     fields: "`requestId`",
@@ -295,7 +295,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "skill.reset_to_kobe": {
     fields: "`skillId`, `name`, `fromSemver`, `shippedSemver`",
-    when: "A Site admin re-attached a detached Kobe skill; the seed publishes the shipped version, which must be above every Site version (KOBE-495)",
+    when: "A Site admin re-attached a detached Kaiju skill; the seed publishes the shipped version, which must be above every Site version (KOBE-495)",
   },
   "skill.reviewed": {
     fields:

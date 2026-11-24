@@ -8,8 +8,8 @@ import { CatalogSkillPage } from "./catalog-skill-page";
 
 /**
  * Site catalog skills (KOBE-495): the view (versions, a version's files read-only, frontmatter,
- * provenance, hashes), Edit from a version (asks first for a Kobe skill: it detaches), the
- * detached notice with Compare and Reset to Kobe, and the site draft in the Workbench editor with
+ * provenance, hashes), Edit from a version (asks first for a Kaiju skill: it detaches), the
+ * detached notice with Compare and Reset to Kaiju, and the site draft in the Workbench editor with
  * Save version (semver confirmed; a scan Block shows its findings).
  */
 const BASE = "/v1/site/skills/catalog-skills";
@@ -117,7 +117,7 @@ describe("catalog skill view (ac-1)", () => {
     expect(await screen.findByText("Read it.")).toBeTruthy();
   });
 
-  it("asks before editing a Kobe skill (it detaches), then starts the site draft", async () => {
+  it("asks before editing a Kaiju skill (it detaches), then starts the site draft", async () => {
     const calls = stubApi({
       [`GET ${BASE}/s-1`]: [200, SKILL],
       [`GET ${BASE}/s-1/versions/v-1`]: [200, VIEW],
@@ -126,13 +126,13 @@ describe("catalog skill view (ac-1)", () => {
     });
     renderSite(<CatalogSkillPage skillId="s-1" />);
     await userEvent.click(await screen.findByRole("button", { name: "Edit pdf from 1.0.0" }));
-    expect(await answerConfirm(/Edit pdf, a Kobe skill/, "Edit and detach")).toMatch(/detaches/);
+    expect(await answerConfirm(/Edit pdf, a Kaiju skill/, "Edit and detach")).toMatch(/detaches/);
     await waitFor(() => expect(calls.some((c) => c.method === "POST")).toBe(true));
     const post = calls.find((c) => c.method === "POST");
     expect(JSON.parse(String(post?.body))).toEqual({ versionId: "v-1" });
   });
 
-  it("says a newer Kobe version is available, compares, and resets after asking", async () => {
+  it("says a newer Kaiju version is available, compares, and resets after asking", async () => {
     const detached = {
       ...SKILL,
       kobe: {
@@ -173,19 +173,19 @@ describe("catalog skill view (ac-1)", () => {
         409,
         {
           code: "shipped_not_above",
-          message: "Kobe ships 1.1.0, which is not above the Site's 1.2.0.",
+          message: "Kaiju ships 1.1.0, which is not above the Site's 1.2.0.",
         },
       ],
     });
     renderSite(<CatalogSkillPage skillId="s-1" />);
     expect(
-      await screen.findByText(/A newer Kobe version of pdf is available \(1\.1\.0/),
+      await screen.findByText(/A newer Kaiju version of pdf is available \(1\.1\.0/),
     ).toBeTruthy();
     expect(screen.getByText("Detached")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: /^Compare/ }));
     expect(await screen.findByText(/Kobe ships 1\.1\.0/)).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: /^Reset to Kobe/ }));
-    await answerConfirm(/Reset pdf to Kobe/, "Reset to Kobe");
+    await userEvent.click(screen.getByRole("button", { name: /^Reset to Kaiju/ }));
+    await answerConfirm(/Reset pdf to Kaiju/, "Reset to Kaiju");
     expect(await screen.findByText(/not above the Site's 1\.2\.0/)).toBeTruthy();
     expect(calls.filter((c) => c.method === "POST")).toHaveLength(1);
   });

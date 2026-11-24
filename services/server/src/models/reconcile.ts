@@ -62,7 +62,7 @@ const vkDiffers = (want: DesiredVirtualKey, teamId: string, have: ObservedVirtua
   (wantedPerMinute(want) !== undefined && wantedPerMinute(want) !== have.requestsPerMinute) ||
   (want.limits?.budgets !== undefined && want.limits.budgets.length > 0);
 
-/** Customer names Kobe used before: `kobe-install` until KOBE-256 renamed it to the site's. */
+/** Customer names Kaiju used before: `kobe-install` until KOBE-256 renamed it to the site's. */
 export const LEGACY_CUSTOMERS: readonly string[] = ["kobe-install"];
 
 interface SiteCustomer {
@@ -177,7 +177,7 @@ export async function reconcile(
     if (customer) changes++;
   }
 
-  const teamIds = new Map<string, string>(); // Kobe team id → Bifrost team id
+  const teamIds = new Map<string, string>(); // Kaiju team id → Bifrost team id
   const haveTeams = new Map((observedTeams ?? []).map((t) => [t.name, t]));
   for (const want of desired.teams) {
     const have = haveTeams.get(want.name);

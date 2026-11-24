@@ -35,7 +35,7 @@ import {
   threadSuggestionsSchema,
 } from "./server-call.js";
 
-/** Kobe Event Stream event types (spec §6.2). Every event is persisted to `run_events` with a monotonic `seq` before fan-out. */
+/** Kaiju Event Stream event types (spec §6.2). Every event is persisted to `run_events` with a monotonic `seq` before fan-out. */
 export const KOBE_EVENT_TYPES = [
   "run.queued",
   "run.started",
@@ -267,7 +267,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     reasons: z.array(policyReasonSchema).min(1),
     expires_at: timestampSchema,
     /**
-     * A Kobe admin write (KOBE-623): the card's "Admin change" scope and summary, built by the
+     * A Kaiju admin write (KOBE-623): the card's "Admin change" scope and summary, built by the
      * server. Additive: clients that predate it show the ordinary card.
      */
     admin: kobeAdminApprovalSchema.optional(),

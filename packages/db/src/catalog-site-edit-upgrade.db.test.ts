@@ -13,8 +13,8 @@ import {
 /**
  * KOBE-495 (0180, 0181): a Site with catalog rows migrates as the non-superuser owner, in one
  * transaction with the new publisher value `site` (never used before commit); then a Site admin's
- * version is published on a Kobe and a maintainer skill, the publisher rule still holds for every
- * other version, Kobe skills carry a detached marker, site drafts hold files, and a maintainer's
+ * version is published on a Kaiju and a maintainer skill, the publisher rule still holds for every
+ * other version, Kaiju skills carry a detached marker, site drafts hold files, and a maintainer's
  * notification names its Site admin.
  */
 const MARKER = `ADD VALUE 'site'`;
@@ -117,7 +117,7 @@ afterAll(async () => {
 });
 
 describe("site-published catalog versions (0180, 0181)", () => {
-  it("publishes a Site admin's version on a maintainer's and on a Kobe skill", async () => {
+  it("publishes a Site admin's version on a maintainer's and on a Kaiju skill", async () => {
     await withClient(database().appUrl, async (c) => {
       const a = await version(c, {
         skill: ids.skill,
@@ -190,7 +190,7 @@ describe("site-published catalog versions (0180, 0181)", () => {
     });
   });
 
-  it("detaches only a Kobe skill, as a whole", async () => {
+  it("detaches only a Kaiju skill, as a whole", async () => {
     await withClient(database().appUrl, async (c) => {
       const detach = (id: string, from: string | null) =>
         c.query(
@@ -211,7 +211,7 @@ describe("site-published catalog versions (0180, 0181)", () => {
       await c.query(`UPDATE registry_skills SET kobe_shipped_version = '1.1.0' WHERE id = $1`, [
         ids.kobe,
       ]);
-      // Reset to Kobe clears it as a whole.
+      // Reset to Kaiju clears it as a whole.
       await expect(
         c.query(`UPDATE registry_skills SET detached_at = NULL WHERE id = $1`, [ids.kobe]),
       ).rejects.toMatchObject({ constraint: "registry_skills_detached" });

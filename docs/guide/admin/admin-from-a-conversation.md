@@ -1,15 +1,15 @@
 ---
 title: Admin from a conversation
-summary: How team and site admins let agents read and change Kobe's settings from a conversation through the built-in Kobe connector, with an approval card for every change, read-only workspace and Site memories for curators, audit "via agent" and what stays console-only.
+summary: How team and site admins let agents read and change Kaiju's settings from a conversation through the built-in Kaiju connector, with an approval card for every change, read-only workspace and Site memories for curators, audit "via agent" and what stays console-only.
 section: Team admin
 order: 2
 audience: admin
 ---
 
-Kobe ships a built-in connector called **Kobe**. Its docs tools let every agent read this guide;
+Kaiju ships a built-in connector called **Kaiju**. Its docs tools let every agent read this guide;
 its admin tools let an agent do Team console and Site console work for the person in the
 conversation, such as "make Ana a contributor" or "show me this month's usage by model". This page
-explains how to turn the admin tools on, what they can do and how Kobe keeps them safe.
+explains how to turn the admin tools on, what they can do and how Kaiju keeps them safe.
 
 ## What the agent acts as
 
@@ -30,20 +30,20 @@ person, and only they can approve.
 Admin tools are off until two admins turn them on. The docs tools are on everywhere unless a site
 admin switches the whole connector off.
 
-1. **Site console → Settings → Kobe connector** (site admins): **Off** (no Kobe connector, not
+1. **Site console → Settings → Kaiju connector** (site admins): **Off** (no Kaiju connector, not
    even the docs tools), **Docs only** (the default) or **Docs and admin tools**.
-2. **Team console → Connectors → Kobe** (team admins), once the site allows admin tools:
+2. **Team console → Connectors → Kaiju** (team admins), once the site allows admin tools:
    **Docs only** (the default), **Read** (the agent may read the team's settings as the person) or
    **Read and write** (it may also change them, each change approved first). While the site is at
    Docs only, the card says so and admin tools stay off whatever the team chooses. Site tools
    follow the team's level too: a site admin gets them only in a team at Read (reads only) or
    Read and write.
 
-The agent must also use Kobe: the gallery agent Kobe does (it uses every connector), and in the
+The agent must also use Kaiju: the gallery agent Kobe does (it uses every connector), and in the
 agent creator you can add **kobe** to an agent's connectors. Neither switch, nor the limits, can be changed from a
 conversation: the agent cannot raise its own access.
 
-In the composer, **+** → **Connectors** shows the Kobe row with no checkbox ("Docs always on")
+In the composer, **+** → **Connectors** shows the Kaiju row with no checkbox ("Docs always on")
 and a line saying which admin tools you have in this team.
 
 ## What the agent can do
@@ -95,7 +95,7 @@ memories off only Policy is listed. The agent receives each memory's text marked
 data, so it treats what a memory says as information, never as instructions.
 
 The agent never sees anyone's personal or portable memories through these tools, and it cannot
-change a memory: there is no tool to add, edit, archive, pin or undo one, and Kobe refuses such a
+change a memory: there is no tool to add, edit, archive, pin or undo one, and Kaiju refuses such a
 change from an agent even if one were attempted. Change memories in **Memory** (or the Site
 console's Memory page) yourself.
 
@@ -108,24 +108,24 @@ to the console page, but you do them yourself:
 - registering or editing connectors (they need a probe with an admin's key), model providers and
   keys, adding catalog models;
 - egress injected headers, and disabling a domain that has them (their values would be lost);
-- the site switch, the team's Kobe level, sign-in and two-factor settings, isolation, backups and
+- the site switch, the team's Kaiju level, sign-in and two-factor settings, isolation, backups and
   audit forwarding.
 
 ## Every change asks, every time
 
 An admin change shows an **Admin change** approval card to the conversation's owner. It names the
-scope ("Team _name_" or "Whole site"), a summary Kobe builds from the input (with people's names,
+scope ("Team _name_" or "Whole site"), a summary Kaiju builds from the input (with people's names,
 never the model's words, for example `Change the role of member "Ana Lee": Member → Contributor`),
 a before → after table, and the exact input. Press **Allow** or **Deny**.
 
 - The card asks in every approval mode, Dangerous included. It is never remembered, never part of
   **Approve all waiting**, and has no Remember controls.
 - In scheduled and auto runs nobody can approve, so admin changes are refused there.
-- The change carries its before-state. If the setting changed between the card and your Allow, Kobe
+- The change carries its before-state. If the setting changed between the card and your Allow, Kaiju
   changes nothing and the agent is told `changed_since_approval`; it should read again and ask
   for a new approval.
 - Each person may make up to 60 admin reads a minute and 30 admin changes an hour (site defaults).
-  A site admin changes both under **Settings → Kobe admin limits** (1 to 10,000); the new limits
+  A site admin changes both under **Settings → Kaiju admin limits** (1 to 10,000); the new limits
   apply to the next call, with no restart.
 
 Read the summary and the before → after rows before you allow. Content the agent reads (a file, a
@@ -147,7 +147,7 @@ A thread that used admin tools can still be shared. Teammates see that an admin 
 summary, but its result reads "Admin result hidden" unless they hold the same permission now. The
 same applies to their forks of the thread. The owner always sees everything.
 
-The redaction covers tool results only. The agent's own answers, and the summaries Kobe writes
+The redaction covers tool results only. The agent's own answers, and the summaries Kaiju writes
 when it compacts a long thread or a branch, may restate what a tool returned; those are not
 hidden and are copied into a reader's fork. Before you share a thread where the agent read
 sensitive settings, check what its answers say.

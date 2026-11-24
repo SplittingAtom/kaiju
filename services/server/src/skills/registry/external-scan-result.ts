@@ -4,12 +4,12 @@ import { z } from "zod";
 /**
  * The external scanner's result (KOBE-341, SK32) as the server keeps it in the version's scan
  * document (`scan.external`). Findings are advisory: a MEDIUM, HIGH or CRITICAL finding becomes a
- * Caution finding (acknowledged one by one before Approve, like Kobe's own) and can raise a Pass
- * verdict to Caution; LOW and INFO findings are shown for information. Block stays Kobe's own
+ * Caution finding (acknowledged one by one before Approve, like Kaiju's own) and can raise a Pass
+ * verdict to Caution; LOW and INFO findings are shown for information. Block stays Kaiju's own
  * decision: nothing here ever sets it.
  */
 export const SCAN_MARKER = "KOBE_EXTERNAL_SCAN ";
-/** External rules are named apart from Kobe's own (`cisco:<rule id>`). */
+/** External rules are named apart from Kaiju's own (`cisco:<rule id>`). */
 export const EXTERNAL_RULE_PREFIX = "cisco:";
 const RAISING = new Set(["medium", "high", "critical"]);
 
@@ -61,7 +61,7 @@ export type ExternalScan =
       readonly finishedAt: string;
     };
 
-/** The result line in the pod's log, reduced to what Kobe keeps; a failure when there is none. */
+/** The result line in the pod's log, reduced to what Kaiju keeps; a failure when there is none. */
 export function parseScanLog(
   log: string,
   at: { readonly startedAt: string | null; readonly finishedAt: string },

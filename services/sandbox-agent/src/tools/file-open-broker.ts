@@ -86,7 +86,7 @@ export class FileOpenBroker {
       tool: request.tool,
       input: request.input,
     };
-    if (!this.#deps.send(frame)) fail("unavailable", "Kobe server not reachable");
+    if (!this.#deps.send(frame)) fail("unavailable", "Kaiju server not reachable");
   }
 
   /** `file.open_result` from the server; false when nothing waits for it. */

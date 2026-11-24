@@ -181,13 +181,13 @@ describe("Users", () => {
       "GET /v1/site/users": [200, USERS],
       "POST /v1/site/users/u-bob/deactivate": [
         404,
-        { code: "user_not_found", message: "No Kobe user with that id." },
+        { code: "user_not_found", message: "No Kaiju user with that id." },
       ],
     });
     renderSite(<UsersPage />);
     await userEvent.click(await screen.findByRole("button", { name: "Deactivate Bob" }));
     await answerConfirm("Deactivate Bob?", "Deactivate");
-    expect((await screen.findByRole("alert")).textContent).toMatch(/No Kobe user with that id/);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/No Kaiju user with that id/);
   });
   it("shows a user's single sign-on links, expects a link and unlinks (KOBE-630)", async () => {
     const provider = {
@@ -309,14 +309,14 @@ describe("Invitations", () => {
       "GET /v1/site/invites": [200, { invitations: [] }],
       "POST /v1/site/invites": [
         409,
-        { code: "user_exists", message: "That address already has a Kobe account." },
+        { code: "user_exists", message: "That address already has a Kaiju account." },
       ],
     });
     renderSite(<SiteInvitesPage />);
     await screen.findByText("No open invitations.");
     await userEvent.type(screen.getByLabelText("Email address"), "b@x.io");
     await userEvent.click(screen.getByRole("button", { name: "Send invitation" }));
-    expect((await screen.findByRole("alert")).textContent).toMatch(/already has a Kobe account/);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/already has a Kaiju account/);
   });
 });
 
@@ -519,7 +519,7 @@ describe("Settings", () => {
   });
 });
 
-describe("Settings: the Kobe connector switch (KOBE-623)", () => {
+describe("Settings: the Kaiju connector switch (KOBE-623)", () => {
   it("shows off / docs / admin with docs chosen, and round-trips a change", async () => {
     const calls = stubApi({
       "GET /v1/site/settings": [
@@ -529,24 +529,24 @@ describe("Settings: the Kobe connector switch (KOBE-623)", () => {
       "PUT /v1/site/settings": [200, { requireTwoFactor: false, kobeMcpMode: "admin" }],
     });
     renderSite(<SettingsPage />, "admin");
-    const form = within(await screen.findByRole("form", { name: "Kobe connector" }));
+    const form = within(await screen.findByRole("form", { name: "Kaiju connector" }));
     expect((form.getByRole("radio", { name: "Docs only" }) as HTMLInputElement).checked).toBe(true);
     expect(form.getByRole("radio", { name: "Off" })).toBeTruthy();
     await userEvent.click(form.getByRole("radio", { name: "Docs and admin tools" }));
-    await userEvent.click(form.getByRole("button", { name: "Save Kobe connector" }));
-    await screen.findByText("Kobe connector: Docs and admin tools.");
+    await userEvent.click(form.getByRole("button", { name: "Save Kaiju connector" }));
+    await screen.findByText("Kaiju connector: Docs and admin tools.");
     const put = must(calls.find((c) => c.method === "PUT"));
     expect(JSON.parse(String(put.body))).toEqual({ kobeMcpMode: "admin" });
     expect(
       (
-        within(screen.getByRole("form", { name: "Kobe connector" })).getByRole("radio", {
+        within(screen.getByRole("form", { name: "Kaiju connector" })).getByRole("radio", {
           name: "Docs and admin tools",
         }) as HTMLInputElement
       ).checked,
     ).toBe(true);
   });
 
-  it("shows the Kobe admin limits with their defaults and saves a change (KOBE-814)", async () => {
+  it("shows the Kaiju admin limits with their defaults and saves a change (KOBE-814)", async () => {
     const calls = stubApi({
       "GET /v1/site/settings": [
         [
@@ -579,14 +579,14 @@ describe("Settings: the Kobe connector switch (KOBE-623)", () => {
       ],
     });
     renderSite(<SettingsPage />, "admin");
-    const form = within(await screen.findByRole("form", { name: "Kobe admin limits" }));
+    const form = within(await screen.findByRole("form", { name: "Kaiju admin limits" }));
     const reads = form.getByLabelText(/admin reads per person per minute/i) as HTMLInputElement;
     expect(reads.value).toBe("60");
     expect(form.getByText(/default is 60/)).toBeTruthy();
     expect(form.getByText(/default is 30/)).toBeTruthy();
     await userEvent.clear(reads);
     await userEvent.type(reads, "90");
-    await userEvent.click(form.getByRole("button", { name: "Save Kobe limits" }));
+    await userEvent.click(form.getByRole("button", { name: "Save Kaiju limits" }));
     await screen.findByText(/Kobe admin limits now 90 reads per minute and 30 writes per hour/);
     const put = must(calls.find((c) => c.method === "PUT"));
     expect(JSON.parse(String(put.body))).toEqual({ kobeReadsPerMinute: 90, kobeWritesPerHour: 30 });
@@ -596,7 +596,7 @@ describe("Settings: the Kobe connector switch (KOBE-623)", () => {
     stubApi({ "GET /v1/site/settings": [200, { requireTwoFactor: false }] });
     renderSite(<SettingsPage />, "admin");
     await screen.findAllByRole("checkbox");
-    expect(screen.queryByRole("form", { name: "Kobe connector" })).toBeNull();
+    expect(screen.queryByRole("form", { name: "Kaiju connector" })).toBeNull();
   });
 });
 

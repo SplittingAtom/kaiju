@@ -6,7 +6,7 @@ import { useBranding } from "../../components/shell/branding-context";
 import { Button, Field, Notice, TextInput } from "../../components/ui/console";
 import { validateSetup } from "../../lib/setup";
 
-/** First-run wizard: creates the Owner while Kobe has no users, then disables itself. */
+/** First-run wizard: creates the Owner while Kaiju has no users, then disables itself. */
 export default function SetupPage() {
   const [required, setRequired] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);

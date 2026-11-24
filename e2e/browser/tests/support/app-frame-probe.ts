@@ -63,7 +63,7 @@ export const PROBE_HTML = `<!doctype html>
   await attempt("local_storage", async () => "read:" + window.localStorage.length);
   await attempt("parent_dom", async () => "read:" + window.parent.document.title.length);
   // WebRTC (review MEDIUM-2): connect-src does not govern it. Record what this browser does in
-  // this realm (Kobe's guard should have removed the constructor) and in a fresh one.
+  // this realm (Kaiju's guard should have removed the constructor) and in a fresh one.
   const rtc = (win) => new Promise((resolve) => {
     const Ctor = win.RTCPeerConnection || win.webkitRTCPeerConnection;
     if (typeof Ctor !== "function") return resolve({ constructor: "absent" });

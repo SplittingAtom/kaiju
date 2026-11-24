@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The assistant-ui runtime for Kobe (D16): `useRemoteThreadListRuntime` over the Thread API, and
+ * The assistant-ui runtime for Kaiju (D16): `useRemoteThreadListRuntime` over the Thread API, and
  * per thread an `ExternalStoreRuntime` fed by the thread's controller, its entry tree projected to
  * a branchable message repository (`parentId` + `headId`).
  */

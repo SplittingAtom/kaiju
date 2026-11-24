@@ -48,7 +48,7 @@ export function recordAudit(tx: KobeTx, event: ServerAuditEvent): Promise<AuditR
 }
 
 /**
- * Records an event that has no transaction of Kobe's to join (Better Auth endpoints, reads such as
+ * Records an event that has no transaction of Kaiju's to join (Better Auth endpoints, reads such as
  * export, system observations). Never throws: the action already happened, so a failed write is
  * logged at error level (operators alert on it) instead of failing the response.
  */

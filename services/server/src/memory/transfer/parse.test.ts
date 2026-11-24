@@ -110,7 +110,7 @@ describe("JSON import", () => {
     expect(codeOf(() => parseImport("json", many))).toBe("memory_import_too_large");
   });
 
-  it("refuses a file that is not a Kobe memory export", () => {
+  it("refuses a file that is not a Kaiju memory export", () => {
     expect(codeOf(() => parseImport("json", "{"))).toBe("memory_import_invalid");
     expect(codeOf(() => parseImport("json", '{"items":[]}'))).toBe("memory_import_invalid");
   });

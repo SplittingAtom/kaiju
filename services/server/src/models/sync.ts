@@ -84,7 +84,7 @@ interface TeamSnapshot extends TeamInput {
 }
 
 /**
- * Keeps Bifrost in step with Kobe (KOBE-40, spec D30; "No Redis"). Every replica LISTENs on
+ * Keeps Bifrost in step with Kaiju (KOBE-40, spec D30; "No Redis"). Every replica LISTENs on
  * `kobe_models` (on its shared LISTEN connection, KOBE-704); the one holding
  * {@link MODELS_SYNC_LOCK_KEY} (a session lock on that connection, released if the connection or
  * the replica dies) runs the passes: on every change hint (debounced),

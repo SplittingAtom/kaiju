@@ -1,6 +1,6 @@
-# Kobe
+# Kaiju
 
-Kobe is a self-hosted conversational agent platform for one organization and its teams: your own
+Kaiju is a self-hosted conversational agent platform for one organization and its teams: your own
 Claude.ai-style workspace on your own k3s cluster. Agents run in gVisor-isolated sandboxes with a real
 filesystem and shell, teams are isolated by Postgres row-level security, and every tool call is decided
 by the server. Site admins can brand the whole site (name, logo, favicon and one of six
@@ -19,7 +19,7 @@ review. Licensed under Apache-2.0.
 | `services/sandbox-agent` | Sandbox main process: dial-out WSS, Pi RPC bridge                      |
 | `services/mcp-proxy`     | Credential-holding MCP proxy                                           |
 | `services/egress-proxy`  | Default-deny egress proxy                                              |
-| `packages/protocol`      | Kobe Event Stream schema shared by server and web                      |
+| `packages/protocol`      | Kaiju Event Stream schema shared by server and web                      |
 | `packages/db`            | Drizzle schema, migrations, RLS policies, cross-team probe suite       |
 | `tools/license-check`    | Dependency license policy check                                        |
 | `images/sandbox`         | The one sandbox image agents run in (gVisor)                           |

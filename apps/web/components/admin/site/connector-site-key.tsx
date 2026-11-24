@@ -18,7 +18,7 @@ import type { Mutation } from "../use-resource";
 /**
  * A connector's site-wide API key (KOBE-303): entered once here, used for every member of every
  * team that enabled the connector, never shown again (only its last four characters). The
- * upstream server then sees one identity for everyone, which the warning says; Kobe's own audit
+ * upstream server then sees one identity for everyone, which the warning says; Kaiju's own audit
  * still records which member made each call.
  */
 export function SiteKeyPanel({
@@ -77,7 +77,7 @@ export function SiteKeyPanel({
     >
       <Notice tone="warn">
         Shared attribution: every member of every team that enabled {c.name} calls it with this one
-        key, so the server sees a single identity for everyone. Kobe&apos;s audit log still records
+        key, so the server sees a single identity for everyone. Kaiju&apos;s audit log still records
         which member made each call.
       </Notice>
       <p className="m-0 my-3 text-sm text-console-muted">

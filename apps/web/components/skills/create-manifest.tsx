@@ -94,7 +94,7 @@ export function ManifestChoiceForm({
 
 /**
  * Create kobe.skill.yaml from the Promote panel (KOBE-564): offered when the Site refuses a
- * version for having no manifest. Kobe drafts the file with the chosen model and forks the
+ * version for having no manifest. Kaiju drafts the file with the chosen model and forks the
  * version into a Workbench draft of the member's; the editor opens on it: review, Save version,
  * run the evals again, then promote the new version.
  */
@@ -120,7 +120,7 @@ export function CreateManifest({
     <div className="flex flex-col gap-2">
       <ManifestChoiceForm
         teamId={teamId}
-        intro="Kobe can write kobe.skill.yaml for this version with a model of your choice, into a new Workbench draft. Save that draft as the next version and promote it."
+        intro="Kaiju can write kobe.skill.yaml for this version with a model of your choice, into a new Workbench draft. Save that draft as the next version and promote it."
         pending={mutation.pending}
         done={mutation.notice !== null}
         onCreate={(choice) => void create(choice)}

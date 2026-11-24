@@ -23,7 +23,7 @@ export interface MemoryWho {
   readonly siteRole: SiteRole;
   readonly grants: readonly SiteGrant[];
   /**
-   * The call comes from a Kobe admin tool inside a run (KOBE-650): it reads what that Workspace's
+   * The call comes from a Kaiju admin tool inside a run (KOBE-650): it reads what that Workspace's
    * runs may see, so the Workspace's switches apply even to Site curators.
    */
   readonly viaAgent?: boolean;
@@ -86,7 +86,7 @@ export function assertEnabled(
 }
 
 /**
- * A Kobe MCP admin tool's call (KOBE-650, Chris Q4): agents have no write path to memory items, and
+ * A Kaiju MCP admin tool's call (KOBE-650, Chris Q4): agents have no write path to memory items, and
  * read only Workspace and Site items their person curates; personal and portable items never.
  * The tools ask for nothing else; this refuses a call that did anyway.
  */

@@ -79,7 +79,7 @@ describe("discovery validation (KOBE-626)", () => {
   });
 
   it("refuses an Entra document naming another tenant or the {tenantid} placeholder (ac-2)", async () => {
-    // openid-client itself tolerates any issuer from login.microsoftonline.com; Kobe does not.
+    // openid-client itself tolerates any issuer from login.microsoftonline.com; Kaiju does not.
     for (const issuer of [
       "https://login.microsoftonline.com/{tenantid}/v2.0",
       "https://login.microsoftonline.com/99999999-2222-4333-8444-555555555555/v2.0",

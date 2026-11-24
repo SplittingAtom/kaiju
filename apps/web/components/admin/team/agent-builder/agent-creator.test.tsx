@@ -215,7 +215,7 @@ describe("connector tools: Allowed and Denied (ac-2)", () => {
   });
 });
 
-describe("the built-in Kobe connector (KOBE-623)", () => {
+describe("the built-in Kaiju connector (KOBE-623)", () => {
   const KOBE = {
     kobe: {
       connector_id: "6b6f6265-0000-4000-8000-000000000001",
@@ -239,9 +239,9 @@ describe("the built-in Kobe connector (KOBE-623)", () => {
     await fillIdentity();
     await userEvent.click(tab("Behaviour"));
     const add = await screen.findByRole("combobox", { name: "Add a connector" });
-    await within(add).findByRole("option", { name: "kobe (Kobe's admin tools)" });
+    await within(add).findByRole("option", { name: "kobe (Kaiju's admin tools)" });
     await userEvent.selectOptions(add, "jira");
-    // Narrowing to jira's tools keeps Kobe's docs tools on.
+    // Narrowing to jira's tools keeps Kaiju's docs tools on.
     const allowed = () =>
       within(screen.getByRole("list", { name: "Allowed tools" }))
         .getAllByRole("listitem")

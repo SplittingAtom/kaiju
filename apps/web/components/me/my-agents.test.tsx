@@ -125,7 +125,7 @@ describe("My agents shell", () => {
       </MyAgentsShell>,
     );
     expect(await screen.findByText("inside")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Kobe" }).getAttribute("href")).toBe("/");
+    expect(screen.getByRole("link", { name: "Kaiju" }).getAttribute("href")).toBe("/");
     // The theme toggle, as in the chat bar (KOBE-282).
     expect(
       within(screen.getByRole("banner")).getByRole("button", { name: "Dark theme" }),

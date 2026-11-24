@@ -101,7 +101,7 @@
   background-color: var(--kobe-viewer-match-current);
 }
 
-/* Links drawn by Kobe (never pdf.js's annotation layer). */
+/* Links drawn by Kaiju (never pdf.js's annotation layer). */
 .links {
   position: absolute;
   inset: 0;

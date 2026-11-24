@@ -55,7 +55,7 @@ export function DraftManifest({
     <div className="mt-3 flex flex-col gap-2">
       <ManifestChoiceForm
         teamId={teamId}
-        intro="No kobe.skill.yaml yet: Kobe can write one from SKILL.md and the files with a model of your choice. Promotion to the Site needs it."
+        intro="No kobe.skill.yaml yet: Kaiju can write one from SKILL.md and the files with a model of your choice. Promotion to the Site needs it."
         pending={pending}
         done={notice !== null}
         onCreate={(choice) => void run(choice)}

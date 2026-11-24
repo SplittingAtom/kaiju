@@ -31,7 +31,7 @@ export function batchable(
   return (
     // KOBE-493: a write to the file the member is viewing is decided on its own.
     !isViewedFileAsk(row.reasons) &&
-    // KOBE-619: a Kobe admin change is approved on its own, every time.
+    // KOBE-619: a Kaiju admin change is approved on its own, every time.
     !isKobeAdminAsk(row.reasons) &&
     !isProjectWrite(row.tool, parseCanonicalInput(row)) &&
     tool !== undefined &&
@@ -110,7 +110,7 @@ export async function approveAll(
       }
       if (!batchable(row, tools.get(row.tool))) {
         throw notAllowed(
-          `${row.tool} can delete data or reach outside Kobe, so it needs its own decision.`,
+          `${row.tool} can delete data or reach outside Kaiju, so it needs its own decision.`,
         );
       }
       if (!(await askerConnected(tx, teamId, row.userId, row.connectionId))) {

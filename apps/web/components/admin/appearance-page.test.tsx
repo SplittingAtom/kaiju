@@ -7,7 +7,7 @@ import { AppearancePage } from "./site/appearance-page";
 import { answerConfirm, forbidNativeConfirm, renderSite, stubApi } from "./testing";
 
 const BRANDING = {
-  appName: "Kobe",
+  appName: "Kaiju",
   showName: true,
   logo: null,
   favicon: null,
@@ -133,7 +133,7 @@ describe("site Appearance page (KOBE-501)", () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it("resets to Kobe's defaults after asking", async () => {
+  it("resets to Kaiju's defaults after asking", async () => {
     const calls = stubApi({
       "GET /v1/site/branding": [200, { ...BRANDING, appName: "Acme" }],
       "POST /v1/site/branding/reset": [200, BRANDING],

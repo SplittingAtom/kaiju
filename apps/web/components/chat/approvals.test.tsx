@@ -39,7 +39,7 @@ function asked(overrides: Partial<KobeEventPayload<"approval.requested">> = {}) 
       {
         code: "risk_write" as const,
         stage: "risk_class" as const,
-        message: "Creating a Jira issue changes data outside Kobe.",
+        message: "Creating a Jira issue changes data outside Kaiju.",
       },
     ],
     expires_at: new Date(Date.now() + 3_600_000).toISOString(),
@@ -71,7 +71,7 @@ describe("approval card", () => {
     const card = screen.getByRole("group", { name: /Approval needed/ });
     expect(card.textContent).toContain(TOOL);
     expect(card.textContent).toContain("Changes data");
-    expect(card.textContent).toContain("Creating a Jira issue changes data outside Kobe.");
+    expect(card.textContent).toContain("Creating a Jira issue changes data outside Kaiju.");
     expect(screen.getByLabelText("Input to approve").textContent).toContain(
       '"summary": "Rotate keys"',
     );
@@ -110,7 +110,7 @@ describe("approval card", () => {
       ],
     });
     await screen.findByRole("checkbox", { name: /Remember: allow/ });
-    expect(screen.getByText(/doesn.t use remembered approvals: Kobe asks again/)).toBeTruthy();
+    expect(screen.getByText(/doesn.t use remembered approvals: Kaiju asks again/)).toBeTruthy();
   });
 
   it("an ordinary card says nothing about scheduled runs", async () => {

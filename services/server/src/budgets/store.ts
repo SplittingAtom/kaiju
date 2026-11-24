@@ -333,7 +333,7 @@ export interface TeamBudgetInput {
 }
 
 /**
- * KOBE-621: the budget as the caller saw it (a Kobe MCP write's approved before-state). Amounts
+ * KOBE-621: the budget as the caller saw it (a Kaiju MCP write's approved before-state). Amounts
  * compare to the cent; `user_requests_per_minute` applies to the team's own budget only.
  */
 export interface BudgetExpectation extends BudgetAmounts {
@@ -421,7 +421,7 @@ export async function setTeamBudget(
       await update(prior, next);
     } else {
       // KOBE-786: insert only if still absent. A first budget saved meanwhile (another admin, an
-      // approved Kobe MCP write) is a changed before-state, never a unique-violation 500.
+      // approved Kaiju MCP write) is a changed before-state, never a unique-violation 500.
       const inserted = await tx
         .insert(teamBudgets)
         .values({ teamId, ...next, updatedBy: actorId })

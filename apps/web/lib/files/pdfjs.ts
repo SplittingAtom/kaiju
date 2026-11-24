@@ -6,11 +6,11 @@
  *
  * Hardening: the file is opened from bytes already read through the audited workspace route
  * (no URL, no range requests); no PDF JavaScript runs (pdf.js only scripts documents through its
- * viewer's sandbox, which Kobe never loads); XFA forms are off; pdf.js 6 has no `eval` path
+ * viewer's sandbox, which Kaiju never loads); XFA forms are off; pdf.js 6 has no `eval` path
  * left (the old `isEvalSupported` option is gone with the code behind it); WebAssembly is off,
  * as the CSP has no `'wasm-unsafe-eval'` (pdf.js uses its JavaScript decoders instead); standard
  * fonts that a file does not embed fall back to system fonts. The viewer never mounts pdf.js's
- * annotation layer: links are drawn by Kobe (`components/files/pdf-page.tsx`).
+ * annotation layer: links are drawn by Kaiju (`components/files/pdf-page.tsx`).
  */
 import type * as PdfJsModule from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { DocumentInitParameters, PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";

@@ -5,7 +5,7 @@ import { DEFAULT_BACKOFF, backoffDelay, type BackoffPolicy } from "../wire/backo
 import type { WireLogger } from "../wire/client.js";
 
 /**
- * Bootstrap → session tokens (KOBE-22 contract, wired in KOBE-25). A Kobe sandbox pod gets one
+ * Bootstrap → session tokens (KOBE-22 contract, wired in KOBE-25). A Kaiju sandbox pod gets one
  * credential: a projected ServiceAccount token (audience `kobe.sandbox-bootstrap`, rotated by the
  * kubelet, file at KOBE_BOOTSTRAP_TOKEN_FILE). The agent trades it at
  * `POST <server>/v1/sandbox/session` for its sandbox id and one short-lived session token per

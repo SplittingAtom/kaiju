@@ -2,7 +2,7 @@ import { KOBE_BUILTIN_CONNECTOR_ID, siteSettings, sql, type KobeDb, type KobeTx 
 import { recordAudit } from "../audit/record.js";
 
 /**
- * Per-person Kobe admin limits (KOBE-619, spec §6): admin reads per minute and admin writes per
+ * Per-person Kaiju admin limits (KOBE-619, spec §6): admin reads per minute and admin writes per
  * hour, site settings with defaults 60 and 30. Counted from the person's allowed `mcp.tool_call`
  * rows for the built-in connector in the audit log, so the limit holds across server replicas and
  * restarts; the window is found by `at` (indexed) and the person's rows by `(actor_id, seq)`.
@@ -99,7 +99,7 @@ const LOCK_ATTEMPTS = 100;
 const LOCK_RETRY_MS = 100;
 
 /**
- * Runs `fn` (a Kobe admin decision: limit count, then the `mcp.tool_call` row that counts) while
+ * Runs `fn` (a Kaiju admin decision: limit count, then the `mcp.tool_call` row that counts) while
  * holding the person's limit lock, a transaction-level advisory lock, so two replicas cannot both
  * pass the count before either records its call (review L5). The lock's transaction stays open
  * while `fn` runs on other connections; waiting uses try-and-retry with the connection released

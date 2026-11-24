@@ -9,7 +9,7 @@ import {
 } from "@kobe/protocol";
 
 /**
- * Kobe's caps on what a kernel prints (docs/specs/notebooks.md NB4, NB9), applied before anything
+ * Kaiju's caps on what a kernel prints (docs/specs/notebooks.md NB4, NB9), applied before anything
  * is sent: the MIME allow-list, at most `maxOutputBytes` per output, `maxOutputs` and `maxBytes`
  * per execution, and stream text coalesced (per stream name, up to `coalesceBytes`, flushed after
  * `flushMs`). Past a cap one marker output ends the outputs and the rest is dropped.
@@ -73,7 +73,7 @@ function bundleOf(data: unknown): Record<string, unknown> | undefined {
   return Object.keys(kept).length > 0 ? kept : undefined;
 }
 
-/** A kernel output as Kobe keeps it, or undefined when nothing of it may be shown. */
+/** A kernel output as Kaiju keeps it, or undefined when nothing of it may be shown. */
 export function sanitizeOutput(raw: unknown): NotebookOutput | undefined {
   if (!isRecord(raw)) return undefined;
   const type = raw.output_type;
@@ -197,7 +197,7 @@ export class OutputLimiter {
     return { outputs: this.#count, truncated: this.#truncated };
   }
 
-  /** A note of Kobe's own (the kernel died, the timeout), subject to the same caps. */
+  /** A note of Kaiju's own (the kernel died, the timeout), subject to the same caps. */
   note(text: string): void {
     this.flush();
     if (!this.#truncated) this.#send(noteOutput(text));
@@ -228,7 +228,7 @@ export class OutputLimiter {
       this.#pending = undefined;
       this.#deliver(
         noteOutput(
-          `${NOTEBOOK_TRUNCATED_PREFIX}: this cell printed more than Kobe keeps (${this.#limits.maxOutputs} outputs, ${this.#limits.maxBytes} bytes)]\n`,
+          `${NOTEBOOK_TRUNCATED_PREFIX}: this cell printed more than Kaiju keeps (${this.#limits.maxOutputs} outputs, ${this.#limits.maxBytes} bytes)]\n`,
         ),
       );
       return;

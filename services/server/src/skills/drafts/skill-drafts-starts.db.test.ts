@@ -308,7 +308,7 @@ describe("fork (ac-1, ac-3)", () => {
     );
     const creator = rows.find((r) => r.name === "skill-creator");
     const charts = rows.find((r) => r.name === "charts");
-    if (!creator || !charts) throw new Error("Kobe skills not seeded");
+    if (!creator || !charts) throw new Error("Kaiju skills not seeded");
     await h.admin.query(
       `INSERT INTO team_skill_installs (team_id, skill_id, version_id, pin_mode, access, installed_by)
        VALUES ($1, $2, $3, 'pinned', 'available', $4)`,
@@ -461,7 +461,7 @@ describe("teams are walls (review S3)", () => {
         WHERE s.name = 'charts' ORDER BY v.seq DESC LIMIT 1`,
     );
     const charts = rows[0];
-    if (!charts) throw new Error("Kobe skills not seeded");
+    if (!charts) throw new Error("Kaiju skills not seeded");
     await h.admin.query(
       `INSERT INTO team_skill_installs (team_id, skill_id, version_id, pin_mode, access, installed_by)
        VALUES ($1, $2, $3, 'pinned', 'available', $4) ON CONFLICT DO NOTHING`,
@@ -484,7 +484,7 @@ describe("teams are walls (review S3)", () => {
         WHERE s.name = 'skill-creator' ORDER BY v.seq DESC LIMIT 1`,
     );
     const latest = rows[0];
-    if (!latest) throw new Error("Kobe skills not seeded");
+    if (!latest) throw new Error("Kaiju skills not seeded");
     await h.admin.query(
       `INSERT INTO team_skill_installs (team_id, skill_id, version_id, pin_mode, access, installed_by)
        VALUES ($1, $2, $3, 'pinned', 'available', $4) ON CONFLICT DO NOTHING`,
@@ -522,7 +522,7 @@ describe("teams are walls (review S3)", () => {
         WHERE s.name = 'skill-creator' AND v.state = 'approved' ORDER BY v.seq DESC LIMIT 1`,
     );
     const creator = rows[0];
-    if (!creator) throw new Error("Kobe skills not seeded");
+    if (!creator) throw new Error("Kaiju skills not seeded");
     await h.admin.query(
       `INSERT INTO team_skill_installs (team_id, skill_id, version_id, pin_mode, access, installed_by)
        VALUES ($1, $2, $3, 'pinned', 'available', $4) ON CONFLICT DO NOTHING`,

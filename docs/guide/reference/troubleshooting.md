@@ -16,7 +16,7 @@ message wakes it, which can take a little time; your files are kept.
 
 **"Your sandbox ran out of temporary space and is restarting".** The sandbox's home folder
 (`$HOME`, 1 GiB by default) or its `/tmp` (2 GiB) filled up, usually with packages installed
-outside My files or large temporary files, so Kubernetes stopped it. Kobe starts a fresh sandbox on
+outside My files or large temporary files, so Kubernetes stopped it. Kaiju starts a fresh sandbox on
 your next message by itself and the conversation goes on. Everything in My files (`/workspace`) is
 kept; the home folder, `/tmp` and anything installed there start empty again, as after the sandbox
 sleeps. To avoid it, ask the agent to install packages and write large files inside My files (see
@@ -32,7 +32,7 @@ full, so yours could not be created. Nothing of yours was deleted. Ask your team
 to free or raise the quota, then send your message again.
 
 **"The server that holds its storage is not answering".** It may come back with your files: try
-again later. If it stays down, Kobe offers to rebuild from the last sync (next entry).
+again later. If it stays down, Kaiju offers to rebuild from the last sync (next entry).
 
 **"The storage that held it is lost".** Choose **Rebuild sandbox…** under the message (or in the
 Files panel), check the last sync time it shows, and confirm; then send your message again.
@@ -59,7 +59,7 @@ in Trash are deleted for good after 30 days.
 
 ## "Too many …, wait and try again"
 
-Kobe limits how often each person can do a few things, counted across all your workspaces. The
+Kaiju limits how often each person can do a few things, counted across all your workspaces. The
 limits are generous, so you only meet them when something repeats far faster than people work
 (a script, a stuck key, a page reloading in a loop). Wait the time the message says and try again;
 nothing was lost. The limits are the same on every site:
@@ -129,8 +129,8 @@ access**. See [Internet access](../internet-and-approvals/internet-access.md).
 **A connector shows a red cross.** Open **+** → **Connectors** to read the reason. Often you need to
 add your own key in **Profile → My connectors**.
 
-**The agent says it has no admin tools.** Kobe's admin tools need all of these: a site admin chose
-**Docs and admin tools** (Site console → Settings → Kobe connector), your team admin set the Kobe
+**The agent says it has no admin tools.** Kaiju's admin tools need all of these: a site admin chose
+**Docs and admin tools** (Site console → Settings → Kaiju connector), your team admin set the Kaiju
 card on the team console's **Connectors** page to **Read** or **Read and write** (changes need Read
 and write), the agent uses the kobe connector (the gallery agent Kobe does; others must list
 **kobe** among their connectors), and your role allows the action (members get none). Scheduled
@@ -170,7 +170,7 @@ Messages on the sign-in page after **Sign in with _your organization_** (the add
 
 **"Your organization's sign-in can't be used for this site yet"** (`not_allowed`). Either your
 organization gave you no app role or group that a site admin mapped to a team (ask your
-administrator for access), or a Kobe account with your address exists: sign in below with its
+administrator for access), or a Kaiju account with your address exists: sign in below with its
 password or passkey within 10 minutes and confirm the link. Administrators: the audit reason is
 `no_access` or `link_required`.
 
@@ -187,10 +187,10 @@ on, and refuses adding a passkey, password or authenticator app from such a sess
 (`SSO_MFA_REQUIRED`).
 
 **"…carried too many groups"** (`groups_overage`). The token named more than 200 groups, so Entra
-left the list out. Kobe refuses the sign-in and leaves the person's team access as it was (an
+left the list out. Kaiju refuses the sign-in and leaves the person's team access as it was (an
 Owner or Admin is signed in on their site role instead, still without mappings applied).
 Administrators: map app roles instead, or have Entra send only "Groups assigned to the
-application" (the groups claim filter). SCIM user provisioning does not help here: Kobe does not
+application" (the groups claim filter). SCIM user provisioning does not help here: Kaiju does not
 take groups from SCIM yet.
 
 **"…came from a different organization"** (`tenant_mismatch`). The token's tenant (`tid`) or
@@ -204,14 +204,14 @@ organization.
 10 minutes, was finished in another browser, or the page was reloaded. Start again.
 
 **"…could not be verified"** (`token_invalid`). The token's signature, audience, nonce or times
-failed Kobe's checks (often a clock more than a minute off, or a sign-in older than 10 minutes).
-Start again; administrators check the server's and the provider's clocks. Kobe asks the provider
+failed Kaiju's checks (often a clock more than a minute off, or a sign-in older than 10 minutes).
+Start again; administrators check the server's and the provider's clocks. Kaiju asks the provider
 for a sign-in at most 9 minutes old (`max_age`); a provider that ignores that and sends an older
 `auth_time` is refused here, so sign out at the provider and sign in again. A provider other than
 Entra that sends no `auth_time` at all is refused too (`check: auth_time` in the audit log).
 
 **"Sign-in was cancelled or refused…"** (`idp_error`). You cancelled, or the provider refused (for
-example you are not assigned to the Kobe application).
+example you are not assigned to the Kaiju application).
 
 **"…could not be reached"** (`idp_unreachable`). The server could not reach the provider.
 Sign in with your password or passkey, or try later. Administrators: check the server's egress to
@@ -270,17 +270,17 @@ in. Ask a site admin.
 ## Account
 
 **I forgot my password.** Use **Forgot your password?** on the sign-in page. If you sign in with
-your organization's account and never had a Kobe password, there is none to reset: use **Sign in
+your organization's account and never had a Kaiju password, there is none to reset: use **Sign in
 with _your organization_**.
 
-**"Too many sign-in attempts. Wait a minute, then try again."** Kobe slows down guessing. After
+**"Too many sign-in attempts. Wait a minute, then try again."** Kaiju slows down guessing. After
 10 wrong passwords or authenticator codes for one account in 15 minutes, from anywhere, that
 account gets one try a minute until the 15 minutes have passed. During that time even the right
 password is refused until the next try is due, so wait a minute before trying again. Signing in
 with a passkey or your organization's account is not affected. Signing in with your
 organization's account, or with your password and code once a try is due, or a password reset
 (**Forgot your password?**) ends the wait at once. The same message appears when
-one network sends many sign-ins within a few seconds. Kobe never locks an account. If it keeps
+one network sends many sign-ins within a few seconds. Kaiju never locks an account. If it keeps
 happening although you are not mistyping, someone else may be trying your address: tell your site
 admin, who sees it in the audit log and on **Users**.
 

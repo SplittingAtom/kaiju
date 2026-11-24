@@ -19,7 +19,7 @@ export const identity = defineDomain({
     "two_factors",
     "jwks",
     "rate_limits",
-    // Kobe's own rate limits and reset-email claims, apart from Better Auth's prune (KOBE-809)
+    // Kaiju's own rate limits and reset-email claims, apart from Better Auth's prune (KOBE-809)
     "kobe_rate_limits",
     "invitations",
     // Identity and governance

@@ -83,7 +83,7 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     ]);
   });
 
-  it("has no DNS; Kobe services resolve through /etc/hosts to their ClusterIPs", async () => {
+  it("has no DNS; Kaiju services resolve through /etc/hosts to their ClusterIPs", async () => {
     const spec = sandboxPodSpec(await verified(), SETTINGS, ADDRESSES) as unknown as Pod & {
       dnsConfig: { nameservers: string[] };
       hostAliases: { ip: string; hostnames: string[] }[];

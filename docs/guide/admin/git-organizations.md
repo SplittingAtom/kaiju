@@ -29,14 +29,14 @@ Select **Connect a git organization**. The dialog has three steps:
 3. **Test and connect.** **Test** reads the organization and lists what the credential may do
    (read, push and open pull requests, create repositories, administer) without saving anything.
    It names who actions will appear as, the host's version and the credential's expiry, and warns
-   when the credential can do more than Kobe needs. **Connect** is offered once a test passes; it
+   when the credential can do more than Kaiju needs. **Connect** is offered once a test passes; it
    tests again and stores the credential. You can also set the display name members see (by
    default "_organization_ on _provider_") and the [repository defaults](#settings).
 
 When a test fails, the dialog says why in plain words: the credential was not accepted, a
 permission is missing (it names the one the host asked for), the organization does not exist or
 is not visible to the credential, the GitHub App is not installed or is suspended, the host runs
-a version Kobe does not support, or Kobe cannot reach the host or its address is not allowed (one
+a version Kaiju does not support, or Kaiju cannot reach the host or its address is not allowed (one
 message for both, so the page does not reveal which internal names exist). A GitHub App's private
 key is at most 8 KiB. A server on a private network
 must also be reachable under the Site's egress rules: ask a Site admin to add it as an internal
@@ -53,13 +53,13 @@ GitHub App**) with these **repository permissions** and no organization or accou
 | Contents       | Read and write | Clone and fetch (read), push (write).                                                                                             |
 | Pull requests  | Read and write | Open pull requests and comment.                                                                                                   |
 | Issues         | Read and write | Create issues and comment.                                                                                                        |
-| Administration | Read and write | Only if agents may create repositories. GitHub requires it for that; it also allows deleting repositories, which Kobe never does. |
+| Administration | Read and write | Only if agents may create repositories. GitHub requires it for that; it also allows deleting repositories, which Kaiju never does. |
 
 At **Read**, Read is enough for Contents, Pull requests and Issues, and Administration is not
 needed. Install the App on the organization (all repositories when agents create repositories),
-generate a private key, and give Kobe the **App ID**, the **installation ID** (the number at the
+generate a private key, and give Kaiju the **App ID**, the **installation ID** (the number at the
 end of the installation's settings address) and the **private key** (choose the `.pem` file or
-paste it; an encrypted key cannot be used). Kobe mints a one-hour token for each use, limited to
+paste it; an encrypted key cannot be used). Kaiju mints a one-hour token for each use, limited to
 the repository and permissions that use needs. Actions appear as the App's bot, no user account is
 used, and removing the App's installation revokes access at once.
 
@@ -69,7 +69,7 @@ Create a fine-grained personal access token (**Settings → Developer settings �
 tokens → Fine-grained tokens**) with the organization as **resource owner** (an organization owner
 may have to approve it), access to all repositories (or the ones agents may use), an expiry date,
 and the same repository permissions as the App above, with no organization permissions. The token
-is the whole grant: Kobe cannot narrow it per use, and actions appear as the token's owner. GitHub
+is the whole grant: Kaiju cannot narrow it per use, and actions appear as the token's owner. GitHub
 cannot report a fine-grained token's permissions, so the test shows writing and creating as "not
 known until first use". A classic token works but is flagged for its extra scopes.
 
@@ -87,8 +87,8 @@ account** that is a member of only this organization, sign in as it, and create 
 | `write:repository`   | Read and push repositories, open pull requests.        |
 | `write:issue`        | Create issues and comment, also on pull requests.      |
 
-Kobe supports Gitea 1.26.0 and Forgejo 15.0.0 and later, and refuses older servers with a message
-naming the minimum. If you pick Gitea for a Forgejo server (or the other way round), Kobe records
+Kaiju supports Gitea 1.26.0 and Forgejo 15.0.0 and later, and refuses older servers with a message
+naming the minimum. If you pick Gitea for a Forgejo server (or the other way round), Kaiju records
 what the server reports.
 
 ## Access levels
@@ -114,8 +114,8 @@ repository's old address is not followed: use its current name.
 
 ### Agents' git host tools
 
-Agents act on the host's API through tools Kobe runs on its server (the list is in
-[Working with git repositories](../for-agents/working-with-git.md)). Kobe decides every call
+Agents act on the host's API through tools Kaiju runs on its server (the list is in
+[Working with git repositories](../for-agents/working-with-git.md)). Kaiju decides every call
 under the Workspace's policy:
 
 - Reads and creating a branch need no approval while the member is present. Creating a
@@ -127,8 +127,8 @@ under the Workspace's policy:
   Workspace allow rule does not remove the member's approval in a conversation (only the member's
   own remembered approval does), so "always allow pull requests in `acme/docs`" is the member's
   choice, not the admin's.
-- The tools come from Kobe's built-in **git** connector, separate from the Kobe connector: the
-  Site's **Kobe connector** setting and turning the Kobe connector off in a conversation do not
+- The tools come from Kaiju's built-in **git** connector, separate from the Kaiju connector: the
+  Site's **Kaiju connector** setting and turning the Kaiju connector off in a conversation do not
   affect them. Their ceiling is the Site's **Git connections** switch and allowed hosts, then
   each connection's access level and agents.
 - New repositories are private, or internal where the connection's repository default is
@@ -139,7 +139,7 @@ under the Workspace's policy:
   conversation running in the member's sandbox uses one of them.
 - Nothing destructive is offered: no deleting or archiving repositories, merging, visibility or
   settings changes, members, secrets or webhooks.
-- Reading a repository that is a Kobe Repo (with the tools or git in sandboxes) follows its
+- Reading a repository that is a Kaiju Repo (with the tools or git in sandboxes) follows its
   project's read rule. Every Workspace member is currently a reader of every project, so today
   this refuses no member; it takes effect wherever a project's readers are restricted, and then
   the Repo behaves for others as if it did not exist. Converting a project to a Repo never widens
@@ -162,7 +162,7 @@ Each connection card shows the provider, host, organization, credential (the App
 token's last characters), access level, health, when it was last checked, the token's expiry and
 what the credential may do. Health is **Working**, **Failing** (with what went wrong, such as the
 credential no longer accepted or the App's installation removed), **Not checked yet**, or **Not
-allowed by the Site** (the Site turned git connections off or no longer allows the host; Kobe then
+allowed by the Site** (the Site turned git connections off or no longer allows the host; Kaiju then
 sends nothing to the host). Its buttons:
 
 - **Settings**: display name, access level, defaults for new repositories (private, or internal
@@ -171,9 +171,9 @@ sends nothing to the host). Its buttons:
   (see [Commits to Repos](#commits-to-repos)), and whether every agent in the Workspace may use
   it or only agents you choose. Git in sandboxes cannot use a connection limited
   to chosen agents, because one sandbox serves all of a member's agents.
-- **Replace credential**: paste a new token or key. Kobe tests it first; the old one is then
+- **Replace credential**: paste a new token or key. Kaiju tests it first; the old one is then
   discarded. Sandboxes may keep using the old one for up to 30 seconds.
-- **Check now**: tests the stored credential and updates the health. Kobe also checks every
+- **Check now**: tests the stored credential and updates the health. Kaiju also checks every
   connection every few hours.
 - **Disconnect**: deletes the stored credential. Nothing on the host changes: repositories there
   stay. Sandboxes already working with the organization may keep their access for up to 30
@@ -196,42 +196,42 @@ connection and the date; neither names the token. Create a new token on the host
 ## Commits to Repos
 
 A Repo is a project whose record is a repository in a connected organization. When a member
-commits to a Repo with Kobe's **Commit…** dialog, or their agent does with `commit_project`,
-Kobe's server makes a git commit authored as the member (with the address chosen under
-[Commit author email](#commit-author-email), and "_name_ via Kobe" as committer) and pushes it
+commits to a Repo with Kaiju's **Commit…** dialog, or their agent does with `commit_project`,
+Kaiju's server makes a git commit authored as the member (with the address chosen under
+[Commit author email](#commit-author-email), and "_name_ via Kaiju" as committer) and pushes it
 with the connection's credential:
 
 - **By default**, to a new branch named `kobe/<member>/<message>-<commit>`, and opens a pull
   request into the default branch. Further commits from the same working copy are added to that
   pull request while it is open; after it is merged or closed, the next commit opens a new one.
 - **With "Allow commits straight to the default branch"** (off by default), straight to the
-  default branch, and Kobe's copy of the Repo takes the same commit. Where the host protects the
-  default branch, Kobe opens a pull request instead and says so. Turning the setting on or off is
+  default branch, and Kaiju's copy of the Repo takes the same commit. Where the host protects the
+  default branch, Kaiju opens a pull request instead and says so. Turning the setting on or off is
   recorded as `git.connection.updated` (field `direct_commits`).
 
-Kobe builds each commit on the host's current branch and checks every file it changes: if
+Kaiju builds each commit on the host's current branch and checks every file it changes: if
 someone changed the same file on the host since the member's copy, the commit is refused ("changed
 on the git host") and nothing on the host is overwritten; the member presses **Update**, then
-commits again. Changes to other files on the host are kept. Kobe never force-pushes. A commit needs
+commits again. Changes to other files on the host are kept. Kaiju never force-pushes. A commit needs
 the connection at **Read and write**, the Contributor role or above and editor or owner of the
 project; an agent's commit also needs the connection to allow that agent (when it is limited to
 chosen agents) and the member's approval each time (`commit_repo`: the card names the host,
 repository and branch; rules that allow `commit_project` do not cover it, and it cannot be
-remembered). Kobe records `git.repo.commit_attempted` before each push and `git.repo.committed`
+remembered). Kaiju records `git.repo.commit_attempted` before each push and `git.repo.committed`
 after it, with the pull request's number and link but never the message, file names or branch
-name; `git.repo.commit_failed` when Kobe or the host refused the commit. Members may commit to
+name; `git.repo.commit_failed` when Kaiju or the host refused the commit. Members may commit to
 Repos 60 times an hour (more answers "Too many commits to Repos" with when to try again).
 
-This setting governs Kobe's own commit flow only. Agents pushing with git in their sandbox push to
+This setting governs Kaiju's own commit flow only. Agents pushing with git in their sandbox push to
 whatever branch the host allows them: protect the default branch on the host (require a pull
 request) to keep it reviewed either way.
 
 ## Commit author email
 
-Commits made in members' sandboxes carry the member's name as author, and "_name_ via Kobe" as
+Commits made in members' sandboxes carry the member's name as author, and "_name_ via Kaiju" as
 committer. Under **Commit author email** on the Git page, choose the address they carry:
 
-- **Member's Kobe email** (the default): the email the member signs in with. Anyone who can read
+- **Member's Kaiju email** (the default): the email the member signs in with. Anyone who can read
   the repository on the host sees it.
 - **No-reply address**: `<short id>+<name slug>@users.noreply.<Site host>` (the first characters
   of the member's id, a plus sign, their display name in lower-case letters, digits and hyphens,
@@ -245,11 +245,11 @@ commits only. Changes are recorded in the audit log (`git.settings.updated`).
 ## Repos: the mirror, read-only Repos, relink and detach
 
 After a project is converted to a Repo, the repository's default branch on the host is the
-project's record. Kobe keeps a mirror of it, its files and its newest 25 commits, so the Files
+project's record. Kaiju keeps a mirror of it, its files and its newest 25 commits, so the Files
 panel, project mounts in sandboxes and members without git access keep working. The mirror is
 refreshed:
 
-- when Kobe pushes to the repository, including a push from git in a sandbox (about 30 seconds
+- when Kaiju pushes to the repository, including a push from git in a sandbox (about 30 seconds
   later);
 - when someone opens the Repo, if it was last refreshed more than 5 minutes ago (in the
   background: the panel shows the mirror as it is meanwhile);
@@ -258,30 +258,30 @@ refreshed:
   Refresh skips the waiting after failures, but not a rate limit set by the host or the end of
   the connection's hourly budget: it then says when to try again.
 
-A commit made on the host appears in Kobe after the next refresh. Each refresh uses one of the
+A commit made on the host appears in Kaiju after the next refresh. Each refresh uses one of the
 connection's 3,000 git reads an hour, the budget agents' git tools share; when it is used up the
 refresh waits for the next hour. The panel shows when the mirror was last refreshed and, after a
-failure, what went wrong. Kobe retries a failed refresh after 5 minutes, then waits twice as long
+failure, what went wrong. Kaiju retries a failed refresh after 5 minutes, then waits twice as long
 after each further failure, up to 6 hours (or until the host's rate limit resets); the mirror
 stays as it was in the meantime. A mirror can hold at most 500 files of at most 50 MiB each, 256 MiB in all, at the tip of the
-default branch; Kobe checks every file's size before reading it. A repository whose newest 25
+default branch; Kaiju checks every file's size before reading it. A repository whose newest 25
 commits add more than about half as much again (large files rewritten often) is also too large to
 mirror until those commits are older. Convert to repo refuses a project whose current files are already beyond that ("too
 large to mirror"). If a repository grows past it on the host, the Repo says it is too large to
-mirror and keeps showing its last mirror; nothing changes on the host. Kobe checks again every 6
+mirror and keeps showing its last mirror; nothing changes on the host. Kaiju checks again every 6
 hours (or on Refresh) and the mirror resumes once the repository is back within the limits. When
-the host reports a repository size far over the limit (more than four times the largest pack Kobe
-accepts), Kobe skips the download and the Repo stays too large; the size is only a hint, so a
+the host reports a repository size far over the limit (more than four times the largest pack Kaiju
+accepts), Kaiju skips the download and the Repo stays too large; the size is only a hint, so a
 repository that is only a little over is still fetched and judged by what it sends. Refresh on a
 Repo that is too large to mirror works once an hour for the whole Repo; before that it says why
-and when to try again. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
+and when to try again. Symlinks and submodules are left out. Kaiju's history settings for projects don't apply to
 a Repo: its history is on the host.
 
-A repository renamed or transferred on the host is followed: Kobe knows it by the host's id. When
+A repository renamed or transferred on the host is followed: Kaiju knows it by the host's id. When
 the repository is **archived** or **deleted** on the host, or its connection is **disconnected**,
-the Repo becomes read-only in Kobe from its last mirror and shows a banner saying why. Hosts
+the Repo becomes read-only in Kaiju from its last mirror and shows a banner saying why. Hosts
 answer "not found" both for a deleted repository and for one the Workspace's credential can no
-longer see (for example a GitHub App whose repository list was narrowed), so Kobe marks a Repo
+longer see (for example a GitHub App whose repository list was narrowed), so Kaiju marks a Repo
 deleted only after four such answers in a row, over at least half an hour, and keeps checking a
 deleted Repo every 6 hours: when the host shows it again, it is active again. Workspace
 admins then have two ways forward:
@@ -292,7 +292,7 @@ admins then have two ways forward:
   nothing is lost. A public repository, or one that is already another project's Repo, is
   refused.
 - **Detach**: turn the Repo back into an ordinary project. One commit of the mirrored files
-  starts its Kobe history again, and Kobe commits work as before. The repository stays on the host
+  starts its Kaiju history again, and Kaiju commits work as before. The repository stays on the host
   and stays listed under **Repositories**.
 
 Relink and detach are in the Files panel: a Repo's **⋯** menu → **Repo details…** → **Relink…**
@@ -301,7 +301,7 @@ Relink and detach are in the Files panel: a Repo's **⋯** menu → **Repo detai
 
 Both are recorded in the audit log (`git.repo.relinked`, `git.repo.detached`), as are mirror
 updates and changes of state on the host (`git.repo.mirror_updated`,
-`git.repo.host_state_changed`). Kobe never changes anything on the host when a Repo is relinked
+`git.repo.host_state_changed`). Kaiju never changes anything on the host when a Repo is relinked
 or detached.
 
 ## What members see

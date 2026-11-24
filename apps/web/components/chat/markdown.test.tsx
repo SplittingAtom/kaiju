@@ -20,7 +20,7 @@ function expectInert(root: HTMLElement) {
   for (const tag of ["script", "iframe", "img", "object", "embed", "style", "form", "math"]) {
     expect(root.querySelector(tag), tag).toBeNull();
   }
-  // Only Kobe's own icons (inside the code block's copy button) may be SVG, never agent text.
+  // Only Kaiju's own icons (inside the code block's copy button) may be SVG, never agent text.
   expect(
     [...root.querySelectorAll("svg")].filter((svg) => svg.closest("button") === null),
     "svg",

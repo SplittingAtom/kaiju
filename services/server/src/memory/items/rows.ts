@@ -101,7 +101,7 @@ export function itemToWire(
 
 /**
  * How much of an item's history a reader gets. The console reads every version, links for their
- * author and curators. A Kobe admin tool (KOBE-650 review I2, L2) reads the newest
+ * author and curators. A Kaiju admin tool (KOBE-650 review I2, L2) reads the newest
  * `versionsLimit` and sees a link only when it curates the scope and can open that conversation,
  * since the answer is kept in a conversation others may read.
  */

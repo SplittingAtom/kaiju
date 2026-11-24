@@ -93,7 +93,7 @@ describe("checkIdTokenClaims", () => {
     expect(check(entraClaims(over))).toMatchObject({ ok: false, failure, check: which });
   });
 
-  it("KOBE-775: a generic provider must send auth_time (Kobe asks with max_age)", () => {
+  it("KOBE-775: a generic provider must send auth_time (Kaiju asks with max_age)", () => {
     const base = { ...entraClaims(), iss: GENERIC.issuer, aud: GENERIC.clientId, sub: "s1" };
     expect(check({ ...base, auth_time: undefined }, GENERIC)).toMatchObject({
       ok: false,

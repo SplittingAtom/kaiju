@@ -1,5 +1,5 @@
-// The Kobe Explorer Gate (KOBE-441, MCP Apps spec §11) harness, client side: the checks the browser
-// cannot make. e2e/gate-apps.sh runs this inside a Kobe server pod (`node --input-type=module -e`)
+// The Kaiju Explorer Gate (KOBE-441, MCP Apps spec §11) harness, client side: the checks the browser
+// cannot make. e2e/gate-apps.sh runs this inside a Kaiju server pod (`node --input-type=module -e`)
 // after the Gate 1-3 clients' helpers (everything above `const MODES` in e2e/gate1/client.mjs,
 // gate2 and gate3: config, client(), db(), userClient(), ownerClient(), signedInAs(), turn(),
 // follow(), code(), ...). Every step prints `key=value` lines. It drives the product's API; the

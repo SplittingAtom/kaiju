@@ -55,7 +55,7 @@ function codeInBody(text: string): string | undefined {
     }
     seen.add(value);
     const record = value as Record<string, unknown>;
-    // Gemini errors carry Kobe's code as an ErrorInfo `reason` (the shim's sendError).
+    // Gemini errors carry Kaiju's code as an ErrorInfo `reason` (the shim's sendError).
     for (const key of ["code", "type", "reason"]) {
       const candidate = record[key];
       if (typeof candidate === "string" && /^[a-z][a-z0-9_]{2,63}$/.test(candidate)) {
@@ -114,7 +114,7 @@ export function isUnauthorized(failure: Failure): boolean {
 
 /** The run error code for a failure that is not retried (any more). */
 export function runErrorCode(failure: Failure): ModelRunErrorCode {
-  // Only Kobe's own refusal or Bifrost's budget: a provider's own 402 (its billing) is an error.
+  // Only Kaiju's own refusal or Bifrost's budget: a provider's own 402 (its billing) is an error.
   if (failure.code !== undefined && BUDGET_CODES.has(failure.code)) {
     return "model_budget_exhausted";
   }

@@ -1,4 +1,4 @@
-// Gate 1 (KOBE-1) harness, client side. Runs inside a Kobe server pod (`node --input-type=module
+// Gate 1 (KOBE-1) harness, client side. Runs inside a Kaiju server pod (`node --input-type=module
 // -e`, see e2e/gate1.sh), so it has the site's database URL and talks to the server through its
 // Service: requests spread over the server replicas like real users' do. Each simulated user sends
 // its own X-Forwarded-For address (TEST-NET-2), which the server trusts from the pod network, so

@@ -10,7 +10,7 @@ import { publishSiteDraft } from "../../skills/site-edit/site-publish.js";
 import { readJson } from "../../http/request.js";
 import { error, publishSchema, ifMatch, type Ctx, type CatalogEditKit } from "./shared.js";
 
-/** Scan preview, suggested bump and publish of the site draft; a Kobe skill's compare and reset. */
+/** Scan preview, suggested bump and publish of the site draft; a Kaiju skill's compare and reset. */
 export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
   const { db, blobsOr, unavailable, kobeDeps, failure, skillId } = kit;
@@ -86,9 +86,9 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
       case "not_found":
         return error(c, 404, "not_found", "No such catalog skill.");
       case "not_kobe":
-        return error(c, 409, "not_kobe", "Only Kobe's own skills compare with a shipped version.");
+        return error(c, 409, "not_kobe", "Only Kaiju's own skills compare with a shipped version.");
       case "not_shipped":
-        return error(c, 409, "not_shipped", "This release of Kobe doesn't ship that skill.");
+        return error(c, 409, "not_shipped", "This release of Kaiju doesn't ship that skill.");
       case "not_stored":
         return error(c, 409, "not_stored", "The current version's files are not in the store.");
     }
@@ -107,17 +107,17 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
       case "not_found":
         return error(c, 404, "not_found", "No such catalog skill.");
       case "not_kobe":
-        return error(c, 409, "not_kobe", "Only Kobe's own skills reset to Kobe.");
+        return error(c, 409, "not_kobe", "Only Kaiju's own skills reset to Kaiju.");
       case "not_detached":
-        return error(c, 409, "not_detached", "This skill already follows Kobe's shipped version.");
+        return error(c, 409, "not_detached", "This skill already follows Kaiju's shipped version.");
       case "not_shipped":
-        return error(c, 409, "not_shipped", "This release of Kobe doesn't ship that skill.");
+        return error(c, 409, "not_shipped", "This release of Kaiju doesn't ship that skill.");
       case "shipped_not_above":
         return error(
           c,
           409,
           "shipped_not_above",
-          `Kobe ships ${r.shippedSemver}, which is not above the Site's ${r.siteSemver}: the skill stays detached until Kobe ships a higher version.`,
+          `Kaiju ships ${r.shippedSemver}, which is not above the Site's ${r.siteSemver}: the skill stays detached until Kaiju ships a higher version.`,
           { shippedSemver: r.shippedSemver, siteSemver: r.siteSemver },
         );
     }

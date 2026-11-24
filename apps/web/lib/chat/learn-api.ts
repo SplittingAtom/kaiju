@@ -93,9 +93,9 @@ export function learnIndicator(state: LearnState | null): LearnIndicator {
 
 /** Why `/learn` (new messages only) can't run, beyond the state's blocker. */
 export function learnBlocker(state: LearnState | null, mode: LearnMode): string | null {
-  if (state === null) return "Checking whether Kobe can learn from this chat…";
+  if (state === null) return "Checking whether Kaiju can learn from this chat…";
   if (state.blocker !== null) return state.blocker.message;
-  if (state.running !== null) return "Kobe is already learning from this chat.";
+  if (state.running !== null) return "Kaiju is already learning from this chat.";
   if (mode === "new" && !state.newMessages)
     return "Nothing new since the last pass. Rescan the whole chat instead.";
   return null;

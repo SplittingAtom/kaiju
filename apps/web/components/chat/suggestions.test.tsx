@@ -56,7 +56,7 @@ describe("agent starters on the welcome screen (ac-1)", () => {
       scope: "gallery",
       galleryKey: "kobe",
       default: true,
-      name: "Kobe",
+      name: "Kaiju",
       model: null,
       starters: ["Summarise my workspace", "Chart the CSV in my files"],
     });

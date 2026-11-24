@@ -23,7 +23,7 @@ function usePasskeys(): boolean {
 }
 
 /**
- * Shown on a 429: Better Auth's per-address limit or Kobe's per-account throttle of failed
+ * Shown on a 429: Better Auth's per-address limit or Kaiju's per-account throttle of failed
  * attempts (KOBE-812), which allows one attempt a minute after 10 failures in 15 minutes.
  */
 const TOO_MANY = "Too many sign-in attempts. Wait a minute, then try again.";

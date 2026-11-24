@@ -244,7 +244,7 @@ const EXTERNAL_REASONS: Readonly<Record<string, string>> = {
 
 /**
  * The optional external scanner's part (KOBE-341, SK32): its state and its findings, apart from
- * Kobe's own. Advisory: MEDIUM and up are Caution findings to acknowledge, the rest information.
+ * Kaiju's own. Advisory: MEDIUM and up are Caution findings to acknowledge, the rest information.
  */
 function ExternalScan({
   state,
@@ -273,7 +273,7 @@ function ExternalScan({
         <p>
           External scanner: {state.status}
           {EXTERNAL_REASONS[state.reason] ? ` (${EXTERNAL_REASONS[state.reason]})` : ""}.
-          Acknowledge that the package goes without it before approving; Kobe&apos;s own scan above
+          Acknowledge that the package goes without it before approving; Kaiju&apos;s own scan above
           still stands.
         </p>
         <ul className="list-disc ps-6">

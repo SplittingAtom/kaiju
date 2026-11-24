@@ -1,20 +1,20 @@
 ---
 title: Approvals
-summary: When Kobe asks before a tool call runs, how to allow or deny it, how remembered approvals work and where to revoke them.
+summary: When Kaiju asks before a tool call runs, how to allow or deny it, how remembered approvals work and where to revoke them.
 section: Internet access and approvals
 order: 2
 audience: member
 ---
 
-Kobe's server decides every tool call the agent makes. Some calls run at once, some are refused,
+Kaiju's server decides every tool call the agent makes. Some calls run at once, some are refused,
 and some wait for you to say yes. This page explains the approval card, remembering an approval,
 and how to take one back.
 
-## When Kobe asks
+## When Kaiju asks
 
 Whether a call asks depends on the agent's approval mode and your team's rules:
 
-- **Ask on write** (the usual mode): Kobe asks before the agent changes something outside its
+- **Ask on write** (the usual mode): Kaiju asks before the agent changes something outside its
   sandbox, such as a connector tool that writes, project memory, or a commit to a project. Work
   inside the sandbox (files in My files, shell commands, Python) runs without asking unless your
   team added a rule that asks.
@@ -26,9 +26,9 @@ Scheduled runs never ask either: a call that would need approval is skipped and 
 **Skipped actions** at the end of the scheduled run's conversation (the "Scheduled run finished"
 notification gives the count).
 
-Connector tools, and the tools Kobe runs for the agent itself (memory, artifacts, sharing and
+Connector tools, and the tools Kaiju runs for the agent itself (memory, artifacts, sharing and
 opening files, file edit proposals, notebooks, skill drafts and project commits), look at all your
-conversations running at the same time: your conversations share one sandbox, and Kobe can't tell
+conversations running at the same time: your conversations share one sandbox, and Kaiju can't tell
 which of them made a call. Such a call asks whenever any of them would ask for it or refuse it (a
 stricter agent or mode in another conversation, or a scheduled run going meanwhile, for example),
 even if this conversation alone would run it. The card then says another conversation of yours is
@@ -37,7 +37,7 @@ running. A call this conversation's own agent refuses stays refused.
 ### When a scheduled or automatic run overlaps a chat
 
 The most restrictive of your overlapping runs decides. So while you chat, a scheduled run of yours
-(or one in **Auto**) loses every action Kobe runs for the agent that your chat would ask about:
+(or one in **Auto**) loses every action Kaiju runs for the agent that your chat would ask about:
 sharing files, saving project memory and project commits, and running Python where your site asks
 before sandbox writes. In a chat set to **Ask for every tool** that is every such action, reads
 included (recalling memory, opening a file, proposing an edit, skill drafts). Connector tools behave
@@ -57,7 +57,7 @@ The card reads "Approval needed to run _tool_" with a badge: **Reads data**, **C
 Press **Allow** or **Deny**. Only you, the conversation's owner, can decide; people you shared the
 thread with cannot.
 
-- Kobe signs the exact input you allowed, so only that call runs, once.
+- Kaiju signs the exact input you allowed, so only that call runs, once.
 - An approval waits up to one hour, then expires and the run stops.
 - Stopping the run expires its waiting approvals.
 - After deciding, the card says "Denied. The tool did not run." or shows the result.
@@ -68,9 +68,9 @@ writes project memory or commits to a project, or when your team turned it off.
 
 ## Admin changes
 
-When the agent changes a Kobe setting for you through the built-in Kobe connector (for example a
+When the agent changes a Kaiju setting for you through the built-in Kaiju connector (for example a
 member's role, a budget or a team connector), the card starts with **Admin change:**. It shows the
-**Scope** ("Team _name_" or "Whole site"), a summary Kobe built from the input (with names, not the
+**Scope** ("Team _name_" or "Whole site"), a summary Kaiju built from the input (with names, not the
 model's words), a **Before and after** table, and the exact input.
 
 - It asks every time, in every approval mode, Dangerous included.
@@ -84,11 +84,11 @@ See [Admin from a conversation](../admin/admin-from-a-conversation.md).
 When the agent creates a repository, opens a pull request, comments or creates an issue on a
 connected git organization, the card says what will happen on which host, organization and
 repository, and shows the title and the full text that will be posted (shown as plain text; long
-text has **Show all**), including the last line Kobe adds with your name and a link to the
+text has **Show all**), including the last line Kaiju adds with your name and a link to the
 conversation. For a new repository it shows the visibility (private, or internal; never public).
 The exact input is below.
 
-- Once posted, the text is on the git host, outside Kobe: Kobe cannot take it back.
+- Once posted, the text is on the git host, outside Kaiju: Kaiju cannot take it back.
 - Creating a branch and reading do not ask, unless your team's policy says so (in scheduled runs
   and auto mode creating a branch is refused unless your team allow-lists it).
 - These cards are never part of **Approve all waiting**. You can remember them like other tools;
@@ -124,8 +124,8 @@ A remembered approval:
   project.
 
 A tool card allowed by one says "Allowed by your rule (_scope_)". For a connector tool or a tool
-Kobe runs itself, one remembered for **this conversation** or **this run only** applies only while
-no other conversation of yours is running: meanwhile Kobe asks again (it can't tell which
+Kaiju runs itself, one remembered for **this conversation** or **this run only** applies only while
+no other conversation of yours is running: meanwhile Kaiju asks again (it can't tell which
 conversation the call came from). A longer one, such as **until revoked**, keeps applying.
 
 ## Revoke a remembered approval

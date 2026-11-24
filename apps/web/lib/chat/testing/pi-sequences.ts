@@ -42,7 +42,7 @@ const answer = (id: string, parentId: string, model: string, text: string) =>
 const SETUP: readonly PiLine[] = [
   modelChange("m0", null, OPENAI),
   { type: "thinking_level_change", id: "t0", parentId: "m0", thinkingLevel: "off" },
-  message("s0", "t0", { role: "system", content: "You are Kobe." }),
+  message("s0", "t0", { role: "system", content: "You are Kaiju." }),
 ];
 
 /**

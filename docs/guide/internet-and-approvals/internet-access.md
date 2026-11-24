@@ -1,12 +1,12 @@
 ---
 title: Internet access
-summary: How the agent reaches the internet through Kobe's egress proxy, what the blocked-site card means, and how to request access to a website.
+summary: How the agent reaches the internet through Kaiju's egress proxy, what the blocked-site card means, and how to request access to a website.
 section: Internet access and approvals
 order: 1
 audience: member
 ---
 
-The agent's sandbox has no direct internet connection. Every web request goes through Kobe's
+The agent's sandbox has no direct internet connection. Every web request goes through Kaiju's
 egress proxy, which lets through only the websites your team has enabled. When the agent tries to
 reach anything else, the request is blocked and you can ask for access from the conversation.
 
@@ -35,8 +35,8 @@ another way. You can close the card with its close button.
 
 ## Request access
 
-Press **Request access** on the card. Kobe notifies the right people ("Access requested: … were
-notified. Kobe tells you when they decide."):
+Press **Request access** on the card. Kaiju notifies the right people ("Access requested: … were
+notified. Kaiju tells you when they decide."):
 
 - If the site is already in the ceiling, your **team admins** decide.
 - If it is not, the **site admins** decide; approving adds it to the ceiling and enables it for your
@@ -54,7 +54,7 @@ or a wildcard of its parent domain (`*.parent`), never broader. Site admins also
 appear in the team console's **Egress** page (**Access requests**) and the site console's **Egress
 ceiling** page.
 
-Where the team turned on Kobe's admin tools, team admins can also ask the agent to list and decide
+Where the team turned on Kaiju's admin tools, team admins can also ask the agent to list and decide
 access requests or enable a domain; each decision shows an **Admin change** card. Domains with
 injected headers are changed in the console only.
 

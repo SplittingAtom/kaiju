@@ -80,7 +80,7 @@ function SourceDiff({ source }: { readonly source: TemplateSource }) {
 }
 
 /**
- * The live template in the app sandbox, served by Kobe's admin frame route with a header CSP
+ * The live template in the app sandbox, served by Kaiju's admin frame route with a header CSP
  * (`sandbox allow-scripts`, no network); its bridge is stubbed: every call fails.
  */
 export function TemplatePreview({ src, uri }: { readonly src: string; readonly uri: string }) {

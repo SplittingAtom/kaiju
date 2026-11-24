@@ -41,7 +41,7 @@ export function auditPageBody(page: AuditPage | TeamAuditPage) {
 
 /**
  * {@link auditPageBody} with "via agent" views for `userId` (KOBE-623): events a person caused
- * through a Kobe MCP admin tool name the thread, run and tool call, and whether the viewer may
+ * through a Kaiju MCP admin tool name the thread, run and tool call, and whether the viewer may
  * open that thread.
  */
 export async function auditPageBodyFor(

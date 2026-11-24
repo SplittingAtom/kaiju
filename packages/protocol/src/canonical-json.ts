@@ -1,7 +1,7 @@
 /**
  * Canonical JSON for approval signing (D29: approvals are HMAC-signed over the canonical input).
  *
- * The rule is RFC 8785 (JSON Canonicalization Scheme, JCS), with Kobe's strictness on top:
+ * The rule is RFC 8785 (JSON Canonicalization Scheme, JCS), with Kaiju's strictness on top:
  *
  * 1. Only JSON values are accepted: `null`, booleans, finite numbers, strings, arrays, and plain
  *    objects (prototype `Object.prototype` or `null`). `undefined` (anywhere, including as a

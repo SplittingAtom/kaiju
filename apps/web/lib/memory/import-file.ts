@@ -103,9 +103,9 @@ export function readImport(format: ImportFormat, text: string): ReadResult {
   try {
     items = (JSON.parse(text) as { items?: unknown }).items;
   } catch {
-    return { ok: false, message: "This is not valid JSON. Use a Kobe memory export." };
+    return { ok: false, message: "This is not valid JSON. Use a Kaiju memory export." };
   }
-  if (!Array.isArray(items)) return { ok: false, message: "This is not a Kobe memory export." };
+  if (!Array.isArray(items)) return { ok: false, message: "This is not a Kaiju memory export." };
   return items.length > IMPORT_UI_MAX_ROWS
     ? tooMany(items.length)
     : { ok: true, file: { format: "json", content: text, rows: items.length } };

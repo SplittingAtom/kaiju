@@ -5,7 +5,7 @@ import { manifestConnectorNames, type ToolManifest } from "../manifest.js";
 
 /**
  * The MCP tools of an agent version as the eval and the Orbit export must see them (KOBE-112):
- * the Kobe-normalized names `mcp__<server>__<tool>` of exactly what a run of this agent in this
+ * the Kaiju-normalized names `mcp__<server>__<tool>` of exactly what a run of this agent in this
  * team would be offered (same function as `run.start.mcp`, KOBE-111): the version's frozen
  * connectors (for `all`, the team's), team-enabled and active, their pinned and undrifted tools under the team's exposure,
  * narrowed by the agent's tool globs. Names only: no URL, grant or credential is read or returned.

@@ -43,7 +43,7 @@ describe("listing follows the person's permission and both switches (ac-1, KA5)"
       to_role: "team_admin",
     });
     expect(forged.isError).toBe(true);
-    expect(forged.text).toContain("Kobe denied this call");
+    expect(forged.text).toContain("Kaiju denied this call");
     expect(forged.text).toContain("not available to you");
     expect(await roleOf(w.team, w.target.id)).toBe("member");
     expect((await decisions(w.team)).at(-1)).toMatchObject({
@@ -124,7 +124,7 @@ describe("reads run freely, as the person", () => {
 });
 
 describe("the docs tools (KOBE-620, KA-3; spec §4, KA4, KA7)", () => {
-  const index = () => llmsTxt(PAGES, { appName: "Kobe", origin: new URL(PUBLIC_URL).origin });
+  const index = () => llmsTxt(PAGES, { appName: "Kaiju", origin: new URL(PUBLIC_URL).origin });
 
   it("docs_index equals /llms.txt for the deployment's origin and app name (ac-1)", async () => {
     const w = await world(null);

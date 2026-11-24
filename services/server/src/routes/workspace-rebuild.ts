@@ -69,7 +69,7 @@ async function confirmRebuild(c: Ctx, run: () => Promise<RebuildOutcome>) {
       {
         code: "rebuild_failed",
         message:
-          "The sandbox couldn't be rebuilt right now. If the rebuild had already started, Kobe finishes it on its own; otherwise nothing was changed. Try again in a moment.",
+          "The sandbox couldn't be rebuilt right now. If the rebuild had already started, Kaiju finishes it on its own; otherwise nothing was changed. Try again in a moment.",
       },
       503,
     );
@@ -99,7 +99,7 @@ function answer(c: Ctx, outcome: RebuildOutcome) {
         {
           code: "rebuild_pending",
           message:
-            "The rebuild is confirmed, but the old storage couldn't be removed yet. Kobe keeps trying on its own; send your message again in a few minutes.",
+            "The rebuild is confirmed, but the old storage couldn't be removed yet. Kaiju keeps trying on its own; send your message again in a few minutes.",
         },
         503,
       );

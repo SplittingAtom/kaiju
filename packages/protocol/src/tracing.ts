@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * Run traces (KOBE-274). CONTRACT: the ids every component derives for a run's trace, the W3C
- * `traceparent` shape Kobe sends, and the session attributes Langfuse groups by. Browser-safe (no
+ * `traceparent` shape Kaiju sends, and the session attributes Langfuse groups by. Browser-safe (no
  * hashing): the trace id and root span id are pure functions of the run id, so the server, the
  * model gateway and the sandbox agent agree on them without a lookup. They are **predictable**
  * (anyone who sees a run id knows its trace id), so trust never comes from a trace id: see the
@@ -103,7 +103,7 @@ export function runRootSpanId(runId: string): string {
 export const TRACE_FLAG_SAMPLED = 0x01;
 
 /**
- * W3C `traceparent`, version `00` only: `00-<trace id>-<parent span id>-<flags>`. Kobe always sends
+ * W3C `traceparent`, version `00` only: `00-<trace id>-<parent span id>-<flags>`. Kaiju always sends
  * flags `01` (only sampled runs get a trace context); a receiver accepts any flags and treats an
  * unsampled one as "do not record".
  */

@@ -6,7 +6,7 @@ order: 1
 audience: member
 ---
 
-Connectors link Kobe to other systems (a ticket tracker, a data platform, an internal API) through
+Connectors link Kaiju to other systems (a ticket tracker, a data platform, an internal API) through
 the Model Context Protocol (MCP). Each connector gives the agent a set of tools. Some connectors
 also bring apps: small interactive views that appear in the conversation. This page explains how to
 use both.
@@ -19,15 +19,15 @@ the team in the team console's **Connectors** page and choose which of its tools
 That page lists each connector's tools under **Read only** and **Write**; a tool that opens an app
 card is marked **MCP-UI**.
 
-The agent never holds the connector's credentials. Its calls go through Kobe's MCP proxy, which
+The agent never holds the connector's credentials. Its calls go through Kaiju's MCP proxy, which
 adds the credential on the way out, checks the call against your team's rules and records it.
 
-## The built-in Kobe connector
+## The built-in Kaiju connector
 
-Every site has one connector it did not have to register: **Kobe**, Kobe's own. It needs no key
+Every site has one connector it did not have to register: **Kaiju**, Kaiju's own. It needs no key
 and no internet access, and it cannot be turned off for a conversation. Its docs tools let any
 agent read this guide, so you can ask "How do I…" anywhere. Where a site admin and your team admin
-turned them on, its admin tools let the agent read or change Kobe settings as you, within your own
+turned them on, its admin tools let the agent read or change Kaiju settings as you, within your own
 permissions, and every change asks you first with an **Admin change** card. In the composer,
 **+** → **Connectors** lists it first, with "Docs always on" and which admin tools you have. In
 the agent creator you can name **kobe** among an agent's connectors to give it the admin tools.
@@ -39,21 +39,21 @@ Some connectors act as you, with your own account. Open **Profile → My connect
 connector keys**, `/me/connectors`):
 
 - A connector that needs your key shows **No key added**; press **Add key**, paste your **API
-  key** and save. Kobe stores it encrypted, uses it only for your runs and never shows it again.
+  key** and save. Kaiju stores it encrypted, uses it only for your runs and never shows it again.
 - **Replace key** and **Remove key** change or delete it.
 - "Provided by your organization: you need no key of your own." means a site-wide key is used.
 
 Until you add a key, your runs cannot use that connector ("Your runs can't use it until you add
 one."). An app that is missing only your key shows **Add your key**, linking to this page.
 
-A connector that uses OAuth asks you to sign in with your account instead of a key. Kobe renews
+A connector that uses OAuth asks you to sign in with your account instead of a key. Kaiju renews
 that sign-in by itself when it runs out, and also when the connector's server turns it down
 before then (the call is then tried once more). You only need to sign in again when the
 provider has ended the sign-in.
 
 Your keys (and sign-ins for connectors that use OAuth) belong to one workspace. When you are
 removed from a workspace, your account is deactivated, or your identity provider removes your
-access, Kobe deletes them for that workspace (each deletion is in the workspace's **Audit** as
+access, Kaiju deletes them for that workspace (each deletion is in the workspace's **Audit** as
 `mcp.grant.removed`). If you are added back, add your keys and sign in again. The same happens
 when a site admin changes a connector's server address or how it signs in: add your key or sign
 in again. A sign-in you finish after the connector's address changed is refused (**Connect**
@@ -69,8 +69,8 @@ enters your sandbox. With **Read** your sandbox can fetch (clone and pull) there
 write** it can also push, if your role is Contributor or above (and, for a Repo, you are an editor
 or owner of its project).
 
-Agents also get **git host tools** for these organizations from Kobe's built-in **git** connector
-(listed under **+** → **Connectors**, always on, apart from the Kobe connector), run by Kobe's
+Agents also get **git host tools** for these organizations from Kaiju's built-in **git** connector
+(listed under **+** → **Connectors**, always on, apart from the Kaiju connector), run by Kaiju's
 server: reading
 repositories, branches, files, pull requests and issues (at **Read**), and creating branches,
 repositories, pull requests, issues and comments (at **Read and write**, with the same role rules as
@@ -89,7 +89,7 @@ and the reason, with a link to fix it where there is one.
 ## Connector tool calls and approvals
 
 Connector tools are marked by the system that provides them as reading or changing data. By
-default Kobe asks you before a connector tool that changes something runs; read-only tools run
+default Kaiju asks you before a connector tool that changes something runs; read-only tools run
 without asking. Your team's rules can ask more often, and a tool whose definition changed since a
 site admin approved it is turned off until it is approved again. See
 [Approvals](internet-and-approvals/approvals.md).
@@ -97,10 +97,10 @@ site admin approved it is turned off until it is approved again. See
 ## Apps in answers
 
 Some connector tools return an app: an interactive card (a table explorer, a picker, a chart)
-rendered right in the answer. Apps run in a locked-down frame and can only talk to Kobe, which
+rendered right in the answer. Apps run in a locked-down frame and can only talk to Kaiju, which
 checks every call they make like any other tool call.
 
-- **Show response.** When an answer includes an app, Kobe shows only the app card. Everything else
+- **Show response.** When an answer includes an app, Kaiju shows only the app card. Everything else
   in that answer (the text, reasoning steps, other tool cards, the "Used skill" line) is behind a
   collapsed **Show response** toggle under the card; open it to read it in its original order.
   Approval cards, problems and blocked-site cards are never hidden. **Copy** still copies the

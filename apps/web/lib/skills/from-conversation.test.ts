@@ -3,7 +3,7 @@ import type { ChatApi } from "../chat/api";
 import { SOURCE_FILE, skillPrompt, startSkillFromConversation } from "./from-conversation";
 
 /**
- * KOBE-322 (SK10 start 2): a Kobe-agent thread with the source attached and the request to
+ * KOBE-322 (SK10 start 2): a Kaiju-agent thread with the source attached and the request to
  * skill-creator in its composer, not sent: the member reads it and sends it (coordinator).
  */
 function fakeApi(agents: { id: string; galleryKey?: string }[]) {
@@ -27,7 +27,7 @@ function fakeApi(agents: { id: string; galleryKey?: string }[]) {
 }
 
 describe("startSkillFromConversation", () => {
-  it("opens a Kobe conversation, attaches the source and prefills the request without sending", async () => {
+  it("opens a Kaiju conversation, attaches the source and prefills the request without sending", async () => {
     const api = fakeApi([{ id: "a-team" }, { id: "a-kobe", galleryKey: "kobe" }]);
     const attach = vi.fn();
     const prefill = vi.fn();

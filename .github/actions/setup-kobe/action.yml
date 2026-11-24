@@ -2,7 +2,7 @@
 # Node from .nvmrc with the pnpm store cache, the install, and optionally Turbo's local cache.
 # Run after actions/checkout. Pins stay full commit SHAs (Dependabot's github-actions entry
 # also updates this file).
-name: Set up the Kobe workspace
+name: Set up the Kaiju workspace
 description: pnpm, Node from .nvmrc, pnpm install and the Turbo cache from main
 inputs:
   pnpm:

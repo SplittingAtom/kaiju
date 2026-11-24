@@ -14,7 +14,7 @@ import {
  * KOBE-318 (SK28): a site with published team agents migrates as the non-superuser owner (as the
  * chart's Job does). Every existing team agent version is frozen at the local skill versions it
  * resolves to on migration day: per named team skill, its newest approved or suspended version
- * (`teamSkillStates`), never a catalog-routed name (Kobe's seven, or an archived skill whose
+ * (`teamSkillStates`), never a catalog-routed name (Kaiju's seven, or an archived skill whose
  * name the team installed), never another team's skill. FORCE RLS and the immutability trigger
  * are back afterwards, and from then on every version needs a manifest.
  */
@@ -132,7 +132,7 @@ async function seed(c: pg.Client): Promise<void> {
     await c.query(`INSERT INTO teams (id, slug, name) VALUES ($1, $2, 'Freeze')`, [id, slug]);
   // Team A: newest approved (v3 pending is not yet usable), a suspended newest, never approved,
   // rejected after approval, archived (kept for frozen agents), archived with the name handed to
-  // an installed catalog skill, and a team `pdf` from before the upgrade (Kobe's name).
+  // an installed catalog skill, and a team `pdf` from before the upgrade (Kaiju's name).
   await teamSkill(c, ids.teamA, "style", ["approved", "approved", "pending"]);
   await teamSkill(c, ids.teamA, "sus", ["approved", "suspended"]);
   await teamSkill(c, ids.teamA, "draft", ["pending"]);
@@ -213,7 +213,7 @@ describe("agent skill manifest backfill (KOBE-318)", () => {
           team_id: ids.teamA,
           version: 1,
           // In the agent's order, once each; `draft` and `gone` have no usable version, `handed`
-          // resolves through the install, `pdf` is Kobe's and `nosuch` is nobody's.
+          // resolves through the install, `pdf` is Kaiju's and `nosuch` is nobody's.
           skill_manifest: {
             skills: [
               frozen(ids.teamA, "style", 2),

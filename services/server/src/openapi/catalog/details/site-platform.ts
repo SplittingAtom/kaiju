@@ -64,7 +64,7 @@ const connectorView = obj({
   updatedAt: dateTime,
 });
 
-/** `pinBody`: what pinning did (Kobe's own sentence on failure, never the server's text). */
+/** `pinBody`: what pinning did (Kaiju's own sentence on failure, never the server's text). */
 const pinResult = {
   anyOf: [
     obj({ ok: { type: "boolean", const: true }, tools: int, "templates?": int }),

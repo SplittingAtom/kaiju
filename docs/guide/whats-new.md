@@ -1,6 +1,6 @@
 ---
 title: What's new
-summary: What changed in the latest Kobe releases for members and admins, with links to the pages that explain each change. v1.4 connects Workspaces to git organizations on GitHub, Gitea and Forgejo and turns projects into Repos; v1.3 adds memories, and turning Allow memory off now turns memories off too.
+summary: What changed in the latest Kaiju releases for members and admins, with links to the pages that explain each change. v1.4 connects Workspaces to git organizations on GitHub, Gitea and Forgejo and turns projects into Repos; v1.3 adds memories, and turning Allow memory off now turns memories off too.
 section: Getting started
 order: 4
 audience: member
@@ -17,7 +17,7 @@ become a **Repo** that lives on the git host.
 ### For everyone
 
 - **Git in the sandbox works with no setup** for the connected organizations: `git clone`, `fetch`
-  and `push` go through Kobe, which holds the credential. Your agent never sees it. Pushing needs
+  and `push` go through Kaiju, which holds the credential. Your agent never sees it. Pushing needs
   the Contributor role. See [Working with git repositories](for-agents/working-with-git.md).
 - **Agents get git host tools**: list and read repositories, branches, files, pull requests and
   issues, and create branches. Creating a repository, opening a pull request, commenting and
@@ -41,12 +41,12 @@ become a **Repo** that lives on the git host.
   default branch** for the connection. Protect the default branch on the host as well.
 - **Site admins** can switch git connections off for the Site and limit the hosts. See
   [Site admin](admin/site-admin.md).
-- Repositories are outside Kobe's retention and erasure:
+- Repositories are outside Kaiju's retention and erasure:
   [Retention and deletion](reference/retention-and-deletion.md).
 
 ## v1.3: memories
 
-Kobe can now keep short **memories** beside your notes: facts, preferences, conventions,
+Kaiju can now keep short **memories** beside your notes: facts, preferences, conventions,
 definitions and decisions it gives the agent at the start of each run, so you don't repeat
 yourself. Your notes work as before.
 
@@ -55,7 +55,7 @@ yourself. Your notes work as before.
 - **My memory has two tabs.** The memory icon in the top bar (or `/memory`) opens **My memory**
   with **Memories** and **Notes**. Add, edit, pin, archive and undo memories there. See
   [Your memories](memory.md#your-memories).
-- **Learn from this chat.** Ask Kobe to suggest memories from a conversation you started: **+** ›
+- **Learn from this chat.** Ask Kaiju to suggest memories from a conversation you started: **+** ›
   **Memory** › **Learn from this chat**, `/learn`, or **Ctrl+Shift+L** (**Cmd+Shift+L** on a Mac).
   Nothing is saved until you review each suggestion in **To review**. A dot on the **+** button
   pulses once when a conversation has something worth learning from. See
@@ -70,9 +70,9 @@ yourself. Your notes work as before.
   anything goes to the site, and only the statement and your justification travel, never the
   conversation. See [Propose a memory to the Workspace](memory.md#propose-a-memory-to-the-workspace)
   and [Propose a memory to the Site](memory.md#propose-a-memory-to-the-site).
-- **Checked before saving.** Kobe refuses secrets and warns about instruction-like text, personal
+- **Checked before saving.** Kaiju refuses secrets and warns about instruction-like text, personal
   data and near-duplicates. A memory never changes what an agent may do. See
-  [What Kobe checks before a memory is saved](memory.md#what-kobe-checks-before-a-memory-is-saved).
+  [What Kaiju checks before a memory is saved](memory.md#what-kaiju-checks-before-a-memory-is-saved).
 
 ### For admins
 
@@ -103,5 +103,5 @@ yourself. Your notes work as before.
   after 30; nothing you still use is ever deleted. See
   [How long memories are kept](memory.md#how-long-memories-are-kept).
 
-The people who run Kobe find the operator notes for this release (settings, chart, migrations and
+The people who run Kaiju find the operator notes for this release (settings, chart, migrations and
 upgrade steps) in the repository's `docs/releases/v1.3.md`.

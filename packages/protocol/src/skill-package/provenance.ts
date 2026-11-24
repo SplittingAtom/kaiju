@@ -9,7 +9,7 @@ import {
 } from "./layout.js";
 
 /**
- * `provenance.json` (KOBE-309, spec SK19/SK30): Kobe-generated at promotion, never author-edited.
+ * `provenance.json` (KOBE-309, spec SK19/SK30): Kaiju-generated at promotion, never author-edited.
  * Where the package came from, who submitted it, what the scanner said, the scorecard **numbers
  * only** (never eval transcripts, prompts, answers or test threads: those stay in the team), and
  * both hashes. Written as canonical JSON (RFC 8785, `canonicalJson`) in UTF-8, at most
@@ -19,10 +19,10 @@ import {
  * changing a hash. So its fields are of three kinds:
  *  - verifiable against the package beside it ({@link provenanceMismatches}): `name`, `version`,
  *    `hashes`, and `scorecard.packageHash` (freshness);
- *  - Kobe-attested, authoritative only in Kobe's own records, never read back from a file:
+ *  - Kaiju-attested, authoritative only in Kaiju's own records, never read back from a file:
  *    `source`, `submitter`, `confirmedBy`, `scan`, the scorecard numbers, `origin`;
  *  - informational: `fromConversation`, `createdAt`.
- * Kobe never trusts an incoming `provenance.json` (uploads, drafts and imports refuse one;
+ * Kaiju never trusts an incoming `provenance.json` (uploads, drafts and imports refuse one;
  * `checkPackagePaths`) and writes its own from its records whenever it exports a package.
  */
 

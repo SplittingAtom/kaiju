@@ -92,7 +92,7 @@ describe("mapAgentVersionToOrbit (KOBE-90)", () => {
     expect(warnings).toHaveLength(2);
   });
 
-  it("keeps a provider model id and drops a Kobe catalog alias with a warning", () => {
+  it("keeps a provider model id and drops a Kaiju catalog alias with a warning", () => {
     const withId = exportOf(definition({ model: "ollama/qwen3:32b" }));
     expect(withId.config.setup.agents[0]?.model).toBe("ollama/qwen3:32b");
     const alias = exportOf(definition({ model: "smart" }));

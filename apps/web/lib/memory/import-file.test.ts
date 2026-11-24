@@ -22,7 +22,7 @@ describe("Markdown bullets", () => {
     });
   });
 
-  it("turns bullets into a Kobe export and skips other lines", () => {
+  it("turns bullets into a Kaiju export and skips other lines", () => {
     const { content, rows } = markdownToJson(
       "# Team facts\n\n- [fact] One #a\n* [convention] Two\nnot a bullet\n-   \n",
     );

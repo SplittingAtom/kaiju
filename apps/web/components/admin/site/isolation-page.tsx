@@ -21,7 +21,7 @@ const STATE_LABEL = {
 } as const;
 
 /**
- * Isolation status (spec D4, KOBE-9 `/v1/site/isolation`). Without a gVisor or Kata runtime Kobe
+ * Isolation status (spec D4, KOBE-9 `/v1/site/isolation`). Without a gVisor or Kata runtime Kaiju
  * refuses to run agents and "the admin console shows the fix": this page.
  */
 export function IsolationPage() {
@@ -43,7 +43,7 @@ export function IsolationPage() {
     <>
       <PageHeader
         title="Isolation"
-        description="Kobe runs agents only in a gVisor or Kata sandbox. There is no way to turn this off."
+        description="Kaiju runs agents only in a gVisor or Kata sandbox. There is no way to turn this off."
       />
       <ResourceView state={state} label="isolation status">
         {(initial) => <IsolationDetails status={fresh ?? initial} />}
@@ -134,7 +134,7 @@ function Fix({ status }: { readonly status: Extract<IsolationStatus, { state: "m
           <li>Press “Re-check now”. Agents start working as soon as the check passes.</li>
         </ol>
         <p className="text-sm text-console-muted">
-          Details: <code>{status.docs}</code> in the Kobe repository.
+          Details: <code>{status.docs}</code> in the Kaiju repository.
         </p>
       </Notice>
     </section>

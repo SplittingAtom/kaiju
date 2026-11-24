@@ -62,7 +62,7 @@ export interface SiteAuditEvent {
   /** Null once erased (after the site's retention period) or when the request had none. */
   readonly ip: string | null;
   readonly userAgent: string | null;
-  /** Done through a Kobe MCP admin tool (KOBE-623): thread, run, tool call. */
+  /** Done through a Kaiju MCP admin tool (KOBE-623): thread, run, tool call. */
   readonly viaAgent?: ViaAgent;
 }
 

@@ -12,7 +12,7 @@ import { buildDesiredState, virtualKeyName, type ProviderInput } from "./desired
 import { reconcile } from "./reconcile.js";
 
 /**
- * A Bifrost upgrade on a kept store (KOBE-600): the previous pinned binary syncs Kobe's state
+ * A Bifrost upgrade on a kept store (KOBE-600): the previous pinned binary syncs Kaiju's state
  * (providers, keys, customer, teams, virtual keys with a request rate), then the new binary starts
  * on the same `config.db` and runs its store migrations (v2.3.0 moves virtual-key rate limits onto
  * model-config tiers). The sync must find nothing to change, the virtual keys must keep their ids
@@ -130,7 +130,7 @@ describe.skipIf(!BIN || !PREVIOUS)("Bifrost upgrade on a kept store", () => {
         "f".repeat(40),
       );
 
-    // The previous version syncs Kobe's state.
+    // The previous version syncs Kaiju's state.
     const oldPort = 18000 + Math.floor(Math.random() * 1000);
     bifrost = await startBifrost(PREVIOUS ?? "", dir, oldPort);
     const oldAdmin = createHttpBifrostAdmin({

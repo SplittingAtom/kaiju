@@ -70,7 +70,7 @@ export interface GatewayOptions {
   readonly rate: RequestRate;
   readonly gate: CallGate;
   readonly sink: UsageSink;
-  /** Bifrost refused a virtual key Kobe holds: ask the sync to re-push (NOTIFY `resync`). */
+  /** Bifrost refused a virtual key Kaiju holds: ask the sync to re-push (NOTIFY `resync`). */
   readonly onBifrostForgotKey: () => void;
   readonly logger: Logger;
   readonly settings: { readonly maxBodyBytes: number; readonly idleTimeoutMs: number };

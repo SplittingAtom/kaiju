@@ -12,7 +12,7 @@ import {
 
 /**
  * KOBE-245 against the REAL pinned Pi 1.0.0 with the real kobe-tools extension, through
- * kobe-sandbox-agent and a fake Kobe server: `run.start.project` instructions reach the model's
+ * kobe-sandbox-agent and a fake Kaiju server: `run.start.project` instructions reach the model's
  * input for a project run (labelled, sanitised, capped), and a non-project run gets none. They
  * come with the per-run file, so a changed instruction never restarts Pi.
  */

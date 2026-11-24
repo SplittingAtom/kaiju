@@ -9,7 +9,7 @@ import { styleViolations, watchStyleViolations } from "./support/csp.js";
  * the banner; the page never reloads by itself; Reload reloads and keeps the composer's draft.
  * No model turn, nothing created on the server.
  */
-const NOTICE = "Kobe was updated. Reload to get the latest version.";
+const NOTICE = "Kaiju was updated. Reload to get the latest version.";
 const BUILD = "**/api/build";
 
 test("a newer build shows the reload banner, and Reload keeps the draft", async ({

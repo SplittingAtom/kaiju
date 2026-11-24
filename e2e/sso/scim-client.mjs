@@ -22,7 +22,7 @@ export function scimClient({ base, token, fetchImpl = globalThis.fetch, headers 
         authorization: `Bearer ${token}`,
         accept: "application/scim+json",
         ...(body === undefined ? {} : { "content-type": "application/scim+json" }),
-        // Entra's provisioning service identifies itself; Kobe ignores it.
+        // Entra's provisioning service identifies itself; Kaiju ignores it.
         "user-agent": "Microsoft.Identity.Provisioning",
         ...headers,
       },

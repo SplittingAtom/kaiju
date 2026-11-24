@@ -12,9 +12,9 @@ import { isReservedWorkspacePath } from "./outputs.js";
  * (core schema) document whose root is a mapping, duplicate keys and aliases refused.
  * {@link parseSkillEvalSuite} applies them and returns located issues for Workbench lint.
  *
- * Unknown keys are refused at every level: a check Kobe does not know is never skipped (that
+ * Unknown keys are refused at every level: a check Kaiju does not know is never skipped (that
  * would pass a case silently). A new expectation therefore needs a new contract, and a format that
- * older Kobe must refuse a new `apiVersion`. `apiVersion` may be left out (skills written for
+ * older Kaiju must refuse a new `apiVersion`. `apiVersion` may be left out (skills written for
  * other tools have none); it then means v1.
  *
  * Nothing in it grants anything: no key pre-approves a tool, widens egress or adds a connector.
@@ -144,7 +144,7 @@ const matchSchema = z.preprocess(
 );
 
 /**
- * An output glob: Kobe's glob grammar, relative to `/workspace` (`outputs/*.xlsx`). A glob that
+ * An output glob: Kaiju's glob grammar, relative to `/workspace` (`outputs/*.xlsx`). A glob that
  * names a reserved path literally is refused here; wildcards never reach one either, because the
  * runner matches globs only against produced files outside them (`checkEvalOutputs`).
  */
@@ -289,7 +289,7 @@ export const skillEvalSuiteSchema = z.strictObject(
   {
     apiVersion: z
       .literal(SKILL_EVALS_API_VERSION, {
-        error: `must be ${SKILL_EVALS_API_VERSION} or left out; a newer format needs a newer Kobe.`,
+        error: `must be ${SKILL_EVALS_API_VERSION} or left out; a newer format needs a newer Kaiju.`,
       })
       .optional(),
     /** A catalog model alias; the team default runs when the team hasn't enabled it (SK17). */

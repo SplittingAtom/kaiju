@@ -192,7 +192,7 @@ export function RepoPanel({
             </p>
           )}
           <p className="text-muted-foreground m-0">
-            Kobe refreshes the mirror when it pushes, when the Repo is opened and every few minutes;
+            Kaiju refreshes the mirror when it pushes, when the Repo is opened and every few minutes;
             Refresh asks now, within the connection&apos;s hourly limit.
           </p>
           {view.commits.length > 0 && (

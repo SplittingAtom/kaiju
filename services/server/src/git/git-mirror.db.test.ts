@@ -201,7 +201,7 @@ describe("a commit made on the host appears after a refresh (ac-1)", () => {
       fileCount: 3,
       skipped: 0,
     });
-    // Kobe's own writes still refuse a Repo.
+    // Kaiju's own writes still refuse a Repo.
     const revert = await c.w.owner.browser.request(
       "POST",
       `/v1/projects/${c.projectId}/commits/1/revert`,
@@ -360,7 +360,7 @@ describe("Convert to repo refuses what the mirror could never show (R3-M1)", () 
     const p = await project(w, [{ by: w.owner, message: "Start", files: { "a.txt": "a" } }]);
     // Six files of 49 MiB each as recorded (294 MiB): the refusal is decided from the
     // project's records before any content is read. (The database itself keeps a project at
-    // 500 files and Kobe at 50 MiB per file, so the total is the limit that can be reached.)
+    // 500 files and Kaiju at 50 MiB per file, so the total is the limit that can be reached.)
     const tree = new Map<string, TreeFile>();
     for (let i = 0; i < 6; i += 1) {
       tree.set(`big/${i}.bin`, {
@@ -506,7 +506,7 @@ describe("read-only Repos, relink and detach (ac-3)", () => {
   it("follows a rename, then marks an archived and a deleted repository read-only", async () => {
     const c = await converted();
     await idle(c);
-    // Renamed on the host: Kobe follows the host's id.
+    // Renamed on the host: Kaiju follows the host's id.
     forgejo.editRepository(c.slug, { name: `${c.slug}-renamed` });
     renameSync(
       path.join(git.root, `${hostName(c)}.git`),

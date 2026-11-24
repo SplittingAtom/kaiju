@@ -10,11 +10,11 @@
  *   spaces, or by `:` and anything: an alternate data stream) and its HFS spellings (with the
  *   characters HFS+ ignores);
  * - `.gitmodules` in the same spellings: fsck parses it and refuses `url`, `name` and `path`
- *   values it finds unsafe; submodules are out of scope (§10), so Kobe refuses the file outright
+ *   values it finds unsafe; submodules are out of scope (§10), so Kaiju refuses the file outright
  *   rather than guess what the host's fsck accepts;
  * - control characters (git accepts them, hosts and checkouts do not handle them safely).
  *
- * Kobe's own path rules (`project_tree_entries_path`: at most 1024 characters, no leading or
+ * Kaiju's own path rules (`project_tree_entries_path`: at most 1024 characters, no leading or
  * trailing slash, no `//`, no backslash, no `.`/`..` segment) already keep paths within every
  * host's limits; they are checked again here so this module stands alone.
  */

@@ -2,7 +2,7 @@
 
 > Sign in, pick an agent and send a first message.
 
-Read [the glossary](https://chat.example.com/docs/glossary.md#thread) and [using Kobe](https://chat.example.com/docs/agents/use.md).
+Read [the glossary](https://chat.example.com/docs/glossary.md#thread) and [using Kaiju](https://chat.example.com/docs/agents/use.md).
 
 Settings live at [/settings](https://chat.example.com/settings); outside links stay as they are: [site](https://example.com).
 

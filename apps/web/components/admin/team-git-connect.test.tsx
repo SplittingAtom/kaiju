@@ -127,7 +127,7 @@ describe("Connect a git organization (KOBE-761 ac-1, ac-2)", () => {
     const live = d.getByRole("status");
     await within(live).findByText(/Test passed/);
     expect(live.textContent).toMatch(/Acts as.*The App's bot \(kobe-acme\[bot\]\)/);
-    expect(live.textContent).toMatch(/more than Kobe needs \(members:write\)/);
+    expect(live.textContent).toMatch(/more than Kaiju needs \(members:write\)/);
     expect(bodyOf(calls, "POST", `${GIT_BASE}/test`)).toEqual({
       provider: "github",
       organization: "acme",
@@ -342,7 +342,7 @@ describe("Connect: checks and errors (KOBE-761)", () => {
     const big = `-----BEGIN RSA PRIVATE KEY-----\n${"A".repeat(9000)}\n-----END RSA PRIVATE KEY-----`;
     await userEvent.click(d.getByRole("textbox", { name: "Private key" }));
     await userEvent.paste(big);
-    expect(await d.findByText(/too long for a private key: Kobe accepts up to 8 KiB/)).toBeTruthy();
+    expect(await d.findByText(/too long for a private key: Kaiju accepts up to 8 KiB/)).toBeTruthy();
     await userEvent.click(d.getByRole("button", { name: "Next" }));
     expect(d.getByRole("heading", { name: /Step 2 of 3/ })).toBeTruthy();
     await userEvent.clear(d.getByRole("textbox", { name: "Private key" }));
@@ -380,7 +380,7 @@ describe("Connect: checks and errors (KOBE-761)", () => {
     });
   });
 
-  it("maps a failed test to Kobe's words and keeps Connect off; an edit drops an old pass", async () => {
+  it("maps a failed test to Kaiju's words and keeps Connect off; an edit drops an old pass", async () => {
     stubApi({
       [`GET ${GIT_BASE}`]: [200, list([])],
       [`POST ${GIT_BASE}/test`]: [
@@ -472,7 +472,7 @@ describe("Connect: checks and errors (KOBE-761)", () => {
 });
 
 describe("Replace credential (KOBE-761 ac-1, ac-2)", () => {
-  it("tests and replaces a token, then clears it; a refusal is said in Kobe's words", async () => {
+  it("tests and replaces a token, then clears it; a refusal is said in Kaiju's words", async () => {
     const calls = stubApi({
       [`GET ${GIT_BASE}`]: [200, list([tokenConnection({ id: ID })])],
       [`PUT ${GIT_BASE}/${ID}/credential`]: [

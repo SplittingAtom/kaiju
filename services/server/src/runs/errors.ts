@@ -22,7 +22,7 @@ export type OrchestratorErrorCode =
   | "sandbox_unavailable" // 503: the workspace did not answer a steer
   | "invalid_mention" // 422: an @file mention is malformed, outside /workspace or unknown (KOBE-223)
   | "app_context_invalid" // 422: an app context chip names an app the member can't open now (KOBE-439)
-  | "invalid_content" // 422: the text imitates Kobe's app-context or skill markers (KOBE-439/451)
+  | "invalid_content" // 422: the text imitates Kaiju's app-context or skill markers (KOBE-439/451)
   | "skill_not_available"; // 422: the picked skill is not in the run's effective set (KOBE-451)
 
 export const RUN_ERROR_STATUS: Record<OrchestratorErrorCode, number> = {
@@ -57,7 +57,7 @@ const DEFAULT_MESSAGES: Record<OrchestratorErrorCode, string> = {
   thread_not_found: "No thread with that id.",
   entry_not_found: "That entry is not part of this thread.",
   invalid_parent_entry:
-    "That entry is a note from Kobe, not a message. Branch from a message instead.",
+    "That entry is a note from Kaiju, not a message. Branch from a message instead.",
   forbidden: "You can't do that.",
   read_only: "This thread is shared with you read-only.",
   invalid_transition: "The run is not in a state that allows this.",
@@ -76,7 +76,7 @@ const DEFAULT_MESSAGES: Record<OrchestratorErrorCode, string> = {
   sandbox_unavailable: "Your workspace did not answer. Try again.",
   invalid_mention: "A mentioned file is not in your workspace.",
   app_context_invalid: "An app's context can no longer be sent. Remove its chip and try again.",
-  invalid_content: "Your message can't contain Kobe's app-context or skill markers.",
+  invalid_content: "Your message can't contain Kaiju's app-context or skill markers.",
   skill_not_available:
     "That skill isn't available to this agent in your team. Remove it and send again.",
 };

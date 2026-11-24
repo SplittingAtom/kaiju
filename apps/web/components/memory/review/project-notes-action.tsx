@@ -67,7 +67,7 @@ export function ProjectNotesAction({
         description: (
           <>
             <span className="block">
-              Kobe adds this line under <code>## {preview.data.section}</code> in the project&apos;s{" "}
+              Kaiju adds this line under <code>## {preview.data.section}</code> in the project&apos;s{" "}
               <code>{preview.data.path}</code>. Everyone who can read the project sees its notes,
               and the agent reads them in its conversations.
             </span>

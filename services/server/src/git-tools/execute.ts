@@ -50,7 +50,7 @@ import { connectionView, readResult, writeResult } from "./results.js";
  * and input (spec workspace-git G9-G13, §9; KOBE-762). Everything the decision rests on is read
  * again here, just before the host is called (an approval may have waited an hour): the
  * connection, its level and agents, the member's role, the Site's host decision, and for a write
- * to a Kobe Repo the member's project role. The credential is opened for this call only and never
+ * to a Kaiju Repo the member's project role. The credential is opened for this call only and never
  * leaves the server; the adapter keeps every request on the connected organization.
  *
  * Writes run under the member's git write lock: the idempotency check (a repeat of the same call in
@@ -179,10 +179,10 @@ export async function runGitTool(
     );
     return locked.ok
       ? locked.value
-      : toolError("busy", "Kobe is busy with your other git changes; try again shortly.");
+      : toolError("busy", "Kaiju is busy with your other git changes; try again shortly.");
   } catch (err) {
     logger.error({ err, tool: tool.name, runId: ctx.runId }, "git-tools: tool failed");
-    return toolError("failed", "Kobe could not run this git tool. Try again.");
+    return toolError("failed", "Kaiju could not run this git tool. Try again.");
   }
 }
 
@@ -246,7 +246,7 @@ async function readTool(
   adapter: GitHostAdapter,
 ): Promise<GitExecution> {
   const repo = input.repository ?? "";
-  // M4 (owner decision 2026-11-22): a Kobe Repo is read by its project's read rule; one the
+  // M4 (owner decision 2026-11-22): a Kaiju Repo is read by its project's read rule; one the
   // member may not read is left out of listings and refused exactly as a missing repository.
   const repos = await hostHasRepos(deps.db, principal, connection.baseUrl);
   try {
@@ -387,7 +387,7 @@ async function writeTool(
   if (prior?.state === "unknown") {
     return toolError(
       "outcome_unknown",
-      `An earlier attempt of exactly this ${tool.name} call in this run was sent to the git host, but Kobe has no record of how it ended, so it was not sent again. Check ${connection.organization}/${repository} on the host (its newest branches, pull requests, issues or comments) and tell the user what you find; if it is not there, ask again with a changed input.`,
+      `An earlier attempt of exactly this ${tool.name} call in this run was sent to the git host, but Kaiju has no record of how it ended, so it was not sent again. Check ${connection.organization}/${repository} on the host (its newest branches, pull requests, issues or comments) and tell the user what you find; if it is not there, ask again with a changed input.`,
     );
   }
   let attempted = false;

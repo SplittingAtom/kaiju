@@ -9,7 +9,7 @@ import { pageApi } from "./support/gate5.js";
  * a remote image, a form post, window.open, top navigation and document.cookie all fail; WebRTC
  * is recorded per browser (review MEDIUM-2).
  *
- * The frame is Kobe's member frame route (`GET /v1/team/apps/:appId/frame`) for one of the
+ * The frame is Kaiju's member frame route (`GET /v1/team/apps/:appId/frame`) for one of the
  * member's live apps. The deployment's real response is kept (status, headers, and the WebRTC
  * guard script it puts first), and only the template after the guard is replaced by a hostile
  * probe (`support/app-frame-probe.ts`), so no test connector has to be pinned. The probe runs
@@ -42,7 +42,7 @@ const GUARD = FRAME_GUARD;
 /** The probe, after the deployment's own guard (and doctype), as the route would serve it. */
 function probeBody(realBody: string): string {
   const guard = GUARD.exec(realBody);
-  expect(guard, "the frame document starts with Kobe's WebRTC guard").not.toBeNull();
+  expect(guard, "the frame document starts with Kaiju's WebRTC guard").not.toBeNull();
   expect(realBody.indexOf(guard?.[0] ?? "")).toBeLessThan(
     realBody.search(/<(?!!doctype)[a-z]/i) + 1,
   );
@@ -95,7 +95,7 @@ function expectIsolated(report: Report): void {
   expect(blocked("connect-src", "/xhr")).toBe(true);
   expect(blocked("connect-src", "/ws")).toBe(true);
   expect(blocked("img-src", "/img.png")).toBe(true);
-  // No popup, no cookies or storage, no access to Kobe's page.
+  // No popup, no cookies or storage, no access to Kaiju's page.
   // A blocked window.open returns null (Chromium, WebKit) or throws (Firefox: InvalidAccessError,
   // KOBE-446); either way no popup page opens (asserted below).
   expect(results["window_open"]).toMatch(/^(null|threw:)/);
@@ -107,7 +107,7 @@ function expectIsolated(report: Report): void {
   expect(JSON.parse(results["webrtc"] ?? "{}")).toEqual({ constructor: "absent" });
 }
 
-test("an app frame cannot reach the network, Kobe or the page around it (KOBE-437 ac-1)", async ({
+test("an app frame cannot reach the network, Kaiju or the page around it (KOBE-437 ac-1)", async ({
   page,
   context,
 }) => {

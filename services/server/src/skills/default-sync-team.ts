@@ -59,7 +59,7 @@ export async function addInTeam(
   teamId: string,
   skillId: string,
   version: TargetVersion,
-  /** Null: Kobe's own Default sync (a Kobe-published skill, KOBE-317); the row says `by_kobe`. */
+  /** Null: Kaiju's own Default sync (a Kaiju-published skill, KOBE-317); the row says `by_kobe`. */
   installedBy: string | null,
   /**
    * A Team admin's Reinstall of a removed Default may install a deprecated skill (their override,

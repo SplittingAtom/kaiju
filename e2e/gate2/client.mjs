@@ -1,4 +1,4 @@
-// Gate 2 (KOBE-2, Safety) harness, client side. e2e/gate2.sh runs this inside a Kobe server pod
+// Gate 2 (KOBE-2, Safety) harness, client side. e2e/gate2.sh runs this inside a Kaiju server pod
 // (`node --input-type=module -e`) after the Gate 1 client's helpers: everything above `const MODES`
 // in e2e/gate1/client.mjs (config, client(), readEvents(), signedIn(), db(), ...) is reused as is,
 // then this file adds the Gate 2 steps and its own MODES. Every step prints `key=value` lines.

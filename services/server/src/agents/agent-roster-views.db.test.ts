@@ -374,7 +374,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
 
   beforeAll(async () => {
     const [seeded] = await seedGalleryAgents(deps.database.db, [
-      { key: KOBE_GALLERY_KEY, generation: 1, file: "---\nname: Kobe\n---\nYou are Kobe.\n" },
+      { key: KOBE_GALLERY_KEY, generation: 1, file: "---\nname: Kaiju\n---\nYou are Kaiju.\n" },
     ]);
     kobe = seeded?.agentId ?? "";
     lent = await personal("bob", "Bob Default");

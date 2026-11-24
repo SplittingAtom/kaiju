@@ -3,7 +3,7 @@
 /**
  * One page of the PDF viewer (KOBE-801). Off screen it is an empty box of the page's size; on
  * screen (`active`) it renders its canvas, pdf.js's text layer (select, copy, find highlights)
- * and Kobe's own link layer: web and mail links open like the chat's links (new tab,
+ * and Kaiju's own link layer: web and mail links open like the chat's links (new tab,
  * `noopener noreferrer nofollow`), links inside the document jump to their page, anything else
  * (`javascript:`, `file:`, launch actions) is not drawn. Leaving the screen frees the canvas.
  */
@@ -41,7 +41,7 @@ function linkBoxes(annotations: readonly Annotation[], viewport: Viewport): Link
     if (a.subtype !== "Link" || !a.rect || a.rect.length !== 4) return;
     const url = safeLinkUrl(a.url);
     const dest = a.dest ?? null;
-    if (url === null && dest === null) return; // inert: nothing Kobe will follow
+    if (url === null && dest === null) return; // inert: nothing Kaiju will follow
     const [r0 = 0, r1 = 0, r2 = 0, r3 = 0] = a.rect;
     const [x1 = 0, y1 = 0] = viewport.convertToViewportPoint(r0, r1) as number[];
     const [x2 = 0, y2 = 0] = viewport.convertToViewportPoint(r2, r3) as number[];

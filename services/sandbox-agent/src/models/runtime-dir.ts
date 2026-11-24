@@ -23,7 +23,7 @@ export const RUNTIME_DIR_PREFIX = "pi-";
 export const AGENT_SUBDIR = "agent";
 export const MODEL_FILE_NAME = "model.json";
 /**
- * What Pi 1.0.0 itself writes into its config dir under Kobe's launch flags (verified: a fresh dir
+ * What Pi 1.0.0 itself writes into its config dir under Kaiju's launch flags (verified: a fresh dir
  * holds exactly these after boot and after a prompt): its credential store, the lock
  * proper-lockfile takes next to it, and the models catalog store.
  */

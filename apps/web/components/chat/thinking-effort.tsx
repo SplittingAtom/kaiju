@@ -1,7 +1,7 @@
 /*
  * Vendored from assistant-ui's Reasoning effort element (KOBE-556):
  * https://github.com/assistant-ui/assistant-ui/blob/208cc81de222d85b8c3877445187828cff09feeb/packages/ui/src/components/react/assistant-ui/elements/reasoning-effort.tsx
- * with its `field` surface (surfaces.tsx) inlined. Changed for Kobe: restyled with Kobe's tokens
+ * with its `field` surface (surfaces.tsx) inlined. Changed for Kaiju: restyled with Kaiju's tokens
  * (the pressed pill inverted: foreground fill, background text), sized for the composer's toolbar
  * with a compact variant, pill text centred, a labelled group, a disabled state and a per-level
  * title. The upstream spend bar and readout were removed (KOBE-574), with its `pct` / `announced`

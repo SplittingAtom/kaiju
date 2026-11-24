@@ -5,7 +5,7 @@ export type MirrorErrorCode =
   | "too_many_files"
   | "file_too_large"
   | "repository_too_large"
-  /** A path Kobe's projects cannot hold (too long once mounted, or not a valid workspace path). */
+  /** A path Kaiju's projects cannot hold (too long once mounted, or not a valid workspace path). */
   | "unsupported_path"
   | "fetch_failed"
   /** The server has no room for the fetch now. */

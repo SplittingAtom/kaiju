@@ -97,10 +97,10 @@ export function listItems(
   });
 }
 
-/** Versions a Kobe admin tool shows (KOBE-650); the route loads one more to tell "more exist". */
+/** Versions a Kaiju admin tool shows (KOBE-650); the route loads one more to tell "more exist". */
 export const AGENT_VERSIONS_SHOWN = 10;
 
-/** What a Kobe admin tool's read gets (KOBE-650 review I2, L2). */
+/** What a Kaiju admin tool's read gets (KOBE-650 review I2, L2). */
 export const AGENT_DETAIL_VIEW: DetailView = Object.freeze({
   versionsLimit: AGENT_VERSIONS_SHOWN + 1,
   openableLinksOnly: true,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Acceptance checks for the Kobe Orbit eval image (KOBE-92). Usage: test-image.sh <image>
+# Acceptance checks for the Kaiju Orbit eval image (KOBE-92). Usage: test-image.sh <image>
 # Runs the image like a Job pod (uid 1000, read-only root, no capabilities, no-new-privileges)
 # against a deterministic fake OpenAI-compatible model on a throwaway docker network. Files are
 # copied in with `docker cp` (no bind mounts), so it also works against a remote DOCKER_HOST.

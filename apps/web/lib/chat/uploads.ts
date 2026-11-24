@@ -128,7 +128,7 @@ export function failureFrom(status: number, body: unknown): UploadFailure {
     code: "upload_failed",
     message:
       status === 0
-        ? "Kobe is unreachable. Check your connection and try again."
+        ? "Kaiju is unreachable. Check your connection and try again."
         : `The upload failed (HTTP ${status}). Try again.`,
     retryable: true,
   };

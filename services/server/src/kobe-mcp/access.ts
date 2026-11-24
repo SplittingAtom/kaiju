@@ -20,7 +20,7 @@ import type { KobeTool } from "./catalog.js";
 import { KOBE_ADMIN_TOOLS } from "./tools/index.js";
 
 /**
- * Who may use which Kobe MCP tool right now (KOBE-619, spec kobe-admin-mcp §3, §6, §8): the site
+ * Who may use which Kaiju MCP tool right now (KOBE-619, spec kobe-admin-mcp §3, §6, §8): the site
  * switch (`kobe_mcp.mode`), the team's level (`teams.settings.kobe_mcp.admin`) and the person's
  * own permission (team role, site role), all re-read from the database for every list and call.
  */

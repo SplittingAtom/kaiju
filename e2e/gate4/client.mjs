@@ -1,6 +1,6 @@
 // Gate 4 (KOBE-4, v1.0) harness, client side, part 1 of 2 (KOBE-232): the user stories Gates 1-3
 // do not cover (U1, U2's per-team memory, U5, U6, U11's warning and dashboard, U14, U15's
-// search). e2e/gate4.sh runs it inside a Kobe server pod after the Gate 1, 2 and 3 clients'
+// search). e2e/gate4.sh runs it inside a Kaiju server pod after the Gate 1, 2 and 3 clients'
 // helpers (everything above their MODES: client(), userClient(), signedInAs(), turn(), ...);
 // e2e/gate4/connectors.mjs follows with U7 and U8 and the MODES. Every step prints key=value
 // lines. The database is read for evidence and written only to move time (an approval's expiry,
@@ -407,7 +407,7 @@ async function u6() {
   out("allow", statusOf(decided));
   const seen1 = await follow(c, run1, 300_000);
   out("run1", seen1.terminal?.type ?? "none");
-  // share_file (a Kobe write that asks in ask-on-write; artifacts never ask, by decision): the
+  // share_file (a Kaiju write that asks in ask-on-write; artifacts never ask, by decision): the
   // file it shared is the one the approved input named.
   const shared = seen1.events.find((e) => e.type === "file.shared")?.data.payload;
   out("shared", shared ? `${shared.file_id}:${shared.name}` : "-");

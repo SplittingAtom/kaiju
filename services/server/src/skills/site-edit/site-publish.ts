@@ -34,7 +34,7 @@ import {
  * is its submitter, nobody reviews it (the database's `registry_versions_site_publisher`). Its
  * bytes go to the catalog's content-addressed store first, as every version's; one transaction
  * then re-checks the admin, the skill (retired, blocklisted) and the number under the skill's lock,
- * writes the version with its provenance (the previous publisher and version), detaches a Kobe
+ * writes the version with its provenance (the previous publisher and version), detaches a Kaiju
  * skill, queues a Default `add` when the version is in the Default's major (pinned installs never
  * move; Track installs take it at the next run), audits `registry.version_published` and drops
  * the draft. The maintainers of a team-published skill are told afterwards (`site-notify.ts`).
@@ -183,7 +183,7 @@ async function publishingTeam(tx: KobeTx, skillId: string): Promise<string | nul
 }
 
 /** A Default `add` when the version is in the major Default installs follow (fills teams). */
-/** The admin asked for it (as a tag change does): installs name them, never Kobe. */
+/** The admin asked for it (as a tag change does): installs name them, never Kaiju. */
 async function applyDefault(
   tx: KobeTx,
   skillId: string,

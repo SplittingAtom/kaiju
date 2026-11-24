@@ -13,14 +13,14 @@ import { compareSemver } from "./semver.js";
 import { putSkillBundle, sha256Hex } from "./storage.js";
 
 /**
- * Kobe's own catalog skills (KOBE-317, SK4): at every server start, the package set the server
+ * Kaiju's own catalog skills (KOBE-317, SK4): at every server start, the package set the server
  * ships (`kobe-packages.ts`) is published as approved catalog versions, publisher `kobe`, so a
  * fresh install and every upgrade end with the same catalog. Like the gallery seed, it is
  * idempotent and a failure never stops the server from starting.
  *
- * - **No person.** A Kobe version has no submitter or reviewer and its tag, Default sync and the
+ * - **No person.** A Kaiju version has no submitter or reviewer and its tag, Default sync and the
  *   installs that sync makes name no user (`by_kobe`); the database refuses anything else
- *   (migration 0137). Kobe's audit events are the system's.
+ *   (migration 0137). Kaiju's audit events are the system's.
  * - **Bytes first.** The runtime zip (what sandboxes fetch) and the package zip are written to the
  *   object store under content-addressed keys, `<prefix>skills/catalog/<sha256>`, before the
  *   version row commits; identical bytes from two replicas land on the same key. A start re-writes
@@ -30,15 +30,15 @@ import { putSkillBundle, sha256Hex } from "./storage.js";
  *   replica, a restart, a rollback to an older release). A new one must carry a semver above the
  *   skill's newest; one reusing a semver, or lower (an older release starting after a newer one
  *   published), is refused and logged: nothing is overwritten.
- * - **Default once.** A new Kobe skill is tagged Default and an `add` Default sync is queued
+ * - **Default once.** A new Kaiju skill is tagged Default and an `add` Default sync is queued
  *   (On by default, Track within major in every team, with the KOBE-314 rules: opt-outs, blocks
  *   and name conflicts are skipped). Later starts never re-tag: a Site admin who removed Default
  *   keeps that choice. A new version in the Default's major queues an `add` again, which only
  *   fills teams that miss the install; a new major waits for a Site admin to move Default (SK6).
  *
- * - **Detached skills are left alone** (KOBE-495). A Site admin's first edit of a Kobe skill
+ * - **Detached skills are left alone** (KOBE-495). A Site admin's first edit of a Kaiju skill
  *   detaches it: the seed then publishes nothing for it and only records the shipped version
- *   (`kobe_shipped_version`), so the console can offer Compare and Reset to Kobe. The seed never
+ *   (`kobe_shipped_version`), so the console can offer Compare and Reset to Kaiju. The seed never
  *   retires or archives a skill, detached or not, when it leaves the package set.
  *
  * Replicas starting together write each version once: every write takes the exclusive Default-set
@@ -54,7 +54,7 @@ export type KobeSeedAction =
   /** A Site admin detached the skill (KOBE-495): the shipped version is only recorded. */
   | "skipped_detached"
   /**
-   * A non-Kobe catalog skill already has this name (KOBE-620: a name Kobe added later, which an
+   * A non-Kaiju catalog skill already has this name (KOBE-620: a name Kaiju added later, which an
    * upgraded Site may hold; migration 0208 keeps it): nothing is published, a warning is logged.
    */
   | "skipped_name_taken";
@@ -119,7 +119,7 @@ export const scanDocument = (scan: ScanResult) => ({
 });
 
 /**
- * A Kobe version's provenance (docs/skill-package.md "Kobe-published"): what Kobe vouches for,
+ * A Kaiju version's provenance (docs/skill-package.md "Kaiju-published"): what Kaiju vouches for,
  * without the promotion fields (no source team, submitter or scorecard: nobody promoted it).
  */
 function provenance(p: KobePackage, scan: ScanResult, at: Date) {
@@ -164,13 +164,13 @@ async function lockedSkill(tx: KobeTx, p: KobePackage): Promise<SkillRow> {
     INSERT INTO registry_skills (name, summary, publisher)
     VALUES (${p.name}, ${summary}, 'kobe') RETURNING id`);
   const row = inserted.rows[0];
-  if (!row) throw new Error("skills: Kobe skill insert returned no row");
+  if (!row) throw new Error("skills: Kaiju skill insert returned no row");
   return { id: row.id, created: true, detached: false };
 }
 
 /**
  * A detached skill (KOBE-495): records the shipped version it skips (when it changed), so the
- * console can say a newer Kobe version is available. Inside the caller's transaction or alone.
+ * console can say a newer Kaiju version is available. Inside the caller's transaction or alone.
  */
 async function recordShipped(db: KobeDb | KobeTx, name: string, semver: string): Promise<boolean> {
   const { rows } = await db.execute<{ id: string }>(sql`
@@ -229,7 +229,7 @@ async function insertVersion(
       'approved', ${at.now.toISOString()}::timestamptz, ${at.now.toISOString()}::timestamptz)
     RETURNING id`);
   const row = rows[0];
-  if (!row) throw new Error("skills: Kobe version insert returned no row");
+  if (!row) throw new Error("skills: Kaiju version insert returned no row");
   await tx.execute(sql`
     UPDATE registry_skills SET summary = ${p.manifest.summary}, updated_at = now()
     WHERE id = ${skillId} AND summary IS DISTINCT FROM ${p.manifest.summary}`);
@@ -237,7 +237,7 @@ async function insertVersion(
 }
 
 /**
- * The Default tag on a new Kobe skill, and an `add` sync: on creation, and on a later version in
+ * The Default tag on a new Kaiju skill, and an `add` sync: on creation, and on a later version in
  * the Default's current major while the skill is still Default (fills teams that miss it).
  */
 async function applyDefault(
@@ -278,7 +278,7 @@ async function seedOne(deps: KobeSeedDeps, p: KobePackage): Promise<KobeSeedResu
   if (await nameTaken(deps.db, p.name)) {
     deps.log.warn(
       { name: p.name, semver: p.semver },
-      "skills: a Kobe skill's name is taken by another catalog skill; Kobe's is not published here",
+      "skills: a Kaiju skill's name is taken by another catalog skill; Kaiju's is not published here",
     );
     return { ...base, action: "skipped_name_taken" };
   }
@@ -294,7 +294,7 @@ async function seedOne(deps: KobeSeedDeps, p: KobePackage): Promise<KobeSeedResu
   if (scan.verdict === "block") {
     deps.log.error(
       { name: p.name, semver: p.semver, rules: scan.findings.map((f) => f.rule) },
-      "skills: a Kobe skill package scans Block; not published",
+      "skills: a Kaiju skill package scans Block; not published",
     );
     return { ...base, action: "refused", reason: "scan_block" };
   }
@@ -313,7 +313,7 @@ async function seedOne(deps: KobeSeedDeps, p: KobePackage): Promise<KobeSeedResu
     if (decision.kind === "refused") {
       deps.log.error(
         { name: p.name, semver: p.semver, reason: decision.reason },
-        "skills: a Kobe skill package was refused (raise its version to change its files)",
+        "skills: a Kaiju skill package was refused (raise its version to change its files)",
       );
       return { ...base, action: "refused" as const, reason: decision.reason };
     }
@@ -349,7 +349,7 @@ export async function seedKobeSkills(deps: KobeSeedDeps): Promise<KobeSeedResult
     try {
       results.push(await seedOne(deps, p));
     } catch (err) {
-      deps.log.error({ err, name: p.name }, "skills: a Kobe skill could not be published");
+      deps.log.error({ err, name: p.name }, "skills: a Kaiju skill could not be published");
       results.push({ name: p.name, semver: p.semver, action: "failed" });
     }
   }
@@ -357,7 +357,7 @@ export async function seedKobeSkills(deps: KobeSeedDeps): Promise<KobeSeedResult
   if (changed.length > 0)
     deps.log.info(
       { skills: changed.map((r) => `${r.name}@${r.semver}`) },
-      "skills: Kobe published",
+      "skills: Kaiju published",
     );
   return results;
 }
@@ -393,11 +393,11 @@ export function startKobeSeed(
     try {
       ok = (await seed(deps)).every((r) => r.action !== "failed");
     } catch (err) {
-      deps.log.error({ err }, "skills: Kobe skills could not be seeded");
+      deps.log.error({ err }, "skills: Kaiju skills could not be seeded");
     }
     if (ok) return settle();
     if (stopped) return;
-    deps.log.warn({ retryInMs: delay }, "skills: Kobe skills seed incomplete; retrying");
+    deps.log.warn({ retryInMs: delay }, "skills: Kaiju skills seed incomplete; retrying");
     timer = setTimeout(() => void attempt(Math.min(delay * 2, retry.maxMs)), delay);
     timer.unref();
   };

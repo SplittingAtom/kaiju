@@ -25,7 +25,7 @@ import type { LinkIntent } from "./link-intent.js";
 
 /**
  * Account linking (spec sso-oidc-scim §6, SSO4, SSO9, SSO10; KOBE-630). Email is never proof:
- * an unlinked identity links to an existing Kobe user only through
+ * an unlinked identity links to an existing Kaiju user only through
  *
  * - **local proof**: the person signs in locally as that user after the SSO sign-in left a link
  *   intent (`linkByLocalProof`), or
@@ -52,7 +52,7 @@ export function domainAllowed(allowedEmailDomains: readonly string[], email: str
 
 /**
  * The setup Owner or any site-role holder (Owner, Admin): never the target of an expected link
- * (SSO10; review M3). An expected link would hand the Kobe account to whoever controls the IdP
+ * (SSO10; review M3). An expected link would hand the Kaiju account to whoever controls the IdP
  * account (helpdesk roles can reset it), and IdP data never grants site roles; these people link
  * by their own local proof.
  */

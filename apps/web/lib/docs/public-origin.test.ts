@@ -14,7 +14,7 @@ describe("publicOrigin", () => {
   it("uses the forwarded host and proto, then Host", () => {
     expect(
       publicOrigin(
-        req({ "x-forwarded-host": "Kobe.Example.com", "x-forwarded-proto": "https" }),
+        req({ "x-forwarded-host": "Kaiju.Example.com", "x-forwarded-proto": "https" }),
         null,
       ),
     ).toBe("https://kobe.example.com");

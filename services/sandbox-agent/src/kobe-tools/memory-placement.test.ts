@@ -213,7 +213,7 @@ describe("memory placement through kobe-tools (KOBE-658 ac-2)", () => {
       const turns = [c.turn(0), c.turn(1), c.turn(2)];
       if (placement !== "stable_plus_delta") {
         for (const t of turns) expect(t.system).toBe(turns[0]?.system);
-        expect(turns[0]?.system).toContain("## What Kobe knows\n");
+        expect(turns[0]?.system).toContain("## What Kaiju knows\n");
       }
       for (const t of turns) expect(t.system).not.toContain("VIEWED-");
       // Each request extends the previous one byte for byte (keep) or keeps everything before

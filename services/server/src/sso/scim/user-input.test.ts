@@ -116,7 +116,7 @@ describe("parsePatch (Entra quirks)", () => {
     ).toEqual({ ok: true, value: { userName: "new@contoso.com" } });
   });
 
-  it("ignores attributes Kobe doesn't keep and removals of them", () => {
+  it("ignores attributes Kaiju doesn't keep and removals of them", () => {
     expect(
       parsePatch(
         patch(

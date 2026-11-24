@@ -145,7 +145,7 @@ export function RememberLimitsForm({
           hint={
             floor?.approveAll === false
               ? "Not allowed by the site floor."
-              : "Never for tools that can delete data or reach outside Kobe."
+              : "Never for tools that can delete data or reach outside Kaiju."
           }
           onChange={(e) => set({ approveAll: e.target.checked })}
         />

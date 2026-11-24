@@ -9,7 +9,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
 
 /**
  * KOBE-333 (SK19, SK20): Promote to Site. The package that leaves is the version's own (payload,
- * evals/, kobe.skill.yaml) with a Kobe-written provenance holding scorecard numbers only; SK20's
+ * evals/, kobe.skill.yaml) with a Kaiju-written provenance holding scorecard numbers only; SK20's
  * rules refuse with reasons; a Builder's promotion waits for a Team admin unless the team lets
  * Builders promote, with audits in the team and on the Site; and promotion is the only way skill
  * content leaves a team.
@@ -158,7 +158,7 @@ describe("rules (ac-2)", () => {
 });
 
 describe("a Team admin's promotion (ac-1)", () => {
-  it("submits the version's own package with a Kobe-written provenance (numbers only)", async () => {
+  it("submits the version's own package with a Kaiju-written provenance (numbers only)", async () => {
     const made = await upload(as.admin, "team", pkg("sales-report", "0.1.0"));
     await evaluated("team", made.skill.id, made.version.version, ids.admin);
     const preview = await as.admin.get(

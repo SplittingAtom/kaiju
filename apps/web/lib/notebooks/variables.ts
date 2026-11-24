@@ -167,7 +167,7 @@ export function summaryOf(v: Variable): string {
   return parts.join(" · ");
 }
 
-/** What a value Kobe does not read says (its type is in the Type column). */
+/** What a value Kaiju does not read says (its type is in the Type column). */
 export const NOT_READ_TEXT = "(value not shown for this type)";
 
 /** The value as the row says it: the repr (cut), or why there is none. */

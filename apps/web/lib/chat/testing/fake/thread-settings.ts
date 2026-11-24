@@ -135,7 +135,7 @@ export function learnRoute(
   body: Json | undefined,
 ): Response {
   if (thread.read_only === true)
-    return error(403, "read_only", "Only the thread's author can teach Kobe from it.");
+    return error(403, "read_only", "Only the thread's author can teach Kaiju from it.");
   if (method === "GET") return json(200, learnStateOf(k, thread));
   const refusal = k.learnRefusal;
   if (refusal !== null) return error(refusal.status, refusal.code, refusal.message);

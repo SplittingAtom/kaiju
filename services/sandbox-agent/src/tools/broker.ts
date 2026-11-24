@@ -67,7 +67,7 @@ export class ArtifactBroker {
       return;
     }
     if (!this.#deps.send(frame)) {
-      this.#pending.fail(requestId, "unavailable", "Kobe server not reachable");
+      this.#pending.fail(requestId, "unavailable", "Kaiju server not reachable");
     }
   }
 

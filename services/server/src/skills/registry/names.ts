@@ -2,7 +2,7 @@ import { KOBE_SKILL_NAMES } from "@kobe/protocol";
 
 /**
  * The Site's flat skill namespace (KOBE-332, SK24): catalog names are unique (the database's
- * `registry_skills_name_unique`), Kobe's built-in names are reserved for Kobe
+ * `registry_skills_name_unique`), Kaiju's built-in names are reserved for Kaiju
  * (`registry_skills_kobe_names`), and near names are a typosquat hint for reviewers, never a block.
  */
 

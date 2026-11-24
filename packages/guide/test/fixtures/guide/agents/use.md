@@ -1,5 +1,5 @@
 ---
-title: Using [Kobe]
+title: Using [Kaiju]
 summary: How agents read the guide.
 section: For agents
 audience: agent

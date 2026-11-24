@@ -1,6 +1,6 @@
 ---
 title: Writing messages
-summary: How to send messages, attach files, mention files, use slash commands, ask Kobe to learn from the conversation, stop or steer a run, and rate an answer.
+summary: How to send messages, attach files, mention files, use slash commands, ask Kaiju to learn from the conversation, stop or steer a run, and rate an answer.
 section: Chat and threads
 order: 1
 audience: member
@@ -104,5 +104,5 @@ cases**, where **Withdraw** deletes the copy.
 
 The context gauge under the composer shows how much of the model's context window the thread
 uses. Click it to see exactly what the model was sent last time, section by section (only you, the
-owner, can see this). When it fills up, Kobe compacts older turns into a summary; you can also do
+owner, can see this). When it fills up, Kaiju compacts older turns into a summary; you can also do
 it yourself with **Compact now** or `/compact`.

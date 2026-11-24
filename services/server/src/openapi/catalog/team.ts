@@ -119,13 +119,13 @@ export const teamAreas: readonly CatalogArea[] = [
       [
         "get",
         "/v1/team/connectors/kobe",
-        "Get the built-in Kobe connector's site switch and team level",
+        "Get the built-in Kaiju connector's site switch and team level",
         "Team members (`team.read`).",
       ],
       [
         "put",
         "/v1/team/connectors/kobe",
-        "Set the team's level for the built-in Kobe connector",
+        "Set the team's level for the built-in Kaiju connector",
         "Team admins (`team.connectors.manage`).",
       ],
       [

@@ -11,7 +11,7 @@ import { isUserVerified } from "./webauthn-flags.js";
  * Endpoints that add a local credential or factor to the signed-in account (SSO9, review finding 3):
  * refused for a user with no `credential` account (made by SSO JIT or SCIM), who signs in only
  * through the identity provider, so an IdP-side disable can never be outlived by a local passkey
- * or password. TOTP enrolment is refused too (it would be a Kobe factor the IdP doesn't govern).
+ * or password. TOTP enrolment is refused too (it would be a Kaiju factor the IdP doesn't govern).
  */
 const LOCAL_CREDENTIAL_PATHS = new Set([
   "/passkey/generate-register-options",
@@ -24,7 +24,7 @@ const LOCAL_CREDENTIAL_PATHS = new Set([
 const SSO_ONLY_ACCOUNT = {
   code: "SSO_ONLY_ACCOUNT",
   message:
-    "This account signs in through your organization's identity provider and can't have a Kobe password, passkey or authenticator app.",
+    "This account signs in through your organization's identity provider and can't have a Kaiju password, passkey or authenticator app.",
 };
 
 /**
@@ -114,7 +114,7 @@ const SSO_REQUIRED = {
 
 const LAST_SIGN_IN_METHOD = {
   code: "LAST_SIGN_IN_METHOD",
-  message: "This passkey is your only way to sign in to Kobe, so it can't be removed.",
+  message: "This passkey is your only way to sign in to Kaiju, so it can't be removed.",
 };
 
 const PASSKEY_VERIFY_PATHS = new Set([

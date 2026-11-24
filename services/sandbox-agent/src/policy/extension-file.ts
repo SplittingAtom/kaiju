@@ -2,7 +2,7 @@ import { realpath, stat } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Startup check of a Kobe Pi extension file (kobe-policy, KOBE-36; kobe-models, KOBE-41): a
+ * Startup check of a Kaiju Pi extension file (kobe-policy, KOBE-36; kobe-models, KOBE-41): a
  * regular file that only root can change — the file and every directory above it owned by uid 0
  * and not group/world-writable — as baked into the image (`/opt/kobe/pi-extensions/<name>`, 0444
  * in 0555 directories). Model-run code runs as the sandbox user, so it must not be able to replace

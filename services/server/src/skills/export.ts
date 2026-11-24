@@ -18,9 +18,9 @@ export const CATALOG_PACKAGE_RATE = { windowMs: 60_000, max: 10 } as const;
 /**
  * Exports (KOBE-345, spec SK30): any version as a portable SKILL.md zip (the runtime payload,
  * with or without `evals/`; never `kobe.skill.yaml` or `provenance.json`), and a catalog
- * version as its full package (payload, `evals/`, `kobe.skill.yaml` and Kobe's
+ * version as its full package (payload, `evals/`, `kobe.skill.yaml` and Kaiju's
  * `provenance.json`, the mirror's `skills/<name>/` layout). Every zip has one `<name>/` folder,
- * so it unpacks into `.agents/skills/` or a Pi `--skill <dir>` as is, and Kobe's own upload and
+ * so it unpacks into `.agents/skills/` or a Pi `--skill <dir>` as is, and Kaiju's own upload and
  * import strip that folder. Bytes are deterministic (fixed order and timestamps): the same
  * version always exports to the same SHA-256, which an import can pin.
  */

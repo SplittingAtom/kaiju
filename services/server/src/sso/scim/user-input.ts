@@ -8,7 +8,7 @@ import {
 } from "./schemas.js";
 
 /**
- * What a SCIM request asks to change on a User (KOBE-631, spec §10). Kobe keeps only these; every
+ * What a SCIM request asks to change on a User (KOBE-631, spec §10). Kaiju keeps only these; every
  * other attribute (title, department, addresses, the enterprise extension, `roles` until SSO-8) is
  * accepted and ignored, so Entra's default attribute mappings don't fail provisioning.
  * `null` means "removed".
@@ -228,8 +228,8 @@ export function isAddress(v: string): boolean {
 }
 
 /**
- * The Kobe sign-in address (§10): `userName` when it is an address (Entra's UPN), else the work
- * email; lowercased like every Kobe address. Undefined when neither is an address.
+ * The Kaiju sign-in address (§10): `userName` when it is an address (Entra's UPN), else the work
+ * email; lowercased like every Kaiju address. Undefined when neither is an address.
  */
 export function addressFor(userName: string, email: string | null | undefined): string | undefined {
   if (isAddress(userName)) return userName.toLowerCase();
@@ -239,7 +239,7 @@ export function addressFor(userName: string, email: string | null | undefined): 
 
 /**
  * The display name: displayName, else name.formatted, else given + family names. A PATCH that
- * changes only one name part (`partial`) leaves the name as it is: Kobe keeps one name, not parts.
+ * changes only one name part (`partial`) leaves the name as it is: Kaiju keeps one name, not parts.
  */
 export function nameFrom(c: UserChanges, partial = false): string | undefined {
   if (c.displayName) return c.displayName;

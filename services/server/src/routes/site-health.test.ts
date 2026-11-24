@@ -54,7 +54,7 @@ describe("GET /v1/site/health", () => {
     });
   });
 
-  it("is an informational notice when Kobe cannot tell (ingress not managed by the chart)", async () => {
+  it("is an informational notice when Kaiju cannot tell (ingress not managed by the chart)", async () => {
     expect(await check("unknown")).toEqual({
       id: "ingress_rate_limit",
       level: "info",

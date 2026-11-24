@@ -466,7 +466,7 @@ export interface ApprovalBroker {
   onResync?(): void;
 }
 
-/** Pi extension dialogs (`pi.ui_request`). Kobe v1 has no UI for them; the default cancels. */
+/** Pi extension dialogs (`pi.ui_request`). Kaiju v1 has no UI for them; the default cancels. */
 export interface UiBroker {
   /** Returns the response to send, or undefined for fire-and-forget methods. */
   handle(request: {

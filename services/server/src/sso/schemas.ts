@@ -44,7 +44,7 @@ export type MfaRule = z.infer<typeof mfaRuleSchema>;
 
 /**
  * The Entra preset (§8): Entra v2.0 ID tokens do not reliably carry `amr`, so the admin creates a
- * Conditional Access authentication context `c1` that requires MFA and Kobe asks for it. SSO-4
+ * Conditional Access authentication context `c1` that requires MFA and Kaiju asks for it. SSO-4
  * verifies the preset against a real tenant.
  */
 export const ENTRA_MFA_RULE: MfaRule = {

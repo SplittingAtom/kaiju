@@ -131,7 +131,7 @@ export function createAuth({
   }
 
   return betterAuth({
-    appName: "Kobe",
+    appName: "Kaiju",
     baseURL: origin.origin,
     basePath: "/api/auth",
     secret,
@@ -206,7 +206,7 @@ export function createAuth({
       useSecureCookies: origin.protocol === "https:",
       ipAddress: { ipAddressHeaders: ["x-forwarded-for"], trustedProxies: [...trustedProxies] },
     },
-    // Endpoints Kobe doesn't use that check a password outside the sign-in throttle (KOBE-812
+    // Endpoints Kaiju doesn't use that check a password outside the sign-in throttle (KOBE-812
     // review M1): `/verify-password` is only labelled server-scoped and answers over HTTP;
     // `/delete-user` is off anyway (user.deleteUser not enabled).
     disabledPaths: ["/verify-password", "/delete-user"],
@@ -221,10 +221,10 @@ export function createAuth({
       // Better Auth's own account lockout (10 failed codes, then 15 minutes refused even with the
       // right code) is off: the owner decided on a growing delay, never a lockout (KOBE-812), and
       // the sign-in throttle below counts second-factor failures with the password's.
-      twoFactor({ issuer: "Kobe", accountLockout: { enabled: false } }),
+      twoFactor({ issuer: "Kaiju", accountLockout: { enabled: false } }),
       passkey({
         rpID: origin.hostname,
-        rpName: "Kobe",
+        rpName: "Kaiju",
         origin: origin.origin,
         authenticatorSelection: { userVerification: "required", residentKey: "required" },
       }),

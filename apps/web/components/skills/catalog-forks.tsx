@@ -11,7 +11,7 @@ import { draftHref } from "./draft-href";
 import { useNavigate } from "../shell/use-navigate";
 
 /**
- * Catalog skills the team has installed, to fork into a draft of your own (KOBE-322): Kobe's
+ * Catalog skills the team has installed, to fork into a draft of your own (KOBE-322): Kaiju's
  * names are reserved, so the copy starts under `<name>-custom` (renamed in the editor at will).
  */
 export function CatalogForks() {

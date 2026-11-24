@@ -24,7 +24,7 @@ const GROUPS: DocsNavGroup[] = [
     section: "Reference",
     id: "reference",
     pages: [
-      { slug: "glossary", title: "Glossary", summary: "The words Kobe uses." },
+      { slug: "glossary", title: "Glossary", summary: "The words Kaiju uses." },
       { slug: "ref/limits", title: "Limits", summary: "Upload and run limits." },
     ],
   },

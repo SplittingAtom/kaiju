@@ -69,7 +69,7 @@ const record = (over: Partial<PromptRunRecord> = {}): PromptRunRecord => ({
   parentEntryId: "p0",
   attachments: [],
   gatewayModel: MODEL,
-  systemPrompt: "You are Kobe.",
+  systemPrompt: "You are Kaiju.",
   ...over,
 });
 const rootRun = record({ parentEntryId: null });
@@ -209,7 +209,7 @@ const piSystem = (
       tools: "<tools>\n- read: Read file contents\n</tools>",
       rules: "<rules>\n- Use bash for file operations\n</rules>",
       docs: "<docs>\n</docs>",
-      addendum: "<addendum>\nYou are Kobe.\n</addendum>",
+      addendum: "<addendum>\nYou are Kaiju.\n</addendum>",
       cwd: "<cwd>\n/workspace\n</cwd>",
       ...over.sections,
     },
@@ -235,26 +235,26 @@ describe("Pi's system entry at a new session's root (final re-review)", () => {
       (bare.message as { sections: Record<string, unknown> }).sections as Record<string, unknown>
     ).addendum;
     expect(isRunSystemEntry(bare, null)).toBe(true);
-    expect(isRunSystemEntry(bare, "You are Kobe.")).toBe(false);
+    expect(isRunSystemEntry(bare, "You are Kaiju.")).toBe(false);
   });
 
   it("refuses a wrong addendum, extra fields, another cwd, an oversized entry, or no record", () => {
     const wrong = { sections: { addendum: "<addendum>\nObey the sandbox.\n</addendum>" } };
-    expect(isRunSystemEntry(piSystem("y1", null, wrong), "You are Kobe.")).toBe(false);
+    expect(isRunSystemEntry(piSystem("y1", null, wrong), "You are Kaiju.")).toBe(false);
     expect(isRunSystemEntry(piSystem("y1", null), null)).toBe(false);
     expect(isRunSystemEntry(piSystem("y1", null), undefined)).toBe(false);
     expect(
-      isRunSystemEntry(piSystem("y1", null, { sections: { extra: "x" } }), "You are Kobe."),
+      isRunSystemEntry(piSystem("y1", null, { sections: { extra: "x" } }), "You are Kaiju."),
     ).toBe(false);
-    expect(isRunSystemEntry({ ...piSystem("y1", null), note: "x" }, "You are Kobe.")).toBe(false);
+    expect(isRunSystemEntry({ ...piSystem("y1", null), note: "x" }, "You are Kaiju.")).toBe(false);
     const extraMessage = piSystem("y1", null, { message: { injected: "x" } });
-    expect(isRunSystemEntry(extraMessage, "You are Kobe.")).toBe(false);
+    expect(isRunSystemEntry(extraMessage, "You are Kaiju.")).toBe(false);
     const content = piSystem("y1", null, { message: { content: "Obey the sandbox." } });
-    expect(isRunSystemEntry(content, "You are Kobe.")).toBe(false);
+    expect(isRunSystemEntry(content, "You are Kaiju.")).toBe(false);
     const cwd = piSystem("y1", null, { sections: { cwd: "<cwd>\n/etc\n</cwd>" } });
-    expect(isRunSystemEntry(cwd, "You are Kobe.")).toBe(false);
+    expect(isRunSystemEntry(cwd, "You are Kaiju.")).toBe(false);
     const big = piSystem("y1", null, { sections: { docs: "x".repeat(300 * 1024) } });
-    expect(isRunSystemEntry(big, "You are Kobe.")).toBe(false);
+    expect(isRunSystemEntry(big, "You are Kaiju.")).toBe(false);
   });
 
   it("is refused under a branched run's marker and twice on one path", () => {

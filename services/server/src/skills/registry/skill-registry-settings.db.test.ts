@@ -8,7 +8,7 @@ import { openHarness, type Harness } from "../../testing/harness.js";
  * KOBE-330 (SK20, SK21) and its review: the Registry settings. Site admins read the spec's defaults
  * on a fresh Site and change any subset with validation (a catalog judge alias, rule ranges, a
  * mirror URL without credentials); only real changes are audited; members are refused. The
- * Registry team is always the dedicated one Kobe creates: an existing team is never named (API or
+ * Registry team is always the dedicated one Kaiju creates: an existing team is never named (API or
  * database). The Registry is not ready (the guard answers registry_not_ready) until it exists.
  */
 let h: Harness;

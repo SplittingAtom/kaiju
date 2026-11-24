@@ -40,7 +40,7 @@ async function loadAudit(teamId: string): Promise<ApiResult<AuditData>> {
 }
 
 function actorName(e: TeamAuditEvent): string {
-  if (e.actor.kind === "system") return "Kobe (system)";
+  if (e.actor.kind === "system") return "Kaiju (system)";
   return e.actor.name ?? e.actor.id ?? "Unknown";
 }
 

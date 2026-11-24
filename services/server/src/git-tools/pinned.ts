@@ -6,10 +6,10 @@ import { GIT_TOOLS, type GitToolDef } from "./catalog.js";
 /**
  * The built-in git connector (KOBE-762, owner decision 2026-11-22): the git host tools as their
  * own connector row (`builtin = 'git'`, fixed id), in the shape the MCP decision path already
- * understands, exactly as the Kobe connector's tools are (`kobe-mcp/pinned.ts`): each tool a
+ * understands, exactly as the Kaiju connector's tools are (`kobe-mcp/pinned.ts`): each tool a
  * "pinned" tool from the code's catalog (never drifted), the connector a team connector with
  * `custom` exposure over every git tool. It has no switch of its own: the Site's Git switch and
- * each connection's settings are the ceiling (`access.ts`), so the Kobe MCP switch and the Kobe
+ * each connection's settings are the ceiling (`access.ts`), so the Kaiju MCP switch and the Kaiju
  * connector's thread toggle never reach these tools.
  */
 

@@ -40,7 +40,7 @@ export interface AgentDeps {
   readonly extensions?: readonly string[];
   /** Model gateway wiring (KOBE-41); absent when the sandbox has no model access. */
   readonly models?: ModelWiring | undefined;
-  /** Egress for Pi's tools (KOBE-39); absent outside Kobe's pods. */
+  /** Egress for Pi's tools (KOBE-39); absent outside Kaiju's pods. */
   readonly egress?: EgressWiring | undefined;
   /** The root-owned BASH_ENV script for tools when egress is not wired (KOBE-235). */
   readonly toolEnvScript?: string | undefined;

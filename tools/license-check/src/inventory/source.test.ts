@@ -4,7 +4,7 @@ import { renderInventory, renderNotice } from "./render.js";
 import { malformedRows, parseInventory, pendingRows } from "./source.js";
 
 const BASE = `
-notice: Kobe
+notice: Kaiju
 npm:
   title: npm
   intro: i
@@ -159,11 +159,11 @@ describe("render", () => {
     expect(md).toContain("a \\| b Approved by Chris on 2026-10-17 (KOBE-375). |");
   });
 
-  it("puts each bundled NOTICE after Kobe's own", () => {
-    const notice = renderNotice("Kobe\nCopyright", [
+  it("puts each bundled NOTICE after Kaiju's own", () => {
+    const notice = renderNotice("Kaiju\nCopyright", [
       { component: "pyarrow", version: "25", where: "sandbox image", text: "Apache Arrow\n" },
     ]);
-    expect(notice.startsWith("Kobe\nCopyright\n")).toBe(true);
+    expect(notice.startsWith("Kaiju\nCopyright\n")).toBe(true);
     expect(notice).toMatch(/pyarrow 25 \(sandbox image\)\n-+\n\nApache Arrow\n$/);
   });
 });

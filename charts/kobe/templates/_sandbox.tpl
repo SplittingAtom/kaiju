@@ -86,7 +86,7 @@ sandbox.sessionKeysSecret, sandbox.sessionVerifyKeysConfigMap (required then).
 
 {{/*
 KOBE_SANDBOX_CONFIG for the server (validated by services/server/src/sandbox/config.ts): the
-sandbox image and sizing, and how sandboxes reach Kobe's services (Service for the ClusterIP,
+sandbox image and sizing, and how sandboxes reach Kaiju's services (Service for the ClusterIP,
 pod labels and port for the team NetworkPolicy).
 */}}
 {{- define "kobe.sandboxConfig" -}}

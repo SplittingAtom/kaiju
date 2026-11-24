@@ -82,7 +82,7 @@ export const BOOTSTRAP_TOKEN_FILE = `${BOOTSTRAP_TOKEN_DIR}/bootstrap-token`;
 export const BOOTSTRAP_TOKEN_SECONDS = 3600;
 
 /**
- * Hostnames sandboxes use for Kobe's services. They resolve through /etc/hosts (pod hostAliases
+ * Hostnames sandboxes use for Kaiju's services. They resolve through /etc/hosts (pod hostAliases
  * pointing at the Services' ClusterIPs): sandboxes get no DNS at all, so DNS cannot be used as an
  * exfiltration channel around the default-deny egress policy. `.internal` is reserved for private use.
  */
@@ -100,7 +100,7 @@ export const KOBE_ENDPOINTS = Object.keys(SANDBOX_HOSTS) as KobeEndpoint[];
  * one reason only (KOBE-71): the sandbox container adds the SETUID and SETGID capabilities and
  * allows privilege escalation, so the image's kobe-runas helper can start each Pi process under
  * its own uid. Everything else "restricted" demands (non-root, seccomp, drop ALL, volume types)
- * is enforced by Kobe's own admission policy for team pods (chart: sandbox-admission.yaml).
+ * is enforced by Kaiju's own admission policy for team pods (chart: sandbox-admission.yaml).
  */
 export const POD_SECURITY_LEVEL = "baseline";
 /** UID/GID of the `kobe` user in images/sandbox/Dockerfile (the agent; the workspace group). */

@@ -1,5 +1,5 @@
 /**
- * Isolation prerequisite (spec D4, principle 7): Kobe refuses to run agents without a gVisor or
+ * Isolation prerequisite (spec D4, principle 7): Kaiju refuses to run agents without a gVisor or
  * Kata RuntimeClass. Judged by the RuntimeClass handler, never its name. There is no bypass.
  */
 // Kata handlers carry the hypervisor and options as dash-separated parts (kata-qemu-snp, kata-clh-tdx).
@@ -7,7 +7,7 @@
 export const ISOLATION_HANDLER = /^(runsc|kata(-[a-z0-9]+)*)$/;
 
 export const ISOLATION_REMEDIATION = [
-  "Kobe refuses to run agents without an isolation runtime: no RuntimeClass with a gVisor",
+  "Kaiju refuses to run agents without an isolation runtime: no RuntimeClass with a gVisor",
   "(handler 'runsc') or Kata ('kata*') handler exists in this cluster.",
   "Fix: install gVisor on every node with scripts/install-gvisor-k3s.sh (creates RuntimeClass",
   "'gvisor', handler 'runsc'), or install Kata Containers, then retry. See docs/install.md#isolation.",

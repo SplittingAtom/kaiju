@@ -79,8 +79,8 @@ async function pruneProject(
     SELECT c.id, c.seq, p.created_by FROM projects p
       JOIN project_commits c ON c.team_id = p.team_id AND c.id = p.head_commit_id
      WHERE p.team_id = ${teamId} AND p.id = ${projectId}
-       -- KOBE-765: a Repo keeps its Kobe history as it was (G17: the host's history is the
-       -- record, so Kobe's cap no longer applies), and a conversion's history never moves.
+       -- KOBE-765: a Repo keeps its Kaiju history as it was (G17: the host's history is the
+       -- record, so Kaiju's cap no longer applies), and a conversion's history never moves.
        AND p.kind = 'project'
        AND NOT EXISTS (SELECT 1 FROM git_conversions g
                         WHERE g.team_id = p.team_id AND g.project_id = p.id

@@ -60,7 +60,7 @@ export function commitNotice(
     }
     case "pushed":
       return {
-        text: `Committed to ${r.branch} on the git host${r.seq === null ? "" : ` (#${r.seq} in Kobe)`}.`,
+        text: `Committed to ${r.branch} on the git host${r.seq === null ? "" : ` (#${r.seq} in Kaiju)`}.`,
       };
   }
 }
@@ -210,7 +210,7 @@ export function CommitForm({
     const res = await work.commit(trimmed);
     if (!res) return;
     if (!res.ok) {
-      // KOBE-767: a Repo's default branch moved on the host: Update brings Kobe's copy in.
+      // KOBE-767: a Repo's default branch moved on the host: Update brings Kaiju's copy in.
       setBehind(res.error.code === "commit_conflict" || res.error.code === "repo_moved");
       return;
     }

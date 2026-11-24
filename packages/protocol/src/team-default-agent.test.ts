@@ -22,7 +22,7 @@ describe("team default agent contract (KOBE-571)", () => {
       teamDefaultAgentSchema.safeParse({
         agentId: ID,
         unavailable: false,
-        options: [{ agentId: ID, name: "Kobe", slug: "kobe", group: "site", versionInEffect: 1 }],
+        options: [{ agentId: ID, name: "Kaiju", slug: "kobe", group: "site", versionInEffect: 1 }],
       }).success,
     ).toBe(true);
     expect(

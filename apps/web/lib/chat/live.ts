@@ -1,5 +1,5 @@
 /**
- * What a run's Kobe Event Stream (spec §6.2, KOBE-31) adds on top of the committed entry tree: the
+ * What a run's Kaiju Event Stream (spec §6.2, KOBE-31) adds on top of the committed entry tree: the
  * text still streaming, tool activity, notices, and how the run ended. Pure and immutable: every
  * function returns a new state. Events with `seq <= lastSeq` are dropped (duplicates across
  * reconnects), so replaying a stream from 0 after a refresh rebuilds exactly the same state.

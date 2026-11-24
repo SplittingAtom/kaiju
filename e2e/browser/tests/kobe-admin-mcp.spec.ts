@@ -6,14 +6,14 @@ import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-624 (KA-7; spec docs/specs/kobe-admin-mcp.md): admin and docs from the conversation through
- * the built-in Kobe connector.
+ * the built-in Kaiju connector.
  *
  * - `KOBE_USER` / `KOBE_PW`: a site admin who is also team admin of the active team (`KOBE_TEAM`
  *   pins it). Its default agent must name the `kobe` connector or `connectors: all` (the gallery
  *   agent Kobe does), else the admin tools are not attached.
  * - `KOBE_USER2` / `KOBE_PW2`: an ordinary member of that team (role `member`).
  *
- * Each test sets the site switch (`kobe_mcp.mode`) and the team's Kobe level through the console
+ * Each test sets the site switch (`kobe_mcp.mode`) and the team's Kaiju level through the console
  * API, and puts both back as it found them in `finally`.
  *
  * (a) the owner asks the agent to make member2 a contributor: an "Admin change" card (scope the
@@ -43,7 +43,7 @@ interface ToolCall {
   readonly args: string;
 }
 
-/** A Kobe connector tool's Pi name: `mcp__kobe__<tool>` (or the fallback name `kobe-builtin`). */
+/** A Kaiju connector tool's Pi name: `mcp__kobe__<tool>` (or the fallback name `kobe-builtin`). */
 const KOBE_TOOL = /^mcp__kobe(?:[-_]builtin)?__(.+)$/;
 const isKobeAdminCall = (c: ToolCall): boolean => {
   const tool = KOBE_TOOL.exec(c.name)?.[1];
@@ -55,7 +55,7 @@ const isKobeDocsCall = (c: ToolCall): boolean =>
 async function siteMode(page: Page): Promise<Mode> {
   const res = await pageApi<{ kobeMcpMode?: Mode }>(page, "GET", "/v1/site/settings");
   expect(res.status, JSON.stringify(res.json)).toBe(200);
-  expect(res.json.kobeMcpMode, "the server predates the Kobe site switch").toBeDefined();
+  expect(res.json.kobeMcpMode, "the server predates the Kaiju site switch").toBeDefined();
   return res.json.kobeMcpMode as Mode;
 }
 
@@ -91,15 +91,15 @@ async function withSwitches(
     await body();
   } finally {
     await setTeamLevel(page, before.level).catch((e: unknown) =>
-      console.warn(`could not restore the team's Kobe level: ${String(e)}`),
+      console.warn(`could not restore the team's Kaiju level: ${String(e)}`),
     );
     await setSiteMode(page, before.mode).catch((e: unknown) =>
-      console.warn(`could not restore the Kobe site switch: ${String(e)}`),
+      console.warn(`could not restore the Kaiju site switch: ${String(e)}`),
     );
   }
 }
 
-/** The admin tools the page's member would get now (the composer's Kobe row). */
+/** The admin tools the page's member would get now (the composer's Kaiju row). */
 async function kobeAdmin(page: Page): Promise<string | undefined> {
   const res = await pageApi<{ connectors?: { builtin?: { admin: string } }[] }>(
     page,
@@ -180,7 +180,7 @@ test("the owner changes member2's role from the conversation: Admin change card,
     try {
       expect(await kobeAdmin(page)).toBe("read_write");
       await chat.send(
-        `Use the Kobe admin tools to change the team role of ${target.name} (${target.email}) ` +
+        `Use the Kaiju admin tools to change the team role of ${target.name} (${target.email}) ` +
           "from member to contributor. First list the team members to find their user id, then " +
           "call the role change tool exactly once. Then reply DONE.",
       );
@@ -249,7 +249,7 @@ test("member2 gets no admin tool: the agent answers without one", async ({ page,
       expect(await kobeAdmin(other)).toBe("off");
       await otherChat.open();
       const threadId = await otherChat.ask(
-        "Use the Kobe admin tools to list this team's members and change the role of " +
+        "Use the Kaiju admin tools to list this team's members and change the role of " +
           `${owner.email} to member. If you have no such tool, say so and do not try another way.`,
       );
       await expect(other.getByRole("group", { name: ADMIN_CARD })).toHaveCount(0);
@@ -276,7 +276,7 @@ test("a how-to question is answered from the docs tools and cites a /docs/ page"
     { mode: mode === "off" ? "docs" : mode, level: await teamLevel(page) },
     async () => {
       const threadId = await chat.ask(
-        "How do I approve a team skill? Use the Kobe docs tools (docs_index, docs_search or " +
+        "How do I approve a team skill? Use the Kaiju docs tools (docs_index, docs_search or " +
           "docs_page) to find the answer, and cite the guide page's /docs/ URL in your answer.",
       );
       const calls = await toolCalls(page, threadId);
@@ -304,7 +304,7 @@ test("with the team at docs only, the owner's role change gets no admin tool", a
     try {
       expect(await kobeAdmin(page)).toBe("off");
       const threadId = await chat.ask(
-        `Use the Kobe admin tools to change the team role of ${target.name} (${target.email}) ` +
+        `Use the Kaiju admin tools to change the team role of ${target.name} (${target.email}) ` +
           "to contributor. If you have no such tool, say so and do not try another way.",
       );
       await expect(page.getByRole("group", { name: ADMIN_CARD })).toHaveCount(0);

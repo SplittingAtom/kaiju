@@ -162,7 +162,7 @@ describe.skipIf(!PI_AVAILABLE)("Stop before Pi's first token in real Pi 1.0.0 (K
     const resync = await entries(before?.id);
     expect(resync.entries.filter((e) => roleOf(e) === "user").map((e) => e.id)).toEqual([user?.id]);
 
-    // The next run continues from the prompt (Kobe's leaf once it is mirrored): the model gets
+    // The next run continues from the prompt (Kaiju's leaf once it is mirrored): the model gets
     // both prompts, and a sync since the prompt never returns it.
     const second = await harness.server.command(
       {

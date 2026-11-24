@@ -1,5 +1,5 @@
 /**
- * Kobe's own checks on a validated ID token (spec sso-oidc-scim §5.4–5.5, §7, §13; KOBE-628), run
+ * Kaiju's own checks on a validated ID token (spec sso-oidc-scim §5.4–5.5, §7, §13; KOBE-628), run
  * after `openid-client` verified the signature (JWKS), `iss`, `aud`, `nonce` and the time claims.
  * They are deliberately repeated here, so a library default can never loosen them:
  *
@@ -155,7 +155,7 @@ function audienceOk(claims: Claims, clientId: string): boolean {
 }
 
 /**
- * `authTimeRequired`: Kobe sends `max_age`, so OIDC Core §3.1.2.1 makes `auth_time` required in
+ * `authTimeRequired`: Kaiju sends `max_age`, so OIDC Core §3.1.2.1 makes `auth_time` required in
  * the answer; generic providers must send it (KOBE-775). Entra v2 may leave it out, so for Entra
  * it is checked when present (the flow logs its absence).
  */

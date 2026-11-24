@@ -16,7 +16,7 @@ export interface MemoryFileContent {
   /** The Notes section (KOBE-157); empty with Notes off. */
   readonly text: string;
   /**
-   * What Kobe knows, stable part (KOBE-383: title, preamble, Policy, pinned items): first in the
+   * What Kaiju knows, stable part (KOBE-383: title, preamble, Policy, pinned items): first in the
    * run's additions, with or without Notes. Absent when the run has no semantic memory.
    */
   readonly known?: string;

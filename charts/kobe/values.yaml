@@ -1,7 +1,7 @@
-# Kobe Helm values. Every key is validated by values.schema.json (unknown keys are rejected).
+# Kaiju Helm values. Every key is validated by values.schema.json (unknown keys are rejected).
 
 global:
-  # Registry for Kobe images; images are private, so set imagePullSecrets (applied to every pod).
+  # Registry for Kaiju images; images are private, so set imagePullSecrets (applied to every pod).
   imageRegistry: ghcr.io/splittingatom
   # Defaults to the chart appVersion.
   imageTag: ""
@@ -12,7 +12,7 @@ global:
   # true only for throwaway environments (dev loop, CI).
   allowGeneratedSecretsOffline: false
 
-# Kobe refuses to run agents without a gVisor or Kata RuntimeClass (spec D4). The install fails
+# Kaiju refuses to run agents without a gVisor or Kata RuntimeClass (spec D4). The install fails
 # when none exists; there is no switch to disable this check.
 isolation:
   # RuntimeClass sandboxes run under; its handler must be runsc (gVisor) or kata*.
@@ -165,8 +165,8 @@ sandbox:
 rancher:
   enabled: false
 
-# Public origin users reach Kobe at (cookies, WebAuthn relying party). Defaults to
-# http(s)://<ingress.host>; set it when Kobe sits behind another proxy or ingress is disabled.
+# Public origin users reach Kaiju at (cookies, WebAuthn relying party). Defaults to
+# http(s)://<ingress.host>; set it when Kaiju sits behind another proxy or ingress is disabled.
 publicUrl: ""
 
 auth:
@@ -229,7 +229,7 @@ smtp:
   # starttls: STARTTLS required (587); tls: implicit TLS (465); none: unencrypted, for an in-cluster
   # dev relay only, and never with credentials. Certificates are always verified.
   security: starttls
-  # Sender (required): "Kobe <kobe@example.com>" or an address.
+  # Sender (required): "Kaiju <kobe@example.com>" or an address.
   from: ""
   # Secret with keys "username" and "password" for SMTP AUTH. Empty: no authentication.
   existingSecret: ""
@@ -249,7 +249,7 @@ web:
   # (KOBE-500, theming plan TH5): KOBE_SERVER_URL. Empty = this release's server Service
   # (http://<fullname>-server, port 80 -> the server's 8080, which the not-from-sandboxes
   # NetworkPolicy already admits). Set it only for split installs where web and server are not one
-  # release. Origin only (http(s)://host[:port]); when unreachable the web serves the Kobe defaults.
+  # release. Origin only (http(s)://host[:port]); when unreachable the web serves the Kaiju defaults.
   serverUrl: ""
   networkPolicy:
     # Opt-in egress policy (KOBE-698): DNS and the server's pods on 8080 only. A serverUrl outside
@@ -353,10 +353,10 @@ server:
     # Basic-auth user name sent with the token. GitHub: any (x-access-token for App tokens);
     # Forgejo/Gitea: the token owner's user name.
     username: x-access-token
-    authorName: Kobe Registry
+    authorName: Kaiju Registry
     authorEmail: registry@kobe.invalid
   # Opt-in egress policy (KOBE-698; off keeps the server's egress open, as before). On: DNS,
-  # Postgres, Kobe's own services, the Kubernetes API, public addresses on allowedPorts (S3, the
+  # Postgres, Kaiju's own services, the Kubernetes API, public addresses on allowedPorts (S3, the
   # identity provider, OAuth, model discovery) and the SMTP relay on smtp.port. Anything on the LAN
   # or in the cluster (S3, SMTP, IdP, telemetry, SIEM) needs a rule in extraEgress (docs/install.md).
   networkPolicy:
@@ -608,7 +608,7 @@ modelGateway:
     extraEgress: []
 
 # Model gateway (spec D4, D30), always installed: Bifrost (Apache-2.0) holds the provider keys and
-# enforces each member's model allowlist. Kobe is the source of truth (Site console and
+# enforces each member's model allowlist. Kaiju is the source of truth (Site console and
 # API): the server pushes providers, keys, catalog models and the customer/team/virtual-key
 # hierarchy to it. Only the shim and the server can reach it.
 bifrost:
@@ -762,9 +762,9 @@ retention:
 # value into the site settings at start ONLY while that setting is unset: an admin's change on the
 # Appearance page always wins and is never overwritten on a restart or upgrade. Changing a value
 # here later does not change a site that already has the setting; "Reset to defaults" on the
-# Appearance page returns to these values at once (clear a value to reset to Kobe's built-in one).
+# Appearance page returns to these values at once (clear a value to reset to Kaiju's built-in one).
 branding:
-  # The site's name (1-40 characters, plain text on one line). Empty: "Kobe".
+  # The site's name (1-40 characters, plain text on one line). Empty: "Kaiju".
   appName: ""
   # One of default, slate, forest, plum, ember, tokyo-nights, catalyst. Empty: the built-in default.
   preset: ""
@@ -794,7 +794,7 @@ ingress:
     clusterIssuer: ""
   # Strict-Transport-Security (KOBE-695): the server and the web send it themselves whenever the
   # public URL is https (max-age one year). includeSubDomains extends it to every subdomain of the
-  # public host's domain; leave it off when Kobe shares a parent domain with other sites.
+  # public host's domain; leave it off when Kaiju shares a parent domain with other sites.
   hsts:
     includeSubDomains: false
   # Optional per-source-IP rate limit at the ingress (KOBE-811), off by default: a Traefik
@@ -818,7 +818,7 @@ ingress:
     assumeTraefikV3: false
     # You limit requests per client at your own edge (load balancer, WAF, CDN, or your own
     # ingress when ingress.enabled is false): true tells the Site console, which otherwise shows
-    # an informational notice that no ingress rate limit is configured (or that Kobe cannot tell).
+    # an informational notice that no ingress rate limit is configured (or that Kaiju cannot tell).
     external: false
     # Event streams (SSE: run events, workspace events and changes, skill-eval events) get their
     # own Ingress and their own, separate budget (by default stricter per second than the main

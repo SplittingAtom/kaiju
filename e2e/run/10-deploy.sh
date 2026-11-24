@@ -23,14 +23,14 @@ for ns in "$NS" kobe-deps "$SANDBOX_NS" "$TEAM_NS" "$TEAM2_NS" "$UPSTREAM_NS" "$
   $KUBECTL wait --for=delete "namespace/$ns" --timeout=180s >/dev/null 2>&1 || true
 done
 
-echo "==> deploying dependencies and Kobe ${TAG}"
+echo "==> deploying dependencies and Kaiju ${TAG}"
 $KUBECTL apply -f dev/postgres.yaml >/dev/null
 $KUBECTL -n kobe-deps rollout status deploy/pg --timeout=180s >/dev/null
 $KUBECTL apply -f dev/mailpit.yaml >/dev/null
 $KUBECTL -n kobe-deps rollout status deploy/mailpit --timeout=180s >/dev/null
 $KUBECTL apply -f dev/s3.yaml >/dev/null # KOBE-27: S3-compatible test fixture (SeaweedFS, Apache-2.0)
 $KUBECTL -n kobe-deps rollout status deploy/s3 --timeout=300s >/dev/null
-# KOBE-274: the OTLP sink first, so every Kobe service exports to it from the start.
+# KOBE-274: the OTLP sink first, so every Kaiju service exports to it from the start.
 $KUBECTL create namespace "$OTEL_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
 $KUBECTL -n "$OTEL_NS" run otlp --restart=Never --image="ghcr.io/splittingatom/kobe-model-gateway:$TAG" \
   --image-pull-policy=IfNotPresent --labels=app=otlp --command -- node -e "$(cat e2e/lib/otlp-sink.js)" >/dev/null

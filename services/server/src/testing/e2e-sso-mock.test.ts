@@ -9,7 +9,7 @@ import { kindDefaults } from "../sso/schemas.js";
 
 /**
  * Unit tests of the k3d SSO gate's mock Entra and SCIM client (KOBE-633, e2e/sso/): every token
- * the mock issues goes through Kobe's own claim checks (`checkIdTokenClaims`) and MFA rule, so the
+ * the mock issues goes through Kaiju's own claim checks (`checkIdTokenClaims`) and MFA rule, so the
  * gate's scenarios mean what they say. The modules are plain JavaScript run in a server pod.
  */
 const here = dirname(fileURLToPath(import.meta.url));
@@ -57,7 +57,7 @@ interface Flow {
   readonly tenant?: string;
 }
 
-/** Kobe's side of one sign-in: authorize, then the token request; returns the raw parts. */
+/** Kaiju's side of one sign-in: authorize, then the token request; returns the raw parts. */
 async function signIn(flow: Flow = {}) {
   const tenant = flow.tenant ?? TENANT;
   const verifier = randomBytes(32).toString("base64url");
@@ -108,7 +108,7 @@ async function idTokenOf(flow: Flow = {}) {
   return { token, nonce: s.nonce };
 }
 
-/** What Kobe concludes from a token: signature against the JWKS, then its own claim checks. */
+/** What Kaiju concludes from a token: signature against the JWKS, then its own claim checks. */
 async function kobeVerdict(token: string, nonce: string, provider = PROVIDER) {
   const header = jose.decodeProtectedHeader(token) as Record<string, unknown>;
   let signature = "ok";
@@ -126,7 +126,7 @@ async function kobeVerdict(token: string, nonce: string, provider = PROVIDER) {
   };
 }
 
-const MEMBER = { oid: randomUUID(), upn: "ann@sso.test", name: "Ann Lee", roles: ["Kobe.Member"] };
+const MEMBER = { oid: randomUUID(), upn: "ann@sso.test", name: "Ann Lee", roles: ["Kaiju.Member"] };
 
 describe("mock Entra: discovery and keys", () => {
   it("serves Entra's v2.0 discovery document for a configured tenant only", async () => {
@@ -144,7 +144,7 @@ describe("mock Entra: discovery and keys", () => {
       id_token_signing_alg_values_supported: ["RS256"],
     });
     expect(doc.response_types_supported).toContain("code");
-    // Like Entra: PKCE supported but not advertised (Kobe's Entra preset assumes it).
+    // Like Entra: PKCE supported but not advertised (Kaiju's Entra preset assumes it).
     expect(doc.code_challenge_methods_supported).toBeUndefined();
     const other = await mock.handle({
       method: "GET",
@@ -164,7 +164,7 @@ describe("mock Entra: discovery and keys", () => {
 });
 
 describe("mock Entra: the code flow", () => {
-  it("issues an ID token Kobe accepts, with Entra's claims", async () => {
+  it("issues an ID token Kaiju accepts, with Entra's claims", async () => {
     const { token, nonce } = await idTokenOf({ user: MEMBER });
     const verdict = await kobeVerdict(token, nonce);
     expect(verdict.signature).toBe("ok");
@@ -174,7 +174,7 @@ describe("mock Entra: the code flow", () => {
         subject: MEMBER.oid,
         email: "ann@sso.test",
         emailVerified: true,
-        values: ["Kobe.Member"],
+        values: ["Kaiju.Member"],
       },
     });
     const claims = jose.decodeJwt(token);
@@ -293,9 +293,9 @@ describe("mock Entra: groups and overage", () => {
   });
 });
 
-describe("mock Entra: bad-token modes are refused by Kobe's checks", () => {
+describe("mock Entra: bad-token modes are refused by Kaiju's checks", () => {
   const cases: ReadonlyArray<readonly [string, string, string]> = [
-    // mode, the check that fails, Kobe's failure (signature-level modes: "-")
+    // mode, the check that fails, Kaiju's failure (signature-level modes: "-")
     ["wrong_iss", "iss", "tenant_mismatch"],
     ["wrong_aud", "aud", "token_invalid"],
     ["wrong_nonce", "nonce", "token_invalid"],
@@ -306,7 +306,7 @@ describe("mock Entra: bad-token modes are refused by Kobe's checks", () => {
     ["alg_none", "alg", "token_invalid"],
     ["hs256", "alg", "token_invalid"],
   ];
-  it.each(cases)("%s fails Kobe's %s check (%s)", async (mode, check, failure) => {
+  it.each(cases)("%s fails Kaiju's %s check (%s)", async (mode, check, failure) => {
     const { token, nonce } = await idTokenOf({ user: MEMBER, mode });
     const verdict = await kobeVerdict(token, nonce);
     expect(verdict.check).toMatchObject({ ok: false, check, failure });
@@ -339,7 +339,7 @@ describe("mock Entra: bad-token modes are refused by Kobe's checks", () => {
 });
 
 describe("SCIM client: Entra's request shapes", () => {
-  /** A recording fetch that answers like Kobe's SCIM endpoints would. */
+  /** A recording fetch that answers like Kaiju's SCIM endpoints would. */
   function recorder() {
     const calls: Array<{
       method: string;
@@ -492,7 +492,7 @@ describe("mock as a generic OIDC provider on gate1 (KOBE-634 browser spec)", () 
     genericKeys = jose.createLocalJWKSet(JSON.parse(keys.body));
   });
 
-  it("names its own origin as issuer and advertises PKCE S256, as Kobe's generic preset requires", async () => {
+  it("names its own origin as issuer and advertises PKCE S256, as Kaiju's generic preset requires", async () => {
     const res = await generic.handle({
       method: "GET",
       path: `/${TENANT}/v2.0/.well-known/openid-configuration`,

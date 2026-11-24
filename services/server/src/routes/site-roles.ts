@@ -21,7 +21,7 @@ import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 export function siteRolesRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
   const db = deps.database.db;
-  const userNotFound = { code: "user_not_found", message: "No Kobe user with that id." } as const;
+  const userNotFound = { code: "user_not_found", message: "No Kaiju user with that id." } as const;
 
   app.get("/", requireSitePermission("site.users.manage"), async (c) => {
     const rows = await db

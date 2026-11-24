@@ -113,7 +113,7 @@ export async function revokeInvite(
   db: KobeDb,
   id: string,
   /**
-   * KOBE-623: the invitation's address as the caller saw it (a Kobe MCP call's approved
+   * KOBE-623: the invitation's address as the caller saw it (a Kaiju MCP call's approved
    * before-state): revoked only while the open invitation still has it, in the same statement.
    */
   expectedEmail?: string,

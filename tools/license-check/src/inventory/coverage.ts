@@ -12,7 +12,7 @@ export interface ImageRef {
   readonly at: string;
 }
 
-/** Kobe's own images; their contents are inventoried through the tables above. */
+/** Kaiju's own images; their contents are inventoried through the tables above. */
 const FIRST_PARTY = /^ghcr\.io\/splittingatom\//;
 const DOCKER_HUB = /^(?:docker\.io|index\.docker\.io|registry-1\.docker\.io|mirror\.gcr\.io)\//;
 

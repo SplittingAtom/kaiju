@@ -167,7 +167,7 @@ async function readFacts(
 }
 
 /**
- * The member's explicit roles on every Kobe Repo (G15) the pushed repository is (review M3):
+ * The member's explicit roles on every Kaiju Repo (G15) the pushed repository is (review M3):
  * matched on the host's stable id within the connection's base URL under ANY connection (a
  * reconnect leaves `connection_id` cleared, G20) and also on the last-seen name (a rename or a
  * stale id must not lose the rule). Both match sets apply: fail closed.
@@ -209,14 +209,14 @@ export async function repoProjectRoles(
   });
 }
 
-/** A Kobe Repo's record and the member's explicit role on its project (M4 read rule). */
+/** A Kaiju Repo's record and the member's explicit role on its project (M4 read rule). */
 export interface RepoReadRule {
   readonly hostRepoId: string;
   readonly fullName: string;
   readonly projectRole: "owner" | "editor" | undefined;
 }
 
-/** Whether any repository on `baseUrl` is a Kobe Repo in the member's Workspace (no cap). */
+/** Whether any repository on `baseUrl` is a Kaiju Repo in the member's Workspace (no cap). */
 export async function hostHasRepos(
   db: KobeDb,
   principal: Pick<GitTransportPrincipal, "teamId">,
@@ -233,7 +233,7 @@ export async function hostHasRepos(
 }
 
 /**
- * The Kobe Repo records (a `git_repositories` row with a project) for `baseUrl` that match one of
+ * The Kaiju Repo records (a `git_repositories` row with a project) for `baseUrl` that match one of
  * `repos` by the host's id or by the last-seen name (either matches; fail closed), under any
  * connection (a reconnect clears `connection_id`, G20), with the member's explicit role on each
  * project. Asked per requested repository (or per listed page), never as a capped list of all
@@ -271,7 +271,7 @@ export async function repoReadRules(
 }
 
 /**
- * Owner decision 2026-11-22 (review g103 M4): reading a repository that is a Kobe Repo needs a role
+ * Owner decision 2026-11-22 (review g103 M4): reading a repository that is a Kaiju Repo needs a role
  * on its project (reader, editor or owner: {@link projectPermissions} `view`), matched by the
  * host's id and by the last-seen name, both applying (fail closed). Other repositories of the
  * organization need nothing more. `permissions` is replaceable in tests only.
@@ -290,7 +290,7 @@ export function repoReadable(
 
 /**
  * The access rules (G12) for a matched connection that need no host call; undefined when allowed
- * so far. A push to an organization repository that is not a Kobe Repo needs exactly this: the
+ * so far. A push to an organization repository that is not a Kaiju Repo needs exactly this: the
  * connection at Read and write and the Contributor role or above (G12). A Repo additionally needs
  * editor or owner on its project ({@link repoRefusal}, after the host id is known).
  */
@@ -325,7 +325,7 @@ export function accessRefusal(
   return undefined;
 }
 
-/** A push to a Kobe Repo needs editor or owner on every project the repository is the record of. */
+/** A push to a Kaiju Repo needs editor or owner on every project the repository is the record of. */
 export function repoRefusal(
   role: TeamRole,
   repos: readonly { readonly projectRole: "owner" | "editor" | undefined }[],
@@ -359,7 +359,7 @@ function adapterRefusal(err: unknown): GitTransportAnswer {
         "The git host refused the Workspace's credential; a Workspace admin should check the connection.",
       );
     case "rate_limited":
-      return deny("host_rate_limited", "The git host is rate limiting Kobe; try again later.");
+      return deny("host_rate_limited", "The git host is rate limiting Kaiju; try again later.");
     case "host_refused":
       return deny("site_refused", "This Site does not allow that git host.");
     default:
@@ -437,7 +437,7 @@ export async function decideGitTransport(
     }
     if (access === "write") {
       // Review M3: resolve the host's stable id first; an unresolvable repository is refused
-      // (fail closed), and a Kobe Repo by id or by name keeps its project rule.
+      // (fail closed), and a Kaiju Repo by id or by name keeps its project rule.
       const resolved = await adapter.getRepository({ name: request.repository });
       const repos = await repoProjectRoles(
         deps.db,

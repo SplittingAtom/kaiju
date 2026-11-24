@@ -45,7 +45,7 @@ afterEach(() => {
 });
 
 describe("Members and roles", () => {
-  it("marks a member Kobe added for the Skill reviewer grant (KOBE-331 review)", async () => {
+  it("marks a member Kaiju added for the Skill reviewer grant (KOBE-331 review)", async () => {
     stubApi({
       "GET /v1/team/members": [
         200,

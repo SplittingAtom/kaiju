@@ -72,7 +72,7 @@ const TOOL = "commit_project";
 /**
  * Review M2 (KOBE-767): a commit to a Repo sends the project's files to an external git host, so
  * it is its own approval subject: rules that allow `commit_project` (written when it only touched
- * Kobe's copy) never cover it, and every one asks a person, with where it pushes on the card.
+ * Kaiju's copy) never cover it, and every one asks a person, with where it pushes on the card.
  */
 export const REPO_COMMIT_TOOL = "commit_repo";
 

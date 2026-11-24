@@ -32,11 +32,11 @@ const input = (over: Partial<RunGitInput> = {}): RunGitInput => ({
 });
 
 describe("run.start.git (KOBE-764)", () => {
-  it("makes the member the author with their Kobe email and 'via Kobe' the committer (G13)", () => {
+  it("makes the member the author with their Kaiju email and 'via Kaiju' the committer (G13)", () => {
     const git = buildRunGitContext(input());
     expect(git).toEqual({
       author: { name: "Ada Lovelace", email: "ada@acme.test" },
-      committer: { name: "Ada Lovelace via Kobe", email: "ada@acme.test" },
+      committer: { name: "Ada Lovelace via Kaiju", email: "ada@acme.test" },
       remotes: [{ base_url: "https://github.com", organization: "acme" }],
     });
     expect(runGitContextSchema.safeParse(git).success).toBe(true);
@@ -46,7 +46,7 @@ describe("run.start.git (KOBE-764)", () => {
     const git = buildRunGitContext(input({ mode: "noreply" }));
     const noReply = `${gitNoReplyShortId(USER)}+ada-lovelace@users.noreply.kobe.acme.test`;
     expect(git.author).toEqual({ name: "Ada Lovelace", email: noReply });
-    expect(git.committer).toEqual({ name: "Ada Lovelace via Kobe", email: noReply });
+    expect(git.committer).toEqual({ name: "Ada Lovelace via Kaiju", email: noReply });
     expect(JSON.stringify(git)).not.toContain("ada@acme.test");
   });
 
@@ -61,7 +61,7 @@ describe("run.start.git (KOBE-764)", () => {
     const long = gitNoReplySlug(`${"a".repeat(38)} bcd`);
     expect(long).toBe("a".repeat(38));
     expect(gitNoReplySlug("x".repeat(80))).toHaveLength(39);
-    const email = gitNoReplyEmail({ id: USER, name: "x".repeat(80) }, "Kobe.Acme.Test");
+    const email = gitNoReplyEmail({ id: USER, name: "x".repeat(80) }, "Kaiju.Acme.Test");
     expect(email).toBe(`${id}+${"x".repeat(39)}@users.noreply.kobe.acme.test`);
     expect((email.split("@")[0] ?? "").length).toBeLessThanOrEqual(64);
     expect(runGitContextSchema.shape.author.shape.email.safeParse(email).success).toBe(true);
@@ -83,12 +83,12 @@ describe("run.start.git (KOBE-764)", () => {
 
   it("cleans names git would misread and keeps room for the suffix", () => {
     expect(gitAuthorName('Ada "<x>"\nLovelace\\')).toBe("Ada x Lovelace");
-    expect(gitAuthorName(" \n\t")).toBe("Kobe member");
+    expect(gitAuthorName(" \n\t")).toBe("Kaiju member");
     const git = buildRunGitContext(
       input({ user: { id: USER, name: "n".repeat(500), email: "a@b.test" } }),
     );
     expect(runGitContextSchema.safeParse(git).success).toBe(true);
-    expect(git.committer.name.endsWith(" via Kobe")).toBe(true);
+    expect(git.committer.name.endsWith(" via Kaiju")).toBe(true);
   });
 
   it("lists connections the sandbox's git may use: on, open to every agent, https on 443", () => {

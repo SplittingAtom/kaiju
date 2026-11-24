@@ -12,7 +12,7 @@ import {
 
 /**
  * `run.start.memory.semantic` (KOBE-377; spec SM23, SM24): the semantic memory items the server
- * picked for this run, which kobe-sandbox-agent renders as the "What Kobe knows" block (KOBE-383)
+ * picked for this run, which kobe-sandbox-agent renders as the "What Kaiju knows" block (KOBE-383)
  * above Notes. Additive: absent on an old server, for an agent without
  * {@link CAPABILITY_SEMANTIC_MEMORY}, for an agent version whose memory setting is `notes_only`
  * or `off` (KOBE-646), and for evals and test chats. The server records each item version given
@@ -57,7 +57,7 @@ export const SEMANTIC_MEMORY_PLACEMENT_DEFAULT: SemanticMemoryPlacement = "lates
 export const CAPABILITY_SEMANTIC_MEMORY_PLACEMENT = "semantic_memory_placement";
 
 /**
- * Bytes of the rendered "What Kobe knows" block (SM23): block header and footer, each lane's
+ * Bytes of the rendered "What Kaiju knows" block (SM23): block header and footer, each lane's
  * nonce fences and header, and each item's line (bullet, kind, provenance) plus its statement.
  * {@link semanticMemoryRenderedBytes} computes it with the fixed overheads below. The Site's
  * context budget (KOBE-381, Site setting `context_budget_kib`) picks the size from
@@ -71,7 +71,7 @@ export const SEMANTIC_MEMORY_BLOCK_MIN_BYTES = 4 * 1024;
 export const SEMANTIC_MEMORY_BLOCK_DEFAULT_BYTES = 8 * 1024;
 export const SEMANTIC_MEMORY_BLOCK_MAX_BYTES = 16 * 1024;
 /**
- * The headers ("What Kobe knows", "… for this message" and, with `stable_plus_delta`, "… for this
+ * The headers ("What Kaiju knows", "… for this message" and, with `stable_plus_delta`, "… for this
  * conversation"), the preamble with the untrusted-data notice (longer when the picks travel beside
  * the person's message, KOBE-658), and the "n more not shown" line (KOBE-383: measured from the
  * sandbox's renderer, which tests that it stays within each overhead; 640 before KOBE-658).

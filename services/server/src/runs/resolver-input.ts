@@ -135,8 +135,8 @@ async function installedNamesAmong(
  * of is the catalog's. A name both have is the team's own, unless the team installed the catalog
  * skill and its own skill is archived or has never been approved: a draft never hides an
  * installed, Site-reviewed skill, and archiving a skill to install the catalog one (the name-clash
- * rule) hands the name over. A Kobe skill's name is always the catalog's (KOBE-317, SK24): it was
- * reserved for the built-in before, so an agent naming `pdf` keeps getting Kobe's.
+ * rule) hands the name over. A Kaiju skill's name is always the catalog's (KOBE-317, SK24): it was
+ * reserved for the built-in before, so an agent naming `pdf` keeps getting Kaiju's.
  */
 async function catalogNamed(
   tx: KobeTx,
@@ -187,7 +187,7 @@ export async function loadTeamFacts(tx: KobeTx, teamId: string): Promise<TeamRes
  * (KOBE-318), a name in the manifest resolves to that exact version, even if its skill was since
  * archived and its name installed from the catalog (SK31: archive keeps frozen agents working);
  * a team name left out of the manifest has no version for this agent (`not_approved`) until a
- * republish, whatever was approved since. Kobe's names are never frozen.
+ * republish, whatever was approved since. Kaiju's names are never frozen.
  */
 async function namedLocalSkills(
   tx: KobeTx,
@@ -272,7 +272,7 @@ export async function loadSkillFacts(
     frozen?: readonly FrozenSkill[];
   },
 ): Promise<SkillFacts> {
-  // Kobe's skills (the former built-ins, KOBE-317) are catalog names like any other: they resolve
+  // Kaiju's skills (the former built-ins, KOBE-317) are catalog names like any other: they resolve
   // through the team's install (or the Default install still on its way, catalog-facts.ts).
   const listed = [...new Set(args.agentSkillNames)];
   const access = await teamSkillAccess(tx, args.teamId, args.userId);

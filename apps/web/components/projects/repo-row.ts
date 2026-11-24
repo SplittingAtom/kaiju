@@ -32,7 +32,7 @@ export function repoRowWords(info: RepoInfo | undefined): RepoRowWords {
     words.push(readOnlyText(view.readOnlyReason));
   } else if (view.mirror.tooLarge) {
     chips.push("too large to mirror");
-    words.push("too large to mirror: Kobe shows the last mirror");
+    words.push("too large to mirror: Kaiju shows the last mirror");
   } else if (view.mirror.error !== null) {
     chips.push("refresh failed");
     words.push("the last refresh failed");

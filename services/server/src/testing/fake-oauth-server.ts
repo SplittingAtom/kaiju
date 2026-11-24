@@ -94,7 +94,7 @@ export class FakeOauthServer {
     return new Promise((r) => this.server.close(() => r()));
   }
 
-  /** Plays the browser at /authorize: returns the redirect Kobe's callback should receive. */
+  /** Plays the browser at /authorize: returns the redirect Kaiju's callback should receive. */
   async authorize(authorizationUrl: string): Promise<URL> {
     const res = await fetch(authorizationUrl, { redirect: "manual" });
     const location = res.headers.get("location");

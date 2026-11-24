@@ -84,7 +84,7 @@ async function step(context, options) {
     return fauxAssistantMessage(`COUNTS:${JSON.stringify(counts)}`);
   }
   // KOBE-492: how often each needle occurs in the non-system messages the model was given (a
-  // mid-run Kobe notice arrives as a custom message, which Pi sends in user role).
+  // mid-run Kaiju notice arrives as a custom message, which Pi sends in user role).
   if (next.countInMessages !== undefined) {
     const text = messages
       .filter((m) => m.role !== "system" && m.role !== "developer")

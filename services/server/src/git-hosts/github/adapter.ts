@@ -415,7 +415,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
       const name = assertRepositoryName(input.name);
       const visibility = input.visibility as string;
       if (visibility !== "private" && visibility !== "internal") {
-        throw new GitHostError("invalid_request", "Kobe creates private repositories only.");
+        throw new GitHostError("invalid_request", "Kaiju creates private repositories only.");
       }
       const k = await kind();
       // Exactly the connected owner (review M3): the org endpoint for an organization; a user's

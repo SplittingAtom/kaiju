@@ -1,5 +1,5 @@
 /**
- * A fake Kobe server for chat tests: the Thread API, the run orchestrator and the Kobe Event Stream
+ * A fake Kaiju server for chat tests: the Thread API, the run orchestrator and the Kaiju Event Stream
  * with the real wire shapes (snake_case JSON over `fetch`, SSE resume by `starting_after` /
  * `Last-Event-ID`, 204 after the end, 410 when compacted). It follows the server's rules where the
  * UI depends on them (D14 interrupted blocks the queue, D17 queue/Stop, KOBE-34 leaf/Trash busy

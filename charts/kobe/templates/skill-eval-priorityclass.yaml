@@ -13,4 +13,4 @@ metadata:
 value: -100
 preemptionPolicy: Never
 globalDefault: false
-description: "Kobe skill eval sandboxes: low priority, never preempt (KOBE-325)."
+description: "Kaiju skill eval sandboxes: low priority, never preempt (KOBE-325)."

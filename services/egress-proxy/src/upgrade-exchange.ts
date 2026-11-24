@@ -84,8 +84,8 @@ export async function connectVerified(
     reply(
       res,
       502,
-      `Kobe egress: cannot connect to ${host}`,
-      `Kobe egress: ${host} did not accept a connection.`,
+      `Kaiju egress: cannot connect to ${host}`,
+      `Kaiju egress: ${host} did not accept a connection.`,
     );
     return undefined;
   }
@@ -100,8 +100,8 @@ export async function connectVerified(
     reply(
       res,
       502,
-      `Kobe egress: ${host} TLS could not be verified`,
-      `Kobe egress: ${host}'s HTTPS certificate could not be verified for that name.`,
+      `Kaiju egress: ${host} TLS could not be verified`,
+      `Kaiju egress: ${host}'s HTTPS certificate could not be verified for that name.`,
     );
     return undefined;
   }
@@ -181,8 +181,8 @@ export async function exchange(
       reply(
         res,
         status,
-        `Kobe egress: ${host} request failed`,
-        `Kobe egress: the request to ${host} failed (${reason}).`,
+        `Kaiju egress: ${host} request failed`,
+        `Kaiju egress: the request to ${host} failed (${reason}).`,
       );
     },
     // KOBE-763 review M2: resume only when the destination drained AND the throttle allows.
@@ -262,8 +262,8 @@ function relayResponse(relay: Relay, upstreamRes: IncomingMessage): void {
     reply(
       res,
       502,
-      "Kobe egress: response too large",
-      `Kobe egress: responses are limited to ${limits.maxResponseBytes} bytes.`,
+      "Kaiju egress: response too large",
+      `Kaiju egress: responses are limited to ${limits.maxResponseBytes} bytes.`,
     );
     upstreamRes.destroy();
     tls.destroy();

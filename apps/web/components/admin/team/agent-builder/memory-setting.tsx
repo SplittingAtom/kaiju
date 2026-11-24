@@ -12,7 +12,7 @@ export const MEMORY_SETTING_LABELS: Readonly<
 > = {
   all: {
     label: "All memory",
-    hint: "Memory notes (My memory, project memory) and any other memories Kobe keeps.",
+    hint: "Memory notes (My memory, project memory) and any other memories Kaiju keeps.",
   },
   notes_only: {
     label: "Notes only",

@@ -12,7 +12,7 @@ import type { LearnState } from "./learn-api";
 export const LEARN_SPIN_MAX_MS = MEMORY_PASS_MAX_MS + 15_000;
 
 export const LEARN_TIMEOUT_MESSAGE =
-  "Kobe couldn't confirm that learning from this chat finished. Try again.";
+  "Kaiju couldn't confirm that learning from this chat finished. Try again.";
 
 export interface LearnWatch {
   readonly passId: string;

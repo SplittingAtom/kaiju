@@ -61,7 +61,7 @@ describe("commit_project answers on a Repo", () => {
 });
 
 describe("who decides an agent's commit (review M2)", () => {
-  it("a Repo's commit always asks, as its own subject; a rule covers only Kobe's own commits", () => {
+  it("a Repo's commit always asks, as its own subject; a rule covers only Kaiju's own commits", () => {
     expect(commitSubject("git.acme.test/acme/app: a branch", true)).toEqual({
       tool: REPO_COMMIT_TOOL,
       ask: true,

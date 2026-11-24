@@ -9,7 +9,7 @@ import { loadKobeAccess, personAllows, switchesAllow } from "./access.js";
 import { kobeToolByName } from "./tools/index.js";
 
 /**
- * The person half of a Kobe admin decision (KOBE-619, §8 "a tool hidden from tools/list is refused
+ * The person half of a Kaiju admin decision (KOBE-619, §8 "a tool hidden from tools/list is refused
  * on call too"): the run's user must hold the tool's console permission and the site and team
  * switches must allow it, re-read now. Used by the sandbox's `policy.check`, so a member is never
  * asked to approve a change their role cannot make; the MCP proxy's re-check does the same in
@@ -68,7 +68,7 @@ export async function guardKobeAdminCall(
       {
         code: KOBE_ADMIN_NOT_ALLOWED_REASON,
         stage: "team_deny",
-        message: `${tool.name} is not available to you in this team (your role, or the Kobe admin switches); it was denied.`,
+        message: `${tool.name} is not available to you in this team (your role, or the Kaiju admin switches); it was denied.`,
       },
     ],
   };

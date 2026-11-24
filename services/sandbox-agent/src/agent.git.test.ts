@@ -12,7 +12,7 @@ import { RUN_2, runStart, startHarness, until, type Harness } from "./testing/ha
  */
 const git = {
   author: { name: "Ada Lovelace", email: "ada@acme.test" },
-  committer: { name: "Ada Lovelace via Kobe", email: "ada@acme.test" },
+  committer: { name: "Ada Lovelace via Kaiju", email: "ada@acme.test" },
   remotes: [{ base_url: "https://github.com", organization: "acme" }],
 };
 
@@ -48,7 +48,7 @@ describe("git config for Pi's tools (KOBE-764)", () => {
     expect((await stat(file)).mode & 0o777).toBe(0o600);
     const text = await readFile(file, "utf8");
     expect(text).toContain('[author]\n\tname = "Ada Lovelace"\n\temail = "ada@acme.test"');
-    expect(text).toContain('[committer]\n\tname = "Ada Lovelace via Kobe"');
+    expect(text).toContain('[committer]\n\tname = "Ada Lovelace via Kaiju"');
     expect(text).toContain('[url "http://github.com/acme/"]');
     expect(text).toContain("[credential]\n\thelper =\n");
   });

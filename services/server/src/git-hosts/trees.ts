@@ -5,7 +5,7 @@ import { GitHostError } from "./adapter.js";
  * committing to a Repo writes a new commit on top of the host's tree, so the server reads the
  * folders a commit changes, never the whole repository). The three hosts answer in the same JSON
  * shape (`sha`, `tree[]` of `path`, `mode`, `type`, `sha`, plus `truncated`; Gitea and Forgejo
- * page it). Anything without its fields is `unexpected`; names that git or Kobe would misread
+ * page it). Anything without its fields is `unexpected`; names that git or Kaiju would misread
  * are refused rather than handed on.
  */
 export type GitTreeEntryType = "blob" | "tree" | "commit";
@@ -24,7 +24,7 @@ export interface GitTree {
   readonly entries: readonly GitTreeEntry[];
 }
 
-/** Most entries of one folder Kobe reads (a larger folder is refused, not cut). */
+/** Most entries of one folder Kaiju reads (a larger folder is refused, not cut). */
 export const GIT_TREE_MAX_ENTRIES = 10_000;
 /** Page size asked of Gitea and Forgejo (their default maximum for trees). */
 export const GIT_TREE_PAGE_SIZE = 1000;
@@ -41,7 +41,7 @@ function unexpected(): GitHostError {
   return new GitHostError("unexpected", "The git host gave an unexpected answer.");
 }
 
-/** A tree id Kobe asks for: a full commit or tree SHA. */
+/** A tree id Kaiju asks for: a full commit or tree SHA. */
 export function assertTreeSha(sha: string): string {
   if (!SHA.test(sha)) throw new GitHostError("invalid_request", "That is not a commit id.");
   return sha;
@@ -83,7 +83,7 @@ export function treePage(json: unknown): {
   return { sha, entries, truncated: body.truncated === true, total };
 }
 
-/** Refuses a folder larger than Kobe reads. */
+/** Refuses a folder larger than Kaiju reads. */
 export function assertTreeSize(count: number): void {
   if (count > GIT_TREE_MAX_ENTRIES) {
     throw new GitHostError("invalid_request", "A folder in the repository has too many entries.", {

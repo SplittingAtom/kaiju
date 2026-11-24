@@ -139,7 +139,7 @@ export const GIT_EVENTS = {
   }),
   /**
    * A Workspace admin changed the Workspace's git settings (KOBE-761): today the commit author
-   * email of sandbox commits (G13, GQ10), member's Kobe email or the no-reply form.
+   * email of sandbox commits (G13, GQ10), member's Kaiju email or the no-reply form.
    */
   // ── Git host tool writes (KOBE-762, spec workspace-git G9, §8) ──
   /** An agent created a branch in a repository of the connected organization (`git_create_branch`). */
@@ -166,7 +166,7 @@ export const GIT_EVENTS = {
     hostId,
     url: webUrl.optional(),
   }),
-  // ── Committing to a Repo from Kobe's commit flow (KOBE-767, spec workspace-git G18, GQ11):
+  // ── Committing to a Repo from Kaiju's commit flow (KOBE-767, spec workspace-git G18, GQ11):
   // ids, the mode and the host's numbers; never the message, paths or the branch name ──
   /**
    * The member's commit (from the Commit dialog, or an agent's `commit_project`: run and tool call
@@ -190,7 +190,7 @@ export const GIT_EVENTS = {
   }),
   /**
    * Written before the push of a commit to a Repo (review M3): what is about to reach the host,
-   * so a push whose outcome Kobe could not record is still on record by its commit id.
+   * so a push whose outcome Kaiju could not record is still on record by its commit id.
    */
   "git.repo.commit_attempted": event("team", {
     projectId: id,
@@ -279,7 +279,7 @@ export const GIT_EVENTS = {
   }),
   /**
    * The project's owner or a Workspace admin gave up on a failed conversion. A repository the
-   * host created for it stays there (`leftOnHost`, its record `repositoryId`); Kobe deletes
+   * host created for it stays there (`leftOnHost`, its record `repositoryId`); Kaiju deletes
    * nothing on a git host (§9).
    */
   "git.project.conversion_abandoned": event("team", {
@@ -292,7 +292,7 @@ export const GIT_EVENTS = {
   // project's name, paths, commit messages or the repository's name ──
   /**
    * A refresh found new files on the host's default branch and wrote them into the Repo as one
-   * Kobe commit (system). Counts of the change; `skipped` symlinks and submodules left out;
+   * Kaiju commit (system). Counts of the change; `skipped` symlinks and submodules left out;
    * `prunedCommitId` the previous mirror commit, dropped (the history is on the host).
    */
   "git.repo.mirror_updated": event("team", {
@@ -327,7 +327,7 @@ export const GIT_EVENTS = {
     hostRepoId,
   }),
   /**
-   * A Workspace admin turned the Repo back into an ordinary project: one Kobe commit of the
+   * A Workspace admin turned the Repo back into an ordinary project: one Kaiju commit of the
    * mirrored files (`commitId`); the repository stays on the host, its record unlinked (G20).
    */
   "git.repo.detached": event("team", {

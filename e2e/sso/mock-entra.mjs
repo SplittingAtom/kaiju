@@ -1,8 +1,8 @@
 // A mock Microsoft Entra ID (v2.0 endpoints) for the single sign-on gate (KOBE-633, spec
 // docs/specs/sso-oidc-scim.md §17 SSO-9). It answers as `https://login.microsoftonline.com`: the
 // gate points that name at this pod with a CoreDNS rewrite and gives the server its CA through the
-// chart's `server.extraCaBundle`, so Kobe's own discovery, JWKS and token calls run unchanged, with
-// no internet and no bypass in Kobe.
+// chart's `server.extraCaBundle`, so Kaiju's own discovery, JWKS and token calls run unchanged, with
+// no internet and no bypass in Kaiju.
 //
 // Endpoints, per tenant (any id in `tenants`):
 //   GET  /<tid>/v2.0/.well-known/openid-configuration   Entra's document shape (no PKCE methods listed)
@@ -12,11 +12,11 @@
 //   GET  /_mock/stats                                    request counts per endpoint (for the gate)
 //
 // The browser step takes the person and the scenario from two test-only query parameters the gate
-// appends to the authorize URL Kobe sent: `mock_user` (base64url JSON: oid, upn, name, roles,
+// appends to the authorize URL Kaiju sent: `mock_user` (base64url JSON: oid, upn, name, roles,
 // groups, mfa, amr, email, xms_edov, any extra claims) and `mock_mode`. Entra-like claims: `oid`,
 // `tid`, a pairwise `sub` unlike `oid`, `ver: "2.0"`, `preferred_username`, `roles` or `groups`,
 // a groups overage (`_claim_names`/`_claim_sources`, more than 200 groups or mode `overage`), and
-// `acrs`: only when Kobe's `claims` parameter asks for an authentication context and the person
+// `acrs`: only when Kaiju's `claims` parameter asks for an authentication context and the person
 // passes MFA (`mfa: true`), as Conditional Access would.
 //
 // Bad-token modes (`mock_mode`): wrong_iss, wrong_aud, wrong_nonce, expired, stale_auth_time,
@@ -29,7 +29,7 @@
 //
 // As a generic OIDC provider (gate1 browser spec, KOBE-634; e2e/sso/gate1-mock-idp.yaml): set
 // MOCK_ORIGIN to the mock's own https origin (its issuer is then `<origin>/<tid>/v2.0`, so the real
-// login.microsoftonline.com is never touched), MOCK_ADVERTISE_PKCE=1 (Kobe's generic preset
+// login.microsoftonline.com is never touched), MOCK_ADVERTISE_PKCE=1 (Kaiju's generic preset
 // requires S256 in the document) and MOCK_HTTP_PORT for a plain-HTTP listener behind the ingress
 // that serves the browser's authorize step only.
 
@@ -84,7 +84,7 @@ export function decodeUser(raw) {
 }
 export const encodeUser = (user) => b64u(JSON.stringify(user));
 
-/** The authentication context ids Kobe's `claims` parameter asks for (`acrs` essential). */
+/** The authentication context ids Kaiju's `claims` parameter asks for (`acrs` essential). */
 export function requestedAcrs(claimsParam) {
   if (!claimsParam) return [];
   try {
@@ -199,7 +199,7 @@ export async function createMockEntra({
       preferred_username: u.upn,
       rh: b64u(randomBytes(12)),
       sid: randomUUID(),
-      // Pairwise per application: never the object id (Kobe keys on `oid`).
+      // Pairwise per application: never the object id (Kaiju keys on `oid`).
       sub: b64u(createHash("sha256").update(`${clientId}:${u.oid}`).digest()).slice(0, 43),
       tid: grant.tid,
       uti: b64u(randomBytes(16)),

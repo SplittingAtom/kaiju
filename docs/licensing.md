@@ -1,6 +1,6 @@
 # Licensing
 
-Kobe is Apache-2.0 ([LICENSE](../LICENSE), [NOTICE](../NOTICE)). This page is the policy; the
+Kaiju is Apache-2.0 ([LICENSE](../LICENSE), [NOTICE](../NOTICE)). This page is the policy; the
 inventory of every third-party component (npm and Python packages, images, chart and cluster
 components, dev and test tools, assets) is [THIRD_PARTY_LICENSES.md](../THIRD_PARTY_LICENSES.md).
 
@@ -22,7 +22,7 @@ entry that Chris decides on, recording **who approved it and when**:
   `reason` and either `approval: {by, on, ref}` or `pending: gate review` on its row in
   `tools/license-check/inventory.yaml`.
 
-Copyleft programs are acceptable only as **separate, unmodified programs** that Kobe runs or talks
+Copyleft programs are acceptable only as **separate, unmodified programs** that Kaiju runs or talks
 to without linking (the Debian GPL tools in the sandbox image, the optional ClamAV service); each
 is listed in the inventory with that reason.
 
@@ -78,11 +78,11 @@ drift. The sources:
   `ci/`, a workflow or a script has no row (`images:` on a row covers a repository), and when a
   top-level key of `charts/kobe/values.yaml` is not classified in `chartValues` (first-party,
   site-provided, or the rows it brings in).
-- **NOTICE:** Kobe's own notice, then the NOTICE file of every bundled component that ships one
+- **NOTICE:** Kaiju's own notice, then the NOTICE file of every bundled component that ships one
   (npm packages shipped in an image, and the `notice` texts in the image reports), as Apache-2.0
   section 4(d) requires when redistributing them.
 
-Every Kobe image ships `LICENSE`, `NOTICE` and `THIRD_PARTY_LICENSES.md` under
+Every Kaiju image ships `LICENSE`, `NOTICE` and `THIRD_PARTY_LICENSES.md` under
 `/usr/share/doc/kobe/`; `scripts/assert-image-licenses.sh` checks that they match the repository
 (CI `e2e` images job, `sandbox-image`, `orbit-eval-image`, `pnpm images:check`).
 
@@ -97,32 +97,32 @@ family. `pnpm license:check` names anything missing.
   Dependabot through `images/bifrost/Dockerfile`): Apache-2.0. Checked at v2.5.1
   (`github.com/maximhq/bifrost`, tag `transports/v2.5.1`, KOBE-600; before that v2.2.5): the
   repository has a single `LICENSE` (Apache-2.0) at its root and no other license files; the
-  code Kobe relies on — the HTTP transport (`transports/bifrost-http`), the admin API handlers,
+  code Kaiju relies on — the HTTP transport (`transports/bifrost-http`), the admin API handlers,
   and the governance plugin
   (`plugins/governance`: customers, teams, virtual keys, budgets, rate limits) — is in that tree.
   Bifrost's enterprise features are separate (an enterprise build and license key; in the open
   code they show up as `is_enterprise` flags, user-level governance, clustering, SCIM and UI
-  fallbacks), and Kobe uses none of them. Re-check on every Bifrost bump.
+  fallbacks), and Kaiju uses none of them. Re-check on every Bifrost bump.
 - **llama.cpp server** (`ghcr.io/ggml-org/llama.cpp`, `server-b12004`, pinned by digest; the
   optional in-cluster embedding service, KOBE-659): MIT. Checked at tag `b12004`: `LICENSE` (MIT)
   at the root; vendored code is MIT (cpp-httplib, nlohmann/json, gguf-py, UI vendors), BSD-2
   (xxHash) or public domain (sha256, big-integer). The image's Ubuntu base adds distribution
-  packages (curl, ffmpeg and their libraries) under their own licenses; Kobe runs the image
+  packages (curl, ffmpeg and their libraries) under their own licenses; Kaiju runs the image
   unmodified and links none of it. The model it serves, **nomic-embed-text v1.5** (GGUF weights
   from `nomic-ai/nomic-embed-text-v1.5-GGUF`), is Apache-2.0.
 - **pgvector** (the `vector` Postgres extension, optional; KOBE-409 vector memory search):
   PostgreSQL License (permissive, BSD/MIT-family under D3, like PostgreSQL itself). It runs inside
   the site's Postgres server (the CloudNativePG image ships it; an external server installs it)
-  and Kobe ships none of it: no Kobe image contains pgvector, so no notice is carried. If Kobe ever
+  and Kaiju ships none of it: no Kaiju image contains pgvector, so no notice is carried. If Kaiju ever
   builds its own Postgres image, that image must ship pgvector's `LICENSE`. CI installs Debian's
   `postgresql-17-pgvector` into the test Postgres of the db-server jobs (`scripts/ci-postgres.sh`).
 - **Pi** (`@earendil-works/pi-coding-agent`, pinned 1.4.0): MIT. Checked at `v1.0.0` and `v1.4.0`
   (`github.com/earendil-works/pi`): one `LICENSE` (MIT) at the root, the npm package declares MIT,
   and `packages/mcp/LICENSES` holds the MIT license of the MCP TypeScript SDK it includes.
 - **agent-sandbox** (`kubernetes-sigs/agent-sandbox`, v1.0.4): Apache-2.0, a single `LICENSE` at
-  the root of the v1.0.4 tag and no NOTICE. Installed by the site, not shipped by Kobe.
+  the root of the v1.0.4 tag and no NOTICE. Installed by the site, not shipped by Kaiju.
 - **Orbit and Inspect AI** (Orbit eval image, KOBE-92): Orbit v1.0.3 is Apache-2.0 (`LICENSE` at
-  the repository root and in the wheel, NOTICE carried into Kobe's NOTICE), Inspect AI is MIT.
+  the repository root and in the wheel, NOTICE carried into Kaiju's NOTICE), Inspect AI is MIT.
 - **Native libraries inside Python wheels**: numpy bundles OpenBLAS (BSD-3-Clause) and
   libgfortran (GPL with the GCC Runtime Library Exception, which permits redistribution in non-GPL
   programs); pillow and pyarrow bundle further permissive libraries (inventory, "Container and base

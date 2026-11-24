@@ -1,4 +1,4 @@
-# Kobe dev loop (KOBE-7). `scripts/dev-cluster.sh && tilt up` builds every service image and deploys
+# Kaiju dev loop (KOBE-7). `scripts/dev-cluster.sh && tilt up` builds every service image and deploys
 # the Helm chart (plus a throwaway Postgres) into a k3d cluster with gVisor. To develop against a
 # real k3s cluster instead, set KOBE_DEV_CONTEXT=<kube context> and KOBE_DEV_REGISTRY=<registry the
 # cluster can pull from>. There is no docker compose.

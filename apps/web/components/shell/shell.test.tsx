@@ -62,7 +62,7 @@ describe("utility bar", () => {
     // The team selector is on the rail's top line (KOBE-419).
     expect(await screen.findByRole("navigation", { name: "Workspace" })).toBeTruthy();
     expect(one.queryByRole("navigation", { name: "Workspace" })).toBeNull();
-    expect(one.getByRole("heading", { level: 1, name: "Kobe" })).toBeTruthy();
+    expect(one.getByRole("heading", { level: 1, name: "Kaiju" })).toBeTruthy();
     expect(await one.findByRole("search")).toBeTruthy();
     expect(one.getByLabelText("Search conversations")).toBeTruthy();
     const area = within(one.getByRole("navigation", { name: "My area" }));
@@ -209,8 +209,8 @@ describe("return to the last thread (CE4)", () => {
     await composer();
     await waitFor(() => expect(lastThreadHref(fake.teamId)).toBe(`/?thread=${t}`));
     cleanup();
-    render(<ChatReturnLink>Back to Kobe</ChatReturnLink>);
-    const link = screen.getByRole("link", { name: "Back to Kobe" });
+    render(<ChatReturnLink>Back to Kaiju</ChatReturnLink>);
+    const link = screen.getByRole("link", { name: "Back to Kaiju" });
     await waitFor(() => expect(link.getAttribute("href")).toBe(`/?thread=${t}`));
   });
 
@@ -234,15 +234,15 @@ describe("return to the last thread (CE4)", () => {
     expect(lastThreadHref("team-b")).toBe("/");
     expect(lastThreadHref(null)).toBe("/");
     rememberLastThread(fake.teamId, t);
-    render(<ChatReturnLink>Kobe</ChatReturnLink>);
+    render(<ChatReturnLink>Kaiju</ChatReturnLink>);
     await waitFor(() =>
-      expect(screen.getByRole("link", { name: "Kobe" }).getAttribute("href")).toBe(`/?thread=${t}`),
+      expect(screen.getByRole("link", { name: "Kaiju" }).getAttribute("href")).toBe(`/?thread=${t}`),
     );
     cleanup();
     rememberLastThread("team-a", t); // e.g. another tab switched the session's team since
-    render(<ChatReturnLink>Kobe</ChatReturnLink>);
+    render(<ChatReturnLink>Kaiju</ChatReturnLink>);
     await new Promise((r) => setTimeout(r, 20));
-    expect(screen.getByRole("link", { name: "Kobe" }).getAttribute("href")).toBe("/");
+    expect(screen.getByRole("link", { name: "Kaiju" }).getAttribute("href")).toBe("/");
   });
 
   it("ignores a stored value that is not a thread id", () => {

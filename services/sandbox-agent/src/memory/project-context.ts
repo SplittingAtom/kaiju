@@ -42,7 +42,7 @@ export function repoLine(
   const dir = `/workspace/${REPO_WORKING_COPY_DIR}/${oneLine(repo.slug)}`;
   const branch = oneLine(repo.default_branch);
   const url = oneLine(repo.clone_url);
-  const base = `This project is a Repo: its record is the git repository ${url} (default branch ${branch}). Its git working copy is ${dir} (origin = that repository, prepared before this message); ${oneLine(project.mount)} is Kobe's read-only copy of the default branch.`;
+  const base = `This project is a Repo: its record is the git repository ${url} (default branch ${branch}). Its git working copy is ${dir} (origin = that repository, prepared before this message); ${oneLine(project.mount)} is Kaiju's read-only copy of the default branch.`;
   return repo.access === "write"
     ? `${base} To change the Repo, work in ${dir}: create a branch, commit, push it (git push -u origin <branch>), then open a pull request with git_open_pull_request. commit_project on the user's checked-out copy also ends on the host, as a pull request by default. The working copy lives only in this sandbox (it is not synced to the user's files): push your branches, because uncommitted or unpushed work there is lost if the sandbox's disk is replaced.`
     : `${base} You may fetch and read it there, but you cannot push to it: the user is not an editor of the project, or the Workspace's connection is read-only. The working copy lives only in this sandbox and is not synced to the user's files.`;

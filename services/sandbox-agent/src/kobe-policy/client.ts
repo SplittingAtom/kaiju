@@ -315,7 +315,7 @@ function verdictOf(record: Record<string, unknown>, toolCallId: string): Verdict
   }
   if (record.decision === "deny") {
     const message = typeof record.message === "string" ? record.message.trim() : "";
-    return deny(message === "" ? "denied by Kobe policy" : message.slice(0, MAX_MESSAGE_LENGTH));
+    return deny(message === "" ? "denied by Kaiju policy" : message.slice(0, MAX_MESSAGE_LENGTH));
   }
   return deny("malformed policy answer");
 }

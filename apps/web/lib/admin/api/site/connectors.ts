@@ -179,7 +179,7 @@ export interface TemplateSource {
 }
 
 /**
- * The admin preview frame of one version (review M2): served by Kobe as text/html with a
+ * The admin preview frame of one version (review M2): served by Kaiju as text/html with a
  * sandboxing header CSP (opaque origin, no network), like D25 artifacts; never `srcdoc`.
  */
 export const templateFrameUrl = (

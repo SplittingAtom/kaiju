@@ -29,7 +29,7 @@ export {
  * 2. requires header rules for the matched pattern (plain HTTP to anything else stays refused);
  * 3. resolves the host once, refuses internal addresses (rebinding gains nothing), connects to the
  *    checked address on 443 and does TLS **itself**, with SNI = the host and the certificate
- *    verified against it (system CAs): there is no TLS interception and no Kobe CA;
+ *    verified against it (system CAs): there is no TLS interception and no Kaiju CA;
  * 4. strips hop-by-hop headers, `Proxy-*` and any client header named like an injected one, sets
  *    `Host`, adds the team's headers (opened here, never sent to the sandbox), and relays the
  *    response with size, time and bandwidth limits;
@@ -97,7 +97,7 @@ export async function handlePlainHttp(
       res,
       407,
       "Proxy Authentication Required",
-      "Kobe egress proxy: send the sandbox's egress session token.",
+      "Kaiju egress proxy: send the sandbox's egress session token.",
       { "proxy-authenticate": REALM },
     );
     return;
@@ -117,8 +117,8 @@ export async function handlePlainHttp(
     reply(
       res,
       429,
-      "Kobe egress: too many connections",
-      "Kobe egress: this sandbox has too many open connections; close some and retry.",
+      "Kaiju egress: too many connections",
+      "Kaiju egress: this sandbox has too many open connections; close some and retry.",
     );
     return;
   }
@@ -128,8 +128,8 @@ export async function handlePlainHttp(
       reply(
         res,
         403,
-        "Kobe egress blocked: invalid target",
-        `Kobe egress: plain HTTP needs an http://<host name>/ URL (${parsed.why}).`,
+        "Kaiju egress blocked: invalid target",
+        `Kaiju egress: plain HTTP needs an http://<host name>/ URL (${parsed.why}).`,
       );
       return;
     }
@@ -138,8 +138,8 @@ export async function handlePlainHttp(
       reply(
         res,
         405,
-        "Kobe egress: method not allowed",
-        "Kobe egress: only GET, HEAD, POST, PUT, PATCH, DELETE and OPTIONS are relayed.",
+        "Kaiju egress: method not allowed",
+        "Kaiju egress: only GET, HEAD, POST, PUT, PATCH, DELETE and OPTIONS are relayed.",
       );
       return;
     }
@@ -152,8 +152,8 @@ export async function handlePlainHttp(
         reply(
           res,
           400,
-          "Kobe egress blocked: not a git smart-HTTP request",
-          `Kobe egress: this looks like a git request but is not one Kobe relays (${git.why}).`,
+          "Kaiju egress blocked: not a git smart-HTTP request",
+          `Kaiju egress: this looks like a git request but is not one Kaiju relays (${git.why}).`,
         );
         return;
       }
@@ -194,8 +194,8 @@ async function decideFor(
       reply(
         res,
         403,
-        "Kobe egress blocked: not an active team member",
-        "Kobe egress: this sandbox's user is not an active member of its team.",
+        "Kaiju egress blocked: not an active team member",
+        "Kaiju egress: this sandbox's user is not an active member of its team.",
       );
       return undefined;
     }
@@ -210,8 +210,8 @@ async function decideFor(
     reply(
       res,
       503,
-      "Kobe egress: allowlist unavailable",
-      "Kobe egress: the allowlist could not be read; try again shortly.",
+      "Kaiju egress: allowlist unavailable",
+      "Kaiju egress: the allowlist could not be read; try again shortly.",
     );
     return undefined;
   }
@@ -224,15 +224,15 @@ async function decideFor(
       reply(
         res,
         403,
-        `Kobe egress blocked: ${host} is not enabled for this team`,
-        `Kobe egress: ${host} is not enabled for this team. A team admin can enable it (Request access).`,
+        `Kaiju egress blocked: ${host} is not enabled for this team`,
+        `Kaiju egress: ${host} is not enabled for this team. A team admin can enable it (Request access).`,
       );
     } else {
       reply(
         res,
         403,
-        `Kobe egress blocked: ${host} is not allowed on this site`,
-        `Kobe egress: ${host} is not in this site's egress ceiling; a site admin must add it first (Request access).`,
+        `Kaiju egress blocked: ${host} is not allowed on this site`,
+        `Kaiju egress: ${host} is not in this site's egress ceiling; a site admin must add it first (Request access).`,
       );
     }
     return undefined;
@@ -261,8 +261,8 @@ async function upgrade(
     reply(
       res,
       403,
-      "Kobe egress blocked: plain HTTP is not allowed",
-      "Kobe egress: only HTTPS (CONNECT) is allowed; use an https:// URL.",
+      "Kaiju egress blocked: plain HTTP is not allowed",
+      "Kaiju egress: only HTTPS (CONNECT) is allowed; use an https:// URL.",
     );
     return;
   }
@@ -278,8 +278,8 @@ async function upgrade(
     reply(
       res,
       503,
-      "Kobe egress: header injection unavailable",
-      "Kobe egress: the team's headers for this domain could not be read; ask a team admin to set them again.",
+      "Kaiju egress: header injection unavailable",
+      "Kaiju egress: the team's headers for this domain could not be read; ask a team admin to set them again.",
     );
     return;
   }
@@ -291,8 +291,8 @@ async function upgrade(
     reply(
       res,
       413,
-      "Kobe egress: request too large",
-      `Kobe egress: request bodies are limited to ${limits.maxRequestBytes} bytes.`,
+      "Kaiju egress: request too large",
+      `Kaiju egress: request bodies are limited to ${limits.maxRequestBytes} bytes.`,
     );
     return;
   }
@@ -307,8 +307,8 @@ async function upgrade(
       reply(
         res,
         502,
-        `Kobe egress: cannot resolve ${host}`,
-        `Kobe egress: ${host} does not resolve.`,
+        `Kaiju egress: cannot resolve ${host}`,
+        `Kaiju egress: ${host} does not resolve.`,
       );
       return;
     }
@@ -319,8 +319,8 @@ async function upgrade(
       reply(
         res,
         403,
-        `Kobe egress blocked: ${host} resolves to an internal address`,
-        `Kobe egress: ${host} resolves to an internal or reserved address, which sandboxes may not reach unless a site admin marks it internal (Request access).`,
+        `Kaiju egress blocked: ${host} resolves to an internal address`,
+        `Kaiju egress: ${host} resolves to an internal or reserved address, which sandboxes may not reach unless a site admin marks it internal (Request access).`,
       );
       return;
     }

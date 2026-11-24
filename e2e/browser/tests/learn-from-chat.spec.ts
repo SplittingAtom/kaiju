@@ -20,7 +20,7 @@ const PASS_ENDED = /Kobe found|Try again|budget|turned off|isn't enabled/;
 const FOUND_SOMETHING = /Kobe found (1 thing|\d+ things) to review/;
 
 /**
- * A preference this member has not taught Kobe yet, so every run's pass finds a new candidate and
+ * A preference this member has not taught Kaiju yet, so every run's pass finds a new candidate and
  * exercises To review opening by itself (a fixed sentence is learned once, and later passes find
  * nothing new). Candidates left in To review go with the thread, which the fixture moves to Trash.
  */
@@ -76,7 +76,7 @@ test("Learn from this chat in the + menu, /learn and the ? sheet", async ({ chat
     await learn.click();
     await expect(plus).toHaveAttribute("data-kobe-learn-state", "spinner");
     const notice = page.locator("[data-kobe-learn-notice]");
-    await expect(notice).toContainText("Kobe is learning from this chat");
+    await expect(notice).toContainText("Kaiju is learning from this chat");
     // The pass ends with the notice saying how it went (KOBE-661). When it found something, To
     // review opens by itself over the chat (KOBE-396): a modal panel, the chat inert behind it, so
     // the + leaves the accessibility tree. The panel arrives a moment after the + settles and the

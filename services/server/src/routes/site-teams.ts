@@ -21,7 +21,7 @@ export function siteTeamsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
   app.use(requireSitePermission("site.teams.manage"));
 
   const teamNotFound = { code: "team_not_found", message: "No team with that id." } as const;
-  const userNotFound = { code: "user_not_found", message: "No Kobe user with that id." } as const;
+  const userNotFound = { code: "user_not_found", message: "No Kaiju user with that id." } as const;
 
   app.get("/", async (c) => {
     const rows = await db

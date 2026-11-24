@@ -5,13 +5,13 @@ import { SsoNetError, checkSsoUrl, guardedFetch, type SsoNet, type SsoNetFailure
 /**
  * Discovery validation of a provider (spec sso-oidc-scim §4, §5.1–5.2; KOBE-626), run when a
  * provider is saved and by the console's Test button. Uses `openid-client` 6 for the discovery
- * request, through {@link guardedFetch}, then checks what Kobe requires on top of it:
+ * request, through {@link guardedFetch}, then checks what Kaiju requires on top of it:
  *
  * - the issuer is tenant-specific (`common`/`organizations`/`consumers` refused, Entra built from
  *   the tenant id);
  * - the discovery URL passes the SSRF guard (https, public address or an allowed CIDR);
  * - the document's `issuer` equals the configured issuer **exactly** (openid-client itself lets an
- *   Entra or B2C issuer differ, for multi-tenant apps; Kobe never does);
+ *   Entra or B2C issuer differ, for multi-tenant apps; Kaiju never does);
  * - `code` is a supported response type;
  * - PKCE S256 is advertised (Entra supports it without advertising it: the Entra preset assumes it);
  * - the authorization, token and JWKS endpoints are https and pass the SSRF guard.
@@ -69,7 +69,7 @@ const NET_MESSAGES: Readonly<Record<SsoNetFailure, string>> = {
   host_unresolvable: "The identity provider's host name does not resolve.",
   port_not_allowed: "That port is not allowed for identity providers on this site.",
   invalid_url: "That is not a valid identity provider URL.",
-  redirect_refused: "The discovery URL answered with a redirect; Kobe does not follow redirects.",
+  redirect_refused: "The discovery URL answered with a redirect; Kaiju does not follow redirects.",
   unreachable: "The discovery document could not be fetched (unreachable, timed out or not 200).",
   too_large: "The discovery document is too large.",
 };

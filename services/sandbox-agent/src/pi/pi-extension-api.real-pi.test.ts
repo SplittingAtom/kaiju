@@ -97,7 +97,7 @@ describe("the pinned Pi version", () => {
   });
 });
 
-describe.runIf(INSTALLED)("Pi's extension API as the Kobe extensions bind to it", () => {
+describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it", () => {
   it("offers every ExtensionAPI method the extensions call", async () => {
     const { api } = await loadThroughPi(() => undefined);
     for (const method of [

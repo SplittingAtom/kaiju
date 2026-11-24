@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Asserts that a Kobe image ships the repository's LICENSE, NOTICE and THIRD_PARTY_LICENSES.md under
+# Asserts that a Kaiju image ships the repository's LICENSE, NOTICE and THIRD_PARTY_LICENSES.md under
 # /usr/share/doc/kobe/, byte for byte (Apache-2.0 section 4, KOBE-375). Run from the repository
 # root on the commit the image was built from. Used by check-images.sh and the image workflows.
 set -euo pipefail

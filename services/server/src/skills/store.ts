@@ -186,7 +186,7 @@ export function uploadSkillVersion(
       if (existing.latestVersion >= MAX_SKILL_VERSIONS)
         return { ok: false, error: "version_limit" };
     } else if (isKobeSkillName(input.slug)) {
-      // Kobe's own skills' names are reserved (KOBE-317, SK24, review S4): no new team or personal
+      // Kaiju's own skills' names are reserved (KOBE-317, SK24, review S4): no new team or personal
       // skill takes one. One made before the upgrade keeps its name and its new versions.
       return { ok: false, error: "reserved_name" };
     } else if ((await countSkills(tx, location)) >= MAX_LIVE_SKILLS) {

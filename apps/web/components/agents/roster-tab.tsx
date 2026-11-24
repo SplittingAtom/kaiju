@@ -329,7 +329,7 @@ function ReachCell({
 }
 
 function ownerLabel(row: AgentRosterRow): string {
-  if (row.kind === "gallery") return "Kobe gallery";
+  if (row.kind === "gallery") return "Kaiju gallery";
   if (row.kind === "team_owned") return row.ownerName ? `${row.ownerName} (team)` : "The team";
   return row.ownerName ?? "—";
 }

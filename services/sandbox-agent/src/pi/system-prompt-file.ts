@@ -3,7 +3,7 @@ import { SYSTEM_PROMPT_MAX_BYTES } from "@kobe/protocol";
 
 /**
  * The agent's system prompt as Pi 1.0.0 takes it (KOBE-123). Pi's `--append-system-prompt <text|file>`
- * reads the value as a file when a file of that name exists, else uses it as literal text; Kobe
+ * reads the value as a file when a file of that name exists, else uses it as literal text; Kaiju
  * always passes a path. It is an append, not `--system-prompt` (a replace): Pi's default prompt
  * carries the tool and skill descriptions, so replacing it would leave the model without them.
  *

@@ -14,7 +14,7 @@ export const inviteSchema = z
     role: teamRoleSchema,
     /**
      * KOBE-621: the address's invitation as the caller saw it (its role, or null for none); another
-     * state is a 409 `changed_since_approval` (a Kobe MCP write's approved before-state).
+     * state is a 409 `changed_since_approval` (a Kaiju MCP write's approved before-state).
      */
     expectedRole: teamRoleSchema.nullable().optional(),
   })
@@ -28,7 +28,7 @@ const INVITES_PER_HOUR = 50;
 /**
  * Team invitations (`/v1/team/invites`, KOBE-13): the way a team admin brings someone into the
  * active team. The person must accept while signed in as the invited address, so nobody joins a
- * team without consent, and the answer is the same whether or not the address is a Kobe user (no
+ * team without consent, and the answer is the same whether or not the address is a Kaiju user (no
  * account-existence oracle). People without an account need a site invitation too.
  */
 export function teamInvitesRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {

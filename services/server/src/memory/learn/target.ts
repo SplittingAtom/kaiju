@@ -48,7 +48,7 @@ export function failureForCode(code: string): MemoryPassFailureCode {
 
 const MESSAGES: Readonly<Record<MemoryPassFailureCode, string>> = {
   budget_exhausted:
-    "A budget is used up, so Kobe can't learn from this chat until it resets or an admin raises it.",
+    "A budget is used up, so Kaiju can't learn from this chat until it resets or an admin raises it.",
   learning_model_unavailable:
     "The learning model isn't enabled in this workspace any more. A team admin enables it in Workspace settings › Models, or picks another learning model.",
   memory_disabled: "Memory or Learn from this chat was turned off.",
@@ -56,7 +56,7 @@ const MESSAGES: Readonly<Record<MemoryPassFailureCode, string>> = {
   timeout: "The learning model took too long to answer. Try again.",
   model_error: "The learning model couldn't be reached. Try again.",
   cancelled: "The pass was cancelled.",
-  thread_busy: "The chat stayed busy while Kobe saved what it learned. Try again.",
+  thread_busy: "The chat stayed busy while Kaiju saved what it learned. Try again.",
 };
 
 /** Whether "Try again" is offered (not for a used-up budget, a switch or a missing model). */

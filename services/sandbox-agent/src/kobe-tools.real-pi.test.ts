@@ -12,7 +12,7 @@ import {
 
 /**
  * KOBE-128 against the REAL pinned Pi 1.0.0 with the real kobe-policy and kobe-tools extensions,
- * through kobe-sandbox-agent and a fake Kobe server (which answers `policy.check` and
+ * through kobe-sandbox-agent and a fake Kaiju server (which answers `policy.check` and
  * `artifact.put`). A scripted model makes Pi call the tools without credentials.
  */
 type PiEventFrame = Extract<SandboxToServerFrame, { type: "pi.event" }>;
@@ -170,7 +170,7 @@ describe.skipIf(!PI_AVAILABLE)("kobe-tools in real Pi, through kobe-sandbox-agen
     t.server.terminate();
     const end = await toolEnd(t, "d1");
     expect(end.isError).toBe(true);
-    expect(end.text).toMatch(/connection to Kobe server lost/);
+    expect(end.text).toMatch(/connection to Kaiju server lost/);
   }, 60_000);
 
   it("offers no artifact tools to a Pi started without the extension (old image)", async () => {

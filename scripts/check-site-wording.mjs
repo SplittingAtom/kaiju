@@ -62,7 +62,7 @@ function selfTest() {
     "<h2 id='x'>Install</h2>",
     'message: "That model is not in the install’s catalog."',
     "`${tool.name} is blocked by install policy.`",
-    '"not allowed by this Kobe install."',
+    '"not allowed by this Kaiju install."',
     "<p>a fresh install reaches nothing</p>",
     'prefix="Install "',
     '"Pick a model from the install catalog."',

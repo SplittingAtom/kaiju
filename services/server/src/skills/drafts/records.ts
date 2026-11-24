@@ -31,7 +31,7 @@ export interface DraftRecord {
   readonly startedFrom: SkillDraftStart;
   readonly parentRef: Record<string, unknown> | null;
   readonly fromThreadId: string | null;
-  /** A governed import's origin (KOBE-344): URL, commit, Kobe's hash, importer. */
+  /** A governed import's origin (KOBE-344): URL, commit, Kaiju's hash, importer. */
   readonly origin: Record<string, unknown> | null;
   /** Someone besides the author changed it (sticky, kept by the database). */
   readonly coEdited: boolean;

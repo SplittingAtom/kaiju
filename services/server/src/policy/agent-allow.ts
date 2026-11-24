@@ -9,9 +9,9 @@ import { matchSubject, splitAgentToolEntry } from "./patterns.js";
  *
  * - an empty or absent list limits nothing (the builder never writes an empty list; it drops the
  *   key, and `withKobeDocs` keeps "empty = not narrowed");
- * - connector (MCP) tools, the Kobe connector's included, are limited whenever the list is not
+ * - connector (MCP) tools, the Kaiju connector's included, are limited whenever the list is not
  *   empty: only those it matches;
- * - built-in tools (`BUILTIN_TOOLS`, Pi's and Kobe's own) are limited only when the list names at
+ * - built-in tools (`BUILTIN_TOOLS`, Pi's and Kaiju's own) are limited only when the list names at
  *   least one built-in (an entry whose tool part matches a built-in name: `read`, `bas?`,
  *   `bash:ls *`, `*`); then only the built-ins it matches. A list of connector tools only, as the
  *   builder writes for a chosen connector, leaves every built-in as it was.

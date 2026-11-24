@@ -184,7 +184,7 @@ describe("Gate 2 through the real MCP proxy, kobe-policy bypassed", () => {
     const s = await sandbox();
     const out = await callDirect(s, "create_issue", input);
     expect(out.result?.isError).toBe(true);
-    expect(out.result?.content[0]?.text).toMatch(/^Kobe denied this call/);
+    expect(out.result?.content[0]?.text).toMatch(/^Kaiju denied this call/);
     expect(writes()).toEqual([]);
     expect((await auditActions(s.team)).at(-1)?.target).toMatchObject({
       decision: "denied",

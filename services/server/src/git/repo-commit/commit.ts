@@ -44,21 +44,21 @@ import { loadRepoCommitFacts, saveBranch, type BranchRow, type RepoCommitFacts }
 import { editTree, TreeMismatch, type FileEdit } from "./tree-edit.js";
 
 /**
- * Committing to a Repo from Kobe's commit flow (KOBE-767, spec workspace-git G18, GQ11, G12, G13).
+ * Committing to a Repo from Kaiju's commit flow (KOBE-767, spec workspace-git G18, GQ11, G12, G13).
  * The Commit dialog and the agent's `commit_project` call this for a project of kind `repo`. The
- * member's working copy is planned as for any project (edit rights, checkout, base = Kobe's head,
+ * member's working copy is planned as for any project (edit rights, checkout, base = Kaiju's head,
  * the diff, limits); then, with no transaction open:
  *
  *  1. the rights of G12: the connection at Read and write, the Contributor role or above, edit
  *     rights on the project (planned), the Site's decision for the host, the repository private
  *     (or internal where the connection allows it), not archived, still the recorded one (by id);
- *  2. a git commit: the changed files' blobs (read from Kobe's storage, checked against their
+ *  2. a git commit: the changed files' blobs (read from Kaiju's storage, checked against their
  *     SHA-256), the folders on their paths read from the host's tree of the default branch's head
  *     now (or of the open pull request's base) and written again, each changed path checked
- *     three-way against Kobe's base (review H1: the host's version must still be the base's, so
+ *     three-way against Kaiju's base (review H1: the host's version must still be the base's, so
  *     another person's change to the same file is refused as `repo_moved`, never overwritten), and
- *     a commit authored as the member (their Kobe email or the Workspace's no-reply form, GQ10)
- *     with "<name> via Kobe" as committer;
+ *     a commit authored as the member (their Kaiju email or the Workspace's no-reply form, GQ10)
+ *     with "<name> via Kaiju" as committer;
  *  3. a push, always a compare-and-swap, never forced, over the guarded smart-HTTP client with a
  *     credential minted for this repository (G8: it never leaves the server):
  *     - by default (GQ11) to a branch of its own, and a pull request into the default branch is
@@ -66,14 +66,14 @@ import { editTree, TreeMismatch, type FileEdit } from "./tree-edit.js";
  *       commit is added to the same branch (`git_commit_branches`);
  *     - when the connection allows direct commits, to the default branch from its head. If the
  *       branch moved between the read and the push, the push is refused and the member is told
- *       to Update (`repo_moved`; Kobe's copy is refreshed, KOBE-766); if the host refuses it
- *       otherwise (a protected branch), a pull request is opened instead (`fallback`). When Kobe's
+ *       to Update (`repo_moved`; Kaiju's copy is refreshed, KOBE-766); if the host refuses it
+ *       otherwise (a protected branch), a pull request is opened instead (`fallback`). When Kaiju's
  *       copy stood exactly on that head, it takes the same commit (`repoMirror`), so the member's
  *       checkout moves on as with any commit; otherwise the mirror refresh brings it in.
  *
  * `git.repo.commit_attempted` is written before the push and `git.repo.committed` right after it,
  * before anything else (review M3): a push that landed is answered as a success even when a later
- * Kobe write fails. Refusals are `git.repo.commit_failed`. Nothing here logs or returns the
+ * Kaiju write fails. Refusals are `git.repo.commit_failed`. Nothing here logs or returns the
  * credential; host text reaches the member only as receive-pack's short reason (`hostReason`).
  */
 export interface RepoCommitDeps {
@@ -84,7 +84,7 @@ export interface RepoCommitDeps {
   /** Tests: a fake adapter. */
   readonly adapterFor?: (input: GitAdapterInput) => GitHostAdapter;
   /**
-   * Refreshes Kobe's copy of the Repo from the host now (KOBE-766 `kickMirrorRefresh`; never
+   * Refreshes Kaiju's copy of the Repo from the host now (KOBE-766 `kickMirrorRefresh`; never
    * throws, runs in the background), so `repo_moved` and Update do not wait for the timer.
    */
   readonly refreshMirror?: (teamId: string, repositoryId: string) => void;
@@ -93,7 +93,7 @@ export interface RepoCommitDeps {
   readonly now?: () => Date;
   /** Tests: between the plan and the first read of the host (review H1's race). */
   readonly afterPlan?: () => Promise<void>;
-  /** Tests: after a successful push, before Kobe's records are written (review M3). */
+  /** Tests: after a successful push, before Kaiju's records are written (review M3). */
   readonly afterPush?: () => Promise<void>;
 }
 
@@ -117,7 +117,7 @@ export const GIT_REPO_COMMIT_RATE: RateLimitRule = { windowMs: 60 * 60_000, max:
  * attempts that end without a push (nothing new, a conflict) count here only.
  */
 export const GIT_REPO_COMMIT_ATTEMPT_RATE: RateLimitRule = { windowMs: 60 * 60_000, max: 300 };
-/** One push's request cap: the changed files of one commit (Kobe's file cap is 50 MiB each). */
+/** One push's request cap: the changed files of one commit (Kaiju's file cap is 50 MiB each). */
 export const GIT_REPO_COMMIT_MAX_REQUEST_BYTES = 2 * 1024 * 1024 * 1024;
 /** One commit's deadline for all its exchanges with the host. */
 export const GIT_REPO_COMMIT_DEADLINE_MS = 10 * 60_000;
@@ -170,7 +170,7 @@ interface Context {
   readonly req: RepoCommitRequest;
   readonly plan: Plan;
   readonly facts: RepoCommitFacts;
-  /** Kobe's base tree of the checkout (the three-way check's base). */
+  /** Kaiju's base tree of the checkout (the three-way check's base). */
   readonly base: Tree;
   readonly connection: GitConnectionRecord;
   readonly adapter: GitHostAdapter;
@@ -182,7 +182,7 @@ interface Context {
 async function run(deps: RepoCommitDeps, req: RepoCommitRequest): Promise<CommitResult> {
   const { db } = deps.commit;
   const { teamId, userId } = req.owner;
-  // Review H1: the plan, the repository row (locked FOR SHARE) and Kobe's base tree in one
+  // Review H1: the plan, the repository row (locked FOR SHARE) and Kaiju's base tree in one
   // transaction, so they describe one state.
   const prepared = await withTeam(db, teamId, async (tx) => {
     const plan = await planCommit(tx, deps.commit, req, { repo: true });
@@ -197,7 +197,7 @@ async function run(deps: RepoCommitDeps, req: RepoCommitRequest): Promise<Commit
   if (req.via !== undefined && req.approvedAs !== "commit_repo") {
     return refused(
       "repo_unavailable",
-      "This commit was approved for Kobe's own copy, and the project is a Repo now: commit again so the push to the git host can be approved.",
+      "This commit was approved for Kaiju's own copy, and the project is a Repo now: commit again so the push to the git host can be approved.",
     );
   }
   const connection = rightsOf(facts, req);
@@ -284,7 +284,7 @@ async function limitsBeforeHost(db: KobeDb, userId: string): Promise<Refused | u
   return undefined;
 }
 
-/** Review L1: the host's default branch only when it is a name Kobe sends; else the recorded one. */
+/** Review L1: the host's default branch only when it is a name Kaiju sends; else the recorded one. */
 function branchOf(repo: GitRepository, facts: RepoCommitFacts): string {
   const host = repo.defaultBranch;
   if (host !== null) {
@@ -395,7 +395,7 @@ async function recorded(
   if (!allowed) {
     throw stop(
       "repo_unavailable",
-      "The repository on the git host is no longer private, so Kobe sends nothing to it.",
+      "The repository on the git host is no longer private, so Kaiju sends nothing to it.",
     );
   }
   if (repo.archived) throw stop("repo_unavailable", "The repository is archived on the git host.");
@@ -404,7 +404,7 @@ async function recorded(
 
 /**
  * The blobs of the changed files, written loose (path → edit), and the three-way check's base
- * (path → the blob id of Kobe's base version, null for an added file).
+ * (path → the blob id of Kaiju's base version, null for an added file).
  */
 async function blobs(ctx: Context): Promise<Changes> {
   const store = ctx.deps.commit.blobs;
@@ -506,14 +506,14 @@ async function buildTree(ctx: Context, changes: Changes, onto: string): Promise<
       ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
       throw stop(
         "repo_moved",
-        `${err.path} changed on the git host since your copy. Kobe refreshes its copy; Update, then commit again.`,
+        `${err.path} changed on the git host since your copy. Kaiju refreshes its copy; Update, then commit again.`,
       );
     }
     if (err instanceof GitHostError && err.code === "not_found") {
       ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
       throw stop(
         "repo_moved",
-        "The commit your copy stands on is no longer on the host. Kobe refreshes its copy; Update, then commit again.",
+        "The commit your copy stands on is no longer on the host. Kaiju refreshes its copy; Update, then commit again.",
       );
     }
     throw err;
@@ -635,7 +635,7 @@ async function remoteHead(ctx: Context, branch: string): Promise<string | null> 
 
 async function commitAndPush(ctx: Context): Promise<CommitResult> {
   const checkoutBase = ctx.plan.checkout.baseCommitId;
-  if (checkoutBase === null) throw stop("repo_unavailable", "Kobe has no copy of the Repo yet.");
+  if (checkoutBase === null) throw stop("repo_unavailable", "Kaiju has no copy of the Repo yet.");
   const changes = await blobs(ctx);
   const head = await remoteHead(ctx, ctx.defaultBranch);
   if (head === null || !/^[0-9a-f]{40}$/.test(head)) {
@@ -660,7 +660,7 @@ async function commitAndPush(ctx: Context): Promise<CommitResult> {
 }
 
 /**
- * After a push the host took: `git.repo.committed` first (retried), then Kobe's own records, each
+ * After a push the host took: `git.repo.committed` first (retried), then Kaiju's own records, each
  * failure logged and never turned into an error answer (review M3).
  */
 async function settle(ctx: Context, what: Committed, then: () => Promise<void>): Promise<void> {
@@ -684,7 +684,7 @@ async function settle(ctx: Context, what: Committed, then: () => Promise<void>):
   } catch (err) {
     ctx.deps.commit.log.error(
       { err, project_id: ctx.req.projectId, commit_sha: what.commitSha },
-      "a commit to a Repo landed on the host but Kobe's records were not all written",
+      "a commit to a Repo landed on the host but Kaiju's records were not all written",
     );
   }
 }
@@ -705,13 +705,13 @@ async function directCommit(
       ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
       throw stop(
         "repo_moved",
-        `${branch} moved on the git host while committing. Kobe refreshes its copy; Update, then commit again.`,
+        `${branch} moved on the git host while committing. Kaiju refreshes its copy; Update, then commit again.`,
       );
     }
     return "fallback";
   }
   let kobe: { readonly seq: number; readonly commitId: string } | undefined;
-  // Kobe's copy takes the same commit only when it stood exactly on the head pushed onto: the
+  // Kaiju's copy takes the same commit only when it stood exactly on the head pushed onto: the
   // checkout's base is the copy of `mirror_head_sha` and that is the host's head (review H1).
   const inSync =
     ctx.facts.repo.mirrorHeadSha === head &&
@@ -729,7 +729,7 @@ async function directCommit(
     });
     if (mirrored.status === "committed") kobe = mirrored;
   });
-  // The mirror catches up either way: its commit list, or Kobe's copy when it was not written.
+  // The mirror catches up either way: its commit list, or Kaiju's copy when it was not written.
   ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
   return {
     status: "pushed",
@@ -764,7 +764,7 @@ async function pullRequestCommit(
 ): Promise<CommitResult> {
   const open = await openBranch(ctx, checkoutBase);
   if (open) {
-    // The open pull request's commits build on its own base, checked against Kobe's base.
+    // The open pull request's commits build on its own base, checked against Kaiju's base.
     const built = await buildTree(ctx, changes, open.baseSha);
     if (open.treeSha === built.tree) return { status: "nothing_to_commit" };
     const commit = await writeCommitObject(ctx, built.tree, open.headSha);
@@ -978,7 +978,7 @@ function hostStop(err: GitHostError): Stop {
         "The Workspace's credential may not write to this repository.",
       );
     case "rate_limited":
-      return stop("repo_unavailable", "The git host is rate limiting Kobe. Try again later.");
+      return stop("repo_unavailable", "The git host is rate limiting Kaiju. Try again later.");
     case "not_found":
       return stop("repo_unavailable", "The repository is gone from the git host.");
     case "host_refused":

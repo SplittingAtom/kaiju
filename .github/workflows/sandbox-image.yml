@@ -1,4 +1,4 @@
-# Builds, tests and scans the Kobe sandbox image (KOBE-21). The image is large (~1.4 GB), so it runs
+# Builds, tests and scans the Kaiju sandbox image (KOBE-21). The image is large (~1.4 GB), so it runs
 # only when its inputs change, nightly (to catch new CVEs), and on demand.
 name: sandbox-image
 
@@ -7,7 +7,7 @@ on:
     paths:
       - images/sandbox/**
       - services/sandbox-agent/**
-      # test-image.sh runs the Kobe skills' scripts on the image (KOBE-317).
+      # test-image.sh runs the Kaiju skills' scripts on the image (KOBE-317).
       - services/server/builtin-skills/**
       - packages/**
       - tools/license-check/**

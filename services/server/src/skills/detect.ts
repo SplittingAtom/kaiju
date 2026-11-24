@@ -7,7 +7,7 @@ import { SKILLS_DIR, SKILLS_STORE_SUBDIR } from "../sandbox/constants.js";
 /**
  * Skill use, seen by the server (KOBE-297). Pi uses a skill by `read`-ing its SKILL.md from the
  * directory it was given with `--skill`: `<SKILLS_DIR>/store/sk-<sha256>/` for a bundle
- * (sandbox-agent skills/store.ts; Kobe's own skills too since KOBE-317). A call counts
+ * (sandbox-agent skills/store.ts; Kaiju's own skills too since KOBE-317). A call counts
  * only when its normalized absolute path is exactly the SKILL.md of a skill in the run's own list
  * (`runs.skill_refs`, written with `run.start`), and only once its result came back without error.
  * The name is the server's, from that list: nothing the sandbox labels a call with is read, a

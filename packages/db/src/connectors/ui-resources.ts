@@ -12,7 +12,7 @@ export const UI_RESOURCE_URI_PATTERN = /^ui:\/\/[\x21-\x7e]+$/;
 const json = z.unknown();
 
 /**
- * The declared `_meta.ui` of a template that Kobe pins (part of the pinned hash, so a change of
+ * The declared `_meta.ui` of a template that Kaiju pins (part of the pinned hash, so a change of
  * declared CSP or permissions is drift). v1 ignores `csp` when rendering (T3).
  */
 export const uiResourceMetaSchema = z

@@ -95,7 +95,7 @@ describe("no header or route on the public listener accepts a delegation (ac-6)"
       );
       expect(res.status).toBe(401);
       expect(await roleOf(w.team, w.target.id)).toBe("member");
-      // The Kobe endpoints exist on the internal listener only.
+      // The Kaiju endpoints exist on the internal listener only.
       for (const path of ["/internal/v1/mcp/kobe/calls", "/v1/internal/v1/mcp/kobe/calls"]) {
         const r = await fetch(`http://127.0.0.1:${port}${path}`, { method: "POST" });
         // 403: the CSRF origin check answers first for a POST without the site's origin.
@@ -246,7 +246,7 @@ describe("review fixes (KOBE-619)", () => {
       [w.admin.id],
     );
     expect(await delegationBacked(db, d, opts)).toBe(true);
-    // Review L1: an SSO backing session counts only on its own proof; Kobe TOTP never stands in.
+    // Review L1: an SSO backing session counts only on its own proof; Kaiju TOTP never stands in.
     await fx.admin.query(
       `UPDATE session_sso_contexts SET mfa_satisfied = false
         WHERE session_id IN (SELECT id FROM sessions WHERE user_id = $1)`,

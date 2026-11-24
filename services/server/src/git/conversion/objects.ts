@@ -9,7 +9,7 @@ import type { ConversionPlan, PlanIdentity } from "./plan.js";
  * Builds a conversion's git objects (KOBE-765, G16) in a bare repository on local disk (the
  * server's temp directory), deterministically: the same plan and the same file contents give the
  * same blob, tree and commit ids on every attempt, so a retry recognises what an interrupted push
- * already left on the host. Blobs are the files' bytes (verified against Kobe's SHA-256 before
+ * already left on the host. Blobs are the files' bytes (verified against Kaiju's SHA-256 before
  * they are written); trees use git's order and modes (100644, or 100755 for an executable file);
  * commits carry the plan's author, committer, time (UTC) and message, each on the previous one.
  * One file is in memory at a time (at most a project file's size).
@@ -23,7 +23,7 @@ export interface SourceFile {
 }
 
 export interface HistorySource {
-  /** The tree of a Kobe commit (null: an empty tree). */
+  /** The tree of a Kaiju commit (null: an empty tree). */
   loadTree(commitId: string | null): Promise<readonly SourceFile[]>;
   /** The bytes of one file (throws a {@link ConversionStepError} when missing). */
   readFile(file: SourceFile): Promise<Uint8Array>;

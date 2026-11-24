@@ -104,7 +104,7 @@ export function suspensionMessage(
   const more = items.length - lines.length;
   return {
     to,
-    subject: "Kobe: skills suspended after a scanner update",
+    subject: "Kaiju: skills suspended after a scanner update",
     text: [
       "A scanner rule update rescanned these skill versions and now blocks them, or could not",
       "finish rescanning them. They are suspended: runs leave them out until a reviewer decides",

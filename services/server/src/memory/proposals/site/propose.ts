@@ -132,7 +132,7 @@ export function proposeSiteFromCandidate(
     const c = row.candidate;
     const kind = body.kind ?? c.kind;
     if (c.source === "inferred")
-      throw invalid("Kobe noticed this one: only what you said or confirmed goes to the Site.");
+      throw invalid("Kaiju noticed this one: only what you said or confirmed goes to the Site.");
     if (saveShape(c).op !== "create" || !allowedScopes(c, kind).includes("team"))
       throw invalid("Only a new shared memory can be proposed to the Site.");
     if (!(await quotesThePerson(tx, { teamId, threadId: row.threadId }, c)))

@@ -26,7 +26,7 @@ export const findingKey = (f: StoredFinding): string =>
 
 /**
  * The scan's Caution findings' keys (a finding stored without a severity counts as Caution), and
- * the external scanner's Caution findings (KOBE-341: advisory, acknowledged like Kobe's own).
+ * the external scanner's Caution findings (KOBE-341: advisory, acknowledged like Kaiju's own).
  */
 export function cautionKeys(scan: Record<string, unknown>): string[] {
   const findings = Array.isArray(scan.findings) ? (scan.findings as StoredFinding[]) : [];

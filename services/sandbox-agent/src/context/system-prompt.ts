@@ -13,7 +13,7 @@ import {
 /**
  * The system prompt of a model call, split into the context viewer's sections (KOBE-470, CV3).
  * Pi 1.0.0 builds it from named sections (`core/system-prompt.js`): `preamble`, `tools`, `rules`,
- * `docs` (Pi's own text), `addendum` (Kobe's `--append-system-prompt` file: the agent's
+ * `docs` (Pi's own text), `addendum` (Kaiju's `--append-system-prompt` file: the agent's
  * instructions), `project_context` (context files), `skills`, `cwd`, each but the preamble wrapped
  * in `<name>…</name>` and joined with blank lines. When kobe-tools adds the run's memory, project
  * instructions or viewed file (`before_agent_start` returning `systemPrompt`), Pi sends the whole
@@ -35,7 +35,7 @@ export interface KobePromptParts {
   readonly viewing: string;
   /** Sync conflicts told at the run's start (KOBE-492); optional for older parts. */
   readonly conflicts?: string;
-  /** What Kobe knows (KOBE-383): the stable part and the per-message picks, with their lanes. */
+  /** What Kaiju knows (KOBE-383): the stable part and the per-message picks, with their lanes. */
   readonly known?: string;
   readonly picks?: string;
   readonly knownSections?: readonly SemanticSection[];
@@ -111,14 +111,14 @@ const KOBE_SECTIONS: readonly {
   readonly header: string;
   readonly kind: ContextSectionKind;
   readonly label: string;
-  /** The part's own sections (What Kobe knows: one per lane), when the agent wrote them. */
+  /** The part's own sections (What Kaiju knows: one per lane), when the agent wrote them. */
   readonly sections?: "knownSections" | "picksSections" | "heldSections";
 }[] = [
   {
     part: "known",
     header: KNOWN_HEADER,
     kind: "memory",
-    label: "What Kobe knows",
+    label: "What Kaiju knows",
     sections: "knownSections",
   },
   { part: "memory", header: MEMORY_HEADER, kind: "memory", label: "Saved memory" },
@@ -132,14 +132,14 @@ const KOBE_SECTIONS: readonly {
     part: "held",
     header: HELD_HEADER,
     kind: "memory",
-    label: "What Kobe knows for this conversation",
+    label: "What Kaiju knows for this conversation",
     sections: "heldSections",
   },
   {
     part: "picks",
     header: PICKS_HEADER,
     kind: "memory",
-    label: "What Kobe knows for this message",
+    label: "What Kaiju knows for this message",
     sections: "picksSections",
   },
   { part: "viewing", header: VIEWING_HEADER, kind: "viewing_file", label: "Viewed file" },

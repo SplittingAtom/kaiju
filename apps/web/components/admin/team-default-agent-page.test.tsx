@@ -12,7 +12,7 @@ afterEach(cleanup);
 const OPTIONS = [
   { agentId: "t-1", name: "Triage", slug: "triage", group: "team", versionInEffect: 3 },
   { agentId: "l-1", name: "Writer", slug: "writer", group: "team", versionInEffect: 2 },
-  { agentId: "g-1", name: "Kobe", slug: "kobe", group: "site", versionInEffect: 1 },
+  { agentId: "g-1", name: "Kaiju", slug: "kobe", group: "site", versionInEffect: 1 },
 ];
 
 describe("Team default agent (KOBE-571, agents-roster §7.7)", () => {
@@ -35,7 +35,7 @@ describe("Team default agent (KOBE-571, agents-roster §7.7)", () => {
     ]);
     expect(groups).toEqual([
       ["Team roster", ["Triage (v3)", "Writer (v2)"]],
-      ["Site roster", ["Kobe (v1)"]],
+      ["Site roster", ["Kaiju (v1)"]],
     ]);
     const save = screen.getByRole("button", { name: "Save" }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);

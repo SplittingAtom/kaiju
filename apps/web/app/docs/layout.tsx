@@ -7,7 +7,7 @@ import "./docs-global.css";
 export const metadata: Metadata = { title: "Docs" };
 
 /**
- * The Kobe guide (KOBE-616), opened from the bar's Docs icon as a panel over the workspace, the
+ * The Kaiju guide (KOBE-616), opened from the bar's Docs icon as a panel over the workspace, the
  * way the Site console opens (KOBE-452, `lib/shell/panels.ts`): the conversation stays mounted
  * underneath, the panel's Close, Escape and a press outside close it, and its address
  * (`/docs/<slug>`) is a link, a reload and Back like any panel's. The panel frame carries the

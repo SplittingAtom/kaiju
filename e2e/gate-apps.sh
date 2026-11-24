@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The Kobe Explorer Gate (KOBE-441; MCP Apps host spec docs/specs/mcp-apps-host.md §11): an MCP App
+# The Kaiju Explorer Gate (KOBE-441; MCP Apps host spec docs/specs/mcp-apps-host.md §11): an MCP App
 # in the conversation first, then from the rail, with the negative checks. API checks run in a
 # server pod (e2e/gate-apps/client.mjs); the browser checks are Playwright specs in a real Chromium
 # (e2e/browser/tests/gate-apps/explorer.spec.ts, app-frame.spec.ts with KOBE_REQUIRE_APP=1, and
@@ -62,7 +62,7 @@ cleanup() {
   for p in "${PODS[@]+"${PODS[@]}"}"; do $KUBECTL delete pod $p --ignore-not-found --wait=false >/dev/null 2>&1 || true; done
   for u in "${UNDO[@]+"${UNDO[@]}"}"; do eval "$u" >/dev/null 2>&1 || true; done
   rm -rf "$WORK"
-  verdict_on_exit "$rc" "Kobe Explorer Gate"
+  verdict_on_exit "$rc" "Kaiju Explorer Gate"
 }
 trap cleanup EXIT
 
@@ -306,7 +306,7 @@ grep -qE '^(FAIL|XPASS|INVALID|NOTRUN) ' <<<"$lines" && browser_failed=1
 if [[ "$PARTS_FAILED" != " " || "$browser_failed" == 1 ]]; then
   browser_said=ok
   [[ "$browser_failed" == 1 ]] && browser_said=failed
-  verdict "Kobe Explorer Gate: FAILED (API parts failed:${PARTS_FAILED% }; browser: $browser_said)"
+  verdict "Kaiju Explorer Gate: FAILED (API parts failed:${PARTS_FAILED% }; browser: $browser_said)"
   exit 1
 fi
-verdict "Kobe Explorer Gate (k3d): proven"
+verdict "Kaiju Explorer Gate (k3d): proven"

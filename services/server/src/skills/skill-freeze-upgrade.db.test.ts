@@ -22,7 +22,7 @@ import { catalogSeed, hashOf } from "../testing/catalog-seed.js";
  * unfrozen (today's run start); after it, through the manifest the backfill froze. The world
  * covers every kind of named skill: newest approved, suspended newest, never approved, rejected,
  * archived, archived with its name installed from the catalog, catalog installed and not,
- * blocklisted, Required, Kobe's name, a personal skill of a named name, and another team.
+ * blocklisted, Required, Kaiju's name, a personal skill of a named name, and another team.
  */
 const MARKER = 'ALTER TABLE "team_agent_versions" ADD COLUMN "skill_manifest" jsonb';
 

@@ -146,7 +146,7 @@ function runRefusal(env: DeliveryEnv, row: CommandRow, frame: object): DeliveryR
   if (row.kind === "run.start" && legacyBuiltins(row)) {
     // A run.start queued before KOBE-317 lists image built-ins, which no frame carries any more
     // (they are catalog bundles now): the run fails visibly rather than starting without the
-    // skills it was resolved with. Sending it again resolves them as Kobe's catalog skills.
+    // skills it was resolved with. Sending it again resolves them as Kaiju's catalog skills.
     return failRun(
       COMMAND_FAILURES.queuedBeforeUpgrade,
       "this run was queued before an upgrade and lists skills this sandbox no longer has; send it again",

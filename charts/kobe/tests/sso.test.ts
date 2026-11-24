@@ -16,7 +16,7 @@ const BASE = {
   ingress: { host: "kobe.example.com" },
   postgres: { external: { existingSecret: "kobe-db" } },
   s3: { endpoint: "https://s3.example.com", bucket: "kobe", existingSecret: "kobe-s3" },
-  smtp: { host: "smtp.example.com", from: "Kobe <kobe@example.com>" },
+  smtp: { host: "smtp.example.com", from: "Kaiju <kobe@example.com>" },
   global: { allowGeneratedSecretsOffline: true },
 };
 const TENANT = "11111111-2222-4333-8444-555555555555";

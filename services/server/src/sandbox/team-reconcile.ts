@@ -67,7 +67,7 @@ export function teamOfNamespace(ns: KubeObject): TeamRef | undefined {
 }
 
 /**
- * Converges every team namespace (labelled team-namespace=true, so objects Kobe does not own are
+ * Converges every team namespace (labelled team-namespace=true, so objects Kaiju does not own are
  * never listed) with the same function sandbox setup uses. One failing namespace never stops the
  * rest; nothing is deleted.
  */

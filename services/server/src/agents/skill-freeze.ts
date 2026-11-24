@@ -12,7 +12,7 @@ import {
 /**
  * Agent publish freezes local skill versions (KOBE-318, SK28). A team agent version's manifest
  * lists, per named team skill, the newest loadable version at publish (`freezePicks`); a named
- * team skill with none is left out and the publish says so. Catalog skills, Kobe's seven
+ * team skill with none is left out and the publish says so. Catalog skills, Kaiju's seven
  * included, are never listed and follow the team install (SK27). Personal and gallery agents have
  * no team at publish (they run in any of their user's teams), so they freeze nothing.
  */

@@ -5,7 +5,7 @@ import { panelOf } from "./support/panel.js";
 /**
  * KOBE-564: Create kobe.skill.yaml with a model, against a real deployment, both ways in. From
  * the Promote panel: a personal version uploaded without a manifest is refused (`no_manifest`),
- * Kobe drafts the file with the team default model and the Workbench opens on the new draft with
+ * Kaiju drafts the file with the team default model and the Workbench opens on the new draft with
  * it in place. From the editor: a fresh draft gets one under its file tree. Each flow spends one
  * model call on `KOBE_USER`'s budget and deletes the draft it made; the personal skill version
  * stays (there is no delete for versions). Run on gate1: `npx playwright test skill-manifest`.

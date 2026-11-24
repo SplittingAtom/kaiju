@@ -44,7 +44,7 @@ function append(ws: FakeWorkspace, threadId: string, entry: Omit<Entry, "timesta
 
 /**
  * Pi takes the prompt (as recorded from Pi 1.0.0): on a new session its setup entries first, on a
- * branch Kobe's marker, then the user message, announced with `message_end`.
+ * branch Kaiju's marker, then the user message, announced with `message_end`.
  */
 function piTakesPrompt(ws: FakeWorkspace, start: RunStart, announce = true): Entry {
   const threadId = start.thread_id;
@@ -106,7 +106,7 @@ function piAborts(ws: FakeWorkspace, start: RunStart, user: Entry): Entry {
   return aborted;
 }
 
-/** The next run: Pi branches where Kobe says, answers, and the turn is mirrored. */
+/** The next run: Pi branches where Kaiju says, answers, and the turn is mirrored. */
 async function nextRun(
   ws: FakeWorkspace,
   team: string,

@@ -35,9 +35,9 @@ export function vectorNotice(v: MemoryVectors): ReactNode {
     return (
       <Notice tone="warn" title="Search by meaning is off: this Postgres server has no pgvector">
         <p>
-          Install pgvector for the Postgres server Kobe uses (a package or an image with it), then
-          as a superuser run <code>CREATE EXTENSION vector;</code> in Kobe&apos;s database and
-          upgrade Kobe: the next migration adds the vector columns. Until then memory search uses
+          Install pgvector for the Postgres server Kaiju uses (a package or an image with it), then
+          as a superuser run <code>CREATE EXTENSION vector;</code> in Kaiju&apos;s database and
+          upgrade Kaiju: the next migration adds the vector columns. Until then memory search uses
           word matching.
         </p>
       </Notice>
@@ -47,8 +47,8 @@ export function vectorNotice(v: MemoryVectors): ReactNode {
     return (
       <Notice tone="warn" title="Search by meaning is off: pgvector is not enabled">
         <p>
-          pgvector is installed on the Postgres server but Kobe may not enable it. As a superuser
-          run <code>CREATE EXTENSION vector;</code> in Kobe&apos;s database, then upgrade Kobe (or
+          pgvector is installed on the Postgres server but Kaiju may not enable it. As a superuser
+          run <code>CREATE EXTENSION vector;</code> in Kaiju&apos;s database, then upgrade Kaiju (or
           run its migrations again). Until then memory search uses word matching.
         </p>
       </Notice>

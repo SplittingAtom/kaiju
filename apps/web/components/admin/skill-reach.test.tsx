@@ -50,7 +50,7 @@ const REACH = {
     agent("a-draft", "Drafted", { in_draft: true }),
     agent("a-solo", "Solo", { exclusive: true }),
     agent("a-locked", "Locked", { can_edit: false }),
-    agent("g-kobe", "Kobe", { scope: "gallery", can_edit: false }),
+    agent("g-kobe", "Kaiju", { scope: "gallery", can_edit: false }),
   ],
 };
 const OFFERED = {
@@ -129,7 +129,7 @@ describe("team skill reach (KOBE-297)", () => {
         "Plain Team · by its access mode",
         "Drafted Team · by its access mode",
         "Locked Team · by its access mode",
-        "Kobe Built-in · by its access mode",
+        "Kaiju Built-in · by its access mode",
       ]),
     );
   });

@@ -20,7 +20,7 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  * user app (ingress) nor the sandbox listener (8081, which sandboxes reach): the release
  * NetworkPolicy admits only the MCP proxy's pods to this port, and every request must carry the
  * proxy's internal key. The caller's identity is the sandbox's own `kobe.mcp-proxy` session token
- * (`Kobe-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
+ * (`Kaiju-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
  * whose token it has not seen.
  *
  * POST /internal/v1/mcp/connectors/{id}/tools → 200 `{connector, tools}` (pinned + exposed)
@@ -35,7 +35,7 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  * POST /internal/v1/mcp/connectors/{id}/results `{ticket, input, result}` (KOBE-438) → 201
  *      `{storage}`; 403 `ticket_invalid`, 409 `run_not_active`, 429 `too_many_unclaimed` (the allow's `app_capture.ticket`, MCP Apps)
  * POST /internal/v1/mcp/git/list, /git/calls → the same for the built-in git connector (KOBE-762).
- * POST /internal/v1/mcp/kobe/list → 200 `{connector, tools}` (KOBE-619: the built-in Kobe connector's
+ * POST /internal/v1/mcp/kobe/list → 200 `{connector, tools}` (KOBE-619: the built-in Kaiju connector's
  *      tools for this person now) | 404 `connector_not_available`
  * POST /internal/v1/mcp/kobe/calls `{tool, arguments, thread_id?, tool_call_id?}` → 200
  *      `{outcome: "result", result}` | `{outcome: "denied" | "error", code, message}`: decided and
@@ -64,9 +64,9 @@ export interface InternalAppDeps {
   readonly appResults?: AppResultsDeps;
   readonly auth: McpAuthDeps;
   readonly decideLimiter?: RateLimiter;
-  /** The built-in Kobe MCP server (KOBE-619); unset: its routes answer not available. */
+  /** The built-in Kaiju MCP server (KOBE-619); unset: its routes answer not available. */
   readonly kobe?: KobeMcpService;
-  /** The built-in git connector (KOBE-762), served like the Kobe connector. */
+  /** The built-in git connector (KOBE-762), served like the Kaiju connector. */
   readonly gitMcp?: GitMcpService;
   /** The egress proxy's git decisions (KOBE-763), with its own key; unset: not mounted. */
   readonly git?: InternalGitDeps;
@@ -213,7 +213,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
     return c.json(decision);
   });
 
-  // The built-in Kobe connector (KOBE-619): listed and decided-and-executed by the server itself.
+  // The built-in Kaiju connector (KOBE-619): listed and decided-and-executed by the server itself.
   const notAvailable = (c: Context) => notFound(c, "connector_not_available", "Not available.");
   // The built-in git connector (KOBE-762) is served the same way, on its own paths.
   const builtins: [string, Pick<KobeMcpService, "list" | "call"> | undefined][] = [

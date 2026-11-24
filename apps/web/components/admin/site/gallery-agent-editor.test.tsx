@@ -25,7 +25,7 @@ const AGENT = {
   id: "a-1",
   scope: "gallery",
   slug: "kobe",
-  name: "Kobe",
+  name: "Kaiju",
   status: "active",
   ownerUserId: null,
   currentVersion: 2,
@@ -35,7 +35,7 @@ const AGENT = {
   canPublish: true,
   canExport: true,
   starters: [],
-  frontmatter: { name: "Kobe" },
+  frontmatter: { name: "Kaiju" },
   prompt: "From the repository.",
   gallery: ATTACHED,
 };
@@ -114,7 +114,7 @@ describe("gallery agent editor", () => {
     expect(screen.getByText("Customized")).toBeTruthy();
     // Re-attaching is offered at any time from the editor.
     expect(screen.getByText(/Kobe is customized: releases no longer update it/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Reset to repository (Kobe)" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Reset to repository (Kaiju)" })).toBeTruthy();
   });
 
   it("resets a customized agent to the repository after asking", async () => {
@@ -127,9 +127,9 @@ describe("gallery agent editor", () => {
     });
     renderSite(<GalleryAgentEditor agentId="a-1" />);
     await userEvent.click(
-      await screen.findByRole("button", { name: "Reset to repository (Kobe)" }),
+      await screen.findByRole("button", { name: "Reset to repository (Kaiju)" }),
     );
-    await answerConfirm("Reset Kobe to the repository definition?", "Reset to repository");
+    await answerConfirm("Reset Kaiju to the repository definition?", "Reset to repository");
     await waitFor(() => expect(screen.queryByText("Customized")).toBeNull());
     expect((screen.getByLabelText("System prompt") as HTMLTextAreaElement).value).toBe(
       "From the repository.",
@@ -157,10 +157,10 @@ describe("gallery agent editor", () => {
     });
     renderSite(<GalleryAgentEditor agentId="a-1" />);
     await userEvent.click(await screen.findByRole("button", { name: "Publish…" }));
-    await answerConfirm("Publish Kobe to every team?", "Cancel");
+    await answerConfirm("Publish Kaiju to every team?", "Cancel");
     expect(calls.some((c) => c.method === "POST")).toBe(false);
     await userEvent.click(screen.getByRole("button", { name: "Publish…" }));
-    await answerConfirm("Publish Kobe to every team?", "Publish");
+    await answerConfirm("Publish Kaiju to every team?", "Publish");
     await screen.findByText("Published v3.");
     const post = must(calls.find((c) => c.method === "POST"));
     expect(post.headers.get("if-match")).toBe('"3"');

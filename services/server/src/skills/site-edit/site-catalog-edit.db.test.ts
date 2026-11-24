@@ -17,8 +17,8 @@ import { MemoryObjects } from "../../testing/memory-objects.js";
  * The view (versions, files, frontmatter, provenance, scan, hashes), a persistent site draft
  * (admins only, re-checked per call; If-Match revisions), Save version (validation, scan Block,
  * semver must rise, publisher `site` with the admin, audited, Default sync queued in the Default's
- * major, the publishing team's maintainers told), the Kobe seed skipping a detached skill and
- * recording the shipped version, Compare and Reset to Kobe, and the retired/blocklisted guards.
+ * major, the publishing team's maintainers told), the Kaiju seed skipping a detached skill and
+ * recording the shipped version, Compare and Reset to Kaiju, and the retired/blocklisted guards.
  */
 const objects = new MemoryObjects();
 const blobs = { objects, prefix: "kobe/" };
@@ -205,7 +205,7 @@ describe("the site draft (ac-2)", () => {
     const read = await as.admin.get(`${BASE}/${reportId}/draft/files/SKILL.md`);
     expect(read.text).toBe(md);
     expect((await as.admin.get(`${BASE}/${reportId}/draft`)).json.draft.rev).toBe(put.json.rev);
-    // Package rules: provenance.json is Kobe's.
+    // Package rules: provenance.json is Kaiju's.
     const bad = await putFile("admin", reportId, "provenance.json", "{}", put.json.rev);
     expect(bad.json.code).toBe("invalid_path");
   });
@@ -321,7 +321,7 @@ describe("guards", () => {
   });
 });
 
-describe("Kobe-shipped skills (ac-4)", () => {
+describe("Kaiju-shipped skills (ac-4)", () => {
   let pdf: KobePackage;
   let pdfId = "";
   beforeAll(async () => {
@@ -377,7 +377,7 @@ describe("Kobe-shipped skills (ac-4)", () => {
       [res.json.version.versionId],
     );
     expect(sync.rows).toEqual([{ kind: "add" }]);
-    // Asked for by the admin, as a tag change: the installs name them, not Kobe (review M1).
+    // Asked for by the admin, as a tag change: the installs name them, not Kaiju (review M1).
     const by = await h.admin.query(
       `SELECT requested_by, by_kobe FROM skill_default_syncs WHERE version_id = $1`,
       [res.json.version.versionId],

@@ -316,7 +316,7 @@ fi
 # ---- U6 --------------------------------------------------------------------------------------------
 if want U6 && ((MODELS)) && sbx_ready m1 "U6"; then
   echo "==> U6: the approval card, the signed approval, a remember-rule, the 1 h expiry"
-  # share_file asks in ask-on-write (a Kobe write); create_artifact never does (PROMPT_EXEMPT_KOBE_TOOLS,
+  # share_file asks in ask-on-write (a Kaiju write); create_artifact never does (PROMPT_EXEMPT_KOBE_TOOLS,
   # Chris 2026-10-06). The three files are made first with bash, which asks only by policy rule.
   marker="gate4-u6-$NONCE"
   share() { tool_prompt share_file "$(printf '{"path":"%s-%s.txt","description":"Gate 4 U6 %s"}' "$marker" "$1" "$1")"; }
@@ -421,7 +421,7 @@ if want U7 && ((MODELS)); then
       "${s1:-none} ${s2:-none} $([[ -n "$s1" && "$s1" != "$s2" ]] && echo different || echo same)"
   fi
   toks=$(step u7-tokens "\"connectorId\":\"$CONNECTOR\",\"users\":[$U_M1,$U_M2]")
-  contains "U7: both users' tokens were read from Kobe's sealed store (never printed)" '^grant_tokens=[2-9]$' "$toks"
+  contains "U7: both users' tokens were read from Kaiju's sealed store (never printed)" '^grant_tokens=[2-9]$' "$toks"
   tokfile="$WORK/u7-tokens"
   grep '^granttoken ' <<<"$toks" | while read -r _ _ v; do printf '%s' "$v" | b64d; echo; done >"$tokfile"
   chmod 600 "$tokfile"

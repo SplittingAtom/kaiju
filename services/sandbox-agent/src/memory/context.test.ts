@@ -150,7 +150,7 @@ describe("per-thread fence nonce (KOBE-383)", () => {
   });
 });
 
-describe("What Kobe knows in the run file (KOBE-383)", () => {
+describe("What Kaiju knows in the run file (KOBE-383)", () => {
   const policy = {
     id: "00000000-0000-4000-8000-000000000001",
     version: 1,

@@ -15,7 +15,7 @@ import { readAppName } from "../../branding/settings.js";
 import type { KobeDb } from "@kobe/db";
 
 /**
- * The docs tools of the built-in Kobe connector (KOBE-620, spec kobe-admin-mcp §4, KA4, KA7): the
+ * The docs tools of the built-in Kaiju connector (KOBE-620, spec kobe-admin-mcp §4, KA4, KA7): the
  * user guide as the web serves it (`@kobe/guide`, the same pages and renderers as /llms.txt,
  * /llms-full.txt and /docs/<slug>.md), with the deployment's public origin and the site's app
  * name, so an agent in a sandbox reads the docs without any egress. Read-only, no team or user
@@ -68,10 +68,10 @@ function slugOf(raw: string, origin: string): string {
 
 const docsIndex = docsTool({
   name: "docs_index",
-  title: "Kobe guide: index",
+  title: "Kaiju guide: index",
   description:
-    "The Kobe user guide's index (the site's /llms.txt): every page with its URL and a one-line " +
-    "summary, grouped by section. Start here for any question about using or administering Kobe, " +
+    "The Kaiju user guide's index (the site's /llms.txt): every page with its URL and a one-line " +
+    "summary, grouped by section. Start here for any question about using or administering Kaiju, " +
     "then read pages with docs_page.",
   readOnly: true,
   input: z.strictObject({}),
@@ -80,9 +80,9 @@ const docsIndex = docsTool({
 
 const docsPage = docsTool({
   name: "docs_page",
-  title: "Kobe guide: page",
+  title: "Kaiju guide: page",
   description:
-    "One page of the Kobe user guide as Markdown (the site's /docs/<slug>.md). Pass the page's " +
+    "One page of the Kaiju user guide as Markdown (the site's /docs/<slug>.md). Pass the page's " +
     "slug from docs_index or docs_search, e.g. 'admin/team-admin' (its .md URL works too).",
   readOnly: true,
   input: z.strictObject({ slug: z.string().min(1).max(SLUG_MAX) }),
@@ -100,9 +100,9 @@ const docsPage = docsTool({
 
 const docsFull = docsTool({
   name: "docs_full",
-  title: "Kobe guide: full text",
+  title: "Kaiju guide: full text",
   description:
-    "Every page of the Kobe user guide in one Markdown text (the site's /llms-full.txt), or only " +
+    "Every page of the Kaiju user guide in one Markdown text (the site's /llms-full.txt), or only " +
     "one section's pages. Prefer docs_index plus docs_page; use this when you need much of it.",
   readOnly: true,
   input: z.strictObject({ section: z.enum(SECTIONS).optional() }),
@@ -129,9 +129,9 @@ const hit = z.strictObject({
 
 const docsSearch = docsTool({
   name: "docs_search",
-  title: "Kobe guide: search",
+  title: "Kaiju guide: search",
   description:
-    "Searches the Kobe user guide's page titles, summaries and headings (every word must match). " +
+    "Searches the Kaiju user guide's page titles, summaries and headings (every word must match). " +
     "Returns ranked pages with their slugs and URLs; read one with docs_page.",
   readOnly: true,
   input: z.strictObject({

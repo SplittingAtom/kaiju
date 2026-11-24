@@ -8,10 +8,10 @@ import { KOBE_DOCS_TOOLS } from "./docs/index.js";
 import { KOBE_ADMIN_TOOLS } from "./tools/index.js";
 
 /**
- * The Kobe catalog in the shape the MCP decision path already understands (KOBE-619): each tool as
+ * The Kaiju catalog in the shape the MCP decision path already understands (KOBE-619): each tool as
  * a "pinned" tool of the built-in connector (annotations from the catalog, never drifted), and the
  * connector itself as a team connector with `custom` exposure over the tools the switches allow.
- * So `decideMcpCall` (policy engine, run checks, signed approvals, audit) decides Kobe calls with
+ * So `decideMcpCall` (policy engine, run checks, signed approvals, audit) decides Kaiju calls with
  * no second implementation.
  *
  * The docs tools (KOBE-620, KA4/KA7) are part of it and always enabled: they hold no team or user
@@ -21,7 +21,7 @@ import { KOBE_ADMIN_TOOLS } from "./tools/index.js";
 /** What a pinned entry is made from: an admin tool or a docs tool. */
 export type KobePinnable = Pick<KobeTool, "name" | "title" | "description" | "input"> & {
   readonly output?: KobeTool["output"] | z.ZodType;
-  /** Reaches a system outside Kobe (the git built-in's tools, KOBE-762): `openWorldHint: true`. */
+  /** Reaches a system outside Kaiju (the git built-in's tools, KOBE-762): `openWorldHint: true`. */
   readonly openWorld?: boolean;
 } & ({ readonly readOnly: true } | { readonly readOnly: false; readonly destructive: boolean });
 

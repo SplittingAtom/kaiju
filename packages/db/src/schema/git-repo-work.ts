@@ -21,12 +21,12 @@ const SHA = "'^([0-9a-f]{40}|[0-9a-f]{64})$'";
 const BRANCH = "'^[^[:space:]:~^?*\\[\\\\]{1,255}$'";
 
 /**
- * Committing to a Repo from Kobe's commit flow (KOBE-767, spec workspace-git G18, GQ11): the
+ * Committing to a Repo from Kaiju's commit flow (KOBE-767, spec workspace-git G18, GQ11): the
  * member's pull request from their working copy of a Repo. One row per member and Repo: the
  * first commit pushes a branch of its own and opens a pull request; later commits from the same
  * working copy (same base) add to that branch while the pull request is open; a commit after the
  * base moved, or after the pull request was closed or merged, starts a new branch and replaces
- * the row (the audit log keeps each one). `head_sha` is what Kobe last pushed: the next push is a
+ * the row (the audit log keeps each one). `head_sha` is what Kaiju last pushed: the next push is a
  * compare-and-swap from it, so a branch someone else moved on the host is never overwritten.
  */
 export const gitCommitBranches = pgTable(
@@ -40,9 +40,9 @@ export const gitCommitBranches = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     repositoryId: uuid().notNull(),
-    /** The Kobe commit the member's checkout was based on when the branch started. */
+    /** The Kaiju commit the member's checkout was based on when the branch started. */
     baseCommitId: uuid().notNull(),
-    /** The default branch's commit on the host the branch starts from (Kobe's mirror head then). */
+    /** The default branch's commit on the host the branch starts from (Kaiju's mirror head then). */
     baseSha: text().notNull(),
     branch: text().notNull(),
     headSha: text().notNull(),

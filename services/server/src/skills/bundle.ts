@@ -159,7 +159,7 @@ function checkContract(names: readonly string[]): Result<never> | null {
   const code = PROBLEM_CODES[problem.problem] ?? "unsafe_path";
   const why =
     code === "reserved_path"
-      ? `${printable(problem.path)} is reserved: only SKILL.md, evals/ and kobe.skill.yaml, spelled exactly so, are special, and Kobe writes provenance.json itself.`
+      ? `${printable(problem.path)} is reserved: only SKILL.md, evals/ and kobe.skill.yaml, spelled exactly so, are special, and Kaiju writes provenance.json itself.`
       : code === "path_conflict"
         ? `${printable(problem.path)} is both a file and a folder.`
         : `Unsafe path in bundle: ${printable(problem.path)} (${problem.problem.replaceAll("_", " ")})`;

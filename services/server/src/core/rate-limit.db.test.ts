@@ -4,7 +4,7 @@ import { hitRateLimit, pruneExpiredRateLimits } from "../rate-limit.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 
 // KOBE-809: Better Auth prunes its own `rate_limits` table of every row older than its longest
-// window (60 s), whatever the key, whenever one of its keys starts a new window. Kobe's longer
+// window (60 s), whatever the key, whenever one of its keys starts a new window. Kaiju's longer
 // limits and the reset-email resend guard must not live where that prune reaches.
 let h: Harness;
 let tess = "";
@@ -51,7 +51,7 @@ async function runLibraryPrune(): Promise<void> {
     .toBe(0);
 }
 
-describe("Kobe's rate limits survive the auth library's prune (KOBE-809)", () => {
+describe("Kaiju's rate limits survive the auth library's prune (KOBE-809)", () => {
   it("keeps a 10-minute limit and a pending reset link's resend guard", async () => {
     const db = h.deps.database.db;
     const started = Date.now() - TWO_MINUTES;
@@ -77,7 +77,7 @@ describe("Kobe's rate limits survive the auth library's prune (KOBE-809)", () =>
   });
 });
 
-describe("Kobe's own prune of expired rate-limit rows (KOBE-809)", () => {
+describe("Kaiju's own prune of expired rate-limit rows (KOBE-809)", () => {
   const keysLike = async (prefix: string) =>
     (
       await h.admin.query<{ key: string }>(

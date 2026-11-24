@@ -11,14 +11,14 @@ import { isKobeDocsToolName } from "../kobe-mcp/docs/index.js";
 import { kobeToolByName } from "../kobe-mcp/tools/index.js";
 
 /**
- * Shared threads hide Kobe admin results (KOBE-623, spec kobe-admin-mcp §8, decision KA6). A
+ * Shared threads hide Kaiju admin results (KOBE-623, spec kobe-admin-mcp §8, decision KA6). A
  * teammate reading a thread shared with them sees that an admin tool ran, its input and its
  * approval card, but the tool's output is replaced by "Admin result hidden" unless they hold the
  * tool's own permission now (its console page's team or site permission). The thread's owner sees
  * everything. Enforced where the server serves a thread's tool output to a reader: the entry list,
  * the full-output route, the run event stream and a reader's fork.
  *
- * A Kobe tool is recognised by the built-in connector's Pi server segment (`kobe`, or
+ * A Kaiju tool is recognised by the built-in connector's Pi server segment (`kobe`, or
  * `kobe-builtin` when the name was taken); a name the catalog does not know (a tool of a newer or
  * older release) is hidden, the docs tools never are.
  */
@@ -116,7 +116,7 @@ export function redactEntry<E extends { readonly payload: Record<string, unknown
 }
 
 /**
- * A run event as a reader may see it: a hidden Kobe admin `tool.result` carries no output, and an
+ * A run event as a reader may see it: a hidden Kaiju admin `tool.result` carries no output, and an
  * `entry.committed` carrying the stored tool result entry (≤ 64 KB) carries it redacted.
  */
 export function redactEvent(event: KobeEvent, gate: AdminResultGate | undefined): KobeEvent {

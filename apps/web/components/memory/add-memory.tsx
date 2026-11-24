@@ -48,7 +48,7 @@ export function AddMemory({
           description: (
             <>
               <span className="block">
-                Kobe will use this preference in every workspace you belong to:
+                Kaiju will use this preference in every workspace you belong to:
               </span>
               <span
                 data-testid="portable-text"

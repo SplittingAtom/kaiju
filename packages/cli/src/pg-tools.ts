@@ -79,7 +79,7 @@ export function safeToolErrors(stderr: string): string {
 
 /**
  * psql runs with VERBOSITY=verbose (so ERROR lines carry the SQLSTATE) and SHOW_CONTEXT=never.
- * Kobe's own checks (P0001 "kobe restore: …") are shown in full; any other server error only as
+ * Kaiju's own checks (P0001 "kobe restore: …") are shown in full; any other server error only as
  * its SQLSTATE, because messages, DETAIL and CONTEXT can quote row data. Client-side errors
  * (connection, invalid meta-command) are shown.
  */

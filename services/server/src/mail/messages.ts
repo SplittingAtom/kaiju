@@ -14,7 +14,7 @@ const ROLE_NAMES = {
 
 /** Every message names the site by its configured name (`readAppName`, theming TH1). */
 interface Branded {
-  /** The app name (`branding.app_name`, default "Kobe"). */
+  /** The app name (`branding.app_name`, default "Kaiju"). */
   readonly appName: string;
 }
 

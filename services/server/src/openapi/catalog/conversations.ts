@@ -178,7 +178,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
       [
         "get",
         "/v1/runs/{runId}/events",
-        "Stream a run's events (Kobe Event Stream)",
+        "Stream a run's events (Kaiju Event Stream)",
         "Team members (`team.chat`). `text/event-stream`; unknown or private runs answer 404.",
       ],
     ],

@@ -34,7 +34,7 @@ const tooLarge = (c: Ctx) =>
  * `GET /v1/workspace/frame?path=&team=` (KOBE-268): one of the caller's own synced HTML files as
  * the document of the file viewer's iframe, served exactly like an artifact frame (D-6/D25):
  * `FRAME_HEADERS` (CSP `sandbox` without `allow-same-origin`, so an opaque origin with no cookies
- * and no network), only for navigations from Kobe's own page, only for the active team the page
+ * and no network), only for navigations from Kaiju's own page, only for the active team the page
  * names, only `.html`/`.htm`, and at most {@link WORKSPACE_FRAME_MAX_BYTES}. Iframe loads only
  * and the WebRTC guard first, as the artifact frame (KOBE-690). The owner comes from
  * the session, never the request; reads are audited like downloads.

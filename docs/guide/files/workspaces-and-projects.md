@@ -6,7 +6,7 @@ order: 1
 audience: member
 ---
 
-Kobe organises files in three layers. The **workspace** is your team's place. **My files** is your
+Kaiju organises files in three layers. The **workspace** is your team's place. **My files** is your
 own private space inside it. **Projects** are shared, versioned folders the workspace works on
 together. The Files tab of the rail shows all three as one tree.
 
@@ -19,7 +19,7 @@ its people side **Team** and the settings side **Workspace settings**; it is the
 
 ## My files
 
-**My files** (Kobe calls the idea your _scratchspace_) is your own volume in the workspace. Only you
+**My files** (Kaiju calls the idea your _scratchspace_) is your own volume in the workspace. Only you
 and your agent see it. Every conversation you have runs in your own sandbox with My files mounted at
 `/workspace`, so the agent in one conversation can pick up a file the agent in another wrote.
 
@@ -77,7 +77,7 @@ The mounted folder is read-only until you check it out:
 ### Committing to a Repo
 
 A Repo is a project converted to a repository on a connected git host (GitHub, Gitea or
-Forgejo); its record is the repository's default branch, and Kobe keeps a copy of it. On a Repo,
+Forgejo); its record is the repository's default branch, and Kaiju keeps a copy of it. On a Repo,
 **Commit…** says where your commit goes before you commit:
 
 - usually to a new branch on the host with a **pull request** into the default branch. The result
@@ -87,7 +87,7 @@ Forgejo); its record is the repository's default branch, and Kobe keeps a copy o
   host does not protect the branch (otherwise you get a pull request and are told why).
 
 Commits carry your name as author, as the Workspace's [git settings](../admin/git-organizations.md#commit-author-email)
-say. If a file you changed was also changed on the host since your copy, Kobe refuses the
+say. If a file you changed was also changed on the host since your copy, Kaiju refuses the
 commit and changes nothing on the host: press **Update**, then commit again. Changes to other
 files on the host are kept. When the agent commits a Repo with `commit_project`, you approve each
 commit (the card says which host, repository and branch it goes to); no rule allows it without
@@ -99,8 +99,8 @@ In a conversation on a Repo, the agent also gets a real git working copy of it a
 it can work on a branch, commit, push and open a pull request there. The working copy stays in the
 sandbox: it is not synced to your files (so it never counts against your storage, and the Repo's
 read rule, retention and legal hold are those of the project and the host). Work the agent has not
-pushed lives only on the sandbox's disk and is lost if that disk is replaced; Kobe then clones the
-Repo again. Kobe keeps the branch and how many commits it is ahead of or behind the host. It
+pushed lives only on the sandbox's disk and is lost if that disk is replaced; Kaiju then clones the
+Repo again. Kaiju keeps the branch and how many commits it is ahead of or behind the host. It
 lives in the sandbox's own `.kobe/` area, so it never mixes with your files: a folder of yours
 named `repos/` stays an ordinary synced folder.
 
@@ -112,7 +112,7 @@ commits it at once, with no checkout. The agent can commit a checkout itself wit
 Deleting a project is possible only once it has no files, conversations or project memory left.
 Members may still have working copies of it: the confirmation names how many hold uncommitted
 changes, and deleting the project discards them. If someone starts more uncommitted work before
-the delete goes through, Kobe asks again with the new count.
+the delete goes through, Kaiju asks again with the new count.
 
 An archived project's files are frozen: uploads, deletes, commits, reverts and accepted proposals
 are all refused until an owner unarchives it.
@@ -130,7 +130,7 @@ them, and readers see their own suggestions and what happened to them. See
 ## Repos
 
 A project converted to a Repo lives on a git host (GitHub, Gitea or Forgejo): the repository's
-default branch is its record, and Kobe shows a mirror of it. A Repo is still a project in every
+default branch is its record, and Kaiju shows a mirror of it. A Repo is still a project in every
 other way: same roles, same place in the Files panel, same conversations.
 
 ### Repos in the Files panel
@@ -147,7 +147,7 @@ its row shows:
 - **read-only**, **too large to mirror** or **refresh failed** when one of those applies.
 
 A project that is being converted shows **converting to a Repo…**, and **conversion failed** after
-a failure; it takes no Kobe commits until the conversion ends or is abandoned.
+a failure; it takes no Kaiju commits until the conversion ends or is abandoned.
 
 The Repo's **⋯** menu has **Open on &lt;host&gt;** (the repository on the host, in a new tab) and
 **Repo details…**, which shows:
@@ -156,11 +156,11 @@ The Repo's **⋯** menu has **Open on &lt;host&gt;** (the repository on the host
   to the default branch where a Workspace admin allowed it), your working copy and your open pull
   request;
 - when the mirror was last refreshed, that it is refreshing, or why the last refresh failed and
-  when Kobe tries again;
+  when Kaiju tries again;
 - the newest commits on the host;
-- **Refresh**: the mirror refreshes when Kobe pushes, when you open the Repo (if older than 5
+- **Refresh**: the mirror refreshes when Kaiju pushes, when you open the Repo (if older than 5
   minutes), every 5 minutes, and when you press **Refresh** (30 per 10 minutes each, within the
-  connection's hourly limit; if a limit is reached Kobe says so). A commit made on the host
+  connection's hourly limit; if a limit is reached Kaiju says so). A commit made on the host
   appears after the next refresh.
 
 If the repository is archived or deleted on the host, or the Workspace's connection to it is
@@ -185,12 +185,12 @@ Workspace admins, when the Workspace has a git connection at **Read and write**.
 
 Converting is one-way. The repository gets the connection's default visibility, which the
 dialog names: private, or, on GitHub only, internal where a Workspace admin chose that for the
-connection (everyone in the GitHub enterprise can then read it). The conversion stops if it becomes public. Commits carry each author's Kobe email, or a
+connection (everyone in the GitHub enterprise can then read it). The conversion stops if it becomes public. Commits carry each author's Kaiju email, or a
 no-reply address if the Workspace's [git settings](../admin/git-organizations.md#commit-author-email)
 say so; members who have left always get the no-reply address, and the committer reads
-"&lt;name&gt; via Kobe". Files under `.github/workflows/` run on the host if it runs Actions.
+"&lt;name&gt; via Kaiju". Files under `.github/workflows/` run on the host if it runs Actions.
 
-Kobe refuses to start, and says which, when:
+Kaiju refuses to start, and says which, when:
 
 - the project is archived, is already a Repo, or already has a conversion running or failed;
 - a legal hold covers the Workspace;
@@ -213,9 +213,9 @@ the dialog says why, with **Retry** (it resumes
 where it stopped) and **Abandon…** (the project is an ordinary project again; a repository the host
 already created stays there for a Workspace admin to delete or reuse).
 
-Afterwards the repository on the host is the record: Kobe shows the files read-only from the
+Afterwards the repository on the host is the record: Kaiju shows the files read-only from the
 mirror and commits go to the host (see [Committing to a Repo](#committing-to-a-repo)). The
-repository is outside Kobe's retention, erasure and legal hold.
+repository is outside Kaiju's retention, erasure and legal hold.
 
 ### Notices
 

@@ -48,7 +48,7 @@ The builder has two tabs, **Identity** and **Behaviour**:
   **Ask on write**, **Ask for every tool** or **Auto (allow-listed tools only)**. The mode is never
   looser than the team's floor.
 
-**Allowed tools** limits the agent; Kobe's server refuses every call the list rules out, whatever
+**Allowed tools** limits the agent; Kaiju's server refuses every call the list rules out, whatever
 the approval mode:
 
 - **Connector tools** (named `mcp__<connector>__<tool>`, globs like `mcp__github__*` allowed):
@@ -71,7 +71,7 @@ The builder's **Memory** section sets how much memory the agent uses, per publis
 
 | Setting        | What the agent gets                                                                      |
 | -------------- | ---------------------------------------------------------------------------------------- |
-| **All memory** | Memory notes (My memory, project memory) and any other memories Kobe keeps. The default. |
+| **All memory** | Memory notes (My memory, project memory) and any other memories Kaiju keeps. The default. |
 | **Notes only** | Memory notes and Site Policy.                                                            |
 | **Off**        | Site Policy only: no memory index, no **remember** or **recall** tools.                  |
 
@@ -131,7 +131,7 @@ Open **My schedules** (`/me/schedules`) and press **New schedule**: pick the **A
 admin paused can only be resumed by a team admin. Scheduled runs cannot stop to ask you, so
 a tool call that would need approval is skipped instead and listed under **Skipped actions** at
 the end of the run's conversation; remembered approvals do not apply there. While a scheduled run
-overlaps a chat turn of yours, the most restrictive of the two decides: anything Kobe runs for the
+overlaps a chat turn of yours, the most restrictive of the two decides: anything Kaiju runs for the
 agent that your chat would ask about (sharing files, project memory, commits, Python where the
 site asks before sandbox writes; in an **Ask for every tool** chat everything, reads included) and
 connector tools your chat would ask about are skipped for the scheduled run too. See

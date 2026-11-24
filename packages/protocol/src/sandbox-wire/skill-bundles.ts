@@ -47,7 +47,7 @@ export type SkillBundleRef = z.infer<typeof skillBundleRefSchema>;
 
 /*
  * Built-in skills (KOBE-88) no longer have a path of their own (KOBE-317, SK4): they are
- * Kobe-published catalog skills and reach the sandbox as `skill_bundles` like any other. The
+ * Kaiju-published catalog skills and reach the sandbox as `skill_bundles` like any other. The
  * `builtin_skills` capability and `run.start.config.builtin_skills` are gone; an older server that
  * still sends the field to a newer agent never does, because it checks for the capability first.
  */

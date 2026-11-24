@@ -158,7 +158,7 @@ export const SKILLS_EVENTS = {
     version,
     semver: z.string().max(32),
   }),
-  /** A Team admin confirmed a Builder's request; Kobe submitted it (team log). */
+  /** A Team admin confirmed a Builder's request; Kaiju submitted it (team log). */
   "skill.promotion.confirmed": event("team", { requestId: id, registryVersionId: id }),
   /** A Team admin declined a Builder's request (team log). */
   "skill.promotion.declined": event("team", { requestId: id }),
@@ -178,7 +178,7 @@ export const SKILLS_EVENTS = {
     requestId: id.optional(),
   }),
   /**
-   * Kobe drafted a kobe.skill.yaml for a version without one, with the member's chosen model,
+   * Kaiju drafted a kobe.skill.yaml for a version without one, with the member's chosen model,
    * into a new Workbench draft of theirs (KOBE-564); `from` says whether the model's reply was
    * used or SKILL.md's description alone. Metadata only: never the manifest's text.
    */
@@ -237,7 +237,7 @@ export const SKILLS_EVENTS = {
   /**
    * A Site admin published a version they made in the Site Console straight into the Catalog
    * (KOBE-495): scanned, never reviewed. `publisher` is always `site`; `previousPublisher` and
-   * `previousSemver` name the version it follows (Kobe's, a maintainer's or the Site's own).
+   * `previousSemver` name the version it follows (Kaiju's, a maintainer's or the Site's own).
    */
   "registry.version_published": event("site", {
     registryVersionId: id,
@@ -432,7 +432,7 @@ export const SKILLS_EVENTS = {
     moved: count.optional(),
   }),
   /**
-   * Kobe published a version of one of its own catalog skills (KOBE-317, SK4) from the package set
+   * Kaiju published a version of one of its own catalog skills (KOBE-317, SK4) from the package set
    * the server ships, at a server start (system actor). `created`: the skill is new to this Site
    * (it was also tagged Default).
    */
@@ -444,8 +444,8 @@ export const SKILLS_EVENTS = {
     created: z.boolean(),
   }),
   /**
-   * A Site admin's first edit of a Kobe-shipped catalog skill detached it (KOBE-495): the Kobe seed
-   * stops publishing it. `fromSemver`: its newest Kobe version then.
+   * A Site admin's first edit of a Kaiju-shipped catalog skill detached it (KOBE-495): the Kaiju seed
+   * stops publishing it. `fromSemver`: its newest Kaiju version then.
    */
   "skill.detached": event("site", {
     skillId: id,
@@ -453,7 +453,7 @@ export const SKILLS_EVENTS = {
     fromSemver: z.string().max(32),
   }),
   /**
-   * A Site admin re-attached a detached Kobe skill (KOBE-495): the seed publishes the shipped
+   * A Site admin re-attached a detached Kaiju skill (KOBE-495): the seed publishes the shipped
    * version (`shippedSemver`, above every Site version) from now on.
    */
   "skill.reset_to_kobe": event("site", {
@@ -599,7 +599,7 @@ export const SKILLS_EVENTS = {
       .optional(),
     /** Save to Workbench: the conversation the files came from. */
     fromThreadId: id.optional(),
-    /** A governed import (KOBE-344, SK30): where it came from and Kobe's hash of what it got. */
+    /** A governed import (KOBE-344, SK30): where it came from and Kaiju's hash of what it got. */
     origin: z
       .strictObject({
         kind: z.enum(["git", "zip"]),

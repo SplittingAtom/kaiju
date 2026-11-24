@@ -62,11 +62,11 @@ describe("root layout theme (KOBE-282)", () => {
 });
 
 describe("root layout branding (KOBE-500)", () => {
-  it("with nothing configured: no <head> of its own, titled Kobe, the shipped icon", async () => {
+  it("with nothing configured: no <head> of its own, titled Kaiju, the shipped icon", async () => {
     const root = await html();
     expect(kids(root).map((k) => k.type)).toEqual(["body"]);
     expect(await generateMetadata()).toEqual({
-      title: { default: "Kobe", template: "%s · Kobe" },
+      title: { default: "Kaiju", template: "%s · Kaiju" },
       description: "Self-hosted conversational agent platform",
     });
   });

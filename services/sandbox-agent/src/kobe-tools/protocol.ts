@@ -175,7 +175,7 @@ export type ProjectCommitOutcome =
       readonly url: string;
       readonly opened: boolean;
     }
-  /** KOBE-767: pushed straight to the Repo's default branch; `seq` Kobe's copy, null if not yet. */
+  /** KOBE-767: pushed straight to the Repo's default branch; `seq` Kaiju's copy, null if not yet. */
   | { readonly status: "pushed"; readonly branch: string; readonly seq: number | null };
 export interface ProjectCommitAnswer {
   readonly ok: true;

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Kobe Helm umbrella chart and its render tests",
+  "description": "Kaiju Helm umbrella chart and its render tests",
   "type": "module",
   "scripts": {
     "test": "vitest run",

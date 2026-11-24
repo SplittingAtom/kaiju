@@ -7,7 +7,7 @@ const REQUIRED = {
   KOBE_AUTH_SECRET: "x".repeat(32),
   KOBE_SETUP_TOKEN: "t".repeat(24),
   KOBE_SMTP_HOST: "smtp.example.com",
-  KOBE_SMTP_FROM: "Kobe <kobe@example.com>",
+  KOBE_SMTP_FROM: "Kaiju <kobe@example.com>",
 };
 
 describe("loadConfig", () => {
@@ -345,7 +345,7 @@ describe("loadConfig", () => {
         host: "smtp.example.com",
         port: 587,
         security: "starttls",
-        from: { name: "Kobe", address: "kobe@example.com" },
+        from: { name: "Kaiju", address: "kobe@example.com" },
       });
       const { KOBE_SMTP_HOST: _h, ...noHost } = REQUIRED;
       expect(() => loadConfig(noHost)).toThrow(/KOBE_SMTP_HOST/);
@@ -359,8 +359,8 @@ describe("loadConfig", () => {
       );
       for (const bad of [
         "not an address",
-        "Kobe <a@b.c>\r\nBcc: x@y.z",
-        "Kobe <>",
+        "Kaiju <a@b.c>\r\nBcc: x@y.z",
+        "Kaiju <>",
         "a@b.c, d@e.f",
       ]) {
         expect(() => loadConfig({ ...REQUIRED, KOBE_SMTP_FROM: bad }), bad).toThrow(

@@ -7,7 +7,7 @@ import { idSchema, timestampSchema, utf8ByteLength, uuidSchema } from "./common.
  * sandbox agent maps the command onto Pi 1.0.x RPC `{"type":"compact","customInstructions"?}`
  * (verified against the pinned 1.0.0 tarball, see docs/ledger/KOBE-212.md). Pi appends a
  * `compaction` session entry (summary, firstKeptEntryId, tokensBefore, ...) that the server
- * mirrors like any other entry; Kobe never summarizes server-side.
+ * mirrors like any other entry; Kaiju never summarizes server-side.
  *
  * A compaction is a run (kind compaction) created through the usual lease and run-start
  * transaction, so its summary calls are billed and budget-checked like any run, and the one
@@ -45,7 +45,7 @@ export const threadCompactFocusSchema = z
   .refine((s) => /\S/.test(s), { message: "focus is blank" })
   .refine((s) => !FOCUS_REFUSED_CHARS.test(s), { message: "focus has control characters" });
 
-/** Pi's `CompactionResult` in Kobe's casing, shared by the wire reply and the HTTP response. */
+/** Pi's `CompactionResult` in Kaiju's casing, shared by the wire reply and the HTTP response. */
 export const threadCompactResultShape = {
   /**
    * The summary Pi wrote. Absent when it is over {@link THREAD_COMPACT_SUMMARY_MAX_BYTES} (the

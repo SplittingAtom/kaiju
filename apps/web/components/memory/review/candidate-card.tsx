@@ -105,7 +105,7 @@ export function CandidateCard({
           description: (
             <>
               <span className="block">
-                Kobe will use this preference in every workspace you belong to:
+                Kaiju will use this preference in every workspace you belong to:
               </span>
               <span className="mt-2 block border-0 border-l-4 border-solid border-console-border ps-3 [overflow-wrap:anywhere] whitespace-pre-wrap">
                 {visible(draft.statement)}
@@ -124,7 +124,7 @@ export function CandidateCard({
       ...(draft.kind === candidate.kind ? {} : { kind: draft.kind }),
       // Portable always names its scope: the server needs the confirmation with it.
       ...(scope === candidate.scope && scope !== "portable" ? {} : { scope }),
-      // The card said the memory changed since Kobe suggested this: save over what it shows.
+      // The card said the memory changed since Kaiju suggested this: save over what it shows.
       ...(candidate.targetChanged && candidate.target
         ? { targetVersion: candidate.target.version }
         : {}),
@@ -296,5 +296,5 @@ export function CandidateCard({
 function lockedHint(candidate: Candidate): string {
   if (candidate.operation !== "add")
     return "It changes a memory you already have, so it stays there.";
-  return "Kobe noticed this rather than you saying it, so it stays yours.";
+  return "Kaiju noticed this rather than you saying it, so it stays yours.";
 }

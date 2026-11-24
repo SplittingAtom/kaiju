@@ -201,7 +201,7 @@ export function siteRefusal(candidate: {
   readonly allowedScopes: readonly string[];
 }): string | null {
   if (candidate.source === "inferred")
-    return "Kobe noticed this rather than you saying it: only what you said or confirmed goes to the Site.";
+    return "Kaiju noticed this rather than you saying it: only what you said or confirmed goes to the Site.";
   if (candidate.operation !== "add" || !candidate.allowedScopes.includes("team"))
     return "Only a new memory everyone could share can be proposed to the Site.";
   return null;

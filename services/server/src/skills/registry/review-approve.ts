@@ -131,7 +131,7 @@ export async function approve(
   versionId: string,
   userId: string,
   input: DecisionInput,
-  /** The state the caller saw (a Kobe MCP call's approved before-state), checked under the lock. */
+  /** The state the caller saw (a Kaiju MCP call's approved before-state), checked under the lock. */
   expectedState?: string,
 ): Promise<ApproveResult> {
   try {

@@ -56,7 +56,7 @@ function Card({ card }: { readonly card: CatalogCard }) {
       <p className="mt-1 mb-2">{visibleText(card.summary)}</p>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="text-console-muted">
-          {card.publisher === "kobe" ? "By Kobe" : "By its maintainers"}
+          {card.publisher === "kobe" ? "By Kaiju" : "By its maintainers"}
         </span>
         <Badge tone={card.latest.verdict === "pass" ? "done" : "attention"}>
           scan: {card.latest.verdict}

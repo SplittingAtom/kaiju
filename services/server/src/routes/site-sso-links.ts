@@ -20,7 +20,7 @@ const EXPECTATION_REFUSALS: Record<
   ExpectationFailure,
   { status: 404 | 409; code: string; message: string }
 > = {
-  user_not_found: { status: 404, code: "user_not_found", message: "No Kobe user with that id." },
+  user_not_found: { status: 404, code: "user_not_found", message: "No Kaiju user with that id." },
   provider_not_found: {
     status: 404,
     code: "not_found",
@@ -79,7 +79,7 @@ export function siteSsoLinkRoutes(deps: ServerDeps): Hono<{ Variables: AuthVaria
       .from(users)
       .leftJoin(siteRoles, eq(siteRoles.userId, users.id))
       .where(eq(users.id, parsed.data));
-    if (!row) return notFound(c, "user_not_found", "No Kobe user with that id.");
+    if (!row) return notFound(c, "user_not_found", "No Kaiju user with that id.");
     if (row.role !== null && row.id !== c.get("user").id && c.get("siteRole") !== "owner") {
       return c.json(
         { code: "forbidden", message: "Only the Owner changes the sign-in of an Admin." },

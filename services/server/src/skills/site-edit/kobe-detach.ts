@@ -10,16 +10,16 @@ import { isSiteAdmin } from "./site-admin.js";
 import { newestSemver, storedOf, storedVersion, versionRows } from "./catalog-view.js";
 
 /**
- * Detached Kobe skills (KOBE-495, as KOBE-494's customized gallery agents). A Site admin's first
- * edit of a Kobe-shipped catalog skill detaches it in the edit's own transaction, under the skill's
- * row lock (the Kobe seed takes the same lock and then skips it). The console compares the
- * shipped package with the skill's newest version, and Reset to Kobe re-attaches it when the
+ * Detached Kaiju skills (KOBE-495, as KOBE-494's customized gallery agents). A Site admin's first
+ * edit of a Kaiju-shipped catalog skill detaches it in the edit's own transaction, under the skill's
+ * row lock (the Kaiju seed takes the same lock and then skips it). The console compares the
+ * shipped package with the skill's newest version, and Reset to Kaiju re-attaches it when the
  * shipped version is above every version the Site published (otherwise the seed would refuse it
  * as not newer: the skill stays detached and the admin is told why). After a reset the shipped
  * package is seeded at once (the next start would anyway).
  */
 
-/** Marks a Kobe skill detached (no-op for a maintainer skill or one detached already). */
+/** Marks a Kaiju skill detached (no-op for a maintainer skill or one detached already). */
 export async function detachInTx(tx: KobeTx, skillId: string, userId: string): Promise<boolean> {
   const { rows } = await tx.execute<{ name: string }>(sql`
     UPDATE registry_skills s SET detached_at = now(), detached_by = ${userId},
@@ -101,7 +101,7 @@ export type ResetResult =
     };
 
 /**
- * Re-attaches a detached Kobe skill (Reset to Kobe). Refused, and left detached, while the
+ * Re-attaches a detached Kaiju skill (Reset to Kaiju). Refused, and left detached, while the
  * shipped version isn't above the Site's own newest one. The site draft goes with the reset.
  */
 export async function resetToKobe(
@@ -152,7 +152,7 @@ export async function resetToKobe(
     log: deps.log,
     packages: [p],
   }).catch((err: unknown) => {
-    deps.log.error({ err, skillId }, "skills: Kobe skill not re-seeded after Reset to Kobe");
+    deps.log.error({ err, skillId }, "skills: Kaiju skill not re-seeded after Reset to Kaiju");
     return [];
   });
   return { ...result, seed: seeded[0] ?? null };

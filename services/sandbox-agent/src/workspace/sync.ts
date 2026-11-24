@@ -369,7 +369,7 @@ export class WorkspaceSync {
       return await push(this.#s);
     } catch (error) {
       warn(this.#s, "workspace push for a commit failed", error);
-      throw new PushPathError("the working copy could not be pushed to the Kobe server");
+      throw new PushPathError("the working copy could not be pushed to the Kaiju server");
     }
   }
 
@@ -395,7 +395,7 @@ export class WorkspaceSync {
     } catch (error) {
       if (error instanceof PushPathError) throw error;
       warn(this.#s, "push of one file failed", error);
-      throw new PushPathError(`${rel} could not be pushed to the Kobe server`);
+      throw new PushPathError(`${rel} could not be pushed to the Kaiju server`);
     }
   }
 

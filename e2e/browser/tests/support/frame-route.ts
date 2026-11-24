@@ -1,7 +1,7 @@
 import http from "node:http";
 import type { Route } from "@playwright/test";
 
-/** The guard script Kobe's frame route puts before the template (it removes RTCPeerConnection). */
+/** The guard script Kaiju's frame route puts before the template (it removes RTCPeerConnection). */
 export const FRAME_GUARD = /<script>[^]*?RTCPeerConnection[^]*?<\/script>/;
 
 /**

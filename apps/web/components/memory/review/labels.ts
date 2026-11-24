@@ -10,7 +10,7 @@ export const SCOPE_LABELS: Readonly<Record<ReviewScope, string>> = {
 export const SOURCE_LABELS: Readonly<Record<Candidate["source"], string>> = {
   stated: "You said",
   confirmed: "You confirmed",
-  inferred: "Kobe noticed",
+  inferred: "Kaiju noticed",
 };
 
 export const OPERATION_LABELS: Readonly<Record<Candidate["operation"], string>> = {

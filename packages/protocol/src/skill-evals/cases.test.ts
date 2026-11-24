@@ -87,7 +87,7 @@ describe("parsing evals/cases.yaml", () => {
       "cases[1].id: q3 is already the id of cases[0]; each case needs its own id.",
     ]);
     expect(messages("invalid-unknown-expectation.yaml")).toEqual([
-      "cases[0].expect.judge_model: unknown key. Kobe refuses what it does not know rather than skip a check.",
+      "cases[0].expect.judge_model: unknown key. Kaiju refuses what it does not know rather than skip a check.",
     ]);
     expect(messages("invalid-fixture-missing.yaml")).toEqual([
       "cases[0].files[1]: evals/fixtures/missing.csv is not in the skill.",
@@ -102,7 +102,7 @@ describe("parsing evals/cases.yaml", () => {
       `cases: a suite has 1 to ${EVAL_MAX_CASES} cases.`,
     ]);
     expect(messages("invalid-api-version.yaml")).toEqual([
-      "apiVersion: must be kobe.dev/skill-evals/v1 or left out; a newer format needs a newer Kobe.",
+      "apiVersion: must be kobe.dev/skill-evals/v1 or left out; a newer format needs a newer Kaiju.",
     ]);
   });
 

@@ -17,7 +17,7 @@ import { loadSsoSettings } from "../sso/settings.js";
 let h: Harness;
 
 beforeAll(async () => {
-  // Object storage, so the Kobe skills seed (KOBE-317) and the skill jobs run as in a real start.
+  // Object storage, so the Kaiju skills seed (KOBE-317) and the skill jobs run as in a real start.
   h = await openHarness({
     egressHeaderSecrets: ["e".repeat(48)],
     blobs: { objects: new MemoryObjects(), prefix: "kobe/" },

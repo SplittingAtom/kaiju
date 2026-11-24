@@ -88,11 +88,11 @@ export class FileShareBroker {
           size: workspace.size,
         },
       };
-      if (!this.#deps.send(frame)) fail("unavailable", "Kobe server not reachable");
+      if (!this.#deps.send(frame)) fail("unavailable", "Kaiju server not reachable");
     } catch (error) {
       if (error instanceof SharePathError) fail(error.code, error.message);
       else if (error instanceof PushPathError) fail("not_synced", error.message);
-      else fail("not_synced", "the file could not be pushed to the Kobe server");
+      else fail("not_synced", "the file could not be pushed to the Kaiju server");
     }
   }
 

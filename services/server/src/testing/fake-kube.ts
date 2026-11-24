@@ -168,7 +168,7 @@ export function createFakeKube(): FakeKube {
         if (fake.dryRun) return fake.dryRun(object);
         throw new KubeApiError(
           403,
-          `admission webhook denied: Kobe may only manage kobe-team-* namespaces, not ${object.metadata.name}`,
+          `admission webhook denied: Kaiju may only manage kobe-team-* namespaces, not ${object.metadata.name}`,
         );
       }
       if (store.has(key({ ...object, ...object.metadata }))) {

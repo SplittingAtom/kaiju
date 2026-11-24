@@ -18,7 +18,7 @@ const KOBE = {
   scope: "gallery",
   galleryKey: "kobe",
   default: true,
-  name: "Kobe",
+  name: "Kaiju",
   model: null,
 } as const;
 
@@ -48,7 +48,7 @@ describe("an agentless started thread takes an agent (KOBE-458 ac-3)", () => {
     await user.click(within(await agentChoices()).getByRole("radio", { name: /Kobe/ }));
     await waitFor(() => expect(chooses()).toHaveLength(1));
     expect(must(chooses()[0]).body).toEqual({ agent_id: KOBE.id });
-    expect(await screen.findByText("Agent: Kobe")).toBeTruthy();
+    expect(await screen.findByText("Agent: Kaiju")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Chat with:/ })).toBeNull();
     expect(must(fake.threads.get(t)).agent_id).toBe(KOBE.id);
     await composer();
@@ -58,13 +58,13 @@ describe("an agentless started thread takes an agent (KOBE-458 ac-3)", () => {
     const t = fake.addThread("Lakehouse Picker");
     Object.assign(must(fake.threads.get(t)), {
       agent_id: KOBE.id,
-      agent_name: "Kobe",
+      agent_name: "Kaiju",
       agent_status: "active",
       agent_version: 1,
     });
     openApp(fake, t);
     await header();
-    expect(await screen.findByText("Agent: Kobe")).toBeTruthy();
+    expect(await screen.findByText("Agent: Kaiju")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Chat with:/ })).toBeNull();
   });
 });

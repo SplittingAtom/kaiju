@@ -1,6 +1,6 @@
-# Installing Kobe
+# Installing Kaiju
 
-Kobe installs with Helm on k3s (single-node k3s is the minimum). There is no `docker compose`.
+Kaiju installs with Helm on k3s (single-node k3s is the minimum). There is no `docker compose`.
 
 ## Prerequisites
 
@@ -10,12 +10,12 @@ Kobe installs with Helm on k3s (single-node k3s is the minimum). There is no `do
 | An isolation runtime         | gVisor (RuntimeClass handler `runsc`) or Kata (`kata*`) — see [Isolation](#isolation)                                                                        |
 | agent-sandbox controller     | `scripts/install-agent-sandbox.sh`                                                                                                                           |
 | Postgres 17                  | External, or bundled via CloudNativePG (`postgres.mode=cnpg`, operator required)                                                                             |
-| S3-compatible object storage | External only; Kobe does not bundle an S3 server                                                                                                             |
+| S3-compatible object storage | External only; Kaiju does not bundle an S3 server                                                                                                             |
 | Registry access              | Images are private on `ghcr.io/splittingatom`; set `global.imagePullSecrets`                                                                                 |
 
 ## Isolation
 
-Kobe refuses to run agents without a gVisor or Kata RuntimeClass. The chart checks this at
+Kaiju refuses to run agents without a gVisor or Kata RuntimeClass. The chart checks this at
 `helm install`/`helm upgrade` time (the release fails with remediation text) and again with a
 pre-install/pre-upgrade hook Job; the server checks it again itself (see below). The check looks at
 the RuntimeClass **handler** (`runsc` or `kata*`), not its name. There is no option to disable it.
@@ -59,14 +59,14 @@ Each user gets one sandbox per team (spec D11): an agent-sandbox `Sandbox` under
 created by hand. Every team namespace gets:
 
 - a **default-deny NetworkPolicy** (`kobe-sandbox-isolation`): no inbound connections at all;
-  outbound only to the Kobe server's **sandbox port** (8081, a separate listener with no user API),
+  outbound only to the Kaiju server's **sandbox port** (8081, a separate listener with no user API),
   the model-gateway shim (models; `sandbox.modelGatewayAccess`, default on), the MCP proxy and the
-  egress proxy — never Bifrost itself. Sandboxes get no DNS: Kobe's services
+  egress proxy — never Bifrost itself. Sandboxes get no DNS: Kaiju's services
   resolve through `/etc/hosts` (`*.kobe.internal` → the Services' ClusterIPs), so DNS cannot be
   used to leak data past the egress proxy;
 - a **ResourceQuota** (`sandbox.teamQuota`: requests and limits for CPU, memory and ephemeral
   storage, pods, PVCs and requested storage) and a LimitRange with per-container defaults. **Size
-  it for every member who ever used Kobe, not for those online:** a hibernated sandbox keeps its
+  it for every member who ever used Kaiju, not for those online:** a hibernated sandbox keeps its
   workspace volume, so `persistentvolumeclaims` must be at least members + warm pool + members in
   their 30-day offboarding hold, and `requests.storage` that many times `sandbox.workspace.size`.
   The defaults (50 PVCs, 500Gi, 10Gi volumes, warm pool 1) stop a team at about 48 members; the
@@ -88,7 +88,7 @@ one exception: sandbox containers add `SETUID` and `SETGID` (nothing else) and a
 escalation, so the image's `kobe-runas` helper can run each Pi process and its tools under a uid
 of their own, separate from the agent and from other threads (KOBE-71; the capabilities exist
 inside the gVisor/Kata sandbox kernel only). That is why the namespace label says `baseline`; and
-only the Kobe server may add or change NetworkPolicies there. The server's own
+only the Kaiju server may add or change NetworkPolicies there. The server's own
 cluster-wide permissions (namespaces, RoleBindings) are confined to `kobe-team-*` by the same
 mechanism. Sandboxes identify themselves to the server with a projected ServiceAccount token
 (audience `kobe.sandbox-bootstrap`, which the Kubernetes API itself rejects) and receive
@@ -113,7 +113,7 @@ default; it changes nothing on clusters without Rancher.
 
 Private registries: the names in `global.imagePullSecrets` are copied into each team namespace for
 the kubelet (pods there cannot mount them). Alternatively configure registry credentials on the
-nodes (k3s `registries.yaml`). Kobe assumes one site per cluster (`kobe-team-*` names are
+nodes (k3s `registries.yaml`). Kaiju assumes one site per cluster (`kobe-team-*` names are
 cluster-wide).
 
 ### Session-token keys
@@ -283,7 +283,7 @@ database tests only; it has not been exercised on a k3d or real cluster yet (in 
 Longhorn PV attributes and the `selected-node` annotation are unverified).
 
 **Growing workspaces.** `sandbox.workspace.size` (default `10Gi`) applies to volumes created
-after the change; Kobe does not resize existing workspace volumes. To grow them, check that their
+after the change; Kaiju does not resize existing workspace volumes. To grow them, check that their
 StorageClass has `allowVolumeExpansion: true` (the chart's strict-local class has it; k3s'
 `local-path` does not support expansion at all) and that the team's quota
 (`sandbox.teamQuota["requests.storage"]`, default `500Gi`) has room for the larger requests, then
@@ -461,7 +461,7 @@ hour. Audited: `egress.request.created` (with scope), `egress.request.decided`,
 
 ### Same-cluster hosts (Internal)
 
-A name served by this cluster's own ingress (an app published next to Kobe) resolves to the load
+A name served by this cluster's own ingress (an app published next to Kaiju) resolves to the load
 balancer address, which the proxy refuses as internal even when allowlisted. Allow it per domain:
 
 1. A site admin marks the ceiling pattern **Internal (same cluster)** (checkbox in the card when
@@ -498,8 +498,8 @@ re-seals stored values at start-up, after which `secret-previous` can go. They a
 **write-only**: the API and console list header names (to team admins only), never values; the audit log records names
 only (`egress.header.set`, `egress.header.cleared`); disabling the domain deletes them.
 
-Headers can't be added to an opaque HTTPS tunnel, and Kobe does not intercept TLS (there is no
-Kobe CA). So for a domain with injected headers the sandbox uses **plain `http://` URLs**, and the
+Headers can't be added to an opaque HTTPS tunnel, and Kaiju does not intercept TLS (there is no
+Kaiju CA). So for a domain with injected headers the sandbox uses **plain `http://` URLs**, and the
 proxy upgrades them:
 
 1. The tool sends `GET http://pkgs.example.com/simple/` to the proxy (its `HTTP_PROXY`), with the
@@ -552,7 +552,7 @@ what an operator and the Workspace admin must have in place before the first con
 
 | Host                                | Credential the Workspace admin creates                                                                                                                                                                                      | Operator                                                                                                                                                                     |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GitHub (github.com)                 | A GitHub App (recommended) with repository permissions Metadata read, Contents, Pull requests and Issues read and write, and Administration read and write only if agents may create repositories; or a fine-grained token. | Allow `github.com` in the egress ceiling. Nothing else: Kobe uses `api.github.com` and `github.com` only.                                                                    |
+| GitHub (github.com)                 | A GitHub App (recommended) with repository permissions Metadata read, Contents, Pull requests and Issues read and write, and Administration read and write only if agents may create repositories; or a fine-grained token. | Allow `github.com` in the egress ceiling. Nothing else: Kaiju uses `api.github.com` and `github.com` only.                                                                    |
 | GitHub Enterprise Server            | The same App or token on the server.                                                                                                                                                                                        | Allow the server's host in the egress ceiling; a private address also needs the internal marking (below). The base URL must be served on port 443.                           |
 | Gitea (1.26.0 or later)             | A token of a bot account that belongs to only that organization, with scopes `read:user`, `read:organization`, `write:repository`, `write:issue`, and `write:organization` only if agents may create repositories.          | Allow the host in the egress ceiling; a private address also needs the internal marking and its range in the connectors' internal CIDRs (the server calls the API directly). |
 | Forgejo (15.0.0 or later), Codeberg | The same token and scopes.                                                                                                                                                                                                  | The same.                                                                                                                                                                    |
@@ -611,10 +611,10 @@ a pod that passes it, so keep it at least `7Gi` and count it in the node's ephem
 A Site admin can mirror the skill catalog one way to any HTTPS git remote (KOBE-343, spec SK29):
 Site console → Skill Registry → "Mirror the catalog to git", with the remote URL (no credentials
 in it) and a branch (default `main`). Each approved catalog version becomes a commit under
-`skills/<name>/` (the package files and Kobe's `provenance.json`) and an annotated tag
-`<name>/v<semver>`, and `catalog.json` at the root is regenerated. Kobe only appends: commits go
+`skills/<name>/` (the package files and Kaiju's `provenance.json`) and an annotated tag
+`<name>/v<semver>`, and `catalog.json` at the root is regenerated. Kaiju only appends: commits go
 on top of the remote branch, nothing is ever force-pushed, an existing tag is never moved (a tag
-with other content is reported as a conflict), and Kobe never reads the repository back.
+with other content is reported as a conflict), and Kaiju never reads the repository back.
 
 1. Create a token that can push to the repository (GitHub: a fine-grained token with Contents
    read/write on that repository only; Forgejo/Gitea: an access token with repository write) and
@@ -643,16 +643,16 @@ host to the **egress ceiling** too: the server fetches once, through the egress 
 short-lived site token, and never again (not at run time). A branch or tag is never used; a
 commit no branch or tag reaches is refused. What it got is re-hashed and checked like an upload
 (path rules, no symlinks or submodules, no `.git*` names, 5 MiB and 200 files), and the draft
-records its origin (URL, commit, Kobe's SHA-256, importer). The draft is private and goes through
+records its origin (URL, commit, Kaiju's SHA-256, importer). The draft is private and goes through
 evals, a version and review like any other: an import is never a catalog entry. Public hubs are
 places to find skills, not sources.
 
 ## Models
 
 Sandboxes reach models only through **Bifrost** (Apache-2.0, `bifrost.image`, pinned by digest) and
-only via Kobe's **model-gateway shim** (spec D30): no provider key ever enters a sandbox.
+only via Kaiju's **model-gateway shim** (spec D30): no provider key ever enters a sandbox.
 
-- **Configuration lives in Kobe.** Site admins add **providers** (OpenAI, Anthropic, Gemini,
+- **Configuration lives in Kaiju.** Site admins add **providers** (OpenAI, Anthropic, Gemini,
   Ollama, or any OpenAI-compatible endpoint such as vLLM) with their API keys, and publish the
   **model catalog** (aliases such as `fast`, `smart`, `local`); team admins enable a subset and a
   default (site console **Models and providers**, team console **Models**). Keys are stored
@@ -676,11 +676,11 @@ only via Kobe's **model-gateway shim** (spec D30): no provider key ever enters a
   "Ask the provider" has Bifrost call the provider's list-models API with the stored key (audited
   `models.provider.models_refreshed`, 6 per minute per provider). The server itself never calls a
   provider.
-- **Kobe pushes it to Bifrost.** The server reconciles Bifrost through Bifrost's admin API: on every
+- **Kaiju pushes it to Bifrost.** The server reconciles Bifrost through Bifrost's admin API: on every
   change (Postgres `LISTEN/NOTIFY`, within seconds) and every 30 s. One server replica leads (a
   Postgres advisory lock); `GET /v1/site/models` reports `gateway.in_sync` and the last error.
-  Bifrost holds one customer (the site), one team per Kobe team and one virtual key per member
-  of each team, allowed exactly the team's enabled models. Kobe owns this Bifrost: anything else
+  Bifrost holds one customer (the site), one team per Kaiju team and one virtual key per member
+  of each team, allowed exactly the team's enabled models. Kaiju owns this Bifrost: anything else
   configured in it (by hand, through its UI) is removed by the next sync.
 - **Provider endpoints.** OpenAI, Anthropic and Gemini providers always use their vendor's
   endpoint; other providers' keys go only over `https://`; changing a keyed provider's endpoint
@@ -714,12 +714,12 @@ only via Kobe's **model-gateway shim** (spec D30): no provider key ever enters a
   keys cross the pod network unencrypted); NetworkPolicies limit who can connect, not who can
   observe node traffic. Use a CNI with encryption (e.g. WireGuard) if that matters to you.
 - **Secrets:** `bifrost.keysSecret` (or a generated, kept `<release>-model-keys`) holds Bifrost's
-  admin password and encryption key, and Kobe's two sealing secrets (`provider-keys`: server only;
+  admin password and encryption key, and Kaiju's two sealing secrets (`provider-keys`: server only;
   `virtual-keys`: server and shim). Losing `provider-keys` means re-entering provider keys.
   **Rotating** `provider-keys` or `virtual-keys`: copy the old value to `provider-keys-previous` /
   `virtual-keys-previous`, put a new one in place, restart the server and shim; the sync re-seals
   stored values with the new secret within a minute; then remove the `-previous` key.
-- **Bifrost logs no prompts** (`enable_logging: false`). Usage is recorded by Kobe's shim
+- **Bifrost logs no prompts** (`enable_logging: false`). Usage is recorded by Kaiju's shim
   (`run_usage`, KOBE-43): one row per model call with input, output and cache tokens taken from the
   provider's own usage report in the response (the final stream event or the JSON body), the model,
   latency, and the team, user and sandbox of the session token (plus the run, its thread and agent
@@ -770,15 +770,15 @@ only via Kobe's **model-gateway shim** (spec D30): no provider key ever enters a
 
 Memory search by meaning (KOBE-409) stores each memory's vector in Postgres with the
 [pgvector](https://github.com/pgvector/pgvector) extension (PostgreSQL License). It is optional:
-without it Kobe runs as before and memory search uses word matching, and the Site console's
+without it Kaiju runs as before and memory search uses word matching, and the Site console's
 memory page says so.
 
-- **Enable it.** pgvector is not a trusted extension and Kobe's migration role is never a
+- **Enable it.** pgvector is not a trusted extension and Kaiju's migration role is never a
   superuser, so install the pgvector package for your Postgres 17 server (or use a Postgres image
-  that has it), then once, as a superuser, in Kobe's database: `CREATE EXTENSION vector;` (bundled
+  that has it), then once, as a superuser, in Kaiju's database: `CREATE EXTENSION vector;` (bundled
   CloudNativePG does this itself for a new Cluster; see
   [Bundled Postgres](#bundled-postgres-cloudnativepg) for an existing one). The
-  next Kobe upgrade (or migration run) adds the vector columns; nothing else changes. If the
+  next Kaiju upgrade (or migration run) adds the vector columns; nothing else changes. If the
   migration role may create the extension itself, the migration does it.
 - **Check it.** Site console › Settings › Memory shows "Search by meaning" with a count of
   memories that have vectors, or a notice naming what is missing.
@@ -791,7 +791,7 @@ memory page says so.
 
 ### Embeddings (in-cluster CPU model)
 
-Kobe's embedding model (for Semantic Memory, KOBE-409) is reached only through the model gateway,
+Kaiju's embedding model (for Semantic Memory, KOBE-409) is reached only through the model gateway,
 like every other model. By default the chart runs a small one in the cluster
 (`embeddings.local.enabled: true`):
 
@@ -872,7 +872,7 @@ so a replaced or removed key takes effect on the next call. Setting and removing
 (`mcp.connector.site_key_set` / `_removed`), never the value; the start-up sealed-key check covers
 it like members' keys.
 
-The key is bound to the connector URL it was set for: if the URL changes by any path, Kobe stops
+The key is bound to the connector URL it was set for: if the URL changes by any path, Kaiju stops
 using it (members' calls fail, probes go without it) and the registry says to re-enter it. **Rollback
 and rolling upgrades:** a release older than site-wide keys ignores them. After a `helm rollback`,
 members of a site-key connector get "not connected" (the key stays stored, unused, and is used again
@@ -886,7 +886,7 @@ turned off in the thread). A run started by an older server pod during a rolling
 such record: it is checked against its thread's turned-off connectors only. That fallback exists
 for the rollout and is to be removed in the next release.
 
-**Probing and drift.** Kobe pins a connector's tools from its `tools/list`, and re-checks every
+**Probing and drift.** Kaiju pins a connector's tools from its `tools/list`, and re-checks every
 pinned connector each `KOBE_CONNECTOR_REFRESH_SECONDS` (default 3600) for changed tools, which stay
 disabled until a site admin approves them. **Re-probe** on a connector's row in Site console >
 Connectors (site admins only; KOBE-430) runs that check now for one connector and says what it
@@ -904,13 +904,13 @@ it a site-wide key.
 
 ## Single sign-on (Microsoft Entra ID or OIDC)
 
-People can sign in with your organization's identity provider beside Kobe's own passwords and
-passkeys (spec [sso-oidc-scim](specs/sso-oidc-scim.md)). Kobe speaks OpenID Connect (no SAML):
+People can sign in with your organization's identity provider beside Kaiju's own passwords and
+passkeys (spec [sso-oidc-scim](specs/sso-oidc-scim.md)). Kaiju speaks OpenID Connect (no SAML):
 Microsoft Entra ID has its own preset, any other provider with the authorization code flow and
 PKCE S256 works as a generic OIDC provider. Who may sign in, and into which team with which team
 role, comes from **access mappings** of the token's app roles (recommended) or groups; nobody
 without a mapped value gets an account, and mappings never grant a site role. Optionally Entra
-provisions and deactivates accounts over **SCIM**. Kobe stores no access, refresh or ID tokens.
+provisions and deactivates accounts over **SCIM**. Kaiju stores no access, refresh or ID tokens.
 
 Single sign-on is on in the chart (`auth.sso.enabled: true`) but does nothing until a provider is
 added. `auth.sso.enabled: false` is the kill switch: every provider, button, SSO route and SCIM
@@ -928,59 +928,59 @@ URL, as for `kobe restore`): `KOBE_DB_MIGRATE_URL=<migrate URL> kobe sso allow-l
 (`reason: break_glass`) in the audit log. Setting `auth.sso.enabled: false` also brings local
 sign-in back, but switches single sign-on off for everyone.
 
-### Register Kobe in Microsoft Entra ID
+### Register Kaiju in Microsoft Entra ID
 
-You need: Kobe's public URL (`https://<kobe>`), a **slug** for the provider (lowercase letters,
+You need: Kaiju's public URL (`https://<kaiju>`), a **slug** for the provider (lowercase letters,
 digits and hyphens, for example `contoso`; it is part of the redirect URI and can't change), and
 an Entra role that can register applications and grant admin consent.
 
-1. **App registrations → New registration.** Name `Kobe`; supported account types **Accounts in
+1. **App registrations → New registration.** Name `Kaiju`; supported account types **Accounts in
    this organizational directory only (single tenant)**; redirect URI platform **Web**,
-   `https://<kobe>/api/auth/sso/callback/<slug>`. Note the **Application (client) ID** and the
-   **Directory (tenant) ID** from Overview. Kobe pins the tenant: an issuer or tenant of `common`,
+   `https://<kaiju>/api/auth/sso/callback/<slug>`. Note the **Application (client) ID** and the
+   **Directory (tenant) ID** from Overview. Kaiju pins the tenant: an issuer or tenant of `common`,
    `organizations` or `consumers` is refused, and every token's `iss` and `tid` must match.
 2. **Certificates & secrets → New client secret.** Copy the secret's **Value** (not its ID) at
    once. Put a reminder in your calendar before it expires; renewing means pasting the new value
-   into Kobe (Site console) or into the Kubernetes Secret (Helm). Certificate credentials
+   into Kaiju (Site console) or into the Kubernetes Secret (Helm). Certificate credentials
    (`private_key_jwt`) are not supported yet.
 3. **API permissions.** Microsoft Graph delegated `openid`, `profile` and `email` (keep
-   `User.Read`); **Grant admin consent** so people are not asked to consent one by one. Kobe never
+   `User.Read`); **Grant admin consent** so people are not asked to consent one by one. Kaiju never
    calls Microsoft Graph.
 4. **Token configuration → Add optional claim → ID token:** `email`, `upn` and `xms_edov`
    (accept the prompt to turn on the Microsoft Graph email permission). If `xms_edov` is not
    offered in the list, add it in **Manifest** under `optionalClaims.idToken` as
-   `{ "name": "xms_edov", "essential": false }`. Kobe takes the `email` claim only when
+   `{ "name": "xms_edov", "essential": false }`. Kaiju takes the `email` claim only when
    `xms_edov` is true (the address's domain is verified by the tenant); otherwise it uses the
    UPN, which users can't edit. Either way the address counts as verified only in the provider's
    **allowed email domains** (step 9), and only verified addresses match invitations and admin
    "expected links".
 5. **App roles → Create app role** for each team and role you want to grant, allowed member types
    **Users/Groups**. Use one naming scheme across your apps, `<App>.<Role>[.<Team>]`, for example
-   value `Kobe.Member.Research` and `Kobe.TeamAdmin.Research`. The `roles` claim then carries only
+   value `Kaiju.Member.Research` and `Kaiju.TeamAdmin.Research`. The `roles` claim then carries only
    the roles assigned to the person and never hits the groups limit.
-6. **Enterprise applications → Kobe → Properties: Assignment required = Yes.** Then **Users and
+6. **Enterprise applications → Kaiju → Properties: Assignment required = Yes.** Then **Users and
    groups → Add user/group** and assign people or groups to the app roles. Assigning a **group**
    needs Entra ID P1 or P2; on the free tier assign users directly. Unassigned people can't get a
-   token for Kobe at all.
+   token for Kaiju at all.
 7. **Only if you map groups instead of app roles:** **Token configuration → Add groups claim →
    Groups assigned to the application**, emitted as Group ID in the ID token. A token with more
-   than 200 groups carries an "overage" instead of the list; Kobe never calls Graph for it and
+   than 200 groups carries an "overage" instead of the list; Kaiju never calls Graph for it and
    refuses that sign-in (`groups_overage`), leaving the person's team access unchanged. App roles
    avoid this.
-8. **Multi-factor authentication (needs Entra ID P1 for Conditional Access).** Kobe trusts the
+8. **Multi-factor authentication (needs Entra ID P1 for Conditional Access).** Kaiju trusts the
    provider's MFA: with the Site console's **Require two-factor** on, an SSO sign-in counts only
    when the token proves MFA, and Entra proves it with an **authentication context**. Under
    **Protection → Conditional Access → Authentication contexts** create context **`c1`** (for
-   example "Kobe sign-in requires MFA", **Publish to apps** on). Then create one Conditional Access
-   policy: target resources **Authentication context → c1**, the users or groups who use Kobe,
-   grant **Require multifactor authentication**. Kobe asks Entra for `c1` at every sign-in (the
+   example "Kaiju sign-in requires MFA", **Publish to apps** on). Then create one Conditional Access
+   policy: target resources **Authentication context → c1**, the users or groups who use Kaiju,
+   grant **Require multifactor authentication**. Kaiju asks Entra for `c1` at every sign-in (the
    `claims` request parameter) and reads the `acrs` claim. Without Conditional Access (Entra
    free tier) no token proves MFA: leave **Require two-factor** off, or every SSO sign-in is
    refused with "did not include multi-factor authentication" (`mfa_missing`).
-9. **Add the provider to Kobe** (below), then sign in once with a test account that has an app
+9. **Add the provider to Kaiju** (below), then sign in once with a test account that has an app
    role you mapped.
 
-### Add the provider to Kobe
+### Add the provider to Kaiju
 
 **In the Site console** (People → **Single sign-on** → **Add provider**): kind **Microsoft Entra
 ID**, display name (the button says "Sign in with _display name_"), slug, **Directory (tenant)
@@ -1032,7 +1032,7 @@ is proven by an `amr` value in `mfaRule.amr_any` (default `mfa`, `hwk`, `swk`, `
 
 - **Egress from the server.** The server itself calls the provider: the discovery document, the
   signing keys and the token endpoint (the browser does the rest). For Entra that is
-  `login.microsoftonline.com` on 443; local sign-in never contacts it. Those URLs pass Kobe's SSRF
+  `login.microsoftonline.com` on 443; local sign-in never contacts it. Those URLs pass Kaiju's SSRF
   guard: https on an allowed port (`auth.sso.allowedPorts`, default `[443]`), no private,
   loopback, link-local or metadata address and no redirects. With
   `server.networkPolicy.restrictEgress` ([Server and web egress](#server-and-web-egress-optional))
@@ -1045,26 +1045,26 @@ is proven by an `amr` value in `mfaRule.amr_any` (default `mfa`, `hwk`, `swk`, `
   `auth.sso.allowedInternalCidrs` (a private range; loopback, link-local and metadata ranges are
   refused, as for the proxies), and give its CA in `server.extraCaBundle`
   ([Private certificate authorities](#private-certificate-authorities)).
-- **SCIM is inbound:** Entra's provisioning service must reach `https://<kobe>/v1/scim/v2/<slug>`
-  from the internet. For a Kobe that is not reachable from outside, Microsoft's on-premises
-  provisioning agent is your option (outside Kobe).
+- **SCIM is inbound:** Entra's provisioning service must reach `https://<kaiju>/v1/scim/v2/<slug>`
+  from the internet. For a Kaiju that is not reachable from outside, Microsoft's on-premises
+  provisioning agent is your option (outside Kaiju).
 
 ### SCIM provisioning from Entra (optional)
 
 With SCIM, Entra creates accounts before first sign-in, renames them, and deactivates them when
-they are unassigned or blocked; deactivation ends their sessions at once. Kobe never deletes
+they are unassigned or blocked; deactivation ends their sessions at once. Kaiju never deletes
 users and never deactivates the Owner or a site Admin through SCIM.
 
-1. In Kobe: Site console → **Single sign-on** → the provider's **SCIM** → **Create token**. Copy
-   the token (shown once) and the **Tenant URL** (`https://<kobe>/v1/scim/v2/<slug>`). The
+1. In Kaiju: Site console → **Single sign-on** → the provider's **SCIM** → **Create token**. Copy
+   the token (shown once) and the **Tenant URL** (`https://<kaiju>/v1/scim/v2/<slug>`). The
    provider must be turned on.
-2. In Entra: **Enterprise applications → Kobe → Provisioning**, mode **Automatic**; **Admin
+2. In Entra: **Enterprise applications → Kaiju → Provisioning**, mode **Automatic**; **Admin
    credentials**: Tenant URL and Secret Token; **Test Connection**.
 3. **Mappings → Provision Microsoft Entra ID Users → attribute mappings:** set **`externalId` ←
-   `objectId`** (edit the existing `externalId` row or add one). Kobe refuses a user without it
-   (`externalId is required`): the object ID is the same `oid` Kobe keys sign-ins on, so SCIM and
+   `objectId`** (edit the existing `externalId` row or add one). Kaiju refuses a user without it
+   (`externalId is required`): the object ID is the same `oid` Kaiju keys sign-ins on, so SCIM and
    sign-in meet on one account. Keep `userName` ← `userPrincipalName` and `active` ← the default
-   expression. **Turn off "Provision Microsoft Entra ID Groups"**: Kobe has no SCIM Groups
+   expression. **Turn off "Provision Microsoft Entra ID Groups"**: Kaiju has no SCIM Groups
    endpoint yet, so team access comes from the token's app roles at sign-in.
 4. **Settings → Scope: Sync only assigned users and groups**, then **Provisioning Status: On**.
 5. Rotate the token before it leaks or with your schedule: **Rotate** adds a second token (at most
@@ -1073,33 +1073,33 @@ users and never deactivates the Owner or a site Admin through SCIM.
 
 ### Shared tenant
 
-Kobe usually shares an Entra tenant with your other in-house apps. Single sign-on across them
-needs nothing in Kobe (it comes from Entra's own session); these conventions keep the apps
+Kaiju usually shares an Entra tenant with your other in-house apps. Single sign-on across them
+needs nothing in Kaiju (it comes from Entra's own session); these conventions keep the apps
 separate and their users comparable:
 
 - **One app registration per app**, each with its own client ID, secret, redirect URI, app roles,
-  Conditional Access targeting and SCIM job, and **Assignment required** on. Never share Kobe's
+  Conditional Access targeting and SCIM job, and **Assignment required** on. Never share Kaiju's
   registration with another app: each app's tokens carry its own audience (`aud` = its client
-  ID), so a token issued for Kobe is never accepted by another app and the other way round.
+  ID), so a token issued for Kaiju is never accepted by another app and the other way round.
 - **Identity key `oid` + `tid`** in every app, never the email address or UPN (both can change).
-  Kobe keys on (`provider`, `oid`) and pins the provider to one `tid`.
+  Kaiju keys on (`provider`, `oid`) and pins the provider to one `tid`.
 - **Issuer pinned to the tenant**, `https://login.microsoftonline.com/<tenant-id>/v2.0`, with `tid`
-  checked; `common` and `organizations` refused (Kobe refuses them at save).
+  checked; `common` and `organizations` refused (Kaiju refuses them at save).
 - **One Conditional Access MFA policy targeting all the apps** (step 8: add each app, or each
   app's authentication context, to the same policy), so every app's tokens carry the MFA proof
-  Kobe trusts.
+  Kaiju trusts.
 - **App roles assigned to groups**, named `<App>.<Role>[.<Team>]` in every app
-  (`Kobe.Member.Research`, `Catalyst.Reader`), which also avoids the groups overage.
-- **Separate sessions.** Each app's cookies stay on its own host, never the parent domain (Kobe
+  (`Kaiju.Member.Research`, `Catalyst.Reader`), which also avoids the groups overage.
+- **Separate sessions.** Each app's cookies stay on its own host, never the parent domain (Kaiju
   sets no cookie domain). Signing out of one app does not sign out of the others, and
-  signing out of Kobe does not sign out of Entra, unless you configure front-channel logout on
-  purpose (Kobe does not offer it).
-- **A local break-glass admin in each app.** Kobe's is the Owner created in first-run setup: keep
+  signing out of Kaiju does not sign out of Entra, unless you configure front-channel logout on
+  purpose (Kaiju does not offer it).
+- **A local break-glass admin in each app.** Kaiju's is the Owner created in first-run setup: keep
   its password or passkey in your secret store; it signs in even when Entra is down or
   `auth.sso.enabled` is false.
-- **App-to-app calls.** When Kobe calls another app for a person (for example an MCP connector
-  with per-member keys), the target app exposes an API scope on its own registration and Kobe gets
-  a token for that audience for the person (the connector's OAuth flow, or on-behalf-of). Kobe
+- **App-to-app calls.** When Kaiju calls another app for a person (for example an MCP connector
+  with per-member keys), the target app exposes an API scope on its own registration and Kaiju gets
+  a token for that audience for the person (the connector's OAuth flow, or on-behalf-of). Kaiju
   never forwards its own ID or access token to another app.
 
 ### Check the setup
@@ -1141,7 +1141,7 @@ helm install kobe charts/kobe -n kobe \
   --set ingress.tls.clusterIssuer=letsencrypt \
   --set postgres.external.existingSecret=kobe-db \
   --set s3.endpoint=https://s3.example.com --set s3.bucket=kobe --set s3.existingSecret=kobe-s3 \
-  --set smtp.host=smtp.example.com --set smtp.from='Kobe <kobe@example.com>' \
+  --set smtp.host=smtp.example.com --set smtp.from='Kaiju <kobe@example.com>' \
   --set smtp.existingSecret=kobe-smtp
 ```
 
@@ -1149,9 +1149,9 @@ helm install kobe charts/kobe -n kobe \
 `publicUrl`), the server and the web send `Strict-Transport-Security: max-age=31536000`, so
 browsers refuse plain HTTP to that host for a year. A plain-HTTP install sends none. Set
 `ingress.hsts.includeSubDomains=true` only when every subdomain of the public host's domain
-serves HTTPS; leave it off (the default) when Kobe shares a parent domain with other sites. The
+serves HTTPS; leave it off (the default) when Kaiju shares a parent domain with other sites. The
 server also sends `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY` on every response
-except the frames Kobe embeds in its own page.
+except the frames Kaiju embeds in its own page.
 
 ### First run: to the first chat
 
@@ -1166,7 +1166,7 @@ to restore a backup into: see [Backup and restore](#backup-and-restore)):
    ```
 
    (with `auth.existingSecret`, the `setup-token` key of that Secret). Setup runs once; afterwards
-   `/setup` is closed. Kobe accepts 10 setup attempts per client address in 10 minutes. If the
+   `/setup` is closed. Kaiju accepts 10 setup attempts per client address in 10 minutes. If the
    wizard says "Too many setup attempts" although you made few, `auth.trustedProxies` is probably
    wrong, so every visitor counts as one address (or as one shared "unknown" bucket). Fix it, or
    create the Owner straight on the server, which then counts as its own address:
@@ -1194,7 +1194,7 @@ gateway is in sync (site console **Models and providers**); if it waits for a sa
 
 ### Object storage (S3)
 
-Kobe keeps a durable copy of every sandbox's `/workspace` in the bucket (`sandbox.workspaceSync`,
+Kaiju keeps a durable copy of every sandbox's `/workspace` in the bucket (`sandbox.workspaceSync`,
 on by default once `s3.bucket` is set), so a lost or rebuilt volume loses no files. Only the
 server holds the S3 credentials: sandboxes send and fetch files through the server's sandbox port
 and get no network path to the object store. Objects live under
@@ -1210,21 +1210,21 @@ request signatures then travel unencrypted, and the server logs a warning at eve
 larger files stay on the volume only. It can be at most `5Gi`, the largest object S3 accepts in a
 single PutObject or CopyObject request; the chart and the server refuse more.
 
-**Versioning, lifecycle rules and object lock.** Kobe deletes objects with plain `DeleteObject`
+**Versioning, lifecycle rules and object lock.** Kaiju deletes objects with plain `DeleteObject`
 (thread purges, Trash, offboarding, retention periods from its nightly retention pass;
 workspace collection every `sandbox.workspaceSync.collectSeconds`): an object leaves the bucket
-within about a day of the deletion in Kobe, later while the pass is paused (`retention.paused`)
+within about a day of the deletion in Kaiju, later while the pass is paused (`retention.paused`)
 or behind. On a versioned bucket
 that only adds a delete marker: the bytes stay as a noncurrent version until a lifecycle rule
 removes them. Versioning is still recommended (it lets you recover objects deleted or overwritten
 by mistake; see [Backup and restore](#backup-and-restore)), together with these lifecycle rules on
-the bucket (or on Kobe's `s3.prefix`):
+the bucket (or on Kaiju's `s3.prefix`):
 
 | Rule                                                     | Recommended | Why                                                                                                                                                                                                                                                                                                                                                          |
 | -------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `NoncurrentVersionExpiration`                            | 30 days     | the recovery window, and the delay after which data Kobe deletes is erased from storage, counted from the nightly retention pass that deletes the object (within about a day of the deletion; longer while `retention.paused` is set or the pass falls behind); the guide's [Retention and deletion](guide/reference/retention-and-deletion.md) page says so |
+| `NoncurrentVersionExpiration`                            | 30 days     | the recovery window, and the delay after which data Kaiju deletes is erased from storage, counted from the nightly retention pass that deletes the object (within about a day of the deletion; longer while `retention.paused` is set or the pass falls behind); the guide's [Retention and deletion](guide/reference/retention-and-deletion.md) page says so |
 | `Expiration` with `ExpiredObjectDeleteMarker: true`      | on          | removes delete markers left once their noncurrent versions are gone                                                                                                                                                                                                                                                                                          |
-| `AbortIncompleteMultipartUpload` (`DaysAfterInitiation`) | 3 days      | a server stopped mid-upload leaves parts no listing shows and no Kobe sweep can remove                                                                                                                                                                                                                                                                       |
+| `AbortIncompleteMultipartUpload` (`DaysAfterInitiation`) | 3 days      | a server stopped mid-upload leaves parts no listing shows and no Kaiju sweep can remove                                                                                                                                                                                                                                                                       |
 
 You may choose another noncurrent period; it is then the erasure delay your members should be
 told. For example, with the AWS CLI (most S3-compatible stores accept the same document):
@@ -1242,12 +1242,12 @@ aws s3api put-bucket-lifecycle-configuration --bucket kobe --lifecycle-configura
 
 At start the server reads the bucket's versioning and lifecycle configuration and logs a warning
 ("bucket versioning is enabled and no lifecycle rule expires noncurrent versions") when
-versioning is on and no enabled rule expires noncurrent versions of Kobe's objects. Stores that do
+versioning is on and no enabled rule expires noncurrent versions of Kaiju's objects. Stores that do
 not implement those calls, or credentials that may not read them, give no warning.
 
 Object lock, if you use it, must be in **governance mode** with a retention period no longer than
 the noncurrent period above (30 days): locked versions cannot be removed before their lock ends,
-so Kobe's deletes then take effect only after it. **Compliance mode is advised against**: nobody,
+so Kaiju's deletes then take effect only after it. **Compliance mode is advised against**: nobody,
 not even the account owner, can shorten it, so a purge, an offboarding or an erasure request
 cannot reach the bytes until the lock expires.
 
@@ -1261,7 +1261,7 @@ the old prefix, so move them first or keep the old value. `kobe backup` and `kob
 ### Timeouts (Postgres and S3)
 
 A stuck network call must never pin a database transaction, its locks or a pooled connection
-(KOBE-732). Kobe bounds both sides:
+(KOBE-732). Kaiju bounds both sides:
 
 - **App-role sessions.** Every connection the server (its event-stream reader included),
   scheduler, model gateway and egress proxy open as the app role runs `SET statement_timeout = 120000` (2 min) and
@@ -1276,11 +1276,11 @@ A stuck network call must never pin a database transaction, its locks or a poole
   set them, so the defaults apply. The settings are sent with `SET`, not as startup parameters,
   so a session-mode PgBouncer in front works unchanged.
 - **New connections only.** The timeouts take effect on connections opened by this release's
-  pods; the upgrade's rollout replaces every pod, so nothing is left to do for Kobe itself.
+  pods; the upgrade's rollout replaces every pod, so nothing is left to do for Kaiju itself.
 - **External Postgres: role defaults for every other client.** Give the app role the same
-  defaults, so a session opened outside Kobe's services (a `psql` as `kobe_app`, a debugging
+  defaults, so a session opened outside Kaiju's services (a `psql` as `kobe_app`, a debugging
   tool) is bounded too. Run as a superuser (or a role with `CREATEROLE` and `ADMIN` on the app
-  role; the migration Job's owner role has neither, so Kobe cannot set them itself):
+  role; the migration Job's owner role has neither, so Kaiju cannot set them itself):
 
   ```sql
   ALTER ROLE kobe_app IN DATABASE kobe SET statement_timeout = '2min';
@@ -1309,7 +1309,7 @@ A stuck network call must never pin a database transaction, its locks or a poole
 
 ### Postgres connections
 
-Every Kobe pod that uses the database holds up to a fixed number of connections (KOBE-736). Pools
+Every Kaiju pod that uses the database holds up to a fixed number of connections (KOBE-736). Pools
 open lazily, so a quiet install uses far fewer; size Postgres for the full pools, because peaks
 and rollouts fill them.
 
@@ -1400,7 +1400,7 @@ extra network hop. With the flag off, threads in one sandbox share Pi's HOME (KO
 
 ### Email (SMTP)
 
-SMTP is required: Kobe is invite-only and sends invitations and password-reset links by email.
+SMTP is required: Kaiju is invite-only and sends invitations and password-reset links by email.
 `smtp.security` is `starttls` (default, port 587, the upgrade is required), `tls` (implicit TLS,
 port 465) or `none` (unencrypted; only for an in-cluster relay, and refused together with
 credentials). Certificates are always verified. Credentials come only from `smtp.existingSecret`
@@ -1443,8 +1443,8 @@ are for evaluation: one instance, a 10 GiB volume, no backups. For production co
 
 - **Backups.** `postgres.cnpg.backup` is passed verbatim to the Cluster's `spec.backup` (and
   `postgres.cnpg.plugins` to `spec.plugins`, for the Barman Cloud plugin that CloudNativePG 1.26
-  and later recommend instead of `barmanObjectStore`). Point it at a bucket other than Kobe's, add
-  a `ScheduledBackup` resource for base backups, and test a restore. Kobe's own `kobe backup`
+  and later recommend instead of `barmanObjectStore`). Point it at a bucket other than Kaiju's, add
+  a `ScheduledBackup` resource for base backups, and test a restore. Kaiju's own `kobe backup`
   ([backup-restore.md](backup-restore.md)) remains the portable logical backup; CloudNativePG's
   WAL archive adds point-in-time recovery. The instances' egress is not restricted by the chart.
 
@@ -1462,7 +1462,7 @@ are for evaluation: one instance, a 10 GiB volume, no backups. For production co
   ```
 
 - **Instances.** `postgres.cnpg.instances: 3` (or at least 2) for a standby that CloudNativePG
-  promotes when the primary's node fails; with 1, a lost node stops Kobe until the volume is back.
+  promotes when the primary's node fails; with 1, a lost node stops Kaiju until the volume is back.
 - **Storage.** `postgres.cnpg.storage.size` (default `10Gi`) and a StorageClass that can expand
   (`postgres.cnpg.storage.storageClass`). Postgres holds conversations, run events, memory and
   audit, not file contents (those are in S3); size for growth and watch usage. CloudNativePG grows
@@ -1489,7 +1489,7 @@ the web pod) defaults to this release's server Service, `http://<fullname>-serve
 the existing NetworkPolicies already admit); leave it empty for a normal install. Set it only for a
 split install where web and server are not one release, to the server's in-cluster origin
 (`http(s)://host[:port]`, no path). An invalid value fails the web's start; an unreachable server
-is not fatal: the web serves Kobe's default name and look and logs it at most once a minute. Each
+is not fatal: the web serves Kaiju's default name and look and logs it at most once a minute. Each
 web replica caches the branding for 30 s.
 
 **Defaults from the values (optional, for GitOps).** `branding.appName` (1-40 characters, plain
@@ -1501,7 +1501,7 @@ setting is unset**, and records it in the site audit log as the system (`site.br
 An admin's change on the Appearance page always wins: it is never overwritten on a restart or
 upgrade, and changing a value here later does not change a site that already has the setting.
 "Reset to defaults" on the Appearance page returns to the chart's values at once (keys without
-a chart value go back to Kobe's built-in defaults); clear a value here to make Kobe's default the
+a chart value go back to Kaiju's built-in defaults); clear a value here to make Kaiju's default the
 reset target. The audit log then shows the reset's event and the system's seed event for each such
 key, even when its value ends up unchanged. An invalid value stops the server at start with the key
 named. `kobe restore` accepts a fresh target seeded this way and replaces those rows with the
@@ -1514,7 +1514,7 @@ save as **Plain SVG**; from other editors, export a plain SVG without editor met
 ### Replicas, disruption budgets and spread
 
 The server and the model gateway run two replicas by default; `web`, `scheduler`, `mcpProxy` and
-`egressProxy` can be scaled with their `replicas` value (Bifrost stays at one). Every Kobe workload
+`egressProxy` can be scaled with their `replicas` value (Bifrost stays at one). Every Kaiju workload
 with more than one replica gets a PodDisruptionBudget (`minAvailable: 1`, so a node drain keeps one
 replica serving) and a soft `topologySpreadConstraints` on `kubernetes.io/hostname` (`maxSkew: 1`,
 `ScheduleAnyway`: replicas go to different nodes when they can, and single-node clusters still
@@ -1525,7 +1525,7 @@ off per workload with `<component>.podDisruptionBudget.enabled` or
 
 ### Rate limit at the ingress (optional)
 
-Kobe's server limits sign-in, uploads and other costly routes itself. To also cap how many
+Kaiju's server limits sign-in, uploads and other costly routes itself. To also cap how many
 requests one client address may send through the ingress, turn on the Traefik rate limit (off by
 default, so upgrades change nothing). Two things must be true first:
 
@@ -1645,7 +1645,7 @@ signing keys, and manages team namespaces), and by default its egress is not res
 - DNS (kube-dns);
 - Postgres: the bundled CloudNativePG instances, or with external Postgres the peers in
   `server.networkPolicy.databasePeers` on `databasePort` (required with external Postgres);
-- Kobe's own services in the release (Bifrost, model gateway, MCP proxy, egress proxy, ClamAV,
+- Kaiju's own services in the release (Bifrost, model gateway, MCP proxy, egress proxy, ClamAV,
   embeddings);
 - the Kubernetes API on `server.networkPolicy.kubernetesApi.ports` (`[443, 6443]`), at the peers in
   `kubernetesApi.peers` (required). NetworkPolicy sees the API server's own address after the
@@ -1950,13 +1950,13 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   check (a full scan of that small table while the upgrade holds its lock). The previous release
   keeps connecting sandboxes, sending commands and leasing runs, and `helm rollback` is safe for
   members' own work. **This upgrade only (and a rollback from it): start skill evals after every
-  Kobe deployment has rolled** (`kubectl rollout status deploy -l
+  Kaiju deployment has rolled** (`kubectl rollout status deploy -l
 app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egress proxy). Until
   then a previous-release component can break evals, never anything else: its model gateway, MCP
   proxy and egress proxy refuse an eval sandbox's tokens; its server can deliver an eval's stop or
   steer to the member's own sandbox (same member, same team), interrupt an eval's run as lost,
   fail `eval.prepare` / `eval.snapshot`, or, for a few milliseconds, stall its own command
-  delivery on an eval's `run.start`. Kobe does not detect a rollout in progress. Before a
+  delivery on an eval's `run.start`. Kaiju does not detect a rollout in progress. Before a
   `helm rollback`, cancel running evals; any eval sandbox left behind deletes itself at its
   shutdown time (the case's wall clock plus 5 minutes).
   **Eval spend and the team eval cap (KOBE-327 / KOBE-326, migrations `0143` (its eval cap part),
@@ -1966,7 +1966,7 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   (`eval_judge`) are refused, which fails the judged cases. Nothing else changes for members' own
   runs; `helm rollback` keeps the new columns, which the previous release ignores.
 - **MCP Apps templates and visibility (KOBE-433 to KOBE-435, migrations `0152_connector_ui_resources`
-  to `0156_connector_pin_version`).** Kobe pins the `ui://` templates connector tools name and a
+  to `0156_connector_pin_version`).** Kaiju pins the `ui://` templates connector tools name and a
   tool's `_meta.ui.visibility`; a tool visible only to apps is never offered to or callable by
   agents. The migrations only add a site-wide table and columns. **During the rollout**, any mix
   of old and new pods is safe for app-only tools: a new server refuses them itself; a new MCP
@@ -1998,7 +1998,7 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   resolved to on upgrade day, so nothing changes on upgrade; the Job log says how many
   (`kobe: … team agent versions frozen at … local skill versions`). A skill whose only versions
   were pending review on upgrade day is not frozen: once approved, it reaches the agent at its
-  next publish. Catalog skills (Kobe's included) still follow the team's install; personal and
+  next publish. Catalog skills (Kaiju's included) still follow the team's install; personal and
   gallery agents freeze nothing. A frozen version that is later blocklisted, suspended by a rescan
   or no longer approved is left out of runs with a notice until the agent is published again.
   The backfill holds `team_agent_versions`, `team_skills`, `team_skill_reviews` and
@@ -2006,7 +2006,7 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   versions naming 8 skills each over 40,000 review rows, measured on a dev server). Server pods of
   the previous release can't publish team agents (they answer 500) from the end of the Job until
   Helm replaces them; run starts and reads keep working.
-  **Rolling back across this release and Kobe skills (KOBE-317, migrations 0137–0140) is
+  **Rolling back across this release and Kaiju skills (KOBE-317, migrations 0137–0140) is
   unsupported:** after a `helm rollback` the previous release can't publish team agents and ignores
   the freeze. Take a `kobe backup` first. To go back, reinstall the previous release and restore
   that backup (changes made after the upgrade are lost).
@@ -2080,16 +2080,16 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   the server archives the five earlier gallery agents (Assistant, Code Helper, Data Analyst,
   Document Drafter, Researcher), audited as `agent.archived` by the system. Nothing is deleted:
   their threads stay readable and team forks keep working, but no new thread can start on them,
-  and a restart does not bring them back. They are archived only once Kobe is seeded and
+  and a restart does not bring them back. They are archived only once Kaiju is seeded and
   published; if that fails, the five stay until a later start succeeds. After upgrading:
-  - **Schedules** on the five stop: each occurrence is skipped (`agent_unavailable`). Kobe is not
+  - **Schedules** on the five stop: each occurrence is skipped (`agent_unavailable`). Kaiju is not
     put in their place automatically, because it can use more tools and connectors than the agent
-    the schedule was made with. Their owners re-create them on Kobe (or another agent) themselves.
-  - **Team suspensions** of the five do not carry over to Kobe, which is a new agent. A team admin
-    who suspended one of them should review Kobe in the team's agent inventory and suspend it
+    the schedule was made with. Their owners re-create them on Kaiju (or another agent) themselves.
+  - **Team suspensions** of the five do not carry over to Kaiju, which is a new agent. A team admin
+    who suspended one of them should review Kaiju in the team's agent inventory and suspend it
     there if the team should not use it.
-  - **Rolling back** to an older release restores the five and archives Kobe; the older release
-    cannot read Kobe's versions or any agent using `connectors: all`.
+  - **Rolling back** to an older release restores the five and archives Kaiju; the older release
+    cannot read Kaiju's versions or any agent using `connectors: all`.
 - **One approval floor (migration `0024_approval_floor_unify`).** The minimum approval mode is
   site-wide only (spec D6), stored as `site_settings['policy.approval_floor']`. The older key
   `policy.approval_mode_floor` is folded into it (the stricter value wins), and team floors
@@ -2107,7 +2107,7 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   (image `kobe-model-gateway`), and `sandbox.modelGatewayAccess` defaults to `true`. Bifrost moves
   to v2.2.5 (pinned by digest), gets a 1 Gi PVC by default (`bifrost.persistence.enabled`), a
   `Recreate` strategy, a config file and its admin password; only the shim and the server may reach
-  it. Existing Bifrost state is replaced by Kobe's on the first sync. Sandboxes pick up the shim's
+  it. Existing Bifrost state is replaced by Kaiju's on the first sync. Sandboxes pick up the shim's
   address when their pods are next created (hibernate/wake or restart).
 
 - **Retention indexes (KOBE-18, migration `*_retention_rls`).** Two indexes are added with a
@@ -2312,7 +2312,7 @@ To recover a site from a backup (full steps in
 
 1. Recreate every Secret of the [Secrets table](backup-restore.md#secrets) from your secret store
    under new names.
-2. Install the Kobe version the backup was taken with, pointing each one's values key
+2. Install the Kaiju version the backup was taken with, pointing each one's values key
    (`auth.existingSecret`, `envelope.keySecret`, `bifrost.keysSecret`, ...) at it, with the same public URL and the same bucket (or a copy). **Skip
    first-run setup** ([First run](#first-run-to-the-first-chat)): the restore refuses a site with
    users. The server's start seeds the gallery agents; the restore replaces those.

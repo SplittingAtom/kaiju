@@ -3,12 +3,12 @@ import { gatewayProviderName, type ModelProviderKind } from "@kobe/db";
 import type { GatewayLimits, KeySpec, ProviderSpec } from "./bifrost-admin.js";
 
 /**
- * What Bifrost should hold, derived from Kobe's rows (KOBE-40, spec D30). Kobe is the source of
+ * What Bifrost should hold, derived from Kaiju's rows (KOBE-40, spec D30). Kaiju is the source of
  * truth and owns the Bifrost instance: anything Bifrost has that is not desired is removed.
  *
- * - One Bifrost provider per Kobe provider, with one key whose name carries a fingerprint of the
+ * - One Bifrost provider per Kaiju provider, with one key whose name carries a fingerprint of the
  *   key material (so a changed key or Ollama URL is pushed; Bifrost redacts key values on read).
- * - Hierarchy (D30): customer = the site, Bifrost team = Kobe team, virtual key = a member in a
+ * - Hierarchy (D30): customer = the site, Bifrost team = Kaiju team, virtual key = a member in a
  *   team, allowed exactly the team's enabled catalog models (deny-by-default otherwise).
  */
 export const SITE_CUSTOMER = "kobe-site";
@@ -51,7 +51,7 @@ export const vkRateLimit = (requestsPerMinute: number): GatewayLimits => ({
 /**
  * Budgets and rate limits per hierarchy level; the sync passes them to Bifrost when it creates or
  * updates the entity. KOBE-42 pushes only the members' request rates (`TeamInput`): dollar
- * budgets are Kobe's (Bifrost prices calls with its own price list, not the catalog's).
+ * budgets are Kaiju's (Bifrost prices calls with its own price list, not the catalog's).
  */
 export interface GovernanceLimitsSource {
   customer?(): GatewayLimits | undefined;

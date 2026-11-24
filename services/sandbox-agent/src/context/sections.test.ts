@@ -15,7 +15,7 @@ const RENDERED = [
   "You are an expert coding assistant operating inside pi.",
   "<tools>\n- read: Read files\n</tools>",
   "<rules>\n- Be concise\n</rules>",
-  "<addendum>\nYou are Kobe's agent. Follow the team's rules.\n</addendum>",
+  "<addendum>\nYou are Kaiju's agent. Follow the team's rules.\n</addendum>",
   "<skills>\n<available_skills>pdf</available_skills>\n</skills>",
   "<cwd>\n/workspace\n</cwd>",
 ].join("\n\n");
@@ -75,7 +75,7 @@ describe("system prompt sections (KOBE-470)", () => {
     expect(sections.at(-2)?.text).toBe(memory);
   });
 
-  describe("What Kobe knows (KOBE-383)", () => {
+  describe("What Kaiju knows (KOBE-383)", () => {
     const base = {
       version: 1,
       kind: "fact",
@@ -146,9 +146,9 @@ describe("system prompt sections (KOBE-470)", () => {
     it("finds the parts by their headers when the run's parts changed since", () => {
       const sections = splitForcedPrompt(forced, { memory: "other", project: "", viewing: "" });
       expect(kinds(sections).slice(-4)).toEqual([
-        "memory:What Kobe knows",
+        "memory:What Kaiju knows",
         "memory:Saved memory",
-        "memory:What Kobe knows for this message",
+        "memory:What Kaiju knows for this message",
         "viewing_file:Viewed file",
       ]);
       expect(sections.at(-4)?.text).toBe(parts.known);
@@ -164,7 +164,7 @@ describe("system prompt sections (KOBE-470)", () => {
       ) as string;
     const viewings = <T extends { kind: string }>(sections: T[]) =>
       sections.filter((s) => s.kind === "viewing_file");
-    // A file that quotes the section's own header, as a doc about Kobe might.
+    // A file that quotes the section's own header, as a doc about Kaiju might.
     const quoting = viewingOf("a.md", `# Notes\n\n${VIEWING_HEADER}\nquoted\n`);
 
     it("splits a file that quotes the viewed-file header into one section", () => {
@@ -201,7 +201,7 @@ describe("context sections (KOBE-470)", () => {
       {
         role: "system",
         content: "",
-        sections: { preamble: "Pi", addendum: "<addendum>\nBe Kobe\n</addendum>" },
+        sections: { preamble: "Pi", addendum: "<addendum>\nBe Kaiju\n</addendum>" },
         toolsAdded: [{ name: "bash", description: "Run", parameters: { type: "object" } }],
       },
       {
@@ -247,7 +247,7 @@ describe("context sections (KOBE-470)", () => {
   });
 
   it("labels a picks note before a user message as memory, whether converted or not (KOBE-658)", () => {
-    const note = "## What Kobe knows for this message\n<<<BEGIN UNTRUSTED MEMORY n>>>\n- fact: x";
+    const note = "## What Kaiju knows for this message\n<<<BEGIN UNTRUSTED MEMORY n>>>\n- fact: x";
     const sections = sectionsOf([
       { role: "user", content: [{ type: "text", text: note }] },
       { role: "custom", customType: "kobe-memory-picks", content: note },
@@ -255,20 +255,20 @@ describe("context sections (KOBE-470)", () => {
       { role: "user", content: "hi" },
     ]);
     expect(kinds(sections)).toEqual([
-      "memory:What Kobe knows for this message",
-      "memory:What Kobe knows for this message",
+      "memory:What Kaiju knows for this message",
+      "memory:What Kaiju knows for this message",
       "viewing_file:Viewed file",
       "user_message:User",
     ]);
   });
 
   it("splits a forced prompt with held picks after the project instructions (KOBE-658)", () => {
-    const held = "## What Kobe knows for this conversation\nHELD";
+    const held = "## What Kaiju knows for this conversation\nHELD";
     const parts = { memory: "", project: "", viewing: "", known: "", picks: "", held };
     const sections = splitForcedPrompt(`${RENDERED}\n\n${held}`, parts);
-    expect(kinds(sections).at(-1)).toBe("memory:What Kobe knows for this conversation");
+    expect(kinds(sections).at(-1)).toBe("memory:What Kaiju knows for this conversation");
     const byHeader = splitForcedPrompt(`${RENDERED}\n\n${held}`, undefined);
-    expect(kinds(byHeader).at(-1)).toBe("memory:What Kobe knows for this conversation");
+    expect(kinds(byHeader).at(-1)).toBe("memory:What Kaiju knows for this conversation");
   });
 
   it("puts a raw Context's prompt and tools first, and converts session summaries", () => {

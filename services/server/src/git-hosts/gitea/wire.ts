@@ -10,7 +10,7 @@ import {
 
 /**
  * Gitea/Forgejo `/api/v1` answers, validated (never trusted) and mapped to the shared shapes
- * (KOBE-759). Only the fields Kobe reads are checked; anything else the host adds is ignored.
+ * (KOBE-759). Only the fields Kaiju reads are checked; anything else the host adds is ignored.
  */
 
 const id = z.union([z.number().int(), z.string().max(64)]).transform(String);

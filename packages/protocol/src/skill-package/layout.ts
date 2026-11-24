@@ -6,7 +6,7 @@
  *   scripts/ references/ assets/ (and any other path)                          runtime
  *   evals/              eval suite: cases.yaml, fixtures/ (KOBE-324)           package only
  *   kobe.skill.yaml     author-edited registry metadata (manifest.ts)          package only
- *   provenance.json     Kobe-generated at promotion (provenance.ts)            neither hash
+ *   provenance.json     Kaiju-generated at promotion (provenance.ts)            neither hash
  *
  * Three file sets, all addressed by path → bytes:
  *  - the **runtime payload**: every file except `evals/**`, `kobe.skill.yaml` and
@@ -15,7 +15,7 @@
  *    materialization): the `content_hash` columns.
  *  - the **hashed package**: every file except `provenance.json`. Its SHA-256 is the **package
  *    hash** (scorecard freshness, Registry versions, the package zip in the object store).
- *  - `provenance.json` describes both hashes, so neither covers it; Kobe writes it next to the
+ *  - `provenance.json` describes both hashes, so neither covers it; Kaiju writes it next to the
  *    package when it exports or mirrors one.
  *
  * Only the root names are reserved: `scripts/evals/x` is payload, `evals/x` is not.
@@ -32,7 +32,7 @@ export const PAYLOAD_DIRS = ["scripts/", "references/", "assets/"] as const;
 export const SKILL_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?$/;
 /** MAJOR.MINOR.PATCH, each at most nine digits, no leading zeros, no pre-release or build. */
 export const SEMVER_PATTERN = /^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$/;
-/** A Kobe id (users, teams, skills): a lowercase UUID. */
+/** A Kaiju id (users, teams, skills): a lowercase UUID. */
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** Lowercase hex SHA-256: runtime and package hashes. */
 export const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
@@ -121,9 +121,9 @@ export interface PackageProblem {
 
 export interface CheckPackageOptions {
   /**
-   * Accept a root `provenance.json`: only for a package Kobe assembled itself (export, mirror).
+   * Accept a root `provenance.json`: only for a package Kaiju assembled itself (export, mirror).
    * Authored content (uploads, drafts, imports, built-ins) never carries one: an incoming one is
-   * refused, and Kobe writes its own.
+   * refused, and Kaiju writes its own.
    */
   readonly kobeProvenance?: boolean;
 }

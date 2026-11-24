@@ -26,7 +26,7 @@ import { isTempOf, writeFileAtomic } from "../atomic-file.js";
  *   the egress proxy through `http_proxy` (set per command from the rotating egress token by the
  *   BASH_ENV script, KOBE-39); the proxy adds the Workspace's credential upstream over verified
  *   HTTPS. No `http.extraHeader`, no proxy URL (it holds the token) and no secret in the file;
- * - the member as author and "<name> via Kobe" as committer (G13), and `user.useConfigOnly` so git
+ * - the member as author and "<name> via Kaiju" as committer (G13), and `user.useConfigOnly` so git
  *   never invents an address from the host name when there is no identity.
  *
  * `safe.directory` for `/workspace` is the image's system config (images/sandbox/Dockerfile).

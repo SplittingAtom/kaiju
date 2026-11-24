@@ -39,7 +39,7 @@ const HEADING = "open-invitations";
 
 /**
  * Team invitations (KOBE-13; `/v1/team/invites`). The answer is the same whether or not the
- * address has a Kobe account, so the page never says which. The reference page for the console
+ * address has a Kaiju account, so the page never says which. The reference page for the console
  * primitives (KOBE-294): KOBE-295 and KOBE-296 move the other pages the same way.
  */
 export function TeamInvitesPage() {
@@ -72,7 +72,7 @@ export function TeamInvitesPage() {
     const done = await mutation.run(
       () => inviteToTeam(teamId, address, role),
       () =>
-        `Invited ${address} as ${roleLabel(role)}. They join when they accept while signed in to Kobe.`,
+        `Invited ${address} as ${roleLabel(role)}. They join when they accept while signed in to Kaiju.`,
     );
     if (done) {
       setEmail("");
@@ -104,7 +104,7 @@ export function TeamInvitesPage() {
     <>
       <PageHeader
         title="Invitations"
-        description="Invitations last 14 days. Someone without a Kobe account also needs a site invitation from a site admin; they see yours after they sign up."
+        description="Invitations last 14 days. Someone without a Kaiju account also needs a site invitation from a site admin; they see yours after they sign up."
       />
       <form onSubmit={onInvite} aria-label="Invite to the team">
         <FormRow>

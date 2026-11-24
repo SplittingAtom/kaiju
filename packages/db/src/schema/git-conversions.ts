@@ -44,7 +44,7 @@ export const GIT_CONVERSION_ERROR_DETAIL_MAX = 1100;
  * restarted server resumes at `step` (`lease_until` lapsed). The host's repository id is
  * recorded the moment the host answers the create (`host_repo_id`, with the `git_repositories`
  * row it links), so a retry adopts only the repository this attempt created. `plan` freezes the
- * commits to write (Kobe commit ids, authors, times, messages), so every attempt builds the same
+ * commits to write (Kaiju commit ids, authors, times, messages), so every attempt builds the same
  * git objects and the same hashes.
  *
  * SQL-only keys (custom migration): (team_id, connection_id) -> git_connections and

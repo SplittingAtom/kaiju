@@ -5,14 +5,14 @@ import { GIT_CONNECTION_PROVIDERS } from "./git-connections.js";
 /**
  * The Repo mirror (KOBE-766, spec workspace-git G17, G20): the answers and bodies of
  * `/v1/projects/{id}/repo*`, shared by the server and the Files panel (KOBE-768). After Convert
- * to repo the host's default branch is the record; Kobe keeps a mirror of it (files and the
- * newest commits), refreshed when Kobe pushes, when the Repo is opened, on a timer and on
+ * to repo the host's default branch is the record; Kaiju keeps a mirror of it (files and the
+ * newest commits), refreshed when Kaiju pushes, when the Repo is opened, on a timer and on
  * Refresh. When the repository is deleted or archived on the host, or its connection was removed,
  * the Repo is read-only from its last mirror and a Workspace admin may relink or detach it. No
  * shape here carries a credential.
  */
 
-/** The repository on the host as Kobe last saw it (repeats `@kobe/db`'s host states). */
+/** The repository on the host as Kaiju last saw it (repeats `@kobe/db`'s host states). */
 export const GIT_REPO_HOST_STATES = ["active", "archived", "deleted", "unreachable"] as const;
 export type GitRepoHostState = (typeof GIT_REPO_HOST_STATES)[number];
 
@@ -33,12 +33,12 @@ export const GIT_MIRROR_FAILURES = [
   "host_unreachable",
   /** The default branch is not on the host. */
   "branch_missing",
-  /** More files than a Kobe project holds. */
+  /** More files than a Kaiju project holds. */
   "too_many_files",
-  /** A file larger than a Kobe project file may be. */
+  /** A file larger than a Kaiju project file may be. */
   "file_too_large",
   "repository_too_large",
-  /** A path Kobe's projects cannot hold. */
+  /** A path Kaiju's projects cannot hold. */
   "unsupported_path",
   "fetch_failed",
   "server_capacity",
@@ -124,7 +124,7 @@ export type GitRepoRelinkBody = z.infer<typeof gitRepoRelinkBodySchema>;
 /** `POST /v1/projects/{id}/repo/detach`: the project is an ordinary project again. */
 export const gitRepoDetachedSchema = z.strictObject({
   project_id: uuidSchema,
-  /** The Kobe commit of the mirrored files that starts its own history again. */
+  /** The Kaiju commit of the mirrored files that starts its own history again. */
   commit_id: uuidSchema,
   seq: z.number().int().positive(),
 });

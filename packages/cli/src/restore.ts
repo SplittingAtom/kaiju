@@ -79,7 +79,7 @@ export interface RestoreReport {
 
 function describeJournal(migrations: readonly { hash: string }[]): string {
   return migrations.length === 0
-    ? "no migrations (Kobe is not installed)"
+    ? "no migrations (Kaiju is not installed)"
     : `${migrations.length} migrations, latest ${migrations.at(-1)?.hash.slice(0, 12) ?? ""}`;
 }
 
@@ -100,7 +100,7 @@ function checkTarget(
 ): void {
   if (journalText(journal) !== journalText(manifest.migrations)) {
     throw new Error(
-      `The target database's schema does not match the backup: backup has ${describeJournal(manifest.migrations)}, target has ${describeJournal(journal)}. Install the Kobe version the backup was taken with (same migrations), then restore`,
+      `The target database's schema does not match the backup: backup has ${describeJournal(manifest.migrations)}, target has ${describeJournal(journal)}. Install the Kaiju version the backup was taken with (same migrations), then restore`,
     );
   }
   const unknownExclusions = manifest.excludedTables.filter((t) => !isExcluded(t.name));

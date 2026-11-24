@@ -2,7 +2,7 @@ import { expect, test } from "./support/chat.js";
 import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 
 /**
- * KOBE-616: the Kobe guide. The bar's Docs icon opens /docs as a panel over the workspace, the way
+ * KOBE-616: the Kaiju guide. The bar's Docs icon opens /docs as a panel over the workspace, the way
  * the Site console opens (KOBE-452); the nav opens a page and a relative link in a page leads to
  * another, both inside the panel; Escape closes it and focus is back on the icon. The agent-facing
  * text (/llms.txt, one linked .md page, /llms-full.txt) is readable from a fresh context with no

@@ -175,7 +175,7 @@ export const projectSchema = z.strictObject({
   /** KOBE-768 (G19): a Repo is listed with projects, with the git icon. Absent on older answers. */
   kind: z.enum(PROJECT_KINDS).optional(),
   /**
-   * KOBE-768: a conversion to a Repo that is running or failed (the project takes no Kobe writes
+   * KOBE-768: a conversion to a Repo that is running or failed (the project takes no Kaiju writes
    * meanwhile; retry or abandon it), else null. Absent on older answers.
    */
   repo_conversion: z.enum(PROJECT_REPO_CONVERSION_STATES).nullable().optional(),

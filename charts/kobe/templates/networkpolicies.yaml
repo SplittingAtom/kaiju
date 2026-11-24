@@ -76,7 +76,7 @@ spec:
 # scheduler: only the server's sandbox port 8081. The server's internal port 8082 admits only the
 # MCP proxy's and the egress proxy's pods; everything else outside team namespaces gets the app ports (8080, 8081). The team namespace's own egress policy says the
 # same; this is the receiving side, so it holds even where a CNI applies egress selectors loosely.
-# Everything that is not a team namespace (ingress controller, other Kobe pods, operators) is
+# Everything that is not a team namespace (ingress controller, other Kaiju pods, operators) is
 # unaffected; traffic from the node itself (kubelet probes) is not subject to NetworkPolicy here.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

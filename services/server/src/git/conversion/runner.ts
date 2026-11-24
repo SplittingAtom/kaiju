@@ -66,7 +66,7 @@ import {
  *
  * No transaction is open during a host call. Any failure leaves the project an ordinary project,
  * the attempt `failed` with a code (and the file or commit to blame), audited and emailed to the
- * requester; a person retries (resumes at the step) or abandons it. Kobe never deletes a
+ * requester; a person retries (resumes at the step) or abandons it. Kaiju never deletes a
  * repository on the host: an abandoned attempt's repository stays, listed in the Git section.
  */
 export interface ConversionDeps {
@@ -319,7 +319,7 @@ async function createStep(ctx: Context, row: ConversionRow): Promise<ConversionR
     repo = await lookup(ctx, name);
     if (!repo) throw new ConversionStepError("repository_gone", name);
     checkVisible(ctx, row, repo);
-    // Review M2: another Workspace's Repo is invisible under RLS; a repository with any Kobe
+    // Review M2: another Workspace's Repo is invisible under RLS; a repository with any Kaiju
     // conversion mark may be one, so it is refused.
     if ((repo.description ?? "").includes(conversionMarker(""))) {
       throw new ConversionStepError("repository_in_use", name);
@@ -327,7 +327,7 @@ async function createStep(ctx: Context, row: ConversionRow): Promise<ConversionR
     if (repo.archived || !(await isEmpty(ctx, repo))) {
       throw new ConversionStepError("repository_not_empty", name);
     }
-    // Review L6: a chosen repository's default branch must be the one Kobe pushes.
+    // Review L6: a chosen repository's default branch must be the one Kaiju pushes.
     if (repo.defaultBranch !== null && repo.defaultBranch !== ctx.plan.branch) {
       throw new ConversionStepError("default_branch_mismatch", repo.defaultBranch);
     }
@@ -349,7 +349,7 @@ async function createStep(ctx: Context, row: ConversionRow): Promise<ConversionR
         repo = await ctx.adapter.createRepository({
           name,
           visibility: row.visibility,
-          description: `Converted from a Kobe project. ${conversionMarker(row.id)}`,
+          description: `Converted from a Kaiju project. ${conversionMarker(row.id)}`,
         });
       } catch (err) {
         if (!(err instanceof GitHostError) || err.code !== "conflict") throw err;
@@ -507,7 +507,7 @@ interface LocalHistory {
 
 /**
  * Builds the whole history locally before anything is created or pushed (review M1): a file the
- * host refuses, or one Kobe's storage cannot give back, stops the attempt while the host has
+ * host refuses, or one Kaiju's storage cannot give back, stops the attempt while the host has
  * nothing. Needs room on disk for the project's content (review M3).
  */
 async function buildLocal(ctx: Context, row: ConversionRow): Promise<LocalHistory> {
@@ -531,7 +531,7 @@ const rethrow = (err: unknown): never => {
 
 /**
  * Step 3: the host's branch is our head and its default branch ours, then the project becomes a
- * Repo in one transaction (under the project row lock, the same lock every Kobe write takes).
+ * Repo in one transaction (under the project row lock, the same lock every Kaiju write takes).
  */
 async function finishStep(
   ctx: Context,

@@ -30,7 +30,7 @@ export const workspaceConflictFrameSchema = frame("workspace.conflict", {
 
 /**
  * Server -> sandbox: conflicts recorded for a thread whose run is active on this connection. The
- * agent adds a fenced Kobe notice before that run's next model call (Pi custom message: it reaches
+ * agent adds a fenced Kaiju notice before that run's next model call (Pi custom message: it reaches
  * the model in user role, never as the member's text, and is not stored in the session).
  */
 export const workspaceConflictNoteFrameSchema = frame("workspace.conflict_note", {

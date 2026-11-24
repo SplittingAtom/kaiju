@@ -1,4 +1,4 @@
-Kobe {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
+Kaiju {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
 
 Isolation: sandboxes run under RuntimeClass "{{ .Values.isolation.runtimeClassName }}" (gVisor/Kata
 required; the install fails without one).

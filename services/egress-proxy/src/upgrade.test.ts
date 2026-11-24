@@ -364,7 +364,7 @@ describe("upgrade (plain HTTP → verified HTTPS with the team's headers)", () =
   it("keeps plain HTTP refused for enabled domains without injected headers", async () => {
     const res = await viaProxy("http://plain.example.com/");
     expect(res.status).toBe(403);
-    expect(res.message).toBe("Kobe egress blocked: plain HTTP is not allowed");
+    expect(res.message).toBe("Kaiju egress blocked: plain HTTP is not allowed");
     expect(connectCalls).toEqual([]);
     expect(audit).toMatchObject([{ outcome: "blocked", reason: "plain_http" }]);
   });
@@ -448,7 +448,7 @@ describe("upgrade (plain HTTP → verified HTTPS with the team's headers)", () =
     const [data] = (await once(socket, "data")) as [Buffer];
     socket.destroy();
     expect(data.toString().split("\r\n")[0]).toBe(
-      "HTTP/1.1 403 Kobe egress blocked: use http://pkgs.example.com (team credentials are injected)",
+      "HTTP/1.1 403 Kaiju egress blocked: use http://pkgs.example.com (team credentials are injected)",
     );
     expect(connectCalls).toEqual([]);
     expect(audit).toMatchObject([{ outcome: "blocked", reason: "headers_required" }]);

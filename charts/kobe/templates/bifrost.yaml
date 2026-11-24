@@ -2,7 +2,7 @@
 {{- $sel := dict "root" . "component" "bifrost" -}}
 {{- $b := include "kobe.bifrostValues" . | fromJson -}}
 # Bifrost model gateway (spec D4, D30): provider keys, catalog models, the customer/team/virtual-key
-# hierarchy. Kobe is the source of truth: the server pushes everything (KOBE-40), so Bifrost's own
+# hierarchy. Kaiju is the source of truth: the server pushes everything (KOBE-40), so Bifrost's own
 # store is a cache that persistence only keeps across restarts (virtual keys, budget counters).
 # Sandboxes never reach it directly: only the model-gateway shim and the server may (its
 # NetworkPolicy in networkpolicies.yaml).
@@ -82,7 +82,7 @@ spec:
             httpGet: { path: /health, port: http }
             periodSeconds: 5
             timeoutSeconds: 5
-          # As for Kobe's services (_helpers.tpl): liveness starts once Bifrost has started.
+          # As for Kaiju's services (_helpers.tpl): liveness starts once Bifrost has started.
           startupProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 2

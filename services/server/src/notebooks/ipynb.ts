@@ -49,7 +49,7 @@ export function cellSource(
   return source === undefined ? { ok: false, problem: "not_a_notebook" } : { ok: true, source };
 }
 
-/** nbformat stores multi-line text as lists of lines; Kobe writes it that way too. */
+/** nbformat stores multi-line text as lists of lines; Kaiju writes it that way too. */
 function lines(text: string): string[] {
   const parts = text.split(/(?<=\n)/u);
   return parts.length === 1 && parts[0] === "" ? [] : parts;

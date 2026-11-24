@@ -45,11 +45,11 @@ export function scopeLocked(c: StoredCandidate): boolean {
   return c.source === "inferred" || c.target_id !== null;
 }
 
-/** "You said" / "You confirmed" / "Kobe noticed" (the card's source label). */
+/** "You said" / "You confirmed" / "Kaiju noticed" (the card's source label). */
 export const SOURCE_LABELS = {
   stated: "You said",
   confirmed: "You confirmed",
-  inferred: "Kobe noticed",
+  inferred: "Kaiju noticed",
 } as const;
 
 /** What a save of this candidate does to memory. */

@@ -43,7 +43,7 @@ import { decideCandidate, lockCandidate, type CandidateRow } from "./stored.js";
  *    line, same `MEMORY.md` version, same project and person), writes it as the person (Notes
  *    history shows it), and marks the candidate saved with audit.
  *
- * Interactive only: the routes refuse agent (Kobe admin tool) calls, and runs (auto, scheduled)
+ * Interactive only: the routes refuse agent (Kaiju admin tool) calls, and runs (auto, scheduled)
  * have no path here; a run's own project writes stay `remember` with its approval (agent.ts).
  */
 

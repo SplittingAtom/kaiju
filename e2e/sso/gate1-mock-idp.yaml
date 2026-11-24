@@ -32,7 +32,7 @@ spec:
       securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000 }
       containers:
         - name: mock
-          image: __SERVER_IMAGE__ # the installed Kobe server image: its own jose, no new image
+          image: __SERVER_IMAGE__ # the installed Kaiju server image: its own jose, no new image
           imagePullPolicy: IfNotPresent
           command: [node, /mock/mock-entra.mjs]
           env:
@@ -72,7 +72,7 @@ metadata:
 spec:
   selector: { app: mock-idp }
   ports:
-    - { name: https, port: 443, targetPort: 8443 } # the Kobe server: discovery, keys, token
+    - { name: https, port: 443, targetPort: 8443 } # the Kaiju server: discovery, keys, token
     - { name: http, port: 80, targetPort: 8080 } # the ingress: the authorize step only
 ---
 apiVersion: networking.k8s.io/v1
@@ -92,7 +92,7 @@ spec:
             pathType: Exact
             backend: { service: { name: mock-idp, port: { name: http } } }
 ---
-# Only the Kobe server may call the https port (token endpoint, keys) and only the ingress
+# Only the Kaiju server may call the https port (token endpoint, keys) and only the ingress
 # controller the http port; nothing else in the cluster reaches the mock.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

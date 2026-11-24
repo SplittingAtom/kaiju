@@ -1,4 +1,4 @@
-# Builds, tests and scans the Kobe Orbit eval image (KOBE-92). Path-filtered so unrelated PRs skip
+# Builds, tests and scans the Kaiju Orbit eval image (KOBE-92). Path-filtered so unrelated PRs skip
 # it; also nightly (new CVEs) and on demand. Mirrors sandbox-image.yml.
 name: orbit-eval-image
 

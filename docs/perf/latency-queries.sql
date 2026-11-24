@@ -1,7 +1,7 @@
--- Kobe latency baseline queries (KOBE-525) for a Langfuse 4 trace backend, whose OTLP endpoint
--- stores Kobe's spans in ClickHouse table `events_core` (Langfuse 4 has no traces API).
+-- Kaiju latency baseline queries (KOBE-525) for a Langfuse 4 trace backend, whose OTLP endpoint
+-- stores Kaiju's spans in ClickHouse table `events_core` (Langfuse 4 has no traces API).
 --
--- Every latency Kobe records is a span whose duration is the latency, so the queries below need
+-- Every latency Kaiju records is a span whose duration is the latency, so the queries below need
 -- only span names and times. Attributes are used for grouping only where the name is fixed
 -- (model gateway, egress proxy, wake reason).
 --
@@ -161,7 +161,7 @@ SELECT r.route,
  ORDER BY r.route, c.child
 FORMAT PrettyCompact;
 
--- 7b. Per write route: request, object store and Postgres time per request, and the Kobe-side
+-- 7b. Per write route: request, object store and Postgres time per request, and the Kaiju-side
 --     share (the request minus its object-store calls, over the request). Lock waits are inside
 --     `manifest_tx`, so they are not added again.
 WITH routes AS (

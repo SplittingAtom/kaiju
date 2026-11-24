@@ -1,4 +1,4 @@
-# Kobe Orbit eval image (KOBE-92, spec 52a): runs a scenario pack against an exported Orbit agent
+# Kaiju Orbit eval image (KOBE-92, spec 52a): runs a scenario pack against an exported Orbit agent
 # with Inspect AI and writes a JSON result (attack success rate + per-scenario results).
 # Build from the repository root: docker build -f images/orbit-eval/Dockerfile .
 # Every input is pinned (base digest, hashed pip lock shared with ci/orbit, hashed Orbit wheel).
@@ -53,7 +53,7 @@ RUN apt-get update \
 # The package managers are removed (nothing installs at runtime). /var/lib/dpkg/status stays on
 # purpose: Trivy reads it to scan the Debian packages, and deleting it would blind the CVE gate.
 
-# Kobe's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
+# Kaiju's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
 COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kobe/
 USER 1000:1000
 WORKDIR /tmp

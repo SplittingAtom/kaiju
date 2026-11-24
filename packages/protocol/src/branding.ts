@@ -88,7 +88,7 @@ export const DEFAULT_THEME: ThemeSettings = Object.freeze({ preset: "default" })
 /** The app name's bounds in characters (code points), after trimming (§4.1). */
 export const APP_NAME_MIN_LENGTH = 1;
 export const APP_NAME_MAX_LENGTH = 40;
-export const DEFAULT_APP_NAME = "Kobe";
+export const DEFAULT_APP_NAME = "Kaiju";
 
 const codePoints = (s: string): number => [...s].length;
 

@@ -63,7 +63,7 @@ describe("workspaceFrameDocument", () => {
 
 describe("mayLoadFrame", () => {
   const h = (o: Record<string, string>) => new Headers(o);
-  it("admits an iframe load from Kobe's own page", () => {
+  it("admits an iframe load from Kaiju's own page", () => {
     expect(
       mayLoadFrame(h({ "sec-fetch-site": "same-origin", "sec-fetch-dest": "iframe" }), PUBLIC),
     ).toBe(true);

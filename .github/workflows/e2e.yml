@@ -375,14 +375,14 @@ jobs:
             # halves on their own clusters (docs/gates/gate-7.md, "k3d checks").
             gate7-a) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE7_STORIES="U39 U40 U41 U42 U43 U44 U45 U46" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-a.log" ;;
             gate7-b) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE7_STORIES="U47 U48 U49 U50 U51 U52 U53 U54" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-b.log" ;;
-            # The Kobe Explorer Gate (KOBE-441, MCP Apps): an app in the conversation, then from the
+            # The Kaiju Explorer Gate (KOBE-441, MCP Apps): an app in the conversation, then from the
             # rail, against the fake MCP server's ui:// test app, in Chromium plus API checks
             # (docs/gates/gate-apps.md). The gate install's Catalyst run is the coordinator's.
             gate-apps) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-apps.sh 2>&1 | tee "${logs}/gate-apps.log" ;;
             # The SSO gate (KOBE-633, spec sso-oidc-scim SSO-9): a mock Entra ID (e2e/sso/mock-entra.mjs on
             # the server image) answers as login.microsoftonline.com through a CoreDNS rewrite, trusted
             # through server.extraCaBundle; sign-in, JIT by mapping, refusals, MFA (acrs) and SCIM
-            # deactivation. No internet and no test switch in Kobe.
+            # deactivation. No internet and no test switch in Kaiju.
             gate-sso) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-sso.sh 2>&1 | tee "${logs}/gate-sso.log" ;;
             *) echo "unknown shard ${SHARD}" >&2; exit 2 ;;
           esac

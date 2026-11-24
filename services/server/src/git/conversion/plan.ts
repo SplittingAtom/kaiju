@@ -12,19 +12,19 @@ import {
 
 /**
  * The commit plan of a conversion (KOBE-765, G16): which git commits to write, frozen when the job
- * starts so every attempt builds the same objects and the same hashes. Each entry names the Kobe
+ * starts so every attempt builds the same objects and the same hashes. Each entry names the Kaiju
  * commit whose tree it carries (null: an empty tree) and its author, committer, time and message.
  *
- * With history (GQ12, the default) every remaining Kobe commit becomes one git commit, oldest
+ * With history (GQ12, the default) every remaining Kaiju commit becomes one git commit, oldest
  * first, with the member who made it as author (an agent's commit names the member whose
- * conversation it was, as Kobe records it), "<name> via Kobe" as committer (G13), the commit's
+ * conversation it was, as Kaiju records it), "<name> via Kaiju" as committer (G13), the commit's
  * own time for both, and its message. Without history, one commit carries the current files,
  * authored by the member who converts at the time they asked.
  *
- * Emails follow the Workspace's commit email setting (GQ10, KOBE-764: the member's Kobe email, or
+ * Emails follow the Workspace's commit email setting (GQ10, KOBE-764: the member's Kaiju email, or
  * the no-reply form). A member who left (no longer in the Workspace, or deactivated) keeps their
  * name with the no-reply form of the address whatever the setting, never their mailbox (review
- * L1: the owner's privacy default); a member Kobe no longer knows becomes "Former member".
+ * L1: the owner's privacy default); a member Kaiju no longer knows becomes "Former member".
  */
 export interface PlanIdentity {
   readonly name: string;
@@ -32,9 +32,9 @@ export interface PlanIdentity {
 }
 
 export interface PlanCommit {
-  /** The Kobe commit whose tree this carries; null for an empty tree (a project without commits). */
+  /** The Kaiju commit whose tree this carries; null for an empty tree (a project without commits). */
   readonly kobeCommitId: string | null;
-  /** Its number in Kobe; null for the single commit without history. */
+  /** Its number in Kaiju; null for the single commit without history. */
   readonly seq: number | null;
   readonly message: string;
   /** Seconds since the epoch (UTC), author and committer alike. */
@@ -104,7 +104,7 @@ export function conversionIdentity(
   return { author: ctx.author, committer: ctx.committer };
 }
 
-/** A Kobe message as a git message: trimmed, one trailing newline. */
+/** A Kaiju message as a git message: trimmed, one trailing newline. */
 export function gitMessage(text: string): string {
   const trimmed = text.replace(/\r\n?/g, "\n").trim();
   return `${trimmed === "" ? "Update" : trimmed}\n`;
@@ -184,11 +184,11 @@ export async function buildConversionPlan(
           SELECT seq FROM project_commits WHERE team_id = ${teamId} AND id = ${head}`)
       ).rows[0]?.seq
     : undefined;
-  const title = `${row.name.trim() || "Project"}: files from Kobe`;
+  const title = `${row.name.trim() || "Project"}: files from Kaiju`;
   const body =
     seq === undefined
       ? "The project had no files yet when it was converted to a Repo."
-      : `The project's files at Kobe commit #${Number(seq)}, when it was converted to a Repo.`;
+      : `The project's files at Kaiju commit #${Number(seq)}, when it was converted to a Repo.`;
   return {
     v: 1,
     branch: input.branch,

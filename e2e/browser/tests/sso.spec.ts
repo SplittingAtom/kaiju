@@ -35,7 +35,7 @@ import {
  *    ends that browser's session at once and the next SSO sign-in says deactivated.
  *
  * Leaves the provider as it found it (turned off again when this run turned it on), deletes the
- * mapping and revokes the SCIM token. People it made stay as deactivated accounts (Kobe never
+ * mapping and revokes the SCIM token. People it made stay as deactivated accounts (Kaiju never
  * deletes users). No model tokens. Run: `npx playwright test sso`.
  */
 const USER2 = process.env["KOBE_USER2"];
