@@ -42,6 +42,15 @@ COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kaiju/
 # The shipped fonts' licenses (SIL OFL 1.1, KOBE-555); the browser gets the fonts from .next/static.
 COPY apps/web/app/fonts/outfit/OFL.txt /usr/share/doc/kaiju/fonts/outfit/OFL.txt
 COPY apps/web/app/fonts/jetbrains-mono/OFL.txt /usr/share/doc/kaiju/fonts/jetbrains-mono/OFL.txt
+# KOBE-837: the build the running app reports (the guide shows it beside its title): the commit
+# (hex), its date (ISO 8601, e.g. `git log -1 --format=%cI`) and an optional release version, e.g.
+#   --build-arg KAIJU_BUILD_SHA=$(git rev-parse HEAD) --build-arg KAIJU_BUILD_DATE=$(git log -1 --format=%cI)
+# Read at runtime from ENV, never inlined into the bundle; empty or malformed = "Development build".
+# Declared last so a new commit only rebuilds this layer.
+ARG KAIJU_BUILD_SHA=""
+ARG KAIJU_BUILD_DATE=""
+ARG KAIJU_BUILD_VERSION=""
+ENV KAIJU_BUILD_SHA=${KAIJU_BUILD_SHA} KAIJU_BUILD_DATE=${KAIJU_BUILD_DATE} KAIJU_BUILD_VERSION=${KAIJU_BUILD_VERSION}
 # Files stay root-owned (read-only to the app); numeric non-root user so runAsNonRoot can verify it.
 USER 1000:1000
 EXPOSE 8080
