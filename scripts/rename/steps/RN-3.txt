@@ -21,6 +21,7 @@ packages/cli/package.json /"kobe": "/
 ** /\bkobe(?=[A-Z])\w*/
 ** /\b\w*[a-z\d]KOBE\w*|\b\w*_KOBE\w*/
 ** /(?<=-D)KOBE_\w+/
+** /\bKOBE(?=\.[A-Za-z]\w*(?!\.yaml))|\bKOBE-(?=[A-Z]{2})[A-Z-]+/
 
 == RN-3: DOM data attributes, CSS custom properties and classes
 ** /\bdata-kobe-[\w-]+/
@@ -30,7 +31,10 @@ packages/cli/package.json /"kobe": "/
 == RN-3: File and directory names, and the imports and references that name them
 path ** /kobe/i
 ** /(?:\.{1,2}\/|\/)(?:[\w.-]+\/)*[\w.-]*kobe[\w.-]*/i
-** /\b[\w-]*kobe[\w-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
+** /\b[\w-]*kobe[\w.*-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
+** /\b[\w-]*kobe[\w-]*\/[\w./*-]+/
+** /\bkobe_rules\b/
+** /\bkobe-mcp(?=: )/
 
-== RN-3: Pi extensions and the in-sandbox executables built from this repository
-** /\bkobe-(?:policy|tools|models|exec|admin-mcp|admin-guard|guide|seed)\b/
+== RN-3: Server modules named after the product (admin MCP, its guard, the seed)
+** /\bkobe-(?:admin-mcp|admin-guard|seed)\b/

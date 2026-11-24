@@ -7,9 +7,11 @@
 //
 //   node scripts/rename/guard.mjs             check; exit 1 on an unowned occurrence or stale entry
 //   node scripts/rename/guard.mjs --report    also print totals per step and per group
+//   node scripts/rename/guard.mjs --final     also fail while any group is not permanent (the
+//                                             definition of done, spec §8.2: no step, no question)
 //   node scripts/rename/guard.mjs --tokens    print unowned occurrences grouped by area and word
 import { fileURLToPath } from "node:url";
-import { ALLOWLIST, PERMANENT, STEPS, audit, loadAllowlist, tokenAt } from "./lib.mjs";
+import { ALLOWLIST, PERMANENT, PROVISIONAL, STEPS, audit, loadAllowlist, tokenAt } from "./lib.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -60,7 +62,7 @@ function main(args) {
         `${label.padEnd(12)} ${String(v?.count ?? 0).padStart(7)} occurrences in ${String(v?.files.size ?? 0).padStart(5)} files`,
       );
     line("all", t.get("all"));
-    for (const step of [PERMANENT, ...STEPS, "unowned"]) line(step, t.get(step));
+    for (const step of [PERMANENT, PROVISIONAL, ...STEPS, "unowned"]) line(step, t.get(step));
     console.log("");
     for (const g of list.groups) {
       const v = t.get(g);
@@ -77,10 +79,15 @@ function main(args) {
     console.error(`${ALLOWLIST}:${e.line}: stale entry (owns nothing; delete it): ${e.text}`);
   }
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
-  if (unowned.length > 0 || stale.length > 0) {
+  const open = args.includes("--final") ? list.groups.filter((g) => g.step !== PERMANENT) : [];
+  for (const g of open) {
+    console.error(`${ALLOWLIST}:${g.line}: not done: [${g.step}] ${g.reason}`);
+  }
+  if (unowned.length > 0 || stale.length > 0 || open.length > 0) {
     console.error(
       `error: ${unowned.length} occurrence(s) of the old name not covered by ${ALLOWLIST}` +
-        `${unowned.length > 200 ? " (first 200 shown)" : ""}, ${stale.length} stale entr(ies). ` +
+        `${unowned.length > 200 ? " (first 200 shown)" : ""}, ${stale.length} stale entr(ies)` +
+        `${open.length > 0 ? `, ${open.length} group(s) not done (--final)` : ""}. ` +
         "Use the new name, or add an entry with its reason and step (scripts/rename/README.md).",
     );
     return 1;

@@ -3,19 +3,23 @@
 // contents and paths, decides which entry owns each occurrence, and swaps the old name for the new
 // one inside the spans a step's patterns match. No dependencies: runs with plain `node`.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 
 export const ALLOWLIST = "scripts/rename/allowlist.txt";
 
-/** The allowlist, with its permanent groups first (they protect what no step may change). */
+/**
+ * The allowlist, with its kept groups (permanent, then provisional) first: they protect what no
+ * step may change, in contents and in paths alike.
+ */
 export function loadAllowlist(root) {
   const list = parseList(readFileSync(`${root}/${ALLOWLIST}`, "utf8"), ALLOWLIST);
-  const firstStep = list.groups.findIndex((g) => g.step !== PERMANENT);
-  const late = list.groups.findIndex(
-    (g, i) => firstStep >= 0 && i > firstStep && g.step === PERMANENT,
-  );
-  if (late >= 0)
-    throw new Error(`${ALLOWLIST}:${list.groups[late].line}: permanent groups come first`);
+  const rank = (g) => (g.step === PERMANENT ? 0 : g.step === PROVISIONAL ? 1 : 2);
+  const late = list.groups.findIndex((g, i) => i > 0 && rank(g) < rank(list.groups[i - 1]));
+  if (late >= 0) {
+    throw new Error(
+      `${ALLOWLIST}:${list.groups[late].line}: permanent groups come first, then provisional, then steps`,
+    );
+  }
   return list;
 }
 
@@ -23,6 +27,9 @@ export function loadAllowlist(root) {
 export const OLD = /kobe/gi;
 export const STEPS = ["RN-2", "RN-3", "RN-4", "RN-5", "RN-6", "RN-7", "RN-8", "RN-9"];
 export const PERMANENT = "permanent";
+/** Held like permanent until the owner answers the group's question; not done at the end. */
+export const PROVISIONAL = "provisional";
+export const isKept = (step) => step === PERMANENT || step === PROVISIONAL;
 
 /** Kobe -> Kaiju, kobe -> kaiju, KOBE -> KAIJU (spec RN6: "Kaiju" in text, `kaiju` in code). */
 export function swapCase(word) {
@@ -62,7 +69,7 @@ export function globToRegExp(glob) {
 /**
  * Parses an allowlist or step file. Format, one item per line:
  *   `# comment` and blank lines are ignored;
- *   `== <step>: <reason>` starts a group (<step> is `permanent` or RN-2..RN-9);
+ *   `== <step>: <reason>` starts a group (<step> is `permanent`, `provisional` or RN-2..RN-9);
  *   `[path] <glob>... /<regex>/[i]` is an entry of the current group: globs (a leading `!`
  *   excludes) select files, the regex is matched line by line against the file's contents (or
  *   against the whole path with the `path` keyword).
@@ -74,7 +81,7 @@ export function parseList(text, source = "list") {
     const line = raw.trim();
     const where = `${source}:${index + 1}`;
     if (line === "" || line.startsWith("#")) return;
-    const header = /^==\s*(permanent|RN-[2-9])\s*:\s*(\S.*)$/.exec(line);
+    const header = /^==\s*(permanent|provisional|RN-[2-9])\s*:\s*(\S.*)$/.exec(line);
     if (header) {
       groups.push({ step: header[1], reason: header[2], line: index + 1, entries: [] });
       return;
@@ -118,7 +125,10 @@ export function selects(entry, path) {
   return entry.include.some((re) => re.test(path)) && !entry.exclude.some((re) => re.test(path));
 }
 
-/** Tracked files (`git ls-files`), with contents; binary files are read as latin1, never skipped. */
+/**
+ * Tracked files (`git ls-files`), with contents; binary files are read as latin1 and symlinks as
+ * their target text, never skipped. A step never rewrites either (planStep refuses).
+ */
 export function trackedFiles(root) {
   const out = execFileSync("git", ["ls-files", "-z"], {
     cwd: root,
@@ -135,10 +145,29 @@ export function trackedFiles(root) {
 }
 
 export function readText(file) {
+  let stat;
+  try {
+    stat = lstatSync(file);
+  } catch (error) {
+    throw new Error(`${file}: tracked but missing from the working tree (${error.code})`, {
+      cause: error,
+    });
+  }
+  if (stat.isSymbolicLink()) return { binary: false, symlink: true, text: readlinkSync(file) };
+  if (!stat.isFile()) return { binary: true, special: true, text: "" };
   const bytes = readFileSync(file);
   const binary = bytes.subarray(0, 8000).includes(0);
-  return { binary, text: bytes.toString(binary ? "latin1" : "utf8") };
+  const text = bytes.toString(binary ? "latin1" : "utf8");
+  // Text that does not survive a UTF-8 round trip (invalid bytes) is treated like binary.
+  const lossy = !binary && !Buffer.from(text, "utf8").equals(bytes);
+  return { binary: binary || lossy, text };
 }
+
+/**
+ * Entries that can own an occurrence in a path: path entries, and every kept (permanent or
+ * provisional) content entry, so a name kept in contents is kept in file names too.
+ */
+const pathCapable = (e) => e.kind === "path" || isKept(e.step);
 
 /** Start offsets of the old name in `text`. */
 export function occurrences(text) {
@@ -206,7 +235,7 @@ export function audit(root, list, files = trackedFiles(root)) {
   const found = [];
   const owned = new Set();
   for (const file of files) {
-    const pathEntries = list.entries.filter((e) => e.kind === "path" && selects(e, file.path));
+    const pathEntries = list.entries.filter((e) => pathCapable(e) && selects(e, file.path));
     attribute([{ text: file.path, number: 0 }], pathEntries, (o) => {
       found.push({ path: file.path, kind: "path", line: 0, at: o.start, unit: o.unit.text, ...o });
       if (o.owner) owned.add(o.owner.id);
@@ -256,7 +285,7 @@ export function swapUnit(
   const none = { text, changed: 0, starts: [], left: [] };
   if (starts.length === 0) return none;
   const matched = stepEntries.flatMap((e) => spans(e, text));
-  const kept = allowEntries.filter((e) => e.step === PERMANENT).flatMap((e) => spans(e, text));
+  const kept = allowEntries.filter((e) => isKept(e.step)).flatMap((e) => spans(e, text));
   const mine = starts.filter((s) => owners.get(s)?.step === step);
   const reasons = new Set(stepEntries.map((e) => e.group.reason));
   const change = mine.filter(
@@ -296,8 +325,10 @@ export function planStep(
   const left = [];
   const pick = (list, kind, path) =>
     list.entries.filter((e) => e.kind === kind && selects(e, path));
+  const refused = [];
+  const lines = [];
   for (const file of files) {
-    const pathAllow = pick(allowlist, "path", file.path);
+    const pathAllow = allowlist.entries.filter((e) => pathCapable(e) && selects(e, file.path));
     const moved = swapUnit(
       file.path,
       step,
@@ -307,11 +338,11 @@ export function planStep(
     );
     for (const s of moved.left) left.push({ path: file.path, line: 0, text: file.path, start: s });
     let content = { changed: 0, lines: [] };
-    const { text } = file.read();
+    const { text, binary, symlink, special } = file.read();
     if (/kobe/i.test(text)) {
       const stepEntries = pick(stepList, "content", file.path);
       const allowEntries = pick(allowlist, "content", file.path);
-      const lines = linesOf(text).map((u) => ({
+      const fileLines = linesOf(text).map((u) => ({
         u,
         r: !/kobe/i.test(u.text)
           ? { text: u.text, changed: 0, starts: [], left: [] }
@@ -323,16 +354,24 @@ export function planStep(
               owned(`${file.path}\0${u.number}`, u.text, allowEntries),
             ),
       }));
-      for (const { u, r } of lines) {
+      for (const { u, r } of fileLines) {
         for (const s of r.left)
           left.push({ path: file.path, line: u.number, text: u.text, start: s });
+        if (/kobe/i.test(u.text)) {
+          const owners = owned(`${file.path}\0${u.number}`, u.text, allowEntries);
+          lines.push({ path: file.path, line: u.number, text: u.text, owners, changed: r.starts });
+        }
       }
-      const changed = lines.reduce((n, l) => n + l.r.changed, 0);
-      if (changed > 0) {
+      const changed = fileLines.reduce((n, l) => n + l.r.changed, 0);
+      if (changed > 0 && (binary || symlink || special)) {
+        refused.push(
+          `${file.path}: ${symlink ? "symlink" : "binary or not UTF-8"}, never rewritten`,
+        );
+      } else if (changed > 0) {
         content = {
           changed,
-          text: lines.map((l) => l.r.text).join("\n"),
-          lines: lines.filter((l) => l.r.changed > 0).map((l) => l.u.number),
+          text: fileLines.map((l) => l.r.text).join("\n"),
+          lines: fileLines.filter((l) => l.r.changed > 0).map((l) => l.u.number),
         };
       }
     }
@@ -347,5 +386,56 @@ export function planStep(
       });
     }
   }
-  return { plan, left };
+  return { plan, left, refused, conflicts: referenceConflicts(plan, step, lines) };
+}
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Path renames whose references would break: a renamed file or directory name is mentioned in a
+ * line where this step leaves the old name in place, owned by another step (or by a group of this
+ * step the step file leaves out). Kept owners (history, permanent) are not conflicts. A step's PR
+ * must build on its own, so the planner refuses these; move the path into the step that owns its
+ * references, or its references into this step.
+ */
+export function referenceConflicts(plan, step, lines) {
+  const names = new Map();
+  for (const p of plan.filter((x) => x.to)) {
+    const from = p.path.split("/");
+    const to = p.to.split("/");
+    from.forEach((seg, i) => {
+      if (seg === to[i]) return;
+      const stem = i === from.length - 1 ? seg.replace(/\.[^.]*$/, "") : seg;
+      if (!/kobe/i.test(stem)) return;
+      // A bare `kobe` is searched with its parent (`charts/kobe`, `agents/kobe`), else too common.
+      const name = /^kobe$/i.test(stem) && i > 0 ? `${from[i - 1]}/${stem}` : stem;
+      if (!names.has(name)) names.set(name, p.path);
+    });
+  }
+  if (names.size === 0) return [];
+  const alternatives = [...names.keys()]
+    .sort((a, b) => b.length - a.length)
+    .map((n) => `(?<![\\w.-])${escapeRe(n)}(?![\\w-])`);
+  const re = new RegExp(alternatives.join("|"), "g");
+  const conflicts = [];
+  for (const l of lines) {
+    re.lastIndex = 0;
+    for (let m = re.exec(l.text); m; m = re.exec(l.text)) {
+      for (let s = m.index; s < m.index + m[0].length; s += 1) {
+        if (!/^kobe/i.test(l.text.slice(s, s + 4))) continue;
+        const owner = l.owners.get(s);
+        if (!owner || isKept(owner.step) || l.changed.includes(s)) continue;
+        // Regenerated files and Markdown prose do not break the step's build: reported, not blocking.
+        const blocking = !owner.group.reason.startsWith("Generated:") && !l.path.endsWith(".md");
+        conflicts.push({
+          blocking,
+          name: m[0],
+          renamed: names.get(m[0]) ?? m[0],
+          at: `${l.path}:${l.line}`,
+          owner: `${owner.step}: ${owner.group.reason}`,
+        });
+      }
+    }
+  }
+  return conflicts;
 }

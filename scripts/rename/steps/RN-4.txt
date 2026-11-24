@@ -1,7 +1,9 @@
 # RN-4 (KOBE-748): environment variables KAIJU_* (spec §3 changes 5, §4 step 4). The script
 # renames the names; by hand: one shared readEnv helper that falls back to KOBE_* for one release
 # and logs one warning naming the variables to rename, in each service's config.ts; chart
-# templates and values; operator docs. RN-10 removes the fallback.
+# templates and values; operator docs. RN-10 removes the fallback. Dev tooling too: `pnpm verify`
+# skips the DB suite when KAIJU_TEST_DATABASE_URL is unset, so make it fail loudly when only the
+# old KOBE_TEST_DATABASE_URL is set (else the DB suite is skipped silently).
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry

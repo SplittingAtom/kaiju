@@ -11,4 +11,4 @@
 
 == RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
 ** /\bKobe\b/
-** /\bKOBE\b/
+** /\bKOBE\b(?![-.])|\bKOBE(?=\. )/
