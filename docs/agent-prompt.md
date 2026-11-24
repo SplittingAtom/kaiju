@@ -9,16 +9,16 @@ itself are in [parallel-work.md](parallel-work.md).
 scripts/hadron.sh ignite                 # compact briefing (add --full for project notes)
 scripts/hadron.sh next                   # or pick from "Ready now"
 scripts/hadron.sh start <N>              # backlog -> ready if needed, claim
-git worktree add ../Kobe-wt<N> -b kobe-<N>-<slug> origin/main
-cp CLAUDE.local.md ../Kobe-wt<N>/
-scripts/hadron.sh brief <N> > ../Kobe-wt<N>/BRIEF.md   # untracked; the agent reads only this
+git worktree add ../Kaiju-wt<N> -b kobe-<N>-<slug> origin/main
+cp CLAUDE.local.md ../Kaiju-wt<N>/
+scripts/hadron.sh brief <N> > ../Kaiju-wt<N>/BRIEF.md   # untracked; the agent reads only this
 ```
 
 Before starting a ticket, check the other open tickets: don't run two tickets at once that touch
 the same area (`tenancy/<area>.ts`, a route module, `packages/protocol`), unless one is meant to
 wait for the other. Rebase and conflict rounds cost a full re-run of the tests and review. Two
 migration tickets can run at once when the second is stacked on the first: start its worktree
-from the first branch (`git worktree add ../Kobe-wt<N> -b <branch> origin/<first-branch>`) and
+from the first branch (`git worktree add ../Kaiju-wt<N> -b <branch> origin/<first-branch>`) and
 name the base in the prompt; `scripts/onto-main.sh <base>` keeps it current (see
 [parallel-work.md](parallel-work.md#bringing-a-branch-onto-main-or-onto-another-branch)). Audit
 events and the OpenAPI document are no longer conflict hotspots (KOBE-815).
@@ -40,7 +40,7 @@ Fill the angle brackets; keep the prompt to the brief plus these lines. Don't pa
 other ledgers into it — `BRIEF.md` already holds what the ticket needs.
 
 ```text
-Implement <KOBE-N> in ../Kobe-wt<N> (branch kobe-<N>-<slug>). Work only there.
+Implement <KOBE-N> in ../Kaiju-wt<N> (branch kobe-<N>-<slug>). Work only there.
 Read BRIEF.md first (ticket, criteria, spec, decisions), then CLAUDE.md and docs/parallel-work.md.
 Read other code and ledgers only as needed; prefer grep over reading whole files.
 
@@ -95,7 +95,7 @@ migrations and the journal, never `drizzle/meta/*_snapshot.json` (generated, 10k
 ```bash
 scripts/hadron.sh close <N> <pr>         # complete -> done (refuses gate tickets KOBE-1..4)
 scripts/hadron.sh cost <N> <in> <out> <dollars> <model>   # from the agent's report; not optional
-git worktree remove ../Kobe-wt<N>
+git worktree remove ../Kaiju-wt<N>
 ps -Ao pid,etime,command | grep shell-snapshots   # kill any wait loop the agent left behind
 ```
 

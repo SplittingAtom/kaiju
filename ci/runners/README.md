@@ -1,17 +1,17 @@
 # Self-hosted CI runners on the k3s cluster
 
 > **Status: fallback only.** Since the repository went public, CI runs on GitHub-hosted runners
-> (free for public repos, faster SSD disks, up to 20 parallel jobs). The `KOBE_RUNNER` variable is
+> (free for public repos, faster SSD disks, up to 20 parallel jobs). The `KAIJU_RUNNER` variable is
 > unset, so every job uses `ubuntu-latest`. These runners stay installed and idle at zero; set
-> `gh variable set KOBE_RUNNER --body kobe-k3s --repo SplittingAtom/kobe` to switch back.
+> `gh variable set KAIJU_RUNNER --body kobe-k3s --repo SplittingAtom/kobe` to switch back.
 
 GitHub-hosted minutes for this private repo are metered and run out quickly with several agents
 pushing in parallel, so CI runs on our own k3s cluster with
 [Actions Runner Controller](https://github.com/actions/actions-runner-controller) (Apache-2.0).
 
 Every workflow job uses
-`runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-latest') || vars.KOBE_RUNNER || 'ubuntu-latest' }}`.
-With the repository variable `KOBE_RUNNER=kobe-k3s`, jobs run here; delete the variable to fall
+`runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-latest') || vars.KAIJU_RUNNER || 'ubuntu-latest' }}`.
+With the repository variable `KAIJU_RUNNER=kobe-k3s`, jobs run here; delete the variable to fall
 back to GitHub-hosted runners without a code change. **Pull requests from forks always run on
 GitHub-hosted runners**, never on this cluster: the repository is public, and these runners are
 privileged. The repository also requires approval before workflows from outside contributors run.
@@ -64,7 +64,7 @@ kubectl -n kobe-ci-runners create secret generic kobe-arc-github-app \
   --from-file=github_app_private_key=<key.pem>
 helm upgrade --install kobe-k3s -n kobe-ci-runners --version 0.15.0 -f values.yaml \
   oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
-gh variable set KOBE_RUNNER --body kobe-k3s --repo SplittingAtom/kobe
+gh variable set KAIJU_RUNNER --body kobe-k3s --repo SplittingAtom/kaiju
 ```
 
 The GitHub App (`kobe-arc-runners`, owned by SplittingAtom) is installed on this repository only,

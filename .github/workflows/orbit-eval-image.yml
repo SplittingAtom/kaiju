@@ -13,7 +13,7 @@ on:
       - scripts/assert-image-licenses.sh
       - .dockerignore
       - .github/workflows/orbit-eval-image.yml
-      - .github/actions/setup-kobe/**
+      - .github/actions/setup-kaiju/**
   schedule:
     - cron: "37 6 * * *"
   workflow_dispatch:
@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   build-test-scan:
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_BUILD_RUNNER || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_BUILD_RUNNER || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -48,7 +48,7 @@ jobs:
         run: docker build -f images/orbit-eval/Dockerfile -t kaiju-orbit-eval:ci . || { scripts/ci-docker-diagnostics.sh; exit 1; }
       - name: Acceptance checks (hardened run, scenario pack against a fake model endpoint)
         run: images/orbit-eval/test-image.sh kaiju-orbit-eval:ci
-      - uses: ./.github/actions/setup-kobe
+      - uses: ./.github/actions/setup-kaiju
       - name: License audit of bundled Python packages
         run: |
           pnpm --filter @kaiju/license-check build

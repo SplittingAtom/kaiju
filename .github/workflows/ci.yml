@@ -21,7 +21,7 @@ defaults:
   run:
     shell: bash
 
-# Turbo's local cache at the path setup-kobe restores and the static job saves (KOBE-721); stated
+# Turbo's local cache at the path setup-kaiju restores and the static job saves (KOBE-721); stated
 # explicitly because Turbo picks another default inside git worktrees.
 env:
   TURBO_CACHE_DIR: .turbo/cache
@@ -29,17 +29,17 @@ env:
 jobs:
   # KOBE-721: the old serial `checks` job (14-15 min) is split into `static` and `unit`, which run
   # side by side; the thin `checks` job below keeps the required check name. Every job restores
-  # Turbo's local cache from main (setup-kobe), so packages unchanged since main replay their
+  # Turbo's local cache from main (setup-kaiju), so packages unchanged since main replay their
   # build output instead of rebuilding.
   static:
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - id: setup
-        uses: ./.github/actions/setup-kobe
+        uses: ./.github/actions/setup-kaiju
         with:
           # On main this job builds from scratch and saves the cache every other job restores: an
           # entry then holds one commit's build output instead of growing run after run.
@@ -58,7 +58,7 @@ jobs:
       - run: pnpm build
       # Saved right after the build, so the entry holds build output only (typecheck and lint
       # results are not cached across runs). Only main writes, at most once a day per lockfile
-      # (setup-kobe's key): pull requests and merge-queue runs read main's entries and spend no
+      # (setup-kaiju's key): pull requests and merge-queue runs read main's entries and spend no
       # cache quota (publish.yml's image layers share it).
       - name: Save Turbo's build cache (main only)
         if: github.ref == 'refs/heads/main'
@@ -71,13 +71,13 @@ jobs:
       - run: pnpm license:check
 
   unit:
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-kobe
+      - uses: ./.github/actions/setup-kaiju
         with:
           turbo-cache: restore
       # The chart's tests render templates with helm.
@@ -136,7 +136,7 @@ jobs:
   # KOBE-300: the server's test:db (~13 min serial) runs in the db-server shards beside this job;
   # every other package's test:db, the schema check and the upgrade path stay here.
   db-core:
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 15
     env:
       KAIJU_TEST_DATABASE_URL: postgres://postgres:ci-only@localhost:5432/postgres
@@ -148,7 +148,7 @@ jobs:
       # Docker Hub pulls from shared runner IPs fail, 2026-10-09) sometimes answers 429 (KOBE-415).
       - name: PostgreSQL 17 (pulled with retries)
         run: scripts/ci-postgres.sh ci-only
-      - uses: ./.github/actions/setup-kobe
+      - uses: ./.github/actions/setup-kaiju
         with:
           turbo-cache: restore
       # kaiju backup/restore tests run the real pg_dump, pg_restore and psql (PGDG's 17 client).
@@ -176,7 +176,7 @@ jobs:
   # shard (KAIJU_DB_TEST_WORKERS; each file peaks at ~12 connections, within max_connections 100).
   db-server:
     name: db-server (${{ matrix.shard }}/2)
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -195,7 +195,7 @@ jobs:
       # Postgres without it, so migrations and the probe suite are proven on such a server too.
       - name: PostgreSQL 17 + pgvector (pulled with retries)
         run: scripts/ci-postgres.sh ci-only --pgvector
-      - uses: ./.github/actions/setup-kobe
+      - uses: ./.github/actions/setup-kaiju
         with:
           turbo-cache: restore
       - name: Server test:db, shard ${{ matrix.shard }} of 2
@@ -226,7 +226,7 @@ jobs:
     # required `checks` job stays fast. Pins: Orbit v1.0.3 (commit below, keep in step with
     # ORBIT_PIN in services/server/src/agents/orbit/orbit-schema.ts); its dependencies come from
     # Orbit's uv.lock with hashes (ci/orbit/requirements.txt).
-    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KOBE_RUNNER || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

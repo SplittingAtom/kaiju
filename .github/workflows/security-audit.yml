@@ -14,7 +14,7 @@ on:
       - scripts/osv-audit.mjs
       - scripts/osv-audit.test.mjs
       - .github/workflows/security-audit.yml
-      - .github/actions/setup-kobe/**
+      - .github/actions/setup-kaiju/**
 
 concurrency:
   group: security-audit-${{ github.ref }}
@@ -32,7 +32,7 @@ jobs:
         with:
           persist-credentials: false
       # pnpm audit reads the lockfile only: no install, no store cache.
-      - uses: ./.github/actions/setup-kobe
+      - uses: ./.github/actions/setup-kaiju
         with:
           node-cache: ""
           install-args: ""
