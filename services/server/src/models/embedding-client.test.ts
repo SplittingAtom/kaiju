@@ -76,8 +76,10 @@ describe("embedding client (KOBE-409)", () => {
       model: MODEL,
     });
     expect(Object.keys(seen[0]?.headers ?? {}).sort()).toEqual(
-      ["content-type", SERVER_CALL_TOKEN_HEADER].sort(),
+      // The token under its old name too for one release, for an old gateway pod (KOBE-749).
+      ["content-type", SERVER_CALL_TOKEN_HEADER, "x-kobe-server-call"].sort(),
     );
+    expect(seen[0]?.headers["x-kobe-server-call"]).toBe(seen[0]?.headers[SERVER_CALL_TOKEN_HEADER]);
   });
 
   it("names no run for a save or a backfill", async () => {

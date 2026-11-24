@@ -63,6 +63,8 @@ describe("buildPiMcpConfig (KOBE-111)", () => {
       expect(server.headers).toEqual({
         Authorization: `!cat '${TOKEN_FILE}'`,
         "Kaiju-Thread-Id": THREAD,
+        // The old name too for one release, for an mcp-proxy pod from before the rename (KOBE-749).
+        "kobe-thread-id": THREAD,
       });
     }
     const urls = strings(config).filter((s) => /^[a-z]+:\/\//.test(s));

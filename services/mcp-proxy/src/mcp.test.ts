@@ -746,12 +746,13 @@ describe("tools/call", () => {
     await rpc(
       "tools/call",
       { name: "get_issue", arguments: {} },
-      { headers: { "x-api-key": "from-sandbox" } },
+      { headers: { "x-api-key": "from-sandbox", "kobe-thread-id": THREAD } },
     );
     const [first] = fake.received;
     expect(first?.headers.authorization).toBe("Bearer grant");
     expect(first?.headers["x-api-key"]).toBeUndefined();
     expect(fake.received.every((r) => r.headers["kaiju-thread-id"] === undefined)).toBe(true);
+    expect(fake.received.every((r) => r.headers["kobe-thread-id"] === undefined)).toBe(true);
   });
 
   it("uses the server's per-user API key upstream and never shows it to the sandbox (KOBE-108)", async () => {

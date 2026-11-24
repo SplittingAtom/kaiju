@@ -2,6 +2,7 @@ import {
   MEMORY_EMBED_MAX_INPUTS,
   SERVER_CALL_EMBEDDINGS_PATH,
   SERVER_CALL_TOKEN_HEADER,
+  withLegacyHeaderNames,
   embeddingsResponseSchema,
   serverCallEmbeddingsRequestSchema,
 } from "@kaiju/protocol";
@@ -102,10 +103,13 @@ export function createEmbeddingClient(options: EmbeddingClientOptions): Embeddin
             },
             now(),
           );
-          const headers = injectTraceHeaders({
-            "content-type": "application/json",
-            [SERVER_CALL_TOKEN_HEADER]: token,
-          });
+          // Under both header names for one release: an old gateway pod reads it (KOBE-749/754).
+          const headers = injectTraceHeaders(
+            withLegacyHeaderNames({
+              "content-type": "application/json",
+              [SERVER_CALL_TOKEN_HEADER]: token,
+            }),
+          );
           let res: Response;
           try {
             res = await doFetch(endpoint, {

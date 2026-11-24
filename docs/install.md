@@ -1791,9 +1791,10 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
 - **Renamed headers, cookies and telemetry names (Kaiju rename, KOBE-749).** API clients and
   scripts send the active team as `X-Kaiju-Team`; the server still accepts `X-Kobe-Team` for
   this release, and the skill export answers with both `X-Kaiju-Sha256` and `X-Kobe-Sha256`.
-  Services read the old internal header names for this release too, so pods of both versions
-  work together during the rollout and sandboxes still on the old image keep working until they
-  restart. Span, attribute, scope and `service.name` values start with `kaiju` instead of `kobe`
+  For this release every component sends its internal headers under both the new and the old
+  name and accepts either, so old and new pods work together in both directions during a rolling
+  `helm upgrade`, and sandboxes still on the old image keep working until they restart (the
+  next release sends and accepts only the new names). Span, attribute, scope and `service.name` values start with `kaiju` instead of `kobe`
   ([Tracing](tracing.md#names-after-the-rename-to-kaiju)); audit forwarding sends syslog APP-NAME
   `kaiju-audit` with SD-ID `kaiju@<PEN>` and OTLP attributes `kaiju.audit.*` with
   `service.name` `kaiju-server` ([Audit log](audit-log.md)). Update SIEM rules, saved queries and

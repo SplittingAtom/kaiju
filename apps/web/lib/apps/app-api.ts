@@ -1,4 +1,4 @@
-import { TEAM_HEADER } from "../teams";
+import { teamHeaders } from "../teams";
 import type { ToolCallAnswer, ToolListAnswer } from "./host-bridge";
 
 /**
@@ -38,7 +38,7 @@ async function send(
   fetchFn: typeof fetch,
   body?: unknown,
 ): Promise<{ status: number; json: unknown } | Failure> {
-  const headers = new Headers({ accept: "application/json", [TEAM_HEADER]: teamId });
+  const headers = new Headers({ accept: "application/json", ...teamHeaders(teamId) });
   if (body !== undefined) headers.set("content-type", "application/json");
   let res: Response;
   try {

@@ -176,6 +176,8 @@ describe("policy server grant client", () => {
     expect(out).toEqual({ ok: true, value: { kind: "api_key", apiKey: KEY, source: "site" } });
     expect(seen.at(-1)?.path).toBe("/internal/v1/mcp/connectors/c1/grant");
     expect(seen.at(-1)?.headers.get("kaiju-sandbox-token")).toBe("tok");
+    // The old name too for one release, for a server pod from before the rename (KOBE-749).
+    expect(seen.at(-1)?.headers.get("kobe-sandbox-token")).toBe("tok");
     expect(seen.at(-1)?.headers.get("authorization")).toBe(`Bearer ${"i".repeat(40)}`);
   });
 

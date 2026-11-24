@@ -1,3 +1,4 @@
+import { withLegacyHeaderNames } from "@kaiju/protocol";
 import { injectTraceHeaders } from "@kaiju/telemetry";
 import { z } from "zod";
 import type { GrantAnswer, GrantFetchOptions } from "./credentials.js";
@@ -167,11 +168,13 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
     try {
       const res = await doFetch(`${options.baseUrl}/internal/v1/mcp${path}`, {
         method: "POST",
-        headers: injectTraceHeaders({
-          authorization: `Bearer ${options.internalKey}`,
-          "kaiju-sandbox-token": token,
-          "content-type": "application/json",
-        }),
+        headers: injectTraceHeaders(
+          withLegacyHeaderNames({
+            authorization: `Bearer ${options.internalKey}`,
+            "kaiju-sandbox-token": token,
+            "content-type": "application/json",
+          }),
+        ),
         body: body === undefined ? null : JSON.stringify(body),
         signal: AbortSignal.timeout(options.timeoutMs),
         redirect: "error",
@@ -212,11 +215,13 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
         `${options.baseUrl}/internal/v1/mcp/connectors/${encodeURIComponent(connectorId)}/grant`,
         {
           method: "POST",
-          headers: injectTraceHeaders({
-            authorization: `Bearer ${options.internalKey}`,
-            "kaiju-sandbox-token": token,
-            ...(force ? { "content-type": "application/json" } : {}),
-          }),
+          headers: injectTraceHeaders(
+            withLegacyHeaderNames({
+              authorization: `Bearer ${options.internalKey}`,
+              "kaiju-sandbox-token": token,
+              ...(force ? { "content-type": "application/json" } : {}),
+            }),
+          ),
           ...(force ? { body: JSON.stringify({ refresh: "force" }) } : {}),
           // Its own deadline (longer than the server's 5 s refresh), and never past the call's.
           signal: AbortSignal.any([
@@ -264,11 +269,13 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
         `${options.baseUrl}/internal/v1/mcp/connectors/${encodeURIComponent(connectorId)}/results`,
         {
           method: "POST",
-          headers: injectTraceHeaders({
-            authorization: `Bearer ${options.internalKey}`,
-            "kaiju-sandbox-token": token,
-            "content-type": "application/json",
-          }),
+          headers: injectTraceHeaders(
+            withLegacyHeaderNames({
+              authorization: `Bearer ${options.internalKey}`,
+              "kaiju-sandbox-token": token,
+              "content-type": "application/json",
+            }),
+          ),
           body: JSON.stringify({ ticket, input, result }),
           signal: AbortSignal.timeout(options.timeoutMs),
           redirect: "error",

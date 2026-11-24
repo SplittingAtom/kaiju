@@ -1,5 +1,7 @@
 /** Team switcher client logic (spec D9). The server stays authoritative on membership. */
 
+import { setRenamedHeader, withLegacyHeaderNames } from "@kaiju/protocol";
+
 export type TeamRole = "team_admin" | "contributor" | "member";
 
 export interface TeamOption {
@@ -22,6 +24,19 @@ export interface MyTeams {
 
 /** Sent on team-scoped requests; the server refuses it if another tab switched teams meanwhile. */
 export const TEAM_HEADER = "x-kaiju-team";
+
+/**
+ * The team header as sent: under its old name `x-kobe-team` too for one release, so a server pod
+ * from before the rename still reads it during a rolling upgrade (KOBE-749; removed in KOBE-754).
+ */
+export function teamHeaders(teamId: string): Record<string, string> {
+  return withLegacyHeaderNames({ [TEAM_HEADER]: teamId });
+}
+
+/** Sets the team header (both names, as {@link teamHeaders}) on a `Headers` object. */
+export function setTeamHeader(headers: Headers, teamId: string): void {
+  setRenamedHeader(headers, TEAM_HEADER, teamId);
+}
 
 /** Window event fired after the switcher activates a team on load (consoles re-check access). */
 export const ACTIVE_TEAM_EVENT = "kaiju:active-team";

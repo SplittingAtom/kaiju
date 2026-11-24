@@ -27,9 +27,21 @@
 
 ## Decisions
 
-- **Internal headers: receivers accept both names for one release, senders send only the new
-  one.** One map in `packages/protocol/src/legacy-headers.ts` (`LEGACY_HEADER_NAMES`,
-  `readRenamedHeader`, `withRenamedHeaders`); the new name wins when both arrive.
+- **ac-1 amended (coordinator, review round 1 MEDIUM):** for this release senders send **both**
+  the new and the old header name and receivers accept either, so a rolling `helm upgrade` has no
+  window where a new sender meets an old receiver (or the reverse); "send only the new names"
+  applies from KOBE-754 on, which deletes the old names in one place.
+- **Internal headers: both names both ways for one release.** One map in
+  `packages/protocol/src/legacy-headers.ts` (`LEGACY_HEADER_NAMES`; receivers `readRenamedHeader`,
+  `withRenamedHeaders`; senders `withLegacyHeaderNames`, `setRenamedHeader`); the new name wins
+  when both arrive. Senders: web (`teamHeaders`/`setTeamHeader` in `lib/teams.ts`), mcp-proxy and
+  egress-proxy → server (sandbox token), server → gateway (server-call token, chat and
+  embeddings), sandbox agent → mcp-proxy (thread header in Pi's MCP config) and the kobe-models
+  extension → gateway (run id and token; the extension mirrors the old names, pinned by a test).
+  Security kept: the sender helper always overwrites or drops a value already under an old name,
+  the extension drops Pi-config copies of its own headers under both names, the gateway
+  normalises and drops old names before every check and forwards an allowlist only, and
+  mcp-proxy forwards neither thread header upstream (tested).
   - server: `x-kaiju-team` / `x-kobe-team` (`teamHeaderOf` in `authz/middleware.ts`, both read
     sites); `kaiju-sandbox-token` / `kobe-sandbox-token` on the internal MCP and git routes
     (`sandboxTokenOf` in `mcp/principal.ts`; senders are mcp-proxy and egress-proxy);
@@ -69,6 +81,19 @@
 - **Telemetry:** every `kobe.*` span/attribute/scope name, tracer names and `service.name`
   values are `kaiju`; no metric instruments exist (the perf SQL's column aliases renamed).
   Syslog APP-NAME `kaiju-audit`, SD-ID `kaiju@<PEN>`, OTLP audit `kaiju.audit.*`.
+
+## Review round 1 (fix first: one MEDIUM, two LOWs)
+
+- **MEDIUM** (new sender → old receiver during the rollout): fixed by dual-send as above; tests
+  per pair assert both names sent (web client and `teamHeaders`, mcp-proxy grant call, egress git
+  decision, server chat and embeddings calls, extension run headers, Pi MCP config) and the
+  receiver working with either (server team header and sandbox token, mcp-proxy thread header,
+  gateway run id, run token and server-call). `docs/install.md` Upgrade notes corrected.
+- **LOW-1** (break-glass DB race): the revocation and expiry tests now wait for the mail whose
+  subject says "was revoked" / "ended" after `before`, instead of taking the last mail (the
+  approval notice, sent through the outbox after the approve response, could arrive late).
+- **LOW-2** (sign-out wording): kept as is by coordinator decision: the session cookie keeps its
+  name, members stay signed in; ledger and release note say so.
 
 ## Allowlist
 
@@ -117,3 +142,9 @@ One command at a time, TMPDIR on disk:
   the team-setter test's allowed mentions for the two telemetry files (the span attribute is
   no longer spelled like the setting).
 - Not run here: browser suite, e2e gate scripts, image builds (CI and e2e per step).
+
+Review round 1 rerun (after dual-send and the break-glass fix): build, typecheck, lint,
+format:check, guard (40,936 allowed, 219 entries; later recount includes this ledger), self-test
+23/23 ok. Unit: protocol 1,389; egress-proxy 182; mcp-proxy 174; model-gateway 266;
+sandbox-agent 1,294 (196 skipped); server 4,571 (8 skipped); web 4,313. `@kaiju/server test:db`
+3,751 passed, 0 failed.

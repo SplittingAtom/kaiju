@@ -3,7 +3,7 @@
  * It never throws for HTTP or network failures: callers get an `ApiResult` and render the error.
  * Authorization is the server's: a 403 here is the answer, whatever the UI showed.
  */
-import { TEAM_HEADER } from "../teams";
+import { setTeamHeader } from "../teams";
 import { camelizeKeys } from "./casing";
 import { isSameOriginPath } from "../security/same-origin-path";
 
@@ -183,7 +183,7 @@ export async function apiRequest<T>(
     headers.set("content-type", raw.contentType);
     body = typeof raw.body === "string" ? raw.body : new Uint8Array(raw.body);
   }
-  if (teamId !== undefined) headers.set(TEAM_HEADER, teamId);
+  if (teamId !== undefined) setTeamHeader(headers, teamId);
   if (ifMatch !== undefined) headers.set("if-match", ifMatch);
   if (idempotencyKey !== undefined) headers.set("idempotency-key", idempotencyKey);
 
@@ -229,7 +229,7 @@ export async function apiTextFile(
   assertApiPath(path);
   const { teamId, fetchFn = fetch } = options;
   const headers = new Headers({ accept: "*/*" });
-  if (teamId !== undefined) headers.set(TEAM_HEADER, teamId);
+  if (teamId !== undefined) setTeamHeader(headers, teamId);
   let res: Response;
   try {
     res = await fetchFn(path, { method: "GET", headers, credentials: "same-origin" });
@@ -311,7 +311,7 @@ async function getBinary(
   assertApiPath(path);
   const { teamId, fetchFn = fetch } = options;
   const headers = new Headers();
-  if (teamId !== undefined) headers.set(TEAM_HEADER, teamId);
+  if (teamId !== undefined) setTeamHeader(headers, teamId);
   const post = options.json !== undefined;
   if (post) headers.set("content-type", "application/json");
   let res: Response;

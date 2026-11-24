@@ -1,12 +1,16 @@
 /**
  * Header names before the rename to Kaiju (KOBE-749, spec docs/specs/rename-kaiju.md §3 change 6),
- * accepted by receivers for one release and removed in KOBE-754 (RN-10). Senders send only the
- * new name. Receivers accept the old one because the components roll out separately: an API
+ * accepted by receivers for one release and removed in KOBE-754 (RN-10). For the same release,
+ * senders send both names ({@link withLegacyHeaderNames}, {@link setRenamedHeader}), so a new
+ * sender still reaches an old receiver during a rolling upgrade; from KOBE-754 on they send only
+ * the new name. Receivers accept the old one because the components roll out separately: an API
  * client or script still sends `x-kobe-team`, a sandbox started from an image built before the
  * rename sends the old run and thread headers, and during `helm upgrade` an old server, mcp-proxy
  * or egress-proxy pod can call a new one (or the reverse) for a few minutes. The one response
  * header that crosses such a boundary (the workspace file's entry, read by sandbox agents) is
- * sent under both names for the same release.
+ * sent under both names for the same release. Anything a component strips or overwrites before
+ * passing headers on, it strips or overwrites under both names, so nothing can smuggle a value in
+ * under the old name.
  *
  * Keys are the new names, values the old ones; all lower case (Node and Hono read headers
  * case-insensitively).
@@ -52,4 +56,34 @@ export function withRenamedHeaders<T extends Record<string, unknown>>(headers: T
     if (out[current] === undefined && headers[legacy] !== undefined) out[current] = headers[legacy];
   }
   return out as T;
+}
+
+/**
+ * A copy of outgoing headers in which every renamed header set under its new name is also set,
+ * with the same value, under its old name (this release only; KOBE-754 removes it), so a receiver
+ * from before the rename reads it too. A value already under an old name is always replaced or
+ * dropped, never passed on: the old name carries only what the new one says.
+ */
+export function withLegacyHeaderNames<T extends Record<string, string>>(
+  headers: T,
+): Record<string, string> {
+  const legacyNames = new Set<string>(Object.values(LEGACY_HEADER_NAMES));
+  const out: Record<string, string> = Object.fromEntries(
+    Object.entries(headers).filter(([name]) => !legacyNames.has(name.toLowerCase())),
+  );
+  for (const [name, value] of Object.entries(headers)) {
+    const legacy = (LEGACY_HEADER_NAMES as Record<string, string>)[name.toLowerCase()];
+    if (legacy !== undefined) out[legacy] = value;
+  }
+  return out;
+}
+
+/** Sets a renamed header under its new and (this release only, KOBE-754) its old name. */
+export function setRenamedHeader(
+  target: { set(name: string, value: string): void },
+  name: RenamedHeader,
+  value: string,
+): void {
+  target.set(name, value);
+  target.set(LEGACY_HEADER_NAMES[name], value);
 }

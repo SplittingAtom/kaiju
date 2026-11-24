@@ -7,6 +7,7 @@ import {
   SERVER_CALL_REASONING_EFFORT,
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
+  withLegacyHeaderNames,
   serverCallOutputCapFor,
   serverCallRequestSchema,
   type ServerCallRequest,
@@ -308,10 +309,13 @@ export function createServerCallClient(options: ServerCallClientOptions): Server
         async () => {
           const body = JSON.stringify(bodyOf(input));
           // Minted right before the call, sent once, never stored or logged.
-          const headers = injectTraceHeaders({
-            "content-type": "application/json",
-            [SERVER_CALL_TOKEN_HEADER]: mintToken(options.key, input, now()),
-          });
+          // Under both header names for one release: an old gateway pod reads it (KOBE-749/754).
+          const headers = injectTraceHeaders(
+            withLegacyHeaderNames({
+              "content-type": "application/json",
+              [SERVER_CALL_TOKEN_HEADER]: mintToken(options.key, input, now()),
+            }),
+          );
           const res = await post(doFetch, endpoint, headers, body, input.signal);
           let text: string | undefined;
           try {

@@ -21,6 +21,9 @@ import {
 import {
   KAIJU_MODEL_ERROR_PREFIX,
   KAIJU_PROVIDER_ID,
+  LEGACY_RUN_ID_HEADER,
+  LEGACY_RUN_TOKEN_HEADER,
+  RUN_ID_HEADER,
   RUN_TOKEN_HEADER,
   gatewayBaseUrl,
   type ModelFileModel,
@@ -43,7 +46,6 @@ import {
 export const RETRY_BUDGET_MS = 60_000;
 export const RETRY_BASE_MS = 1_000;
 const MAX_ATTEMPTS = 8;
-const RUN_ID_HEADER = "x-kaiju-run-id";
 const ABORTED_MESSAGE = "Request was aborted";
 const NO_FAILURE: Failure = { status: undefined, code: undefined, retryAfterMs: undefined };
 
@@ -124,9 +126,19 @@ export function kaijuModel(gatewayUrl: string, model: ModelFileModel): Model {
 
 const TRACEPARENT_HEADER = "traceparent";
 
+/** Headers this provider owns: any copy from Pi's model config is dropped, under either name. */
+const OWN_HEADERS = [
+  RUN_ID_HEADER,
+  RUN_TOKEN_HEADER,
+  LEGACY_RUN_ID_HEADER,
+  LEGACY_RUN_TOKEN_HEADER,
+  TRACEPARENT_HEADER,
+];
+
 /**
  * The run's headers: its id, its token and (KOBE-274) the run's current span as `traceparent`, so
  * the gateway's span joins the run trace (the gateway trusts it only for the run it attributed).
+ * Id and token go under their old names too for one release (KOBE-749; removed in KOBE-754).
  */
 function withRunHeader(
   headers: ProviderHeaders | undefined,
@@ -134,19 +146,19 @@ function withRunHeader(
   runToken: string | undefined,
 ): ProviderHeaders {
   const base: ProviderHeaders = Object.fromEntries(
-    Object.entries(headers ?? {}).filter(
-      ([name]) =>
-        ![RUN_ID_HEADER, RUN_TOKEN_HEADER, TRACEPARENT_HEADER].includes(name.toLowerCase()),
-    ),
+    Object.entries(headers ?? {}).filter(([name]) => !OWN_HEADERS.includes(name.toLowerCase())),
   );
   const runId = state.run_id;
-  const withId = runId === null ? base : { ...base, [RUN_ID_HEADER]: runId };
+  const withId =
+    runId === null ? base : { ...base, [RUN_ID_HEADER]: runId, [LEGACY_RUN_ID_HEADER]: runId };
   const traceparent = state.traceparent ?? null;
   const traced =
     runId === null || traceparent === null
       ? withId
       : { ...withId, [TRACEPARENT_HEADER]: traceparent };
-  return runToken === undefined ? traced : { ...traced, [RUN_TOKEN_HEADER]: runToken };
+  return runToken === undefined
+    ? traced
+    : { ...traced, [RUN_TOKEN_HEADER]: runToken, [LEGACY_RUN_TOKEN_HEADER]: runToken };
 }
 
 function errorResult(

@@ -11,7 +11,7 @@ import {
   uploadErrorSchema,
   uploadResponseSchema,
 } from "@kaiju/protocol";
-import { TEAM_HEADER } from "../teams";
+import { teamHeaders } from "../teams";
 
 export const MAX_FILE_BYTES = UPLOAD_DEFAULT_MAX_FILE_BYTES;
 export const MAX_MESSAGE_BYTES = UPLOAD_DEFAULT_MAX_MESSAGE_BYTES;
@@ -154,7 +154,9 @@ export const xhrUploadTransport: UploadTransport = ({
     const xhr = new XMLHttpRequest();
     const done = (error: UploadFailure) => resolve({ ok: false, error });
     xhr.open("POST", "/v1/uploads");
-    xhr.setRequestHeader(TEAM_HEADER, teamId);
+    for (const [name, value] of Object.entries(teamHeaders(teamId))) {
+      xhr.setRequestHeader(name, value);
+    }
     xhr.setRequestHeader("accept", "application/json");
     xhr.withCredentials = true;
     xhr.upload.onprogress = (e) => {

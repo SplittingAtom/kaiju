@@ -1,6 +1,7 @@
 import { constants as FS } from "node:fs";
 import { open } from "node:fs/promises";
 import path from "node:path";
+import { withLegacyHeaderNames } from "@kaiju/protocol";
 import type { RunMcpContext } from "@kaiju/protocol/sandbox-wire";
 import { writeFileAtomic } from "../atomic-file.js";
 import type { ModelTokenSource } from "../models/types.js";
@@ -65,10 +66,12 @@ export function buildPiMcpConfig(input: {
       server.name,
       {
         url: `${origin}${PROXY_PATH}/${server.connector_id}`,
-        headers: {
+        // The thread header under its old name too for one release, so an mcp-proxy pod from
+        // before the rename reads it during a rolling upgrade (KOBE-749; removed in KOBE-754).
+        headers: withLegacyHeaderNames({
           Authorization: `!cat '${input.tokenFile}'`,
           "Kaiju-Thread-Id": input.threadId,
-        },
+        }),
         exposure: "hidden",
         toolExposure: Object.fromEntries(server.tools.map((t) => [t.name, "direct"])),
       },

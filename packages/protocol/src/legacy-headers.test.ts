@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { LEGACY_HEADER_NAMES, readRenamedHeader, withRenamedHeaders } from "./legacy-headers.js";
+import {
+  LEGACY_HEADER_NAMES,
+  readRenamedHeader,
+  setRenamedHeader,
+  withLegacyHeaderNames,
+  withRenamedHeaders,
+} from "./legacy-headers.js";
 
 describe("legacy header names (KOBE-749, removed in KOBE-754)", () => {
   it("maps every new x-kaiju/kaiju name to its pre-rename spelling", () => {
@@ -32,5 +38,31 @@ describe("legacy header names (KOBE-749, removed in KOBE-754)", () => {
   it("lets the new name win and still drops the old one", () => {
     const out = withRenamedHeaders({ "x-kaiju-server-call": "new", "x-kobe-server-call": "old" });
     expect(out).toEqual({ "x-kaiju-server-call": "new" });
+  });
+
+  it("senders add the old name next to the new one, replacing any value already under it", () => {
+    expect(
+      withLegacyHeaderNames({
+        "content-type": "application/json",
+        "kaiju-sandbox-token": "t",
+        "kobe-sandbox-token": "smuggled",
+        "kobe-thread-id": "stray",
+      }),
+    ).toEqual({
+      "content-type": "application/json",
+      "kaiju-sandbox-token": "t",
+      "kobe-sandbox-token": "t",
+    });
+    expect(withLegacyHeaderNames({ "Kaiju-Thread-Id": "t1" })).toEqual({
+      "Kaiju-Thread-Id": "t1",
+      "kobe-thread-id": "t1",
+    });
+  });
+
+  it("sets both names on a Headers object", () => {
+    const headers = new Headers({ "x-kobe-team": "smuggled" });
+    setRenamedHeader(headers, "x-kaiju-team", "team-1");
+    expect(headers.get("x-kaiju-team")).toBe("team-1");
+    expect(headers.get("x-kobe-team")).toBe("team-1");
   });
 });

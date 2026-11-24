@@ -121,6 +121,24 @@ async function mailTo(who: Person, count: number) {
   return mailer.to(email(who));
 }
 
+/**
+ * The first mail to `who` after the first `from` whose subject contains `text`, waiting for it.
+ * Matches by subject because an earlier notice (the grant's approval, sent through the outbox
+ * after the approve response) can still be on its way when `from` is counted.
+ */
+async function mailWithSubject(who: Person, from: number, text: string) {
+  const deadline = Date.now() + 5_000;
+  const find = () =>
+    mailer
+      .to(email(who))
+      .slice(from)
+      .find((m) => m.subject.includes(text));
+  while (find() === undefined && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  return find();
+}
+
 async function settled(): Promise<void> {
   await new Promise((r) => setTimeout(r, 300));
 }
@@ -553,7 +571,7 @@ describe("ending a grant", () => {
     const denied = await as.investigator.get(path);
     expect(denied.status).toBe(403);
     expect(denied.json).toMatchObject({ code: "grant_not_active", status: "revoked" });
-    expect((await mailTo("alice", before + 1)).at(-1)?.subject).toContain("was revoked");
+    expect(await mailWithSubject("alice", before, "was revoked")).toBeDefined();
     expect((await auditFor(grantId)).at(-1)).toMatchObject({
       action: "governance.break_glass.revoked",
       target: { grantId, wasActive: true },
@@ -592,7 +610,7 @@ describe("ending a grant", () => {
         target: { grantId, wasActive: true, recipients: 3, teamAdmins: 1 },
       },
     ]);
-    expect((await mailTo("alice", before + 1)).at(-1)?.subject).toContain("ended");
+    expect(await mailWithSubject("alice", before, "ended")).toBeDefined();
   });
 
   it("approve racing revoke always ends revoked, with a consistent audit trail", async () => {

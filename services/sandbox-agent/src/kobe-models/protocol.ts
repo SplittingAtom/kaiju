@@ -46,6 +46,15 @@ export type ModelRunErrorCode = (typeof MODEL_RUN_ERROR_CODES)[number];
 export const RUN_TOKEN_UI_TITLE = "kaiju.run_token";
 /** Request header carrying it (mirrors `RUN_TOKEN_HEADER` in packages/protocol; a test pins it). */
 export const RUN_TOKEN_HEADER = "x-kaiju-run-token";
+/** The run's id (advisory; mirrors the `x-kaiju-run-id` name the gateway reads). */
+export const RUN_ID_HEADER = "x-kaiju-run-id";
+/**
+ * The names of both before the rename (mirror `LEGACY_HEADER_NAMES` in packages/protocol; a test
+ * pins them): sent next to the new ones for one release, so a gateway pod from before the rename
+ * still attributes the call during a rolling upgrade (KOBE-749; removed in KOBE-754).
+ */
+export const LEGACY_RUN_TOKEN_HEADER = "x-kobe-run-token";
+export const LEGACY_RUN_ID_HEADER = "x-kobe-run-id";
 
 export interface ModelFileModel {
   /** `<gateway provider>/<model>` (the catalog's `gateway_model`). */

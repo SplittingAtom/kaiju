@@ -126,6 +126,8 @@ describe("server decider (KOBE-763)", () => {
     const headers = sent[0]?.init.headers as Record<string, string>;
     expect(headers.authorization).toBe(`Bearer ${"k".repeat(40)}`);
     expect(headers["kaiju-sandbox-token"]).toBe("sandbox-token");
+    // The old name too for one release, for a server pod from before the rename (KOBE-749).
+    expect(headers["kobe-sandbox-token"]).toBe("sandbox-token");
     expect(JSON.parse(String(sent[0]?.init.body))).toEqual({
       host: "git.example.test",
       prefix: "",

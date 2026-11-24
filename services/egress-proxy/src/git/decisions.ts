@@ -1,3 +1,4 @@
+import { withLegacyHeaderNames } from "@kaiju/protocol";
 import { z } from "zod";
 import type { GitRequest } from "./grammar.js";
 
@@ -101,11 +102,13 @@ export function serverDecider(options: ServerDeciderOptions): GitDecider {
     try {
       res = await doFetch(url, {
         method: "POST",
-        headers: {
+        // Both token header names for one release, so an old server pod reads it during a rolling
+        // upgrade (KOBE-749; the old name goes in KOBE-754).
+        headers: withLegacyHeaderNames({
           authorization: `Bearer ${options.internalKey}`,
           "kaiju-sandbox-token": query.token,
           "content-type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           host: query.host,
           prefix: query.request.prefix,

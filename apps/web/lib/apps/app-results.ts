@@ -1,5 +1,5 @@
 import { apiRequest, type ApiResult } from "../api/client";
-import { TEAM_HEADER } from "../teams";
+import { teamHeaders } from "../teams";
 import type { AppPlacement } from "./app-cards";
 
 /**
@@ -80,7 +80,7 @@ export async function readAppResult(
   let res: Response;
   try {
     res = await fetchFn(path, {
-      headers: { accept: "application/json", [TEAM_HEADER]: teamId },
+      headers: { accept: "application/json", ...teamHeaders(teamId) },
       credentials: "same-origin",
     });
   } catch {

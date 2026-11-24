@@ -40,6 +40,8 @@ describe("apiRequest", () => {
     const headers = new Headers(init.headers);
     expect(headers.get("content-type")).toBe("application/json");
     expect(headers.get(TEAM_HEADER)).toBe("t-1");
+    // The old name too for one release, for a server pod from before the rename (KOBE-749).
+    expect(headers.get("x-kobe-team")).toBe("t-1");
     expect(init.body).toBe('{"role":"contributor"}');
   });
 

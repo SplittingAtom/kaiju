@@ -4,7 +4,7 @@
  * Never throws: null for a non-2xx answer, a malformed body or a network failure.
  */
 import type { z } from "zod";
-import { TEAM_HEADER } from "../teams";
+import { teamHeaders } from "../teams";
 
 export async function readWire<S extends z.ZodType>(
   route: string,
@@ -15,7 +15,7 @@ export async function readWire<S extends z.ZodType>(
   try {
     const res = await fetchFn(route, {
       method: "GET",
-      headers: { accept: "application/json", [TEAM_HEADER]: teamId },
+      headers: { accept: "application/json", ...teamHeaders(teamId) },
       credentials: "same-origin",
       cache: "no-store",
     });

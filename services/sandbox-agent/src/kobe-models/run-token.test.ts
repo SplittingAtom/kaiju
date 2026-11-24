@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { RUN_TOKEN_HEADER as PROTOCOL_HEADER } from "@kaiju/protocol";
+import { LEGACY_HEADER_NAMES, RUN_TOKEN_HEADER as PROTOCOL_HEADER } from "@kaiju/protocol";
 import { registerKaijuModels, type ExtensionApiLike, type InputContextLike } from "./register.js";
-import { RUN_TOKEN_HEADER, RUN_TOKEN_UI_TITLE, type ModelFileState } from "./protocol.js";
+import {
+  LEGACY_RUN_ID_HEADER,
+  LEGACY_RUN_TOKEN_HEADER,
+  RUN_ID_HEADER,
+  RUN_TOKEN_HEADER,
+  RUN_TOKEN_UI_TITLE,
+  type ModelFileState,
+} from "./protocol.js";
 
 /** KOBE-118: the extension fetches the run token over Pi's RPC channel, once per run. */
 const RUN = "3e4f5a6b-7c8d-4e9f-8a1b-2c3d4e5f6072";
@@ -16,6 +23,9 @@ const state = (run_id: string | null): ModelFileState => ({
 
 it("pins the header name to the protocol's", () => {
   expect(RUN_TOKEN_HEADER).toBe(PROTOCOL_HEADER);
+  // The pre-rename names sent next to them for one release (KOBE-749).
+  expect(LEGACY_HEADER_NAMES[RUN_TOKEN_HEADER]).toBe(LEGACY_RUN_TOKEN_HEADER);
+  expect(LEGACY_HEADER_NAMES[RUN_ID_HEADER]).toBe(LEGACY_RUN_ID_HEADER);
 });
 
 async function setup(states: () => ModelFileState, selected: unknown[] = []) {

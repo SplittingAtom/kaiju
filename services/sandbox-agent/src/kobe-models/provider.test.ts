@@ -232,7 +232,7 @@ describe("kaiju provider", () => {
     expect(calls[0]).toMatchObject({
       apiKey: "token-one-".padEnd(40, "1"),
       maxRetries: 0,
-      headers: { "x-other": "1", "x-kaiju-run-id": RUN },
+      headers: { "x-other": "1", "x-kaiju-run-id": RUN, "x-kobe-run-id": RUN },
     });
   });
 
@@ -240,10 +240,25 @@ describe("kaiju provider", () => {
     const { provider, model, calls } = setup([{ text: "a" }, { text: "b" }], [state()], (runId) =>
       runId === RUN ? "krt1.tok.mac" : undefined,
     );
-    await collect(provider.stream(model, {}, { headers: { "X-Kaiju-Run-Token": "forged" } }));
+    await collect(
+      provider.stream(
+        model,
+        {},
+        {
+          headers: {
+            "X-Kaiju-Run-Token": "forged",
+            "X-Kobe-Run-Token": "forged",
+            "x-kobe-run-id": "x",
+          },
+        },
+      ),
+    );
+    // Both names for one release (KOBE-749), and a copy under either name is never passed on.
     expect(calls[0]?.headers).toEqual({
       "x-kaiju-run-id": RUN,
+      "x-kobe-run-id": RUN,
       "x-kaiju-run-token": "krt1.tok.mac",
+      "x-kobe-run-token": "krt1.tok.mac",
     });
     // Another run's token is never sent for this run, and none without a run.
     const other = setup([{ text: "c" }], [state({ run_id: null })], () => "krt1.tok.mac");
@@ -252,6 +267,7 @@ describe("kaiju provider", () => {
     const none = setup([{ text: "d" }], [state()], () => undefined);
     await collect(none.provider.stream(none.model, {}));
     expect(none.calls[0]?.headers).not.toHaveProperty("x-kaiju-run-token");
+    expect(none.calls[0]?.headers).not.toHaveProperty("x-kobe-run-token");
   });
 
   it("sends the run's span as traceparent (KOBE-274), never a forged one or one without a run", async () => {
@@ -275,6 +291,7 @@ describe("kaiju provider", () => {
     await collect(provider.stream(model, {}));
     expect(calls[1]).toMatchObject({ apiKey: "token-two-".padEnd(40, "2") });
     expect(calls[1]?.headers).not.toHaveProperty("x-kaiju-run-id");
+    expect(calls[1]?.headers).not.toHaveProperty("x-kobe-run-id");
   });
 
   it("waits Retry-After on 503 model_access_pending and then succeeds, transparently", async () => {
