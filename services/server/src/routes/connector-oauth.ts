@@ -1,7 +1,8 @@
 import { Hono } from "hono";
+import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
-import { kobeOrigin } from "../connectors/oauth/client.js";
+import { CALLBACK_PATH, kobeOrigin } from "../connectors/oauth/client.js";
 import {
   finishFlow,
   startFlow,
@@ -44,6 +45,43 @@ function flowDeps(deps: ServerDeps): OauthFlowDeps | undefined {
     now: () => new Date(),
   };
 }
+
+/**
+ * The callback's refusals before a state opens, as pages a browser can use (KOBE-835): signed out
+ * (401) goes to the sign-in page; a state that does not open, or no usable active workspace (the
+ * member switched in another tab, lost the team: 400, 403, 409), goes to My connectors with a fixed
+ * reason and no connector. Both targets are fixed paths on Kobe's own origin; nothing from the
+ * request is carried over. Mounted on the app ahead of the session check, for the callback only.
+ */
+const CALLBACK_REFUSALS: Readonly<Record<number, string>> = {
+  400: "invalid_state",
+  403: "no_workspace",
+  409: "no_workspace",
+};
+
+export function oauthCallbackRefusals(deps: Pick<ServerDeps, "publicUrl">) {
+  return createMiddleware(async (c, next) => {
+    await next();
+    if (c.req.method !== "GET") return;
+    const status = c.res.status;
+    const reason = CALLBACK_REFUSALS[status];
+    if (status !== 401 && reason === undefined) return;
+    const target =
+      status === 401
+        ? new URL("/sign-in", deps.publicUrl)
+        : new URL(RETURN_PATHS.me, deps.publicUrl);
+    if (reason !== undefined && status !== 401) {
+      target.searchParams.set("connector_oauth", "failed");
+      target.searchParams.set("reason", reason);
+    }
+    c.res = new Response(null, {
+      status: 303,
+      headers: { location: target.toString(), "cache-control": "no-store" },
+    });
+  });
+}
+/** Where {@link oauthCallbackRefusals} is mounted. */
+export const OAUTH_CALLBACK_PATH = CALLBACK_PATH;
 
 /**
  * Per-user OAuth connect flow (KOBE-109).

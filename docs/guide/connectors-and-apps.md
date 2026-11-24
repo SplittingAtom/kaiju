@@ -42,14 +42,16 @@ you, even one that has no tools yet.
 ### Connectors that use OAuth
 
 A connector that uses OAuth asks you to sign in at the service with your own account; there is no
-key to copy. Its card shows **Not connected**, **Connected** (since when) or **Sign-in expired**.
+key to copy. Its card shows **Not connected**, **Connected** (with when you first connected) or
+**Sign-in expired, reconnect**.
 
 1. Press **Connect**. Kobe sends you to the service's own sign-in page.
 2. Sign in there and allow access.
 3. The service sends you back to **My connectors**, which says "Connected your account to
    _connector_." If it did not work, it says why ("The sign-in was cancelled or refused at the
    service.", "Could not reach the connector's authorization server. Try again later.", ...).
-   Press **Connect** to try again.
+   Press **Connect** to try again. If you switched workspace in another tab meanwhile, or took
+   longer than 10 minutes, it says so; if you were signed out, you land on the sign-in page.
 
 **Reconnect** signs in again (for example with another account). **Disconnect** deletes your
 sign-in for that connector in this workspace (audited as `mcp.grant.removed`); your runs can't use
@@ -58,9 +60,11 @@ to revoke Kobe's access there too, use the service's own account settings.
 
 Kobe keeps the sign-in on the server, encrypted, and uses it only for your runs: the browser and
 your agent never see it. It renews the sign-in by itself when it runs out, and also when the
-connector's server turns it down before then (the call is then tried once more). **Sign-in
-expired** only means the last one ran out; you need to reconnect only if the connector still
-fails, because the provider ended the sign-in. Starting a connection is limited to 30 tries in 10
+connector's server turns it down before then (the call is then tried once more), so the card
+stays **Connected** while Kobe can renew it. **Sign-in expired, reconnect** appears only for a
+sign-in Kobe cannot renew (the service gave no renewal token and the sign-in ran out); press
+**Reconnect**. If the service ends a sign-in for good, Kobe deletes it and the card shows **Not
+connected** again. Starting a connection is limited to 30 tries in 10
 minutes per person ("Too many connection attempts. Try again in a few minutes.").
 
 ### Connectors that need an API key

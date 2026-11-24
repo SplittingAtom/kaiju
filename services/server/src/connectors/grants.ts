@@ -32,6 +32,7 @@ import {
   type RefreshSupport,
 } from "./grant-refresh.js";
 import { maskHint } from "./mask.js";
+import { parseOauthBundle } from "./oauth/bundle.js";
 import { sameUrl } from "./oauth/discovery.js";
 import { revealSiteKey } from "./site-key.js";
 
@@ -97,14 +98,47 @@ const summaryColumns = {
   updatedAt: connectorGrants.updatedAt,
 };
 
-/** The caller's own grants (masked). */
-export function listGrants(db: KobeDb, teamId: string, userId: string): Promise<GrantSummary[]> {
-  return withTeam(db, teamId, (tx) =>
+/**
+ * The caller's grants (masked) plus, for each OAuth grant, whether Kobe can renew it by itself
+ * (KOBE-835): it holds a refresh token and `canRefresh` (this server has an OAuth client wired).
+ * The sealed bundle is opened only to read that one fact; nothing from it is returned.
+ */
+export async function listGrantsWithRefresh(
+  db: KobeDb,
+  envelope: Envelope | undefined,
+  teamId: string,
+  userId: string,
+  canRefresh: boolean,
+): Promise<(GrantSummary & { readonly refreshable: boolean })[]> {
+  const rows = await withTeam(db, teamId, (tx) =>
     tx
-      .select(summaryColumns)
+      .select({ ...summaryColumns, sealed: connectorGrants.sealed })
       .from(connectorGrants)
       .where(and(eq(connectorGrants.teamId, teamId), eq(connectorGrants.userId, userId))),
   );
+  return rows.map(({ sealed, ...summary }) => ({
+    ...summary,
+    refreshable:
+      canRefresh &&
+      summary.kind === "oauth" &&
+      envelope !== undefined &&
+      hasRefreshToken(envelope, teamId, userId, summary.connectorId, sealed),
+  }));
+}
+
+function hasRefreshToken(
+  envelope: Envelope,
+  teamId: string,
+  userId: string,
+  connectorId: string,
+  sealed: string,
+): boolean {
+  try {
+    const plaintext = envelope.openString(sealed, grantContext(teamId, userId, connectorId));
+    return parseOauthBundle(plaintext).refresh_token !== undefined;
+  } catch {
+    return false;
+  }
 }
 
 /** What a stored grant is made of, before sealing. */

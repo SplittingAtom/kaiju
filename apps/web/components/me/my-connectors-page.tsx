@@ -62,8 +62,17 @@ export function MyConnectorsPage() {
         description="Some connectors act as you: connect your own account (OAuth) or add your own API key. Kobe stores it encrypted, uses it only for your runs, and never shows it again."
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
-      {returned !== null && state.status !== "ready" ? (
-        <OauthReturnNotice result={returned} name={undefined} />
+      {/* One notice, shown once the list has loaded so its text (the name) never changes after it
+          is announced. */}
+      {returned !== null && state.status !== "loading" ? (
+        <OauthReturnNotice
+          result={returned}
+          name={
+            state.status === "ready"
+              ? state.data.connectors.find((c) => c.id === returned.connectorId)?.name
+              : undefined
+          }
+        />
       ) : null}
       <ResourceView state={state} label="connectors">
         {(data: Loaded) => {
@@ -73,24 +82,13 @@ export function MyConnectorsPage() {
               c.status === "active" &&
               (c.authKind === "api_key" || c.authKind === "oauth"),
           );
-          const notice =
-            returned === null ? null : (
-              <OauthReturnNotice
-                result={returned}
-                name={data.connectors.find((c) => c.id === returned.connectorId)?.name}
-              />
-            );
           if (needYou.length === 0) {
             return (
-              <>
-                {notice}
-                <EmptyState title="No connector in this workspace needs your own account or key." />
-              </>
+              <EmptyState title="No connector in this workspace needs your own account or key." />
             );
           }
           return (
             <div className="flex flex-col gap-3">
-              {notice}
               {needYou.map((c) =>
                 c.authKind === "oauth" ? (
                   <OauthConnectorCard

@@ -32,13 +32,15 @@ const massive = {
   // No tools pinned yet: still listed, so a member can connect first.
   tools: [],
 };
-const grant = (expires: string | null) => ({
+const grant = (expires: string | null, refreshable = true) => ({
   connector_id: ID,
   hint: "••••",
   kind: "oauth",
   expires_at: expires,
+  refreshable,
   created_at: "2026-11-20T10:00:00Z",
-  updated_at: "2026-11-20T10:00:00Z",
+  // A refresh bumps updated_at; the card shows when the member connected.
+  updated_at: "2026-11-23T09:00:00Z",
 });
 const FUTURE = new Date(Date.now() + 3_600_000).toISOString();
 const PAST = new Date(Date.now() - 3_600_000).toISOString();
@@ -142,10 +144,20 @@ describe("My connectors: OAuth (KOBE-835)", () => {
     expect(calls.some((c) => c.method === "DELETE")).toBe(true);
   });
 
-  it("says when the sign-in expired and offers Reconnect", async () => {
-    routes([grant(PAST)], { [START]: [200, { authorization_url: AUTHORIZE }] });
+  it("stays Connected after the access token ran out while Kobe can renew it, showing when it connected", async () => {
+    routes([grant(PAST, true)]);
     renderTeam(<MyConnectorsPage />, MEMBER);
-    expect(await screen.findByText("Sign-in expired")).toBeTruthy();
+    expect(await screen.findByText("Connected")).toBeTruthy();
+    expect(card().queryByText(/Sign-in expired/)).toBeNull();
+    const since = card().getByText(/First connected/);
+    expect(since.querySelector("time")?.getAttribute("datetime")).toBe("2026-11-20T10:00:00Z");
+  });
+
+  it("says the sign-in expired only when Kobe cannot renew it, and offers Reconnect", async () => {
+    routes([grant(PAST, false)], { [START]: [200, { authorization_url: AUTHORIZE }] });
+    renderTeam(<MyConnectorsPage />, MEMBER);
+    expect(await screen.findByText("Sign-in expired, reconnect")).toBeTruthy();
+    expect(card().getByText(/cannot renew this sign-in by itself/)).toBeTruthy();
     await userEvent.click(card().getByRole("button", { name: "Reconnect massive" }));
     await vi.waitFor(() => expect(assign).toHaveBeenCalledWith(AUTHORIZE));
   });
@@ -162,6 +174,9 @@ describe("the sign-in result (KOBE-835)", () => {
     renderTeam(<MyConnectorsPage />, MEMBER);
     expect(await screen.findByText("Connected your account to massive.")).toBeTruthy();
     expect(window.location.search).toBe("?keep=1");
+    // Announced once: a single notice, never replaced by a second one.
+    await screen.findByRole("article", { name: "massive" });
+    expect(screen.getAllByText(/Connected your account/)).toHaveLength(1);
   });
 
   it("shows a failure with Kobe's own sentence for a known reason", async () => {
@@ -175,6 +190,21 @@ describe("the sign-in result (KOBE-835)", () => {
     const alert = await screen.findByText(/Could not connect your account to massive/);
     expect(alert.textContent).toContain("cancelled or refused at the service");
     expect(window.location.search).toBe("");
+  });
+
+  it("explains a refusal before the sign-in opened (no workspace) with fixed words", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/me/connectors?connector_oauth=failed&reason=no_workspace",
+    );
+    routes([]);
+    renderTeam(<MyConnectorsPage />, MEMBER);
+    expect(
+      await screen.findByText(
+        /Could not connect your account to the connector\. Your active workspace changed/,
+      ),
+    ).toBeTruthy();
   });
 
   it("never shows query text as given: unknown reasons and connectors get fixed words", async () => {

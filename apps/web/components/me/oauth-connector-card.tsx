@@ -20,14 +20,15 @@ export function oauthStateOf(grant: ConnectorGrant | null, now: Date = new Date(
   if (grant === null || (grant.kind !== undefined && grant.kind !== "oauth")) {
     return "not_connected";
   }
-  if (grant.expiresAt && new Date(grant.expiresAt).getTime() <= now.getTime()) return "expired";
-  return "connected";
+  // The access token running out is routine while Kobe can renew it (refreshable): still connected.
+  const ranOut = grant.expiresAt ? new Date(grant.expiresAt).getTime() <= now.getTime() : false;
+  return ranOut && grant.refreshable !== true ? "expired" : "connected";
 }
 
 const STATE_LABEL: Readonly<Record<OauthState, string>> = {
   not_connected: "Not connected",
   connected: "Connected",
-  expired: "Sign-in expired",
+  expired: "Sign-in expired, reconnect",
 };
 
 /**
@@ -104,12 +105,11 @@ export function OauthConnectorCard({
           <span>Sign in with your own account at the service (OAuth). No key to copy.</span>
         ) : state === "expired" ? (
           <span>
-            Kobe renews the sign-in by itself when the service allows it. If the connector still
-            fails, reconnect.
+            Kobe cannot renew this sign-in by itself. Reconnect to use the connector again.
           </span>
         ) : grant ? (
           <span>
-            Since <DateTime value={grant.updatedAt} />
+            First connected <DateTime value={grant.createdAt} />
           </span>
         ) : null}
       </p>

@@ -21,9 +21,11 @@
   comes from the request (no open redirect). `site` is honoured only for `site.connectors.manage`;
   anyone else goes to My connectors. Any other start body is a 400. In-flight states without the
   field still work (`ret` is optional, default `me`).
-- **`invalid_state` stays a 400 JSON answer** (unchanged): it reveals nothing and existing
-  refusal tests pin it. Expired states are rare (10 min TTL); the web maps the code to a sentence
-  if it ever arrives as a reason.
+- **Callback refusals before the state opens are pages, not JSON** (review round 1): a wrapper on
+  the callback path only (`oauthCallbackRefusals`, mounted ahead of the session check) turns a 401
+  into a 303 to `/sign-in` and a 400 / 403 / 409 into a 303 to
+  `/me/connectors?connector_oauth=failed&reason=invalid_state|no_workspace`: fixed paths on
+  `publicUrl`, no connector id, nothing from the request. No grant is stored on any of them.
 - **Failure reasons** are fixed codes; the web maps known ones to its own sentences and anything
   else to a generic one. The connector is named from the page's own list by UUID, never from the
   query. The authorization server's `error_description` is never forwarded (test).
@@ -33,9 +35,14 @@
   add an outbound call per disconnect; the guide tells members to revoke at the service. No new
   route was needed.
 - **States on My connectors:** not connected (no grant, or a grant of another kind), connected,
-  sign-in expired (`expires_at` past; Kobe still refreshes on use, so the text says reconnect only
-  if it keeps failing). "Needs reconnect" after a refused refresh shows as not connected, because
-  the server drops the grant then.
+  "Sign-in expired, reconnect". Review round 1: `GET /v1/connector-grants` now sends
+  `refreshable` (OAuth grant holding a refresh token, and this server has OAuth refresh wired;
+  read by opening the sealed bundle server-side, nothing from it returned; false for API keys).
+  A grant whose access token ran out stays **Connected** while refreshable; expired only when it
+  is not. "Needs reconnect" after a refused refresh shows as not connected (the server drops the
+  grant). The card shows "First connected" (`created_at`, which a refresh or reconnect keeps),
+  not the last refresh. The result notice renders once, after the list loads, so it is
+  announced once.
 - **OAuth connectors are listed on My connectors even with 0 tools**, so members and admins can
   connect first.
 - **Chat + menu keeps hiding a connector with nothing exposed** (the "team shows the member
@@ -58,6 +65,10 @@
   account in the connector's details, or My connectors, in a workspace that enabled it, then
   Re-probe". `oauth_unreachable` added to the web's shown 5xx codes (fixed server sentence).
 
+- **State is not single use** (pre-existing, KOBE-109): the nonce is not recorded. Left as is
+  (review round 1): a replay needs the same user's session and active team plus a fresh code the
+  authorization server issued for that state's PKCE verifier, so it is not exploitable.
+
 ## Open questions (for Chris or the coordinator)
 
 - ac-4 (verify on the test install with Massive) not done here: needs a deploy and a person to
@@ -79,8 +90,15 @@
   console, then Re-probe".
 - Long lists: `team-connectors-page.test.tsx`, `connector-detail-panel.test.tsx` (KOBE-835 blocks).
 - ac-3 browser: `e2e/browser/tests/connector-oauth.spec.ts`, skipped unless
-  `KOBE_OAUTH_CONNECTOR` names a connector backed by a consent-at-once server (the e2e fake
-  `e2e/lib/fake-oauth-mcp.js` exists for k3d gate4 but is not served to the browser suite).
+  `KOBE_OAUTH_CONNECTOR` names a connector backed by a consent-at-once server. To run it against
+  the existing fake `e2e/lib/fake-oauth-mcp.js` (today only started in a pod by gate4's U7 story)
+  it would take: serving the fake where both the Playwright browser and the server reach it (a
+  Service plus the browser's host map, `KOBE_BROWSER_MAP`, as Gate 5 does), its address allowed by
+  the connector address policy (chart `mcpProxy.allowedInternalCidrs` / the server's connector
+  policy) and its port, an OAuth connector registered to it and enabled for `KOBE_USER`'s team,
+  and `KOBE_OAUTH_CONNECTOR` set. Its `tools/list` needs no token, so it would not exercise the
+  0-tool admin-connect path; that would need a flag making `tools/list` require a token. Not built
+  (follow-up).
 - Guide: `docs/guide/connectors-and-apps.md` (Connect your account or add your own key),
   `docs/guide/admin/site-admin.md` (Adding a connector that uses OAuth, filter),
   `docs/guide/admin/team-admin.md` (filter, Choose all shown),

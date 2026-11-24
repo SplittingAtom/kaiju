@@ -203,12 +203,22 @@ const grantSummary = obj({
   created_at: dateTime,
   updated_at: dateTime,
 });
+/** The list adds whether Kobe renews an OAuth grant by itself (KOBE-835). */
+const listedGrant = obj({
+  connector_id: uuid,
+  hint: str,
+  kind: oneOfStrings(...CONNECTOR_GRANT_KIND_VALUES),
+  expires_at: nullable(dateTime),
+  refreshable: bool,
+  created_at: dateTime,
+  updated_at: dateTime,
+});
 
 const ConnectorGrantEnvelope = untyped("ConnectorGrantEnvelope", obj({ grant: grantSummary }));
 
 export const connectorGrantsDetails: Readonly<Record<string, CatalogDetail>> = {
   "get /v1/connector-grants": {
-    response: untyped("ConnectorGrantList", obj({ grants: arr(grantSummary) })),
+    response: untyped("ConnectorGrantList", obj({ grants: arr(listedGrant) })),
   },
   "delete /v1/connector-grants/{connectorId}": { status: 204, errors: ["404"] },
   "put /v1/connector-grants/{connectorId}": {

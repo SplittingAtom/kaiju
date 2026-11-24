@@ -45,6 +45,8 @@ export interface FakeOauthOptions {
   readonly refreshDelayAfterRotateMs?: number;
   /** Leave `expires_in` out of token responses (it is only RECOMMENDED, RFC 6749 5.1). */
   readonly omitExpiresIn?: boolean;
+  /** Issue no refresh token from the authorization code (a sign-in Kobe cannot renew). */
+  readonly omitRefreshToken?: boolean;
 }
 
 export interface IssuedTokens {
@@ -268,7 +270,7 @@ export class FakeOauthServer {
         access_token: tokens.accessToken,
         token_type: "Bearer",
         ...(o.omitExpiresIn ? {} : { expires_in: o.expiresIn ?? 3600 }),
-        refresh_token: tokens.refreshToken,
+        ...(o.omitRefreshToken ? {} : { refresh_token: tokens.refreshToken }),
         scope: "tools",
       });
     }

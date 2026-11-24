@@ -27,6 +27,8 @@ const REASONS = {
   oauth_unsupported: "This connector's authorization server cannot be used safely with Kobe.",
   registration_failed: "The authorization server did not accept Kobe as a client.",
   invalid_state: "The sign-in took too long or was started elsewhere. Connect again.",
+  no_workspace:
+    "Your active workspace changed, or you are no longer in it. Choose the workspace and connect again.",
 } as const;
 export type OauthFailureReason = keyof typeof REASONS;
 

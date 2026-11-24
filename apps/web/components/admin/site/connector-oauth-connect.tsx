@@ -107,7 +107,7 @@ export function OauthConnectSection({
                   {mine.connected === "connected"
                     ? "Connected"
                     : mine.connected === "expired"
-                      ? "Sign-in expired"
+                      ? "Sign-in expired, reconnect"
                       : "Not connected"}
                 </Badge>
                 {mine.teamName !== null ? (

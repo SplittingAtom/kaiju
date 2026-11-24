@@ -307,6 +307,68 @@ describe("where the callback sends the browser (KOBE-835)", () => {
     expect(location.toString()).not.toContain("hi");
   });
 
+  it("sends a member without a usable active workspace to My connectors with a fixed reason", async () => {
+    const started = await dave.post(`${BASE}/${oauthConnector}/oauth/start`);
+    const back = await fake.authorize(
+      (started.json as { authorization_url: string }).authorization_url,
+    );
+    const daveId = must(
+      (await h.admin.query<{ id: string }>(`SELECT id FROM users WHERE email = 'dave@oauth.test'`))
+        .rows[0]?.id,
+    );
+    await h.admin.query(`DELETE FROM team_members WHERE team_id = $1 AND user_id = $2`, [
+      teamT,
+      daveId,
+    ]);
+    try {
+      const res = await dave.get(callbackPath(back));
+      expect(res.status).toBe(303);
+      const to = new URL(must(res.headers.get("location") ?? undefined));
+      expect(to.pathname).toBe("/me/connectors");
+      expect(Object.fromEntries(to.searchParams)).toEqual({
+        connector_oauth: "failed",
+        reason: "no_workspace",
+      });
+    } finally {
+      await h.admin.query(
+        `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
+        [teamT, daveId],
+      );
+    }
+  });
+
+  it("says whether Kobe renews an OAuth sign-in by itself (refreshable)", async () => {
+    const connectOnce = async () => {
+      const started = await dave.post(`${BASE}/${oauthConnector}/oauth/start`);
+      const back = await fake.authorize(
+        (started.json as { authorization_url: string }).authorization_url,
+      );
+      await dave.get(callbackPath(back));
+    };
+    await connectOnce();
+    // The access token ran out: still renewable, so not an expired sign-in.
+    await h.admin.query(
+      `UPDATE connector_grants SET expires_at = now() - interval '1 minute' WHERE connector_id = $1`,
+      [oauthConnector],
+    );
+    expect((await dave.get(BASE)).json).toMatchObject({
+      grants: [{ connector_id: oauthConnector, kind: "oauth", refreshable: true }],
+    });
+    await dave.delete(`${BASE}/${oauthConnector}`);
+    fake.options = { omitRefreshToken: true };
+    try {
+      await connectOnce();
+    } finally {
+      fake.options = {};
+    }
+    const listed = await dave.get(BASE);
+    expect(listed.json).toMatchObject({
+      grants: [{ connector_id: oauthConnector, kind: "oauth", refreshable: false }],
+    });
+    expect(listed.text).not.toContain("rt-secret");
+    await dave.delete(`${BASE}/${oauthConnector}`);
+  });
+
   it("disconnects: removes the grant and audits it", async () => {
     const started = await dave.post(`${BASE}/${oauthConnector}/oauth/start`);
     const back = await fake.authorize(
@@ -523,31 +585,42 @@ describe("client metadata", () => {
 });
 
 describe("refusals", () => {
+  /** A refusal before the state opens: a 303 to My connectors with a fixed reason, nothing else. */
+  const refusedTo = (res: { status: number; headers: Headers }, reason: string) => {
+    expect(res.status).toBe(303);
+    const to = new URL(must(res.headers.get("location") ?? undefined));
+    expect(to.origin + to.pathname).toBe("http://kobe.test/me/connectors");
+    expect(Object.fromEntries(to.searchParams)).toEqual({ connector_oauth: "failed", reason });
+  };
+
   it("refuses a state tampered with", async () => {
     const { back } = await authorizeFor(alice);
     back.searchParams.set("state", `${back.searchParams.get("state")}x`);
-    const res = await alice.get(callbackPath(back));
-    expect(res.status).toBe(400);
-    expect(res.json).toMatchObject({ code: "invalid_state" });
+    refusedTo(await alice.get(callbackPath(back)), "invalid_state");
   });
 
   it("refuses a state minted for another user", async () => {
     const { back } = await authorizeFor(alice);
-    const res = await bob.get(callbackPath(back));
-    expect(res.status).toBe(400);
-    expect(res.json).toMatchObject({ code: "invalid_state" });
+    refusedTo(await bob.get(callbackPath(back)), "invalid_state");
     expect((await bob.get(BASE)).json).toEqual({ grants: [] });
   });
 
   it("refuses a state used in another team", async () => {
     const { back } = await authorizeFor(alice);
-    const res = await carol.get(callbackPath(back));
-    expect(res.status).toBe(400);
+    refusedTo(await carol.get(callbackPath(back)), "invalid_state");
   });
 
   it("refuses a callback without a state or with an unknown one", async () => {
-    expect((await alice.get(`${CALLBACK}?code=abc`)).status).toBe(400);
-    expect((await alice.get(`${CALLBACK}?code=abc&state=nonsense`)).status).toBe(400);
+    refusedTo(await alice.get(`${CALLBACK}?code=abc`), "invalid_state");
+    refusedTo(await alice.get(`${CALLBACK}?code=abc&state=nonsense`), "invalid_state");
+  });
+
+  it("sends a signed-out browser to the sign-in page, keeping nothing of the request", async () => {
+    const { back } = await authorizeFor(alice);
+    const res = await h.app.request(`http://kobe.test${callbackPath(back)}`);
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("http://kobe.test/sign-in");
+    expect((await alice.get(BASE)).json).toEqual({ grants: [] });
   });
 
   it("refuses a mismatching or missing iss (RFC 9207)", async () => {
