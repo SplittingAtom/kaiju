@@ -387,7 +387,6 @@ test("real allowlist: RN-3's file-name entries claim repository files only (KOBE
   const theirs = [
     ["services/server/src/x.ts", 'import { a } from "../kobe-mcp/access.js";', "kobe-mcp"],
     ["apps/web/x.test.tsx", 'import { FakeKobe } from "../../lib/chat/testing/fake-kobe";', "kobe"],
-    ["services/server/src/x.ts", 'import { KOBE_FILE } from "./agents/kobe.js";', "kobe"],
     ["docs/x.md", "see `apps/web/components/chat/kobe-runtime.tsx`", "kobe-runtime"],
   ];
   for (const [path, line, token] of theirs) {
@@ -408,6 +407,13 @@ test("real allowlist: RN-3's file-name entries claim repository files only (KOBE
       /^RN-6: Image names/,
     ],
     ["services/Dockerfile", "COPY ca.pem /etc/kobe/extra-ca/", "kobe", /^RN-6: Image names/],
+    // The gallery agent's file moves with the agent (KOBE-831), not with RN-3.
+    [
+      "services/server/src/x.ts",
+      'import { KOBE_FILE } from "./agents/kobe.js";',
+      "kobe",
+      /^provisional: \(Q13\)/,
+    ],
     // Test URLs, a database name, a runtime file and regex literals in tests are not files.
     [
       "apps/web/x.test.ts",
@@ -425,7 +431,7 @@ test("real allowlist: RN-3's file-name entries claim repository files only (KOBE
       "services/sandbox-agent/src/x.ts",
       'join(dir, "agent/kobe-context.json")',
       "kobe",
-      /^RN-3: Triage: Lower-case names in application code/,
+      /^provisional: \(Q4\)/,
     ],
     [
       "apps/web/x.test.tsx",
@@ -607,7 +613,14 @@ const DISTINCT_VALUES = {
   "kobe-server.kobe-system.svc":
     "one example URL in a config test; both halves change, in RN-3 and RN-6",
   kobe_:
-    "test database prefix (RN-3) vs column aliases in docs/perf queries (RN-5, with the span attributes they read)",
+    "test database prefix (RN-8) vs column aliases in docs/perf queries (RN-5, with the span attributes they read)",
+  "kobe-migrate":
+    "binary, log service and connection application name (RN-3) vs the chart's migrate Job, named after the release (RN-6)",
+  "kobe-audit":
+    "audit export file name (RN-3) vs the syslog APP-NAME and the Better Auth plugin id (RN-5)",
+  "kobe-egress": "a test's temp directory (RN-3) vs the egress proxy's Basic auth realm (RN-5)",
+  "kobe-sign-in-throttle":
+    "the Better Auth plugin id (RN-5) vs the derived-hash label of the throttle key (kept)",
 };
 
 test("real allowlist: no paired value is split across steps, apart from the listed distinct ones", () => {
