@@ -31,7 +31,7 @@ cleanup() {
   # Nothing of the test may outlive it on the machine: helper, group, the identities' leftovers.
   for id in 2000 2001 2002 2003 3000 3001 3002 3003; do sudo pkill -KILL -u "$id" 2>/dev/null || true; done
   sudo rm -f "$helper" "$reclaim" /tmp/k71-secret-* 2>/dev/null || true
-  sudo groupdel kobe-test-agent 2>/dev/null || true
+  sudo groupdel kaiju-test-agent 2>/dev/null || true
 }
 trap cleanup EXIT
 # CI only: let the identities' uids traverse (never read or write) the directories to the checkout and
@@ -52,8 +52,8 @@ fi
 gcc -std=c11 -O2 -Wall -Wextra -Werror -D_FORTIFY_SOURCE=2 -fstack-protector-strong \
   -DKAIJU_AGENT_UID="$uid" -DKAIJU_WORKSPACE_GID="$gid" \
   -o "$work/kaiju-runas" ../../images/sandbox/runas/kaiju-runas.c
-sudo groupadd -f kobe-test-agent
-agent_gid=$(getent group kobe-test-agent | cut -d: -f3)
+sudo groupadd -f kaiju-test-agent
+agent_gid=$(getent group kaiju-test-agent | cut -d: -f3)
 sudo install -d -m 0755 /usr/local/libexec
 sudo install -o root -g "$agent_gid" -m 0750 "$work/kaiju-runas" "$helper"
 sudo install -o root -g root -m 0755 ../../images/sandbox/runas/kaiju-reclaim.sh "$reclaim"

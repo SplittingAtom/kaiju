@@ -10,12 +10,16 @@ import pg from "pg";
  *
  * Other worktrees run DB suites against the same server at the same time, so a database is dropped
  * only when all of these hold: its name is exactly a throwaway test database's
- * (`kobe_test_<hex8>[_<lane>]` or `kobe_up_<hex8>[_<lane>]`), it was created more than a day ago,
+ * (`kaiju_test_<hex8>[_<lane>]` or `kaiju_up_<hex8>[_<lane>]`), it was created more than a day ago,
  * no session is connected to it, and a plain `DROP DATABASE` (never `WITH (FORCE)`) succeeds, which
  * Postgres refuses while anyone is connected.
+ *
+ * The same names with the `kobe_` prefix (before the repository rename, KOBE-752) are swept by the
+ * same rules: checkouts on older code still leave them.
  */
 
-export const STALE_TEST_DATABASE_PATTERN = /^kobe_(test|up)_[0-9a-f]{8}(_[a-z0-9]{1,20})?$/;
+export const STALE_TEST_DATABASE_PATTERN =
+  /^(?:kaiju|kobe)_(test|up)_[0-9a-f]{8}(_[a-z0-9]{1,20})?$/;
 export const STALE_TEST_DATABASE_AGE_MS = 24 * 60 * 60 * 1000;
 /** At most this many drops per sweep, oldest first, so a backlog never stalls one setup for long. */
 export const STALE_TEST_DATABASE_LIMIT = 100;
@@ -66,7 +70,7 @@ export async function listTestDatabaseCandidates(
             (pg_stat_file('base/' || d.oid || '/PG_VERSION', true)).modification AS created_at,
             (SELECT count(*)::int FROM pg_stat_activity a WHERE a.datname = d.datname) AS connections
        FROM pg_database d
-      WHERE d.datname ~ '^kobe_(test|up)_'`,
+      WHERE d.datname ~ '^(kaiju|kobe)_(test|up)_'`,
   );
   return rows.map((r) => ({ name: r.name, createdAt: r.created_at, connections: r.connections }));
 }

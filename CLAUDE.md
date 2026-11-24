@@ -4,10 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Kobe is a self-hosted, Apache-2.0 conversational agent platform for one organization and its teams,
+Kaiju is a self-hosted, Apache-2.0 conversational agent platform for one organization and its teams,
 deployed only with Helm on k3s. The agreed spec (32 decisions, D1–D32) lives outside this repo (path
 in `CLAUDE.local.md`). Decisions there are
-final — do not re-litigate them. Kobe inherits nothing from Catalyst Agents/Foundry.
+final — do not re-litigate them. Kaiju inherits nothing from Catalyst Agents/Foundry.
+
+The product was called Kobe until the rename (KOBE-745..754, `docs/specs/rename-kaiju.md`). Names
+that existing installs persist keep the old name on purpose (ticket ids, Postgres settings, roles
+and functions, signed and stored identifiers); `scripts/rename/allowlist.txt` lists every one, and
+`node scripts/rename/guard.mjs` fails on any other.
 
 Work is tracked in Hadron (project `kobe`, tickets KOBE-1..65, four phases each closed by a gate ticket).
 Start each session by reading `docs/RUN-LEDGER.md` and running `scripts/hadron.sh ignite`; keep the ledger current.
@@ -16,7 +21,7 @@ Several agents work in parallel: follow `docs/parallel-work.md` (worktree per ti
 ledger in `docs/ledger/`, tables in your area's `packages/db/src/tenancy/<area>.ts`, `db:rebase` for
 migration conflicts).
 
-**User-facing docs.** Every change to Kobe must be evaluated for how it should be documented in the
+**User-facing docs.** Every change to Kaiju must be evaluated for how it should be documented in the
 user- and agent-facing guide (`docs/guide/`, served in the app at `/docs` and to agents as
 `/llms.txt`, `/llms-full.txt` and `/docs/<slug>.md`). A change that adds, removes or alters
 anything a member, admin or in-sandbox agent sees or can do updates the guide in the same PR
@@ -52,15 +57,15 @@ this repository is public, so infrastructure details never go into tracked files
 ## Architecture
 
 - **Workspaces:** `apps/web` (Next.js 16 + assistant-ui), `services/{server,sandbox-agent,mcp-proxy,egress-proxy}`
-  (Node 24, Hono), `packages/protocol` (Kobe Event Stream types shared by server and web),
-  `packages/db` (Drizzle, RLS, cross-team probe suite), `tools/license-check`, `charts/kobe` (Helm).
+  (Node 24, Hono), `packages/protocol` (Kaiju Event Stream types shared by server and web),
+  `packages/db` (Drizzle, RLS, cross-team probe suite), `tools/license-check`, `charts/kaiju` (Helm).
 - **Internal packages compile to `dist/`** and are consumed through `exports` → `dist`, so tests and
   typechecks of dependents need `^build` first (turbo handles this).
 - **ESM everywhere**, TS `NodeNext` resolution: relative imports in services/packages use `.js` extensions.
   `apps/web` uses `Bundler` resolution.
 - **Config is validated with zod at startup** (`src/config.ts` per service); invalid env fails fast.
 - **Sandbox image:** `images/sandbox/Dockerfile` (Python 3.12 slim + Node 22 + Pi pinned 1.4.0 +
-  `kobe-sandbox-agent` + data stack from `images/sandbox/requirements.txt`); checks in
+  `kaiju-sandbox-agent` + data stack from `images/sandbox/requirements.txt`); checks in
   `images/sandbox/test-image.sh <image>`; built, tested and Trivy-scanned by
   `.github/workflows/sandbox-image.yml` (fails on fixable CRITICAL).
 - **Images:** one multi-stage Dockerfile per image, built from the repo root; the four Node services
@@ -71,7 +76,7 @@ this repository is public, so infrastructure details never go into tracked files
 ### Non-negotiables (enforced in review)
 
 - k3s + Helm only — no `docker compose` anywhere, including dev (Tilt against k3s; k3d only in CI).
-- Kobe refuses to run agents without a gVisor or Kata RuntimeClass; never add a bypass mode. Check the
+- Kaiju refuses to run agents without a gVisor or Kata RuntimeClass; never add a bypass mode. Check the
   RuntimeClass **handler** (`runsc`/`kata*`), not its name.
 - Secrets never enter sandboxes: models via Bifrost with a session token, MCP via `mcp-proxy`, internet
   via `egress-proxy`.
@@ -110,7 +115,7 @@ this repository is public, so infrastructure details never go into tracked files
   pass would hide a violation planted outside `packages/db`. Do not re-enable its cache.
 - Server decides every tool call; approvals are HMAC-signed over (run_id, tool_call_id, canonical input).
   No approval bypass.
-- Pi `1.4.x` in RPC mode behind `kobe-sandbox-agent`, which dials out over WSS; sandboxes accept no
+- Pi `1.4.x` in RPC mode behind `kaiju-sandbox-agent`, which dials out over WSS; sandboxes accept no
   inbound connections. `pi-server` is not used in v1.
 - No Redis: Postgres `LISTEN/NOTIFY` for fan-out hints; Postgres is always the durable record.
 - Dependencies MIT/Apache/BSD/MPL only; exceptions documented in

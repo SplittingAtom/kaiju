@@ -23,22 +23,35 @@ describe("selectStaleTestDatabases (KOBE-743)", () => {
     expect(
       selectStaleTestDatabases(
         [
-          db("kobe_test_0a1b2c3d", DAY + 1),
-          db("kobe_up_0a1b2c3d_wt7", 3 * DAY),
-          db("kobe_test_ffffffff_g60", 2 * DAY),
+          db("kaiju_test_0a1b2c3d", DAY + 1),
+          db("kaiju_up_0a1b2c3d_wt7", 3 * DAY),
+          db("kaiju_test_ffffffff_g60", 2 * DAY),
         ],
         { now: NOW },
       ),
-    ).toEqual(["kobe_up_0a1b2c3d_wt7", "kobe_test_ffffffff_g60", "kobe_test_0a1b2c3d"]);
+    ).toEqual(["kaiju_up_0a1b2c3d_wt7", "kaiju_test_ffffffff_g60", "kaiju_test_0a1b2c3d"]);
+  });
+
+  it("also selects the names used before the repository rename (KOBE-752)", () => {
+    expect(
+      selectStaleTestDatabases(
+        [
+          db("kobe_test_0a1b2c3d", DAY + 1),
+          db("kobe_up_0a1b2c3d_wt7", 3 * DAY),
+          db("kaiju_test_ffffffff_g60", 2 * DAY),
+        ],
+        { now: NOW },
+      ),
+    ).toEqual(["kobe_up_0a1b2c3d_wt7", "kaiju_test_ffffffff_g60", "kobe_test_0a1b2c3d"]);
   });
 
   it("never selects a database that is young, in use, or of unknown age", () => {
     expect(
       selectStaleTestDatabases(
         [
-          db("kobe_test_0a1b2c3d", DAY - 1),
-          db("kobe_test_0a1b2c3e", DAY),
-          db("kobe_test_0a1b2c3f", 10 * DAY, 1),
+          db("kaiju_test_0a1b2c3d", DAY - 1),
+          db("kaiju_test_0a1b2c3e", DAY),
+          db("kaiju_test_0a1b2c3f", 10 * DAY, 1),
           db("kobe_test_0a1b2c30", null),
         ],
         { now: NOW },
@@ -49,21 +62,26 @@ describe("selectStaleTestDatabases (KOBE-743)", () => {
   it("never selects another name, however old and idle", () => {
     const names = [
       "postgres",
+      "kaiju",
       "kobe",
+      "kaiju_lane_wt7",
       "kobe_lane_wt7",
-      "kobe_proto33",
+      "kaiju_proto33",
       "rev33",
-      "kobe_test_",
-      "kobe_test_0a1b2c3",
-      "kobe_test_0A1B2C3D",
-      "kobe_test_0a1b2c3d_",
-      "kobe_test_0a1b2c3d_WT7",
-      "kobe_test_0a1b2c3d_wt7_x",
-      "kobe_test_0a1b2c3d; DROP DATABASE postgres",
+      "kaiju_test_",
+      "kaiju_test_0a1b2c3",
+      "kaiju_test_0A1B2C3D",
+      "kaiju_test_0a1b2c3d_",
+      "kaiju_test_0a1b2c3d_WT7",
+      "kaiju_test_0a1b2c3d_wt7_x",
+      "kaiju_test_0a1b2c3d; DROP DATABASE postgres",
+      "kaiju_owner_0a1b2c3d",
+      "kaiju_up_owner_0a1b2c3d",
       "kobe_owner_0a1b2c3d",
-      "kobe_up_owner_0a1b2c3d",
       "xkaiju_test_0a1b2c3d",
-      "kobe_test_0a1b2c3d_aaaaaaaaaaaaaaaaaaaaa",
+      "xkobe_test_0a1b2c3d",
+      "kaijukobe_test_0a1b2c3d",
+      "kaiju_test_0a1b2c3d_aaaaaaaaaaaaaaaaaaaaa",
     ];
     expect(
       selectStaleTestDatabases(
@@ -74,10 +92,10 @@ describe("selectStaleTestDatabases (KOBE-743)", () => {
   });
 
   it("caps the drops per sweep", () => {
-    const many = Array.from({ length: 5 }, (_, i) => db(`kobe_test_0000000${i}`, (10 - i) * DAY));
+    const many = Array.from({ length: 5 }, (_, i) => db(`kaiju_test_0000000${i}`, (10 - i) * DAY));
     expect(selectStaleTestDatabases(many, { now: NOW, limit: 2 })).toEqual([
-      "kobe_test_00000000",
-      "kobe_test_00000001",
+      "kaiju_test_00000000",
+      "kaiju_test_00000001",
     ]);
   });
 });

@@ -5,25 +5,31 @@ import { sweepStaleTempDirs, sweepStaleTestDatabases } from "./sweep.js";
 
 /**
  * Test database lanes (KOBE-482). Several worktrees ("lanes") run DB suites against one dev
- * Postgres server at once. Each lane connects to its own maintenance database `kobe_lane_<lane>`
+ * Postgres server at once. Each lane connects to its own maintenance database `kaiju_lane_<lane>`
  * (instead of the server URL's own database) and names every throwaway database and role it
- * creates `kobe_<kind>_<hex>_<lane>`, so a lane's leftovers can be listed and dropped without
+ * creates `kaiju_<kind>_<hex>_<lane>`, so a lane's leftovers can be listed and dropped without
  * touching another lane's. Without a lane (CI) nothing changes.
+ *
+ * Before the repository rename (KOBE-752) these names started with `kobe_`. Checkouts still on
+ * older code keep creating them, so listing and dropping a lane cover both prefixes; new names
+ * always use the current one.
  */
 
 export const LANE_ENV = "KAIJU_TEST_DB_LANE";
 const LANE_PATTERN = /^[a-z0-9]{1,20}$/;
 const MAX_LANE_LENGTH = 20;
-const REPO_PREFIX = "kobe";
+/** Object name prefix: current first, then the one used before the rename (KOBE-752). */
+const OBJECT_PREFIX = "kaiju";
+const OBJECT_PREFIXES = [OBJECT_PREFIX, "kobe"] as const;
+/** Leading repository names dropped from a worktree directory name (checkouts made before the rename too). */
+const REPO_PREFIXES = ["kaiju", "kobe"] as const;
 const WORKSPACE_MARKER = "pnpm-workspace.yaml";
 
-/** Lane from a worktree directory name: `Kobe-wt482` → `wt482`, `Kobe` → `kobe`. */
+/** Lane from a worktree directory name: `Kaiju-wt482` → `wt482`, `Kaiju` → `kaiju`. */
 export function laneFromDirectory(name: string): string {
   const alnum = name.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const trimmed =
-    alnum.startsWith(REPO_PREFIX) && alnum.length > REPO_PREFIX.length
-      ? alnum.slice(REPO_PREFIX.length)
-      : alnum;
+  const prefix = REPO_PREFIXES.find((p) => alnum.startsWith(p) && alnum.length > p.length);
+  const trimmed = prefix ? alnum.slice(prefix.length) : alnum;
   if (!trimmed) {
     throw new Error(`cannot derive a test database lane from directory "${name}"; set ${LANE_ENV}`);
   }
@@ -60,7 +66,12 @@ export function resolveTestLane(
 }
 
 export function laneDatabaseName(lane: string): string {
-  return `kobe_lane_${lane}`;
+  return `${OBJECT_PREFIX}_lane_${lane}`;
+}
+
+/** The lane's maintenance database under every prefix (the old one may still exist). */
+function laneDatabaseNames(lane: string): readonly string[] {
+  return OBJECT_PREFIXES.map((p) => `${p}_lane_${lane}`);
 }
 
 /** The server URL with its database switched to the lane's maintenance database. */
@@ -76,10 +87,14 @@ export function laneSuffix(random: string, lane: string | undefined): string {
   return lane ? `${random}_${lane}` : random;
 }
 
-/** True for the lane's maintenance database and for objects named with its `laneSuffix`. */
+/**
+ * True for the lane's maintenance database and for objects named with its `laneSuffix`, under
+ * either prefix.
+ */
 export function isLaneObjectName(name: string, lane: string): boolean {
   return (
-    name === laneDatabaseName(lane) || new RegExp(`^kobe_[a-z_]+_[0-9a-f]{8}_${lane}$`).test(name)
+    laneDatabaseNames(lane).includes(name) ||
+    new RegExp(`^(?:${OBJECT_PREFIXES.join("|")})_[a-z_]+_[0-9a-f]{8}_${lane}$`).test(name)
   );
 }
 
@@ -108,7 +123,7 @@ export interface LaneObjects {
   readonly roles: readonly string[];
 }
 
-/** Every lane on the server (from its `kobe_lane_*` database) with its object counts. */
+/** Every lane on the server (from its `kaiju_lane_*` or `kobe_lane_*` database) with its object counts. */
 export async function listTestLanes(
   serverUrl: string,
 ): Promise<readonly { lane: string; databases: number; roles: number }[]> {
@@ -116,9 +131,9 @@ export async function listTestLanes(
   await admin.connect();
   try {
     const { rows } = await admin.query<{ datname: string }>(
-      `SELECT datname FROM pg_database WHERE datname LIKE 'kobe\\_lane\\_%' ORDER BY datname`,
+      `SELECT datname FROM pg_database WHERE datname ~ '^(${OBJECT_PREFIXES.join("|")})_lane_' ORDER BY datname`,
     );
-    const lanes = rows.map((r) => r.datname.slice("kobe_lane_".length));
+    const lanes = [...new Set(rows.map((r) => r.datname.replace(/^[a-z]+_lane_/, "")))].sort();
     return await Promise.all(
       lanes.map(async (lane) => {
         const objects = await laneObjects(admin, lane);
@@ -131,11 +146,12 @@ export async function listTestLanes(
 }
 
 async function laneObjects(admin: pg.Client, lane: string): Promise<LaneObjects> {
+  const prefixes = `^(${OBJECT_PREFIXES.join("|")})_`;
   const dbs = await admin.query<{ name: string }>(
-    `SELECT datname AS name FROM pg_database WHERE datname LIKE 'kobe\\_%'`,
+    `SELECT datname AS name FROM pg_database WHERE datname ~ '${prefixes}'`,
   );
   const roles = await admin.query<{ name: string }>(
-    `SELECT rolname AS name FROM pg_roles WHERE rolname LIKE 'kobe\\_%'`,
+    `SELECT rolname AS name FROM pg_roles WHERE rolname ~ '${prefixes}'`,
   );
   return {
     databases: dbs.rows.map((r) => r.name).filter((n) => isLaneObjectName(n, lane)),

@@ -25,6 +25,13 @@ privileged. The repository also requires approval before workflows from outside 
 | GitHub App credentials                                          | Secret `kobe-arc-github-app` in `kobe-ci-runners`                       |
 | Scratch volumes                                                 | StorageClass `longhorn-ci-scratch` (1 replica, deleted with the runner) |
 
+The cluster and GitHub names here (scale set and release `kobe-k3s`, namespace `kobe-ci-runners`,
+Secret `kobe-arc-github-app`, the GitHub App `kobe-arc-runners` and the nodes' sysctl file
+`90-kobe-ci-inotify.conf`) predate the rename to Kaiju and are kept on purpose: they name live
+objects, and renaming them means reinstalling the scale set and re-registering the App, which is
+infrastructure work outside the repository (KOBE-752). The scale set registers with the renamed
+repository through `githubConfigUrl`.
+
 Runners are ephemeral (one job each), scale 0–6, and run Docker-in-Docker so jobs can build images,
 use service containers (the `db-core` and `db-server` jobs' Postgres) and create the k3d cluster for e2e. Docker's data
 (60 Gi) and the job workspace (20 Gi) live on per-runner Longhorn volumes: the nodes' root disks

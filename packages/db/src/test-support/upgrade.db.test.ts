@@ -32,13 +32,13 @@ describe("out-of-order migration on an existing install", () => {
     const tag = `9999_out_of_order_${randomBytes(3).toString("hex")}`;
     journal.entries.push({ ...last, idx: last.idx + 1, when: last.when - 1, tag });
     writeFileSync(path, JSON.stringify(journal));
-    writeFileSync(join(dir, `${tag}.sql`), "CREATE TABLE kobe_out_of_order (id int);");
+    writeFileSync(join(dir, `${tag}.sql`), "CREATE TABLE kaiju_out_of_order (id int);");
 
     await runMigrations({ databaseUrl: db.ownerUrl, appRole: db.appRole, migrationsFolder: dir });
     const admin = new pg.Client({ connectionString: db.adminUrl });
     await admin.connect();
     try {
-      const res = await admin.query("SELECT to_regclass('kobe_out_of_order') AS t");
+      const res = await admin.query("SELECT to_regclass('kaiju_out_of_order') AS t");
       expect(res.rows[0].t).toBeNull(); // silently skipped
     } finally {
       await admin.end();

@@ -6,6 +6,10 @@ below.
 
 ## One ticket, one worktree, one branch
 
+The paths below assume the main checkout at `../Kaiju` and worktrees beside it; the directory names
+are your choice (checkouts made before the rename may still be called `Kobe…`), only the lane
+name below is derived from them.
+
 ```bash
 git worktree add ../Kobe-wt<N> -b kobe-<N>-<slug> origin/main
 cp ../Kobe/CLAUDE.local.md ../Kobe-wt<N>/   # local infra notes (gitignored)
@@ -168,12 +172,13 @@ hand-written migration too; how to write one is in
   file or suite creates its own throwaway database and roles, so agents can share one server (the
   dev Postgres; URL in `CLAUDE.local.md`). Each worktree is a **test lane** (KOBE-482):
   - **Picking the lane:** `KAIJU_TEST_DB_LANE` (1-20 of `[a-z0-9]`; empty means no lane), else the
-    worktree directory name lowercased to `[a-z0-9]` without the leading `kobe` (`Kobe-wt482` →
-    `wt482`, `Kobe` → `kobe`). CI sets `CI`, so it has no lane unless `KAIJU_TEST_DB_LANE` is set:
+    worktree directory name lowercased to `[a-z0-9]` without a leading `kaiju` (`Kaiju-wt482` →
+    `wt482`, `Kaiju` → `kaiju`; directories named `Kobe…` before the rename drop `kobe` the same
+    way, so their lanes stay). CI sets `CI`, so it has no lane unless `KAIJU_TEST_DB_LANE` is set:
     one database per job, as before.
-  - **What a lane changes:** every DB suite's global setup creates `kobe_lane_<lane>` if missing
+  - **What a lane changes:** every DB suite's global setup creates `kaiju_lane_<lane>` if missing
     (`prepareTestLane`), tests reach the server through that database instead of `postgres`, and
-    every throwaway database and role is named `kobe_<kind>_<hex>_<lane>` (`testNameSuffix()` in
+    every throwaway database and role is named `kaiju_<kind>_<hex>_<lane>` (`testNameSuffix()` in
     `@kaiju/db/testing`; use it for any database or role a test creates). Roles are cluster-wide but
     random per suite, and setup never drops a role it did not create, so lanes never touch each
     other's objects.
@@ -184,13 +189,18 @@ hand-written migration too; how to write one is in
   - **Cleaning up:** a crashed run leaves its lane's databases behind. With the lane idle,
     `pnpm --filter @kaiju/db build` then `pnpm --filter @kaiju/db test:lanes` lists lanes with their
     database and role counts and `pnpm --filter @kaiju/db test:lanes drop <lane>` drops one (its
-    `kobe_lane_<lane>` database, its throwaway databases and roles). Drop a worktree's lane when you
-    remove the worktree. Leftovers named without a lane (`kobe_test_<hex>`) predate lanes or come
+    `kaiju_lane_<lane>` database, its throwaway databases and roles). Drop a worktree's lane when you
+    remove the worktree. Leftovers named without a lane (`kaiju_test_<hex>`) predate lanes or come
     from runs with `KAIJU_TEST_DB_LANE=""`. Every DB suite's setup also drops, on the
-    `KAIJU_TEST_DATABASE_URL` server, up to 100 throwaway databases (`kobe_test_<hex>[_<lane>]`,
-    `kobe_up_<hex>[_<lane>]`, any lane) created more than a day ago with no session connected (a
+    `KAIJU_TEST_DATABASE_URL` server, up to 100 throwaway databases (`kaiju_test_<hex>[_<lane>]`,
+    `kaiju_up_<hex>[_<lane>]`, any lane) created more than a day ago with no session connected (a
     plain `DROP DATABASE`, which Postgres refuses while anyone connects), and removes
     `kaiju-upgrade-*` temp dirs older than an hour (KOBE-743). Leftover roles are not swept.
+  - **Names from before the rename (KOBE-752):** these names started with `kobe_` until the
+    repository was renamed, and checkouts on older code still create them. Listing and dropping a
+    lane, and the stale-database sweep, cover both prefixes (`kobe_lane_<lane>`,
+    `kobe_<kind>_<hex>_<lane>`, `kobe_test_…`, `kobe_up_…`) under the same rules, so nothing needs
+    renaming on the server; old names disappear as their lanes are dropped and the sweep runs.
 - **Tilt against the real cluster:** each agent uses its own namespace and port-forward:
 
   ```bash
