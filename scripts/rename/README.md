@@ -42,7 +42,9 @@ Kept groups protect file paths as well as contents: their content entries also m
 **Ownership.** Allowlist groups are checked top to bottom; the first entry that covers an
 occurrence owns it. `permanent` groups come first, then `provisional` (the guard refuses otherwise). Specific steps sit
 above the generic ones (RN-3 identifiers, RN-2 prose, then the `Triage:` tails), so the file reads
-bottom-up in the order of work. `--report` prints totals per step and per group; `--tokens` lists
+bottom-up in the order of work. Paired values (an issuer and its check, a customer name and the
+test expecting it) must sit in one group: `--pairs` lists values owned by more than one step, and
+the self-test fails on any such split except values listed there as distinct meanings. `--report` prints totals per step and per group; `--tokens` lists
 unowned occurrences by area and word.
 
 ## How a step uses it

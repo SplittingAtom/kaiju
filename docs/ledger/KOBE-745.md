@@ -86,26 +86,49 @@ was fixed before the final run (bare `KOBE` as RN-2 broke RN-2's typecheck; RN-5
 `kobe.agent` matched a test variable). After RN-3, one provisional entry went stale (the lookbehind
 on `kobeName`); it now accepts both names.
 
+## Review round 2: paired values
+
+Rule (now in `splitValues()`, `guard.mjs --pairs`, and a self-test that fails on any split except
+listed distinct meanings): a value two sides must agree on has every occurrence in one group.
+
+- R2-1: every line comparing or minting `iss` with `kobe-server` is kept (site egress check).
+- R2-2/H9: Bifrost customer names `kobe-site`/`kobe-install` and provider names
+  (`kobe-${providerId}`, `kobe-vllm`) kept wherever written, quoted or not.
+- R2-3: `MANAGED_BY` and the server-side-apply `FIELD_MANAGER` join the RN-7 hand work.
+- Other pairs found and fixed: LISTEN/NOTIFY channels (`kobe_egress`, `kobe_models`, ...) kept;
+  label-key constant kept; sandbox Unix users (`kobe`, `kobe-agent`, `kobe-pi-<n>`,
+  `kobe-tool-<n>`) held together (Q7); chart tests belong with the chart; the connector and
+  catalog API segments `/kobe` kept with their web client (Q3); the branch prefix where code
+  builds it (Q10); paired groups for fake-model markers, Service/Secret names, the mirror's
+  commit author, e-mail addresses, test hosts; built-in skill packages and versioned prompt text
+  provisional (Q12: pinned bytes); RN-2 prose skips e-mail addresses; the file-reference entry
+  no longer matches S3 keys.
+- Isolation run (throwaway worktree on `b74bbfe0e`, removed): RN-2..RN-6 applied in order, each
+  builds and typechecks; then unit suites: `@kaiju/session-token` 24/24, `@kaiju/model-gateway`
+  260/260, `@kaiju/server` 4,565 passed, 8 skipped, 0 failed. (Earlier runs failed 14 server
+  tests; each was a list bug fixed above. One run refused RN-3 on a reference conflict, as it
+  should.)
+
 ## Totals (this branch, `node scripts/rename/guard.mjs --report`)
 
-61,701 occurrences in 5,948 files; 121 entries in 53 groups, 250 lines.
+61,770 occurrences in 5,948 files; 139 entries in 57 groups, 276 lines.
 
 | Owner                                     | Occurrences | Files |
 | ----------------------------------------- | ----------: | ----: |
-| permanent                                 |      33,376 | 5,560 |
-| provisional (Q1–Q11 below)                |       1,459 |   458 |
-| RN-2 user-facing text                     |       3,655 | 1,148 |
-| RN-3 packages, identifiers, paths         |      15,029 | 2,986 |
+| permanent                                 |      33,523 | 5,560 |
+| provisional (Q1–Q12 below)                |       1,617 |   497 |
+| RN-2 user-facing text                     |       3,597 | 1,132 |
+| RN-3 packages, identifiers, paths         |      14,700 | 2,975 |
 | RN-4 environment variables                |       3,775 |   476 |
-| RN-5 headers, cookies, storage, telemetry |         752 |   320 |
-| RN-6 chart, images, release-namespace     |       3,334 |   560 |
-| RN-7 namespace prefix, in-namespace names |         213 |    66 |
-| RN-8 repository, CI, CLAUDE.md            |         103 |    20 |
+| RN-5 headers, cookies, storage, telemetry |         747 |   319 |
+| RN-6 chart, images, release-namespace     |       3,479 |   572 |
+| RN-7 namespace prefix, in-namespace names |         225 |    68 |
+| RN-8 repository, CI, CLAUDE.md            |         102 |    20 |
 | RN-9 test install names                   |           5 |     5 |
 
 ## Open questions (for Chris)
 
-Held as `provisional` (no step touches them) until answered; group names carry the number.
+Held as `provisional` (no step touches them) until answered (Q12 added in round 2: built-in skill packages and versioned prompt text; renaming them needs new versions); group names carry the number.
 Recommendation in brackets. Per the review, Q3, Q4, Q7 (and maybe Q5, Q8) stay visible to agents
 or members, against spec §8.1: keep them and amend §8.1, or add read-both logic, before RN-9.
 
@@ -115,7 +138,7 @@ or members, against spec §8.1: keep them and amend §8.1, or add read-both logi
 4. **Q4 Workspace and Pi session names** `.kobe/`, `kobe.branch` etc., Pi provider id `kobe` (328 / 165). [keep]
 5. **Q5 Model ids** `kobe-local/...` (77 / 31). [keep]
 6. **Q6 MCP Apps names shared with Catalyst**: `io.kobe/item-kind`, `kobe/notifications/drag-*`, host name (31 / 14). [keep, or add new names accepting the old]
-7. **Q7 Sandbox home** `/home/kobe` (28 / 12). [keep]
+7. **Q7 Sandbox Unix users and home** (`kobe`, `kobe-agent`, `kobe-pi-<n>`, `kobe-tool-<n>`, `/home/kobe`). [keep]
 8. **Q8 Value `kobe` in persisted enums** (publisher, source, scope, theme preset, agent slug; 130 / 63). [keep]
 9. **Q9 Kubernetes label keys** `kobe.splittingatom.io/*` (40 / 24). [keep, like the namespace prefix]
 10. **Q10 Git branch prefix** `kobe/<member>/...` (14 / 11). [new branches `kaiju/`]
@@ -132,6 +155,6 @@ admin or in-sandbox agent sees or can do changes. `scripts/rename/README.md` doc
 
 ## Evidence
 
-- `node scripts/rename/guard.mjs`: ok, 61,701 allowed occurrences, 121 entries, ~1.8 s.
-- `node --test scripts/rename/rename.test.mjs`: 19 tests pass.
+- `node scripts/rename/guard.mjs`: ok, 61,770 allowed occurrences, 139 entries, ~1.8 s.
+- `node --test scripts/rename/rename.test.mjs`: 21 tests pass.
 - Per-step isolation run: table above.
