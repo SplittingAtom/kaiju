@@ -35,6 +35,9 @@
   token audiences `kobe.${a}` in chart tests and the session-key certificate CN (permanent), the
   database name in chart tests. CLAUDE.md is left to RN-8 (its group now also names
   `charts/kobe` and `kobe-sandbox-agent`), so this PR does not touch contributor instructions.
+- **Found after the apply (RN-7 held them as object names):** the gate2, gate4 and gate-apps
+  harnesses derived the sandbox image as `${SERVER_IMAGE/kaiju-server/kobe-sandbox}` (a CI-only
+  failure); now `kaiju-sandbox`. Image names in two values comments and the inventory text too.
 - **Fixed in passing:** the browser spec `code-completion.spec.ts` typed `kobe_li` while RN-3 had
   renamed the variable to `kaiju_live_value` (it would have failed in the browser suite).
 
@@ -121,3 +124,9 @@ One command at a time, TMPDIR on disk:
   files, read by hand: `-DKAIJU_*` flags match the `.c`, extension paths `dist/kaiju-*`);
   server 4,572 (8 skipped); model-gateway 267; protocol 1,389; egress-proxy 182; mcp-proxy 174;
   license-check 86; web 4,313.
+- DB suites: `@kaiju/server test:db` 3,751 passed; `@kaiju/db test:db` 2,180 passed.
+- Sandbox image built once on a remote amd64 Docker host from this branch and
+  `images/sandbox/test-image.sh` run against it: 81 checks ok, 0 failed (paths under `/opt/kaiju`,
+  `kaiju-runas` capabilities and macros, the `kaiju-*` extensions, `kaiju-reclaim`, kernel bridge);
+  test image removed afterwards. orbit-eval and skill-scan images not built here (CI).
+- Not run here: browser suite, e2e gate scripts (CI and e2e per step).
