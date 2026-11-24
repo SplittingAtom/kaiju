@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import {
   FAUX_MODEL_EXTENSION,
   PI_AVAILABLE,
@@ -40,7 +40,7 @@ describe.skipIf(!PI_AVAILABLE)("the agent's system prompt in real Pi (KOBE-123)"
       env: { KOBE_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
       extensions: [FAUX_MODEL_EXTENSION],
     });
-    const prompt = "You are the marker agent. KOBE-PROMPT-MARKER:real-pi `$(id)`";
+    const prompt = "You are the marker agent. KAIJU-PROMPT-MARKER:real-pi `$(id)`";
     const result = await h.server.command(
       runStart(fauxScript([{ echoSystemPrompt: true }]), { config: { system_prompt: prompt } }),
       30_000,
@@ -51,6 +51,6 @@ describe.skipIf(!PI_AVAILABLE)("the agent's system prompt in real Pi (KOBE-123)"
     expect(seen).toContain(prompt);
     // Appended, not replaced: Pi's own prompt (tool guidance) comes first and is still there.
     expect(seen.indexOf("bash")).toBeGreaterThan(-1);
-    expect(seen.indexOf("bash")).toBeLessThan(seen.indexOf("KOBE-PROMPT-MARKER"));
+    expect(seen.indexOf("bash")).toBeLessThan(seen.indexOf("KAIJU-PROMPT-MARKER"));
   }, 60_000);
 });

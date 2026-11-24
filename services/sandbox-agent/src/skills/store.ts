@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { chmod, lstat, mkdir, readdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
-import { SKILL_BUNDLE_MAX_BYTES, type SkillBundleRef } from "@kobe/protocol/sandbox-wire";
+import { SKILL_BUNDLE_MAX_BYTES, type SkillBundleRef } from "@kaiju/protocol/sandbox-wire";
 import { ensureRuntimeRoot } from "../models/runtime-dir.js";
 import { BundleError, readBundle, type BundleLimits } from "./bundle.js";
 import { extractFiles, SKILL_DIR_MODE } from "./extract.js";

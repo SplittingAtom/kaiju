@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   PROJECT_COMMIT_MESSAGE_MAX as PROTOCOL_MESSAGE_MAX,
   commitProjectToolInputSchema,
-  kobeToolsResponseSchema,
-} from "@kobe/protocol";
+  kaijuToolsResponseSchema,
+} from "@kaiju/protocol";
 import type { ToolsOutcome } from "./client.js";
-import { registerKobeTools } from "./extension.js";
+import { registerKaijuTools } from "./extension.js";
 import { commitOutcomeText, commitProjectTool } from "./project-commit-tool.js";
 import { parseProjectCommitReply } from "./project-reply.js";
 import * as P from "./protocol.js";
@@ -96,7 +96,7 @@ describe("commit_project (KOBE-580)", () => {
           ? { on: () => undefined, getActiveTools: () => [], setActiveTools: () => undefined }
           : {}),
       };
-      registerKobeTools(api, transport(COMMITTED).t, options);
+      registerKaijuTools(api, transport(COMMITTED).t, options);
       return seen;
     };
     expect(names({ projects: true }, true)).toContain("commit_project");
@@ -112,7 +112,7 @@ describe("commit_project (KOBE-580)", () => {
       { status: "pending_approval" },
     ]) {
       const reply = { id: "kt_1", ok: true, op: "project_commit", outcome };
-      expect(kobeToolsResponseSchema.safeParse(reply).success).toBe(true);
+      expect(kaijuToolsResponseSchema.safeParse(reply).success).toBe(true);
       expect(parseProjectCommitReply(reply)).toEqual(reply);
     }
     for (const outcome of [
@@ -146,7 +146,7 @@ describe("commit_project (KOBE-580)", () => {
       { ...pushed, seq: null },
     ]) {
       const reply = { id: "kt_1", ok: true, op: "project_commit", outcome };
-      expect(kobeToolsResponseSchema.safeParse(reply).success).toBe(true);
+      expect(kaijuToolsResponseSchema.safeParse(reply).success).toBe(true);
       expect(parseProjectCommitReply(reply)).toEqual(reply);
     }
     for (const outcome of [

@@ -2,18 +2,18 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { chatRequests, openApp, openThreads } from "./testing";
 
 /** KOBE-588 (PC-1): the new conversation's header and project control (spec §3 NC1-NC5). */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let alpha: string;
 let beta: string;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   alpha = fake.addProject("Alpha");
   beta = fake.addProject("Beta");
   vi.stubGlobal("fetch", fake.fetch);

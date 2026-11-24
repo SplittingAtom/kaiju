@@ -1,4 +1,4 @@
-import { SKILL_BUNDLE_PATH } from "@kobe/protocol/sandbox-wire";
+import { SKILL_BUNDLE_PATH } from "@kaiju/protocol/sandbox-wire";
 import type { BundleFetcher } from "./store.js";
 
 /**

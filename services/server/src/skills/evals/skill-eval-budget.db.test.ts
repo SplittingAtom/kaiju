@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { recordModelUsage, type ModelUsageRecord, type UsageKind } from "@kobe/db";
-import { TEAM_EVAL_CAP_USD_MESSAGE } from "@kobe/protocol";
+import { recordModelUsage, type ModelUsageRecord, type UsageKind } from "@kaiju/db";
+import { TEAM_EVAL_CAP_USD_MESSAGE } from "@kaiju/protocol";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
 import { createSkillEvalJudge } from "./judge.js";

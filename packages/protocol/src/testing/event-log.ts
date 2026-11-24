@@ -1,8 +1,8 @@
 import {
   parseEventPayload,
-  type KobeEvent,
-  type KobeEventPayload,
-  type KobeEventType,
+  type KaijuEvent,
+  type KaijuEventPayload,
+  type KaijuEventType,
 } from "../events.js";
 
 /**
@@ -10,18 +10,18 @@ import {
  * validated against the contract, replay with `readAfter(run, cursor)` as SSE resume does.
  */
 export interface InMemoryEventLog {
-  append<T extends KobeEventType>(
+  append<T extends KaijuEventType>(
     runId: string,
     type: T,
-    payload: KobeEventPayload<T>,
-  ): KobeEvent<T>;
-  readAfter(runId: string, after: number): readonly KobeEvent[];
-  subscribe(runId: string, listener: (event: KobeEvent) => void): () => void;
+    payload: KaijuEventPayload<T>,
+  ): KaijuEvent<T>;
+  readAfter(runId: string, after: number): readonly KaijuEvent[];
+  subscribe(runId: string, listener: (event: KaijuEvent) => void): () => void;
 }
 
 export function createInMemoryEventLog(now: () => Date = () => new Date()): InMemoryEventLog {
-  const logs = new Map<string, readonly KobeEvent[]>();
-  const listeners = new Map<string, ReadonlySet<(event: KobeEvent) => void>>();
+  const logs = new Map<string, readonly KaijuEvent[]>();
+  const listeners = new Map<string, ReadonlySet<(event: KaijuEvent) => void>>();
 
   return {
     append(runId, type, payload) {
@@ -32,9 +32,9 @@ export function createInMemoryEventLog(now: () => Date = () => new Date()): InMe
         ts: now().toISOString(),
         type,
         payload: parseEventPayload(type, payload),
-      } as KobeEvent<typeof type>;
-      logs.set(runId, [...existing, event as KobeEvent]);
-      for (const listener of listeners.get(runId) ?? []) listener(event as KobeEvent);
+      } as KaijuEvent<typeof type>;
+      logs.set(runId, [...existing, event as KaijuEvent]);
+      for (const listener of listeners.get(runId) ?? []) listener(event as KaijuEvent);
       return event;
     },
     readAfter(runId, after) {

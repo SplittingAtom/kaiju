@@ -1,4 +1,4 @@
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 
 export interface SseFrame {
   readonly id?: string;
@@ -42,17 +42,17 @@ export class SseReader {
   }
 
   /** Next event frame (skips keep-alives and retry), parsed; undefined at end of stream. */
-  async nextEvent(): Promise<KobeEvent | undefined> {
+  async nextEvent(): Promise<KaijuEvent | undefined> {
     for (;;) {
       const frame = await this.next();
       if (!frame) return undefined;
-      if (frame.data !== undefined) return JSON.parse(frame.data) as KobeEvent;
+      if (frame.data !== undefined) return JSON.parse(frame.data) as KaijuEvent;
     }
   }
 
   /** Reads events until the stream ends. */
-  async rest(): Promise<KobeEvent[]> {
-    const out: KobeEvent[] = [];
+  async rest(): Promise<KaijuEvent[]> {
+    const out: KaijuEvent[] = [];
     for (let e = await this.nextEvent(); e; e = await this.nextEvent()) out.push(e);
     return out;
   }

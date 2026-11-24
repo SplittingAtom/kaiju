@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { scanSkillBundle } from "@kobe/skill-scanner";
+import { scanSkillBundle } from "@kaiju/skill-scanner";
 import { runWithAuditContext } from "../audit/context.js";
 import { validateZipBundle } from "./bundle.js";
 import { IntegrityError } from "./blob-read.js";
@@ -16,7 +16,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
  * Postgres, verified content-addressed bytes in the object store, deduplicated by hash within a
  * location, a corrupted object refused, and the export of a skill's packages.
  */
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const objects = new MemoryObjects();
 let h: Harness;
 let store: SkillStore;

@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import type { SemanticMemoryKind } from "@kobe/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import type { SemanticMemoryKind } from "@kaiju/protocol";
 import { recordAudit } from "../../../audit/record.js";
 import { evaluateMemoryWrite } from "../../checks.js";
 import { openOp } from "../../items/context.js";
@@ -53,7 +53,7 @@ export const switchedOff = () =>
 
 /** The switch and the shared memory checks on the text that would cross (refuses hard findings). */
 export async function checkSiteText(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: MemoryWho,
   teamId: string,
   text: { statement: string; justification: string },
@@ -85,7 +85,7 @@ interface NewSiteProposal {
 }
 
 async function insertSiteProposal(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   who: MemoryWho,
   p: NewSiteProposal,
@@ -107,7 +107,7 @@ async function insertSiteProposal(
 }
 
 async function finish(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   who: MemoryWho,
   made: { id: string; confirmed: boolean },
@@ -121,7 +121,7 @@ async function finish(
 }
 
 export function proposeSiteFromCandidate(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   candidateId: string,
   body: ProposeSiteFromCandidate,
@@ -170,7 +170,7 @@ export function proposeSiteFromCandidate(
 }
 
 export function proposeSiteFromItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   body: ProposeSiteFromItem,
 ): Promise<SiteProposed> {

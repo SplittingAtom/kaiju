@@ -3,20 +3,20 @@ import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { requestReload, resetReloadRequest } from "../../lib/build/reload-draft";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { composer, openApp } from "./testing";
 
 /**
  * KOBE-487 ac-4: the new-build banner's Reload keeps the composer's draft: the composer stashes it
  * as the page unloads and takes it back after the reload, for the same thread only.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { SKILL_DRAFT_MAX_BYTES, skillDraftFiles, skillDrafts } from "./schema/index.js";
 import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
@@ -14,7 +14,7 @@ import { pgCodeOf } from "./pg-errors.js";
  * (D18, the KOBE-275 pattern): held content is copied aside on every overwrite or delete, the
  * copies immutable and kept while the hold lasts. Isolation: probe.db.test; policies: catalog.
  */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const admin = new pg.Client({ connectionString: inject("adminUrl") });
 const appClient = new pg.Client({ connectionString: inject("appUrl") });
 const owner = new pg.Client({ connectionString: inject("ownerUrl") });

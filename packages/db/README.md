@@ -1,4 +1,4 @@
-# @kobe/db
+# @kaiju/db
 
 Drizzle schema, migrations, the tenancy registry (team RLS and app-role grants), `withTeam()`, the
 cross-team probe suite, and the audit log API.

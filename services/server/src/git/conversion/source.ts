@@ -1,4 +1,4 @@
-import { withTeam, type KobeDb } from "@kobe/db";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import { isProjectKey, loadTree } from "../../projects/tree.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import { ConversionStepError, type HistorySource } from "./objects.js";
@@ -10,7 +10,7 @@ import { ConversionStepError, type HistorySource } from "./objects.js";
  * object stops the attempt (`content_missing`, naming the file).
  */
 export function historySource(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   teamId: string,
   projectId: string,

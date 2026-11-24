@@ -1,4 +1,4 @@
-import { skillImportRequestSchema } from "@kobe/protocol";
+import { skillImportRequestSchema } from "@kaiju/protocol";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";

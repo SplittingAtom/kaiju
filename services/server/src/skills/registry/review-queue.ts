@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../../retention/blobs.js";
 import { parseSemver } from "../semver.js";
 import {
@@ -16,7 +16,7 @@ import {
  * skill's currently approved version, so small changes can be batched.
  */
 
-type Db = KobeDb | KobeTx;
+type Db = KaijuDb | KaijuTx;
 
 export const QUEUE_FILTERS = [
   "open",
@@ -214,7 +214,7 @@ export interface QueueItem {
 
 /** The queue, oldest submission first; maintainer submissions only (Kaiju publishes unreviewed). */
 export async function listQueue(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   filter: QueueFilter,
 ): Promise<QueueItem[]> {

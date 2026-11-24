@@ -2,7 +2,7 @@ import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runWithAuditContext } from "../audit/context.js";
 import { validateZipBundle } from "./bundle.js";
-import { ensureObject } from "./kobe-seed.js";
+import { ensureObject } from "./kaiju-seed.js";
 import { retireVersion } from "./registry/retire.js";
 import { skillSandboxRoutes } from "./sandbox-routes.js";
 import { sha256Hex } from "./storage.js";
@@ -16,7 +16,7 @@ import type { AuthResult, SandboxAuthenticator } from "../workspace-sync/auth.js
  * (it loads in every run, also without an agent) and has a run holding it open in its sandbox.
  */
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 const f = new RunFixture();
 const NAME = "revoke-fetch";
 let skillId = "";

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createFoldersApi } from "./folders-api";
-import { FakeKobe } from "./testing/fake-kobe";
+import { FakeKaiju } from "./testing/fake-kaiju";
 
 describe("the folders API (KOBE-536)", () => {
   it("lists, creates, renames, moves, deletes and files, validated against the protocol", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const api = createFoldersApi(fake.teamId, fake.fetch);
     const made = await api.create("  Budgets ", null);
     expect(made.ok && made.data).toMatchObject({ name: "Budgets", parentId: null, threads: 0 });
@@ -29,7 +29,7 @@ describe("the folders API (KOBE-536)", () => {
   });
 
   it("refuses an empty name before asking, and a malformed answer", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const api = createFoldersApi(fake.teamId, fake.fetch);
     const empty = await api.create("   ", null);
     expect(!empty.ok && empty.error.code).toBe("invalid_request");

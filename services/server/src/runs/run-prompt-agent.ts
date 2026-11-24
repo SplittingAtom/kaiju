@@ -1,5 +1,5 @@
-import type { AgentScope, KobeTx } from "@kobe/db";
-import { sql } from "@kobe/db";
+import type { AgentScope, KaijuTx } from "@kaiju/db";
+import { sql } from "@kaiju/db";
 import { resolveDraftAgent, resolvePinnedAgent } from "../agents/versions.js";
 
 /**
@@ -10,7 +10,7 @@ import { resolveDraftAgent, resolvePinnedAgent } from "../agents/versions.js";
  * draft edited since): then no `system` entry is accepted for the run.
  */
 export async function sentAgentPrompt(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   threadId: string,

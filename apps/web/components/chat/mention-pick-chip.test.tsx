@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { requestReload, resetReloadRequest } from "../../lib/build/reload-draft";
 import { MENTION_LIMIT_REFUSED, MENTION_NAME_REFUSED } from "../../lib/chat/mention-insert";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp } from "./testing";
 
@@ -15,13 +15,13 @@ import { composer, openApp } from "./testing";
  * Duplicates, the 20-mention limit, Tab, Backspace, restored drafts, edit-last and hand-typed
  * `@path` text are covered here; the basics are in mention-picker.test.tsx.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.workspaceFiles.set("data/sales q3.csv", new Uint8Array(10));
   fake.workspaceFiles.set("reports/summary.md", new Uint8Array(10));
   vi.stubGlobal("fetch", fake.fetch);

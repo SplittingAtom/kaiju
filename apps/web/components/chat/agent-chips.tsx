@@ -3,7 +3,7 @@
 import { cn } from "../../lib/utils";
 import { useDraftAgentName, useDraftAgentDangerous } from "./agent-picker";
 import { DangerousChip } from "./dangerous-chip";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 
 /**
  * The thread's agent as chips: its name (the draft's choice before the thread exists) and, when it
@@ -11,7 +11,7 @@ import { useKobeExtras } from "./kobe-runtime";
  * the composer (KOBE-450; compact there).
  */
 export function AgentChips({ compact = false }: { readonly compact?: boolean } = {}) {
-  const summary = useKobeExtras()?.state.summary;
+  const summary = useKaijuExtras()?.state.summary;
   const draftName = useDraftAgentName();
   const draftDangerous = useDraftAgentDangerous();
   // The draft's choice only before the thread exists: a started agentless thread has no agent

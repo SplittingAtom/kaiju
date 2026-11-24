@@ -1,4 +1,4 @@
-import { SESSION_TOKEN_AUDIENCES, type SessionTokenAudience } from "@kobe/protocol";
+import { SESSION_TOKEN_AUDIENCES, type SessionTokenAudience } from "@kaiju/protocol";
 import {
   loadSigningKey,
   loadVerifyKeys,
@@ -8,9 +8,9 @@ import {
   verifyKeysOf,
   type SessionSigningKey,
   type SessionVerifyKeys,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 import { z } from "zod";
-import { KOBE_ENDPOINTS, type KobeEndpoint } from "./constants.js";
+import { KAIJU_ENDPOINTS, type KaijuEndpoint } from "./constants.js";
 
 /**
  * Sandbox provider configuration (spec D11, D12). The chart renders it into KOBE_SANDBOX_CONFIG
@@ -103,8 +103,8 @@ export const sandboxSettingsSchema = z.strictObject({
   serverServiceAccount: dnsName,
   managerClusterRole: dnsName,
   endpoints: z.strictObject(
-    Object.fromEntries(KOBE_ENDPOINTS.map((e) => [e, endpointSchema])) as Record<
-      KobeEndpoint,
+    Object.fromEntries(KAIJU_ENDPOINTS.map((e) => [e, endpointSchema])) as Record<
+      KaijuEndpoint,
       typeof endpointSchema
     >,
   ),

@@ -8,10 +8,10 @@ import {
   parseToolsSnapshot,
   sql,
   type Envelope,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import { canonicalJson } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { canonicalJson } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
@@ -126,7 +126,7 @@ export interface RefreshOptions {
 
 /** Records a skipped pass on the row (if it still has the probed URL) and the start of a skip. */
 async function recordSkip(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   probed: { readonly url: string; readonly name: string },
   reason: string,
@@ -161,7 +161,7 @@ const passState = (templatesSkipped: string | undefined) => ({
   templatesSkipped: templatesSkipped ?? null,
 });
 
-const markRefreshed = (tx: KobeTx, connectorId: string, templatesSkipped: string | undefined) =>
+const markRefreshed = (tx: KaijuTx, connectorId: string, templatesSkipped: string | undefined) =>
   tx.update(connectors).set(passState(templatesSkipped)).where(eq(connectors.id, connectorId));
 
 /**
@@ -169,7 +169,7 @@ const markRefreshed = (tx: KobeTx, connectorId: string, templatesSkipped: string
  * told like an `auth_required` skip (re-review NEW-2); a repeat is not.
  */
 async function noteTemplatesSkipped(
-  tx: KobeTx,
+  tx: KaijuTx,
   connector: { readonly id: string; readonly name: string; readonly before: string | null },
   reason: string | undefined,
 ): Promise<void> {
@@ -183,7 +183,7 @@ async function noteTemplatesSkipped(
 }
 
 export async function refreshConnector(
-  db: KobeDb,
+  db: KaijuDb,
   prober: ConnectorProbe,
   connectorId: string,
   options: RefreshOptions = {},
@@ -286,7 +286,7 @@ export async function refreshConnector(
 
 /** The periodic refresh's credential (KOBE-431), audited only when the choice changes. */
 async function periodicCredential(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope | undefined,
   connectorId: string,
   name: string,
@@ -308,7 +308,7 @@ async function periodicCredential(
  * templates stay as they were and the tools' refresh goes on (review MEDIUM-1).
  */
 async function driftTemplates(
-  tx: KobeTx,
+  tx: KaijuTx,
   connectorId: string,
   live: readonly LiveEntry[],
 ): Promise<{ readonly ok: true; readonly drift: TemplateDrift } | { readonly ok: false }> {
@@ -327,7 +327,7 @@ async function driftTemplates(
 
 /** One connector under its own lock, if the pass has one: held elsewhere, it is skipped. */
 async function refreshLocked(
-  db: KobeDb,
+  db: KaijuDb,
   prober: ConnectorProbe,
   connectorId: string,
   options: RefreshOptions,
@@ -348,7 +348,7 @@ export interface RefreshSummary {
 
 /** One pass over every pinned, active connector. A failure on one is logged, never stops the rest. */
 export async function refreshAllConnectors(
-  db: KobeDb,
+  db: KaijuDb,
   prober: ConnectorProbe,
   logger: Pick<Logger, "warn" | "info">,
   options: RefreshOptions = {},
@@ -383,7 +383,7 @@ export async function refreshAllConnectors(
 }
 
 export interface ConnectorRefreshOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly prober: ConnectorProbe;
   readonly lock: ReconcileLock;
   readonly intervalMs: number;

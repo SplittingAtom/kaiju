@@ -29,7 +29,7 @@ const probeNow = (...tools: ReturnType<typeof t>[]) => {
 const refresh = (id: string) => refreshConnector(h.deps.database.db, h.deps.connectorProbe, id);
 const sweep = (windowMs?: number) =>
   notifyDrift(
-    { db: h.deps.database.db, mailer: h.mailer, publicUrl: "https://kobe.test" },
+    { db: h.deps.database.db, mailer: h.mailer, publicUrl: "https://kaiju.test" },
     windowMs === undefined ? {} : { windowMs },
   );
 const register = async (name: string, ...tools: ReturnType<typeof t>[]) => {
@@ -95,7 +95,7 @@ describe("drift notifications", () => {
     expect(mail.subject).toContain("notify-a");
     expect(mail.text).toContain("a");
     expect(`${mail.subject}\n${mail.text}`).not.toMatch(/ignore previous|evil|https:\/\/notify-a/);
-    expect(mail.text).toContain("https://kobe.test/admin/site/connectors"); // KOBE-257
+    expect(mail.text).toContain("https://kaiju.test/admin/site/connectors"); // KOBE-257
 
     // The same drift event is not notified again.
     expect(await sweep()).toBe(0);
@@ -174,7 +174,7 @@ describe("in-app notice", () => {
 describe("skip email remedy for an OAuth connector (KOBE-784)", () => {
   it("tells a site admin to connect their own account and re-pin, not to add a key", () => {
     const mail = skippedMessage(
-      "https://kobe.example",
+      "https://kaiju.example",
       { name: "linear", source: "member", authKind: "oauth" },
       "a@x.test",
     );

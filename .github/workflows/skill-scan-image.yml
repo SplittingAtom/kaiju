@@ -49,7 +49,7 @@ jobs:
       - uses: ./.github/actions/setup-kobe
       - name: License audit of bundled Python packages
         run: |
-          pnpm --filter @kobe/license-check build
+          pnpm --filter @kaiju/license-check build
           images/sandbox/collect-licenses.sh kobe-skill-scan:ci > "$RUNNER_TEMP/skill-scan-licenses.json"
           LICENSE_REPORT="$RUNNER_TEMP/skill-scan-licenses.json" \
           LICENSE_EXCEPTIONS="$PWD/images/skill-scan/license-exceptions.json" \

@@ -17,8 +17,8 @@ import {
   mentionQueryAt,
   mentionStartAt,
 } from "../../lib/chat/mentions";
-import { sandboxPathOf } from "@kobe/protocol";
-import { useChatSession } from "./kobe-runtime";
+import { sandboxPathOf } from "@kaiju/protocol";
+import { useChatSession } from "./kaiju-runtime";
 
 /** Wait after the last keystroke before asking the server. */
 const SEARCH_DEBOUNCE_MS = 120;

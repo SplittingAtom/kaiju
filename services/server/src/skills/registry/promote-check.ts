@@ -5,9 +5,9 @@ import {
   skillEvalSubmissionShortfalls,
   type CatalogSkillEvalScorecard,
   type RegistrySubmissionRules,
-} from "@kobe/protocol";
-import type { ScanResult } from "@kobe/skill-scanner";
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import type { ScanResult } from "@kaiju/skill-scanner";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { validateZipBundle, type ValidBundle } from "../bundle.js";
 import { scanCanonicalZip } from "../review.js";
 import { scanIncomplete } from "../scan-pool.js";
@@ -92,7 +92,7 @@ function filesOf(bundle: ValidBundle) {
 
 /** The team's newest full eval of this skill version's package (fresh), or of the skill. */
 async function scorecardOf(
-  db: KobeDb,
+  db: KaijuDb,
   source: PromoteSource,
   packageHash: string,
   fresh: boolean,
@@ -142,7 +142,7 @@ export function teamReviewRefusal(row: TeamReviewRow | undefined): Refusal | nul
  * check waits for the submission or wins over it.
  */
 export async function lockedTeamReview(
-  tx: KobeTx,
+  tx: KaijuTx,
   source: PromoteSource,
 ): Promise<TeamReviewRow | undefined> {
   const res = await tx.execute<{ status: string; suspended: boolean }>(sql`
@@ -157,8 +157,8 @@ export async function lockedTeamReview(
  * The version's own flags (KOBE-333 review): whether it came from a conversation (stored at save,
  * through forks too, C4-M3) and, for a team version, its team review (D22, C4-M2).
  */
-async function versionFacts(db: KobeDb, source: PromoteSource) {
-  return withTeam(db, source.teamId, async (tx: KobeTx) => {
+async function versionFacts(db: KaijuDb, source: PromoteSource) {
+  return withTeam(db, source.teamId, async (tx: KaijuTx) => {
     if (source.scope === "personal") {
       const res = await tx.execute<{ flag: boolean; origin: Record<string, unknown> | null }>(sql`
         SELECT from_conversation AS flag, origin FROM personal_skill_versions
@@ -193,7 +193,7 @@ async function versionFacts(db: KobeDb, source: PromoteSource) {
 
 /** SK20's rules (and the catalog's own) against the package. */
 async function refusalsOf(
-  db: KobeDb,
+  db: KaijuDb,
   rules: RegistrySubmissionRules,
   plan: Omit<PromotionPlan, "refusals" | "catalogSkillId">,
   submitterId: string,
@@ -250,7 +250,7 @@ async function refusalsOf(
 }
 
 export async function preparePromotion(
-  db: KobeDb,
+  db: KaijuDb,
   store: SkillStore,
   source: PromoteSource,
   submitterId: string,

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { loadEnvelope } from "@kobe/db";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
+import { loadEnvelope } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { createInternalApp } from "../routes/internal.js";
 import type { TestBrowser } from "../testing/browser.js";
@@ -152,11 +152,11 @@ describe("connecting an OAuth connector", () => {
     expect(q.get("response_type")).toBe("code");
     expect(q.get("code_challenge_method")).toBe("S256");
     expect(q.get("resource")).toBe(fake.mcpUrl);
-    expect(q.get("redirect_uri")).toBe(`http://kobe.test${CALLBACK}`);
+    expect(q.get("redirect_uri")).toBe(`http://kaiju.test${CALLBACK}`);
     expect(q.get("scope")).toBe("tools");
     expect(q.get("state")?.length).toBeGreaterThan(40);
     expect(fake.registrations[0]).toMatchObject({
-      redirect_uris: [`http://kobe.test${CALLBACK}`],
+      redirect_uris: [`http://kaiju.test${CALLBACK}`],
     });
 
     const done = await alice.get(callbackPath(back));
@@ -169,7 +169,7 @@ describe("connecting an OAuth connector", () => {
     expect(verifier.length).toBeGreaterThanOrEqual(43);
     expect(createHash("sha256").update(verifier).digest("base64url")).toBe(q.get("code_challenge"));
     expect(token?.get("resource")).toBe(fake.mcpUrl);
-    expect(token?.get("redirect_uri")).toBe(`http://kobe.test${CALLBACK}`);
+    expect(token?.get("redirect_uri")).toBe(`http://kaiju.test${CALLBACK}`);
 
     const tokens = must(fake.issued.at(-1));
     const { rows } = await h.admin.query<{ kind: string; sealed: string; expires_at: Date }>(
@@ -403,11 +403,11 @@ describe("connector lifecycle edge cases (KOBE-784)", () => {
 
 describe("client metadata", () => {
   it("publishes Kaiju's Client ID Metadata Document without a session", async () => {
-    const res = await h.app.request("http://kobe.test/v1/oauth/client-metadata.json");
+    const res = await h.app.request("http://kaiju.test/v1/oauth/client-metadata.json");
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
-      client_id: "http://kobe.test/v1/oauth/client-metadata.json",
-      redirect_uris: [`http://kobe.test${CALLBACK}`],
+      client_id: "http://kaiju.test/v1/oauth/client-metadata.json",
+      redirect_uris: [`http://kaiju.test${CALLBACK}`],
       token_endpoint_auth_method: "none",
     });
   });

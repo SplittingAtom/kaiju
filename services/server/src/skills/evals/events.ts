@@ -1,9 +1,9 @@
-import { withTeam, type KobeDb, type TeamRole } from "@kobe/db";
+import { withTeam, type KaijuDb, type TeamRole } from "@kaiju/db";
 import {
   skillEvalCompletedPayloadSchema,
   skillEvalProgressPayloadSchema,
   type SkillEvalRunView,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ListenClient } from "../../pg-listen.js";
 import { SKILL_EVAL_CHANNEL } from "./store.js";
 import { doneExecutions, readEvalRun, type EvalViewer } from "./views.js";
@@ -75,7 +75,7 @@ export type StreamRefusal = "not_found" | "finished" | "too_many_streams";
  * of the stream. Null when `who` may not read the eval.
  */
 export async function skillEvalEventStream(
-  deps: { readonly db: KobeDb; readonly hub: SkillEvalHub | undefined },
+  deps: { readonly db: KaijuDb; readonly hub: SkillEvalHub | undefined },
   who: EvalViewer,
   evalRunId: string,
   options: {

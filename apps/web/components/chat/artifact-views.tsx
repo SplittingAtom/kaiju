@@ -22,7 +22,7 @@ import type { ApiError } from "../../lib/api/client";
 import { ErrorNotice } from "../admin/error-notice";
 import type { TextMode } from "../files/text-modes";
 import { ArtifactTextView } from "./artifact-text-view";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { Markdown } from "./markdown";
 
 type Content =

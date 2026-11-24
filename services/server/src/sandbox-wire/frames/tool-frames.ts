@@ -1,4 +1,4 @@
-import { type NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import { type NotebookExecuteFrame } from "@kaiju/protocol/sandbox-wire";
 import type { AllowedArtifactCalls } from "../../artifacts/allowed.js";
 import type { RecalledItems } from "../../memory/recalled.js";
 import { fileEditProposeSpec } from "../file-edit-propose.js";

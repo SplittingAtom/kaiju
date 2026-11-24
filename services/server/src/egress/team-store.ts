@@ -9,8 +9,8 @@ import {
   teamEgress,
   withTeam,
   type EgressPreset,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { lockPattern, settlePending } from "./request-store.js";
 
@@ -37,7 +37,7 @@ export interface TeamEgressEntry {
  * Every ceiling domain with the team's choice, plus enabled domains that left the ceiling (shown
  * as suspended). The ceiling is site-wide; the team's rows are read under its RLS.
  */
-export async function listTeamEgress(db: KobeDb, teamId: string): Promise<TeamEgressEntry[]> {
+export async function listTeamEgress(db: KaijuDb, teamId: string): Promise<TeamEgressEntry[]> {
   const [ceiling, enabled] = await Promise.all([
     db.select().from(egressDomains).orderBy(asc(egressDomains.domain)),
     // Never the sealed header values: they leave the database only to the egress proxy.
@@ -81,7 +81,7 @@ export type EnableResult = "enabled" | "already_enabled" | "not_in_ceiling";
  * (KOBE-39); `settled` counts them.
  */
 export async function enableTeamDomain(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   domain: string,
   userId: string,
@@ -124,7 +124,7 @@ export async function enableTeamDomain(
 
 /** Disables it; false when it wasn't enabled. */
 export async function disableTeamDomain(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   domain: string,
   /**

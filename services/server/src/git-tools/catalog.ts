@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { GIT_REPOSITORY_NAME_MAX, GIT_REPOSITORY_NAME_PATTERN } from "@kobe/db";
-import type { Schema } from "../kobe-mcp/catalog.js";
+import { GIT_REPOSITORY_NAME_MAX, GIT_REPOSITORY_NAME_PATTERN } from "@kaiju/db";
+import type { Schema } from "../kaiju-mcp/catalog.js";
 
 /**
  * The git host tools (spec workspace-git G9, G10, G12, G13, §9; KOBE-762): one set for every
  * provider, served by the server on the built-in Kaiju connector (so the MCP proxy's re-check,
  * the policy engine, signed approvals and the `mcp.tool_call` audit row decide and record every
- * call exactly as for the Kaiju admin tools; `kobe-mcp/service.ts`). The catalog is code, hashed
+ * call exactly as for the Kaiju admin tools; `kaiju-mcp/service.ts`). The catalog is code, hashed
  * with the release like the rest of the built-in connector.
  *
  * Reads are allowed by default at **Read**; `git_create_branch` is a write that runs without asking

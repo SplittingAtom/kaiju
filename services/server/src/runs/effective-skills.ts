@@ -1,4 +1,4 @@
-import type { AgentScope, KobeTx } from "@kobe/db";
+import type { AgentScope, KaijuTx } from "@kaiju/db";
 import type { RunAgentResolver } from "./seams.js";
 
 /** No run yet: the resolver reads no run, it only needs an id. */
@@ -25,7 +25,7 @@ export interface SkillsFor {
  * Empty when the resolution fails (the run would not start either).
  */
 export async function effectiveSkillNames(
-  tx: KobeTx,
+  tx: KaijuTx,
   agents: RunAgentResolver,
   at: SkillsFor,
 ): Promise<string[]> {

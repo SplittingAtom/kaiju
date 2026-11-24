@@ -80,7 +80,7 @@ export function ArtifactResizeHandle({
     <div
       {...splitter}
       aria-label="Resize the artifact column and the conversation"
-      aria-controls="kobe-artifact-column"
+      aria-controls="kaiju-artifact-column"
       className={styles.resizeHandle}
     />
   );

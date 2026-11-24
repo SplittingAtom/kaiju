@@ -12,8 +12,8 @@ import {
   withTeam,
   type Envelope,
   type GitConnectionRecord,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { HttpClient } from "isomorphic-git";
 import type { Logger } from "pino";
 import { recordAudit } from "../../audit/record.js";
@@ -70,7 +70,7 @@ import {
  * repository on the host: an abandoned attempt's repository stays, listed in the Git section.
  */
 export interface ConversionDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly envelope: Envelope | undefined;
   readonly net: GitHostNet;
   readonly blobs: BlobStore | undefined;
@@ -470,7 +470,7 @@ export function conversionWorkRoot(): string {
 }
 
 /** Distinct content the project's carried trees hold, in bytes (what the work folder needs). */
-async function projectBytes(db: KobeDb, teamId: string, projectId: string): Promise<number> {
+async function projectBytes(db: KaijuDb, teamId: string, projectId: string): Promise<number> {
   const res = await withTeam(db, teamId, (tx) =>
     tx.execute<{ bytes: string | null }>(sql`
       SELECT sum(size_bytes) AS bytes FROM (

@@ -1,6 +1,6 @@
 "use client";
 
-import { THINKING_LEVELS, lowestThinking, thinkingRank, type ThinkingLevel } from "@kobe/protocol";
+import { THINKING_LEVELS, lowestThinking, thinkingRank, type ThinkingLevel } from "@kaiju/protocol";
 import { modelName, type TeamModel } from "../../../lib/admin/api/team/models";
 import { Select } from "../../ui/console";
 import { THINKING_LEVEL_LABELS } from "../site/model-thinking";

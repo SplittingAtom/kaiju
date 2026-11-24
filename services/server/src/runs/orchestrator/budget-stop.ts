@@ -1,5 +1,5 @@
-import { isTerminalRunStatus, type BudgetStopCommand } from "@kobe/protocol";
-import { SYSTEM_ACTOR, sql, withTeam } from "@kobe/db";
+import { isTerminalRunStatus, type BudgetStopCommand } from "@kaiju/protocol";
+import { SYSTEM_ACTOR, sql, withTeam } from "@kaiju/db";
 import { auditExpiredApprovals, expireRunApprovalsInTx } from "../../approvals/run-end.js";
 import { recordAudit } from "../../audit/record.js";
 import { withAppendTx } from "../../event-stream/append.js";

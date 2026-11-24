@@ -14,7 +14,7 @@ import { describeFileError } from "../../lib/files/format";
 import { ErrorNotice } from "../admin/error-notice";
 import { BUTTON, TextModeBody, TextModeToolbar, type TextMode } from "../files/text-modes";
 import { useArtifactPanel } from "./artifact-state";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 type CopyState =
   { readonly status: "idle" | "copying" } | { readonly status: "error"; readonly error: ApiError };

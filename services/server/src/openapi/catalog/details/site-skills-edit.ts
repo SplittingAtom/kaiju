@@ -16,7 +16,7 @@ import {
  * The Site catalog editor's operations of "Site: skills" (KOBE-771,
  * `routes/site-skill-catalog-edit/*.ts`, KOBE-495): answers read from
  * `skills/site-edit/catalog-view.ts`, `site-drafts.ts`, `site-preview.ts`, `site-publish.ts` and
- * `kobe-detach.ts`.
+ * `kaiju-detach.ts`.
  */
 
 const siteSkillView = obj({
@@ -64,7 +64,7 @@ const DraftFileChanged = untyped(
 );
 const VersionRawFile = untyped("SiteCatalogVersionFile", rawFile);
 
-const kobeSeedResult = obj({
+const kaijuSeedResult = obj({
   name: str,
   semver: str,
   action: oneOfStrings(
@@ -158,7 +158,7 @@ export const siteSkillsEditDetails: Readonly<Record<string, CatalogDetail>> = {
   },
   "get /v1/site/skills/catalog-skills/{skillId}/kobe/compare": {
     response: untyped(
-      "KobeSkillCompare",
+      "KaijuSkillCompare",
       obj({
         current: obj({ id: uuid, semver: str, publisher }),
         shipped: obj({ semver: str }),
@@ -170,8 +170,8 @@ export const siteSkillsEditDetails: Readonly<Record<string, CatalogDetail>> = {
   "post /v1/site/skills/catalog-skills/{skillId}/kobe/reset": {
     body: null,
     response: untyped(
-      "KobeSkillReset",
-      obj({ shippedSemver: str, seed: nullable(kobeSeedResult) }),
+      "KaijuSkillReset",
+      obj({ shippedSemver: str, seed: nullable(kaijuSeedResult) }),
     ),
     errors: ["404", "409", "503"],
   },

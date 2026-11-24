@@ -4,7 +4,7 @@
  * queue, Steer, Stop; D14: Retry / Continue without retry; branch switch and edit-and-regenerate).
  * The server decides everything; this only shows what it says and asks again after each change.
  */
-import type { ItemReference, KobeEvent, ThinkingLevel } from "@kobe/protocol";
+import type { ItemReference, KaijuEvent, ThinkingLevel } from "@kaiju/protocol";
 import type { ApiError, ApiResult } from "../api/client";
 import type {
   AppContextWire,
@@ -82,7 +82,7 @@ export interface ControllerOptions {
    */
   readonly onLeafMoved?: ((threadId: string) => void) | undefined;
   /** Every streamed batch of the thread's runs (KOBE-465: the notebook panel's executions). */
-  readonly onRunEvents?: ((threadId: string, events: readonly KobeEvent[]) => void) | undefined;
+  readonly onRunEvents?: ((threadId: string, events: readonly KaijuEvent[]) => void) | undefined;
 }
 
 type Listener = () => void;
@@ -99,7 +99,7 @@ export class ThreadController {
   /** A completed run's stream kept open for its announced epilogue (KOBE-234/219). */
   #epilogue: RunStream | undefined;
   readonly #onRetitled: ((threadId: string, title: string) => void) | undefined;
-  readonly #onRunEvents: ((threadId: string, events: readonly KobeEvent[]) => void) | undefined;
+  readonly #onRunEvents: ((threadId: string, events: readonly KaijuEvent[]) => void) | undefined;
   readonly #onLeafMoved: ((threadId: string) => void) | undefined;
   #reopenAttempts = 0;
   #reopenTimer: ReturnType<typeof setTimeout> | undefined;
@@ -410,7 +410,7 @@ export class ThreadController {
     );
   }
 
-  #onEvents(runId: string, events: readonly KobeEvent[]): void {
+  #onEvents(runId: string, events: readonly KaijuEvent[]): void {
     const threadId = this.#state.threadId;
     if (threadId !== null) this.#onRunEvents?.(threadId, events);
     for (const event of events) {

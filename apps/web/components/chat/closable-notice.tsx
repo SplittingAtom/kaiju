@@ -25,7 +25,7 @@ export function useClosedNotice(id: string | undefined): readonly [boolean, () =
 
 /** The member goes on in the composer once the notice (and its focused ×) is gone. */
 function focusComposer(root: ParentNode): void {
-  root.querySelector<HTMLTextAreaElement>("[data-kobe-composer] textarea")?.focus();
+  root.querySelector<HTMLTextAreaElement>("[data-kaiju-composer] textarea")?.focus();
 }
 
 /** The close (×) button of a notice; closing moves focus to the thread's composer. */
@@ -45,7 +45,7 @@ export function CloseNoticeButton({
       className="shrink-0"
       onClick={(event: MouseEvent<HTMLButtonElement>) => {
         // Found before closing: the button is detached once the notice is gone.
-        const root = event.currentTarget.closest("[data-kobe-thread-root]") ?? document;
+        const root = event.currentTarget.closest("[data-kaiju-thread-root]") ?? document;
         onClose();
         focusComposer(root);
       }}

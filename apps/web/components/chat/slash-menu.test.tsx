@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import type { ComponentProps } from "react";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { ChatApp } from "./chat-app";
@@ -15,13 +15,13 @@ import { chatRequests, composer, openApp, openThreads } from "./testing";
  * that are bound now; a pick runs the button's own handler and removes the `/` text; an unknown
  * word is sent as an ordinary message.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },
     { alias: "glm", label: "GLM 5.3", enabled: true, is_default: false },
@@ -52,7 +52,7 @@ const noMenu = () => expect(screen.queryByRole("listbox")).toBeNull();
 const messagePosts = () => chatRequests(fake, "POST").filter((r) => r.path.endsWith("/messages"));
 /** What the menu last said to screen readers (a no-break space marks a repeat). */
 const slashStatus = () =>
-  (document.querySelector("[data-kobe-slash-status]")?.textContent ?? "").replace(/\u00a0/g, "");
+  (document.querySelector("[data-kaiju-slash-status]")?.textContent ?? "").replace(/\u00a0/g, "");
 const sent = () => messagePosts().map((r) => (r.body as { content?: string }).content);
 
 async function opened(t: string) {
@@ -202,7 +202,7 @@ describe("the / menu lists the bound actions (ac-1)", { timeout: 30_000 }, () =>
     await waitFor(() => expect(fake.threads.get(t)?.project_id).toBe(q4));
     expect(input.value).toBe("");
     await waitFor(() =>
-      expect(document.querySelector("[data-kobe-thread-commands]")?.textContent).toBe(
+      expect(document.querySelector("[data-kaiju-thread-commands]")?.textContent).toBe(
         "Moved “Budget” to Q4. Its instructions apply from the next message.",
       ),
     );
@@ -385,7 +385,7 @@ describe("how the text arrives (ac-3)", { timeout: 30_000 }, () => {
     const user = userEvent.setup();
     await openThreads();
     const row = await waitFor(() =>
-      must(document.querySelector<HTMLElement>(`[data-kobe-thread="${second}"]`)),
+      must(document.querySelector<HTMLElement>(`[data-kaiju-thread="${second}"]`)),
     );
     await user.click(within(row).getByText("Second"));
     await waitFor(() =>

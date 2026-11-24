@@ -18,7 +18,7 @@ type CamelKey<S extends string> = S extends `${infer Head}_${infer Tail}`
   : S;
 
 /**
- * A snake_case wire type (e.g. from `@kobe/protocol`) as `camelizeKeys` hands it to the page:
+ * A snake_case wire type (e.g. from `@kaiju/protocol`) as `camelizeKeys` hands it to the page:
  * every key camelized, values kept, read-only. For plain lowercase keys like the protocol's.
  */
 export type Camelized<T> = T extends readonly (infer U)[]

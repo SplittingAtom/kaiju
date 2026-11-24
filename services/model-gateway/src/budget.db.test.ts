@@ -26,9 +26,9 @@ import {
   users,
   virtualKeyContext,
   withTeam,
-  type KobeDatabase,
-} from "@kobe/db";
-import { generateSessionKeyPair, signSessionToken, verifySessionToken } from "@kobe/session-token";
+  type KaijuDatabase,
+} from "@kaiju/db";
+import { generateSessionKeyPair, signSessionToken, verifySessionToken } from "@kaiju/session-token";
 import { noRunTokens } from "./testing/run-tokens.js";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
@@ -52,7 +52,7 @@ const user = randomUUID();
 const sandboxId = randomUUID();
 const VK = `sk-bf-${randomUUID()}`;
 const logger = pino({ level: "silent" });
-let app: KobeDatabase;
+let app: KaijuDatabase;
 let bifrost: Server;
 let shim: Server;
 let listener: ModelsListener;

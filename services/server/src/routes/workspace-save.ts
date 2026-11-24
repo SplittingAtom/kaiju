@@ -5,8 +5,8 @@ import {
   workspaceSaveQuerySchema,
   type WorkspaceFileError,
   type WorkspaceSaveConflict,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";

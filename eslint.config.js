@@ -4,16 +4,16 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 const NO_LOOPBACK_TESTING = {
-  name: "@kobe/address-policy/testing",
+  name: "@kaiju/address-policy/testing",
   message: "Test files only: production code never allows loopback (KOBE-694).",
 };
 const NO_SANDBOX_WIRE = {
-  name: "@kobe/protocol/sandbox-wire",
+  name: "@kaiju/protocol/sandbox-wire",
   message: "The sandbox wire stays out of the web bundle (KOBE-720).",
 };
 const NO_DEEP_PROTOCOL = {
-  group: ["@kobe/protocol/dist/*", "@kobe/protocol/src/*"],
-  message: "Import @kobe/protocol through its exports (KOBE-720).",
+  group: ["@kaiju/protocol/dist/*", "@kaiju/protocol/src/*"],
+  message: "Import @kaiju/protocol through its exports (KOBE-720).",
 };
 const WEB_FILES = [
   "apps/web/**/*.ts",
@@ -111,7 +111,7 @@ export default tseslint.config(
   },
   {
     // KOBE-720: the sandbox wire (frame schemas) never ships to the browser. It is only exported
-    // from `@kobe/protocol/sandbox-wire`, which web code may not import.
+    // from `@kaiju/protocol/sandbox-wire`, which web code may not import.
     files: WEB_FILES,
     rules: {
       "no-restricted-imports": [

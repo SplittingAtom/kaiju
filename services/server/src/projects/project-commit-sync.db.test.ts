@@ -216,7 +216,7 @@ describe("the object budget on thread uploads and its ceiling", () => {
       `INSERT INTO team_storage_quotas (team_id, max_objects, updated_by) VALUES ($1, $2, $3)`,
       [w.team, Number(used.rows[0]?.n), w.admin.id],
     );
-    const boundary = `----kobe${randomUUID().slice(0, 8)}`;
+    const boundary = `----kaiju${randomUUID().slice(0, 8)}`;
     const bytes = Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="t.txt"\r\n` +
         `Content-Type: text/plain\r\n\r\nhello\r\n--${boundary}--\r\n`,

@@ -1,4 +1,4 @@
-import { withTeam, type KobeDb } from "@kobe/db";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import { projectMemoryAccess } from "../access.js";
 import type { MemoryWho } from "../items/who.js";
 import { workspaceOf } from "../review/ids.js";
@@ -49,7 +49,7 @@ export interface SuggestionList {
 }
 
 export function listSuggestions(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   projectId?: string,
 ): Promise<SuggestionList> {

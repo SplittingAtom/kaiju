@@ -13,13 +13,13 @@ import {
   threadFoldersResponseSchema,
   threadLineageResponseSchema,
   threadSyncConflictsResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call, expectContract } from "./contract";
 
 /** A thread with two prompts and an answer: its id and entry ids. */
-function seeded(fake: FakeKobe) {
+function seeded(fake: FakeKaiju) {
   const threadId = fake.addThread("Budget");
   const root = fake.addSystemEntry(threadId, null, "model_change", {
     provider: "kobe",
@@ -35,7 +35,7 @@ function seeded(fake: FakeKobe) {
 
 describe("fake threads area: answers parse with the protocol (KOBE-717)", () => {
   it("lineage, branches, labels, fork", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const { threadId, answer } = seeded(fake);
     const at = `/v1/threads/${threadId}`;
     await expectContract(fake, threadBranchesResponseSchema, "GET", `${at}/branches`);
@@ -55,7 +55,7 @@ describe("fake threads area: answers parse with the protocol (KOBE-717)", () => 
   });
 
   it("Compact now and a carried branch summary", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const { threadId, prompt } = seeded(fake);
     const at = `/v1/threads/${threadId}`;
     await expectContract(fake, compactThreadResponseSchema, "POST", `${at}/compact`, {
@@ -67,7 +67,7 @@ describe("fake threads area: answers parse with the protocol (KOBE-717)", () => 
   });
 
   it("context memories, Learn, files, conflicts and file links", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const { threadId } = seeded(fake);
     const at = `/v1/threads/${threadId}`;
     fake.learnState.set(threadId, { blocker: null });
@@ -87,7 +87,7 @@ describe("fake threads area: answers parse with the protocol (KOBE-717)", () => 
   });
 
   it("folders", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const folder = await expectContract(fake, threadFolderSchema, "POST", "/v1/thread-folders", {
       name: "Q4",
       parent_id: null,
@@ -99,7 +99,7 @@ describe("fake threads area: answers parse with the protocol (KOBE-717)", () => 
   });
 
   it("fails on a deliberate drift", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const { threadId } = seeded(fake);
     const { body } = await call(fake, "GET", `/v1/threads/${threadId}/lineage`);
     const { root_hidden: _hidden, ...drifted } = body as Record<string, unknown>;

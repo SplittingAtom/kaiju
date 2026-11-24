@@ -1,4 +1,4 @@
-import { and, eq, inArray, teamMembers, users, type KobeTx } from "@kobe/db";
+import { and, eq, inArray, teamMembers, users, type KaijuTx } from "@kaiju/db";
 import { loadAccess } from "../projects/access.js";
 import type { Viewer } from "./queries.js";
 
@@ -13,7 +13,7 @@ import type { Viewer } from "./queries.js";
  * see the thread, not which project it is in.
  */
 export async function viewableProjects(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   rows: readonly { readonly ownerUserId: string; readonly projectId: string | null }[],
 ): Promise<ReadonlySet<string>> {
@@ -33,7 +33,7 @@ export async function viewableProjects(
 
 /** Whether the viewer may open the project: a member, or a team admin (as the markers decide). */
 export async function canViewProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   projectId: string,
 ): Promise<boolean> {
@@ -57,7 +57,7 @@ export function maskedProject(
  * still in the active team: someone who left shows as null. Never the email address.
  */
 export async function sharerNames(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   rows: readonly { readonly ownerUserId: string }[],
 ): Promise<Map<string, string>> {

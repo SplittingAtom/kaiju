@@ -8,7 +8,7 @@ afterEach(cleanup);
 
 const MARKUP =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 10" fill="currentColor">' +
-  '<path id="kobe-logo-p" d="M0 0h20v10z"/></svg>';
+  '<path id="kaiju-logo-p" d="M0 0h20v10z"/></svg>';
 
 describe("<Logo />", () => {
   it("inlines the variant with the .logo class, its size and the caller's class", () => {

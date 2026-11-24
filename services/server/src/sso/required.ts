@@ -9,9 +9,9 @@ import {
   sql,
   ssoProviders,
   storeSsoRequired,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAudit } from "../audit/record.js";
 import { listSignInProviders } from "./oidc-flow.js";
@@ -34,18 +34,18 @@ import type { SsoSettings } from "./settings.js";
  *   (`session.ts`). API keys and SCIM tokens are not sessions and are unaffected.
  * - **Off** by the Owner, by the last enabled provider being disabled or deleted (same
  *   transaction, audited, site admins emailed: {@link releaseIfNoProvider}), or with cluster access
- *   by `kobe sso allow-local-sign-in` (packages/cli).
+ *   by `kaiju sso allow-local-sign-in` (packages/cli).
  */
 
-export { REQUIRE_SSO_KEY } from "@kobe/db";
+export { REQUIRE_SSO_KEY } from "@kaiju/db";
 
 /** The stored setting. */
-export async function readSsoRequired(db: KobeDb): Promise<boolean> {
+export async function readSsoRequired(db: KaijuDb): Promise<boolean> {
   return readSsoRequiredIn(db);
 }
 
 /** Whether the setting is in force now (see the module comment). */
-export async function ssoRequired(db: KobeDb, settings: SsoSettings): Promise<boolean> {
+export async function ssoRequired(db: KaijuDb, settings: SsoSettings): Promise<boolean> {
   if (!settings.enabled) return false;
   if (!(await readSsoRequired(db))) return false;
   return storedSettingInForce(db, settings);
@@ -56,14 +56,14 @@ export async function ssoRequired(db: KobeDb, settings: SsoSettings): Promise<bo
  * whether it is in force, i.e. single sign-on is on in the chart and a provider can finish a
  * sign-in.
  */
-export async function storedSettingInForce(db: KobeDb, settings: SsoSettings): Promise<boolean> {
+export async function storedSettingInForce(db: KaijuDb, settings: SsoSettings): Promise<boolean> {
   if (!settings.enabled) return false;
   return (await listSignInProviders(db, settings.helmSecrets)).length > 0;
 }
 
 /** The session was signed in through a provider that is enabled now. */
 export async function signedInThroughEnabledProvider(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   sessionId: string,
 ): Promise<boolean> {
   const [row] = await db
@@ -75,7 +75,7 @@ export async function signedInThroughEnabledProvider(
 }
 
 /** Deletes every session not signed in through a provider; returns how many ended. */
-async function endLocalSessions(tx: KobeTx): Promise<number> {
+async function endLocalSessions(tx: KaijuTx): Promise<number> {
   const gone = await tx
     .delete(sessions)
     .where(
@@ -96,7 +96,7 @@ export interface UnlinkedCounts {
   readonly users: number;
 }
 
-export async function unlinkedCounts(db: KobeDb | KobeTx): Promise<UnlinkedCounts> {
+export async function unlinkedCounts(db: KaijuDb | KaijuTx): Promise<UnlinkedCounts> {
   const res = await db.execute<{ owners: number; site_roles: number; users: number }>(sql`
     SELECT count(*) FILTER (WHERE r.role = 'owner')::int AS owners,
            count(r.role)::int AS site_roles,
@@ -126,7 +126,7 @@ export {
  * at an enabled provider, the setting turns off instead (system, `owner_unlinked`). True if so.
  */
 export async function releaseIfOwnerUnlinked(
-  tx: KobeTx,
+  tx: KaijuTx,
   provider: { readonly providerId: string; readonly slug: string },
 ): Promise<boolean> {
   await lockSsoRequired(tx);
@@ -150,7 +150,7 @@ export type TurnOnOutcome =
  * Turns the setting on from `sessionId`, which must be an SSO session of an enabled provider,
  * while every active Owner has an identity at an enabled provider (checked under the lock).
  */
-export function turnOnSsoRequired(db: KobeDb, sessionId: string): Promise<TurnOnOutcome> {
+export function turnOnSsoRequired(db: KaijuDb, sessionId: string): Promise<TurnOnOutcome> {
   return db.transaction(async (tx): Promise<TurnOnOutcome> => {
     await lockSsoRequired(tx);
     if (!(await signedInThroughEnabledProvider(tx, sessionId))) {
@@ -167,7 +167,7 @@ export function turnOnSsoRequired(db: KobeDb, sessionId: string): Promise<TurnOn
 }
 
 /** The Owner turns the setting off. */
-export function turnOffSsoRequired(db: KobeDb): Promise<void> {
+export function turnOffSsoRequired(db: KaijuDb): Promise<void> {
   return db.transaction(async (tx) => {
     await lockSsoRequired(tx);
     if (!(await readSsoRequiredIn(tx))) return;
@@ -186,7 +186,7 @@ export function turnOffSsoRequired(db: KobeDb): Promise<void> {
  * emails the site admins ({@link notifySsoRequiredOff}) after the commit.
  */
 export async function releaseIfNoProvider(
-  tx: KobeTx,
+  tx: KaijuTx,
   provider: { readonly providerId: string; readonly slug: string },
   options: { readonly system?: boolean } = {},
 ): Promise<boolean> {

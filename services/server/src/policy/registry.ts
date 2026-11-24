@@ -1,4 +1,4 @@
-import { builtinToolDescriptor, type ToolDescriptor, type ToolRegistry } from "@kobe/protocol";
+import { builtinToolDescriptor, type ToolDescriptor, type ToolRegistry } from "@kaiju/protocol";
 
 /**
  * Pinned MCP tools of the team's connectors (D27), by Pi tool name. KOBE-59 implements it over the

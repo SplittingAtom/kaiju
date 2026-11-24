@@ -1,5 +1,5 @@
 /** MCP Apps in the rail (KOBE-440): launching an app card (KOBE-717 area). */
-import type { LaunchAppCardResponse } from "@kobe/protocol";
+import type { LaunchAppCardResponse } from "@kaiju/protocol";
 import type { FakeCore } from "./core";
 import { error, json, uuid } from "./state";
 

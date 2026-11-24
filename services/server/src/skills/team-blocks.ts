@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { lockSkillInstall } from "./default-target.js";
 
@@ -27,7 +27,7 @@ export type BlockResult =
   | { readonly ok: false; readonly code: "not_found" | "installed" };
 
 export function blockCatalogSkill(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly skillId: string; readonly userId: string },
 ): Promise<BlockResult> {
   const { teamId, skillId } = input;
@@ -74,7 +74,7 @@ export function blockCatalogSkill(
 }
 
 export function unblockCatalogSkill(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly skillId: string },
 ): Promise<boolean> {
   const { teamId, skillId } = input;
@@ -91,7 +91,7 @@ export function unblockCatalogSkill(
   });
 }
 
-export function listTeamBlocks(db: KobeDb, teamId: string): Promise<TeamBlock[]> {
+export function listTeamBlocks(db: KaijuDb, teamId: string): Promise<TeamBlock[]> {
   return withTeam(db, teamId, async (tx) => {
     const { rows } = await tx.execute<{
       skill_id: string;

@@ -2,23 +2,23 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chooseNode, openApp, openThreads } from "../chat/testing";
 
 /** KOBE-198 (CE2, CE5): the workspace rail; its threads in the Threads panel since KOBE-453. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const PROJECT_A = "00000000-0000-4000-8000-0000000000a1";
 const PROJECT_B = "00000000-0000-4000-8000-0000000000b2";
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   // The fake chat server, plus the project names the groups ask for.
   const inner = fake.fetch;
   const fetchFn: typeof fetch = async (input, init) => {
-    if (new URL(String(input), "http://kobe.test").pathname === "/v1/projects") {
+    if (new URL(String(input), "http://kaiju.test").pathname === "/v1/projects") {
       return Response.json({
         projects: [
           { id: PROJECT_B, name: "Budget 2027" },
@@ -57,7 +57,7 @@ describe("rail (ac-1)", () => {
     const sections = within(rail())
       .getAllByRole("region")
       .map((r) => r.getAttribute("id"));
-    expect(sections).toEqual(["kobe-rail-files"]);
+    expect(sections).toEqual(["kaiju-rail-files"]);
     expect(within(rail()).queryByRole("region", { name: "Threads" })).toBeNull();
     expect(within(rail()).getByRole("region", { name: "Files" })).toBeTruthy();
   });
@@ -83,7 +83,7 @@ describe("rail (ac-1)", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Threads" })).toBeNull());
     await user.click(within(rail()).getByRole("button", { name: "Show files" }));
     await waitFor(() => expect(rail().hasAttribute("data-collapsed")).toBe(false));
-    await waitFor(() => expect(document.activeElement?.id).toBe("kobe-rail-files"));
+    await waitFor(() => expect(document.activeElement?.id).toBe("kaiju-rail-files"));
   });
 
   it("renders the same expanded markup first on narrow screens, then collapses", async () => {
@@ -153,7 +153,7 @@ describe("thread groups in the Threads panel (ac-2, KOBE-453)", () => {
     const inner = fake.fetch;
     Object.defineProperty(fake, "fetch", {
       value: async (input: string, init?: RequestInit) => {
-        const url = new URL(input, "http://kobe.test");
+        const url = new URL(input, "http://kaiju.test");
         if (url.pathname === "/v1/threads" && (init?.method ?? "GET") === "GET" && ++lists > 1) {
           await held; // the reload after the first message waits
         }
@@ -183,7 +183,7 @@ describe("project names", () => {
     const inner = fake.fetch;
     Object.defineProperty(fake, "fetch", {
       value: async (input: string, init?: RequestInit) =>
-        new URL(input, "http://kobe.test").pathname === "/v1/projects"
+        new URL(input, "http://kaiju.test").pathname === "/v1/projects"
           ? answer()
           : inner(input, init),
     });

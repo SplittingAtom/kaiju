@@ -1,5 +1,5 @@
-import { MANIFEST_PATH } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { MANIFEST_PATH } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { Hono } from "hono";
 import type { TeamVariables } from "../../authz/middleware.js";
 import { hitRateLimit } from "../../rate-limit.js";

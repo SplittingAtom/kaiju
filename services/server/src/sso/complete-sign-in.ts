@@ -1,13 +1,13 @@
 import type { GenericEndpointContext } from "better-auth";
 import { getSessionFromCtx } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
-import { eq, sessions, sessionSsoContexts, type KobeDb } from "@kobe/db";
+import { eq, sessions, sessionSsoContexts, type KaijuDb } from "@kaiju/db";
 import { recordAuditAfter } from "../audit/record.js";
 import type { VerifiedIdentity } from "./claims.js";
 import type { SsoProvider } from "./oidc-flow.js";
 
 async function capSessionExpiry<S extends { id: string; expiresAt: Date }>(
-  db: KobeDb,
+  db: KaijuDb,
   session: S,
   hours: number | null,
 ): Promise<S> {
@@ -25,7 +25,7 @@ async function capSessionExpiry<S extends { id: string; expiresAt: Date }>(
  */
 export async function completeSsoSignIn(
   ctx: GenericEndpointContext,
-  db: KobeDb,
+  db: KaijuDb,
   s: {
     readonly provider: SsoProvider;
     readonly userId: string;

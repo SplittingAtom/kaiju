@@ -4,11 +4,11 @@ import { z } from "zod";
 import { parseKeyMaterial } from "./crypto.js";
 
 export const USAGE = `Usage:
-  kobe backup  --out <new directory> [--no-objects]
-  kobe restore --from <backup directory> [--allow-object-mismatch] [--no-objects]
+  kaiju backup  --out <new directory> [--no-objects]
+  kaiju restore --from <backup directory> [--allow-object-mismatch] [--no-objects]
                [--operator <name>] [--expect-audit-head <seq>:<sha256>]
-  kobe projects restricted [--json]
-  kobe sso allow-local-sign-in [--operator <name>]
+  kaiju projects restricted [--json]
+  kaiju sso allow-local-sign-in [--operator <name>]
 
   --operator           recorded as who ran the restore (default: the OS user)
   --expect-audit-head  an audit chain head recorded off the box (server log, SIEM); the restore
@@ -70,14 +70,14 @@ export interface RestoreCommand {
   readonly expectAuditHead: { readonly seq: number; readonly hash: string } | undefined;
 }
 
-/** `kobe projects restricted` (KOBE-587): read-only, no backup key or object storage needed. */
+/** `kaiju projects restricted` (KOBE-587): read-only, no backup key or object storage needed. */
 export interface ProjectsRestrictedCommand {
   readonly command: "projects-restricted";
   readonly databaseUrl: string;
   readonly json: boolean;
 }
 
-/** `kobe sso allow-local-sign-in` (KOBE-774): the owner role; no backup key or object storage. */
+/** `kaiju sso allow-local-sign-in` (KOBE-774): the owner role; no backup key or object storage. */
 export interface SsoAllowLocalSignInCommand {
   readonly command: "sso-allow-local-sign-in";
   readonly databaseUrl: string;

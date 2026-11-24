@@ -9,9 +9,9 @@ import {
   PACKAGE_SPEC_PATTERN,
   SUMMARY_MAX_CHARS,
   TAG_PATTERN,
-  kobeSkillManifestSchema,
-  type KobeSkillManifest,
-} from "@kobe/protocol";
+  kaijuSkillManifestSchema,
+  type KaijuSkillManifest,
+} from "@kaiju/protocol";
 import { stringify } from "yaml";
 import { readManifest } from "../bundle.js";
 
@@ -20,7 +20,7 @@ import { readManifest } from "../bundle.js";
  * is untrusted text: the one JSON object in it is read leniently, every field is cleaned to the
  * contract's rules or dropped, and the fields the model never decides come from the version
  * (`apiVersion`, `name`, `version`) and the author (`license`). The result always validates
- * against `kobeSkillManifestSchema`; a reply with nothing usable gives the seed alone.
+ * against `kaijuSkillManifestSchema`; a reply with nothing usable gives the seed alone.
  */
 
 export interface ManifestSeed {
@@ -122,8 +122,8 @@ const record = (value: unknown): Record<string, unknown> =>
     : {};
 
 /** The manifest the seed alone gives: SKILL.md's description as the summary. */
-export function manifestFromSeed(seed: ManifestSeed): KobeSkillManifest {
-  return kobeSkillManifestSchema.parse({
+export function manifestFromSeed(seed: ManifestSeed): KaijuSkillManifest {
+  return kaijuSkillManifestSchema.parse({
     apiVersion: MANIFEST_API_VERSION,
     name: seed.name,
     version: seed.semver,
@@ -135,7 +135,7 @@ export function manifestFromSeed(seed: ManifestSeed): KobeSkillManifest {
 }
 
 export interface ParsedManifest {
-  readonly manifest: KobeSkillManifest;
+  readonly manifest: KaijuSkillManifest;
   /** Whether the reply held a JSON object the manifest took fields from. */
   readonly fromModel: boolean;
 }
@@ -168,7 +168,7 @@ export function manifestFromReply(reply: string, seed: ManifestSeed): ParsedMani
     ...(tags.length > 0 ? { tags } : {}),
     ...(Object.keys(caps).length > 0 ? { capabilities: caps } : {}),
   };
-  const parsed = kobeSkillManifestSchema.safeParse(candidate);
+  const parsed = kaijuSkillManifestSchema.safeParse(candidate);
   return parsed.success
     ? { manifest: parsed.data, fromModel: true }
     : { manifest: base, fromModel: false };
@@ -182,7 +182,7 @@ export class ManifestYamlError extends Error {
 }
 
 /** The manifest's keys in the order the built-in skills write them. */
-const KEY_ORDER: readonly (keyof KobeSkillManifest)[] = [
+const KEY_ORDER: readonly (keyof KaijuSkillManifest)[] = [
   "apiVersion",
   "name",
   "version",
@@ -199,7 +199,7 @@ const KEY_ORDER: readonly (keyof KobeSkillManifest)[] = [
  * The manifest as the YAML bytes a package carries, checked the way an upload reads them
  * (`readManifest`: text rules, schema, the name). Throws when they would not be accepted.
  */
-export function manifestYaml(manifest: KobeSkillManifest): Uint8Array {
+export function manifestYaml(manifest: KaijuSkillManifest): Uint8Array {
   const ordered = Object.fromEntries(
     KEY_ORDER.filter((k) => manifest[k] !== undefined).map((k) => [k, manifest[k]]),
   );

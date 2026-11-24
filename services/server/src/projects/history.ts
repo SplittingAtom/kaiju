@@ -1,10 +1,10 @@
 import { Zip, ZipDeflate, strToU8 } from "fflate";
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   PROJECT_HISTORY_PAGE_DEFAULT,
   type ProjectCommitDetail,
   type ProjectHistoryResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { logger } from "../logger.js";
 import type { BlobStore } from "../retention/blobs.js";
 import {
@@ -26,7 +26,7 @@ import {
  */
 
 export async function historyPage(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   before: number | undefined,
@@ -43,7 +43,7 @@ export async function historyPage(
 }
 
 async function commitAt(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   seq: number,
@@ -56,7 +56,7 @@ async function commitAt(
 
 /** The commit, its tree and the diff to its parent (all added when the parent was pruned). */
 export async function commitDetail(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   seq: number,
@@ -74,7 +74,7 @@ export async function commitDetail(
 
 /** One file of a commit's tree, or undefined (no such commit or path). */
 export async function fileAt(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   seq: number,
@@ -100,7 +100,7 @@ export function servable(
  * `<slug>/<path>` plus nothing else. A missing object is left out (logged), as the export does.
  */
 export async function* headZip(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   teamId: string,
   projectId: string,

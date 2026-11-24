@@ -1,6 +1,6 @@
 "use client";
 
-import { WORKBENCH_EDITOR_WIDTH_BOUNDS } from "@kobe/protocol";
+import { WORKBENCH_EDITOR_WIDTH_BOUNDS } from "@kaiju/protocol";
 import { useCallback, type CSSProperties, type ReactNode } from "react";
 import { useShellPreferences, useStoredPreference } from "../../lib/shell/preferences";
 import { useSplitter, type SplitterRange } from "../shell/use-splitter";
@@ -16,8 +16,8 @@ import { useSplitter, type SplitterRange } from "../shell/use-splitter";
  * width (a container query, so a narrow panel on a wide window too): under 36rem, where the two
  * floors and the handle don't fit, the tree stacks above a full-width rail and there is no handle.
  */
-export const EDITOR_WIDTH_VAR = "--kobe-editor-width";
-export const EDITOR_RAIL_ID = "kobe-workbench-editor";
+export const EDITOR_WIDTH_VAR = "--kaiju-editor-width";
+export const EDITOR_RAIL_ID = "kaiju-workbench-editor";
 /** The tree's floor (12rem) and the handle's strip, in px. */
 export const TREE_MIN_PX = 192;
 export const HANDLE_PX = 12;
@@ -25,13 +25,13 @@ export const EDITOR_MIN_PX = WORKBENCH_EDITOR_WIDTH_BOUNDS.min;
 const STEP_PX = 24;
 
 /**
- * The rail's width is `--kobe-editor-width` held within both floors; by default it is what a
+ * The rail's width is `--kaiju-editor-width` held within both floors; by default it is what a
  * 14rem tree leaves. A width the panel can no longer hold shrinks to fit (the tree keeps 12rem).
  */
 const GRID = [
   "grid grid-cols-[minmax(0,1fr)] gap-4",
-  "[--kobe-editor-width:calc(100%_-_14rem_-_12px)]",
-  "@min-[36rem]:gap-0 @min-[36rem]:grid-cols-[minmax(12rem,1fr)_12px_minmax(min(20rem,100%),min(var(--kobe-editor-width),calc(100%_-_12rem_-_12px)))]",
+  "[--kaiju-editor-width:calc(100%_-_14rem_-_12px)]",
+  "@min-[36rem]:gap-0 @min-[36rem]:grid-cols-[minmax(12rem,1fr)_12px_minmax(min(20rem,100%),min(var(--kaiju-editor-width),calc(100%_-_12rem_-_12px)))]",
 ].join(" ");
 
 function regions(handle: HTMLElement | null) {

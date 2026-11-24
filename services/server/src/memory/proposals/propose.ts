@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { semanticMemoryKindSchema, semanticMemoryStatementSchema } from "@kobe/protocol";
-import { MEMORY_PROPOSAL_TEXT_MAX, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { semanticMemoryKindSchema, semanticMemoryStatementSchema } from "@kaiju/protocol";
+import { MEMORY_PROPOSAL_TEXT_MAX, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { evaluateMemoryWrite } from "../checks.js";
 import { openOp } from "../items/context.js";
@@ -61,7 +61,7 @@ const alreadyCurator = () =>
 
 /** Refuses a proposal the proposer may not make from this candidate. */
 async function assertProposable(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; threadId: string },
   c: StoredCandidate,
   kind: ProposeBody["kind"],
@@ -76,7 +76,7 @@ async function assertProposable(
 
 /** The hard checks (lengths, secrets) and the Workspace switch; warnings go to the curators. */
 async function assertText(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: MemoryWho,
   text: { statement: string; rationale?: string | undefined },
 ): Promise<void> {
@@ -106,7 +106,7 @@ interface NewProposal {
 }
 
 async function insertProposal(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   who: MemoryWho,
   p: NewProposal,
@@ -124,7 +124,7 @@ async function insertProposal(
 }
 
 /** The clock of the proposal a returned candidate came back from, while it still runs. */
-async function returnedClock(tx: KobeTx, teamId: string, row: CandidateRow) {
+async function returnedClock(tx: KaijuTx, teamId: string, row: CandidateRow) {
   const previous = row.candidate.returned?.proposal_id;
   if (!previous) return { previousId: null, expiresAt: null };
   const { rows } = await tx.execute<{ expires_at: string | Date }>(sql`
@@ -135,7 +135,7 @@ async function returnedClock(tx: KobeTx, teamId: string, row: CandidateRow) {
 }
 
 export function proposeCandidate(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   candidateId: string,
   body: ProposeBody,
@@ -181,7 +181,7 @@ export function proposeCandidate(
  * still quote the person), with a new 30-day clock. A pending one past its expiry is marked
  * expired first (the sweep, KOBE-651, may not have run yet).
  */
-export function repropose(db: KobeDb, who: MemoryWho, proposalId: string): Promise<Proposed> {
+export function repropose(db: KaijuDb, who: MemoryWho, proposalId: string): Promise<Proposed> {
   const teamId = workspaceOf(who);
   return withTeam(db, teamId, async (tx) => {
     const old = await lockProposal(tx, teamId, proposalId, "any");

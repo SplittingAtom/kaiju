@@ -118,15 +118,15 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
     "$(in_sandbox "echo | $s_client -servername evil.example.com 2>&1 | grep -c '^New, TLS'")"
 
   # Revocation reaches open tunnels: keep one open, disable the domain, the proxy closes it.
-  in_sandbox "rm -f /tmp/kobe-e2e-tunnel.log; setsid nohup sh -c \"sleep 120 | ($s_client -servername $UPSTREAM_HOST -quiet \
-    >/dev/null 2>&1; echo CLOSED >> /tmp/kobe-e2e-tunnel.log)\" >/dev/null 2>&1 & sleep 5; echo started" >/dev/null
+  in_sandbox "rm -f /tmp/kaiju-e2e-tunnel.log; setsid nohup sh -c \"sleep 120 | ($s_client -servername $UPSTREAM_HOST -quiet \
+    >/dev/null 2>&1; echo CLOSED >> /tmp/kaiju-e2e-tunnel.log)\" >/dev/null 2>&1 & sleep 5; echo started" >/dev/null
   contains "an open tunnel to an enabled domain stays up" '^OPEN$' \
-    "$(in_sandbox 'grep -q CLOSED /tmp/kobe-e2e-tunnel.log 2>/dev/null && echo CLOSED || echo OPEN')"
+    "$(in_sandbox 'grep -q CLOSED /tmp/kaiju-e2e-tunnel.log 2>/dev/null && echo CLOSED || echo OPEN')"
   psql_kobe "DELETE FROM team_egress WHERE team_id = '$E2E_TEAM_ID' AND domain = '$UPSTREAM_HOST';" >/dev/null
   notify_egress
   contains "disabling the domain closes the already-open tunnel" '^CLOSED$' \
-    "$(in_sandbox 'for i in $(seq 1 20); do grep -q CLOSED /tmp/kobe-e2e-tunnel.log 2>/dev/null && break; sleep 1; done; \
-      grep -q CLOSED /tmp/kobe-e2e-tunnel.log 2>/dev/null && echo CLOSED || echo OPEN')"
+    "$(in_sandbox 'for i in $(seq 1 20); do grep -q CLOSED /tmp/kaiju-e2e-tunnel.log 2>/dev/null && break; sleep 1; done; \
+      grep -q CLOSED /tmp/kaiju-e2e-tunnel.log 2>/dev/null && echo CLOSED || echo OPEN')"
   contains "a disabled domain is blocked again (change hint, no restart)" '^connect=403 ' \
     "$(until_proxy "https://$UPSTREAM_HOST/" '^connect=403 ')"
 

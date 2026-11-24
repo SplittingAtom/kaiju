@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { eq, siteRoles, users } from "@kobe/db";
+import { eq, siteRoles, users } from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import { requireSitePermission } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

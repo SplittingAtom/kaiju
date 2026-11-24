@@ -13,9 +13,9 @@ describe("loadSkillMirrorConfig (KOBE-343)", () => {
     expect(
       loadSkillMirrorConfig({
         KOBE_SKILL_MIRROR_TOKEN: "ghp_abcdefgh",
-        KOBE_SKILL_MIRROR_USERNAME: "kobe",
+        KOBE_SKILL_MIRROR_USERNAME: "kaiju",
       }).credentials,
-    ).toEqual({ username: "kobe", token: "ghp_abcdefgh" });
+    ).toEqual({ username: "kaiju", token: "ghp_abcdefgh" });
     let message = "";
     try {
       loadSkillMirrorConfig({ KOBE_SKILL_MIRROR_TOKEN: "bad token:x" });

@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentRosterTab } from "@kobe/protocol";
+import type { AgentRosterTab } from "@kaiju/protocol";
 import type { GalleryScore } from "../../lib/admin/api/agents";
 import { listGalleryScores } from "../../lib/admin/api/team/agents";
 import { listGalleryAgents, type GalleryAgentSummary } from "../../lib/admin/api/site/gallery";

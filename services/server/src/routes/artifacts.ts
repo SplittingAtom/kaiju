@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { withTeam, type KobeTx } from "@kobe/db";
+import { withTeam, type KaijuTx } from "@kaiju/db";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
@@ -45,7 +45,7 @@ export function artifactRoutes(
   app.use(requireTeam(deps));
   app.use(requireTeamPermission("team.chat"));
 
-  const asViewer = <T>(c: ArtifactContext, fn: (tx: KobeTx, viewer: Viewer) => Promise<T>) => {
+  const asViewer = <T>(c: ArtifactContext, fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>) => {
     const teamId = c.get("team").id;
     const userId = c.get("user").id;
     return withTeam(db, teamId, async (tx) =>

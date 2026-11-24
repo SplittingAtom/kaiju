@@ -16,7 +16,7 @@ import {
  * Forgejo run on receive) are exactly the ones `paths.ts` refuses, checked against the real git.
  * `.gitmodules` is refused by Kaiju outright (submodules are not carried), so it is listed apart.
  */
-const root = mkdtempSync(path.join(tmpdir(), "kobe-paths-test-"));
+const root = mkdtempSync(path.join(tmpdir(), "kaiju-paths-test-"));
 let probes = 0;
 const run = (cwd: string, args: string[], input?: string) =>
   execFileSync("git", args, {

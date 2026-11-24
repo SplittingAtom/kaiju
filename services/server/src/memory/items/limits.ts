@@ -1,10 +1,10 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   SEMANTIC_MEMORY_NEAR_FULL_RATIO,
   SEMANTIC_MEMORY_PINS_MAX,
   SEMANTIC_MEMORY_POLICY_MAX_BYTES,
   SEMANTIC_MEMORY_POLICY_MAX_ITEMS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { logger } from "../../logger.js";
 import { notifyMemory } from "../../notifications/memory.js";
 import type { MemorySiteSettings } from "../site-settings.js";
@@ -18,14 +18,14 @@ import { workspaceTeam, type Location } from "./location.js";
  * nothing is ever evicted or archived to make room.
  */
 
-export async function lockScope(tx: KobeTx, loc: Location): Promise<void> {
+export async function lockScope(tx: KaijuTx, loc: Location): Promise<void> {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.memory-scope:${loc.lockKey}`}, 0))`,
   );
 }
 
 /** Active items of the scope (per person for `user`/`portable`). */
-export async function activeCount(tx: KobeTx, loc: Location): Promise<number> {
+export async function activeCount(tx: KaijuTx, loc: Location): Promise<number> {
   const { rows } = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM ${loc.items} i WHERE ${loc.where} AND i.status = 'active'`);
   return rows[0]?.n ?? 0;
@@ -39,7 +39,7 @@ export const nearFullAt = (max: number): number => Math.ceil(max * SEMANTIC_MEMO
 
 /** Refuses `needed` more active items past the limit; returns the count before. */
 export async function assertRoom(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   settings: MemorySiteSettings,
   needed: number,
@@ -56,7 +56,7 @@ export async function assertRoom(
 }
 
 /** Refuses an 11th pinned active item in the scope (`except`: the item being pinned). */
-export async function assertPinRoom(tx: KobeTx, loc: Location, except?: string): Promise<void> {
+export async function assertPinRoom(tx: KaijuTx, loc: Location, except?: string): Promise<void> {
   const { rows } = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM ${loc.items} i
      WHERE ${loc.where} AND i.status = 'active' AND i.pinned
@@ -75,7 +75,7 @@ export interface PolicyUsage {
 
 /** Active Policy items and the UTF-8 bytes of their statements (`except`: items left out). */
 export async function policyUsage(
-  tx: KobeTx,
+  tx: KaijuTx,
   except: readonly string[] = [],
 ): Promise<PolicyUsage> {
   const skip =
@@ -99,7 +99,7 @@ export async function policyUsage(
  * names the item itself and any Policy item the write retires (supersede).
  */
 export async function assertPolicyBudget(
-  tx: KobeTx,
+  tx: KaijuTx,
   except: readonly string[],
   statement: string,
 ): Promise<void> {
@@ -126,7 +126,7 @@ export type PendingSiteNotices = readonly string[];
  * list response only (the notice kind names `team | site`).
  */
 export async function notifyNearFull(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   settings: MemorySiteSettings,
   before: number,
@@ -150,14 +150,14 @@ export async function notifyNearFull(
   return recipients.filter((r) => !told.has(r));
 }
 
-async function teamCurators(tx: KobeTx, teamId: string): Promise<string[]> {
+async function teamCurators(tx: KaijuTx, teamId: string): Promise<string[]> {
   const { rows } = await tx.execute<{ id: string }>(sql`
     SELECT user_id AS id FROM team_members WHERE team_id = ${teamId} AND role = 'team_admin'
     UNION SELECT user_id FROM memory_stewards WHERE team_id = ${teamId}`);
   return rows.map((r) => r.id);
 }
 
-async function siteCurators(tx: KobeTx): Promise<string[]> {
+async function siteCurators(tx: KaijuTx): Promise<string[]> {
   const { rows } = await tx.execute<{ id: string }>(sql`
     SELECT r.user_id AS id FROM site_roles r JOIN users u ON u.id = r.user_id
      WHERE r.role IN ('owner', 'admin') AND u.deactivated_at IS NULL
@@ -172,7 +172,7 @@ async function siteCurators(tx: KobeTx): Promise<string[]> {
  * the Workspace they used last (`user_last_teams`), one transaction each. Best effort: the write
  * already happened, so a failure is logged, never raised.
  */
-export async function deliverSiteNotices(db: KobeDb, pending: PendingSiteNotices): Promise<void> {
+export async function deliverSiteNotices(db: KaijuDb, pending: PendingSiteNotices): Promise<void> {
   for (const userId of pending) {
     try {
       const { rows } = await db.execute<{ team_id: string }>(

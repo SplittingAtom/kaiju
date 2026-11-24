@@ -5,16 +5,16 @@ import {
   type RunTransitionCause,
   type ServerCallPurpose,
   type ThreadStatus,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { VIEWING_RECORD_ONLY } from "../runs/store.js";
 import {
   ACTIVE_RUN_STATUSES,
   SYSTEM_ACTOR,
   readBudgetStopScope,
   sql,
-  type KobeTx,
+  type KaijuTx,
   type RunKind,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { auditExpiredApprovals, expireRunApprovalsInTx } from "../approvals/run-end.js";
 import { appendRunEventsInTx, type NewRunEvent } from "../event-stream/append.js";
@@ -42,7 +42,7 @@ export interface RunRow {
 
 /** The run with its thread's owner (under the team's RLS); undefined when not in this team. */
 export async function loadRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<RunRow | undefined> {
@@ -119,7 +119,7 @@ function terminalEvent(
  * died; the sandbox had already denied the call locally) completes from `waiting_approval`.
  */
 export async function endRunInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   requested: RunEnd,
@@ -261,7 +261,7 @@ export async function endRunInTx(
  * (KOBE-219 review M3). Follow-ups (KOBE-222) are announced beside a title; both run together.
  */
 async function epilogueOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   threadId: string,
@@ -289,7 +289,7 @@ function expiryCauseOfEnd(to: RunStatus) {
  * from the database, so a compaction is refused even if a lease's in-memory flag were wrong.
  */
 export async function isActiveMessageRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   threadId: string,
@@ -316,7 +316,7 @@ export interface LeasedRun {
  * its claim UID, so an eval sandbox never sees, or may send frames for, the member's runs.
  */
 export async function activeLeasedRuns(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   sandboxId: string,
 ): Promise<LeasedRun[]> {
@@ -350,7 +350,7 @@ export async function activeLeasedRuns(
 }
 
 /** The run has no terminal status yet, so it still takes events (KOBE-543); locks the run row. */
-export async function runStillOpen(tx: KobeTx, teamId: string, runId: string): Promise<boolean> {
+export async function runStillOpen(tx: KaijuTx, teamId: string, runId: string): Promise<boolean> {
   // Locked (thread, then run: the mirror holds the thread), so a Stop cannot end the run between
   // this read and the append, which would roll back the mirror with it.
   const res = await tx.execute<{ status: RunStatus }>(sql`

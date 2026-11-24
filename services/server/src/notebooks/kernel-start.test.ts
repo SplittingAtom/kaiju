@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { KobeDb, KobeTx } from "@kobe/db";
-import type { ActorContext } from "@kobe/protocol";
+import type { KaijuDb, KaijuTx } from "@kaiju/db";
+import type { ActorContext } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { RunError } from "../runs/errors.js";
 import type { SandboxRouter } from "../sandbox-wire/types.js";
@@ -25,12 +25,12 @@ describe("startKernel", () => {
       notebookKernel: vi.fn(),
     };
     const host = {
-      db: {} as KobeDb,
+      db: {} as KaijuDb,
       router: router as unknown as SandboxRouter,
       log: { warn: vi.fn(), info: vi.fn() } as unknown as Logger,
       isolationMissing: () => false,
-      threadTx: <T>(_a: ActorContext, fn: (tx: KobeTx, v: Viewer) => Promise<T>) =>
-        fn({} as KobeTx, {} as Viewer),
+      threadTx: <T>(_a: ActorContext, fn: (tx: KaijuTx, v: Viewer) => Promise<T>) =>
+        fn({} as KaijuTx, {} as Viewer),
       assertMayRun: vi.fn(async () => {
         throw new RunError("forbidden", "Your account can't run agents in this team.");
       }),

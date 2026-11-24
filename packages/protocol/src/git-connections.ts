@@ -5,7 +5,7 @@ import { timestampSchema, uuidSchema } from "./common.js";
  * Workspace git connections (KOBE-760, spec workspace-git §3, §4, §7): the answers of
  * `/v1/team/git/connections*`, shared by the server and the Git section of the Workspace admin
  * console (KOBE-761). No shape here can carry a credential: a token appears only as its masked
- * hint, a GitHub App only as its App ID and installation ID. The value lists repeat `@kobe/db`'s
+ * hint, a GitHub App only as its App ID and installation ID. The value lists repeat `@kaiju/db`'s
  * (`GIT_PROVIDER_VALUES` and friends; a server test keeps them equal).
  */
 

@@ -1,7 +1,7 @@
 /**
  * Repos in the web app (KOBE-768, spec workspace-git G16, G17, G19, G20): the Repo mirror routes
  * (`/v1/projects/:id/repo*`, KOBE-766) and Convert to repo (`/v1/projects/:id/repo-conversion*`,
- * KOBE-765). Answers are `@kobe/protocol` git-mirror.ts and git-conversions.ts, camelized. The
+ * KOBE-765). Answers are `@kaiju/protocol` git-mirror.ts and git-conversions.ts, camelized. The
  * server decides who may do what; the UI only hides controls. No shape here carries a credential.
  */
 import type {
@@ -10,7 +10,7 @@ import type {
   GitRepoMirror,
   GitRepoView,
   RepoWorkingCopy as WireWorkingCopy,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
 import type { Camelized } from "../api/casing";
 

@@ -62,7 +62,7 @@ test("U21: reasoning, a tool card, the hover footer and the run's markers render
 
   for (const kind of ["model", "approval", "stopped"]) {
     await expect(
-      page.locator(`[data-kobe-marker="${kind}"]`).first(),
+      page.locator(`[data-kaiju-marker="${kind}"]`).first(),
       `marker ${kind}`,
     ).toBeVisible();
   }

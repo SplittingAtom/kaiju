@@ -10,7 +10,7 @@ afterEach(async () => {
   for (const d of dirs.splice(0)) await rm(d, { recursive: true, force: true });
 });
 async function dir(): Promise<string> {
-  const d = await mkdtemp(path.join(tmpdir(), "kobe-mv-"));
+  const d = await mkdtemp(path.join(tmpdir(), "kaiju-mv-"));
   dirs.push(d);
   return d;
 }

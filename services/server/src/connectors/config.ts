@@ -1,4 +1,4 @@
-import { validateCidrs, validateInternalTargets } from "@kobe/address-policy";
+import { validateCidrs, validateInternalTargets } from "@kaiju/address-policy";
 import { DEFAULT_ALLOWED_PORTS, resolveAll, type ConnectorUrlPolicy } from "./url-policy.js";
 
 type Env = Readonly<Record<string, string | undefined>>;

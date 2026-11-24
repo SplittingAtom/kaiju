@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { listTeamInvitationsFor } from "@kobe/db";
+import { listTeamInvitationsFor } from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import type { ServerDeps } from "../deps.js";
 import {

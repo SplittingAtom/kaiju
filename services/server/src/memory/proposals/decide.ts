@@ -5,8 +5,8 @@ import {
   semanticMemoryOverridesSchema,
   semanticMemoryStatementSchema,
   type SemanticMemoryItemDetail,
-} from "@kobe/protocol";
-import { MEMORY_PROPOSAL_TEXT_MAX, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { MEMORY_PROPOSAL_TEXT_MAX, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { afterCommit, openOp } from "../items/context.js";
 import { createItemIn } from "../items/create.js";
@@ -52,7 +52,7 @@ function assertDecider(who: MemoryWho, p: ProposalRow): void {
 }
 
 async function setDecided(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
   who: MemoryWho,
@@ -66,7 +66,7 @@ async function setDecided(
 }
 
 export async function approveProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   proposalId: string,
   body: ApproveBody,
@@ -112,7 +112,7 @@ export async function approveProposal(
  * proposer's To review (when its conversation is still there), to edit and propose again.
  */
 export function turnDownProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   proposalId: string,
   outcome: "dismissed" | "changes_requested",
@@ -139,7 +139,7 @@ export function turnDownProposal(
   });
 }
 
-async function passOf(tx: KobeTx, teamId: string, candidateId: string): Promise<string | null> {
+async function passOf(tx: KaijuTx, teamId: string, candidateId: string): Promise<string | null> {
   const { rows } = await tx.execute<{ pass_id: string }>(sql`
     SELECT pass_id FROM memory_candidates WHERE team_id = ${teamId} AND id = ${candidateId}`);
   return rows[0]?.pass_id ?? null;

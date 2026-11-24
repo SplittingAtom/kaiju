@@ -1,4 +1,4 @@
-import { AUDIT_EVENTS } from "@kobe/db";
+import { AUDIT_EVENTS } from "@kaiju/db";
 import { describe, expect, it, vi } from "vitest";
 import { IsolationRuntimeMissingError, type IsolationGate } from "../isolation/gate.js";
 import { createFakeKube, simulateAgentSandbox, type FakeKube } from "../testing/fake-kube.js";
@@ -220,7 +220,7 @@ describe("wakeSandbox (D14, KOBE-9)", () => {
     ctx.kube.seed({
       apiVersion: "v1",
       kind: "Service",
-      metadata: { name: "kobe-server", namespace: "kobe" },
+      metadata: { name: "kobe-server", namespace: "kaiju" },
       spec: { clusterIP: "10.43.9.9" },
     });
     const upgraded = ctx.make({ ...SETTINGS, image: "ghcr.io/splittingatom/kobe-sandbox:0.2.0" });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PolicyDecision } from "@kobe/protocol";
+import type { PolicyDecision } from "@kaiju/protocol";
 import { combineDecisions } from "./decide.js";
 
 const reason = (

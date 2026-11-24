@@ -1,5 +1,5 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { SandboxToServerFrame, ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { SandboxToServerFrame, ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
 import { ArtifactBroker } from "../tools/broker.js";
 import { toolsError } from "../tools/channel.js";
 import { FileEditBroker } from "../tools/file-edit-broker.js";
@@ -74,8 +74,8 @@ export function routeToolsRequest(
   caps: Capabilities,
   threadId: string,
   runId: string | undefined,
-  request: KobeToolsRequest,
-  reply: (response: KobeToolsResponse) => void,
+  request: KaijuToolsRequest,
+  reply: (response: KaijuToolsResponse) => void,
 ): void {
   if (request.op === "memory.put" || request.op === "memory.read" || request.op === "memory.show") {
     if (caps.memory) tools.memory.request(threadId, runId, request, reply);

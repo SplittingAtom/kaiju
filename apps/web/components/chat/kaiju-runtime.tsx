@@ -1,0 +1,352 @@
+"use client";
+
+/**
+ * The assistant-ui runtime for Kaiju (D16): `useRemoteThreadListRuntime` over the Thread API, and
+ * per thread an `ExternalStoreRuntime` fed by the thread's controller, its entry tree projected to
+ * a branchable message repository (`parentId` + `headId`).
+ */
+import { appContextBody } from "../../lib/apps/app-context";
+import { referencesBody } from "../../lib/apps/app-items";
+import type { ItemReference } from "@kaiju/protocol";
+import {
+  fromThreadMessageLike,
+  MessageNotSentError,
+  useAui,
+  useAuiState,
+  useExternalStoreRuntime,
+  useRemoteThreadListRuntime,
+  type AppendMessage,
+  type AssistantRuntime,
+  type ExportedMessageRepository,
+  type RemoteThreadListAdapter,
+  type ThreadMessage,
+} from "@assistant-ui/react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import type { ApiError } from "../../lib/api/client";
+import { NEW_DRAFT } from "../../lib/chat/attachments";
+import { headOf, isBrowsing } from "../../lib/chat/head";
+import type { ChatSession } from "../../lib/chat/session";
+import type { ThreadController } from "../../lib/chat/thread-controller";
+import type { ViewingChoice } from "../../lib/chat/viewing";
+import {
+  initialThreadState,
+  isThreadRunning,
+  liveOverlay,
+  type ThreadState,
+} from "../../lib/chat/thread-state";
+import {
+  branchPoint,
+  projectThread,
+  type Projection,
+  type ProjectedItem,
+} from "../../lib/chat/tree";
+
+export const ChatSessionContext = createContext<ChatSession | null>(null);
+
+export function useChatSession(): ChatSession {
+  const session = useContext(ChatSessionContext);
+  if (!session) throw new Error("useChatSession needs a ChatSessionContext provider");
+  return session;
+}
+
+/** What the thread view reads beside the messages (`useAuiState((s) => s.thread.extras)`). */
+export interface KaijuThreadExtras {
+  readonly controller: ThreadController | null;
+  readonly state: ThreadState;
+  readonly projection: Projection;
+}
+
+/** The thread's extras from assistant-ui state: the one selector for every `useAuiState` reader. */
+export function kaijuExtrasOf(state: {
+  readonly thread: { readonly extras?: unknown };
+}): KaijuThreadExtras | undefined {
+  return state.thread.extras as KaijuThreadExtras | undefined;
+}
+
+export function useKaijuExtras(): KaijuThreadExtras | undefined {
+  return useAuiState(kaijuExtrasOf);
+}
+
+const DRAFT_STATE = initialThreadState(null);
+const noopSubscribe = () => () => {};
+
+/** The controller of the thread on screen (a draft for a new thread), held while mounted. */
+function useThreadController(session: ChatSession, remoteId: string | undefined) {
+  const [held, setHeld] = useState<{ id: string | null; controller: ThreadController } | null>(
+    null,
+  );
+  useEffect(() => {
+    const id = remoteId ?? null;
+    const controller = session.acquire(id);
+    setHeld({ id, controller });
+    return () => session.release(id, controller);
+  }, [session, remoteId]);
+  const controller = held && held.id === (remoteId ?? null) ? held.controller : null;
+  const state = useSyncExternalStore(
+    controller?.subscribe ?? noopSubscribe,
+    controller?.getState ?? (() => DRAFT_STATE),
+    controller?.getState ?? (() => DRAFT_STATE),
+  );
+  return { controller, state };
+}
+
+function sameDeps(a: readonly unknown[], b: readonly unknown[]): boolean {
+  return a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
+}
+
+/** Converts projected items to `ThreadMessage`s, reusing a message whose inputs didn't change. */
+function useMessageRepository(projection: Projection): ExportedMessageRepository {
+  const cache = useRef(new Map<string, { deps: readonly unknown[]; message: ThreadMessage }>());
+  return useMemo(() => {
+    const next = new Map<string, { deps: readonly unknown[]; message: ThreadMessage }>();
+    const messages = projection.items.map((item: ProjectedItem) => {
+      const cached = cache.current.get(item.message.id);
+      const message =
+        cached && sameDeps(cached.deps, item.deps)
+          ? cached.message
+          : fromThreadMessageLike(item.message, item.message.id, {
+              type: "complete",
+              reason: "unknown",
+            });
+      next.set(item.message.id, { deps: item.deps, message });
+      return { message, parentId: item.parentId };
+    });
+    cache.current = next;
+    return { headId: projection.headId, messages };
+  }, [projection]);
+}
+
+function textOf(message: AppendMessage): string {
+  return message.content
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .join("")
+    .trim();
+}
+
+function apiErrorOf(err: unknown, fallback: string): ApiError {
+  const apiError = (err as { apiError?: ApiError } | null)?.apiError;
+  return apiError ?? { status: 0, code: "client_error", message: `${fallback} Try again.` };
+}
+
+const CANNOT_BRANCH = {
+  status: 409,
+  code: "cannot_branch",
+  message:
+    "This message has nothing above it to branch from, so it can't be edited or regenerated.",
+} as const;
+
+/**
+ * The per-thread runtime, called by the remote thread list for the thread on screen. It gets the
+ * session by closure, not React context: assistant-ui runs this hook in its own thread host, where
+ * the app's context providers are not reliably above it (a remounted app saw the previous
+ * session's value).
+ */
+export function useKaijuThreadRuntime(session: ChatSession): AssistantRuntime {
+  const aui = useAui();
+  const remoteId = useAuiState((s) => s.threadListItem.remoteId);
+  const { controller, state } = useThreadController(session, remoteId);
+
+  // The conversation follows this tab's head (CT3); a run streams on the leaf's branch, so a
+  // browsed branch shows without it.
+  const head = headOf(state);
+  const overlay = isBrowsing(state) ? undefined : liveOverlay(state);
+  const projection = useMemo(
+    () => projectThread(state.entries, head, state.summary?.leafEntryId ?? null, overlay),
+    // `overlay` is rebuilt from these on every render; depend on its sources.
+    [
+      state.entries,
+      head,
+      state.summary?.leafEntryId,
+      state.live,
+      state.livePrompt,
+      state.sending,
+      state.runs,
+    ],
+  );
+  const repository = useMessageRepository(projection);
+  const projectionRef = useRef(projection);
+  projectionRef.current = projection;
+
+  /** Sends on the thread on screen; a new thread is created first (title = the message). */
+  const send = async (typed: string, parentEntryId?: string): Promise<boolean> => {
+    let threadId = aui.threadListItem.getState().remoteId;
+    const draft = threadId ?? NEW_DRAFT;
+    // Dropped files' chips go as their markers after the text (their marker alone when no text).
+    const text = session.mentions.contentFor(draft, typed);
+    if (text === "") return false;
+    const blocker = session.attachments.blocker(draft);
+    if (blocker !== undefined) {
+      controller?.reportError({ status: 0, code: "files_not_ready", message: blocker }, text);
+      return false;
+    }
+    const attach = session.attachments.ready(draft);
+    const mentions = session.mentions.forText(draft, text);
+    // MCP Apps context chips (KOBE-439): exactly the ones shown with this draft.
+    const contexts = appContextBody(session.appContexts.forDraft(draft));
+    // A skill picked from the + menu (KOBE-451): the server checks it is one a run here loads.
+    const skill = session.skillPicks.get(draft);
+    // The file open in the artifact column, unless its chip was removed (KOBE-463, FE7).
+    const viewing = session.viewing.body();
+    // Items an app put in the composer as chips (KOBE-490): the ones shown, as references.
+    const items = session.appItems.forDraft(draft);
+    const created = threadId === undefined;
+    if (threadId === undefined) {
+      try {
+        threadId = (await aui.threadListItem.initialize()).remoteId;
+      } catch (err) {
+        controller?.reportError(apiErrorOf(err, "The conversation could not be created."), text);
+        return false;
+      }
+    }
+    const target = session.peek(threadId) ?? controller;
+    // The controller reports its own failures; a throw must never leave the composer stuck.
+    const sent = await (
+      target?.send(
+        text,
+        parentEntryId,
+        attach,
+        mentions,
+        contexts,
+        skill,
+        viewing,
+        referencesBody(items),
+      ) ?? Promise.resolve(false)
+    ).catch(() => false);
+    if (sent) {
+      session.attachments.sent(draft);
+      session.mentions.clear(draft);
+      session.appContexts.clear(draft);
+      session.skillPicks.clear(draft);
+      session.appItems.removeSent(draft, items);
+    }
+    // The thread exists but the message did not go: the composer is on that thread now, so the
+    // files (and picked mentions) follow it instead of staying under the abandoned "new" draft
+    // (KOBE-194).
+    else if (created) {
+      session.attachments.move(draft, threadId);
+      session.mentions.move(draft, threadId);
+      session.skillPicks.move(draft, threadId);
+      session.appItems.move(draft, threadId);
+    }
+    if (created) session.threadCreated();
+    return sent;
+  };
+
+  /**
+   * Edit and Regenerate: a new version beside the prompt, from its parent entry (`branchPoint`).
+   * The viewed file (KOBE-467, FE7): an edit sends the file open now (none once its chip was
+   * removed), like a new message; a regenerate names the prompt, so the server reads the file
+   * that prompt's run viewed again.
+   */
+  const branchAndSend = async (
+    text: string,
+    userMessageId: string | null | undefined,
+    skill: string | undefined,
+    regenerate: boolean,
+    references?: readonly ItemReference[],
+  ) => {
+    const point = branchPoint(projectionRef.current, userMessageId);
+    if (!point) {
+      controller?.reportError(CANNOT_BRANCH, text);
+      return;
+    }
+    const viewing: ViewingChoice | undefined = regenerate
+      ? point.promptEntryId === undefined
+        ? undefined
+        : { fromEntry: point.promptEntryId }
+      : session.viewing.body();
+    // KOBE-451 review MEDIUM-2: the skill goes again by name; the server re-checks it.
+    await controller?.send(
+      text,
+      point.parentEntryId,
+      undefined,
+      undefined,
+      undefined,
+      skill,
+      viewing,
+      references,
+    );
+  };
+
+  const inTrash = state.summary?.deletedAt != null;
+  const extras: KaijuThreadExtras = useMemo(
+    () => ({ controller, state, projection }),
+    [controller, state, projection],
+  );
+
+  return useExternalStoreRuntime<ThreadMessage>({
+    messageRepository: repository,
+    isRunning: isThreadRunning(state) || (state.sending !== undefined && !state.sending.queues),
+    isLoading: state.phase === "loading",
+    isDisabled: inTrash || state.phase === "error",
+    extras,
+    onNew: async (message) => {
+      // A message that never reached the server goes back into the composer.
+      if (!(await send(textOf(message)))) throw new MessageNotSentError();
+    },
+    // An edit keeps the message's skill unless the member removed its chip (EditComposer).
+    onEdit: async (message) => {
+      const key = editSkillKey(message.sourceId ?? "");
+      const skill = session.skillPicks.get(key);
+      session.skillPicks.clear(key);
+      // ... and its app items, unless their chips were removed (KOBE-490).
+      const references = referencesBody(session.appItems.forDraft(key));
+      session.appItems.clear(key);
+      await branchAndSend(textOf(message), message.sourceId, skill, false, references);
+    },
+    // A regenerate sends the same text with the same skill.
+    onReload: async (parentId) => {
+      const point = branchPoint(projectionRef.current, parentId);
+      await branchAndSend(point?.text ?? "", parentId, point?.skill, true, point?.references);
+    },
+    onCancel: async () => controller?.stop(),
+    setMessages: () => {
+      // Branch switches are applied by the runtime and reported through unstable_onBranchChange.
+    },
+    // The owner's arrows move the leaf (Q21); a reader's move only this tab's head (CT3).
+    unstable_onBranchChange: ({ headId }) => {
+      if (headId === null) return;
+      const entryId = projectionRef.current.lastEntryOfNode.get(headId);
+      if (entryId === undefined) return;
+      if (controller?.getState().summary?.readOnly === true) controller.showVersion(entryId);
+      else void controller?.switchLeaf(entryId);
+    },
+    unstable_capabilities: { copy: true },
+  });
+}
+
+function threadRuntimeHookFor(session: ChatSession): () => AssistantRuntime {
+  return function useSessionThreadRuntime() {
+    return useKaijuThreadRuntime(session);
+  };
+}
+
+/** Where an edit box keeps the skill of the message it edits (KOBE-451 review MEDIUM-2). */
+export function editSkillKey(messageId: string): string {
+  return `edit:${messageId}`;
+}
+
+/** The app-level runtime: the thread list (controlled by `threadId`) and the thread on screen. */
+export function useKaijuRuntime(options: {
+  readonly session: ChatSession;
+  readonly adapter: RemoteThreadListAdapter;
+  readonly threadId: string | undefined;
+  readonly onThreadIdChange: (threadId: string | undefined) => void;
+}): AssistantRuntime {
+  const { session } = options;
+  const runtimeHook = useMemo(() => threadRuntimeHookFor(session), [session]);
+  return useRemoteThreadListRuntime({
+    adapter: options.adapter,
+    threadId: options.threadId,
+    onThreadIdChange: options.onThreadIdChange,
+    runtimeHook,
+  });
+}

@@ -21,7 +21,7 @@ const PROPOSED = "alpha\nBETA\ngamma\ndelta\n";
 
 /** The editor's line-number gutter is beside its first line of text, not stacked above it. */
 async function expectGutterBeside(scope: Locator): Promise<void> {
-  const host = scope.locator("[data-kobe-code-editor]");
+  const host = scope.locator("[data-kaiju-code-editor]");
   const gutter = await host.locator(".cm-gutters").boundingBox();
   const line = await host.locator(".cm-content .cm-line").first().boundingBox();
   expect(gutter).not.toBeNull();
@@ -35,7 +35,7 @@ async function expectGutterBeside(scope: Locator): Promise<void> {
 /** The computed background of the first element matching `selector` in the editor. */
 async function backgroundOf(scope: Locator, selector: string): Promise<string> {
   return scope
-    .locator("[data-kobe-code-editor]")
+    .locator("[data-kaiju-code-editor]")
     .locator(selector)
     .first()
     .evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -133,7 +133,7 @@ test("file editor: raw edit and save, conflict notice, viewing chip, proposal co
     await expect(editor).not.toContainText("never saved");
 
     // The composer says which file goes with the message; the agent proposes an edit to it.
-    await expect(page.locator(`[data-kobe-viewing-chip="${path}"]`)).toBeVisible();
+    await expect(page.locator(`[data-kaiju-viewing-chip="${path}"]`)).toBeVisible();
     await chat.send(
       toolTurn("propose_file_edit", {
         path: `/workspace/${path}`,
@@ -142,7 +142,7 @@ test("file editor: raw edit and save, conflict notice, viewing chip, proposal co
       }),
     );
     await chat.threadId();
-    const card = page.locator(`[data-kobe-file-edit="${path}"]`);
+    const card = page.locator(`[data-kaiju-file-edit="${path}"]`);
     await expect(card).toContainText("Capitalise beta and add delta", { timeout: RUN_TIMEOUT_MS });
     await chat.waitForIdle();
     expect((await workspace(page, "read", path)).text).toBe(BASE); // nothing written yet (FE1)
@@ -155,7 +155,7 @@ test("file editor: raw edit and save, conflict notice, viewing chip, proposal co
     ).toBeVisible();
     await expectGutterBeside(review);
     // KOBE-615: the Proposed edit bubble glows gold; the review row names the current change.
-    const bubble = review.locator("[data-kobe-proposal-bubble]");
+    const bubble = review.locator("[data-kaiju-proposal-bubble]");
     await expect(bubble).toContainText("Proposed edit: Capitalise beta and add delta");
     expect(await bubble.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe("none");
     const row = review.getByRole("toolbar", { name: "Review changes" });
@@ -173,7 +173,7 @@ test("file editor: raw edit and save, conflict notice, viewing chip, proposal co
     expect((await workspace(page, "read", path)).text).toBe("alpha\nBETA\ngamma\n");
 
     // KOBE-615: the editor fills the column; Save As saves a copy and opens it in the tab.
-    const editorBox = await tab.locator("[data-kobe-code-editor]").first().boundingBox();
+    const editorBox = await tab.locator("[data-kaiju-code-editor]").first().boundingBox();
     const tabBox = await tab.boundingBox();
     expect(editorBox && tabBox && editorBox.height > tabBox.height / 2).toBe(true);
     // Save As folds into More on a narrow column.

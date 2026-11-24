@@ -1,7 +1,7 @@
 import type {
   ThreadBranchSummaryFrame,
   ThreadBranchSummaryResultFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { PiProcessError } from "../pi/pi-process.js";
 import {
   BRANCH_SUMMARY_COMMAND,

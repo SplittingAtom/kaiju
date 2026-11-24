@@ -45,8 +45,8 @@ function usePointedRows(
     if (!body) return;
     const at = (target: EventTarget | null): Pointed | null => {
       if (!(target instanceof Element)) return null;
-      const thread = target.closest("[data-kobe-thread]");
-      const id = thread?.getAttribute("data-kobe-thread");
+      const thread = target.closest("[data-kaiju-thread]");
+      const id = thread?.getAttribute("data-kaiju-thread");
       if (thread && id && threadsRef.current?.contains(thread)) return { side: "thread", key: id };
       const file = target.closest('[role="treeitem"][data-path]');
       const path = file?.getAttribute("data-path");
@@ -192,7 +192,7 @@ export function FileMapLayer({
         <p
           role="status"
           className="text-muted-foreground m-0 min-h-4 text-xs"
-          data-kobe-elsewhere=""
+          data-kaiju-elsewhere=""
         >
           {elsewhere === "" ? "" : `Also used in threads not shown: ${elsewhere}`}
         </p>

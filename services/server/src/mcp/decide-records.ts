@@ -5,8 +5,8 @@ import {
   type PolicyReasonCode,
   type RiskClass,
   type ToolDescriptor,
-} from "@kobe/protocol";
-import { withTeam, type PinnedTool } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam, type PinnedTool } from "@kaiju/db";
 import { appIdOf } from "../apps/app-id.js";
 import { signCaptureTicket } from "../apps/capture-ticket.js";
 import { recordAudit } from "../audit/record.js";

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { loadEnvelope } from "@kobe/db";
-import { InMemorySpanExporter, SpanKind, SpanStatusCode, initTelemetry } from "@kobe/telemetry";
+import { loadEnvelope } from "@kaiju/db";
+import { InMemorySpanExporter, SpanKind, SpanStatusCode, initTelemetry } from "@kaiju/telemetry";
 import type { AppCallAnswer, AppCallRequest } from "./app-caller.js";
 import { appCallDepsFor } from "./call-deps.js";
 import { appIdOf } from "./app-id.js";

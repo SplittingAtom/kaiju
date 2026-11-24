@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { soleReviewer } from "./review-guards.js";
 import { PROBLEMS, type Problem } from "./review-problems.js";
 import type { VersionRow } from "./review-queue.js";
@@ -18,7 +18,7 @@ export function confirmerOf(v: Pick<VersionRow, "provenance">): string | null {
 
 /** Whether `userId` decides `v` against SK22, and whether the single-admin exception applies. */
 export async function dutiesProblem(
-  tx: KobeTx,
+  tx: KaijuTx,
   v: VersionRow,
   userId: string,
 ): Promise<{ problem: Problem | null; sole: boolean }> {

@@ -1,4 +1,4 @@
-import { UI_RESOURCE_PLACEMENTS } from "@kobe/db";
+import { UI_RESOURCE_PLACEMENTS } from "@kaiju/db";
 import {
   artifactDetailSchema,
   artifactListResponseSchema,
@@ -25,7 +25,7 @@ import {
   threadFilesResponseSchema,
   threadSyncConflictsResponseSchema,
   workspaceFileEntrySchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { APP_TEXT_REASONS } from "../../../apps/thread-results.js";
 import { launchNewThreadBodySchema } from "../../../apps/new-thread-draft.js";
 import { CONNECTOR_PROBLEMS } from "../../../connectors/thread-connectors.js";
@@ -38,7 +38,7 @@ import { any, arr, bool, nullable, obj, oneOfStrings, str, uuid } from "../json.
 /**
  * Request and response schemas of the conversation catalog areas (KOBE-771): Threads, Runs,
  * Artifacts, Workspace and Schedules. Bodies and answers come from the zod schemas the routes
- * validate with and the `@kobe/protocol` contracts; `untyped(...)` marks the few answers the
+ * validate with and the `@kaiju/protocol` contracts; `untyped(...)` marks the few answers the
  * routes build without a schema (fields read from the handler).
  */
 
@@ -231,7 +231,7 @@ export const runsDetails: Readonly<Record<string, CatalogDetail>> = {
     },
     produces: "text/event-stream",
     responseDescription:
-      "Kaiju Event Stream (types in `@kobe/protocol` `events.ts`); 204 when the run has ended " +
+      "Kaiju Event Stream (types in `@kaiju/protocol` `events.ts`); 204 when the run has ended " +
       "and nothing is left to send.",
     errors: ["404"],
   },
@@ -278,7 +278,7 @@ export const workspaceDetails: Readonly<Record<string, CatalogDetail>> = {
 };
 
 const Schedule = named("Schedule", scheduleResponseSchema);
-// Refusals specific to schedules use `ScheduleError` (`@kobe/protocol` schedules.ts), as `Error`.
+// Refusals specific to schedules use `ScheduleError` (`@kaiju/protocol` schedules.ts), as `Error`.
 const SCHEDULE_ERRORS = ["409", "422"] as const;
 
 const expectedActive = (value: "true" | "false", what: string) => ({

@@ -8,7 +8,7 @@ import type { FolderView } from "../../lib/chat/folders-api";
 import type { ThreadSearchHit } from "../../lib/chat/types";
 import { ErrorNotice } from "../admin/error-notice";
 import { HitNotes } from "../chat/hit-note";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import { THREAD_ITEM, TRASH_ITEM } from "../chat/thread-item";
 import chat from "../chat/chat.module.css";
 import shell from "./shell.module.css";
@@ -79,7 +79,7 @@ export function useThreadsSearch(query: string): {
 /** A muted line under a row: the folder it is filed in (Archived rows, search hits; TF7, TF10). */
 export function FolderNote({ path }: { readonly path: string }) {
   return (
-    <p className={chat.hint} data-kobe-folder-path="">
+    <p className={chat.hint} data-kaiju-folder-path="">
       In {path}
     </p>
   );
@@ -101,7 +101,7 @@ export function HitBranchNote({
   );
   if (off !== true) return null;
   return (
-    <p className={chat.hint} data-kobe-hit-branch="">
+    <p className={chat.hint} data-kaiju-hit-branch="">
       on another branch
     </p>
   );
@@ -115,9 +115,9 @@ export function useOpenHit(hits: readonly ThreadSearchHit[]) {
   const session = useChatSession();
   return (e: MouseEvent<HTMLElement>) => {
     const target = e.target as Element;
-    const trigger = target.closest(`.${chat.threadTrigger}, [data-kobe-hit-open]`);
-    const row = trigger?.closest("[data-kobe-thread]");
-    const hit = hits.find((h) => h.threadId === row?.getAttribute("data-kobe-thread"));
+    const trigger = target.closest(`.${chat.threadTrigger}, [data-kaiju-hit-open]`);
+    const row = trigger?.closest("[data-kaiju-thread]");
+    const hit = hits.find((h) => h.threadId === row?.getAttribute("data-kaiju-thread"));
     if (hit?.matchedEntryId) session.openHit(hit.threadId, hit.matchedEntryId);
   };
 }
@@ -130,7 +130,7 @@ function note(hit: ThreadSearchHit, folders: readonly FolderView[]): ReactNode {
       {path && <FolderNote path={path} />}
       {/* Archived threads stay searchable (CE19), marked so the member knows where they live. */}
       {hit.archivedAt != null && (
-        <span className={shell.hitBadge} data-kobe-archived="">
+        <span className={shell.hitBadge} data-kaiju-archived="">
           Archived
         </span>
       )}
@@ -216,7 +216,7 @@ export function SearchHits({
             );
           }
           return (
-            <li key={hit.threadId} data-kobe-thread={hit.threadId}>
+            <li key={hit.threadId} data-kaiju-thread={hit.threadId}>
               <span className={chat.threadItem}>
                 <button type="button" className={chat.threadTrigger}>
                   {hit.title ?? "Untitled conversation"}

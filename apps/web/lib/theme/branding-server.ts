@@ -1,4 +1,4 @@
-import { type SiteBranding, siteBrandingSchema } from "@kobe/protocol";
+import { type SiteBranding, siteBrandingSchema } from "@kaiju/protocol";
 import { webConfig } from "../config";
 import { isSameOriginPath } from "../security/same-origin-path";
 import type { ShellBranding } from "../../components/shell/branding-context";

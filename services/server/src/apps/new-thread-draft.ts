@@ -1,6 +1,6 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import type { z } from "zod";
-import { launchAppCardBodySchema } from "@kobe/protocol";
+import { launchAppCardBodySchema } from "@kaiju/protocol";
 import { defaultNewThreadPin } from "../agents/default-agent.js";
 import { resolveAgentPin, type AgentPin } from "../agents/versions.js";
 import { checkConnectorsOff, turnOffAtCreation } from "../connectors/thread-connectors.js";
@@ -35,7 +35,7 @@ export type DraftRefusal =
 
 /** The new thread's pin, checked as thread creation checks it; or why the draft is refused. */
 export async function checkNewThreadDraft(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { readonly teamId: string; readonly userId: string },
   draft: NewThreadDraft,
 ): Promise<{ ok: true; pin: AgentPin | null } | { ok: false; error: DraftRefusal }> {
@@ -50,7 +50,7 @@ export async function checkNewThreadDraft(
 
 /** Writes the draft's off connectors on the thread just created (same transaction). */
 export const writeDraftOff = (
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { readonly teamId: string; readonly userId: string },
   threadId: string,
   draft: NewThreadDraft,

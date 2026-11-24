@@ -1,4 +1,4 @@
-import { AUDIT_EVENTS, type AuditEvent } from "@kobe/db";
+import { AUDIT_EVENTS, type AuditEvent } from "@kaiju/db";
 import { pino } from "pino";
 import { describe, expect, it, vi } from "vitest";
 import { ConnectionAudit, type ConnectionRecord } from "./connection-audit.js";

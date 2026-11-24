@@ -7,7 +7,7 @@ import type { MenuChoice } from "../../lib/shell/menu";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { IconAction } from "../shell/icon-action";
 import { useBindCommands } from "../shell/command-bindings";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import {
   useDraftProjectName,
   useDraftProjectState,
@@ -95,7 +95,7 @@ export function DraftProjectControl() {
         </Popover.Trigger>
         <Popover.Portal container={chatPortalContainer()}>
           <Popover.Content
-            data-kobe-portal
+            data-kaiju-portal
             align="start"
             sideOffset={4}
             className="bg-background text-foreground z-50 flex w-64 flex-col gap-1 rounded-lg border p-2 shadow-md"

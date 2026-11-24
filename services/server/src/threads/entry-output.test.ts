@@ -14,13 +14,13 @@ import {
 
 /** KOBE-208 review: bounded offloaded reads (timeout, queue, aborts) and code-point-safe cuts. */
 const ids = { teamId: randomUUID(), threadId: randomUUID(), entryId: "e1" };
-const key = `kobe/teams/${ids.teamId}/threads/${ids.threadId}/entries/e1`;
+const key = `kaiju/teams/${ids.teamId}/threads/${ids.threadId}/entries/e1`;
 const body = JSON.stringify({
   message: { role: "toolResult", toolCallId: "c1", content: [{ type: "text", text: "ok" }] },
 });
 
 function store(get: ObjectStore["get"]): BlobStore {
-  return { prefix: "kobe/", objects: { get } as unknown as ObjectStore };
+  return { prefix: "kaiju/", objects: { get } as unknown as ObjectStore };
 }
 /** A store that never answers until the read is aborted. */
 const stalled = store(

@@ -44,7 +44,7 @@ test("status cues: a green Running badge and the rail's dot, also from another t
   await chat.send(STORY);
   const threadId = await chat.threadId();
   const rowButton = (id: string) =>
-    page.locator(`li[data-kobe-thread="${id}"]`).getByRole("button").first();
+    page.locator(`li[data-kaiju-thread="${id}"]`).getByRole("button").first();
 
   // The header's badge: green, labelled, with a pulsing dot.
   const badge = page.locator('header [data-status-badge="running"]');
@@ -62,11 +62,11 @@ test("status cues: a green Running badge and the rail's dot, also from another t
   const threadsButton = chat.railHeader.getByRole("button", {
     name: /^Threads panel, a conversation (is running|is waiting for your approval)$/,
   });
-  await expect(threadsButton).toHaveAttribute("data-kobe-activity", /^(running|approval)$/);
+  await expect(threadsButton).toHaveAttribute("data-kaiju-activity", /^(running|approval)$/);
 
   // The row in the Threads panel: a green dot, and "Running" for screen readers.
   await chat.openThreads();
-  const row = page.locator(`li[data-kobe-thread="${threadId}"]`);
+  const row = page.locator(`li[data-kaiju-thread="${threadId}"]`);
   const dot = row.locator('[data-status-dot="running"]');
   await expect(dot).toBeVisible();
   expect(greenish(await rgbOf(dot))).toBe(true);
@@ -76,7 +76,7 @@ test("status cues: a green Running badge and the rail's dot, also from another t
   await chat.closeThreads();
 
   // The Stop button is tinted red while the run streams.
-  const stop = chat.steering.locator("[data-kobe-stop]");
+  const stop = chat.steering.locator("[data-kaiju-stop]");
   await expect(stop).toBeVisible();
   expect(reddish(await rgbOf(stop))).toBe(true);
 
@@ -89,17 +89,17 @@ test("status cues: a green Running badge and the rail's dot, also from another t
   await rowButton(otherId).click();
   await expect(page).toHaveURL(new RegExp(`thread=${otherId}`));
   await chat.openThreads();
-  const away = page.locator(`li[data-kobe-thread="${threadId}"] [data-status-dot="running"]`);
+  const away = page.locator(`li[data-kaiju-thread="${threadId}"] [data-status-dot="running"]`);
   await expect(away).toBeVisible();
   await expect(rowButton(threadId)).toHaveAccessibleDescription("Running");
 
   // Back to it (again in the app) to stop it; the dot goes once the run has ended.
   await rowButton(threadId).click();
   await expect(page).toHaveURL(new RegExp(`thread=${threadId}`));
-  await chat.steering.locator("[data-kobe-stop]").click();
+  await chat.steering.locator("[data-kaiju-stop]").click();
   await chat.waitForIdle();
   await chat.openThreads();
-  await expect(page.locator(`li[data-kobe-thread="${threadId}"] [data-status-dot]`)).toHaveCount(0);
+  await expect(page.locator(`li[data-kaiju-thread="${threadId}"] [data-status-dot]`)).toHaveCount(0);
 });
 
 test("reduced motion stops the pulse", async ({ chat, page }) => {
@@ -108,10 +108,10 @@ test("reduced motion stops the pulse", async ({ chat, page }) => {
   await chat.send(STORY);
   const threadId = await chat.threadId();
   await chat.openThreads();
-  const dot = page.locator(`li[data-kobe-thread="${threadId}"] [data-status-dot="running"]`);
+  const dot = page.locator(`li[data-kaiju-thread="${threadId}"] [data-status-dot="running"]`);
   await expect(dot).toBeVisible({ timeout: RUN_START_TIMEOUT_MS });
   expect(await dot.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
   await chat.closeThreads();
-  await chat.steering.locator("[data-kobe-stop]").click();
+  await chat.steering.locator("[data-kaiju-stop]").click();
   await chat.waitForIdle();
 });

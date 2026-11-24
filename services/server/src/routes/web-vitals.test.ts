@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { InMemorySpanExporter, initTelemetry, type Telemetry } from "@kobe/telemetry";
+import { InMemorySpanExporter, initTelemetry, type Telemetry } from "@kaiju/telemetry";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AuthVariables } from "../auth/session.js";
 import { createRateLimiter } from "../sandbox/rate-limit.js";

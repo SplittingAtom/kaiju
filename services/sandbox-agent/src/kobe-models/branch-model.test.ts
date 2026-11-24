@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ModelFileState } from "./protocol.js";
 import {
   branchModel,
-  registerKobeModels,
+  registerKaijuModels,
   type ExtensionApiLike,
   type InputContextLike,
 } from "./register.js";
@@ -61,7 +61,7 @@ async function setup() {
       return true;
     },
   } as unknown as ExtensionApiLike;
-  await registerKobeModels(api, {
+  await registerKaijuModels(api, {
     env: { KOBE_MODEL_FILE: "/x/model.json" },
     readState: async () => state,
     pi: {

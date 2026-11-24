@@ -1,4 +1,4 @@
-import { initTelemetry } from "@kobe/telemetry";
+import { initTelemetry } from "@kaiju/telemetry";
 import type { Logger } from "pino";
 import { EvalRunner } from "../agents/eval/service.js";
 import type { AppOptions } from "../app.js";

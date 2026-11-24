@@ -12,7 +12,7 @@ import {
   type SemanticMemoryKind,
   type SemanticMemoryStatus,
   type SemanticMemoryTransferFormat,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { MemoryItemError } from "../items/errors.js";
 
 /**

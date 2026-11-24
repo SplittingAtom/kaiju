@@ -1,5 +1,5 @@
-import type { TeamRole } from "@kobe/db";
-import type { SiteGrant } from "@kobe/protocol";
+import type { TeamRole } from "@kaiju/db";
+import type { SiteGrant } from "@kaiju/protocol";
 
 /**
  * The fixed role model (spec D8) as one permission matrix. Each permission names the least

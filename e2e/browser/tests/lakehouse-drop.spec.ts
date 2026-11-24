@@ -35,7 +35,7 @@ function transfer(page: Page, item: unknown): Promise<JSHandle<DataTransfer>> {
   );
 }
 
-const panel = (page: Page) => page.locator("[data-kobe-composer-panel]");
+const panel = (page: Page) => page.locator("[data-kaiju-composer-panel]");
 const chipRow = (page: Page) =>
   page.getByRole("list", { name: "Items sent with your next message" });
 
@@ -57,7 +57,7 @@ test("a Lakehouse Picker item dropped on the composer is the clicked insert: chi
   const dataTransfer = await transfer(page, ITEM);
   await chat.composer.dispatchEvent("dragover", { dataTransfer });
   await expect(panel(page)).toHaveAttribute("data-mention-drop", "item");
-  await expect(page.locator("#kobe-composer-hint")).toHaveText("Drop to insert this item");
+  await expect(page.locator("#kaiju-composer-hint")).toHaveText("Drop to insert this item");
   await chat.composer.dispatchEvent("drop", { dataTransfer });
 
   // No text from the drop (the browser's text/plain insertion neither): the member's text stays.
@@ -70,14 +70,14 @@ test("a Lakehouse Picker item dropped on the composer is the clicked insert: chi
     page.getByRole("button", { name: "Table mlb.lahman.batting, from Lakehouse Picker; remove" }),
   ).toBeVisible();
   await expect(
-    page.locator('[data-kobe-app-item="table"] [data-kobe-item-icon="table"]'),
+    page.locator('[data-kaiju-app-item="table"] [data-kaiju-item-icon="table"]'),
   ).toHaveCount(1);
 
   // An item the rules refuse: a note under the composer, nothing inserted, no text/plain fallback.
   const bad = await transfer(page, { ...ITEM, identifier: "mlb.lahman.pitching" });
   await chat.composer.dispatchEvent("dragover", { dataTransfer: bad });
   await chat.composer.dispatchEvent("drop", { dataTransfer: bad });
-  await expect(page.locator("#kobe-composer-hint")).toContainText("can't go into a message");
+  await expect(page.locator("#kaiju-composer-hint")).toContainText("can't go into a message");
   await expect(chat.composer).toHaveValue("Count the rows in");
   await expect(chipRow(page).getByRole("listitem")).toHaveCount(1);
 

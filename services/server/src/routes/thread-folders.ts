@@ -1,11 +1,11 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
-import { isLockTimeout, withTeam, type KobeTx } from "@kobe/db";
+import { isLockTimeout, withTeam, type KaijuTx } from "@kaiju/db";
 import {
   createThreadFolderRequestSchema,
   THREAD_FOLDER_ERROR_HTTP_STATUS,
   updateThreadFolderRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { hitRateLimit } from "../rate-limit.js";
@@ -63,7 +63,7 @@ export function threadFolderRoutes(deps: ServerDeps): Hono<{ Variables: TeamVari
   app.use(requireTeam(deps));
   app.use(requireTeamPermission("team.chat"));
 
-  const asViewer = <T>(c: FolderContext, fn: (tx: KobeTx, viewer: Viewer) => Promise<T>) => {
+  const asViewer = <T>(c: FolderContext, fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>) => {
     const teamId = c.get("team").id;
     const userId = c.get("user").id;
     return withTeam(db, teamId, async (tx) =>
@@ -74,7 +74,7 @@ export function threadFolderRoutes(deps: ServerDeps): Hono<{ Variables: TeamVari
   /** Runs a change; the tree trigger's and the name key's refusals become their codes. */
   const change = async <T>(
     c: FolderContext,
-    fn: (tx: KobeTx, viewer: Viewer) => Promise<FolderResult<T>>,
+    fn: (tx: KaijuTx, viewer: Viewer) => Promise<FolderResult<T>>,
   ): Promise<FolderResult<T> | Response> => {
     try {
       return await asViewer(c, fn);

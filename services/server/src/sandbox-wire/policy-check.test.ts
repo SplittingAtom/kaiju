@@ -1,4 +1,4 @@
-import type { PolicyDecision } from "@kobe/protocol";
+import type { PolicyDecision } from "@kaiju/protocol";
 import { describe, expect, it, vi } from "vitest";
 import { retryEvaluation, type Evaluated } from "./policy-check.js";
 

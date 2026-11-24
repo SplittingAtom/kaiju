@@ -9,9 +9,9 @@ import type { TerminalEvent } from "../../lib/chat/live";
 import type { ThreadState } from "../../lib/chat/thread-state";
 import type { ThreadController } from "../../lib/chat/thread-controller";
 import { ErrorNotice } from "../admin/error-notice";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { ClosableNotice } from "./closable-notice";
-import { ChatSessionContext } from "./kobe-runtime";
+import { ChatSessionContext } from "./kaiju-runtime";
 import { VolumeLostNotice } from "../files/volume-lost-notice";
 import { VOLUME_LOST_CODE } from "../../lib/workspace/rebuild";
 import { NoticeSlot } from "./slots";
@@ -217,7 +217,7 @@ function BudgetBanner({
  * Steer, Stop, Retry and Continue into `steering-panel.tsx`): connection, run notices, how the
  * last run ended, its usage, the budget banner and the last failed action.
  */
-export function RunNotices({ extras }: { readonly extras: KobeThreadExtras }) {
+export function RunNotices({ extras }: { readonly extras: KaijuThreadExtras }) {
   const { controller, state } = extras;
   if (!controller) return null;
   // A reader of a shared thread only follows it: no usage, queue, retry or other owner controls.

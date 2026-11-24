@@ -50,7 +50,7 @@ function flash(el: Element): void {
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
   el.animate?.(
     [
-      { outline: "3px solid var(--kobe-status-accent, currentColor)" },
+      { outline: "3px solid var(--kaiju-status-accent, currentColor)" },
       { outline: "3px solid transparent" },
     ],
     { duration: 1600, easing: "ease-out" },

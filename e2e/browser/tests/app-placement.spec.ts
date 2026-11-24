@@ -67,7 +67,7 @@ test("an app placed in the artifact column opens there from a rail launch; its c
       1,
       { timeout: SHELL_TIMEOUT_MS },
     );
-    const card = page.locator("[data-kobe-app-card-entry]").last();
+    const card = page.locator("[data-kaiju-app-card-entry]").last();
     await expect(card.getByText("Opened in the side column")).toBeVisible();
     // One live frame for the card: the column's, none in the conversation.
     await expect(chat.list.locator(`iframe[title="${frameTitle}"]`)).toHaveCount(0);

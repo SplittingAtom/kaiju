@@ -38,7 +38,7 @@ export const PROBE_HTML = `<!doctype html>
     try { results[name] = await fn(); } catch (e) { results[name] = "threw:" + e.name; }
   };
   await attempt("fetch_remote", async () => { await fetch(REMOTE + "/fetch"); return "reached"; });
-  await attempt("fetch_kobe", async () => { await fetch(kobe + "/v1/team/apps"); return "reached"; });
+  await attempt("fetch_kaiju", async () => { await fetch(kobe + "/v1/team/apps"); return "reached"; });
   await attempt("xhr", () => settle((done) => {
     const x = new XMLHttpRequest();
     x.onload = () => done("reached");

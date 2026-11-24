@@ -4,8 +4,8 @@ import {
   artifactToolInputSchema,
   type CreateArtifactInput,
   type UpdateArtifactInput,
-} from "@kobe/protocol";
-import { type ArtifactPutFrame } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { type ArtifactPutFrame } from "@kaiju/protocol/sandbox-wire";
 import {
   and,
   artifactVersions,
@@ -13,10 +13,10 @@ import {
   eq,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   pgCodeOf,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { AppendError, appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { logger } from "../logger.js";
 import { threadKey, type BlobStore } from "../retention/blobs.js";
@@ -49,7 +49,7 @@ export type PutResult =
     };
 
 export interface ArtifactPutDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Object storage; undefined: artifacts can't be stored (`storage_failed`). */
   readonly blobs: BlobStore | undefined;
   /** Run event cap (`WireTuning.runMaxEvents`): at the cap the event is skipped, not the artifact. */
@@ -83,7 +83,7 @@ class RunEndedError extends Error {}
 class ArtifactMissingError extends Error {}
 
 /** The run is active, in this thread, and owned by the sandbox's user. */
-async function runActive(tx: KobeTx, target: PutTarget, frame: ArtifactPutFrame): Promise<boolean> {
+async function runActive(tx: KaijuTx, target: PutTarget, frame: ArtifactPutFrame): Promise<boolean> {
   // A compaction (KOBE-213) makes no tool calls: refused from the database, not only the lease.
   const res = await tx.execute<{ status: string; kind: string }>(sql`
     SELECT r.status, r.kind FROM runs r
@@ -95,7 +95,7 @@ async function runActive(tx: KobeTx, target: PutTarget, frame: ArtifactPutFrame)
   return row?.kind === "message" && (row.status === "running" || row.status === "waiting_approval");
 }
 
-async function existingResult(tx: KobeTx, teamId: string, toolCallId: string) {
+async function existingResult(tx: KaijuTx, teamId: string, toolCallId: string) {
   const [row] = await tx
     .select({
       artifactId: artifactVersions.artifactId,
@@ -107,7 +107,7 @@ async function existingResult(tx: KobeTx, teamId: string, toolCallId: string) {
   return row;
 }
 
-async function artifactInThread(tx: KobeTx, teamId: string, threadId: string, id: string) {
+async function artifactInThread(tx: KaijuTx, teamId: string, threadId: string, id: string) {
   const [row] = await tx
     .select({ id: artifacts.id })
     .from(artifacts)
@@ -137,7 +137,7 @@ interface Written {
 
 /** Writes the rows and the event in the caller's transaction. */
 async function writeRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: ArtifactPutDeps,
   target: PutTarget,
   frame: ArtifactPutFrame,
@@ -198,7 +198,7 @@ async function writeRows(
 }
 
 async function appendEvent(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: ArtifactPutDeps,
   teamId: string,
   frame: ArtifactPutFrame,

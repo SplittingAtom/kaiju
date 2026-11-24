@@ -11,8 +11,8 @@ import {
   twoFactors,
   users,
   verifications,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { AuthAttemptAudit } from "../audit/attempts.js";
 import { auditPlugin } from "../audit/auth-plugin.js";
 import { recordAuditAfter } from "../audit/record.js";
@@ -37,8 +37,8 @@ import { ssoLinkPlugin } from "./sso-link-plugin.js";
 import { ssoPlugin, SSO_RATE_LIMITS, type SsoRuntime } from "./sso-plugin.js";
 
 export interface AuthOptions {
-  readonly db: KobeDb;
-  /** Public origin of the install, e.g. https://kobe.example.com (WebAuthn RP origin). */
+  readonly db: KaijuDb;
+  /** Public origin of the install, e.g. https://kaiju.example.com (WebAuthn RP origin). */
   readonly publicUrl: string;
   /**
    * Signs cookies and encrypts TOTP secrets and backup codes (>= 32 chars).
@@ -238,4 +238,4 @@ export function createAuth({
   });
 }
 
-export type KobeAuth = ReturnType<typeof createAuth>;
+export type KaijuAuth = ReturnType<typeof createAuth>;

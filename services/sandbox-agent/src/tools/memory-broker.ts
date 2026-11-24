@@ -1,10 +1,10 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
 import type {
   MemoryPutFrame,
   MemoryReadFrame,
   MemoryResultFrame,
   MemoryShowFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 
@@ -20,7 +20,7 @@ export const MAX_PENDING_MEMORY = 32;
 export const MAX_PENDING_MEMORY_PER_THREAD = 4;
 
 type MemoryRequest = Extract<
-  KobeToolsRequest,
+  KaijuToolsRequest,
   { op: "memory.put" | "memory.read" | "memory.show" }
 >;
 type MemoryFrame = MemoryPutFrame | MemoryReadFrame | MemoryShowFrame;
@@ -46,7 +46,7 @@ export class MemoryBroker {
     threadId: string,
     runId: string | undefined,
     request: MemoryRequest,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));
@@ -80,7 +80,7 @@ export class MemoryBroker {
     const pending = this.#pending.take(frame.request_id);
     if (pending === undefined) return false;
     const { v: _v, type: _type, request_id: _request, ...body } = frame;
-    pending.reply({ id: pending.extensionId, ...body } as KobeToolsResponse);
+    pending.reply({ id: pending.extensionId, ...body } as KaijuToolsResponse);
     return true;
   }
 

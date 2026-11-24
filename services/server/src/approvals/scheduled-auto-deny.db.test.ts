@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { skippedActionsSchema, type PolicyDecision } from "@kobe/protocol";
-import { createDb, withTeam, type KobeDatabase } from "@kobe/db";
+import { skippedActionsSchema, type PolicyDecision } from "@kaiju/protocol";
+import { createDb, withTeam, type KaijuDatabase } from "@kaiju/db";
 import { approvalKeyring } from "./index.js";
 import { createPolicyEngine } from "../policy/engine.js";
 import { createToolRegistry } from "../policy/registry.js";
@@ -21,7 +21,7 @@ const fx = new EventStreamFixture();
 const auth = new FakeSandboxAuth();
 const listeners: Awaited<ReturnType<typeof sandboxListener>>[] = [];
 const sandboxes: FakeSandbox[] = [];
-const extraDbs: KobeDatabase[] = [];
+const extraDbs: KaijuDatabase[] = [];
 const KEY = approvalKeyring("approval-key-for-tests-".padEnd(48, "k"));
 
 beforeAll(async () => {

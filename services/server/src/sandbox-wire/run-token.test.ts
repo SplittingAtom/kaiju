@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deriveTraceSpanKey } from "@kobe/protocol/node";
-import { generateSessionKeyPair } from "@kobe/session-token";
+import { deriveTraceSpanKey } from "@kaiju/protocol/node";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import { runTokenKeyFromEnv, traceSpanKeyFromEnv } from "./run-token.js";
 
 describe("run token and trace keys from env (KOBE-521)", () => {

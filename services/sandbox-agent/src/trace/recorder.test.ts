@@ -1,10 +1,10 @@
-import { formatTraceparent, runTraceId } from "@kobe/protocol";
+import { formatTraceparent, runTraceId } from "@kaiju/protocol";
 import {
   decodeSandboxFrame,
   parseSandboxSpan,
   type SandboxSpan,
   type TraceSpansFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { TraceRecorder } from "./recorder.js";
 

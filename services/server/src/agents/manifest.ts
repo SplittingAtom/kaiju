@@ -10,13 +10,13 @@ import {
   toolScopeSchema,
   type ApprovalMode,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   ALL_CONNECTORS,
   agentConnectors,
   isDangerousMode,
   type AgentFrontmatter,
-} from "@kobe/agent-file";
+} from "@kaiju/agent-file";
 import { strictestApprovalMode } from "../policy/approval-floor.js";
 import { hiddenBuiltins } from "../policy/agent-allow.js";
 import { checkAvailable } from "../policy/gates.js";

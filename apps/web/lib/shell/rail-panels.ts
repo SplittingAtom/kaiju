@@ -1,4 +1,4 @@
-import type { RailPanels } from "@kobe/protocol";
+import type { RailPanels } from "@kaiju/protocol";
 
 /**
  * The rail's panels (KOBE-419): Threads, Files, or both (the default). The member turns each on or

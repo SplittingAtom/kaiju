@@ -3,8 +3,8 @@
 The files of one skill version as promotion, the Skills Registry, export and the git mirror carry
 them (KOBE-309; spec Kaiju v1.2 Skills System, SK14, SK19, SK29). The code is the contract:
 `packages/protocol/src/skill-package/` (layout, canonical zip, `kobe.skill.yaml`,
-`provenance.json`) and `@kobe/protocol/node` (`runtimeHash`, `packageHash`). Golden vectors:
-`@kobe/protocol/testing` `SKILL_HASH_VECTORS`; golden fixtures:
+`provenance.json`) and `@kaiju/protocol/node` (`runtimeHash`, `packageHash`). Golden vectors:
+`@kaiju/protocol/testing` `SKILL_HASH_VECTORS`; golden fixtures:
 `packages/protocol/src/skill-package/fixtures/`.
 
 ## Layout
@@ -34,7 +34,7 @@ validator, and the zip and hash functions run it themselves (no unchecked entry 
   `KOBE.SKILL.YAML`, `Provenance.json`, `skill.md`) is **refused**, not treated as payload or as
   reserved. A file named `evals` is refused.
 - **`provenance.json` is Kaiju's:** authored content (uploads, drafts, imports, built-ins) never
-  carries one; it is refused unless Kaiju assembled the package (`{ kobeProvenance: true }`).
+  carries one; it is refused unless Kaiju assembled the package (`{ kaijuProvenance: true }`).
 - **Files only:** symlinks are refused at the source (a git mode 120000 entry is refused, never
   stored as its target text); file modes are not part of a package (the sandbox writes 0644, so
   scripts run through an interpreter); bytes are raw, with no line-ending normalization (a git
@@ -78,7 +78,7 @@ file/folder clash, a case variant such as `Evals/`) has no runtime hash at all. 
    - refused by today's rules: **legacy**. Its stored hash stays its only identity (no alias);
      it keeps running exactly as before, but is never promotable or exportable until re-saved,
      and the re-save goes through today's rules and gets a runtime hash. (A root
-     `provenance.json` is legacy, never hashed with `kobeProvenance`.)
+     `provenance.json` is legacy, never hashed with `kaijuProvenance`.)
    - a stored `kobe.skill.yaml` (never read before KOBE-310) that is invalid or names another
      skill, or an invalid SKILL.md, also makes it legacy.
 
@@ -212,7 +212,7 @@ itself from the package set it ships (`services/server/builtin-skills/<name>/`, 
 `kobe.skill.yaml` whose `version` is the catalog semver). Nobody promotes them, so their
 provenance (stored with the version) has `publisher: "kobe"` instead of `source`, `submitter`,
 `confirmedBy`, `origin` and `scorecard`; the rest is as above. Their versions only rise: changing a
-skill's files means raising its `version` (`kobe-packages.test.ts` holds each version's hashes),
+skill's files means raising its `version` (`kaiju-packages.test.ts` holds each version's hashes),
 and a Site refuses new bytes under a semver it holds or below its newest.
 
 ### Site-published versions
@@ -248,7 +248,7 @@ SKILL.md frontmatter checks, the same package limits) and publish a new version 
 
 ## Scan limits
 
-The scanner (`@kobe/skill-scanner`) reads every text file of the package, `evals/` and
+The scanner (`@kaiju/skill-scanner`) reads every text file of the package, `evals/` and
 `kobe.skill.yaml` included, up to the upload's per-file limit (10 MiB): no file an upload accepts
 is refused or blocked for its size alone. A server test ties the two limits together. The scanner
 reads at most 20 MiB of text per package. A package with more text than that (the upload allows

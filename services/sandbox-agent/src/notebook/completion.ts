@@ -3,8 +3,8 @@ import {
   NOTEBOOK_COMPLETE_TIMEOUT_MS,
   notebookCompletionResultSchema,
   type NotebookCompletionResult,
-} from "@kobe/protocol";
-import type { NotebookCompletionFrame } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import type { NotebookCompletionFrame } from "@kaiju/protocol/sandbox-wire";
 import type { CompleteRequest, KernelSession } from "./session.js";
 
 /**

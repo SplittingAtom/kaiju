@@ -3,10 +3,10 @@ import {
   connectorNameSchema,
   globSchema,
   SYSTEM_PROMPT_MAX_BYTES,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 
-export { APPROVAL_MODES, type ApprovalMode } from "@kobe/protocol";
+export { APPROVAL_MODES, type ApprovalMode } from "@kaiju/protocol";
 
 /**
  * Admin-only agent mode (spec docs/specs/agent-creator.md AC1, approved by Chris 2026-10-22): the
@@ -146,7 +146,7 @@ const connectorsSchema = z.union([
   z.literal(ALL_CONNECTORS),
 ]);
 
-/** Policy glob grammar (@kobe/protocol glob.ts), on a single line. */
+/** Policy glob grammar (@kaiju/protocol glob.ts), on a single line. */
 const toolGlobSchema = globSchema.refine(
   (s) => !ANY_CONTROL.test(s),
   "must be a single line without control characters or invalid Unicode",
@@ -184,7 +184,7 @@ export const agentFrontmatterSchema = z
     icon: iconSchema.optional(),
     model: modelSchema.optional(),
     skills: skillsSchema.optional(),
-    /** Connector registry names (D27; @kobe/protocol `connectorNameSchema`) or `all`. */
+    /** Connector registry names (D27; @kaiju/protocol `connectorNameSchema`) or `all`. */
     connectors: connectorsSchema.optional(),
     tools: toolsSchema.optional(),
     approval_mode: agentApprovalModeSchema.optional(),

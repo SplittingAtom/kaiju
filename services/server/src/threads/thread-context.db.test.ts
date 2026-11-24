@@ -4,13 +4,13 @@ import {
   threadContextError,
   threadContextSchema,
   type ThreadContextErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   CAPABILITY_THREAD_CONTEXT,
   THREAD_CONTEXT_MAX_BYTES,
   type ServerToSandboxFrame,
-} from "@kobe/protocol/sandbox-wire";
-import { sealReply } from "@kobe/protocol/node";
+} from "@kaiju/protocol/sandbox-wire";
+import { sealReply } from "@kaiju/protocol/node";
 import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
 import type { TestResponse } from "../testing/browser.js";
 import { SandboxWakeError, type SandboxRouter } from "../sandbox-wire/types.js";

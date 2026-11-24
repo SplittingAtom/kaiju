@@ -1,4 +1,4 @@
-import { scanSkillBundle } from "@kobe/skill-scanner";
+import { scanSkillBundle } from "@kaiju/skill-scanner";
 import { strToU8, unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import {

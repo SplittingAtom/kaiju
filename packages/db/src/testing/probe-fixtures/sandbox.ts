@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { KobeTx } from "../../client.js";
+import type { KaijuTx } from "../../client.js";
 import {
   runs,
   sandboxCommands,
@@ -22,7 +22,7 @@ import type { ProbeFixture } from "./types.js";
 const PROBE_SHA = "b".repeat(64);
 
 async function insertRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
 ): Promise<{ userId: string; threadId: string; runId: string }> {
   const userId = randomUUID();

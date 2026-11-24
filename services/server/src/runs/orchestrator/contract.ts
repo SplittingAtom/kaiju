@@ -13,7 +13,7 @@ import type {
   RunSnapshot,
   SubmitMessageCommand,
   SubmitMessageResult,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ScheduledCancelReason } from "../cancel-scheduled.js";
 import type { ScheduledSubmit } from "../scheduled-submit.js";
 import type { RunSweepResult } from "../sweeper.js";

@@ -1,6 +1,6 @@
 "use client";
 
-import { SEMANTIC_MEMORY_SCOPE_LABELS } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_SCOPE_LABELS } from "@kaiju/protocol";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createMemoryItemsApi, type MemoryItem } from "../../lib/memory/items-api";
 import { ErrorNotice } from "../admin/error-notice";

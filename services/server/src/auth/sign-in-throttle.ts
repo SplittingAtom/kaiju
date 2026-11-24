@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { and, eq, gt, kobeRateLimits, sql, type KobeDb } from "@kobe/db";
+import { and, eq, gt, kaijuRateLimits, sql, type KaijuDb } from "@kaiju/db";
 import { clearRateLimits, countRateLimitHit, refundRateLimitHit } from "../rate-limit.js";
 
 /**
@@ -91,7 +91,7 @@ export interface SignInThrottle {
 }
 
 export function createSignInThrottle(o: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly now?: () => number;
 }): SignInThrottle {
   const { db } = o;
@@ -116,9 +116,9 @@ export function createSignInThrottle(o: {
 
   async function slotStartOf(account: string, t: number): Promise<number> {
     const [row] = await db
-      .select({ start: kobeRateLimits.windowStart })
-      .from(kobeRateLimits)
-      .where(eq(kobeRateLimits.key, `kobe:${slotKey(account)}`));
+      .select({ start: kaijuRateLimits.windowStart })
+      .from(kaijuRateLimits)
+      .where(eq(kaijuRateLimits.key, `kobe:${slotKey(account)}`));
     return row ? Number(row.start) : t;
   }
 
@@ -174,12 +174,12 @@ export function createSignInThrottle(o: {
 
     async throttled() {
       const rows = await db
-        .select({ key: kobeRateLimits.key, until: kobeRateLimits.expiresAt })
-        .from(kobeRateLimits)
+        .select({ key: kaijuRateLimits.key, until: kaijuRateLimits.expiresAt })
+        .from(kaijuRateLimits)
         .where(
           and(
-            sql`${kobeRateLimits.key} LIKE ${`kobe:${MARKER_PREFIX}%`}`,
-            gt(kobeRateLimits.expiresAt, now()),
+            sql`${kaijuRateLimits.key} LIKE ${`kobe:${MARKER_PREFIX}%`}`,
+            gt(kaijuRateLimits.expiresAt, now()),
           ),
         );
       return rows.map((r) => ({

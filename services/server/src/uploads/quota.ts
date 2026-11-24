@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * Team storage quota (D26, KOBE-143): bytes in `files` plus the live bytes of the team's
@@ -6,7 +6,7 @@ import { sql, type KobeTx } from "@kobe/db";
  * `files` insert happen under it, so two uploads that each fit alone can't both commit past the
  * limit. (Volume sizes are not counted: they are provisioned per sandbox, not stored by Kaiju.)
  */
-export async function lockTeamStorage(tx: KobeTx, teamId: string): Promise<void> {
+export async function lockTeamStorage(tx: KaijuTx, teamId: string): Promise<void> {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.storage:${teamId}`}, 0))`,
   );
@@ -14,7 +14,7 @@ export async function lockTeamStorage(tx: KobeTx, teamId: string): Promise<void>
 
 /** The team's limit: its own `max_bytes`, else the site default. */
 export async function storageLimit(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   defaultBytes: number,
 ): Promise<number> {
@@ -33,7 +33,7 @@ export async function storageLimit(
  * in `live_bytes`, KOBE-162). The thread copy of an attached file stays in S3 until the
  * thread is purged but is not counted again. MCP Apps results (KOBE-438) count when stored.
  */
-export async function storageUsed(tx: KobeTx, teamId: string): Promise<number> {
+export async function storageUsed(tx: KaijuTx, teamId: string): Promise<number> {
   const res = await tx.execute<{ used: string }>(sql`
     SELECT (SELECT COALESCE(SUM(size_bytes), 0) FROM files WHERE team_id = ${teamId} AND run_id IS NULL)
          + (SELECT COALESCE(SUM(live_bytes), 0) FROM workspace_sync WHERE team_id = ${teamId})
@@ -49,7 +49,7 @@ export async function storageUsed(tx: KobeTx, teamId: string): Promise<number> {
  * distinct blobs plus its uploads in flight (`workspace_sync.blob_count + pending_blobs`), each
  * stored upload without a thread (`files`), each project's objects, head and history.
  */
-export async function objectsUsed(tx: KobeTx, teamId: string): Promise<number> {
+export async function objectsUsed(tx: KaijuTx, teamId: string): Promise<number> {
   const res = await tx.execute<{ used: string }>(sql`
     SELECT (SELECT COALESCE(SUM(blob_count + pending_blobs), 0) FROM workspace_sync
              WHERE team_id = ${teamId})
@@ -62,7 +62,7 @@ export async function objectsUsed(tx: KobeTx, teamId: string): Promise<number> {
 
 /** The team's object budget: its own `max_objects`, else the site default. */
 export async function objectLimit(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   defaultObjects: number,
 ): Promise<number> {
@@ -80,7 +80,7 @@ export async function objectLimit(
  * storage lock.
  */
 export async function teamObjectsAllow(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   defaultObjects: number,
   delta = 1,
@@ -96,7 +96,7 @@ export async function teamObjectsAllow(
  * A delta of zero or less (a shrinking write) is always allowed, even when the team is over.
  */
 export async function teamStorageAllows(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   defaultBytes: number,
   deltaBytes: number,

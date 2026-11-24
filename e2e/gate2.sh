@@ -253,7 +253,7 @@ if [[ "$STEPS" == *" budget "* ]] && sbx_need "ac-1 (budget)"; then
       "$(step reset "\"admin\":$U_T1,\"budget\":$BUDGET_USD")"
     [[ "$priced" == *price=set* ]] && UNDO+=("client '$(printf '{"mode":"price","base":"%s","owner":%s,"alias":"%s","action":"restore"}' "$BASE" "$OWNER_JSON" "$MODEL_ALIAS")'")
     UNDO+=("client '$(printf '{"mode":"reset","base":"%s","admin":%s,"budget":null}' "$BASE" "$U_T1")'")
-    prompt="${KOBE_GATE2_BUDGET_PROMPT:-kobe-tool-step budget-$NONCE}"
+    prompt="${KOBE_GATE2_BUDGET_PROMPT:-kaiju-tool-step budget-$NONCE}"
     b=$(chat "$prompt")
     printf '%s\n' "$b" | grep -v '^text=' | cut -c1-300 | sed 's/^/     /'
     brun=$(field run "$b")

@@ -1,4 +1,4 @@
-import { MEMORY_RECALL_MAX_FILES, type MemoryScope, type RecallInput } from "@kobe/protocol";
+import { MEMORY_RECALL_MAX_FILES, type MemoryScope, type RecallInput } from "@kaiju/protocol";
 import type { BlobStore } from "../retention/blobs.js";
 import { readVersionContent, type ListedDoc } from "./store.js";
 

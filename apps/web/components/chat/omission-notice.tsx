@@ -1,7 +1,7 @@
-import type { KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEventPayload } from "@kaiju/protocol";
 import styles from "./chat.module.css";
 
-type Item = KobeEventPayload<"context.omitted">["items"][number];
+type Item = KaijuEventPayload<"context.omitted">["items"][number];
 
 const KIND_LABEL: Readonly<Record<Item["kind"], string>> = {
   skill: "Skill",
@@ -41,7 +41,7 @@ export function omissionText(item: Item): string {
 export function OmissionNotice({
   payload,
 }: {
-  readonly payload: KobeEventPayload<"context.omitted">;
+  readonly payload: KaijuEventPayload<"context.omitted">;
 }) {
   return (
     <div className={styles.notice} role="note">

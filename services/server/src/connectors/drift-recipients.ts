@@ -11,8 +11,8 @@ import {
   teamMembers,
   users,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { driftedTemplates } from "./template-store.js";
 import { teamIdsUsing } from "./team-usage.js";
 
@@ -29,7 +29,7 @@ export interface DriftRecipient {
 }
 
 /** Active site owners and admins. */
-export function siteAdminIds(db: KobeDb): Promise<DriftRecipient[]> {
+export function siteAdminIds(db: KaijuDb): Promise<DriftRecipient[]> {
   return db
     .select({ userId: users.id, email: users.email })
     .from(siteRoles)
@@ -37,7 +37,7 @@ export function siteAdminIds(db: KobeDb): Promise<DriftRecipient[]> {
     .where(isNull(users.deactivatedAt));
 }
 
-export async function driftRecipients(db: KobeDb, connectorId: string): Promise<DriftRecipient[]> {
+export async function driftRecipients(db: KaijuDb, connectorId: string): Promise<DriftRecipient[]> {
   const siteAdmins = await siteAdminIds(db);
   const using = await teamIdsUsing(db, connectorId);
   const teamAdmins: DriftRecipient[] = [];
@@ -83,7 +83,7 @@ export interface DriftNotice {
 
 /** Connectors with tools awaiting re-approval that this user is told about (the in-app notice). */
 export async function driftNoticesFor(
-  db: KobeDb,
+  db: KaijuDb,
   user: { readonly id: string; readonly siteRole: "owner" | "admin" | null },
 ): Promise<DriftNotice[]> {
   const rows = await db

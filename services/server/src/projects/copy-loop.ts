@@ -1,5 +1,5 @@
 import { Transform, type TransformCallback } from "node:stream";
-import { withTeam, type KobeDb } from "@kobe/db";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
 import { verifyingStream, type ObjectStore } from "../workspace-sync/object-store.js";
@@ -69,7 +69,7 @@ export const sumSizes = (copies: readonly Copy[]): number => copies.reduce((n, c
 const MAX_ROUNDS = 3;
 
 export interface CopyLoop<P, R> {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Whose write it is (the reservation's team, project and user). */
   readonly teamId: string;
   readonly projectId: string;

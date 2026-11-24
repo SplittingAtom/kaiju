@@ -1,4 +1,4 @@
-import { eq, siteToolRules, toolRules, type KobeTx } from "@kobe/db";
+import { eq, siteToolRules, toolRules, type KaijuTx } from "@kaiju/db";
 import { readApprovalFloor } from "../policy/approval-floor.js";
 import { toPolicyRule } from "../policy/rule-store.js";
 import type { PolicyRule } from "../policy/rules.js";
@@ -14,7 +14,7 @@ const compact = <T>(values: readonly (T | undefined)[]): T[] =>
  * through `toPolicyRule`, which fails closed on unreadable rows like the engine does.
  */
 export async function readPublishFloor(
-  tx: KobeTx,
+  tx: KaijuTx,
   scope: PublishFloor["scope"],
 ): Promise<PublishFloor> {
   const site = await tx.select().from(siteToolRules);

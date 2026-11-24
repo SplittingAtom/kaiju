@@ -7,8 +7,8 @@ import {
   type PolicyDecision,
   type PolicyReasonCode,
   type ToolDescriptor,
-} from "@kobe/protocol";
-import type { PinnedTool } from "@kobe/db";
+} from "@kaiju/protocol";
+import type { PinnedTool } from "@kaiju/db";
 import { logger } from "../logger.js";
 import type { McpApprovalFailure } from "./approvals.js";
 import {

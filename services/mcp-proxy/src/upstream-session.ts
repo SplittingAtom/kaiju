@@ -1,4 +1,4 @@
-import { SpanKind, SpanStatusCode, withSpan } from "@kobe/telemetry";
+import { SpanKind, SpanStatusCode, withSpan } from "@kaiju/telemetry";
 import { fetch as undiciFetch, type Dispatcher } from "undici";
 import type { AddressChecker } from "./address-policy.js";
 import { checkUpstreamUrl } from "./upstream-connect.js";

@@ -1,5 +1,5 @@
 import type { Context, Hono } from "hono";
-import { withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { AgentAccess } from "./access.js";
 import {
   agentDetail,
@@ -39,7 +39,7 @@ import type { EvalRunner } from "./eval/service.js";
 import { versionScores } from "./eval/store.js";
 import { logger } from "../logger.js";
 import { hitRateLimit } from "../rate-limit.js";
-import { agentSkills, agentWarnings, isDangerousMode } from "@kobe/agent-file";
+import { agentSkills, agentWarnings, isDangerousMode } from "@kaiju/agent-file";
 import { DANGEROUS_FORBIDDEN } from "../policy/dangerous-mode.js";
 import { EMPTY_SKILL_MANIFEST } from "../skills/frozen.js";
 import { skillUpdates } from "./skill-freeze.js";
@@ -70,7 +70,7 @@ export interface ResolvedAgent {
 }
 
 export interface VersionRouteOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly limits: AgentLimits;
   /** The agent named by `:id` if the caller may see it; null → 404 (no existence oracle). */
   readonly resolve: (c: Context) => Promise<ResolvedAgent | null>;
@@ -90,7 +90,7 @@ export interface VersionRouteOptions {
    * Work to do in the publish's or rollback's own transaction once it succeeded (the gallery
    * router marks the agent Customized, KOBE-494). Unset on the team router.
    */
-  readonly afterPublish?: (c: Context, found: ResolvedAgent) => (tx: KobeTx) => Promise<void>;
+  readonly afterPublish?: (c: Context, found: ResolvedAgent) => (tx: KaijuTx) => Promise<void>;
   /**
    * The pre-publish eval gate (KOBE-93), on the team router only: Publish asks it first, and
    * version summaries carry the score each version earned. Unset (the gallery): never gated.

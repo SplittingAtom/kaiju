@@ -30,7 +30,7 @@ describe("auth.sso settings (KOBE-626)", () => {
           displayName: "Keycloak",
           kind: "oidc",
           issuer: "https://kc.example.com/realms/k",
-          clientId: "kobe",
+          clientId: "kaiju",
           accessClaim: "groups",
         },
       ]),

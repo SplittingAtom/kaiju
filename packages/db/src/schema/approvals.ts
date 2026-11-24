@@ -22,9 +22,9 @@ import { threads } from "./threads.js";
 // one row per (run, tool_call_id) that the policy engine sent to a human. The row is the record
 // the approval card shows, the decision the sandbox waits for, and — once allowed — the signed
 // token's state (`input_hmac`, `token_kid`, `token_expires_at`) that the MCP proxy verifies and
-// consumes exactly once (`consumed_at`, `@kobe/protocol` approval.ts `ApprovalStore`).
+// consumes exactly once (`consumed_at`, `@kaiju/protocol` approval.ts `ApprovalStore`).
 
-/** `approvals.status` (spec §5.4; `approvalStatusSchema` in @kobe/protocol). */
+/** `approvals.status` (spec §5.4; `approvalStatusSchema` in @kaiju/protocol). */
 export const approvalStatus = pgEnum("approval_status", [
   "pending",
   "allowed",
@@ -33,7 +33,7 @@ export const approvalStatus = pgEnum("approval_status", [
 ]);
 export type ApprovalStatusValue = (typeof approvalStatus.enumValues)[number];
 
-/** Why an approval left `pending` (`APPROVAL_RESOLUTION_CAUSES` in @kobe/protocol). */
+/** Why an approval left `pending` (`APPROVAL_RESOLUTION_CAUSES` in @kaiju/protocol). */
 export const APPROVAL_CAUSES = [
   "user",
   "ttl",

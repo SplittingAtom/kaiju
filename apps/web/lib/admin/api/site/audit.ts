@@ -9,7 +9,7 @@ import { apiRequest, type ApiResult } from "../../../api/client";
 /**
  * The event categories the server filters on: the first segment of every action in
  * `AUDIT_EVENTS` (packages/db/src/audit/events/*.ts). `audit-categories.test.ts` reads those files
- * and fails when this list drifts from it (the web app can't import @kobe/db).
+ * and fails when this list drifts from it (the web app can't import @kaiju/db).
  */
 export const AUDIT_CATEGORIES = [
   "agent",

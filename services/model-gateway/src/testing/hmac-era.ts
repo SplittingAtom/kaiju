@@ -7,7 +7,7 @@ import { createHmac, hkdfSync } from "node:crypto";
  */
 export function hmacEraToken(kind: "run" | "server-call", claims: unknown, master: string): string {
   const [prefix, info] =
-    kind === "run" ? ["krt1", "kobe/run-token/v1"] : ["ksc1", "kobe/server-call-token/v1"];
+    kind === "run" ? ["krt1", "kaiju/run-token/v1"] : ["ksc1", "kaiju/server-call-token/v1"];
   const key = new Uint8Array(hkdfSync("sha256", master, new Uint8Array(0), info, 32));
   const signed = `${prefix}.${Buffer.from(JSON.stringify(claims)).toString("base64url")}`;
   return `${signed}.${createHmac("sha256", key).update(signed, "ascii").digest("base64url")}`;

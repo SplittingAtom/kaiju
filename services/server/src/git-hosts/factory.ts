@@ -1,4 +1,4 @@
-import type { GitConnectionRecord, GitCredentialSecret } from "@kobe/db";
+import type { GitConnectionRecord, GitCredentialSecret } from "@kaiju/db";
 import { GitHostError, type GitHostAdapter } from "./adapter.js";
 import { createGiteaAdapter } from "./gitea/adapter.js";
 import { createGitHubAdapter } from "./github/adapter.js";

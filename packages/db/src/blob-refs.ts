@@ -19,7 +19,7 @@ export interface BlobRefColumn {
 }
 
 /**
- * Every column that stores an object key. `kobe backup` checks, in its Postgres snapshot, that each
+ * Every column that stores an object key. `kaiju backup` checks, in its Postgres snapshot, that each
  * referenced key is in the bucket listing it records, and refuses otherwise. Every listed table is
  * a team table with `team_id`, unless marked `site`. The retention job (KOBE-18) deletes only keys in a purged thread's
  * own tree (`<prefix>teams/<team>/threads/<thread>/`), and only when no `thread: true` column of

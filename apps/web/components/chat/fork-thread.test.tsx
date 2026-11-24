@@ -2,16 +2,16 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chatRequests, openApp, threadGroup } from "./testing";
 
 /** KOBE-216 (CE16): "Fork to a new thread" from a message, the fork's marker, the rail hint. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {
@@ -57,7 +57,7 @@ describe("fork to a new thread from a message (ac-1)", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "Fork to a new thread" });
     // Inside the chat root, where the theme tokens live (dark mode).
-    expect(dialog.closest("[data-kobe-chat]")).not.toBeNull();
+    expect(dialog.closest("[data-kaiju-chat]")).not.toBeNull();
     const title = within(dialog).getByLabelText("Title of the new thread") as HTMLInputElement;
     expect(title.value).toBe("Quarterly plan");
     await user.clear(title);

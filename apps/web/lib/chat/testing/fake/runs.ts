@@ -1,5 +1,5 @@
 /** Messages, runs, feedback and eval cases (D17, KOBE-30/275/276) (KOBE-717 area). */
-import { splitItemReferences, withItemReferences, type ItemReference } from "@kobe/protocol";
+import { splitItemReferences, withItemReferences, type ItemReference } from "@kaiju/protocol";
 import type { FakeCore } from "./core";
 import {
   ACTIVE,

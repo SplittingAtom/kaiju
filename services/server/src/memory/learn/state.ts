@@ -3,16 +3,16 @@ import {
   loadMemberBudgetState,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   MEMORY_PASS_FAILURE_CODES,
   MEMORY_PASS_MAX_MS,
   type LearnRefusal,
   type LearnState,
   type MemoryPassFailureCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { findThread, type Viewer } from "../../threads/repository.js";
 import { learnAvailability } from "../learning-model.js";
 import { readSwitches, type MemorySwitches } from "../switches.js";
@@ -50,7 +50,7 @@ export function passErrorMessage(error: string | null): string {
   return FAILURE_CODES.has(code) ? failureMessage(code as MemoryPassFailureCode) : FAILED;
 }
 
-async function runningPass(tx: KobeTx, teamId: string, threadId: string) {
+async function runningPass(tx: KaijuTx, teamId: string, threadId: string) {
   const res = await tx.execute<{ id: string; started: string | Date }>(sql`
     SELECT id, coalesce(started_at, created_at) AS started FROM memory_learning_passes
      WHERE team_id = ${teamId} AND thread_id = ${threadId} AND status IN ('queued', 'running')
@@ -60,7 +60,7 @@ async function runningPass(tx: KobeTx, teamId: string, threadId: string) {
   return row ? { pass_id: row.id, started_at: new Date(row.started).toISOString() } : null;
 }
 
-async function lastFailure(tx: KobeTx, viewer: Viewer, threadId: string) {
+async function lastFailure(tx: KaijuTx, viewer: Viewer, threadId: string) {
   const res = await tx.execute<{
     id: string;
     status: string;
@@ -79,7 +79,7 @@ async function lastFailure(tx: KobeTx, viewer: Viewer, threadId: string) {
   };
 }
 
-async function openCandidates(tx: KobeTx, viewer: Viewer, threadId: string): Promise<number> {
+async function openCandidates(tx: KaijuTx, viewer: Viewer, threadId: string): Promise<number> {
   const res = await tx.execute<{ n: string | number }>(sql`
     SELECT count(*) AS n FROM memory_candidates c
       JOIN memory_learning_passes p ON p.team_id = c.team_id AND p.id = c.pass_id
@@ -88,7 +88,7 @@ async function openCandidates(tx: KobeTx, viewer: Viewer, threadId: string): Pro
   return Number(res.rows[0]?.n ?? 0);
 }
 
-async function watermark(tx: KobeTx, viewer: Viewer, threadId: string): Promise<string | null> {
+async function watermark(tx: KaijuTx, viewer: Viewer, threadId: string): Promise<string | null> {
   const res = await tx.execute<{ entry_id: string }>(sql`
     SELECT entry_id FROM memory_learning_watermarks
      WHERE team_id = ${viewer.teamId} AND thread_id = ${threadId} AND user_id = ${viewer.userId}`);
@@ -99,7 +99,7 @@ type Thread = NonNullable<Awaited<ReturnType<typeof findThread>>>["thread"];
 
 /** The first of the start's checks that refuses, or null (a running pass is not a blocker). */
 async function blockerOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   thread: Thread,
   serverCalls: boolean,
@@ -141,7 +141,7 @@ export type LearnStateResult =
 
 /** The state in one `withTeam()` read; a reader of a shared thread gets `read_only`. */
 export async function readLearnState(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: Viewer,
   threadId: string,
   options: { readonly serverCalls: boolean; readonly estimate?: boolean },
@@ -201,7 +201,7 @@ export async function readLearnState(
  * What `/learn` and `/learn all` would read, in tokens (the pass input's own estimate). Its own
  * read-only transaction (the input takes the thread's change lock briefly); null on any refusal.
  */
-async function estimate(db: KobeDb, viewer: Viewer, threadId: string) {
+async function estimate(db: KaijuDb, viewer: Viewer, threadId: string) {
   try {
     return await withTeam(db, viewer.teamId, async (tx) => {
       const all = await assembleLearningInput(tx, viewer, threadId, { rescan: true });

@@ -1,4 +1,4 @@
-import type { KobeToolsResponse } from "@kobe/protocol";
+import type { KaijuToolsResponse } from "@kaiju/protocol";
 import { toolsError } from "./channel.js";
 
 /**
@@ -15,7 +15,7 @@ export interface PendingRequest {
   readonly runId: string;
   /** The extension's own request id, which its answer carries. */
   readonly extensionId: string;
-  readonly reply: (response: KobeToolsResponse) => void;
+  readonly reply: (response: KaijuToolsResponse) => void;
 }
 
 export interface PendingRequestsOptions {
@@ -45,7 +45,7 @@ export class PendingRequests {
     threadId: string,
     runId: string,
     extensionId: string,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): string | undefined {
     const perThread = [...this.#pending.values()].filter((p) => p.threadId === threadId).length;
     if (this.#pending.size >= this.#options.max || perThread >= this.#options.maxPerThread) {

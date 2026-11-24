@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeTx } from "@kobe/db";
-import type { GitRepoDetached, GitRepoRelinkBody, GitRepoView } from "@kobe/protocol";
+import { sql, withTeam, type KaijuTx } from "@kaiju/db";
+import type { GitRepoDetached, GitRepoRelinkBody, GitRepoView } from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { GitHostError, type GitRepository } from "../../git-hosts/adapter.js";
 import { loadAccess, teamRoleFor } from "../../projects/access.js";
@@ -77,7 +77,7 @@ type RepoRow = {
 
 const iso = (d: Date | string | null) => (d === null ? null : new Date(d).toISOString());
 
-async function repoOf(tx: KobeTx, teamId: string, projectId: string): Promise<RepoRow | undefined> {
+async function repoOf(tx: KaijuTx, teamId: string, projectId: string): Promise<RepoRow | undefined> {
   const res = await tx.execute<RepoRow>(sql`
     SELECT g.id, g.connection_id, c.provider, g.base_url, g.full_name, g.default_branch,
            g.host_state, g.mirror_head_sha, g.mirror_commit_id, g.mirror_refreshed_at,
@@ -90,7 +90,7 @@ async function repoOf(tx: KobeTx, teamId: string, projectId: string): Promise<Re
 }
 
 async function viewOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   row: RepoRow,
@@ -149,7 +149,7 @@ function stale(row: RepoRow, now = Date.now()): boolean {
   return now - last > GIT_MIRROR_OPEN_STALE_MS;
 }
 
-async function isAdmin(tx: KobeTx, viewer: Viewer): Promise<boolean> {
+async function isAdmin(tx: KaijuTx, viewer: Viewer): Promise<boolean> {
   return (await teamRoleFor(tx, viewer.teamId, viewer.userId)) === "team_admin";
 }
 

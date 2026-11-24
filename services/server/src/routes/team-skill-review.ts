@@ -1,4 +1,4 @@
-import { MODEL_ALIAS_PATTERN, type KobeDb } from "@kobe/db";
+import { MODEL_ALIAS_PATTERN, type KaijuDb } from "@kaiju/db";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
@@ -90,7 +90,7 @@ const reviewJson = (r: ReviewRecord) => ({
 type Ctx = Context<{ Variables: TeamVariables }>;
 
 /** `GET /`: a page of the queue. Read only (versions without a finished scan: P2-35's job). */
-function listHandler(db: KobeDb) {
+function listHandler(db: KaijuDb) {
   return async (c: Ctx) => {
     const filter = filterSchema.safeParse(c.req.query("status") ?? "pending");
     if (!filter.success)
@@ -166,7 +166,7 @@ function decideRefusal(c: Ctx, error: DecideError, decision: string) {
 }
 
 /** `POST /:skillId/versions/:version`: approve or reject. */
-function decideHandler(db: KobeDb) {
+function decideHandler(db: KaijuDb) {
   return async (c: Ctx) => {
     const skillId = param(c, "skillId", idSchema);
     const version = param(c, "version", versionSchema);
@@ -197,7 +197,7 @@ function decideHandler(db: KobeDb) {
 // The team's skill switches: personal skills (KOBE-80) and the catalog switches (KOBE-316,
 // SK25: "Members may add catalog skills for themselves", "Builders may install catalog
 // skills"). Any member reads them; Team admins change them, each change audited.
-async function settingsJson(db: KobeDb, teamId: string) {
+async function settingsJson(db: KaijuDb, teamId: string) {
   const catalog = await getCatalogSwitches(db, teamId);
   return {
     personalSkillsDisabled: await getPersonalSkillsDisabled(db, teamId),
@@ -211,7 +211,7 @@ async function settingsJson(db: KobeDb, teamId: string) {
 }
 
 /** `PUT /settings`. */
-function putSettingsHandler(db: KobeDb) {
+function putSettingsHandler(db: KaijuDb) {
   return async (c: Ctx) => {
     const body = await parseBody(c, settingsSchema);
     if (!body)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ALL_CONNECTORS } from "@kobe/agent-file";
+import { ALL_CONNECTORS } from "@kaiju/agent-file";
 import {
   splitLines,
   type FieldErrors,
@@ -13,10 +13,10 @@ import {
   deniedTools,
   denyTool,
   withConnectorTools,
-  withKobeDocs,
+  withKaijuDocs,
 } from "../../../../lib/admin/agent-builder/tool-lists";
 import type { ApiResult } from "../../../../lib/api/client";
-import type { KobeTeamConnector, TeamConnector } from "../../../../lib/admin/api/team/connectors";
+import type { KaijuTeamConnector, TeamConnector } from "../../../../lib/admin/api/team/connectors";
 import { Button, Checkbox, FieldError, Notice, TextInput } from "../../../ui/console";
 import { useResource } from "../../use-resource";
 import { useBuilderSources } from "./builder-sources";
@@ -34,15 +34,15 @@ function toolsOf(
 }
 
 /** No built-in Kaiju connector where the sources offer none (gallery agents). */
-const NO_KOBE = (): Promise<ApiResult<KobeTeamConnector>> =>
+const NO_KAIJU = (): Promise<ApiResult<KaijuTeamConnector>> =>
   Promise.resolve({ ok: false, error: { status: 404, code: "not_found", message: "" } });
 
 /** The built-in Kaiju connector when it can be chosen (the site switch is not off). */
-function usableKobe(state: ReturnType<typeof useResource<KobeTeamConnector>>["state"]) {
+function usableKaiju(state: ReturnType<typeof useResource<KaijuTeamConnector>>["state"]) {
   if (state.status !== "ready" || state.data.mode === "off" || state.data.name === null) {
     return undefined;
   }
-  return state.data as KobeTeamConnector & { readonly name: string };
+  return state.data as KaijuTeamConnector & { readonly name: string };
 }
 
 /**
@@ -68,17 +68,17 @@ export function ConnectorTools({
 }) {
   const sources = useBuilderSources();
   const { state } = useResource(sources.connectors);
-  const kobe = usableKobe(useResource(sources.kobe ?? NO_KOBE).state);
+  const kaiju = usableKaiju(useResource(sources.kaiju ?? NO_KAIJU).state);
   const team =
     state.status === "ready" ? state.data.filter((c) => c.enabled && c.status === "active") : [];
   const chosen = splitLines(form.connectors);
   const replaced = form.connectorsAll ? chosen : [];
-  const docs = kobe?.docsTools ?? [];
+  const docs = kaiju?.docsTools ?? [];
   // Team connectors' pinned tools, plus Kaiju's admin tools when it is among `names`.
   const toolsFor = (names: readonly string[] | typeof ALL_CONNECTORS) => [
     ...toolsOf(team, names),
-    ...(kobe !== undefined && (names === ALL_CONNECTORS || names.includes(kobe.name))
-      ? kobe.adminTools.map((t) => t.piName)
+    ...(kaiju !== undefined && (names === ALL_CONNECTORS || names.includes(kaiju.name))
+      ? kaiju.adminTools.map((t) => t.piName)
       : []),
   ];
 
@@ -88,7 +88,7 @@ export function ConnectorTools({
     const added = next.filter((n) => !chosen.includes(n));
     const removed = chosen.filter((n) => !next.includes(n));
     onChange(
-      withKobeDocs(
+      withKaijuDocs(
         withConnectorTools(
           { ...form, connectors: next.join("\n") },
           toolsFor(added),
@@ -103,7 +103,7 @@ export function ConnectorTools({
     const current = toolsFor(chosen);
     const updated = { ...form, connectorsAll: all };
     onChange(
-      withKobeDocs(
+      withKaijuDocs(
         all
           ? withConnectorTools(updated, every)
           : withConnectorTools(
@@ -127,9 +127,9 @@ export function ConnectorTools({
         }
         chosen={chosen}
         options={[
-          ...(kobe === undefined
+          ...(kaiju === undefined
             ? []
-            : [{ value: kobe.name, label: `${kobe.name} (Kaiju's admin tools)` }]),
+            : [{ value: kaiju.name, label: `${kaiju.name} (Kaiju's admin tools)` }]),
           ...team.map((c) => ({ value: c.name, label: c.name })),
         ]}
         noun="connector"

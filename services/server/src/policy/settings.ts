@@ -3,8 +3,8 @@ import {
   type JsonObject,
   type RiskClass,
   type ToolDescriptor,
-} from "@kobe/protocol";
-import { GIT_BUILTIN_CONNECTOR_ID } from "@kobe/db";
+} from "@kaiju/protocol";
+import { GIT_BUILTIN_CONNECTOR_ID } from "@kaiju/db";
 import { GIT_PROMPT_EXEMPT_TOOL } from "../git-tools/catalog.js";
 
 /**
@@ -30,7 +30,7 @@ export const DEFAULT_POLICY_SETTINGS: PolicySettings = { promptSandboxWrites: fa
 export const PROMPT_SANDBOX_WRITES_KEY = "policy.ask_on_write.prompt_sandbox_writes";
 
 /** Kaiju tools that never prompt by risk class in `ask-on-write` (rules and `ask-all` still apply). */
-export const PROMPT_EXEMPT_KOBE_TOOLS: ReadonlySet<string> = new Set([
+export const PROMPT_EXEMPT_KAIJU_TOOLS: ReadonlySet<string> = new Set([
   "create_artifact",
   "update_artifact",
   "save_skill_draft",
@@ -42,7 +42,7 @@ export const PROMPT_EXEMPT_KOBE_TOOLS: ReadonlySet<string> = new Set([
  * writes (shared files, memory) prompt — D23/D24 make project writes approval-gated — except:
  * - personal `remember` (D24: "personal writes via remember need no approval"), recognised by
  *   `scope: "user"` in its input (the memory contract, KOBE-153; anything else prompts);
- * - artifacts ({@link PROMPT_EXEMPT_KOBE_TOOLS}; Chris, 2026-10-06): they only write versioned,
+ * - artifacts ({@link PROMPT_EXEMPT_KAIJU_TOOLS}; Chris, 2026-10-06): they only write versioned,
  *   Kaiju-owned content into the user's own thread, shown in a sandboxed frame with no network;
  * - `save_skill_draft` (KOBE-442; Chris, 2026-10-19): it only writes the member's own private
  *   Workbench draft; saving a version, review and evals stay the member's actions there.
@@ -69,7 +69,7 @@ export function riskClassPrompts(
   if (tool.source === "kobe" && tool.name === "remember" && input.scope === "user") {
     return false;
   }
-  if (tool.source === "kobe" && PROMPT_EXEMPT_KOBE_TOOLS.has(tool.name)) return false;
+  if (tool.source === "kobe" && PROMPT_EXEMPT_KAIJU_TOOLS.has(tool.name)) return false;
   const table: Readonly<Record<ToolDescriptor["scope"], Readonly<Record<RiskClass, boolean>>>> = {
     sandbox: {
       read: false,

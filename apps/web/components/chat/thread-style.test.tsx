@@ -2,14 +2,14 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { chatRequests, composer, openApp } from "./testing";
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -83,6 +83,6 @@ describe("assistant-ui thread styling", () => {
       if (!el) throw new Error("tooltip not shown");
       return el;
     });
-    expect(tip.closest("[data-kobe-chat]")).toBeTruthy();
+    expect(tip.closest("[data-kaiju-chat]")).toBeTruthy();
   });
 });

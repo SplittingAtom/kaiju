@@ -80,7 +80,7 @@ printf ' private_tmp_listable=%s' "$tmp_ls"
 
 # Plant code where Pi (or a later Pi) might load it: the tool's own HOME and TMPDIR work, Pi's do not
 # use them. The module records the uid that loads it; control = this very process loads it.
-plant=/workspace/.kobe168-plant-loaded
+plant=/workspace/.kaiju168-plant-loaded
 mkdir -p "$HOME/.node_modules/bufferutil" "${TMPDIR:-/tmp}/jiti" "${TMPDIR:-/tmp}/node-compile-cache" 2>/dev/null
 cat >"$HOME/.node_modules/bufferutil/index.js" 2>/dev/null <<JS
 require("fs").appendFileSync("$plant", process.getuid() + "\n");
@@ -90,8 +90,8 @@ node -e 'try { require("bufferutil") } catch {}' 2>/dev/null
 printf ' plant_control=%s' "$(grep -c "^$me\$" "$plant" 2>/dev/null || echo 0)"
 
 # Workspace sharing: a file made here is group-shared; Pi's session files are readable here.
-mkdir -p /workspace/kobe168 && echo "from-tool $me" >/workspace/kobe168/from-tool.txt 2>/dev/null
-printf ' ws_file=%s' "$(stat -c '%u:%g:%a' /workspace/kobe168/from-tool.txt 2>/dev/null)"
+mkdir -p /workspace/kaiju168 && echo "from-tool $me" >/workspace/kaiju168/from-tool.txt 2>/dev/null
+printf ' ws_file=%s' "$(stat -c '%u:%g:%a' /workspace/kaiju168/from-tool.txt 2>/dev/null)"
 sess=$(find /workspace -path '*/sessions/*' -type f -user "$pi" 2>/dev/null | head -1)
 if [ -n "$sess" ] && cat "$sess" >/dev/null 2>&1; then printf ' pi_file_readable=1'; else printf ' pi_file_readable=0'; fi
 printf ' END\n'

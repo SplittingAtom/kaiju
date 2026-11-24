@@ -3,8 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AddressPolicy } from "@kobe/address-policy";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { AddressPolicy } from "@kaiju/address-policy";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import { GitHostError } from "../../git-hosts/adapter.js";
 import { gitWireClient, gitWireSession } from "../../git-hosts/git-wire.js";
 import type { GitHostNet } from "../../git-hosts/http.js";
@@ -42,7 +42,7 @@ beforeAll(async () => {
   server = await startGitServer({ credentials: CREDS });
   port = Number(new URL(server.origin).port);
   origin = `http://git.fake.test:${port}`;
-  work = await mkdtemp(path.join(tmpdir(), "kobe-conversion-test-"));
+  work = await mkdtemp(path.join(tmpdir(), "kaiju-conversion-test-"));
 });
 
 afterAll(async () => {
@@ -88,7 +88,7 @@ const source: HistorySource = {
 };
 const ada = { name: "Ada Lovelace", email: "ada@example.test" };
 const adaVia = { name: "Ada Lovelace via Kaiju", email: "ada@example.test" };
-const bob = { name: "Bob", email: "1a2b3c4d5e+bob@users.noreply.kobe.test" };
+const bob = { name: "Bob", email: "1a2b3c4d5e+bob@users.noreply.kaiju.test" };
 const plan: ConversionPlan = {
   v: 1,
   branch: "main",

@@ -1,5 +1,5 @@
-import { scanTeams, sql, type KobeDb, type KobeTx } from "@kobe/db";
-import { MEMORY_EMBED_MAX_DIMS } from "@kobe/protocol";
+import { scanTeams, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import { MEMORY_EMBED_MAX_DIMS } from "@kaiju/protocol";
 import { storedVectorModel } from "./prefixes.js";
 
 /**
@@ -62,7 +62,7 @@ const uuids = (ids: readonly string[]): SQL => sql`${`{${ids.join(",")}}`}::uuid
  * rows need `teamId` (the transaction's team); `itemIds` narrows to the items just saved.
  */
 export async function pendingVersions(
-  tx: KobeTx,
+  tx: KaijuTx,
   table: VectorTable,
   opts: {
     readonly teamId?: string;
@@ -95,7 +95,7 @@ export async function pendingVersions(
  * that moved on is left alone.
  */
 export async function writeVectors(
-  tx: KobeTx,
+  tx: KaijuTx,
   table: VectorTable,
   teamId: string | undefined,
   model: string,
@@ -122,7 +122,7 @@ export interface Coverage {
 }
 
 async function countTable(
-  tx: KobeTx,
+  tx: KaijuTx,
   table: VectorTable,
   model: string | null,
   teamId?: string,
@@ -138,7 +138,7 @@ async function countTable(
 }
 
 /** Coverage of every Workspace's items (one team at a time, RLS), portable and Site items. */
-export async function readCoverage(db: KobeDb, model: string | null): Promise<Coverage> {
+export async function readCoverage(db: KaijuDb, model: string | null): Promise<Coverage> {
   const teams = await scanTeams(db, "memory vector coverage", (tx, team) =>
     countTable(tx, "workspace", model, team.id),
   );

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { teams } from "./schema/index.js";
 import { withTeam } from "./with-team.js";
 
@@ -10,7 +10,7 @@ import { withTeam } from "./with-team.js";
  * reservers (several connections, as several gateway replicas), expired rows never count (ac-2),
  * a crashed replica's reservations expire by themselves (ac-1), and settle ends them.
  */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const SALT = "test-salt";

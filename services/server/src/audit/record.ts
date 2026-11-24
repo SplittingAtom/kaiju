@@ -4,9 +4,9 @@ import {
   type AuditActor,
   type AuditEvent,
   type AuditRecordRef,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { logger } from "../logger.js";
 import { currentAuditContext } from "./context.js";
 
@@ -43,7 +43,7 @@ function complete(event: ServerAuditEvent): AuditEvent {
  * back together. The actor defaults to the signed-in user of the current request. Make it the last
  * write of the transaction (it holds the audit chain lock until commit).
  */
-export function recordAudit(tx: KobeTx, event: ServerAuditEvent): Promise<AuditRecordRef> {
+export function recordAudit(tx: KaijuTx, event: ServerAuditEvent): Promise<AuditRecordRef> {
   return audit(tx, complete(event));
 }
 
@@ -52,7 +52,7 @@ export function recordAudit(tx: KobeTx, event: ServerAuditEvent): Promise<AuditR
  * export, system observations). Never throws: the action already happened, so a failed write is
  * logged at error level (operators alert on it) instead of failing the response.
  */
-export async function recordAuditAfter(db: KobeDb, event: ServerAuditEvent): Promise<void> {
+export async function recordAuditAfter(db: KaijuDb, event: ServerAuditEvent): Promise<void> {
   try {
     const full = complete(event);
     await db.transaction((tx) => audit(tx, full));

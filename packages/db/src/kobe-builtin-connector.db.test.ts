@@ -11,15 +11,15 @@ import {
 } from "./audit/index.js";
 import { createDb } from "./client.js";
 import {
-  readKobeMcpMode,
+  readKaijuMcpMode,
   seedGitBuiltinConnector,
-  seedKobeBuiltinConnector,
+  seedKaijuBuiltinConnector,
 } from "./connectors/builtin.js";
 import { GIT_BUILTIN_CONNECTOR_ID, GIT_BUILTIN_CONNECTOR_URL } from "./schema/connectors.js";
 import {
-  KOBE_BUILTIN_CONNECTOR_ID,
-  KOBE_BUILTIN_CONNECTOR_URL,
-  KOBE_MCP_MODE_KEY,
+  KAIJU_BUILTIN_CONNECTOR_ID,
+  KAIJU_BUILTIN_CONNECTOR_URL,
+  KAIJU_MCP_MODE_KEY,
   connectors,
   siteSettings,
   teams,
@@ -27,20 +27,20 @@ import {
 import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
 
-/** KOBE-618 (KA-1): the built-in `kobe` connector row, the site switch, and audit `via`. */
+/** KOBE-618 (KA-1): the built-in `kaiju` connector row, the site switch, and audit `via`. */
 const app = createDb(inject("appUrl"), { max: 8 });
 afterAll(() => app.close());
 
-describe("the built-in kobe connector row", () => {
+describe("the built-in kaiju connector row", () => {
   it("is seeded once however many replicas seed it at the same time", async () => {
     const results = await Promise.all(
-      Array.from({ length: 8 }, () => seedKobeBuiltinConnector(app.db)),
+      Array.from({ length: 8 }, () => seedKaijuBuiltinConnector(app.db)),
     );
-    const rows = await app.db.select().from(connectors).where(eq(connectors.builtin, "kobe"));
+    const rows = await app.db.select().from(connectors).where(eq(connectors.builtin, "kaiju"));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      id: KOBE_BUILTIN_CONNECTOR_ID,
-      url: KOBE_BUILTIN_CONNECTOR_URL,
+      id: KAIJU_BUILTIN_CONNECTOR_ID,
+      url: KAIJU_BUILTIN_CONNECTOR_URL,
       authKind: "none",
       credentialSource: "member",
       toolsSnapshot: [],
@@ -49,7 +49,7 @@ describe("the built-in kobe connector row", () => {
     expect(results.filter((r) => r.outcome === "seeded").length).toBeLessThanOrEqual(1);
     expect(results.every((r) => r.outcome !== "names_taken")).toBe(true);
     // A later start finds it.
-    expect(await seedKobeBuiltinConnector(app.db)).toEqual({
+    expect(await seedKaijuBuiltinConnector(app.db)).toEqual({
       outcome: "present",
       name: rows[0]?.name,
     });
@@ -82,21 +82,21 @@ describe("the built-in kobe connector row", () => {
     await expect(
       app.db
         .insert(connectors)
-        .values({ name: `fake-${randomUUID().slice(0, 8)}`, url: KOBE_BUILTIN_CONNECTOR_URL }),
+        .values({ name: `fake-${randomUUID().slice(0, 8)}`, url: KAIJU_BUILTIN_CONNECTOR_URL }),
     ).rejects.toSatisfy((e) => pgCodeOf(e) === "23514");
   });
 
   it("refuses a built-in row with another id, URL, credential or a pinned snapshot", async () => {
     const name = () => `b-${randomUUID().slice(0, 8)}`;
     const bad = [
-      { id: randomUUID(), url: KOBE_BUILTIN_CONNECTOR_URL },
-      { id: KOBE_BUILTIN_CONNECTOR_ID, url: "https://mcp.example.com/mcp" },
+      { id: randomUUID(), url: KAIJU_BUILTIN_CONNECTOR_URL },
+      { id: KAIJU_BUILTIN_CONNECTOR_ID, url: "https://mcp.example.com/mcp" },
       {
-        id: KOBE_BUILTIN_CONNECTOR_ID,
-        url: KOBE_BUILTIN_CONNECTOR_URL,
+        id: KAIJU_BUILTIN_CONNECTOR_ID,
+        url: KAIJU_BUILTIN_CONNECTOR_URL,
         authKind: "api_key" as const,
       },
-      { id: KOBE_BUILTIN_CONNECTOR_ID, url: KOBE_BUILTIN_CONNECTOR_URL, toolsHash: "a".repeat(64) },
+      { id: KAIJU_BUILTIN_CONNECTOR_ID, url: KAIJU_BUILTIN_CONNECTOR_URL, toolsHash: "a".repeat(64) },
     ];
     for (const values of bad) {
       // A distinct transaction per attempt: the unique id may conflict before the check.
@@ -117,8 +117,8 @@ describe("the built-in kobe connector row", () => {
 
 describe("the site switch kobe_mcp.mode (KA5)", () => {
   it("defaults to docs, reads a known mode, and treats anything else as docs", async () => {
-    await app.db.delete(siteSettings).where(eq(siteSettings.key, KOBE_MCP_MODE_KEY));
-    expect(await readKobeMcpMode(app.db)).toBe("docs");
+    await app.db.delete(siteSettings).where(eq(siteSettings.key, KAIJU_MCP_MODE_KEY));
+    expect(await readKaijuMcpMode(app.db)).toBe("docs");
     for (const [value, mode] of [
       ["admin", "admin"],
       ["off", "off"],
@@ -127,11 +127,11 @@ describe("the site switch kobe_mcp.mode (KA5)", () => {
     ] as const) {
       await app.db
         .insert(siteSettings)
-        .values({ key: KOBE_MCP_MODE_KEY, value })
+        .values({ key: KAIJU_MCP_MODE_KEY, value })
         .onConflictDoUpdate({ target: siteSettings.key, set: { value } });
-      expect(await readKobeMcpMode(app.db)).toBe(mode);
+      expect(await readKaijuMcpMode(app.db)).toBe(mode);
     }
-    await app.db.delete(siteSettings).where(eq(siteSettings.key, KOBE_MCP_MODE_KEY));
+    await app.db.delete(siteSettings).where(eq(siteSettings.key, KAIJU_MCP_MODE_KEY));
   });
 });
 

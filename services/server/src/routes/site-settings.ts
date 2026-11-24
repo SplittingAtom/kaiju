@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import {
   AUDIT_PII_RETENTION_KEY,
-  KOBE_MCP_MODES,
+  KAIJU_MCP_MODES,
   auditPiiRetentionHoursSchema,
   eq,
   gitAllowedHostsSchema,
@@ -12,19 +12,19 @@ import {
   sessions,
   siteSettings,
   readAuditPiiRetentionHours,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { REQUIRE_TWO_FACTOR, readRequireTwoFactor, type AuthVariables } from "../auth/session.js";
 import { recordAudit } from "../audit/record.js";
 import { requireSitePermission } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import {
-  KOBE_LIMIT_MAX,
-  KOBE_LIMIT_MIN,
-  readKobeLimits,
-  storeKobeLimit,
-} from "../kobe-mcp/limits.js";
-import { readKobeMode, storeKobeMode } from "../kobe-mcp/switches.js";
+  KAIJU_LIMIT_MAX,
+  KAIJU_LIMIT_MIN,
+  readKaijuLimits,
+  storeKaijuLimit,
+} from "../kaiju-mcp/limits.js";
+import { readKaijuMode, storeKaijuMode } from "../kaiju-mcp/switches.js";
 import { storeGitSiteSettings } from "../git/site-settings.js";
 import { readJson } from "../http/request.js";
 
@@ -34,11 +34,11 @@ export const settingsSchema = z
     /** Hours audit rows keep their client IP and user agent (KOBE-17): 1-8760, default 12. */
     auditPiiRetentionHours: auditPiiRetentionHoursSchema.optional(),
     /** The Kaiju MCP site switch (KOBE-623, KA5): `off`, `docs` (default) or `admin`. */
-    kobeMcpMode: z.enum(KOBE_MCP_MODES).optional(),
+    kobeMcpMode: z.enum(KAIJU_MCP_MODES).optional(),
     /** Per-person Kaiju admin reads per minute (KOBE-814): 1-10000, default 60. */
-    kobeReadsPerMinute: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
+    kobeReadsPerMinute: z.number().int().min(KAIJU_LIMIT_MIN).max(KAIJU_LIMIT_MAX).optional(),
     /** Per-person Kaiju admin writes per hour (KOBE-814): 1-10000, default 30. */
-    kobeWritesPerHour: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
+    kobeWritesPerHour: z.number().int().min(KAIJU_LIMIT_MIN).max(KAIJU_LIMIT_MAX).optional(),
     /** Workspace git (KOBE-757, G3): Git connections allowed on this Site (default true). */
     gitConnectionsEnabled: z.boolean().optional(),
     /** Hosts Workspaces may connect to (`github.com`, `*.example.com`); [] = any host. */
@@ -56,7 +56,7 @@ export const settingsSchema = z
     { message: "Change at least one setting." },
   );
 
-async function store(tx: KobeTx, key: string, value: string): Promise<void> {
+async function store(tx: KaijuTx, key: string, value: string): Promise<void> {
   await tx
     .insert(siteSettings)
     .values({ key, value })
@@ -71,12 +71,12 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
   app.use(requireSitePermission("site.settings.manage"));
 
   const current = async () => {
-    const limits = await readKobeLimits(db);
+    const limits = await readKaijuLimits(db);
     const git = await readGitSiteSettings(db);
     return {
       requireTwoFactor: await readRequireTwoFactor(deps),
       auditPiiRetentionHours: await readAuditPiiRetentionHours(db),
-      kobeMcpMode: await readKobeMode(db),
+      kobeMcpMode: await readKaijuMode(db),
       kobeReadsPerMinute: limits.readsPerMinute,
       kobeWritesPerHour: limits.writesPerHour,
       gitConnectionsEnabled: git.enabled,
@@ -140,9 +140,9 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
           target: { setting: "audit_pii_retention_hours", value: auditPiiRetentionHours },
         });
       }
-      if (kobeMcpMode !== undefined) await storeKobeMode(tx, kobeMcpMode);
-      if (kobeReadsPerMinute !== undefined) await storeKobeLimit(tx, "read", kobeReadsPerMinute);
-      if (kobeWritesPerHour !== undefined) await storeKobeLimit(tx, "write", kobeWritesPerHour);
+      if (kobeMcpMode !== undefined) await storeKaijuMode(tx, kobeMcpMode);
+      if (kobeReadsPerMinute !== undefined) await storeKaijuLimit(tx, "read", kobeReadsPerMinute);
+      if (kobeWritesPerHour !== undefined) await storeKaijuLimit(tx, "write", kobeWritesPerHour);
       if (gitConnectionsEnabled !== undefined || gitAllowedHosts !== undefined) {
         await storeGitSiteSettings(tx, {
           ...(gitConnectionsEnabled !== undefined ? { enabled: gitConnectionsEnabled } : {}),
@@ -156,7 +156,7 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
   return app;
 }
 
-async function endSsoSessionsWithoutMfa(tx: KobeTx): Promise<void> {
+async function endSsoSessionsWithoutMfa(tx: KaijuTx): Promise<void> {
   const weak = tx
     .select({ id: sessionSsoContexts.sessionId })
     .from(sessionSsoContexts)

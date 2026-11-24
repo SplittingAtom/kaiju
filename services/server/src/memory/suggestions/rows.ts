@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { semanticMemoryKindSchema, type SemanticMemoryKind } from "@kobe/protocol";
-import { sql, type KobeTx, type MemorySuggestionState } from "@kobe/db";
+import { semanticMemoryKindSchema, type SemanticMemoryKind } from "@kaiju/protocol";
+import { sql, type KaijuTx, type MemorySuggestionState } from "@kaiju/db";
 import { notifyMemoryAll, settleMemoryReminders } from "../../notifications/memory.js";
 import { MemoryItemError } from "../items/errors.js";
 
@@ -108,7 +108,7 @@ function rowsOf(raw: readonly Raw[]): SuggestionRow[] {
 
 /** The open suggestions `userId` may decide: one project's, or every project's (To review). */
 export async function decidableSuggestions(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string },
   projectId?: string,
 ): Promise<SuggestionRow[]> {
@@ -123,7 +123,7 @@ export async function decidableSuggestions(
 
 /** The caller's own suggestions in a project, newest first, in every state. */
 export async function ownSuggestions(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string },
   projectId: string,
 ): Promise<SuggestionRow[]> {
@@ -140,7 +140,7 @@ export const suggestionNotFound = () =>
 
 /** One suggestion, row-locked for a decision (any state: the caller checks). */
 export async function lockSuggestion(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
 ): Promise<SuggestionRow> {
@@ -155,7 +155,7 @@ export async function lockSuggestion(
 }
 
 /** Who decides a project's suggestions: its owners and editors and the Team admins. */
-export async function decidersOf(tx: KobeTx, teamId: string, projectId: string): Promise<string[]> {
+export async function decidersOf(tx: KaijuTx, teamId: string, projectId: string): Promise<string[]> {
   const { rows } = await tx.execute<{ user_id: string }>(sql`
     SELECT user_id FROM project_members
      WHERE team_id = ${teamId} AND project_id = ${projectId} AND role IN ('owner', 'editor')
@@ -172,7 +172,7 @@ export async function decidersOf(tx: KobeTx, teamId: string, projectId: string):
  * (it notifies). Returns the ids it staled.
  */
 export async function staleMovedSuggestions(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId?: string,
 ): Promise<string[]> {

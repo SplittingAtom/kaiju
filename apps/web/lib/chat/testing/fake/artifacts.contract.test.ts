@@ -1,11 +1,11 @@
-import { artifactDetailSchema, artifactListResponseSchema } from "@kobe/protocol";
+import { artifactDetailSchema, artifactListResponseSchema } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call, expectContract } from "./contract";
 
 describe("fake artifacts area: answers parse with the protocol (KOBE-717)", () => {
   it("lists a thread's artifacts and reads one", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const threadId = fake.addThread("T");
     const id = fake.addArtifact(threadId, {
       kind: "markdown",
@@ -22,7 +22,7 @@ describe("fake artifacts area: answers parse with the protocol (KOBE-717)", () =
   });
 
   it("fails on a deliberate drift", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const id = fake.addArtifact(fake.addThread(), {
       kind: "markdown",
       title: "N",

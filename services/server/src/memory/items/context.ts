@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import type { SemanticMemoryOverrides, SemanticMemoryScope } from "@kobe/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import type { SemanticMemoryOverrides, SemanticMemoryScope } from "@kaiju/protocol";
 import { recordAudit, type ServerAuditEvent } from "../../audit/record.js";
 import { readMemorySiteSettings, type MemorySiteSettings } from "../site-settings.js";
 import { readSiteSwitches, readSwitches } from "../switches.js";
@@ -20,7 +20,7 @@ type SQL = ReturnType<typeof sql>;
 
 /** One store call: the scope's location, the switches and Site settings, in one transaction. */
 export interface Op {
-  readonly tx: KobeTx;
+  readonly tx: KaijuTx;
   /** Portable scope: Workspace-wide holds and their members, read before the transaction (M1). */
   readonly portableHolds?: PortableHoldSnapshot;
   readonly loc: Location;
@@ -47,7 +47,7 @@ export interface Op {
  * notices.
  */
 export async function inStore<T>(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: SemanticMemoryScope,
   fn: (op: Op) => Promise<T>,
@@ -59,7 +59,7 @@ export async function inStore<T>(
   // Read before the transaction opens: never a second pooled connection inside it (review M1).
   const portableHolds =
     scope === "portable" && options.prunes ? await snapshotPortableHolds(db) : undefined;
-  const body = async (tx: KobeTx) => {
+  const body = async (tx: KaijuTx) => {
     const op = await openOp(tx, who, scope, portableHolds);
     const value = await fn(op);
     opened.push(op);
@@ -76,7 +76,7 @@ export async function inStore<T>(
  * embedding (background, failing soft: Build vectors embeds anything missed, KOBE-779) and the
  * Site curators' near-full notices go out. Every caller of {@link openOp} that writes ends here.
  */
-export async function afterCommit(db: KobeDb, ops: readonly Op[]): Promise<void> {
+export async function afterCommit(db: KaijuDb, ops: readonly Op[]): Promise<void> {
   for (const op of ops) {
     embedSaved(db, { userId: op.who.userId, teamId: op.who.teamId }, op.loc.scope, op.saved);
   }
@@ -91,7 +91,7 @@ export async function afterCommit(db: KobeDb, ops: readonly Op[]): Promise<void>
  * transaction when a call may prune, and passes its ops to {@link afterCommit} after commit.
  */
 export async function openOp(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: MemoryWho,
   scope: SemanticMemoryScope,
   portableHolds?: PortableHoldSnapshot,

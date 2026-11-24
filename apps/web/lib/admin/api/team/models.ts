@@ -3,7 +3,7 @@
  * team.models.manage; KOBE-40 API, KOBE-44 UI). The whole site catalog, each with whether the
  * team enabled it and which one is the team's default.
  */
-import type { ThinkingControl, ThinkingLevel } from "@kobe/protocol";
+import type { ThinkingControl, ThinkingLevel } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../../api/client";
 import type { CatalogModel, ProviderKind } from "../site/models";
 

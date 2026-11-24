@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import type { GitApproval } from "@kobe/protocol";
+import type { GitApproval } from "@kaiju/protocol";
 import { visible } from "../../lib/security/visible";
 import styles from "./chat.module.css";
 

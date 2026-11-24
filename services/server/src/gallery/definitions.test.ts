@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { agentConnectors, agentSkills } from "@kobe/agent-file";
-import { BUILTIN_TOOLS, KOBE_SKILL_NAMES } from "@kobe/protocol";
+import { agentConnectors, agentSkills } from "@kaiju/agent-file";
+import { BUILTIN_TOOLS, KAIJU_SKILL_NAMES } from "@kaiju/protocol";
 import { computeToolManifest, manifestAllowsTool } from "../agents/manifest.js";
-import { GALLERY_DEFINITIONS, KOBE_GALLERY_KEY, parseGalleryDefinitions } from "./definitions.js";
+import { GALLERY_DEFINITIONS, KAIJU_GALLERY_KEY, parseGalleryDefinitions } from "./definitions.js";
 
 describe("the repo's gallery definitions", () => {
   it("all parse, with unique keys and positive generations", () => {
@@ -19,26 +19,26 @@ describe("the repo's gallery definitions", () => {
 
 describe("the one gallery agent, Kobe (KOBE-254)", () => {
   const parsed = parseGalleryDefinitions(GALLERY_DEFINITIONS);
-  const kobe = parsed[0]?.definition;
-  if (!kobe) throw new Error("no gallery definition");
+  const kaiju = parsed[0]?.definition;
+  if (!kaiju) throw new Error("no gallery definition");
   const floor = { scope: "site", site: [], team: [], approvalFloor: "auto" } as const;
-  const manifest = computeToolManifest(kobe.frontmatter, floor, new Date());
+  const manifest = computeToolManifest(kaiju.frontmatter, floor, new Date());
 
   it("ships exactly one gallery agent, Kobe, at generation 4", () => {
     // 2: the web-search notice is scoped to requests that need the web (review of #240).
     // 3: no built-in web search any more; research goes through connectors (KOBE-606).
-    expect(parsed.map((p) => [p.key, p.generation])).toEqual([[KOBE_GALLERY_KEY, 4]]);
-    expect(KOBE_GALLERY_KEY).toBe("kobe");
-    expect(kobe.frontmatter.name).toBe("Kobe");
-    expect(kobe.frontmatter.description).toBeTruthy();
-    expect(kobe.frontmatter.starters?.length).toBeGreaterThan(0);
+    expect(parsed.map((p) => [p.key, p.generation])).toEqual([[KAIJU_GALLERY_KEY, 4]]);
+    expect(KAIJU_GALLERY_KEY).toBe("kaiju");
+    expect(kaiju.frontmatter.name).toBe("Kobe");
+    expect(kaiju.frontmatter.description).toBeTruthy();
+    expect(kaiju.frontmatter.starters?.length).toBeGreaterThan(0);
   });
 
   it("pins no model, narrows no tool and asks for every team connector", () => {
-    expect(kobe.frontmatter.model).toBeUndefined();
-    expect(kobe.frontmatter.tools).toBeUndefined();
-    expect(kobe.frontmatter.approval_mode).toBeUndefined();
-    expect(agentConnectors(kobe.frontmatter)).toEqual({ all: true, names: [] });
+    expect(kaiju.frontmatter.model).toBeUndefined();
+    expect(kaiju.frontmatter.tools).toBeUndefined();
+    expect(kaiju.frontmatter.approval_mode).toBeUndefined();
+    expect(agentConnectors(kaiju.frontmatter)).toEqual({ all: true, names: [] });
   });
 
   it("freezes every available built-in tool and `all` connectors (ac-1)", () => {
@@ -55,17 +55,17 @@ describe("the one gallery agent, Kobe (KOBE-254)", () => {
   });
 
   it("lists every Kobe skill (the former built-ins), and only those", () => {
-    expect([...agentSkills(kobe.frontmatter).names].sort()).toEqual([...KOBE_SKILL_NAMES].sort());
+    expect([...agentSkills(kaiju.frontmatter).names].sort()).toEqual([...KAIJU_SKILL_NAMES].sort());
   });
 
   it("keeps the prompt general-purpose and concise", () => {
-    expect(kobe.prompt.length).toBeGreaterThan(500);
-    expect(new TextEncoder().encode(kobe.prompt).length).toBeLessThan(5000);
+    expect(kaiju.prompt.length).toBeGreaterThan(500);
+    expect(new TextEncoder().encode(kaiju.prompt).length).toBeLessThan(5000);
   });
 
   it("researches through connectors, with URLs, and never names the retired web_search (KOBE-606)", () => {
-    expect(kobe.prompt).not.toMatch(/web_search|web search/i);
-    const research = kobe.prompt.slice(kobe.prompt.indexOf("Research:"));
+    expect(kaiju.prompt).not.toMatch(/web_search|web search/i);
+    const research = kaiju.prompt.slice(kaiju.prompt.indexOf("Research:"));
     expect(research).toMatch(/^Research: for current or outside facts, use a connector tool/);
     expect(research).toMatch(/URL/);
     // Says so only when a request needs outside facts: never as the opening of every reply.
@@ -74,18 +74,18 @@ describe("the one gallery agent, Kobe (KOBE-254)", () => {
   });
 
   it("carries the Document Drafter's Markdown preview artifact (KOBE-131) and share_file (KOBE-152)", () => {
-    expect(kobe.prompt).toMatch(/docx/);
-    expect(kobe.prompt).toMatch(/create_artifact with kind markdown/);
-    expect(kobe.prompt).toMatch(/update_artifact/);
-    expect(kobe.prompt).toMatch(/share_file/);
+    expect(kaiju.prompt).toMatch(/docx/);
+    expect(kaiju.prompt).toMatch(/create_artifact with kind markdown/);
+    expect(kaiju.prompt).toMatch(/update_artifact/);
+    expect(kaiju.prompt).toMatch(/share_file/);
   });
 
   it("carries the data, code and artifact guidance of the agents it replaced", () => {
-    expect(kobe.prompt).toMatch(/data-analysis skill/);
-    expect(kobe.prompt).toMatch(/html artifact/);
-    expect(kobe.prompt).toMatch(/xlsx/);
-    expect(kobe.prompt).toMatch(/code-review skill/);
-    expect(kobe.prompt).toMatch(/skill-creator skill/);
-    for (const what of ["HTML", "diagram", "table", "code"]) expect(kobe.prompt).toContain(what);
+    expect(kaiju.prompt).toMatch(/data-analysis skill/);
+    expect(kaiju.prompt).toMatch(/html artifact/);
+    expect(kaiju.prompt).toMatch(/xlsx/);
+    expect(kaiju.prompt).toMatch(/code-review skill/);
+    expect(kaiju.prompt).toMatch(/skill-creator skill/);
+    for (const what of ["HTML", "diagram", "table", "code"]) expect(kaiju.prompt).toContain(what);
   });
 });

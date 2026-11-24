@@ -267,7 +267,7 @@ export const fileShareCallShape = {
   input: shareFileInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4) for `share_file`; member of `kobeToolsRequestSchema`. */
+/** kobe-tools request (fd 4) for `share_file`; member of `kaijuToolsRequestSchema`. */
 export const fileShareToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("file.share"),

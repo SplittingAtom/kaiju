@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiError, ApiResult } from "../../lib/api/client";
 import type {
-  KobeNotification,
+  KaijuNotification,
   NotificationPage,
   NotificationsApi,
 } from "../../lib/notifications/api";
@@ -16,11 +16,11 @@ export type ListState =
   | { readonly status: "error"; readonly error: ApiError }
   | {
       readonly status: "ready";
-      readonly items: readonly KobeNotification[];
+      readonly items: readonly KaijuNotification[];
       readonly next: string | null;
     };
 
-const markedRead = (n: KobeNotification, at: string): KobeNotification =>
+const markedRead = (n: KaijuNotification, at: string): KaijuNotification =>
   n.readAt === null ? { ...n, readAt: at } : n;
 
 /** A call that never rejects: a thrown request becomes the client error. */
@@ -35,7 +35,7 @@ interface Marks {
 
 const NO_MARKS: Marks = { ids: new Set(), allAt: null };
 
-function applyMarks(items: readonly KobeNotification[], marks: Marks): KobeNotification[] {
+function applyMarks(items: readonly KaijuNotification[], marks: Marks): KaijuNotification[] {
   return items.map((n) => {
     if (marks.allAt !== null) return markedRead(n, marks.allAt);
     return marks.ids.has(n.notificationId) ? markedRead(n, new Date().toISOString()) : n;

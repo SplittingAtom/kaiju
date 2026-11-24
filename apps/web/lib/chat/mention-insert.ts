@@ -4,7 +4,7 @@
  * marker the send appends, so it is listed in `mentions[]` and the server validates it as for any
  * pick (KOBE-223).
  */
-import { MENTION_MAX_PER_MESSAGE, mentionPathIssue } from "@kobe/protocol";
+import { MENTION_MAX_PER_MESSAGE, mentionPathIssue } from "@kaiju/protocol";
 
 export const MENTION_FOLDER_REFUSED =
   "Folders can't be mentioned. Mention a file inside the folder instead.";

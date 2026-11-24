@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createChatApi } from "./api";
-import { FakeKobe } from "./testing/fake-kobe";
+import { FakeKaiju } from "./testing/fake-kaiju";
 import { conversationMarkdown } from "./thread-copy";
 import { LONG_ANSWER_LEFT_OUT, MESSAGES_LEFT_OUT } from "./thread-menu";
 
 /** KOBE-292 review: Copy reads every page and says what it could not include. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 beforeEach(() => {
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
 });
 
 const say = (text: string) => ({ role: "assistant", content: [{ type: "text", text }] });

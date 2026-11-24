@@ -6,9 +6,9 @@ import {
   sql,
   ssoIdentities,
   users,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { hasLocalPassword } from "../../auth/reset-links.js";
 import { endSsoSessions, isProtectedUser } from "../sso-sessions.js";
@@ -62,7 +62,7 @@ export function scimAddressVerified(
 }
 
 export interface ScimContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly lifecycle: UserLifecycle;
   readonly provider: ScimProvider;
   readonly credentialId: string;
@@ -151,7 +151,7 @@ function whereFilter(providerId: string, filter: UserFilter | null): ReturnType<
 
 /** One page of the provider's Users matching `filter`, and how many match in all. */
 export async function listScimUsers(
-  db: KobeDb,
+  db: KaijuDb,
   providerId: string,
   filter: UserFilter | null,
   startIndex: number,
@@ -178,7 +178,7 @@ export async function listScimUsers(
 }
 
 async function readUser(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   providerId: string,
   userId: string,
   lock = false,
@@ -194,7 +194,7 @@ async function readUser(
 }
 
 export function getScimUser(
-  db: KobeDb,
+  db: KaijuDb,
   providerId: string,
   userId: string,
 ): Promise<ScimUserRow | undefined> {

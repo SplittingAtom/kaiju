@@ -1,5 +1,5 @@
-import { MIN_SECRET_LENGTH } from "@kobe/db";
-import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kobe/session-token";
+import { MIN_SECRET_LENGTH } from "@kaiju/db";
+import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kaiju/session-token";
 import { z } from "zod";
 
 /**

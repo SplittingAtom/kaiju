@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
-import { runSemanticMemorySchema, semanticMemoryRenderedBytes } from "@kobe/protocol";
+import { withTeam } from "@kaiju/db";
+import { runSemanticMemorySchema, semanticMemoryRenderedBytes } from "@kaiju/protocol";
 import { startVectorLeg } from "./items/vector-leg.js";
 import { storedVectorModel } from "./embeddings/prefixes.js";
 import { BackgroundTasks } from "../background.js";

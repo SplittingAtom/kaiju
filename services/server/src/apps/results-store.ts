@@ -6,10 +6,10 @@ import {
   sql,
   threadAppResults,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type ThreadAppResultStorage,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { logger } from "../logger.js";
 import { threadKey, type BlobStore } from "../retention/blobs.js";
 import { teamStorageAllows } from "../uploads/quota.js";
@@ -26,7 +26,7 @@ import type { CaptureClaims } from "./capture-ticket.js";
  * then the row and the queue entry's removal in one transaction; a refusal deletes the upload.
  */
 export interface AppResultStoreDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly defaultQuotaBytes: number;
 }
@@ -43,7 +43,7 @@ export const MAX_UNCLAIMED_PER_RUN = 20;
 
 const PENDING_GRACE = sql.raw(`interval '1 hour'`);
 
-async function unclaimed(tx: KobeTx, claims: CaptureClaims): Promise<number> {
+async function unclaimed(tx: KaijuTx, claims: CaptureClaims): Promise<number> {
   const res = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM thread_app_results
      WHERE team_id = ${claims.teamId} AND run_id = ${claims.runId}
@@ -58,7 +58,7 @@ async function unclaimed(tx: KobeTx, claims: CaptureClaims): Promise<number> {
  * `FOR UPDATE` (KOBE-266, re-review LOW-K): foreign-key checks of the run's events and approvals
  * take `FOR KEY SHARE` and must not wait on a store.
  */
-async function runActive(tx: KobeTx, claims: CaptureClaims): Promise<boolean> {
+async function runActive(tx: KaijuTx, claims: CaptureClaims): Promise<boolean> {
   const res = await tx.execute<{ status: string }>(sql`
     SELECT status FROM runs
      WHERE team_id = ${claims.teamId} AND id = ${claims.runId} AND thread_id = ${claims.threadId}
@@ -119,7 +119,7 @@ export interface ResultContent {
  * goes with it.
  */
 export type ResultRowWriter<T> = (
-  tx: KobeTx,
+  tx: KaijuTx,
   storage: ThreadAppResultStorage,
   content: ResultContent,
   bytes: number,

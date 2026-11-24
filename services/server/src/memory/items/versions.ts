@@ -1,5 +1,5 @@
-import { lockLegalHolds, sql, type KobeTx } from "@kobe/db";
-import type { SemanticMemoryActorKind } from "@kobe/protocol";
+import { lockLegalHolds, sql, type KaijuTx } from "@kaiju/db";
+import type { SemanticMemoryActorKind } from "@kaiju/protocol";
 import {
   portableHoldsUnchanged,
   portableOwnerUnheld,
@@ -35,7 +35,7 @@ export interface NewVersion {
  * embedding).
  */
 export interface VersionTarget {
-  readonly tx: KobeTx;
+  readonly tx: KaijuTx;
   readonly loc: Location;
   readonly saved: string[];
 }
@@ -83,7 +83,7 @@ export async function insertVersion(op: VersionTarget, v: NewVersion): Promise<v
  */
 async function held(
   portableHolds: PortableHoldSnapshot | undefined,
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   itemId: string,
   owner: string | null,
@@ -134,7 +134,7 @@ const MAX_REFUSED_PER_WRITE = 2;
 export async function pruneVersions(
   /** Portable items: the Workspace-wide holds read before the transaction (`Op.portableHolds`). */
   portableHolds: PortableHoldSnapshot | undefined,
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   item: { readonly id: string; readonly currentVersion: number; readonly owner: string | null },
   cap: number,

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { uploadErrorSchema, uploadResponseSchema } from "@kobe/protocol";
+import { uploadErrorSchema, uploadResponseSchema } from "@kaiju/protocol";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 import { RawBody } from "../testing/browser.js";
 import { EICAR, startFakeClamd, type FakeClamd } from "../testing/fake-clamd.js";
@@ -13,7 +13,7 @@ import type { UploadSettings } from "./settings.js";
  */
 const fx = new EventStreamFixture();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 let clamd: FakeClamd;
 
 beforeAll(async () => {

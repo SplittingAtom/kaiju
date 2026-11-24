@@ -9,9 +9,9 @@ source e2e/executor/trials.sh # helpers (in_owner, tool_said, ...)
 
 contains "the sandbox agent runs with the tool executor on (pod env from the chart flag)" '^true$' \
   "$(in_owner 'printenv KOBE_TOOL_EXECUTOR')"
-$KUBECTL -n "$TEAM_NS" exec -i "$(owner_pod_now)" -c agent -- sh -c 'cat > /workspace/.kobe168-probe.sh && chmod 0664 /workspace/.kobe168-probe.sh' \
+$KUBECTL -n "$TEAM_NS" exec -i "$(owner_pod_now)" -c agent -- sh -c 'cat > /workspace/.kaiju168-probe.sh && chmod 0664 /workspace/.kaiju168-probe.sh' \
   <"$EXEC_DIR/probe.sh" >/dev/null 2>&1 || true
-in_owner 'rm -f /workspace/.kobe168-plant-loaded' >/dev/null
+in_owner 'rm -f /workspace/.kaiju168-plant-loaded' >/dev/null
 
 # Thread B: a long tool call keeps its Pi and executor alive while thread A's tool probes.
 b_out_file=$(mktemp)
@@ -29,7 +29,7 @@ contains "the executor is its own process, measured (RSS)" '^[0-9]+$' "$rss_line
 if [[ "$rss_line" =~ ^[0-9]+$ ]] && ((rss_line < 262144)); then ok "executor RSS under 256 MiB (${rss_line} KiB)"
 else fail "executor RSS under 256 MiB (got ${rss_line:-none} KiB)"; fi
 
-probe_out=$(chat_run "bash: sh /workspace/.kobe168-probe.sh" 240000)
+probe_out=$(chat_run "bash: sh /workspace/.kaiju168-probe.sh" 240000)
 probe=$(tool_said "$probe_out")
 printf '     probe: %s\n' "$probe"
 contains "thread A's run completed and the probe ran" 'END$' "$probe"
@@ -66,15 +66,15 @@ contains "thread B ended run.completed" '^terminal=run.completed$' "$b_out"
 
 # The other half of workspace sharing, from the agent's and a Pi uid's side.
 contains "workspace: the agent (uid 1000) can append to the tool's file" '^appended$' \
-  "$(in_owner 'echo agent >> /workspace/kobe168/from-tool.txt && echo appended')"
+  "$(in_owner 'echo agent >> /workspace/kaiju168/from-tool.txt && echo appended')"
 contains "workspace: a Pi uid can append to the tool's file (shared by group 1000)" '^appended$' \
-  "$(in_owner 'R=/opt/kobe/bin/kobe-runas; $R 2015 sh -c "echo pi >> /workspace/kobe168/from-tool.txt" && echo appended')"
+  "$(in_owner 'R=/opt/kobe/bin/kobe-runas; $R 2015 sh -c "echo pi >> /workspace/kaiju168/from-tool.txt" && echo appended')"
 contains "workspace: the directory is setgid group 1000 so new files stay shared" '^[0-9]*:1000:2775$' \
-  "$(in_owner 'stat -c "%u:%g:%a" /workspace/kobe168')"
+  "$(in_owner 'stat -c "%u:%g:%a" /workspace/kaiju168')"
 
 # Planted code is not loaded by a later Pi: thread C starts a fresh Pi, which must not run the
 # module thread A's tool left in the tool's HOME (and records no uid in 2000-2063 if it did).
 c_out=$(chat_run "hello-plant-$RANDOM" 240000)
 contains "a later thread's Pi starts and answers" '^terminal=run.completed$' "$c_out"
-plant_log=$(in_owner 'cat /workspace/.kobe168-plant-loaded 2>/dev/null | sort -u | tr "\n" " "')
+plant_log=$(in_owner 'cat /workspace/.kaiju168-plant-loaded 2>/dev/null | sort -u | tr "\n" " "')
 contains "the plant exists and only the tool's own control run loaded it (no Pi uid)" '^30[0-9]{2} $' "$plant_log"

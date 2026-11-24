@@ -10,13 +10,13 @@ import {
 import userEvent from "@testing-library/user-event";
 import { expect } from "vitest";
 import type { UploadTransport } from "../../lib/chat/uploads";
-import type { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import type { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import { ChatApp } from "./chat-app";
 
 /** Renders the chat app over the fake server, optionally on a thread (`?thread=`). */
 export function openApp(
-  fake: FakeKobe,
+  fake: FakeKaiju,
   threadId?: string,
   uploadTransport?: UploadTransport,
   search = "",
@@ -44,7 +44,7 @@ export async function openRowMenu(name: string): Promise<HTMLElement> {
   return screen.findByRole("menu", { name });
 }
 
-export function chatRequests(fake: FakeKobe, method?: string) {
+export function chatRequests(fake: FakeKaiju, method?: string) {
   return fake.requests.filter(
     (r) =>
       (r.path.startsWith("/v1/threads") || r.path.startsWith("/v1/runs")) &&
@@ -53,7 +53,7 @@ export function chatRequests(fake: FakeKobe, method?: string) {
 }
 
 /** Waits until the browser holds exactly one stream, for `runId` if given. */
-export async function streaming(fake: FakeKobe, runId?: string) {
+export async function streaming(fake: FakeKaiju, runId?: string) {
   await waitFor(() => {
     expect(fake.openStreams.map((s) => s.runId)).toEqual(runId ? [runId] : [expect.any(String)]);
     expect(fake.openStreams[0]?.readyState).toBe(1);
@@ -75,7 +75,7 @@ export async function closeThreads(): Promise<void> {
 
 /** The status line screen readers hear (the thread's polite live region, not the phase one). */
 export function announcement(): string {
-  const live = document.querySelector('[aria-live="polite"]:not([data-kobe-phase-live])');
+  const live = document.querySelector('[aria-live="polite"]:not([data-kaiju-phase-live])');
   return (live?.textContent ?? "").replace(/\u00a0/g, "");
 }
 
@@ -131,7 +131,7 @@ function visibleText(el: Element): string {
  * layout, so this checks attributes and classes, not pixels.
  */
 export function crushedIconButtons(root: ParentNode = document): string[] {
-  return [...root.querySelectorAll("[data-kobe-chat] button:not([data-slot])")]
+  return [...root.querySelectorAll("[data-kaiju-chat] button:not([data-slot])")]
     .filter((b) => b.querySelector("svg, img") !== null && visibleText(b) === "")
     .filter((b) => ![...b.classList].some((c) => INLINE_PADDING.test(c)))
     .map(

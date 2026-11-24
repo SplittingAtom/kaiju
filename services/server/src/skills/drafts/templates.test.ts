@@ -1,5 +1,5 @@
-import { canonicalZip } from "@kobe/protocol";
-import { scanSkillBundle } from "@kobe/skill-scanner";
+import { canonicalZip } from "@kaiju/protocol";
+import { scanSkillBundle } from "@kaiju/skill-scanner";
 import { describe, expect, it } from "vitest";
 import { validateZipBundle } from "../bundle.js";
 import { TEMPLATE_IDS, templateFiles, templates } from "./templates.js";

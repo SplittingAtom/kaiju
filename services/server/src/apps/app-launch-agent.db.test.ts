@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_APP_CARDS } from "@kobe/protocol";
+import { CAPABILITY_APP_CARDS } from "@kaiju/protocol";
 import { seedGalleryAgents } from "../gallery/seed.js";
 import {
   pinnedApp,
@@ -20,7 +20,7 @@ import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
  */
 const CAPS = ["skill_bundles", CAPABILITY_APP_CARDS];
 const f = new RunFixture();
-let kobe = "";
+let kaiju = "";
 
 beforeAll(async () => {
   await f.setup({
@@ -29,8 +29,8 @@ beforeAll(async () => {
     },
   });
   const [seeded] = await seedGalleryAgents(f.fx.db);
-  kobe = seeded?.agentId ?? "";
-  expect(kobe).not.toBe("");
+  kaiju = seeded?.agentId ?? "";
+  expect(kaiju).not.toBe("");
 });
 afterAll(() => f.teardown());
 
@@ -59,18 +59,18 @@ describe("an app launch starts the thread with the new-conversation agent (KOBE-
     const defaults = (listed.json.agents as { id: string; default?: boolean }[]).filter(
       (a) => a.default === true,
     );
-    expect(defaults.map((a) => a.id)).toEqual([kobe]);
+    expect(defaults.map((a) => a.id)).toEqual([kaiju]);
 
     const res = await launchNew(w, { app_id: appId });
     expect(res.status, JSON.stringify(res.json)).toBe(201);
     const threadId = res.json.thread_id as string;
     expect(await threadAgent(f, threadId)).toMatchObject({
-      agent_id: kobe,
+      agent_id: kaiju,
       agent_scope: "gallery",
     });
     expect((await threadAgent(f, threadId))?.agent_version).toBeGreaterThanOrEqual(1);
     const read = await w.owner.browser.get(`/v1/threads/${threadId}`);
-    expect(read.json).toMatchObject({ agent_id: kobe, agent_name: "Kobe" });
+    expect(read.json).toMatchObject({ agent_id: kaiju, agent_name: "Kobe" });
   });
 
   it("offers the member's connectors, the app's own included, on the first run (ac-2)", async () => {
@@ -93,7 +93,7 @@ describe("an app launch starts the thread with the new-conversation agent (KOBE-
     await f.fx.admin.query(
       `INSERT INTO team_agent_suspensions (team_id, agent_id, agent_scope, suspended_by)
        VALUES ($1, $2, 'gallery', $3)`,
-      [w.team, kobe, w.owner.id],
+      [w.team, kaiju, w.owner.id],
     );
     const res = await launchNew(w, { app_id: appId });
     expect(res.status, JSON.stringify(res.json)).toBe(201);
@@ -174,7 +174,7 @@ describe("the new-conversation view's choices go with the launch (KOBE-458 revie
     const threadId = await f.thread(w.owner);
     const res = await w.owner.browser.post(`/v1/threads/${threadId}/app-cards`, {
       app_id: appId,
-      agent_id: kobe,
+      agent_id: kaiju,
     });
     expect(res.status).toBe(400);
   });

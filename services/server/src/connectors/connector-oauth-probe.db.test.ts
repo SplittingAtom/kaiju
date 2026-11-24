@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { loadEnvelope } from "@kobe/db";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
+import { loadEnvelope } from "@kaiju/db";
 import type { ProbeCredentialKind, ProbeResult } from "./probe.js";
 import { RefreshGate } from "./oauth/refresh-gate.js";
 import { refreshConnector } from "./refresh.js";

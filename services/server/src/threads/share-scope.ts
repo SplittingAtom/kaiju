@@ -1,4 +1,4 @@
-import type { ThreadVisibility } from "@kobe/protocol";
+import type { ThreadVisibility } from "@kaiju/protocol";
 import {
   and,
   eq,
@@ -7,9 +7,9 @@ import {
   SYSTEM_ACTOR,
   threads,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { notifyThreadAccess } from "../event-stream/access.js";
 import { canCreateInProject } from "./references.js";
@@ -24,7 +24,7 @@ import type { SummaryRow, ThreadError, Viewer } from "./repository.js";
 
 /** Why `thread` can't move to `target`, or null. Revoking (`private`) is always allowed. */
 export async function shareScopeRefusal(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   thread: SummaryRow,
   target: ThreadVisibility,
@@ -54,7 +54,7 @@ export function applyShareScope(
  * and, when readers may have lost access, has their open streams recheck at once.
  */
 export async function recordShareScope(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   before: SummaryRow,
   after: SummaryRow,
@@ -83,7 +83,7 @@ export async function recordShareScope(
  * able to revoke it. Each is audited (`thread.sharing_changed`, system actor) and open reader
  * streams recheck at once. Returns how many threads were made private.
  */
-export async function endSharesOf(tx: KobeTx, teamId: string, userId: string): Promise<number> {
+export async function endSharesOf(tx: KaijuTx, teamId: string, userId: string): Promise<number> {
   const shared = await tx
     .select({
       id: threads.id,
@@ -136,7 +136,7 @@ export async function endSharesOf(tx: KobeTx, teamId: string, userId: string): P
  * failed, so the step is reported as incomplete; reads already ignore the shares of a deactivated
  * owner (`sharedWith`), so a failure never leaves them readable.
  */
-export async function endUserShares(db: KobeDb, userId: string): Promise<void> {
+export async function endUserShares(db: KaijuDb, userId: string): Promise<void> {
   const teams = await listMemberships(db, userId);
   const failures: unknown[] = [];
   for (const { teamId } of teams) {

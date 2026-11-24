@@ -14,7 +14,7 @@ describe("-- kobe:no-transaction migrations (KOBE-734)", () => {
       true,
     );
     expect(isNoTransaction("CREATE TABLE a ();\n-- kobe:no-transaction")).toBe(false);
-    expect(isNoTransaction("-- kobe:no-transactions\nX")).toBe(false);
+    expect(isNoTransaction("-- kaiju:no-transactions\nX")).toBe(false);
   });
 
   it("names the index a concurrent build creates", () => {

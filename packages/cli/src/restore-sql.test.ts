@@ -204,7 +204,7 @@ describe("restore postlude", () => {
     expect(verify).toBeGreaterThan(audited.indexOf('ENABLE TRIGGER "audit ""x""";'));
     expect(verify).toBeLessThan(insert);
     expect(insert).toBeLessThan(audited.indexOf("COMMIT;"));
-    expect(audited).toContain("kobe restore: the audit chain in the backup is broken");
+    expect(audited).toContain("kaiju restore: the audit chain in the backup is broken");
     expect(audited).toContain(`head_seq = 7 AND head_hash = '${"a".repeat(64)}'`);
     expect(audited).toContain(`WHERE seq = 3 AND hash = '${"b".repeat(64)}'`);
     expect(audited).toContain(`'operator', 'ops.jane'`);

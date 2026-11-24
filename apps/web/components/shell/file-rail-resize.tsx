@@ -1,6 +1,6 @@
 "use client";
 
-import { THREADS_FILE_RAIL_WIDTH_BOUNDS } from "@kobe/protocol";
+import { THREADS_FILE_RAIL_WIDTH_BOUNDS } from "@kaiju/protocol";
 import { useCallback, type CSSProperties } from "react";
 import { useShellPreferences, useStoredPreference } from "../../lib/shell/preferences";
 import { useSplitter, type SplitterRange } from "./use-splitter";
@@ -19,7 +19,7 @@ import { useSplitter, type SplitterRange } from "./use-splitter";
  */
 export const FILE_RAIL_ID = "kobe-threads-file-rail";
 const THREADS_VAR = "--kobe-threads-col";
-const RAIL_VAR = "--kobe-file-rail-col";
+const RAIL_VAR = "--kaiju-file-rail-col";
 const RAIL_MIN_PX = THREADS_FILE_RAIL_WIDTH_BOUNDS.min;
 /** The folder column (200 px), the two 1 px dividers and the four 12 px gaps. */
 const FIXED_PX = 200 + 2 + 4 * 12;
@@ -29,7 +29,7 @@ const STEP_PX = 24;
 
 /** The body's grid: its thread and rail columns come from two custom properties. */
 export const THREE_RAIL_COLUMNS =
-  "grid-cols-[200px_1px_var(--kobe-threads-col)_1px_var(--kobe-file-rail-col)]";
+  "grid-cols-[200px_1px_var(--kobe-threads-col)_1px_var(--kaiju-file-rail-col)]";
 
 /** The two columns for a width (null: the default). */
 export function railColumns(width: number | null): { threads: string; rail: string } {
@@ -51,7 +51,7 @@ function setColumns(body: HTMLElement | null, width: number | null): void {
 }
 
 function regions(handle: HTMLElement | null) {
-  const body = handle?.closest<HTMLElement>("[data-kobe-threads-body]") ?? null;
+  const body = handle?.closest<HTMLElement>("[data-kaiju-threads-body]") ?? null;
   const rail = body?.querySelector<HTMLElement>(`#${FILE_RAIL_ID}`) ?? null;
   return { body, rail };
 }
@@ -124,7 +124,7 @@ export function FileRailResizeHandle({
     reversed: true,
     // Unmounted mid-drag: the body shows the committed width again.
     revert: () => {
-      setColumns(document.querySelector<HTMLElement>("[data-kobe-threads-body]"), width);
+      setColumns(document.querySelector<HTMLElement>("[data-kaiju-threads-body]"), width);
     },
     step: STEP_PX,
     fallback: { value: width ?? RAIL_MIN_PX, min: RAIL_MIN_PX, max: RAIL_MIN_PX },
@@ -134,7 +134,7 @@ export function FileRailResizeHandle({
       {...splitter}
       aria-label="Resize the workspace files"
       aria-controls={FILE_RAIL_ID}
-      data-kobe-file-rail-handle=""
+      data-kaiju-file-rail-handle=""
       className="group relative z-20 flex w-px cursor-col-resize touch-none justify-center self-stretch outline-none"
     >
       {/* A wider strip to grab than the 1 px line it shows. */}

@@ -60,7 +60,7 @@ describe("projectThread: root branches (KOBE-214)", () => {
     ]);
     expect(p.headId).toBe("empty:k1");
     expect(p.items.at(-1)?.message.content).toEqual([
-      { type: "data-kobe-problem", data: { reason: "empty", message: EMPTY_VERSION_NOTE } },
+      { type: "data-kaiju-problem", data: { reason: "empty", message: EMPTY_VERSION_NOTE } },
     ]);
     // Choosing that version again puts the leaf back where the next message continues.
     expect(p.lastEntryOfNode.get("empty:k1")).toBe("k1");

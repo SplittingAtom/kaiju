@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { sql } from "@kobe/db";
-import { semanticMemoryItemDetailSchema } from "@kobe/protocol";
+import { sql } from "@kaiju/db";
+import { semanticMemoryItemDetailSchema } from "@kaiju/protocol";
 import { SiteHoldIsolationError, siteMemoryHeld, withSiteMemoryPurge } from "./site-memory-hold.js";
 import { logger } from "../logger.js";
 import { tagsFingerprint } from "../memory/items/tag-fingerprint.js";

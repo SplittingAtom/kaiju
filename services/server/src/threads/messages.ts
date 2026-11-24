@@ -1,5 +1,5 @@
-import { splitAppContext, splitItemReferences, splitSkillRequest } from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+import { splitAppContext, splitItemReferences, splitSkillRequest } from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 export { cutText } from "./entry-output.js";
 
@@ -44,7 +44,7 @@ export function memberText(text: string): string {
 
 /** The thread's first user message (by append order), or undefined before there is one. */
 export async function firstUserMessage(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<FirstMessage | undefined> {
@@ -60,7 +60,7 @@ export async function firstUserMessage(
 
 /** The text of the first assistant message after `seq` that has any (the answer's start). */
 export async function firstAnswerAfter(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   seq: number,
@@ -87,7 +87,7 @@ export const MESSAGE_COUNT_SCAN = 1_000;
  * message entries (review L4): `capped` says the thread has more.
  */
 export async function messageCount(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<{ readonly count: number; readonly capped: boolean }> {
@@ -118,7 +118,7 @@ export interface LastExchange {
  * the follow-up call (KOBE-222) quotes. Undefined when there is no user message with text.
  */
 export async function lastExchange(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<LastExchange | undefined> {

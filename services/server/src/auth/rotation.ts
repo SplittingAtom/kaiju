@@ -1,5 +1,5 @@
 import { createAuthMiddleware, isAPIError } from "better-auth/api";
-import { and, eq, gt, sessions, sessionSsoContexts, type KobeDb } from "@kobe/db";
+import { and, eq, gt, sessions, sessionSsoContexts, type KaijuDb } from "@kaiju/db";
 import { revokeResetLinks } from "./reset-links.js";
 
 /**
@@ -18,7 +18,7 @@ const SESSION_ROTATING_PATHS = new Set([
 
 type SsoContextRow = typeof sessionSsoContexts.$inferSelect;
 
-async function ssoContextOf(db: KobeDb, sessionId: string): Promise<SsoContextRow | undefined> {
+async function ssoContextOf(db: KaijuDb, sessionId: string): Promise<SsoContextRow | undefined> {
   const [row] = await db
     .select()
     .from(sessionSsoContexts)
@@ -40,7 +40,7 @@ export type SessionRotation = ReturnType<typeof sessionRotation>;
  * `after` (Better Auth's after hook) carries it over to the new session and applies the
  * post-change revocations.
  */
-export function sessionRotation(db: KobeDb) {
+export function sessionRotation(db: KaijuDb) {
   const rotatingFrom = new WeakMap<
     object,
     { userId: string; createdAt: Date; context: SsoContextRow }

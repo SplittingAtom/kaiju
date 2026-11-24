@@ -1,10 +1,10 @@
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { requireTeam, type TeamVariables } from "../authz/middleware.js";
 import { teamRoleAllows } from "../authz/permissions.js";
 import type { ServerDeps } from "../deps.js";
-import { SKILL_ACCESS_MODES } from "@kobe/protocol";
+import { SKILL_ACCESS_MODES } from "@kaiju/protocol";
 import { setTeamSkillAccess } from "../skills/access.js";
 import { MAX_OFFERED_SKILLS, agentNames, setOfferToAll, skillReach } from "../skills/reach.js";
 import { findSkill, type SkillLocation, type SkillRecord } from "../skills/store.js";

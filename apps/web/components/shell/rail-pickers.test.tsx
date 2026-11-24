@@ -3,7 +3,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { RAIL_WIDTH_VAR } from "../../lib/shell/rail-width";
 import { must } from "../../lib/testing/must";
@@ -19,7 +19,7 @@ import { PICKER_RAIL_PX } from "./rail-pickers";
  * runs live in the rail (the cards' frame route and bridge), its `ui/message` fills the draft on
  * screen and never sends, its context is a chip there, and its calls name the thread on screen.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -30,7 +30,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   resizeWindow(DESKTOP_WIDTH);
 });
@@ -167,7 +167,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
       `/v1/team/apps/${PICKER.appId}/frame?team=${fake.teamId}&sha256=${PICKER.sha256}`,
     );
     expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
-    expect(must(frame.closest("[data-kobe-rail-picker]"))).toBeTruthy();
+    expect(must(frame.closest("[data-kaiju-rail-picker]"))).toBeTruthy();
 
     await userEvent.setup().selectOptions(pickerSelect(section), "");
     await waitFor(() => expect(screen.queryByTitle(PICKER_FRAME)).toBeNull());
@@ -250,7 +250,7 @@ describe("the live picker (KOBE-460 ac-4, ac-6)", () => {
     await waitFor(() =>
       expect(picker.replies()).toContainEqual({ jsonrpc: "2.0", id: 7, result: {} }),
     );
-    expect(document.querySelector("[data-kobe-app-insert-from]")?.textContent).toContain(
+    expect(document.querySelector("[data-kaiju-app-insert-from]")?.textContent).toContain(
       "From Lakehouse Picker",
     );
     await flush();

@@ -37,7 +37,7 @@ describe("createKubeClient timeouts (KOBE-732)", () => {
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address();
     if (address === null || typeof address === "string") throw new Error("no port");
-    const dir = mkdtempSync(join(tmpdir(), "kobe-kube-"));
+    const dir = mkdtempSync(join(tmpdir(), "kaiju-kube-"));
     const file = join(dir, "config");
     writeFileSync(
       file,

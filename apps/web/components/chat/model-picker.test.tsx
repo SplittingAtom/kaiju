@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chatRequests, composer, openApp, streaming } from "./testing";
 
@@ -11,11 +11,11 @@ import { chatRequests, composer, openApp, streaming } from "./testing";
  * enabled models; the default is the team default; the choice is saved on the thread and a model
  * the team disabled since shows as unavailable.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   // The real test install: Ollama Cloud, kimi-k2.7-code the default, glm-5.3 enabled.
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },

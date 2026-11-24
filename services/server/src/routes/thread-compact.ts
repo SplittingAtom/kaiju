@@ -3,7 +3,7 @@ import {
   COMPACT_THREAD_ERROR_HTTP_STATUS,
   compactThreadError,
   compactThreadRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { CompactionError } from "../runs/compaction.js";

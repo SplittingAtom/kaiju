@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SYSTEM_PROMPT_MAX_BYTES, type ApprovalToken, type PolicyReason } from "../index.js";
 import {
-  KOBE_EVENT_DROPPED_TYPE,
+  KAIJU_EVENT_DROPPED_TYPE,
   MODEL_LIMITS_MAX_TOKENS,
   SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
   SANDBOX_MAX_FRAME_BYTES,
@@ -9,7 +9,7 @@ import {
   decodeSandboxFrame,
   decodeServerFrame,
   encodeFrame,
-  kobeEventDroppedSchema,
+  kaijuEventDroppedSchema,
   parseTranslatedPiEvent,
   piGetEntriesDataSchema,
   type SandboxToServerFrame,
@@ -572,11 +572,11 @@ describe("contracts cleanup (agent-reported gaps)", () => {
 
   it("describes the kobe.event_dropped placeholder, which the translator ignores", () => {
     const placeholder = {
-      type: KOBE_EVENT_DROPPED_TYPE,
+      type: KAIJU_EVENT_DROPPED_TYPE,
       original_type: "message_update",
       reason: "frame_too_large",
     };
-    expect(kobeEventDroppedSchema.parse(placeholder)).toEqual(placeholder);
+    expect(kaijuEventDroppedSchema.parse(placeholder)).toEqual(placeholder);
     expect(parseTranslatedPiEvent(placeholder)).toEqual({ kind: "ignored" });
     expect(
       decodeSandboxFrame(

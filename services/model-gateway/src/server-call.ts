@@ -12,16 +12,16 @@ import {
   serverCallRequestSchema,
   type ServerCallClaims,
   type ServerCallTokenPurpose,
-} from "@kobe/protocol";
-import { verifyServerCallToken, type SessionVerifyKeys } from "@kobe/session-token";
+} from "@kaiju/protocol";
+import { verifyServerCallToken, type SessionVerifyKeys } from "@kaiju/session-token";
 import { isUsageKind } from "./usage/kind.js";
-import type { ServerCallPassClaim, ServerCallRunClaim } from "@kobe/db";
+import type { ServerCallPassClaim, ServerCallRunClaim } from "@kaiju/db";
 import { CREDENTIAL_HEADERS } from "./credentials.js";
 import type { CallLimiter, RequestRate } from "./limits.js";
 import type { Route } from "./routes.js";
 
 /**
- * Server-originated model calls (KOBE-234; contract in `@kobe/protocol` server-call.ts, design in
+ * Server-originated model calls (KOBE-234; contract in `@kaiju/protocol` server-call.ts, design in
  * docs/design/server-model-calls.md). A request carrying {@link SERVER_CALL_TOKEN_HEADER} is a
  * server call and nothing else: the header alone (no API-key header, `?key=`, run token or run id
  * beside it), a verified token never used before on this replica, the one route, and a body of the

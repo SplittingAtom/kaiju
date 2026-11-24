@@ -1,4 +1,4 @@
-import type { SemanticMemoryScope } from "@kobe/protocol";
+import type { SemanticMemoryScope } from "@kaiju/protocol";
 
 /**
  * The saved memories each run's `recall` answers named (KOBE-399), per sandbox connection, so

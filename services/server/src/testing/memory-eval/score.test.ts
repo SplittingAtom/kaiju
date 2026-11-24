@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { SemanticMemoryKind } from "@kobe/protocol";
+import type { SemanticMemoryKind } from "@kaiju/protocol";
 import type { Candidate, SelectLane } from "../../memory/items/select.js";
 import {
   cacheShares,

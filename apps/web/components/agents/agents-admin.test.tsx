@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import type { AgentRosterUsage } from "@kobe/protocol";
+import type { AgentRosterUsage } from "@kaiju/protocol";
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -121,7 +121,7 @@ const SITE_PROPOSAL = row({
 });
 
 const GALLERY_STATE = {
-  key: "kobe",
+  key: "kaiju",
   generation: 3,
   customized: true,
   customizedAt: "2026-10-30T10:00:00Z",
@@ -260,14 +260,14 @@ describe("Site tab as a site admin: the Gallery page's actions (ac-1)", () => {
       ],
     });
     renderTeam(<Page search="tab=site" />, SITE_ADMIN);
-    const kobe = await rowOf("Kobe");
-    expect(await within(kobe).findByText("Customized")).toBeTruthy();
+    const kaiju = await rowOf("Kobe");
+    expect(await within(kaiju).findByText("Customized")).toBeTruthy();
     expect(
-      within(kobe)
+      within(kaiju)
         .getByRole("link", { name: /Edit\s+Kobe/ })
         .getAttribute("href"),
     ).toBe("/admin/site/gallery/g-1");
-    expect(within(kobe).getByText("Not evaluated")).toBeTruthy();
+    expect(within(kaiju).getByText("Not evaluated")).toBeTruthy();
     expect(screen.getByText(/A newer repository version of Kobe is available/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: /^Compare/ }));
     expect(await screen.findByText("repository file")).toBeTruthy();
@@ -351,7 +351,7 @@ describe("Site tab as a site admin: the Gallery page's actions (ac-1)", () => {
     await rowAction("Kobe", "Export file");
     await waitFor(() =>
       expect(clicked).toEqual([
-        { href: "/v1/site/gallery/agents/g-1/export", download: "kobe.md" },
+        { href: "/v1/site/gallery/agents/g-1/export", download: "kaiju.md" },
       ]),
     );
     click.mockRestore();

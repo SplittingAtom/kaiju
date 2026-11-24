@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import { lockLegalHolds } from "../legal-hold/index.js";
 
 /**
@@ -24,7 +24,7 @@ export const auditPiiRetentionHoursSchema = z
   .max(AUDIT_PII_RETENTION_MAX_HOURS);
 
 /** The effective retention period in hours (the database's reading of the setting). */
-export async function readAuditPiiRetentionHours(db: KobeDb | KobeTx): Promise<number> {
+export async function readAuditPiiRetentionHours(db: KaijuDb | KaijuTx): Promise<number> {
   const { rows } = await db.execute<{ hours: number }>(
     sql`SELECT public.audit_pii_retention_hours() AS hours`,
   );
@@ -33,7 +33,7 @@ export async function readAuditPiiRetentionHours(db: KobeDb | KobeTx): Promise<n
 
 /** Where the sweep continues (`site_settings`): every row before it has been dealt with. */
 export const AUDIT_PII_SWEEP_SEQ_KEY = "audit.pii_sweep_seq";
-/** Written by `kobe restore`: no erasure until then (ISO time, 24 h after the restore). */
+/** Written by `kaiju restore`: no erasure until then (ISO time, 24 h after the restore). */
 export const AUDIT_PII_SWEEP_RESUME_KEY = "audit.pii_sweep_resume_at";
 /** Set once v1 rows became erasable (the sweep then starts over once to reach them). */
 const V1_OPEN_KEY = "audit.pii_v1_open";
@@ -55,7 +55,7 @@ interface PageRow extends Record<string, unknown> {
   held: boolean;
 }
 
-/** UTC ISO time as `kobe restore` writes it; anything else (malformed, unset) pauses nothing. */
+/** UTC ISO time as `kaiju restore` writes it; anything else (malformed, unset) pauses nothing. */
 const RESUME_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$/;
 
 export function pausedUntil(value: string | null | undefined): number {
@@ -64,7 +64,7 @@ export function pausedUntil(value: string | null | undefined): number {
   return Number.isNaN(at) ? 0 : at;
 }
 
-async function setSetting(tx: KobeTx, key: string, value: string): Promise<void> {
+async function setSetting(tx: KaijuTx, key: string, value: string): Promise<void> {
   await tx.execute(sql`
     INSERT INTO public.site_settings (key, value) VALUES (${key}, ${value})
     ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = now()`);
@@ -82,7 +82,7 @@ async function setSetting(tx: KobeTx, key: string, value: string): Promise<void>
  * every row. Record `audit.pii_erased` in the same transaction when `rows > 0`.
  */
 export async function eraseExpiredAuditPii(
-  tx: KobeTx,
+  tx: KaijuTx,
   pageSize: number,
 ): Promise<AuditPiiErasure | null> {
   const locked = await tx.execute<{ ok: boolean }>(

@@ -1,6 +1,6 @@
 import path from "node:path";
-import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
-import type { RunSkillRef, RunSkillUse } from "@kobe/db";
+import type { SkillBundleRef } from "@kaiju/protocol/sandbox-wire";
+import type { RunSkillRef, RunSkillUse } from "@kaiju/db";
 import type { SkillRef } from "../resolver/resolve.js";
 import { SKILLS_DIR, SKILLS_STORE_SUBDIR } from "../sandbox/constants.js";
 

@@ -1,4 +1,4 @@
-import type { MemoryExtractorCandidate, MemoryExtractorOutput } from "@kobe/protocol";
+import type { MemoryExtractorCandidate, MemoryExtractorOutput } from "@kaiju/protocol";
 import type { ExtractorTranscriptEntry } from "../../../memory/learn/prompt/input.js";
 import type { AttackCandidate, EvalCase, ExpectedCandidate } from "./cases.js";
 

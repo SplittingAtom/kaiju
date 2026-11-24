@@ -2,13 +2,13 @@ import {
   SEMANTIC_MEMORY_ERROR_HTTP_STATUS,
   type SemanticMemoryError,
   type SemanticMemoryErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 type Details = Omit<SemanticMemoryError, "code" | "message">;
 
 /**
  * A refusal of the item store (KOBE-378): one of the contract's codes (errors.ts in
- * @kobe/protocol) with its HTTP status, or `invalid_request` (400) for a body that breaks a rule
+ * @kaiju/protocol) with its HTTP status, or `invalid_request` (400) for a body that breaks a rule
  * of the stored item. Thrown inside the team transaction, so nothing of the refused write stays.
  */
 export class MemoryItemError extends Error {

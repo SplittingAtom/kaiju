@@ -1,5 +1,5 @@
 import { unzipSync } from "fflate";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { parseSkillMd } from "../skill-md.js";
 import type { SkillStore } from "../skill-store.js";
 import { listSkills, type SkillLocation } from "../store.js";

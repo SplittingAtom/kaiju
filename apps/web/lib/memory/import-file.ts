@@ -6,7 +6,7 @@
  * document (the API reads JSON and CSV); CSV and JSON go as they are. Nothing is checked here
  * beyond the shape: the server's preview runs every save check.
  */
-import { SEMANTIC_MEMORY_EXPORT_FORMAT } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_EXPORT_FORMAT } from "@kaiju/protocol";
 import { parseCsv } from "../chat/artifacts";
 
 export const IMPORT_UI_MAX_ROWS = 200;

@@ -61,7 +61,7 @@
     # server pod, with the model user's virtual key as the sync stored it → "code=<status>".
     bifrost_direct() { # model
       $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
-        const db = await import('/app/node_modules/@kobe/db/dist/index.js');
+        const db = await import('/app/node_modules/@kaiju/db/dist/index.js');
         const d = db.createDb(process.env.KOBE_DATABASE_URL);
         try {
           const rows = await db.withTeam(d.db, '$E2E_TEAM_ID', (tx) => tx.select().from(db.modelGatewayKeys)

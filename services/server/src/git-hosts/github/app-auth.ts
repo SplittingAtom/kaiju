@@ -1,5 +1,5 @@
 import { createHash, createPrivateKey, sign, type KeyObject } from "node:crypto";
-import type { GitCredentialKind } from "@kobe/db";
+import type { GitCredentialKind } from "@kaiju/db";
 import { GitHostError } from "../adapter.js";
 import { hostRequest, type GitHostNet } from "../http.js";
 import type { GitHostTarget } from "../target.js";

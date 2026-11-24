@@ -12,9 +12,9 @@ import {
   users,
   verifications,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { revokeAllInvitesSentBy } from "../invitations/team-invites.js";
 import { assertOwnerKeepsSignIn } from "../sso/owner-invariant.js";
@@ -32,7 +32,7 @@ export class DeactivationProtectedError extends Error {
 }
 
 /** True when the user exists and is deactivated. */
-export async function isDeactivated(db: KobeDb, userId: string): Promise<boolean> {
+export async function isDeactivated(db: KaijuDb, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: users.id })
     .from(users)
@@ -43,7 +43,7 @@ export async function isDeactivated(db: KobeDb, userId: string): Promise<boolean
 /** Extra writes a caller makes in the same transaction as the (de)activation (e.g. SCIM's audit). */
 export interface ActivationOptions {
   /** Runs inside the transaction, before its audit row; `changed` says whether the state moved. */
-  readonly inTx?: (tx: KobeTx, changed: boolean) => Promise<void>;
+  readonly inTx?: (tx: KaijuTx, changed: boolean) => Promise<void>;
 }
 
 /** Who deactivates (SSO11): a site admin (default), or one provider's SCIM (`scim:<id>`). */
@@ -56,7 +56,7 @@ export interface DeactivationOptions extends ActivationOptions {
 }
 
 /** How a deactivation was recorded (`users.deactivated_via`); null when active or unknown. */
-export async function deactivatedVia(db: KobeDb | KobeTx, userId: string): Promise<string | null> {
+export async function deactivatedVia(db: KaijuDb | KaijuTx, userId: string): Promise<string | null> {
   const [row] = await db
     .select({ via: users.deactivatedVia, at: users.deactivatedAt })
     .from(users)
@@ -74,7 +74,7 @@ export async function deactivatedVia(db: KobeDb | KobeTx, userId: string): Promi
  * transfer takes) and refuses the Owner under it ({@link DeactivationProtectedError}).
  */
 export async function deactivateUser(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   options: DeactivationOptions = {},
 ): Promise<boolean> {
@@ -122,7 +122,7 @@ export async function deactivateUser(
 
 /** Reactivates a user; they sign in again with their existing credentials. False if not deactivated. */
 export async function reactivateUser(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   options: ActivationOptions = {},
 ): Promise<boolean> {
@@ -135,7 +135,7 @@ export async function reactivateUser(
  * admin's deactivation committed meanwhile wins (`refused`).
  */
 export function reactivateUserIfVia(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   via: DeactivatedVia,
   options: ActivationOptions = {},
@@ -144,7 +144,7 @@ export function reactivateUserIfVia(
 }
 
 async function reactivate(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   via: DeactivatedVia | undefined,
   options: ActivationOptions,
@@ -173,7 +173,7 @@ async function reactivate(
 
 /** Teams where this user is a team admin and no other active team admin remains. */
 export async function teamsLeftWithoutActiveAdmin(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
 ): Promise<{ readonly id: string; readonly slug: string; readonly name: string }[]> {
   const adminOf = (await listMemberships(db, userId)).filter((m) => m.role === "team_admin");

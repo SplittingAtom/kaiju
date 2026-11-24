@@ -1,6 +1,6 @@
 // Shared setup for the agent.runs.*.test.ts files (split from agent.runs.test.ts, KOBE-725).
-import { APP_CARD_CUSTOM_TYPE, appCardEntryId, type AppCardEntry } from "@kobe/protocol";
-import { type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import { APP_CARD_CUSTOM_TYPE, appCardEntryId, type AppCardEntry } from "@kaiju/protocol";
+import { type SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, expect } from "vitest";
 import { RUN, type Harness } from "./testing/harness.js";
 

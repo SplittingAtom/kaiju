@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { skillPackageHashes } from "@kobe/protocol/node";
+import { skillPackageHashes } from "@kaiju/protocol/node";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startGitServer, type GitServer } from "../../testing/git-http-server.js";
 import { mirrorHttpClient } from "./http-client.js";
@@ -20,7 +20,7 @@ function version(name: string, semver: string, body: string, id: string): Mirror
     ["kobe.skill.yaml", enc(`apiVersion: kobe.dev/skill/v1\nname: ${name}\nversion: ${semver}\n`)],
     ["provenance.json", enc(`{"name":"${name}"}`)],
   ]);
-  const hashes = skillPackageHashes(files, { kobeProvenance: true });
+  const hashes = skillPackageHashes(files, { kaijuProvenance: true });
   return { registryVersionId: id, name, semver, files, ...hashes };
 }
 
@@ -39,7 +39,7 @@ afterAll(async () => {
 });
 
 async function session(url: string): Promise<MirrorSession> {
-  const dir = mkdtempSync(path.join(tmpdir(), "kobe-mirror-test-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "kaiju-mirror-test-"));
   dirs.push(dir);
   const http = mirrorHttpClient({
     remote: url,
@@ -81,7 +81,7 @@ describe("MirrorSession (KOBE-343)", () => {
       [V2, c],
     ] as const) {
       const files = filesAt("catalog", `${r.tag}^{commit}`, v.name);
-      expect(skillPackageHashes(files, { kobeProvenance: true })).toEqual({
+      expect(skillPackageHashes(files, { kaijuProvenance: true })).toEqual({
         runtimeHash: v.runtimeHash,
         packageHash: v.packageHash,
       });
@@ -166,7 +166,7 @@ describe("MirrorSession (KOBE-343)", () => {
 
   it("fails on refused credentials without leaking the token in the error", async () => {
     const url = server.repo("auth");
-    const dir = mkdtempSync(path.join(tmpdir(), "kobe-mirror-test-"));
+    const dir = mkdtempSync(path.join(tmpdir(), "kaiju-mirror-test-"));
     dirs.push(dir);
     const http = mirrorHttpClient({
       remote: url,

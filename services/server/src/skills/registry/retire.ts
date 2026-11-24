@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { siteRoleAllows, type SiteRole } from "../../authz/permissions.js";
 import type { CatalogVersion } from "../../resolver/catalog-pins.js";
@@ -74,7 +74,7 @@ export type RetireResult =
   | { readonly ok: true; readonly retired: Retired }
   | { readonly ok: false; readonly code: RetireRefusal };
 
-async function isActiveMaintainer(tx: KobeTx, skillId: string, userId: string) {
+async function isActiveMaintainer(tx: KaijuTx, skillId: string, userId: string) {
   const r = await tx.execute(sql`
     SELECT 1 FROM registry_maintainers m JOIN users u ON u.id = m.user_id
      WHERE m.skill_id = ${skillId} AND m.user_id = ${userId} AND u.deactivated_at IS NULL`);
@@ -85,7 +85,7 @@ async function isActiveMaintainer(tx: KobeTx, skillId: string, userId: string) {
  * A maintainer or Site admin may deprecate and undo it; only Site admins withdraw, revoke and
  * unrevoke.
  */
-async function mayAct(tx: KobeTx, act: VersionAct, skillId: string, who: Actor) {
+async function mayAct(tx: KaijuTx, act: VersionAct, skillId: string, who: Actor) {
   if (siteRoleAllows(who.siteRole, "site.skills.catalog.manage")) return true;
   return (
     (act === "deprecate" || act === "undeprecate") &&
@@ -93,7 +93,7 @@ async function mayAct(tx: KobeTx, act: VersionAct, skillId: string, who: Actor) 
   );
 }
 
-async function versionsBefore(tx: KobeTx, skillId: string): Promise<CatalogVersion[]> {
+async function versionsBefore(tx: KaijuTx, skillId: string): Promise<CatalogVersion[]> {
   const r = await tx.execute<{
     id: string;
     semver: string;
@@ -121,7 +121,7 @@ async function versionsBefore(tx: KobeTx, skillId: string): Promise<CatalogVersi
 
 /** One version's act, in one transaction (the version row locked). */
 export function retireVersion(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly skillId: string;
     readonly semver: string;
@@ -250,7 +250,7 @@ export function retireVersion(
 
 /** A whole skill's deprecation, naming a replacement (another live catalog skill) or not. */
 export function deprecateSkill(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly skillId: string;
     readonly actor: Actor;
@@ -316,7 +316,7 @@ export interface PublishedVersionRow {
 
 /** A skill's status and published versions, newest first, for those who may act on them. */
 export async function publishedForActors(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   who: Actor,
 ): Promise<
@@ -352,7 +352,7 @@ export async function publishedForActors(
  * notice (an undo isn't news, and a notice would let a deprecate–undo loop flood installers).
  */
 export function undeprecateSkill(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly skillId: string; readonly actor: Actor },
 ): Promise<RetireResult> {
   const { skillId, actor } = input;

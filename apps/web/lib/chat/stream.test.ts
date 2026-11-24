@@ -1,4 +1,4 @@
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openRunStream, type EventSourceLike, type StreamSignal } from "./stream";
 import { must } from "../testing/must";
@@ -25,7 +25,7 @@ class StubSource implements EventSourceLike {
   }
 }
 
-function delta(seq: number, text: string): KobeEvent {
+function delta(seq: number, text: string): KaijuEvent {
   return {
     run_id: RUN,
     seq,
@@ -50,7 +50,7 @@ afterEach(() => vi.useRealTimers());
 
 describe("openRunStream", () => {
   it("opens the run's SSE URL after the cursor and batches events in seq order", () => {
-    const batches: KobeEvent[][] = [];
+    const batches: KaijuEvent[][] = [];
     openRunStream(RUN, 4, { onEvents: (e) => batches.push([...e]), onSignal: () => {} }, factory);
     expect(sources[0]?.url).toBe(`/v1/runs/${RUN}/events?starting_after=4`);
     const s = must(sources[0]);

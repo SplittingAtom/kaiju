@@ -1,6 +1,6 @@
 "use client";
 
-import { SEMANTIC_MEMORY_SCOPES } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_SCOPES } from "@kaiju/protocol";
 import { useEffect, useState } from "react";
 import { isUuid } from "../../lib/memory/ids";
 import type { ItemScope, MemoryItem, MemoryItemsApi } from "../../lib/memory/items-api";

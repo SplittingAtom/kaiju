@@ -7,7 +7,7 @@ import {
   APP_CARD_PREAMBLE,
   CAPABILITY_APP_CARDS,
   isAppCardEntryId,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { AppCallRequest } from "./app-caller.js";
 import { appIdOf } from "./app-id.js";
 import { enableConnector, registerConnector } from "../testing/mcp-fixtures.js";

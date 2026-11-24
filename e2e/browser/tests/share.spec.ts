@@ -16,7 +16,7 @@ const TEAM_KEY = "kobe.lastTeamId";
 const group = (page: Page, kind: string) =>
   page.getByRole("dialog", { name: "Threads" }).locator(`[data-group="${kind}"]`);
 const rowIn = (page: Page, kind: string, title: string) =>
-  group(page, kind).locator("[data-kobe-thread]").filter({ hasText: title });
+  group(page, kind).locator("[data-kaiju-thread]").filter({ hasText: title });
 
 /** Opens a row's Share submenu and picks `scope`. */
 async function shareAs(page: Page, row: Locator, title: string, scope: string) {
@@ -69,7 +69,7 @@ test("share with the team, read and fork as another member, then revoke", async 
 
   await chat.open();
   const threadId = await chat.ask("No tools. Reply with the single word SHARED.");
-  const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+  const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
   await header.getByRole("button", { name: /^Rename / }).click();
   const name = page.getByRole("textbox", { name: "Conversation name", exact: true });
   await name.fill(title);

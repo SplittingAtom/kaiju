@@ -17,7 +17,7 @@
 //   "handled"      answer the prompt with disposition "handled"
 //   "drop-policy"  close its end of the policy channel (as a broken kobe-policy would), then settle
 //   "sh:<command>" run `/bin/sh -c <command>` the way Pi's bash tool does (detached) and report its
-//                  exit code, stdout and stderr as a kobe_test_shell event (KOBE-71 identity tests)
+//                  exit code, stdout and stderr as a kaiju_test_shell event (KOBE-71 identity tests)
 // `compact` (KOBE-213) is chosen by its customInstructions: "hang" waits for abort, "nothing" and
 // "fail" answer success:false ("fail-late-token" then asks for the run token anyway), "token" first asks for the run token as kobe-models does on
 // session_before_compact (the answer goes into the summary); anything else appends a compaction
@@ -148,7 +148,7 @@ if (process.env.KOBE_POLICY_FD) {
         answerHello();
         continue;
       }
-      out({ type: "kobe_test_policy_reply", reply });
+      out({ type: "kaiju_test_policy_reply", reply });
       if (reply.type === "policy.result") policy.get(reply.request_id)?.(reply);
     }
   });
@@ -213,7 +213,7 @@ function runPrompt(message) {
     start();
     const requestId = `ext-${nextPolicy++}`;
     policy.set(requestId, (reply) => {
-      out({ type: "kobe_test_policy_decision", decision: reply.decision });
+      out({ type: "kaiju_test_policy_decision", decision: reply.decision });
       settle();
     });
     policySocket.write(
@@ -223,14 +223,14 @@ function runPrompt(message) {
     // KOBE-118: what kobe-models does on `input`: asks the agent for the run's token over RPC.
     start();
     dialogs.set("tok-1", (answer) => {
-      out({ type: "kobe_test_run_token_answer", answer });
+      out({ type: "kaiju_test_run_token_answer", answer });
       settle();
     });
     out({ type: "extension_ui_request", id: "tok-1", method: "input", title: "kobe.run_token" });
   } else if (message === "dialog") {
     start();
     dialogs.set("ui-1", (answer) => {
-      out({ type: "kobe_test_dialog_answer", answer });
+      out({ type: "kaiju_test_dialog_answer", answer });
       settle();
     });
     out({
@@ -262,7 +262,7 @@ function runPrompt(message) {
     child.on("exit", () => {
       const probed = JSON.parse(text);
       out({
-        type: "kobe_test_grandchild",
+        type: "kaiju_test_grandchild",
         sameChannel: probed.fd3Ino === policyFdIno,
         sameToolsChannel: toolsFdIno !== null && probed.fd4Ino === toolsFdIno,
         ...probed,
@@ -280,13 +280,13 @@ function runPrompt(message) {
     child.stdout.on("data", (d) => (stdout += d));
     child.stderr.on("data", (d) => (stderr += d));
     child.on("close", (code) => {
-      out({ type: "kobe_test_shell", code, stdout, stderr });
+      out({ type: "kaiju_test_shell", code, stdout, stderr });
       settle();
     });
   } else if (message === "orphan") {
     start();
     const child = spawn("sleep", ["300"], { stdio: "ignore", detached: true });
-    out({ type: "kobe_test_orphan", pid: child.pid });
+    out({ type: "kaiju_test_orphan", pid: child.pid });
   } else if (message === "drop-policy") {
     start();
     policySocket?.destroy();
@@ -427,7 +427,7 @@ function handle(cmd) {
         data: { sessionFile, isStreaming: streaming, model: selectedModel ?? null },
       });
     case "set_model":
-      if (registered === undefined || cmd.provider !== "kobe" || cmd.modelId !== registered.id)
+      if (registered === undefined || cmd.provider !== "kaiju" || cmd.modelId !== registered.id)
         return respond(cmd, {
           success: false,
           error: `Model not found: ${cmd.provider}/${cmd.modelId}`,

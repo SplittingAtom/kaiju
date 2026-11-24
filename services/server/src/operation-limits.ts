@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import {
   checkRateLimit,
   clearRateLimit,
@@ -142,7 +142,7 @@ class WakeRefused extends Error {
  * finds no marker and is checked (and refused) itself; it is never let through as "in progress".
  */
 export async function admitWakeStart(
-  db: KobeDb,
+  db: KaijuDb,
   owner: SandboxTarget,
   now?: number,
 ): Promise<RateLimitVerdict> {
@@ -178,7 +178,7 @@ export function wakeStartOver(db: RateLimitDb, owner: SandboxTarget): Promise<vo
  * message is never refused for it: the run limit already bounds those.
  */
 export async function admitSandboxWake(
-  db: KobeDb,
+  db: KaijuDb,
   router: Pick<SandboxRouter, "isConnected">,
   owner: SandboxTarget,
   now?: number,

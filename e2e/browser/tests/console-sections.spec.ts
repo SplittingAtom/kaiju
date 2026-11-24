@@ -70,8 +70,8 @@ test("Site backup and restore: status and steps", async ({ page }) => {
       .first(),
   ).toBeVisible();
   await expect(panelOf(page).getByText(/^(Running|Paused)$/)).toBeVisible();
-  await expect(panelOf(page).getByLabel("Take a backup")).toContainText("kobe backup --out");
-  await expect(panelOf(page).getByLabel("Restore a backup")).toContainText("kobe restore --from");
+  await expect(panelOf(page).getByLabel("Take a backup")).toContainText("kaiju backup --out");
+  await expect(panelOf(page).getByLabel("Restore a backup")).toContainText("kaiju restore --from");
 });
 
 // The Inventory's agents moved to the Agents page's Team tab (KOBE-570, AR12): its columns there.

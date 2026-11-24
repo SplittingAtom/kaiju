@@ -9,8 +9,8 @@ import {
   teams,
   withTeam,
   type ConnectorExposureKind,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { mapLimited } from "../mcp/fan-out.js";
 
 /** Team transactions in flight at once: a few connections from the pool, never one per team. */
@@ -40,7 +40,7 @@ interface Enablement {
  * `team_connectors` is a team table and RLS never lets one query see every team, so this reads
  * each team in its own `withTeam`, a few at a time (`TEAM_READ_CONCURRENCY`), ordered by team name.
  */
-async function enablementsOf(db: KobeDb, connectorId: string): Promise<Enablement[]> {
+async function enablementsOf(db: KaijuDb, connectorId: string): Promise<Enablement[]> {
   const all = await db
     .select({ id: teams.id, name: teams.name, slug: teams.slug })
     .from(teams)
@@ -60,7 +60,7 @@ async function enablementsOf(db: KobeDb, connectorId: string): Promise<Enablemen
 }
 
 /** Ids of the teams that have the connector enabled (removal counts, drift recipients). */
-export async function teamIdsUsing(db: KobeDb, connectorId: string): Promise<string[]> {
+export async function teamIdsUsing(db: KaijuDb, connectorId: string): Promise<string[]> {
   return (await enablementsOf(db, connectorId)).map((e) => e.team.id);
 }
 
@@ -70,7 +70,7 @@ export async function teamIdsUsing(db: KobeDb, connectorId: string): Promise<str
  * enablements). A custom count only counts ticks that still name a pinned tool.
  */
 export async function listTeamsUsing(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
 ): Promise<ConnectorTeamUse[] | undefined> {
   const [found] = await db

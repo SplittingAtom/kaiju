@@ -1,5 +1,5 @@
-import { sql } from "@kobe/db";
-import type { KobeDb } from "@kobe/db";
+import { sql } from "@kaiju/db";
+import type { KaijuDb } from "@kaiju/db";
 
 /**
  * Serializes the cap checks and activations of one user (KOBE-173): an in-process queue per user
@@ -31,7 +31,7 @@ function releaseSlot(): void {
 }
 
 export async function withUserScheduleLock<T>(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   fn: () => Promise<T>,
 ): Promise<T> {

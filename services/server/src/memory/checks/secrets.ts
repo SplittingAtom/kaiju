@@ -1,9 +1,9 @@
-import { matchSecret, matchSplitSecret } from "@kobe/skill-scanner";
+import { matchSecret, matchSplitSecret } from "@kaiju/skill-scanner";
 import { collapsedView, decodedRuns, secretViews } from "./text.js";
 
 /**
  * Secret scan (KOBE-379, SM18): the skill scanner's secret rules (`SECRET_RULES` in
- * `@kobe/skill-scanner`, not a copy), run over every view of the text: as written, normalised,
+ * `@kaiju/skill-scanner`, not a copy), run over every view of the text: as written, normalised,
  * split tokens joined, every separator between token characters removed (prefix-anchored rules
  * only), and base64 / hex runs decoded once. A hit blocks the save at every scope with
  * `memory_secret`; there is no override.

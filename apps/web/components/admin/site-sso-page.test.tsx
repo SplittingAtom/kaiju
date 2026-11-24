@@ -27,7 +27,7 @@ const provider = (over: Record<string, unknown> = {}) => ({
   enabled: false,
   managed_by: "console",
   client_secret: "set",
-  redirect_uri: "https://kobe.example.com/api/auth/sso/callback/contoso",
+  redirect_uri: "https://kaiju.example.com/api/auth/sso/callback/contoso",
   linked_identities: 0,
   created_at: "2026-11-11T10:00:00Z",
   updated_at: "2026-11-11T10:00:00Z",
@@ -208,7 +208,7 @@ describe("Require single sign-on (KOBE-774)", () => {
     renderSite(<SiteSsoPage />);
     await userEvent.click(await screen.findByRole("switch", { name: "Require single sign-on" }));
     const text = await answerConfirm(/Require single sign-on\?/, "Require single sign-on");
-    expect(text).toContain("kobe sso allow-local-sign-in");
+    expect(text).toContain("kaiju sso allow-local-sign-in");
     // Who would be stranded, in numbers (review H1).
     expect(text).toMatch(/7 active accounts have no linked/);
     expect(text).toMatch(/1 of them holds a site role/);

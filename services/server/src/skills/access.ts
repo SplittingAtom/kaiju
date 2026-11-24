@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 /**
  * Most team skills one team may offer to all agents (KOBE-297), now On by default plus Required.
@@ -21,7 +21,7 @@ export type SkillAccess = "available" | "default_on" | "required" | "hidden";
 export const REQUIRED_WARN_AT = 5;
 
 /** Required team skills (unarchived) and Required installs: what loads in every run (SK27). */
-export async function requiredCount(tx: KobeTx, teamId: string): Promise<number> {
+export async function requiredCount(tx: KaijuTx, teamId: string): Promise<number> {
   const { rows } = await tx.execute<{ n: number }>(sql`
     SELECT (SELECT count(*) FROM team_skills
              WHERE team_id = ${teamId} AND access = 'required' AND archived_at IS NULL)
@@ -44,7 +44,7 @@ export type AccessResult =
  * skill Required and to change a Required one: a Builder can neither add nor remove Required.
  */
 export function setTeamSkillAccess(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly teamId: string;
     readonly skillId: string;

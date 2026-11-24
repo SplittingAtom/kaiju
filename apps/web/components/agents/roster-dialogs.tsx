@@ -4,7 +4,7 @@ import {
   AGENT_ROSTER_NOTE_MAX,
   type AgentRosterRow,
   type AgentVersionRuleInput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { useState } from "react";
 import { listMyTeamsForEval } from "../../lib/admin/api/site/gallery";
 import { listTeamAgentVersions } from "../../lib/admin/api/team/agent-builder";

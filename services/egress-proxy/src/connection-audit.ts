@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, audit, type AuditEvent, type KobeDb } from "@kobe/db";
+import { SYSTEM_ACTOR, audit, type AuditEvent, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { RateBuckets } from "./rate-buckets.js";
 
@@ -87,7 +87,7 @@ export type AuditWriter = (events: readonly AuditEvent[]) => Promise<void>;
 /** Rows per transaction: each append holds the audit chain lock until commit. */
 const ROWS_PER_TX = 100;
 
-export function dbAuditWriter(db: KobeDb): AuditWriter {
+export function dbAuditWriter(db: KaijuDb): AuditWriter {
   return async (events) => {
     for (let i = 0; i < events.length; i += ROWS_PER_TX) {
       const batch = events.slice(i, i + ROWS_PER_TX);

@@ -1,4 +1,4 @@
-import type { RunViewingContext } from "@kobe/protocol";
+import type { RunViewingContext } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -55,7 +55,7 @@ describe("viewingContextText (KOBE-462)", () => {
   });
 
   it("each run's file holds only that run's viewed file, or none (KOBE-473)", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-viewing-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-viewing-"));
     try {
       const file = new MemoryContextFile(path.join(dir, "memory-context.json"));
       const runFile = async (v?: RunViewingContext) => {

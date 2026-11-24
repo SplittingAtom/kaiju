@@ -1,4 +1,4 @@
-import type { KobeEventPayload, KobeEventType } from "../events.js";
+import type { KaijuEventPayload, KaijuEventType } from "../events.js";
 import type { PolicyReason } from "../policy.js";
 import { EXAMPLE_IDS } from "./ids.js";
 
@@ -9,7 +9,7 @@ const reason: PolicyReason = {
 };
 
 /** One valid payload per event type: contract documentation and fixtures for consumers' tests. */
-export const EVENT_PAYLOAD_EXAMPLES: { readonly [T in KobeEventType]: KobeEventPayload<T> } = {
+export const EVENT_PAYLOAD_EXAMPLES: { readonly [T in KaijuEventType]: KaijuEventPayload<T> } = {
   "run.queued": {
     thread_id: EXAMPLE_IDS.thread,
     trigger: "user",

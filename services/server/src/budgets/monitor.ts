@@ -12,10 +12,10 @@ import {
   type BudgetLine,
   type BudgetScope,
   type BudgetThreshold,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import type { BudgetStopCommand } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import type { BudgetStopCommand } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { Mailer } from "../mail/mailer.js";
@@ -39,7 +39,7 @@ import { createListenClient, type ListenClient } from "../pg-listen.js";
  * alerts are unique per period in Postgres and `stopForBudget` is idempotent.
  */
 export interface BudgetMonitorOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The process's shared LISTEN connection (KOBE-704); never closed here. */
   readonly listen?: ListenClient;
   /** Without `listen`: app-role URL of a LISTEN connection of the monitor's own (tests). */
@@ -104,7 +104,7 @@ export class BudgetMonitor {
       if (!this.options.connectionString) throw new Error("budget monitor: no LISTEN connection");
       listen = this.owned = createListenClient({
         connectionString: this.options.connectionString,
-        applicationName: "kobe-budgets",
+        applicationName: "kaiju-budgets",
       });
     }
     // No resync on (re)connect: the periodic sweep re-reads every team anyway.
@@ -255,7 +255,7 @@ export class BudgetMonitor {
     const { db } = this.options;
     const alertTeam = line.scope === "site" ? null : teamId;
     const alertUser = line.scope === "user" ? (line.userId ?? null) : null;
-    const write = async (tx: KobeTx): Promise<boolean> => {
+    const write = async (tx: KaijuTx): Promise<boolean> => {
       const known = await tx.execute(sql`
         SELECT 1 FROM budget_alerts
          WHERE team_id IS NOT DISTINCT FROM ${alertTeam}::uuid

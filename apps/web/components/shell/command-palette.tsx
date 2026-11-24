@@ -17,7 +17,7 @@ import { isMacPlatform, matchesShortcut, shortcutOf } from "../../lib/shell/shor
 import { cn } from "../../lib/utils";
 import { useOpenConsoles } from "../admin/console-links";
 import { useArtifactPanel } from "../chat/artifact-state";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import { useThreadReadOnly } from "../chat/use-thread-read-only";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { useBindCommands, useBoundCommands, useWantCommands } from "./command-bindings";
@@ -250,7 +250,7 @@ function PaletteBody(props: BodyProps) {
                   aria-selected={i === at}
                   aria-disabled={row.blocker ? true : undefined}
                   aria-label={optionName(row)}
-                  data-kobe-palette-option={row.key}
+                  data-kaiju-palette-option={row.key}
                   // The input keeps the focus on a click.
                   onMouseDown={(e) => e.preventDefault()}
                   onMouseMove={() => i !== at && setActive(i)}
@@ -324,11 +324,11 @@ export function CommandPalette({
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
           aria-describedby={undefined}
-          data-kobe-portal
-          data-kobe-palette
+          data-kaiju-portal
+          data-kaiju-palette
           className="bg-background text-foreground fixed top-[15vh] left-1/2 z-50 flex w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 flex-col overflow-hidden rounded-lg border shadow-lg"
           onEscapeKeyDown={(e) => {
             if (step.kind === "root") return;

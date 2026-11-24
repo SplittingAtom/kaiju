@@ -28,7 +28,7 @@ function fakeApi(agents: { id: string; galleryKey?: string }[]) {
 
 describe("startSkillFromConversation", () => {
   it("opens a Kobe conversation, attaches the source and prefills the request without sending", async () => {
-    const api = fakeApi([{ id: "a-team" }, { id: "a-kobe", galleryKey: "kobe" }]);
+    const api = fakeApi([{ id: "a-team" }, { id: "a-kaiju", galleryKey: "kobe" }]);
     const attach = vi.fn();
     const prefill = vi.fn();
     const res = await startSkillFromConversation(
@@ -37,7 +37,7 @@ describe("startSkillFromConversation", () => {
     );
     expect(res).toEqual({ ok: true, status: 201, data: { threadId: "w-1" } });
     expect(api.createThread).toHaveBeenCalledWith("Skill from: Monthly close", null, {
-      agentId: "a-kobe",
+      agentId: "a-kaiju",
       test: false,
     });
     const [thread, file] = attach.mock.calls[0] ?? [];

@@ -22,22 +22,22 @@ import { teams } from "./teams.js";
 
 // The Site Skills Registry and Catalog (KOBE-311, spec SK5–SK8, SK21–SK24, SK29, SK31). All
 // site-wide (†): a catalog skill belongs to the Site, not to a team. The closed sets mirror
-// `@kobe/protocol` skill-catalog.ts (a server test keeps them equal). Records only; the bytes of a
+// `@kaiju/protocol` skill-catalog.ts (a server test keeps them equal). Records only; the bytes of a
 // version live in the object store under its runtime and package hashes (KOBE-310).
 
-/** Mirrors `SKILL_NAME_PATTERN` (@kobe/protocol): catalog names share the flat skill namespace. */
+/** Mirrors `SKILL_NAME_PATTERN` (@kaiju/protocol): catalog names share the flat skill namespace. */
 const NAME_FORMAT = "^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?$";
 const SEMVER_FORMAT = "^(0|[1-9][0-9]{0,8})\\.(0|[1-9][0-9]{0,8})\\.(0|[1-9][0-9]{0,8})$";
 /** Mirrors `REGISTRY_TAG_PATTERN`. */
 const TAG_FORMAT = "^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$";
 const SUMMARY_MAX = 280;
-/** The code-defined system tags (SK5); mirrors `SYSTEM_TAGS` (@kobe/protocol, a test ties them). */
+/** The code-defined system tags (SK5); mirrors `SYSTEM_TAGS` (@kaiju/protocol, a test ties them). */
 export const SYSTEM_TAG_NAMES = ["default"] as const;
 /**
  * The catalog names Kaiju publishes (KOBE-317, SK4, SK24): reserved for publisher `kobe`. Mirrors
- * `KOBE_SKILL_NAMES` (@kobe/protocol, a server test ties them).
+ * `KAIJU_SKILL_NAMES` (@kaiju/protocol, a server test ties them).
  */
-export const KOBE_SKILL_NAMES = [
+export const KAIJU_SKILL_NAMES = [
   "data-analysis",
   "charts",
   "docx",
@@ -50,10 +50,10 @@ export const KOBE_SKILL_NAMES = [
 /**
  * Kaiju names added after Sites could already hold them (KOBE-620): a non-Kaiju catalog skill that
  * took one before the upgrade keeps it (the check below lets it, so the migration never fails),
- * the server refuses new ones (`isKobeSkillName`), and the Kaiju seed skips that skill there
- * (logged) instead of publishing it. Every name here is also in `KOBE_SKILL_NAMES`.
+ * the server refuses new ones (`isKaijuSkillName`), and the Kaiju seed skips that skill there
+ * (logged) instead of publishing it. Every name here is also in `KAIJU_SKILL_NAMES`.
  */
-export const KOBE_SKILL_NAMES_ADDED_LATER = ["kobe-guide"] as const;
+export const KAIJU_SKILL_NAMES_ADDED_LATER = ["kobe-guide"] as const;
 const NOTE_MAX = 4000;
 const quoted = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(", "));
 
@@ -152,7 +152,7 @@ export const registrySkills = pgTable(
     // name or be renamed away from one.
     check(
       "registry_skills_kobe_names",
-      sql`(${t.publisher} = 'kobe') = (${t.name} IN (${quoted(KOBE_SKILL_NAMES)})) OR (${t.publisher} <> 'kobe' AND ${t.name} IN (${quoted(KOBE_SKILL_NAMES_ADDED_LATER)}))`,
+      sql`(${t.publisher} = 'kobe') = (${t.name} IN (${quoted(KAIJU_SKILL_NAMES)})) OR (${t.publisher} <> 'kobe' AND ${t.name} IN (${quoted(KAIJU_SKILL_NAMES_ADDED_LATER)}))`,
     ),
     // All or nothing, and only on a Kaiju skill (KOBE-495).
     check(
@@ -397,13 +397,13 @@ export const registrySkillTags = pgTable(
       .references(() => registryTags.id),
     /** Null exactly when Kaiju added it (`by_kobe`, KOBE-317: the seed's Default tag). */
     addedBy: uuid().references(() => users.id),
-    byKobe: boolean().notNull().default(false),
+    byKaiju: boolean().notNull().default(false),
     addedAt: ts().notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.skillId, t.tagId] }),
     index("registry_skill_tags_tag_idx").on(t.tagId),
-    check("registry_skill_tags_by_kobe", sql`${t.byKobe} = (${t.addedBy} IS NULL)`),
+    check("registry_skill_tags_by_kobe", sql`${t.byKaiju} = (${t.addedBy} IS NULL)`),
   ],
 );
 

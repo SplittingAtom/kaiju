@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
-import { serializeAgentFile } from "@kobe/agent-file";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { withTeam } from "@kaiju/db";
+import { serializeAgentFile } from "@kaiju/agent-file";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { resolvePinnedAgent } from "./versions.js";
 import { sweepAgentSchedules } from "./roster-schedules.js";
 import { pauseOwnerSchedulesInTx } from "../schedules/offboard.js";
@@ -21,7 +21,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * eligibility (Unavailable), and schedules that pause and resume with the roster. Two members, two
  * teams. Own throwaway database.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 const ANY = { "if-match": "*" };
 

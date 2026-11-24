@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { gitIdentitySchema } from "@kobe/protocol/sandbox-wire";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { gitIdentitySchema } from "@kaiju/protocol/sandbox-wire";
 import { z } from "zod";
 import {
   GIT_COMMITTER_SUFFIX,
@@ -122,7 +122,7 @@ const epoch = (at: Date | string) => Math.floor(new Date(at).getTime() / 1000);
 
 /** Reads the project and its authors and freezes the plan (in the caller's team transaction). */
 export async function buildConversionPlan(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: {
     readonly teamId: string;
     readonly projectId: string;

@@ -1,5 +1,5 @@
 {
-  "name": "@kobe/model-gateway",
+  "name": "@kaiju/model-gateway",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -26,10 +26,10 @@
     "test:db": "vitest run -c vitest.db.config.ts"
   },
   "dependencies": {
-    "@kobe/db": "workspace:*",
-    "@kobe/protocol": "workspace:*",
-    "@kobe/session-token": "workspace:*",
-    "@kobe/telemetry": "workspace:*",
+    "@kaiju/db": "workspace:*",
+    "@kaiju/protocol": "workspace:*",
+    "@kaiju/session-token": "workspace:*",
+    "@kaiju/telemetry": "workspace:*",
     "pg": "^8.23.1",
     "pino": "^10.4.0",
     "zod": "^4.6.7"

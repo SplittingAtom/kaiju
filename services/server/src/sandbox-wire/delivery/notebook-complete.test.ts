@@ -3,7 +3,7 @@ import {
   CAPABILITY_NOTEBOOK_COMPLETE,
   CAPABILITY_NOTEBOOK_INSPECT,
   CAPABILITY_NOTEBOOKS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import type { CommandRow } from "../commands.js";
 import type { DeliveryEnv } from "./env.js";

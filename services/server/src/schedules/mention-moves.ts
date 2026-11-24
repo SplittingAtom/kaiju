@@ -1,5 +1,5 @@
-import { and, eq, schedules, sql, type KobeTx } from "@kobe/db";
-import { MENTION_MAX_PER_MESSAGE, mentionMarker } from "@kobe/protocol";
+import { and, eq, schedules, sql, type KaijuTx } from "@kaiju/db";
+import { MENTION_MAX_PER_MESSAGE, mentionMarker } from "@kaiju/protocol";
 import { mentionAllowed } from "../runs/mentions.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 
@@ -59,7 +59,7 @@ const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 /** Rewrites the owner's schedules in this team that mention a moved path; returns how many. */
 export async function retargetScheduleMentions(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   from: string,
   to: string,

@@ -43,8 +43,8 @@ export interface ProposalReviewProps {
 export function ProposalBubble({ summary }: { readonly summary: string }) {
   return (
     <p
-      data-kobe-proposal-bubble=""
-      className="kobe-glow-gold bg-card m-0 w-fit max-w-full shrink-0 self-start rounded-full px-3 py-1 text-sm break-words"
+      data-kaiju-proposal-bubble=""
+      className="kaiju-glow-gold bg-card m-0 w-fit max-w-full shrink-0 self-start rounded-full px-3 py-1 text-sm break-words"
     >
       <strong>Proposed edit:</strong> {summary}
     </p>
@@ -68,9 +68,9 @@ function RowButton({
 }) {
   const colour =
     tone === "accept"
-      ? "text-[var(--kobe-diff-added)]"
+      ? "text-[var(--kaiju-diff-added)]"
       : tone === "reject"
-        ? "text-[var(--kobe-diff-deleted)]"
+        ? "text-[var(--kaiju-diff-deleted)]"
         : "";
   return (
     <button
@@ -164,7 +164,7 @@ export function ProposalReview({
             />
             <span
               className="text-muted-foreground px-1 text-xs tabular-nums"
-              data-kobe-change-position=""
+              data-kaiju-change-position=""
             >
               {changeText(current, open)}
             </span>

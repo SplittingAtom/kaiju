@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useBranches } from "../../lib/chat/use-branches";
 import { useLineage } from "../../lib/chat/use-lineage";
-import { ChatSessionContext, useKobeExtras } from "./kobe-runtime";
+import { ChatSessionContext, useKaijuExtras } from "./kaiju-runtime";
 import { CompareDialog } from "./compare-dialog";
 import { ConversationTreePanel } from "./conversation-tree";
 import { TreeCommands } from "./tree-commands";
@@ -43,7 +43,7 @@ export function TreeHost({
 }) {
   const local = useLocalRoute();
   const at = route ?? local;
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const session = useContext(ChatSessionContext);
   const threadId = extras?.state.threadId ?? null;
   const branches = useBranches(threadId, session);

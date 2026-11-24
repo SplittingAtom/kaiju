@@ -1,5 +1,5 @@
-import { eq, modelCatalog, modelProviders, type KobeTx } from "@kobe/db";
-import type { MemoryPassFailureCode } from "@kobe/protocol";
+import { eq, modelCatalog, modelProviders, type KaijuTx } from "@kaiju/db";
+import type { MemoryPassFailureCode } from "@kaiju/protocol";
 import { resolveRunModel } from "../../runs/models.js";
 
 /**
@@ -20,7 +20,7 @@ export type LearnTarget =
 /** Provider kinds known to take `response_format: json_schema` through the gateway (as the judge). */
 const STRUCTURED_OUTPUT_KINDS: ReadonlySet<string> = new Set(["openai"]);
 
-export async function learnTarget(tx: KobeTx, teamId: string, alias: string): Promise<LearnTarget> {
+export async function learnTarget(tx: KaijuTx, teamId: string, alias: string): Promise<LearnTarget> {
   const resolved = await resolveRunModel(tx, teamId, alias);
   if (!resolved.ok || resolved.model === undefined) return { ok: false };
   const [row] = await tx

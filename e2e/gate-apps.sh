@@ -217,7 +217,7 @@ part_end rail
 part_begin "rail: a launch during a run waits and goes in when it ends, before the next message"
 q0=$(turn "$U_AD" "No tools. Reply OK." '"title":"apps queue"')
 QUEUE_THREAD=$(field thread "$q0")
-turn "$U_AD" "kobe-long-answer=400 a long answer" "\"threadId\":\"$QUEUE_THREAD\"" >"$WORK/long.out" 2>&1 &
+turn "$U_AD" "kaiju-long-answer=400 a long answer" "\"threadId\":\"$QUEUE_THREAD\"" >"$WORK/long.out" 2>&1 &
 long=$!
 sleep 6
 q1=$(step apps-launch "\"user\":$U_AD,\"threadId\":\"$QUEUE_THREAD\",\"appId\":\"$APP\"")

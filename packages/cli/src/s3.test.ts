@@ -8,7 +8,7 @@ import { createS3Client, s3Lister, type ListClient } from "./s3.js";
 const settings: S3Settings = {
   endpoint: "https://s3.example.com",
   region: "us-east-1",
-  bucket: "kobe",
+  bucket: "kaiju",
   prefix: "data/",
   forcePathStyle: true,
   credentials: { accessKeyId: "a", secretAccessKey: "b" },
@@ -37,12 +37,12 @@ describe("s3Lister", () => {
       { key: "data/b", size: 2, etag: '"b"' },
     ]);
     expect(seen).toEqual([
-      { Bucket: "kobe", Prefix: "data/" },
-      { Bucket: "kobe", Prefix: "data/", ContinuationToken: "t1" },
+      { Bucket: "kaiju", Prefix: "data/" },
+      { Bucket: "kaiju", Prefix: "data/", ContinuationToken: "t1" },
     ]);
     expect(lister.location).toEqual({
       endpoint: "https://s3.example.com",
-      bucket: "kobe",
+      bucket: "kaiju",
       prefix: "data/",
     });
   });

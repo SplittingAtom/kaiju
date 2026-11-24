@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { gatewayProviderName, type ModelProviderKind } from "@kobe/db";
+import { gatewayProviderName, type ModelProviderKind } from "@kaiju/db";
 import type { GatewayLimits, KeySpec, ProviderSpec } from "./bifrost-admin.js";
 
 /**

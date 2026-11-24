@@ -1,4 +1,4 @@
-import { RULE_SET_VERSION, type ScanResult } from "@kobe/skill-scanner";
+import { RULE_SET_VERSION, type ScanResult } from "@kaiju/skill-scanner";
 import { describe, expect, it } from "vitest";
 import { ScanCache } from "./rescan-cache.js";
 

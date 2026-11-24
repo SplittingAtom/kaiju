@@ -1,8 +1,8 @@
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { NotebookRunResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { NotebookRunResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_PENDING_RUNS_PER_THREAD, NotebookBroker } from "./notebook-broker.js";
 
@@ -10,7 +10,7 @@ const THREAD = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e";
 const RUN = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
 /** Under CI load file I/O can take seconds; the tests allow more than that. */
 const SETTLE_MS = 15_000;
-type Req = Extract<KobeToolsRequest, { op: "notebook.run" }>;
+type Req = Extract<KaijuToolsRequest, { op: "notebook.run" }>;
 const request = (input: Req["input"], id = "kt_1"): Req => ({
   id,
   op: "notebook.run",
@@ -24,7 +24,7 @@ async function setup(options: { sendOk?: boolean; sync?: boolean } = {}) {
   await writeFile(path.join(root, "a.ipynb"), "{}");
   const sent: Record<string, unknown>[] = [];
   const pushed: string[] = [];
-  const replies: KobeToolsResponse[] = [];
+  const replies: KaijuToolsResponse[] = [];
   const broker = new NotebookBroker({
     root,
     send: (frame) => {
@@ -49,7 +49,7 @@ async function setup(options: { sendOk?: boolean; sync?: boolean } = {}) {
     sent,
     pushed,
     replies,
-    reply: (r: KobeToolsResponse) => replies.push(r),
+    reply: (r: KaijuToolsResponse) => replies.push(r),
     settle,
   };
 }

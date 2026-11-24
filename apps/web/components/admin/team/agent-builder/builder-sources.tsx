@@ -3,9 +3,9 @@
 import { createContext, useContext } from "react";
 import type { ApiResult } from "../../../../lib/api/client";
 import {
-  getTeamKobe,
+  getTeamKaiju,
   listTeamConnectors,
-  type KobeTeamConnector,
+  type KaijuTeamConnector,
   type TeamConnector,
 } from "../../../../lib/admin/api/team/connectors";
 import { listTeamModels, type TeamModels } from "../../../../lib/admin/api/team/models";
@@ -21,7 +21,7 @@ export interface BuilderSources {
   readonly models: () => Promise<ApiResult<TeamModels>>;
   readonly connectors: () => Promise<ApiResult<readonly TeamConnector[]>>;
   /** The built-in Kaiju connector (KOBE-623); absent where it does not apply (gallery agents). */
-  readonly kobe?: () => Promise<ApiResult<KobeTeamConnector>>;
+  readonly kaiju?: () => Promise<ApiResult<KaijuTeamConnector>>;
   readonly skills: () => Promise<ApiResult<SkillChoices>>;
   /** Whether the Dangerous approval mode is offered (AC1); the server enforces it. */
   readonly mayDangerous: boolean;
@@ -41,7 +41,7 @@ export function useBuilderSources(): BuilderSources {
   return {
     models: () => listTeamModels(teamId),
     connectors: () => listTeamConnectors(teamId),
-    kobe: () => getTeamKobe(teamId),
+    kaiju: () => getTeamKaiju(teamId),
     skills: () => getSkillChoices(teamId),
     // Who may choose Dangerous (AC1): team admins and site admins.
     mayDangerous: access.role === "team_admin" || access.siteAdmin === true,

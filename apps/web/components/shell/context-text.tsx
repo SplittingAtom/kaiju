@@ -1,6 +1,6 @@
 "use client";
 
-import type { ContextSection } from "@kobe/protocol";
+import type { ContextSection } from "@kaiju/protocol";
 import {
   useCallback,
   useEffect,
@@ -175,7 +175,7 @@ export function ContextText({
         role="region"
         aria-label="Context text"
         tabIndex={0}
-        className={`${styles.pane} kobe-panel`}
+        className={`${styles.pane} kaiju-panel`}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
       >
         <div className={styles.spacer} style={{ height: rows.length * ROW_PX }}>

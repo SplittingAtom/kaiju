@@ -26,7 +26,7 @@ afterAll(() => {
 
 /** A copy of the real migrations with `extra` appended to the journal (and an empty SQL file). */
 function branchWith(extra: (last: Entry) => Entry[]): string {
-  const dir = mkdtempSync(join(tmpdir(), "kobe-upgrade-"));
+  const dir = mkdtempSync(join(tmpdir(), "kaiju-upgrade-"));
   copies.push(dir);
   cpSync(DEFAULT_MIGRATIONS_FOLDER, dir, { recursive: true });
   const path = join(dir, "meta", "_journal.json");

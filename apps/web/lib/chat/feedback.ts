@@ -1,7 +1,7 @@
-import { FEEDBACK_COMMENT_MAX_CHARS, FEEDBACK_REASONS, type FeedbackReason } from "@kobe/protocol";
+import { FEEDBACK_COMMENT_MAX_CHARS, FEEDBACK_REASONS, type FeedbackReason } from "@kaiju/protocol";
 
 /**
- * Answer feedback in the chat (KOBE-275), camelized from `@kobe/protocol` feedback.ts: a member's
+ * Answer feedback in the chat (KOBE-275), camelized from `@kaiju/protocol` feedback.ts: a member's
  * thumbs up or down on one answer (one run), reasons and a short comment on a thumbs down. Each
  * member sees and changes only their own rating, readers of a shared thread included.
  */

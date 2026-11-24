@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { UPLOAD_ERROR_HTTP_STATUS, uploadErrorSchema, uploadResponseSchema } from "@kobe/protocol";
+import { UPLOAD_ERROR_HTTP_STATUS, uploadErrorSchema, uploadResponseSchema } from "@kaiju/protocol";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { RawBody } from "../testing/browser.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -23,7 +23,7 @@ import { clearLimit, expectRateLimited, fillLimit } from "../testing/operation-l
  */
 const fx = new EventStreamFixture();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const blobs = { objects, prefix: PREFIX };
 const settings: UploadSettings = {
   maxFileBytes: 1000,

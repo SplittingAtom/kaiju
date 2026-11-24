@@ -1,4 +1,4 @@
-import type { GitConversionFailure, GitConversionRefusal } from "@kobe/protocol";
+import type { GitConversionFailure, GitConversionRefusal } from "@kaiju/protocol";
 import { GIT_REPO_MAX_FILES } from "../repo-limits.js";
 import { GIT_CONVERSION_MAX_BYTES } from "./limits.js";
 

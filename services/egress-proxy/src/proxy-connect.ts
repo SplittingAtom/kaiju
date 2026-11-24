@@ -1,6 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import { isIP, type Socket } from "node:net";
-import { normalizeHost } from "@kobe/db";
+import { normalizeHost } from "@kaiju/db";
 import type { EgressDecision } from "./allowlist.js";
 import { authenticate } from "./auth.js";
 import type { ConnectUpstream } from "./proxy-deps.js";

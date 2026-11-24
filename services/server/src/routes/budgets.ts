@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { MAX_BUDGET_TOKENS, MAX_BUDGET_USD, MAX_REQUESTS_PER_MINUTE } from "@kobe/db";
+import { MAX_BUDGET_TOKENS, MAX_BUDGET_USD, MAX_REQUESTS_PER_MINUTE } from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import {
   requireSitePermission,
@@ -19,7 +19,7 @@ import {
   setTeamBudget,
   teamBudgetsView,
 } from "../budgets/store.js";
-import { TEAM_EVAL_CAP_USD_MESSAGE, teamEvalCapSchema } from "@kobe/protocol";
+import { TEAM_EVAL_CAP_USD_MESSAGE, teamEvalCapSchema } from "@kaiju/protocol";
 import { setEvalCap } from "../skills/settings.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { invalidRequest, notFound, param, parseBody, readJson } from "../http/request.js";

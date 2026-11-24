@@ -5,7 +5,7 @@
  */
 import type { SyncConflictView } from "./sync-conflicts";
 import { createRebuildApi, type RebuildApi } from "../workspace/rebuild";
-import type { WorkspaceArea, WorkspaceSyncStatus } from "@kobe/protocol";
+import type { WorkspaceArea, WorkspaceSyncStatus } from "@kaiju/protocol";
 import {
   apiDownload,
   apiReadCapped,

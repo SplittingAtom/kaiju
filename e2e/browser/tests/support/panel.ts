@@ -5,5 +5,5 @@ import type { Locator, Page } from "@playwright/test";
  * chat mounted (and inert) behind it, so a page's queries are scoped here, never page-wide.
  */
 export function panelOf(page: Page): Locator {
-  return page.locator("[data-kobe-panel]");
+  return page.locator("[data-kaiju-panel]");
 }

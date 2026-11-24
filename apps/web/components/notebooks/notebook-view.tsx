@@ -12,7 +12,7 @@
  */
 import { ListPlusIcon, PlayIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { NOTEBOOK_FILE_MAX_BYTES } from "@kobe/protocol";
+import { NOTEBOOK_FILE_MAX_BYTES } from "@kaiju/protocol";
 import type { FilesApi } from "../../lib/files/api";
 import { useWorkspaceProjects } from "../projects/workspace-projects";
 import { editBlockReason, sha256Hex } from "../../lib/files/editor";
@@ -262,7 +262,7 @@ function NotebookBody(
     ];
   };
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2" data-kobe-notebook={path}>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2" data-kaiju-notebook={path}>
       <EditorToolbar
         label="Notebook"
         actions={notebookActions()}

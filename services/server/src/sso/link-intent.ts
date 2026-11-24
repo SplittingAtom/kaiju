@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { SealedCookieBox, consumeOnce, rememberOnce } from "./state.js";
 
 /**
@@ -39,7 +39,7 @@ export class LinkIntentBox extends SealedCookieBox<LinkIntent> {
 
 /** Creates an intent, records its nonce for single use, and returns the sealed cookie value. */
 export async function issueLinkIntent(
-  db: KobeDb,
+  db: KaijuDb,
   box: LinkIntentBox,
   input: { readonly providerId: string; readonly subject: string; readonly email: string },
 ): Promise<string> {
@@ -50,5 +50,5 @@ export async function issueLinkIntent(
 }
 
 /** Consumes an intent's nonce: true only the first time, while unexpired. */
-export const consumeLinkIntent = (db: KobeDb, intent: LinkIntent): Promise<boolean> =>
+export const consumeLinkIntent = (db: KaijuDb, intent: LinkIntent): Promise<boolean> =>
   consumeOnce(db, PREFIX, intent.nonce, intent.providerId);

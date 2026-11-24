@@ -1,5 +1,5 @@
 {
-  "name": "@kobe/telemetry",
+  "name": "@kaiju/telemetry",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kobe/protocol": "workspace:*",
+    "@kaiju/protocol": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/context-async-hooks": "^2.0.0",
     "@opentelemetry/core": "^2.0.0",

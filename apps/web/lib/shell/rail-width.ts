@@ -10,7 +10,7 @@
 import { RAIL_PX } from "./layout";
 
 /** The shell grid's custom property for the expanded rail's dragged width. */
-export const RAIL_WIDTH_VAR = "--kobe-rail-expanded-width";
+export const RAIL_WIDTH_VAR = "--kaiju-rail-expanded-width";
 
 /** One arrow key's step on the rail's handle, in px. */
 export const RAIL_STEP_PX = 24;

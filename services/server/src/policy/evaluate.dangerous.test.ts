@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { builtin, ENABLED_ALL, rule } from "../testing/policy-fixtures.js";
-import { type Case, run, kobeWrite, jiraCreate, jiraSearch } from "./evaluate.test-helpers.js";
+import { type Case, run, kaijuWrite, jiraCreate, jiraSearch } from "./evaluate.test-helpers.js";
 
 describe("evaluatePolicy: Dangerous mode (AC1, KOBE-476)", () => {
   /** A Dangerous agent that picked only a connector: its tools are named one by one. */
@@ -27,8 +27,8 @@ describe("evaluatePolicy: Dangerous mode (AC1, KOBE-476)", () => {
   it("never lifts a Kaiju-scoped write's prompt, even when named (U10, D23, D24)", () => {
     for (const mode of interactive) {
       const decision = run({
-        tool: kobeWrite,
-        options: { dangerous: [...dangerous, kobeWrite.name], mode },
+        tool: kaijuWrite,
+        options: { dangerous: [...dangerous, kaijuWrite.name], mode },
       });
       expect(decision.effect, mode).toBe("require_approval");
     }

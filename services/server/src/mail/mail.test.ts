@@ -34,9 +34,9 @@ describe("smtpTransportOptions", () => {
 
 describe("parseFrom", () => {
   it("parses a display name and lower-cases the address", () => {
-    expect(parseFrom("Kaiju Mail <Kobe@Example.com>")).toEqual({
+    expect(parseFrom("Kaiju Mail <Kaiju@Example.com>")).toEqual({
       name: "Kaiju Mail",
-      address: "kobe@example.com",
+      address: "kaiju@example.com",
     });
   });
 });
@@ -51,7 +51,7 @@ describe("messages", () => {
       inviterName: "Eve\nX-Evil: 1",
       teamName: "Fin\rance",
       role: "contributor",
-      signInUrl: "https://kobe.test/",
+      signInUrl: "https://kaiju.test/",
     });
     expect(m.subject).not.toMatch(/[\r\n]/);
     expect(m.text).toContain("as a contributor");
@@ -62,15 +62,15 @@ describe("messages", () => {
       appName: "Kaiju",
       to: "a@b.test",
       inviterName: "Owner",
-      link: "https://kobe.test/invite#token=abc",
+      link: "https://kaiju.test/invite#token=abc",
       expiresAt: new Date("2026-10-05T00:00:00Z"),
     });
     expect(invite.subject).not.toContain("abc");
-    expect(invite.text).toContain("https://kobe.test/invite#token=abc");
+    expect(invite.text).toContain("https://kaiju.test/invite#token=abc");
     const reset = passwordResetMessage({
       appName: "Kaiju",
       to: "a@b.test",
-      link: "https://kobe.test/reset-password#token=xyz",
+      link: "https://kaiju.test/reset-password#token=xyz",
       expiresInMinutes: 30,
     });
     expect(reset.subject).not.toContain("xyz");
@@ -83,7 +83,7 @@ describe("messages", () => {
       appName,
       to: "a@b.test",
       inviterName: "Owner",
-      link: "https://kobe.test/invite#token=abc",
+      link: "https://kaiju.test/invite#token=abc",
       expiresAt: new Date("2026-10-05T00:00:00Z"),
     });
     expect(invite.subject).toBe("Owner invited you to Acme Bcc: x@y.test");
@@ -94,14 +94,14 @@ describe("messages", () => {
       inviterName: "Owner",
       teamName: "Finance",
       role: "member",
-      signInUrl: "https://kobe.test/",
+      signInUrl: "https://kaiju.test/",
     });
     expect(team.subject).toBe("Owner invited you to the Finance team on Acme");
     expect(team.text).toContain("team on Acme as a member");
     const reset = passwordResetMessage({
       appName: "Acme",
       to: "a@b.test",
-      link: "https://kobe.test/reset-password#token=xyz",
+      link: "https://kaiju.test/reset-password#token=xyz",
       expiresInMinutes: 30,
     });
     expect(reset.subject).toBe("Reset your Acme password");

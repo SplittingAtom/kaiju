@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { and, eq, gt, sql, verifications, type KobeDb } from "@kobe/db";
+import { and, eq, gt, sql, verifications, type KaijuDb } from "@kaiju/db";
 import type { LocalProofIdentity } from "./linking.js";
 
 /**
@@ -37,7 +37,7 @@ const parse = (value: string): PendingLink | undefined => {
 
 /** Stages the identity for the session (replacing any earlier one) and drops expired ones. */
 export async function stagePendingLink(
-  db: KobeDb,
+  db: KaijuDb,
   sessionId: string,
   identity: LocalProofIdentity,
   userId: string,
@@ -65,7 +65,7 @@ export async function stagePendingLink(
 
 /** The session's unexpired pending link of `userId`, if any. */
 export async function readPendingLink(
-  db: KobeDb,
+  db: KaijuDb,
   sessionId: string,
   userId: string,
 ): Promise<PendingLink | undefined> {
@@ -84,7 +84,7 @@ export async function readPendingLink(
 
 /** Takes (deletes) the session's pending link once: the confirm and the discard both use it. */
 export async function takePendingLink(
-  db: KobeDb,
+  db: KaijuDb,
   sessionId: string,
   userId: string,
 ): Promise<PendingLink | undefined> {

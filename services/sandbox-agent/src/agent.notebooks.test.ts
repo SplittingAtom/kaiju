@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import type { NotebookExecuteFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { KernelManager } from "./notebook/manager.js";
 import { fakeLauncher } from "./notebook/testing/fake-bridge.js";

@@ -1,6 +1,6 @@
-import { type FileOpenFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
-import { sql, type KobeDb } from "@kobe/db";
-import { CAPABILITY_FILE_EDITS, workspaceToolPath, type FileOpenedPayload } from "@kobe/protocol";
+import { type FileOpenFrame, type ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
+import { sql, type KaijuDb } from "@kaiju/db";
+import { CAPABILITY_FILE_EDITS, workspaceToolPath, type FileOpenedPayload } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { isInternalPath } from "../workspace-files/paths.js";
@@ -16,7 +16,7 @@ import type { SandboxTarget } from "./types.js";
  * `file.opened {tool_call_id, path}`, on which the owner's client opens the file's tab.
  */
 export interface FileOpenConnection {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly target: SandboxTarget;
   readonly runMaxEvents: number;
   readonly log: Pick<Logger, "error" | "warn">;
@@ -101,7 +101,7 @@ export function fileOpenSpec(c: FileOpenConnection): ToolFrameSpec<FileOpenFrame
 
 /** Checks the path against the run owner's synced workspace and records `file.opened`. */
 export async function openFile(
-  db: KobeDb,
+  db: KaijuDb,
   target: SandboxTarget,
   frame: FileOpenFrame,
   runMaxEvents: number,

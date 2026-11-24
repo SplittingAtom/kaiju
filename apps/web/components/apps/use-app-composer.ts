@@ -6,7 +6,7 @@ import { frameDragRelay } from "../../lib/apps/frame-drag";
 import type { AppMessage, BridgeDragEvent } from "../../lib/apps/host-bridge";
 import { NEW_DRAFT } from "../../lib/chat/attachments";
 import type { ChatSession } from "../../lib/chat/session";
-import { useChatSession, useKobeExtras } from "../chat/kobe-runtime";
+import { useChatSession, useKaijuExtras } from "../chat/kaiju-runtime";
 
 /**
  * An app frame's `ui/message` and `ui/update-model-context` (KOBE-439, spec §8): the text goes to
@@ -32,7 +32,7 @@ export function useAppComposer(
   options: { readonly newConversation?: boolean; readonly active?: boolean } = {},
 ) {
   const session = useChatSession();
-  const onScreen = useKobeExtras()?.state.threadId ?? null;
+  const onScreen = useKaijuExtras()?.state.threadId ?? null;
   const threadId =
     options.active === false ? null : (onScreen ?? (options.newConversation ? NEW_DRAFT : null));
   const { appId, connectorId, templateSha256, title } = app;

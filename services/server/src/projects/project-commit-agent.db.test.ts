@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_PROJECTS, type PolicyDecision, type PolicyEngine } from "@kobe/protocol";
-import { projectCommitResultFrameSchema } from "@kobe/protocol/sandbox-wire";
+import { CAPABILITY_PROJECTS, type PolicyDecision, type PolicyEngine } from "@kaiju/protocol";
+import { projectCommitResultFrameSchema } from "@kaiju/protocol/sandbox-wire";
 import { approvalKeyring } from "../approvals/index.js";
 import { createApp } from "../app.js";
 import { diffHash } from "./tree.js";
@@ -25,7 +25,7 @@ import { createWorkspaceSync, type WorkspaceSync } from "../workspace-sync/index
 const fx = new EventStreamFixture();
 const auth = new FakeSandboxAuth();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const KEY = approvalKeyring("approval-key-for-tests-".padEnd(48, "k"));
 const silent = { error: () => {}, warn: () => {}, info: () => {} };
 const sandboxes: FakeSandbox[] = [];
@@ -124,7 +124,7 @@ async function world(role: "editor" | "reader", checkout = true): Promise<World>
         .status,
     ).toBe(201);
   }
-  const boundary = `----kobe${randomBytes(6).toString("hex")}`;
+  const boundary = `----kaiju${randomBytes(6).toString("hex")}`;
   const bytes = Buffer.from(
     `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="a.md"\r\n` +
       `Content-Type: text/plain\r\n\r\nA1\r\n--${boundary}--\r\n`,

@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   GIT_BUILTIN_CONNECTOR_ID,
-  KOBE_BUILTIN_CONNECTOR_ID,
-  KOBE_MCP_MODE_KEY,
+  KAIJU_BUILTIN_CONNECTOR_ID,
+  KAIJU_MCP_MODE_KEY,
   GIT_SITE_ENABLED_KEY,
   verifyAuditChain,
   withTeam,
-} from "@kobe/db";
-import { projectPermissions } from "@kobe/protocol";
-import { kobeGitApprovalCard } from "./card.js";
+} from "@kaiju/db";
+import { projectPermissions } from "@kaiju/protocol";
+import { kaijuGitApprovalCard } from "./card.js";
 import { guardGitToolCall } from "./guard.js";
 import { describePinnedTool } from "../mcp/catalog.js";
 import { gitPinnedTools } from "./pinned.js";
@@ -78,15 +78,15 @@ describe("the sandbox's policy.check refuses before anyone is asked", () => {
       teamId: w.team,
       userId: w.contributor.id,
       threadId: randomUUID(),
-      publicUrl: "https://kobe.test",
+      publicUrl: "https://kaiju.test",
       input: { connection: id, repository: "docs", title: "t", body: "b" },
     };
     const card = await withTeam(h.fx.db, w.team, (tx) =>
-      kobeGitApprovalCard(tx, { ...req, piName: h.pi("git_create_issue") }),
+      kaijuGitApprovalCard(tx, { ...req, piName: h.pi("git_create_issue") }),
     );
     expect(card).toMatchObject({ action: "create_issue", repository: "docs" });
     const lookalike = await withTeam(h.fx.db, w.team, (tx) =>
-      kobeGitApprovalCard(tx, { ...req, piName: "mcp__other__git_create_issue" }),
+      kaijuGitApprovalCard(tx, { ...req, piName: "mcp__other__git_create_issue" }),
     );
     expect(lookalike).toBeUndefined();
   });
@@ -157,7 +157,7 @@ describe("per-connection budget (M2)", () => {
 });
 
 describe("the git tools follow the Git switch, never the Kaiju connector's (M3)", () => {
-  const kobeMode = (mode: string | null) => h.setSite(KOBE_MCP_MODE_KEY, mode);
+  const kaijuMode = (mode: string | null) => h.setSite(KAIJU_MCP_MODE_KEY, mode);
   const gitSwitch = (on: boolean) => h.setSite(GIT_SITE_ENABLED_KEY, on ? null : "false");
 
   it.each([
@@ -170,7 +170,7 @@ describe("the git tools follow the Git switch, never the Kaiju connector's (M3)"
     const w = await world();
     const id = await connect(w, "forgejo");
     const s = await h.sandboxFor(w.team, w.contributor);
-    await kobeMode(mode);
+    await kaijuMode(mode);
     await gitSwitch(git);
     try {
       expect((await gitNames(s)).length > 0).toBe(offered);
@@ -181,7 +181,7 @@ describe("the git tools follow the Git switch, never the Kaiju connector's (M3)"
       );
       expect(picker.some((c) => c.builtin?.kind === "git")).toBe(offered);
     } finally {
-      await kobeMode(null);
+      await kaijuMode(null);
       await gitSwitch(true);
     }
   });
@@ -192,7 +192,7 @@ describe("the git tools follow the Git switch, never the Kaiju connector's (M3)"
     const s = await h.sandboxFor(w.team, w.contributor);
     await h.fx.admin.query(
       `INSERT INTO thread_connectors_off (team_id, thread_id, connector_id) VALUES ($1, $2, $3)`,
-      [w.team, s.threadId, KOBE_BUILTIN_CONNECTOR_ID],
+      [w.team, s.threadId, KAIJU_BUILTIN_CONNECTOR_ID],
     );
     const out = await call(s, "git_list_repositories", { connection: id });
     expect(out.isError, out.text).toBeUndefined();
@@ -329,7 +329,7 @@ describe("write tools apply the Repo read rule first (R2-L2)", () => {
       db: h.fx.db,
       envelope,
       net: h.fx.replica(0).deps.gitHostNet,
-      publicUrl: "https://kobe.test",
+      publicUrl: "https://kaiju.test",
       projectPermissions: (role, projectRole) => ({
         ...projectPermissions(role, projectRole),
         view: false,

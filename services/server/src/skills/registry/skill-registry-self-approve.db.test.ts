@@ -22,7 +22,7 @@ let builder: TestBrowser;
 const ids = { admin: "", builder: "", reviewer: "" };
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   ids.admin = await h.createUser("admin@solo.test", "admin");
   ids.builder = await h.createUser("builder@solo.test");
   ids.reviewer = await h.createUser("reviewer@solo.test");

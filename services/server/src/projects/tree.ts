@@ -1,12 +1,12 @@
 import { createHash, randomUUID } from "node:crypto";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   canonicalJson,
   PROJECT_COMMIT_MESSAGE_MAX,
   type ProjectCommit,
   type ProjectDiffEntry,
   type ProjectTreeEntry,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import { recordLinks } from "../thread-file-links/record.js";
 import { projectWriteBlock, ProjectWriteBlocked } from "./repo-state.js";
@@ -89,7 +89,7 @@ export const toTreeEntry = (f: TreeFile): ProjectTreeEntry => ({
 });
 
 /** The project's head (null before the first commit). */
-export async function headOf(tx: KobeTx, teamId: string, projectId: string): Promise<Head | null> {
+export async function headOf(tx: KaijuTx, teamId: string, projectId: string): Promise<Head | null> {
   const res = await tx.execute<{ id: string; seq: number }>(sql`
     SELECT c.id, c.seq FROM projects p
       JOIN project_commits c ON c.team_id = p.team_id AND c.id = p.head_commit_id
@@ -99,7 +99,7 @@ export async function headOf(tx: KobeTx, teamId: string, projectId: string): Pro
 }
 
 /** The tree of a commit (empty for null: a project with no commit yet). */
-export async function loadTree(tx: KobeTx, teamId: string, commitId: string | null): Promise<Tree> {
+export async function loadTree(tx: KaijuTx, teamId: string, commitId: string | null): Promise<Tree> {
   if (commitId === null) return new Map();
   const res = await tx.execute<EntryRow>(sql`
     SELECT path, sha256, blob_ref, size_bytes, mime_type, executable FROM project_tree_entries
@@ -214,7 +214,7 @@ export type { CommitRow };
  * the caller turns into a refusal.
  */
 async function rewriteFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   tree: Tree,
@@ -254,7 +254,7 @@ async function rewriteFiles(
  * objects of the head tree, `history_*` = the distinct objects only older commits reference.
  */
 export async function refreshProjectStorage(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
 ): Promise<void> {
@@ -290,7 +290,7 @@ export interface WrittenCommit {
  * except for the Repo mirror's own writes (`mirror`, KOBE-766).
  */
 export async function writeCommit(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: {
     readonly teamId: string;
     readonly projectId: string;
@@ -389,7 +389,7 @@ export async function writeCommit(
  * The head tree as `project_files` holds it now plus/minus one file (the single-file write
  * paths): `project_files` has no executable bit, so it is taken from the head tree.
  */
-export async function filesTree(tx: KobeTx, teamId: string, projectId: string): Promise<Tree> {
+export async function filesTree(tx: KaijuTx, teamId: string, projectId: string): Promise<Tree> {
   const res = await tx.execute<EntryRow>(sql`
     SELECT f.path, f.sha256, f.blob_ref, f.size_bytes, f.mime_type,
            COALESCE(e.executable, false) AS executable
@@ -403,7 +403,7 @@ export async function filesTree(tx: KobeTx, teamId: string, projectId: string): 
 
 /** A single-file write (upload, import, proposal, removal) recorded as a commit of the new files. */
 export async function commitFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   author: CommitAuthor,
@@ -420,7 +420,7 @@ export async function commitFiles(
 
 /** Blob keys some tree of the project (or its head files) references, of these. */
 export async function referencedKeys(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   keys: readonly string[],
@@ -446,7 +446,7 @@ export const PROJECT_BLOB_GRACE = sql.raw(`interval '1 hour'`);
  * deleter re-checks that nothing references the key and that no legal hold covers the team.
  */
 export async function queueProjectBlobs(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   userId: string,

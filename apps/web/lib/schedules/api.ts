@@ -2,7 +2,7 @@
  * Schedules over the shared API client (`/v1/schedules`, KOBE-173; contract KOBE-171). Responses
  * arrive camelized; request bodies use the routes' snake_case. Every call sends `X-Kobe-Team`.
  */
-import type { SchedulePausedBy, ScheduleRecurrence } from "@kobe/protocol";
+import type { SchedulePausedBy, ScheduleRecurrence } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
 
 export interface Schedule {

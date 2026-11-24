@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import { TestBrowser } from "../testing/browser.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -16,7 +16,7 @@ import { SITE_SWITCH_KEYS, readSwitches, semanticRunLanes } from "./switches.js"
  */
 const fx = new EventStreamFixture();
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 
 beforeAll(async () => {
   await fx.setup([{}], () => ({ blobs }));

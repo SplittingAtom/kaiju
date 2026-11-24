@@ -21,7 +21,7 @@ const PAGES = buildGuide([
     content: `${fm("Models", "Pick a model; memory use differs.", "Models")}\nText.\n`,
   },
 ]);
-const ORIGIN = "https://kobe.example.com";
+const ORIGIN = "https://kaiju.example.com";
 
 describe("pageHeadings", () => {
   it("lists h2-h4 outside code fences, with their anchors", () => {

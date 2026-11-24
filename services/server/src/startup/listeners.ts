@@ -1,6 +1,6 @@
 import type { Server } from "node:http";
 import { serve } from "@hono/node-server";
-import { signSiteEgressToken } from "@kobe/session-token";
+import { signSiteEgressToken } from "@kaiju/session-token";
 import type { Logger } from "pino";
 import { createApp, type AppOptions } from "../app.js";
 import type { Config } from "../config.js";
@@ -130,7 +130,7 @@ function internalListener(
       fetch: createInternalApp({
         internalKey,
         mcp: deps.mcp,
-        kobe: deps.kobeMcp,
+        kaiju: deps.kaijuMcp,
         gitMcp: deps.gitMcp,
         appResults: deps.appResults,
         auth: {

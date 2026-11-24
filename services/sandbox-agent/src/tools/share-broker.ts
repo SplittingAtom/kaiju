@@ -1,5 +1,5 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { FileShareFrame, FileShareResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { FileShareFrame, FileShareResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
@@ -28,7 +28,7 @@ export interface FileShareBrokerDeps {
   readonly pushPath: (rel: string) => Promise<PushedFile>;
 }
 
-type ShareRequest = Extract<KobeToolsRequest, { op: "file.share" }>;
+type ShareRequest = Extract<KaijuToolsRequest, { op: "file.share" }>;
 
 export class FileShareBroker {
   readonly #deps: FileShareBrokerDeps;
@@ -50,7 +50,7 @@ export class FileShareBroker {
     threadId: string,
     runId: string | undefined,
     request: ShareRequest,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));

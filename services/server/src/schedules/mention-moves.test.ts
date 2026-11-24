@@ -1,4 +1,4 @@
-import { mentionMarker } from "@kobe/protocol";
+import { mentionMarker } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { movedPath, retargetMentions } from "./mention-moves.js";
 

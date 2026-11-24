@@ -1,4 +1,4 @@
-import { agentSkills, type AgentFrontmatter } from "@kobe/agent-file";
+import { agentSkills, type AgentFrontmatter } from "@kaiju/agent-file";
 import {
   and,
   eq,
@@ -10,10 +10,10 @@ import {
   teamAgentVersions,
   teamSkills,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { agentAccess, type AgentScope } from "../agents/access.js";
 import { siteVisibleTo } from "../agents/roster-resolution.js";
 import { setTeamSkillAccess } from "./access.js";
@@ -68,7 +68,7 @@ const skillsOf = (frontmatter: Record<string, unknown> | undefined) =>
     ? { names: [] as string[], exclusive: false }
     : agentSkills(frontmatter as AgentFrontmatter);
 
-async function teamAgentRows(tx: KobeTx, teamId: string): Promise<AgentRow[]> {
+async function teamAgentRows(tx: KaijuTx, teamId: string): Promise<AgentRow[]> {
   const rows = await tx
     .select({
       id: teamAgents.id,
@@ -91,7 +91,7 @@ async function teamAgentRows(tx: KobeTx, teamId: string): Promise<AgentRow[]> {
   return rows.map((r) => ({ ...r, scope: "team" as const, current: r.current ?? undefined }));
 }
 
-async function siteAgentRows(tx: KobeTx, userId: string): Promise<AgentRow[]> {
+async function siteAgentRows(tx: KaijuTx, userId: string): Promise<AgentRow[]> {
   const rows = await tx
     .select({
       id: siteAgents.id,
@@ -165,7 +165,7 @@ function reachOf(
 
 /** The reach of the team skill `skillId` (null: no such team skill). */
 export function skillReach(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: { teamId: string; userId: string; role: TeamRole },
   skillId: string,
 ): Promise<SkillReach | null> {
@@ -214,7 +214,7 @@ export type OfferResult =
  * S1 of KOBE-316).
  */
 export async function setOfferToAll(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   skillId: string,
   offerToAll: boolean,
@@ -234,7 +234,7 @@ export async function setOfferToAll(
 
 /** Names of agents by id, for usage rows (only agents the viewer may see get a name). */
 export async function agentNames(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   ids: readonly string[],
 ): Promise<Map<string, { scope: AgentScope; name: string }>> {

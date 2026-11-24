@@ -1,4 +1,4 @@
-import { formatSseRetry, SSE_KEEPALIVE_FRAME } from "@kobe/protocol";
+import { formatSseRetry, SSE_KEEPALIVE_FRAME } from "@kaiju/protocol";
 import type { RunEventHub, WorkspaceHubSubscriber } from "../event-stream/hub.js";
 import { STREAM_DEFAULTS, type StreamTimings } from "../event-stream/stream.js";
 import { logger as rootLogger } from "../logger.js";

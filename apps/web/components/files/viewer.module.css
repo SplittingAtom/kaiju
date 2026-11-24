@@ -5,8 +5,8 @@
 
 /* The surround: a dark backdrop in either theme, so white pages and transparent images stand out. */
 .surround {
-  background: var(--kobe-viewer-surround);
-  color: var(--kobe-viewer-surround-fg);
+  background: var(--kaiju-viewer-surround);
+  color: var(--kaiju-viewer-surround-fg);
 }
 
 .page {
@@ -17,8 +17,8 @@
   position: relative;
   direction: ltr;
   margin: 0 auto;
-  background: var(--kobe-viewer-page);
-  box-shadow: var(--kobe-viewer-page-shadow);
+  background: var(--kaiju-viewer-page);
+  box-shadow: var(--kaiju-viewer-page-shadow);
 }
 
 .page canvas {
@@ -71,7 +71,7 @@
 }
 
 .page :global(.textLayer) ::selection {
-  background: var(--kobe-viewer-selection);
+  background: var(--kaiju-viewer-selection);
   background: color-mix(in srgb, AccentColor, transparent 50%);
   color: transparent;
 }
@@ -93,12 +93,12 @@
 .page :global(.textLayer) .match {
   margin: -1px;
   padding: 1px;
-  border-radius: var(--kobe-radius-sm);
-  background-color: var(--kobe-viewer-match);
+  border-radius: var(--kaiju-radius-sm);
+  background-color: var(--kaiju-viewer-match);
 }
 
 .page :global(.textLayer) .matchSelected {
-  background-color: var(--kobe-viewer-match-current);
+  background-color: var(--kaiju-viewer-match-current);
 }
 
 /* Links drawn by Kaiju (never pdf.js's annotation layer). */
@@ -113,23 +113,23 @@
   position: absolute;
   pointer-events: auto;
   cursor: pointer;
-  border-radius: var(--kobe-radius-sm);
+  border-radius: var(--kaiju-radius-sm);
 }
 
 .links > *:hover,
 .links > *:focus-visible {
-  background: var(--kobe-viewer-link);
-  outline: 2px solid var(--kobe-viewer-link-outline);
+  background: var(--kaiju-viewer-link);
+  outline: 2px solid var(--kaiju-viewer-link-outline);
 }
 
 /* Images: a checkerboard shows through transparent pixels. */
 .checkerboard {
-  background-color: var(--kobe-viewer-check-light);
+  background-color: var(--kaiju-viewer-check-light);
   background-image: conic-gradient(
-    var(--kobe-viewer-check-dark) 25%,
-    var(--kobe-viewer-check-light) 0 50%,
-    var(--kobe-viewer-check-dark) 0 75%,
-    var(--kobe-viewer-check-light) 0
+    var(--kaiju-viewer-check-dark) 25%,
+    var(--kaiju-viewer-check-light) 0 50%,
+    var(--kaiju-viewer-check-dark) 0 75%,
+    var(--kaiju-viewer-check-light) 0
   );
   background-size: 16px 16px;
 }
@@ -144,5 +144,5 @@
 
 /* A page that could not be drawn says so on the page itself. */
 .pageNote {
-  color: var(--kobe-viewer-page-fg);
+  color: var(--kaiju-viewer-page-fg);
 }

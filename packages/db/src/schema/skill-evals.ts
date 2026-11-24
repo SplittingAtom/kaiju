@@ -16,7 +16,7 @@ import {
 import { users } from "./auth.js";
 import { teams } from "./teams.js";
 
-// Skill eval runs (KOBE-325, spec SK16, SK18; contract KOBE-324 `@kobe/protocol` skill-evals).
+// Skill eval runs (KOBE-325, spec SK16, SK18; contract KOBE-324 `@kaiju/protocol` skill-evals).
 // Team tables: team_id NOT NULL, ENABLE + FORCE RLS with the canonical policy and a break-glass
 // read (custom migration `*_skill_evals_rls.sql`). An eval run evaluates one package (a draft's
 // revision or a saved version) and plans executions; each execution is one ordinary run in its
@@ -30,7 +30,7 @@ import { teams } from "./teams.js";
 // run and its results stay until no hold covers the starter; TRUNCATE is refused while any hold
 // is active.
 
-/** Mirror `SKILL_EVAL_MODES` / `SKILL_EVAL_RUN_STATUSES` of `@kobe/protocol` (a server test). */
+/** Mirror `SKILL_EVAL_MODES` / `SKILL_EVAL_RUN_STATUSES` of `@kaiju/protocol` (a server test). */
 export const SKILL_EVAL_RUN_MODES = ["full", "with_only"] as const;
 export const SKILL_EVAL_RUN_STATES = [
   "queued",

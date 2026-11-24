@@ -134,7 +134,7 @@ test("a reader of the shared thread: the picker and the tree move only their vie
     await expect(
       branchBar(second).getByRole("button", { name: "Make it current", exact: true }),
     ).toHaveCount(0);
-    await expect(second.locator("[data-kobe-thread-root]").getByRole("alert")).toHaveCount(0);
+    await expect(second.locator("[data-kaiju-thread-root]").getByRole("alert")).toHaveCount(0);
 
     // The tree: the CHARLIE row brings the leaf's branch back; the side row shows it again.
     await showFromTree(second, MAIN);

@@ -28,11 +28,11 @@ describe("team invitations need a verified address (nOAuth, review finding 1)", 
   }
 
   it("Entra: a self-set email claim never becomes the address (the UPN does)", async () => {
-    await invite("victim1@kobe-victim.test");
+    await invite("victim1@kaiju-victim.test");
     const { browser } = await signInVia(
       entra,
       "corp",
-      entraUser({ email: "victim1@kobe-victim.test", preferred_username: "eve1@contoso.com" }),
+      entraUser({ email: "victim1@kaiju-victim.test", preferred_username: "eve1@contoso.com" }),
     );
     const me = await browser.get("/v1/me");
     expect(me.json.user.email).toBe("eve1@contoso.com");
@@ -41,10 +41,10 @@ describe("team invitations need a verified address (nOAuth, review finding 1)", 
   });
 
   it("generic: an unverified email lists and accepts no invitation", async () => {
-    await invite("victim2@kobe-victim.test");
+    await invite("victim2@kaiju-victim.test");
     const { browser } = await signInVia(kc, "kc", {
       sub: "kc-nOAuth-1",
-      email: "victim2@kobe-victim.test",
+      email: "victim2@kaiju-victim.test",
       groups: ["g-research"],
     });
     const me = await browser.get("/v1/me");
@@ -53,7 +53,7 @@ describe("team invitations need a verified address (nOAuth, review finding 1)", 
     const row = await h.admin.query(`SELECT email, email_verified FROM users WHERE id = $1`, [
       userId,
     ]);
-    expect(row.rows[0]).toEqual({ email: "victim2@kobe-victim.test", email_verified: false });
+    expect(row.rows[0]).toEqual({ email: "victim2@kaiju-victim.test", email_verified: false });
     expect((await browser.get("/v1/me/invites")).json.invitations).toEqual([]);
     expect((await browser.post(`/v1/me/invites/${teamId}/accept`)).status).toBe(404);
     expect((await browser.post(`/v1/me/invites/${teamId}/decline`)).status).toBe(404);
@@ -64,16 +64,16 @@ describe("team invitations need a verified address (nOAuth, review finding 1)", 
     expect(member.rows).toEqual([{ role: "contributor" }]);
     // The invitation is still there for the real owner of the address.
     const open = await h.admin.query(
-      `SELECT 1 FROM team_invitations WHERE email = 'victim2@kobe-victim.test'`,
+      `SELECT 1 FROM team_invitations WHERE email = 'victim2@kaiju-victim.test'`,
     );
     expect(open.rowCount).toBe(1);
   });
 
   it("generic: a verified email (email_verified: true) accepts its invitation", async () => {
-    await invite("verified3@kobe-victim.test", "member");
+    await invite("verified3@kaiju-victim.test", "member");
     const { browser } = await signInVia(kc, "kc", {
       sub: "kc-verified-3",
-      email: "verified3@kobe-victim.test",
+      email: "verified3@kaiju-victim.test",
       email_verified: true,
       groups: ["g-research"],
     });
@@ -87,14 +87,14 @@ describe("SSO-made users get no local credential (SSO9, review finding 3)", () =
   it("refuses passkey registration, a password change and TOTP enrolment", async () => {
     const { browser } = await signInVia(entra, "corp", entraUser());
     expect((await browser.get("/v1/me")).status).toBe(200);
-    const authenticator = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
+    const authenticator = new SoftwareAuthenticator("kaiju.test", "http://kaiju.test");
     const options = await browser.get("/api/auth/passkey/generate-register-options");
     expect(options.status).toBe(403);
     expect(options.json.code).toBe("SSO_ONLY_ACCOUNT");
     const verify = await browser.post("/api/auth/passkey/verify-registration", {
       response: authenticator.register({
         challenge: "AAAA",
-        rp: { id: "kobe.test", name: "Kaiju" },
+        rp: { id: "kaiju.test", name: "Kaiju" },
         user: { id: "AAAA", name: "x" },
       }),
     });
@@ -243,7 +243,7 @@ describe("returnTo (open redirect)", () => {
     "/%2F%2Fevil",
   ])("lands %s on /", async (returnTo) => {
     const { location } = await signInVia(entra, "corp", entraUser(), returnTo);
-    expect(location).toBe("http://kobe.test/");
+    expect(location).toBe("http://kaiju.test/");
   });
 });
 

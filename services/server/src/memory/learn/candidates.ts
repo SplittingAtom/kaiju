@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { evaluateMemoryWrite } from "../checks.js";
 import { locate } from "../items/location.js";
 import type { MemoryWho } from "../items/who.js";
@@ -19,7 +19,7 @@ import { statementHash, type KnownStatements, type SelectedCandidate } from "./v
 
 /** The person's open candidates in this Workspace and their dismissals in this thread. */
 export async function readKnownStatements(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string; threadId: string },
 ): Promise<KnownStatements> {
   const open = await tx.execute<{ statement: unknown }>(sql`
@@ -53,7 +53,7 @@ const scopeOf = (c: SelectedCandidate) =>
 
 /** Runs the shared save checks on each candidate; drops credentials and invalid text. */
 export async function checkCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   env: { teamId: string; userId: string; memory: EffectiveMemory },
   selected: readonly SelectedCandidate[],
 ): Promise<{
@@ -124,7 +124,7 @@ export function candidatePayload(c: CheckedCandidate, promptVersion: string) {
 
 /** Stores the candidates in order (`ord` 0..n-1). */
 export async function insertCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; passId: string },
   candidates: readonly CheckedCandidate[],
   promptVersion: string,

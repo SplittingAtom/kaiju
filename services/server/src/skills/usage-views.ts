@@ -1,4 +1,4 @@
-import { FEEDBACK_MIN_RATERS } from "@kobe/protocol";
+import { FEEDBACK_MIN_RATERS } from "@kaiju/protocol";
 import { userKey, type TeamUse, type UsageSnapshot, type UsageWindow } from "./usage-snapshot.js";
 
 /**

@@ -1,11 +1,11 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   semanticMemoryRenderedBytes,
   semanticMemoryRunRank,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
   type SemanticMemoryPlacement,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { logger } from "../../logger.js";
 import { readRunRecords, recordToRunItem } from "./run-records.js";
 import type { SelectLane } from "./select.js";
@@ -115,7 +115,7 @@ export const epochIndex = (k: number, every: number): number => k - (k % every);
  * (its current version is used) or leaves (archived, its place switched off).
  */
 export async function readEpoch(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: { readonly teamId: string; readonly threadId: string; readonly runId: string },
   every: number,
 ): Promise<{ readonly epochRunId: string; readonly isThisRun: boolean } | undefined> {
@@ -141,7 +141,7 @@ export async function readEpoch(
  * the switches allow for this run.
  */
 export async function readHeldSet(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: { readonly teamId: string; readonly userId: string },
   epochRunId: string,
   lanes: readonly SelectLane[],

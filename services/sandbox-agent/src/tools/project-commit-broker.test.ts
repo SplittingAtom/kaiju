@@ -1,6 +1,6 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { ProjectCommitResultFrame } from "@kobe/protocol/sandbox-wire";
-import { projectCommitFrameSchema } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { ProjectCommitResultFrame } from "@kaiju/protocol/sandbox-wire";
+import { projectCommitFrameSchema } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { PushPathError } from "../workspace/sync.js";
 import { ProjectCommitBroker } from "./project-commit-broker.js";
@@ -8,7 +8,7 @@ import { ProjectCommitBroker } from "./project-commit-broker.js";
 const THREAD = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e";
 const RUN = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
 
-type CommitRequest = Extract<KobeToolsRequest, { op: "project.commit" }>;
+type CommitRequest = Extract<KaijuToolsRequest, { op: "project.commit" }>;
 const request = (id = "kt_1"): CommitRequest => ({
   id,
   op: "project.commit",
@@ -28,7 +28,7 @@ const result = (request_id: string, seq = 5): ProjectCommitResultFrame => ({
 function setup(options: { sends?: boolean; push?: () => Promise<unknown>; write?: boolean } = {}) {
   const frames: Record<string, unknown>[] = [];
   const order: string[] = [];
-  const replies: KobeToolsResponse[] = [];
+  const replies: KaijuToolsResponse[] = [];
   const broker = new ProjectCommitBroker({
     send: (frame) => {
       order.push("send");
@@ -43,7 +43,7 @@ function setup(options: { sends?: boolean; push?: () => Promise<unknown>; write?
       }),
     canCommit: (runId) => runId === RUN && options.write !== false,
   });
-  const reply = (r: KobeToolsResponse) => replies.push(r);
+  const reply = (r: KaijuToolsResponse) => replies.push(r);
   return { broker, frames, order, replies, reply };
 }
 

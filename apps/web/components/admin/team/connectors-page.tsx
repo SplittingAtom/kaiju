@@ -28,7 +28,7 @@ import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";
 import { McpUiBadge, ToolColumns } from "../connector-tools";
 import { useMutation, useResource, type Mutation } from "../use-resource";
-import { KobeConnectorCard } from "./kobe-connector-card";
+import { KaijuConnectorCard } from "./kaiju-connector-card";
 
 const HINT = "text-sm text-console-muted";
 
@@ -50,7 +50,7 @@ export function TeamConnectorsPage() {
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
       <div className="mb-4">
-        <KobeConnectorCard />
+        <KaijuConnectorCard />
       </div>
       <ResourceView state={state} label="connectors">
         {(connectors) =>

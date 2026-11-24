@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { itemKindOf } from "@kobe/protocol";
-import { useChatSession } from "../chat/kobe-runtime";
+import { itemKindOf } from "@kaiju/protocol";
+import { useChatSession } from "../chat/kaiju-runtime";
 import { ItemChipBody } from "./app-item-chips";
 
 /** How far the ghost sits from the pointer, so the pointer stays visible. */
@@ -44,7 +44,7 @@ export function FrameDragGhost() {
   return (
     <div
       aria-hidden="true"
-      data-kobe-frame-drag-ghost
+      data-kaiju-frame-drag-ghost
       className="bg-background text-foreground inline-flex max-w-64 min-w-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs shadow-md"
       style={{
         position: "fixed",

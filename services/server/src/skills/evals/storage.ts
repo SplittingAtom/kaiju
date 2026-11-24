@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
-import { fixtureWorkspacePath, type SkillEvalSuite } from "@kobe/protocol";
+import { fixtureWorkspacePath, type SkillEvalSuite } from "@kaiju/protocol";
 import { unzipSync, zipSync } from "fflate";
 import type { BlobStore } from "../../retention/blobs.js";
 import { readVerified } from "../blob-read.js";

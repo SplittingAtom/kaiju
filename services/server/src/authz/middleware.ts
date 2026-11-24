@@ -1,10 +1,10 @@
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
-import { eq, getMembership, sessionActiveTeams, teams, type TeamRole } from "@kobe/db";
+import { eq, getMembership, sessionActiveTeams, teams, type TeamRole } from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import type { ServerDeps } from "../deps.js";
-import { delegationOf } from "../kobe-mcp/delegation.js";
+import { delegationOf } from "../kaiju-mcp/delegation.js";
 import { grantsOf } from "../skills/registry/grants.js";
 import {
   siteRoleAllows,

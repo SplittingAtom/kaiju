@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { recordModelUsage } from "./models/index.js";
 import { teams, users } from "./schema/index.js";
 
@@ -10,7 +10,7 @@ import { teams, users } from "./schema/index.js";
  * the same snapshot as the reservations, not on the spend the caller cached. A line without a
  * period (a gateway of the release before) is still judged on its own `spent`.
  */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const team = randomUUID();
 const alice = randomUUID();
 const bob = randomUUID();
@@ -48,7 +48,7 @@ const spend = (who: string, tokens: number) =>
       runId: undefined,
       at: new Date(),
       route: "openai",
-      model: "kobe-unpriced/m",
+      model: "kaiju-unpriced/m",
       status: 200,
       inputTokens: tokens,
       outputTokens: 0,

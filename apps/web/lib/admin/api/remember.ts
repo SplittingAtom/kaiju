@@ -4,7 +4,7 @@
  * floor. Responses arrive camelized (`argPattern` kept verbatim); bodies go in snake_case. The
  * server enforces every scope and limit; these pages list, revoke and set.
  */
-import type { RememberScope } from "@kobe/protocol";
+import type { RememberScope } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../api/client";
 
 const enc = encodeURIComponent;

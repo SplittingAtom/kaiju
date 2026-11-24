@@ -1,4 +1,4 @@
-import type { RunProjectContext } from "@kobe/protocol";
+import type { RunProjectContext } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { memoryRunFileContent } from "./context.js";
 import {

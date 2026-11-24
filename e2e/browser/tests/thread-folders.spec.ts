@@ -63,7 +63,7 @@ const nodeOf = (page: Page, name: string) =>
   treeOf(page).getByRole("treeitem", { name, exact: true });
 /** The rows of the chosen node's list (the tree holds no thread rows). */
 const rowOf = (page: Page, title: string) =>
-  panelOf(page).locator("[data-kobe-thread]").filter({ hasText: title });
+  panelOf(page).locator("[data-kaiju-thread]").filter({ hasText: title });
 
 async function chooseNode(page: Page, name: string): Promise<void> {
   const node = nodeOf(page, name);
@@ -73,7 +73,7 @@ async function chooseNode(page: Page, name: string): Promise<void> {
 
 /** Renames the open conversation from its header. */
 async function rename(page: Page, title: string): Promise<void> {
-  const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+  const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
   await header.getByRole("button", { name: /^Rename / }).click();
   const name = page.getByRole("textbox", { name: "Conversation name", exact: true });
   await name.fill(title);
@@ -96,7 +96,7 @@ async function rowSubmenu(page: Page, row: Locator, title: string, item: string)
 async function saveToFolder(page: Page, row: Locator, title: string, folder: string) {
   const folders = await rowSubmenu(page, row, title, "Save to folder…");
   await folders.getByRole("menuitem", { name: folder, exact: true }).click();
-  await expect(panelOf(page).locator("[data-kobe-rail-status]")).toHaveText(
+  await expect(panelOf(page).locator("[data-kaiju-rail-status]")).toHaveText(
     `Saved “${title}” to ${folder}.`,
   );
 }
@@ -201,7 +201,7 @@ test("a second member sees the folder and files a thread shared with them", asyn
     await chooseNode(second, "Current");
     const shared = panelOf(second)
       .getByRole("list", { name: "Shared with me", exact: true })
-      .locator("[data-kobe-thread]")
+      .locator("[data-kaiju-thread]")
       .filter({ hasText: title });
     await expect(shared).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
 

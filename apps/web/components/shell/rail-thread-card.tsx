@@ -4,7 +4,7 @@ import { useAuiState } from "@assistant-ui/react";
 import { HoverCard } from "radix-ui";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import type { ThreadCard } from "../../lib/chat/types";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import { chatPortalContainer } from "../ui/chat-portal";
 import styles from "./rail.module.css";
 

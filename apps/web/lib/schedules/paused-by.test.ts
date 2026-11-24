@@ -1,4 +1,4 @@
-import { SCHEDULE_PAUSED_BY } from "@kobe/protocol";
+import { SCHEDULE_PAUSED_BY } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { pausedByLabel } from "./paused-by";
 

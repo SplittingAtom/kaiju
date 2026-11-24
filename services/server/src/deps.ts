@@ -16,14 +16,14 @@ import {
   createDb,
   siteRoles,
   users,
-  type KobeDatabase,
-} from "@kobe/db";
+  type KaijuDatabase,
+} from "@kaiju/db";
 import { ApprovalService, type ApprovalKeyring } from "./approvals/index.js";
 import { AuditAnchorLogger } from "./audit/anchor.js";
 import { AuthAttemptAudit } from "./audit/attempts.js";
 import { recordAudit } from "./audit/record.js";
 import { BackgroundTasks } from "./background.js";
-import { createAuth, type KobeAuth } from "./auth/auth.js";
+import { createAuth, type KaijuAuth } from "./auth/auth.js";
 import { createClientIpWatch, type ClientIpWatch } from "./auth/client-ip-watch.js";
 import { createSignInThrottle, type SignInThrottle } from "./auth/sign-in-throttle.js";
 import { createRunEventHub, type RunEventHub } from "./event-stream/hub.js";
@@ -70,7 +70,7 @@ import { NO_PROBE, type ConnectorProbe } from "./connectors/probe.js";
 import type { AppResultsDeps } from "./apps/results.js";
 import { captureKey } from "./apps/capture-ticket.js";
 import { createMcpService, DENIED_AUDIT_RATE, type McpService } from "./mcp/service.js";
-import { createKobeMcpService, type KobeMcpService } from "./kobe-mcp/service.js";
+import { createKaijuMcpService, type KaijuMcpService } from "./kaiju-mcp/service.js";
 import { createGitMcpService, type GitMcpService } from "./git-tools/mcp-service.js";
 import { createRateLimiter } from "./sandbox/rate-limit.js";
 import { createPolicyEngine } from "./policy/engine.js";
@@ -132,8 +132,8 @@ export interface NewUser {
 }
 
 export interface ServerDeps {
-  readonly database: KobeDatabase;
-  readonly auth: KobeAuth;
+  readonly database: KaijuDatabase;
+  readonly auth: KaijuAuth;
   readonly publicUrl: string;
   /** The nightly retention pass, offboarding purges and workspace GC are paused (KOBE-243). */
   readonly retentionPaused: boolean;
@@ -225,7 +225,7 @@ export interface ServerDeps {
    * The built-in Kaiju MCP server (KOBE-619): its tools listed and decided-and-executed on the
    * internal listener; `createApp` binds the public API router it dispatches admin tools to.
    */
-  readonly kobeMcp: KobeMcpService;
+  readonly kaijuMcp: KaijuMcpService;
   readonly gitMcp: GitMcpService;
   /** The address policy registered connector URLs must pass (KOBE-100). */
   readonly connectorUrlPolicy: ConnectorUrlPolicy;
@@ -345,7 +345,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     },
   });
   const setupDigest = digest(options.setupToken);
-  const { applicationName = "kobe-server-listen", ...listenTuning } = options.listen ?? {};
+  const { applicationName = "kaiju-server-listen", ...listenTuning } = options.listen ?? {};
   const listen = createListenClient({
     ...listenTuning,
     connectionString: options.databaseUrl,
@@ -565,7 +565,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
     ...(options.gitWireSend ? { wire: options.gitWireSend } : {}),
   };
-  const kobeMcp = createKobeMcpService({
+  const kaijuMcp = createKaijuMcpService({
     db: database.db,
     publicUrl: new URL(options.publicUrl).origin,
     policy: policySources,
@@ -717,7 +717,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     memoryEmbeddings,
     memoryVectors,
     mcp,
-    kobeMcp,
+    kaijuMcp,
     gitMcp,
     connectorUrlPolicy,
     gitHostNet,

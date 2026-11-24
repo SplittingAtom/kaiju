@@ -1,17 +1,17 @@
 import {
-  KOBE_ADMIN_RESULT_HIDDEN,
+  KAIJU_ADMIN_RESULT_HIDDEN,
   mcpServerSegment,
   parseMcpToolName,
-  type KobeEvent,
-} from "@kobe/protocol";
-import { sql, type KobeTx, type TeamRole } from "@kobe/db";
+  type KaijuEvent,
+} from "@kaiju/protocol";
+import { sql, type KaijuTx, type TeamRole } from "@kaiju/db";
 import { siteRoleAllows, teamRoleAllows, type SiteRole } from "../authz/permissions.js";
-import { kobeBuiltinName } from "../kobe-mcp/access.js";
-import { isKobeDocsToolName } from "../kobe-mcp/docs/index.js";
-import { kobeToolByName } from "../kobe-mcp/tools/index.js";
+import { kaijuBuiltinName } from "../kaiju-mcp/access.js";
+import { isKaijuDocsToolName } from "../kaiju-mcp/docs/index.js";
+import { kaijuToolByName } from "../kaiju-mcp/tools/index.js";
 
 /**
- * Shared threads hide Kaiju admin results (KOBE-623, spec kobe-admin-mcp §8, decision KA6). A
+ * Shared threads hide Kaiju admin results (KOBE-623, spec kaiju-admin-mcp §8, decision KA6). A
  * teammate reading a thread shared with them sees that an admin tool ran, its input and its
  * approval card, but the tool's output is replaced by "Admin result hidden" unless they hold the
  * tool's own permission now (its console page's team or site permission). The thread's owner sees
@@ -23,7 +23,7 @@ import { kobeToolByName } from "../kobe-mcp/tools/index.js";
  * older release) is hidden, the docs tools never are.
  */
 
-export { KOBE_ADMIN_RESULT_HIDDEN };
+export { KAIJU_ADMIN_RESULT_HIDDEN };
 
 export interface AdminResultGate {
   /** Whether this viewer must not see the output of `toolName` (a Pi tool name). */
@@ -45,8 +45,8 @@ export function adminResultGate(facts: AdminGateFacts): AdminResultGate {
       const parsed = parseMcpToolName(toolName);
       if (!parsed || !facts.segments.includes(parsed.server_segment)) return false;
       const name = parsed.tool_segment;
-      if (isKobeDocsToolName(name)) return false;
-      const tool = kobeToolByName(name);
+      if (isKaijuDocsToolName(name)) return false;
+      const tool = kaijuToolByName(name);
       if (tool === undefined) return true;
       return tool.scope === "team"
         ? !teamRoleAllows(facts.teamRole, tool.permission)
@@ -60,12 +60,12 @@ export function adminResultGate(facts: AdminGateFacts): AdminResultGate {
  * is hidden). Reads inside the viewer's team transaction (the team role is a team table).
  */
 export async function loadAdminResultGate(
-  tx: Pick<KobeTx, "execute">,
+  tx: Pick<KaijuTx, "execute">,
   viewer: { readonly teamId: string; readonly userId: string },
   ownerUserId: string,
 ): Promise<AdminResultGate | undefined> {
   if (viewer.userId === ownerUserId) return undefined;
-  const name = await kobeBuiltinName(tx);
+  const name = await kaijuBuiltinName(tx);
   const res = await tx.execute<{ team_role: TeamRole | null; site_role: SiteRole }>(sql`
     SELECT (SELECT m.role FROM public.team_members m
              WHERE m.team_id = ${viewer.teamId} AND m.user_id = ${viewer.userId}) AS team_role,
@@ -100,7 +100,7 @@ export function redactEntryPayload(
   const { details: _details, ...rest } = message;
   return {
     ...entry,
-    message: { ...rest, content: [{ type: "text", text: KOBE_ADMIN_RESULT_HIDDEN }] },
+    message: { ...rest, content: [{ type: "text", text: KAIJU_ADMIN_RESULT_HIDDEN }] },
   };
 }
 
@@ -119,19 +119,19 @@ export function redactEntry<E extends { readonly payload: Record<string, unknown
  * A run event as a reader may see it: a hidden Kaiju admin `tool.result` carries no output, and an
  * `entry.committed` carrying the stored tool result entry (≤ 64 KB) carries it redacted.
  */
-export function redactEvent(event: KobeEvent, gate: AdminResultGate | undefined): KobeEvent {
+export function redactEvent(event: KaijuEvent, gate: AdminResultGate | undefined): KaijuEvent {
   if (gate === undefined) return event;
   if (event.type === "entry.committed") {
     const payload = event.payload.payload;
     const redacted = payload === undefined ? undefined : redactEntryPayload(payload, gate);
     return redacted === undefined
       ? event
-      : ({ ...event, payload: { ...event.payload, payload: redacted } } as KobeEvent);
+      : ({ ...event, payload: { ...event.payload, payload: redacted } } as KaijuEvent);
   }
   if (event.type !== "tool.result" || !gate.hides(event.payload.tool)) return event;
   const { blob_ref: _ref, app: _app, ...payload } = event.payload;
   return {
     ...event,
-    payload: { ...payload, preview: KOBE_ADMIN_RESULT_HIDDEN, truncated: false },
+    payload: { ...payload, preview: KAIJU_ADMIN_RESULT_HIDDEN, truncated: false },
   };
 }

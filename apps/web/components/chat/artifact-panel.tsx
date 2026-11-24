@@ -46,7 +46,7 @@ import { ArtifactBody } from "./artifact-views";
 import { AddToProject } from "../projects/add-to-project";
 import { artifactProjectFileName } from "../../lib/projects/add-to-project";
 import { useThreadReadOnly } from "./use-thread-read-only";
-import { kobeExtrasOf, useChatSession, useKobeExtras } from "./kobe-runtime";
+import { kaijuExtrasOf, useChatSession, useKaijuExtras } from "./kaiju-runtime";
 
 interface Detail {
   readonly artifact: ArtifactDetailView | null;
@@ -105,7 +105,7 @@ function VersionNav({
   );
 }
 
-export const artifactTitleId = (id: string) => `kobe-artifact-title-${tabDomId(id)}`;
+export const artifactTitleId = (id: string) => `kaiju-artifact-title-${tabDomId(id)}`;
 
 /**
  * One tab's artifact. Every open tab stays mounted (hidden while inactive), so a tab keeps the
@@ -279,7 +279,7 @@ function FileTab({
     [changes, dropFile, moveFiles],
   );
   // The kernel of the conversation on screen (KOBE-465): notebooks and `.py` files run there.
-  const threadId = useAuiState((s) => kobeExtrasOf(s)?.state.threadId ?? null);
+  const threadId = useAuiState((s) => kaijuExtrasOf(s)?.state.threadId ?? null);
   const readOnly = useThreadReadOnly();
   const changeHint = useFileChangeHint(path, threadId);
   const kernel = useMemo(
@@ -322,7 +322,7 @@ function FileTab({
 function AppTab({ spec }: { readonly spec: AppTabSpec }) {
   const session = useChatSession();
   // Its card's thread, the one on screen: calls name it (KOBE-460 review LOW-1).
-  const threadId = useKobeExtras()?.state.threadId ?? null;
+  const threadId = useKaijuExtras()?.state.threadId ?? null;
   const composer = useAppComposer({
     appId: spec.app.appId,
     connectorId: spec.connectorId,
@@ -374,7 +374,7 @@ export function ArtifactPanel({
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key !== "Escape" || event.defaultPrevented) return;
     // Escape in the file editor stays there: it never closes the tab being edited (KOBE-463).
-    if ((event.target as Element | null)?.closest?.("[data-kobe-code-editor]")) return;
+    if ((event.target as Element | null)?.closest?.("[data-kaiju-code-editor]")) return;
     event.stopPropagation();
     if (sheet) {
       panel.hideSheet();

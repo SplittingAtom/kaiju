@@ -10,7 +10,7 @@ import {
   type RunSemanticMemoryItem,
   type SemanticMemoryKind,
   type SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   LANE_FLOOR_BYTES,
   RENDER_LANES,

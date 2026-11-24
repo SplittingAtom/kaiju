@@ -2,8 +2,8 @@ import {
   GENERATED_TITLE_MAX_CHARS,
   generatedTitleSchema,
   type ServerCallRequest,
-} from "@kobe/protocol";
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { cutText, firstUserMessage, memberText } from "./messages.js";
 
 /**
@@ -117,7 +117,7 @@ export type TitleDecision = "announce" | "fallback" | "none";
  * is already written); otherwise `fallback` (no title call will ever come).
  */
 export async function titleDecisionInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { readonly teamId: string; readonly runId: string; readonly threadId: string },
   canCall: boolean,
 ): Promise<TitleDecision> {
@@ -138,7 +138,7 @@ export async function titleDecisionInTx(
 
 /** Whether this run was the thread's last title attempt (its call failed: time for the fallback). */
 export async function lastTitleAttempt(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<boolean> {
@@ -154,7 +154,7 @@ export async function lastTitleAttempt(
  * ac-b); true when a row changed. `team_id` is explicit (break-glass rule).
  */
 export async function saveGeneratedTitle(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   threadId: string,
   title: string,
@@ -175,7 +175,7 @@ export async function saveGeneratedTitle(
  * the thread's first user message, else this run's prompt. Returns it when a row changed.
  */
 export async function saveFallbackTitleInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { readonly teamId: string; readonly runId: string; readonly threadId: string },
 ): Promise<string | undefined> {
   const { teamId, runId, threadId } = ids;
@@ -197,7 +197,7 @@ export async function saveFallbackTitleInTx(
 
 /** {@link saveFallbackTitleInTx} in its own transaction (after a run, off its path). */
 export function saveFallbackTitle(
-  db: KobeDb,
+  db: KaijuDb,
   ids: { readonly teamId: string; readonly runId: string; readonly threadId: string },
 ): Promise<string | undefined> {
   return withTeam(db, ids.teamId, async (tx) => {

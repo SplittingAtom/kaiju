@@ -8,7 +8,7 @@ import { expect, test } from "./support/chat.js";
  * Workbench) in both themes and checks every visible button (`button`, `role=button`, links
  * styled as buttons) whose computed background is blue: its text, and every visible descendant's
  * colour, must be white with AA (4.5:1) on the fill. "Blue" comes from the accent token
- * (`--kobe-status-accent`, app/theme.css): a fill within HUE_SPAN of its hue, with real chroma.
+ * (`--kaiju-status-accent`, app/theme.css): a fill within HUE_SPAN of its hue, with real chroma.
  * Colours are read with getComputedStyle through a canvas, so any CSS syntax reads as sRGB; nothing
  * is injected into the page. Spends no model turn and changes nothing on the deployment.
  */
@@ -66,7 +66,7 @@ function blueWithoutWhite(page: Page): Promise<{ checked: number; offenders: Off
       return (hi + 0.05) / (lo + 0.05);
     };
     const accent = rgba(
-      getComputedStyle(document.documentElement).getPropertyValue("--kobe-status-accent").trim(),
+      getComputedStyle(document.documentElement).getPropertyValue("--kaiju-status-accent").trim(),
     );
     if (chroma(accent) < MIN_CHROMA) throw new Error(`the accent is not blue: ${accent.join()}`);
     const accentHue = hue(accent);
@@ -142,12 +142,12 @@ for (const theme of THEMES) {
 
     for (const { path, name } of PAGES) {
       await page.goto(path);
-      await expect(page.locator("[data-kobe-panel] main").first()).toBeVisible({
+      await expect(page.locator("[data-kaiju-panel] main").first()).toBeVisible({
         timeout: SHELL_TIMEOUT_MS,
       });
       await expect(
         page
-          .locator("[data-kobe-panel]")
+          .locator("[data-kaiju-panel]")
           .getByRole("status")
           .filter({ hasText: /^(Checking your access|Loading)/ }),
       ).toHaveCount(0, { timeout: SHELL_TIMEOUT_MS });

@@ -6,7 +6,7 @@
 .panel {
   /* No outline at rest (not a transparent one: forced colours would paint it, so focus would
      change nothing there). */
-  outline: 2px none var(--kobe-composer-focus);
+  outline: 2px none var(--kaiju-composer-focus);
   outline-offset: 0;
   transition:
     outline-color 120ms ease-out,
@@ -16,9 +16,9 @@
 
 .panel:focus-within {
   outline-style: solid;
-  outline-color: var(--kobe-composer-focus);
+  outline-color: var(--kaiju-composer-focus);
   /* The glow of a focused panel (KOBE-550, app/theme.css), like a focused Catalyst input. */
-  box-shadow: var(--kobe-glow-panel);
+  box-shadow: var(--kaiju-glow-panel);
 }
 
 /* The text field has no ring of its own: the panel's outline shows where the focus is. More
@@ -34,22 +34,22 @@
    soft halo pulses around it (KOBE-374, the KOBE-301 running token). Only the shadow moves; the
    border and outline stay solid, so focus stays visible at every frame. */
 .panel[data-running] {
-  border-color: var(--kobe-status-running);
-  animation: kobe-composer-pulse 2s ease-in-out infinite;
+  border-color: var(--kaiju-status-running);
+  animation: kaiju-composer-pulse 2s ease-in-out infinite;
 }
 
 .panel[data-running]:focus-within {
-  outline-color: var(--kobe-status-running);
+  outline-color: var(--kaiju-status-running);
 }
 
-@keyframes kobe-composer-pulse {
+@keyframes kaiju-composer-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--kobe-status-running) 45%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--kaiju-status-running) 45%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 0 7px color-mix(in srgb, var(--kobe-status-running) 0%, transparent);
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--kaiju-status-running) 0%, transparent);
   }
 }
 
@@ -57,7 +57,7 @@
 @media (prefers-reduced-motion: reduce) {
   .panel[data-running] {
     animation: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--kobe-status-running) 45%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--kaiju-status-running) 45%, transparent);
   }
 }
 
@@ -74,21 +74,21 @@
 .panel[data-mention-drop="file"],
 .panel[data-mention-drop="file"]:focus-within {
   outline-style: solid;
-  outline-color: var(--kobe-brand-focus);
+  outline-color: var(--kaiju-brand-focus);
   background-color: color-mix(in srgb, var(--admin-accent) 6%, transparent);
 }
 
 .panel[data-mention-drop="item"],
 .panel[data-mention-drop="item"]:focus-within {
   outline-style: solid;
-  outline-color: var(--kobe-brand-focus);
+  outline-color: var(--kaiju-brand-focus);
   background-color: color-mix(in srgb, var(--admin-accent) 6%, transparent);
 }
 
 .panel[data-mention-drop="folder"],
 .panel[data-mention-drop="folder"]:focus-within {
   outline-style: dashed;
-  outline-color: var(--kobe-status-failed);
+  outline-color: var(--kaiju-status-failed);
 }
 
 /* Forced colours (Windows High Contrast): tokens and shadows are overridden there, so the focus,

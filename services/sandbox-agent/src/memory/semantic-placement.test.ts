@@ -5,7 +5,7 @@ import {
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
   type SemanticMemoryPlacement,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { MARKER_BEGIN, MARKER_END } from "../kobe-tools/memory-fence.js";
 import {

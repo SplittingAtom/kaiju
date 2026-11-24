@@ -1,4 +1,4 @@
-import { SCAN_LIMITS } from "@kobe/skill-scanner";
+import { SCAN_LIMITS } from "@kaiju/skill-scanner";
 import { describe, expect, it } from "vitest";
 import { SKILL_LIMITS } from "./limits.js";
 

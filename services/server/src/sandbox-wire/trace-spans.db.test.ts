@@ -1,9 +1,9 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { parseTraceparent, runRootSpanId, runTraceId } from "@kobe/protocol";
-import { CAPABILITY_TRACE_SPANS, SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
-import { deriveTraceSpanKey, mapSandboxSpanId } from "@kobe/protocol/node";
-import { InMemorySpanExporter, initTelemetry, spanRelay, type Telemetry } from "@kobe/telemetry";
+import { parseTraceparent, runRootSpanId, runTraceId } from "@kaiju/protocol";
+import { CAPABILITY_TRACE_SPANS, SANDBOX_CLOSE_CODES } from "@kaiju/protocol/sandbox-wire";
+import { deriveTraceSpanKey, mapSandboxSpanId } from "@kaiju/protocol/node";
+import { InMemorySpanExporter, initTelemetry, spanRelay, type Telemetry } from "@kaiju/telemetry";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 

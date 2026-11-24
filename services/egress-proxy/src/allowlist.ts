@@ -1,7 +1,7 @@
-import { decideEgress, type EgressDecision as SharedDecision } from "@kobe/db";
+import { decideEgress, type EgressDecision as SharedDecision } from "@kaiju/db";
 
 /**
- * The shared decision (@kobe/db), plus whether the matching (effective) pattern is marked internal
+ * The shared decision (@kaiju/db), plus whether the matching (effective) pattern is marked internal
  * (EA4, KOBE-603): only then may the host resolve to one of the install's internal targets.
  * `internal` is present only when true.
  */
@@ -102,7 +102,7 @@ export class AllowlistCache {
 
   async decide(teamId: string, host: string): Promise<EgressDecision> {
     const [ceiling, team] = await Promise.all([this.getCeiling(), this.getTeam(teamId)]);
-    // The shared decision (@kobe/db): the catalog's egress check uses the same one (KOBE-336).
+    // The shared decision (@kaiju/db): the catalog's egress check uses the same one (KOBE-336).
     return withInternal(ceiling, decideEgress(ceiling.patterns, team, host));
   }
 

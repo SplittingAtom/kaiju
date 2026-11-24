@@ -3,8 +3,8 @@ import {
   GIT_SITE_ENABLED_KEY,
   readGitSiteSettings,
   siteSettings,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -12,9 +12,9 @@ import { recordAudit } from "../audit/record.js";
  * (`site.settings.manage`): the switch and the host limit (canonical patterns from
  * `gitAllowedHostsSchema`). Each effective change is audited as `site.settings.updated`. The
  * reader and the check every connection goes through (`readGitSiteSettings`, `decideGitHost`) are
- * in `@kobe/db`.
+ * in `@kaiju/db`.
  */
-async function store(tx: KobeTx, key: string, value: string): Promise<void> {
+async function store(tx: KaijuTx, key: string, value: string): Promise<void> {
   await tx
     .insert(siteSettings)
     .values({ key, value })
@@ -22,7 +22,7 @@ async function store(tx: KobeTx, key: string, value: string): Promise<void> {
 }
 
 export async function storeGitSiteSettings(
-  tx: KobeTx,
+  tx: KaijuTx,
   change: { readonly enabled?: boolean; readonly allowedHosts?: readonly string[] },
 ): Promise<void> {
   const current = await readGitSiteSettings(tx);

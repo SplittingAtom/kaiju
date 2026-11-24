@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { registerMemoryReminder } from "../../notifications/memory.js";
 import type { MemoryWho } from "../items/who.js";
 
@@ -10,7 +10,7 @@ export function workspaceOf(who: MemoryWho): string {
 
 /** Undo reopened a candidate of the pass: its reminder is owed again (idempotent). */
 export function noticeOpenAgain(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   passId: string,

@@ -40,7 +40,7 @@ expect "team tables have FORCE ROW LEVEL SECURITY" '^team_members\|true$' "$(psq
 wait_endpoints "$NS" kobe-web
 contains "web answers through the Traefik ingress" '"service":"web"' \
   "$(reachable "$NS" kube-system traefik "--header 'Host: kobe.localtest.me' http://traefik.kube-system/api/healthz")"
-contains "the web app serves the chat (KOBE-32)" 'data-kobe-chat' \
+contains "the web app serves the chat (KOBE-32)" 'data-kaiju-chat' \
   "$(reachable "$NS" kube-system traefik "--header 'Host: kobe.localtest.me' http://traefik.kube-system/")"
 contains "server answers" '"service":"server"' "$(reachable "$NS" "$NS" kobe-server http://kobe-server/healthz)"
 # KOBE-9: every server/scheduler process verified isolation itself (not disclosed by /readyz).

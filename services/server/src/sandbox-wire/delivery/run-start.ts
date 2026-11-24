@@ -3,14 +3,14 @@ import {
   CAPABILITY_MCP,
   type RunStartFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import {
   CAPABILITY_APP_CARDS,
   CAPABILITY_FILE_EDITS,
   CAPABILITY_MEMORY,
   CAPABILITY_PROJECTS,
   CAPABILITY_SYNC_CONFLICTS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { loadRunGitContext } from "../../git/sandbox-git.js";
 import { runGitRepo } from "../../git/working-copy.js";
 import { untoldNotes, type AgentNotes } from "../../sync-conflicts/store.js";

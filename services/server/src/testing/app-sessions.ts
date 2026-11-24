@@ -1,5 +1,5 @@
 import pg from "pg";
-import { testServerUrl } from "@kobe/db/testing";
+import { testServerUrl } from "@kaiju/db/testing";
 
 /**
  * Pool#end resolves before its idle connections have closed; dropping the database WITH (FORCE)

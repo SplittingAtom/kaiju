@@ -6,7 +6,7 @@ import {
   type BreakGlassEntry,
   type BreakGlassRead,
   type BreakGlassReadResult,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import { currentAuditContext } from "../audit/context.js";
 import { requireSitePermission } from "../authz/middleware.js";

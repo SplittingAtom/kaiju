@@ -4,7 +4,7 @@ import {
   takeRateBucket,
   type RateBucketRule,
   type RateLimitDb,
-} from "@kobe/db";
+} from "@kaiju/db";
 
 /** One request taken from a member's per-minute model rate. */
 export type MemberRateTake =

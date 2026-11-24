@@ -1,4 +1,4 @@
-import { InMemorySpanExporter, initTelemetry, type Telemetry } from "@kobe/telemetry";
+import { InMemorySpanExporter, initTelemetry, type Telemetry } from "@kaiju/telemetry";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import { createRateLimiter } from "../sandbox/rate-limit.js";

@@ -1,6 +1,6 @@
-import { APP_CONTEXT_MAX_BYTES, imitatesAppContext } from "@kobe/protocol";
+import { APP_CONTEXT_MAX_BYTES, imitatesAppContext } from "@kaiju/protocol";
 
-export { splitAppContext, type SentAppContext } from "@kobe/protocol";
+export { splitAppContext, type SentAppContext } from "@kaiju/protocol";
 import { MESSAGE_TEXT_MAX } from "./host-bridge";
 
 /**

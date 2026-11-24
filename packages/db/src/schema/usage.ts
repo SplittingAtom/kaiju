@@ -38,7 +38,7 @@ export type UsageSource = (typeof USAGE_SOURCES)[number];
 /**
  * What made the call (KOBE-234, CE18/CE21): `run` for a sandbox's call during a run (every row
  * before migration 0099), `title` / `followups` for the server's own post-run calls through the
- * gateway (`@kobe/protocol` server-call.ts). Server calls have no sandbox; they carry the run whose
+ * gateway (`@kaiju/protocol` server-call.ts). Server calls have no sandbox; they carry the run whose
  * completion triggered them (so thread and agent resolve as for run calls). Budgets count every
  * kind; per-run views and the context gauge read `run` rows only. Skill evals (KOBE-326, SK17):
  * `eval_judge` for the server's judge call after an eval execution's run (a server call, like

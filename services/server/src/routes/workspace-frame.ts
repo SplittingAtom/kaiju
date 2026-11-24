@@ -1,7 +1,7 @@
 import type { Context, Hono } from "hono";
 import { z } from "zod";
-import { withTeam } from "@kobe/db";
-import { workspacePathSchema } from "@kobe/protocol";
+import { withTeam } from "@kaiju/db";
+import { workspacePathSchema } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

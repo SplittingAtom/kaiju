@@ -6,9 +6,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { logger } from "../logger.js";
 import type { ObjectStore } from "../workspace-sync/object-store.js";
 
@@ -38,7 +38,7 @@ import type { ObjectStore } from "../workspace-sync/object-store.js";
 
 export interface BlobStore {
   readonly objects: ObjectStore;
-  /** The configured key prefix (`s3.prefix`), e.g. `kobe/` or ``. */
+  /** The configured key prefix (`s3.prefix`), e.g. `kaiju/` or ``. */
   readonly prefix: string;
   /** Test hook: how long a batch delete may run before it is aborted (default 30 s). */
   readonly deleteTimeoutMs?: number;
@@ -87,7 +87,7 @@ export function projectTreeKey(
 
 /** Project keys among `keys` that a project tree, head file or workspace row still names. */
 async function projectReferenced(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   keys: readonly string[],
 ): Promise<Set<string>> {
@@ -108,7 +108,7 @@ async function projectReferenced(
 
 /** Keys among `keys` that a thread-owned column of the team still references (another thread). */
 async function stillReferenced(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   keys: readonly string[],
 ): Promise<Set<string>> {
@@ -132,11 +132,11 @@ async function stillReferenced(
 
 /** One batch in the team's transaction; `record` audits it (last write). */
 export async function deleteBlobBatchInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   store: BlobStore,
   limit: number,
-  record: (tx: KobeTx, counts: BlobDeletionCounts) => Promise<void>,
+  record: (tx: KaijuTx, counts: BlobDeletionCounts) => Promise<void>,
 ): Promise<BlobDeletionCounts & { readonly more: boolean }> {
   await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
   await lockLegalHolds(tx);
@@ -204,7 +204,7 @@ export async function deleteBlobBatchInTx(
 }
 
 /** Counts a failed attempt on the oldest queued keys (the object store was unreachable). */
-async function noteFailure(db: KobeDb, teamId: string, limit: number): Promise<void> {
+async function noteFailure(db: KaijuDb, teamId: string, limit: number): Promise<void> {
   await withTeam(db, teamId, (tx) =>
     tx.execute(sql`
       UPDATE retention_blob_deletions SET attempts = attempts + 1
@@ -219,10 +219,10 @@ async function noteFailure(db: KobeDb, teamId: string, limit: number): Promise<v
  * (counted in `attempts`; the queue is kept and the next pass retries) and is rethrown.
  */
 export async function deleteReleasedBlobs(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
-  record: (tx: KobeTx, counts: BlobDeletionCounts) => Promise<void>,
+  record: (tx: KaijuTx, counts: BlobDeletionCounts) => Promise<void>,
   options: {
     readonly limit?: number;
     readonly maxBatches?: number;

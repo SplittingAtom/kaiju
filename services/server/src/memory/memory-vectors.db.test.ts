@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { sql, withTeam } from "@kobe/db";
-import { SERVER_CALL_TOKEN_HEADER } from "@kobe/protocol";
-import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+import { sql, withTeam } from "@kaiju/db";
+import { SERVER_CALL_TOKEN_HEADER } from "@kaiju/protocol";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kaiju/session-token";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import { TestBrowser } from "../testing/browser.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -70,7 +70,7 @@ const discovery = {
 beforeAll(async () => {
   await fx.setup([{}], () => ({
     models: { providerKeySecrets: ["p".repeat(40)], discovery },
-    blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
+    blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
     embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));

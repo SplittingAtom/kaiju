@@ -9,7 +9,7 @@ import { FAKE_MODEL } from "../support/gate5.js";
  * in e2e/gate5.sh), Compact now is compact-now.spec.ts; the thresholds are here.
  *
  * With the fake model (CI) the team's default model has a 200,000-token window (e2e/gate5.sh) and
- * `kobe-prompt-tokens=<n>` sets the prompt size the call reports: 60%, 70% and 86%. Against a real
+ * `kaiju-prompt-tokens=<n>` sets the prompt size the call reports: 60%, 70% and 86%. Against a real
  * model the reading is whatever the turn used; the level must then match the rule for it.
  */
 const meterOf = (page: Page) => page.getByRole("meter", { name: "Context used" });
@@ -43,7 +43,7 @@ test("U20: the gauge turns amber at 65% and red at 85% of the model's window", a
     [140_000, "warn"],
     [172_000, "full"],
   ] as const) {
-    await chat.ask(`kobe-prompt-tokens=${tokens} No tools. Reply with the single word GAUGE.`);
+    await chat.ask(`kaiju-prompt-tokens=${tokens} No tools. Reply with the single word GAUGE.`);
     await expect.poll(async () => (await reading(page)).now, { timeout: 30_000 }).toBe(tokens);
     const r = await reading(page);
     expect(r.max).toBe(200_000);

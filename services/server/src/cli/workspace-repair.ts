@@ -1,4 +1,4 @@
-import { createDb } from "@kobe/db";
+import { createDb } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { createS3ObjectStore, loadS3Settings, repairWorkspaces } from "../workspace-sync/index.js";
 import { exitSoon } from "./replica.js";

@@ -1,4 +1,4 @@
-import type { SchedulePausedBy } from "@kobe/protocol";
+import type { SchedulePausedBy } from "@kaiju/protocol";
 
 const LABELS: Readonly<Record<SchedulePausedBy, string>> = {
   team_admin: "Paused by a team admin",

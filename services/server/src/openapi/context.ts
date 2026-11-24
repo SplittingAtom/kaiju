@@ -5,7 +5,7 @@ import {
   threadContextSchema,
   threadContextWakingSchema,
   type ThreadContextErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * OpenAPI for `GET /v1/threads/{id}/context` (KOBE-470, `routes/thread-context.ts`, spec

@@ -154,7 +154,7 @@ Postgres connection budget (KOBE-736). The server's pool sizes, its replica coun
 pools of every other component that connects (scheduler, model gateway, egress proxy: replicas x
 (pool + 1 LISTEN connection); the model gateway also holds the member rate limiter's own pool,
 `modelGateway.database.ratePoolMax`, KOBE-810), so the server can warn at start when the total nears
-max_connections. An estimate: rollout surge pods, the migrate Job and `kobe backup` come on top.
+max_connections. An estimate: rollout surge pods, the migrate Job and `kaiju backup` come on top.
 */}}
 {{- define "kobe.serverDbEnv" -}}
 {{- $s := .Values.server.database -}}
@@ -223,7 +223,7 @@ max_connections. An estimate: rollout surge pods, the migrate Job and `kobe back
 - name: KOBE_SMTP_SECURITY
   value: {{ $smtp.security | default "starttls" | quote }}
 - name: KOBE_SMTP_FROM
-  value: {{ required "smtp.from is required, e.g. \"Kaiju <kobe@example.com>\"" $smtp.from | quote }}
+  value: {{ required "smtp.from is required, e.g. \"Kaiju <kaiju@example.com>\"" $smtp.from | quote }}
 {{- with $smtp.existingSecret }}
 - name: KOBE_SMTP_USERNAME
   valueFrom:
@@ -419,7 +419,7 @@ spec:
 - name: wait-for-migrations
   image: {{ include "kobe.image" (dict "root" . "name" "server") }}
   imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-  command: ["node", "node_modules/@kobe/db/dist/cli/wait.js"]
+  command: ["node", "node_modules/@kaiju/db/dist/cli/wait.js"]
   env:
     {{- include "kobe.databaseEnv" . | nindent 4 }}
   {{- include "kobe.containerSecurityContext" . | nindent 2 }}

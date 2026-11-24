@@ -1,5 +1,5 @@
-import { isActiveRunStatus } from "@kobe/protocol";
-import { scanTeams, sql, withTeam } from "@kobe/db";
+import { isActiveRunStatus } from "@kaiju/protocol";
+import { scanTeams, sql, withTeam } from "@kaiju/db";
 import { withAppendTx } from "../event-stream/append.js";
 import {
   applyTransition,

@@ -97,7 +97,7 @@ export function useDetail(): DetailApi {
 /**
  * A message part that renders as a block with its own disclosure (`useDisclosure`): reasoning, a
  * tool card, and the data parts `messages.tsx` renders by name (assistant-ui hands
- * `data-kobe-…` parts over as `{ type: "data", name: "kobe-…" }`): a stored step, a compaction.
+ * `data-kaiju-…` parts over as `{ type: "data", name: "kaiju-…" }`): a stored step, a compaction.
  */
 export function opensAsBlock(part: {
   readonly type: string;
@@ -106,8 +106,8 @@ export function opensAsBlock(part: {
 }): boolean {
   if (part.type === "reasoning" || part.type === "tool-call") return true;
   if (part.type !== "data") return false;
-  if (part.name === "kobe-offloaded") return true;
-  return part.name === "kobe-marker" && (part.data as { kind?: string })?.kind === "compaction";
+  if (part.name === "kaiju-offloaded") return true;
+  return part.name === "kaiju-marker" && (part.data as { kind?: string })?.kind === "compaction";
 }
 
 /**

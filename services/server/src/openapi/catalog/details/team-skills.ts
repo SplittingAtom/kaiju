@@ -6,7 +6,7 @@ import {
   teamEvalCapSchema,
   teamSkillInstallSchema,
   uninstallSkillSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 import { declineSchema } from "../../../routes/skill-promotions.js";
 import { decisionSchema, settingsSchema } from "../../../routes/team-skill-review.js";

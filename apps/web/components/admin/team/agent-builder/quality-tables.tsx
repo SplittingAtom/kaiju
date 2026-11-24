@@ -1,6 +1,6 @@
 "use client";
 
-import { FEEDBACK_REASONS } from "@kobe/protocol";
+import { FEEDBACK_REASONS } from "@kaiju/protocol";
 import type {
   AgentFeedbackTotals,
   ReasonCounts,

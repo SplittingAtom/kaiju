@@ -1,4 +1,4 @@
-import { desc, eq, inArray, siteLegalHolds, sql, users, type KobeDb, type KobeTx } from "@kobe/db";
+import { desc, eq, inArray, siteLegalHolds, sql, users, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { activeSiteAdmins } from "../break-glass/store.js";
 
@@ -33,14 +33,14 @@ export type SiteHoldResult = { ok: true; hold: SiteHoldRow } | { ok: false; erro
 const LOCK_TIMEOUT = "30s";
 
 /** No other active site admin: the requester may approve their own request (flagged). */
-export async function siteHoldSoleAdmin(db: KobeDb | KobeTx, by: string): Promise<boolean> {
+export async function siteHoldSoleAdmin(db: KaijuDb | KaijuTx, by: string): Promise<boolean> {
   return (await activeSiteAdmins(db, by)).length === 0;
 }
 
-type Change = (tx: KobeTx, current: SiteHoldRow) => Promise<SiteHoldResult>;
+type Change = (tx: KaijuTx, current: SiteHoldRow) => Promise<SiteHoldResult>;
 
 /** Runs `change` on the locked hold in one transaction (audit last, inside `change`). */
-function changeHold(db: KobeDb, id: string, change: Change): Promise<SiteHoldResult> {
+function changeHold(db: KaijuDb, id: string, change: Change): Promise<SiteHoldResult> {
   return db.transaction(async (tx): Promise<SiteHoldResult> => {
     await tx.execute(sql`SELECT set_config('lock_timeout', ${LOCK_TIMEOUT}, true)`);
     const [current] = await tx
@@ -53,7 +53,7 @@ function changeHold(db: KobeDb, id: string, change: Change): Promise<SiteHoldRes
   });
 }
 
-async function update(tx: KobeTx, id: string, set: Partial<SiteHoldRow>): Promise<SiteHoldRow> {
+async function update(tx: KaijuTx, id: string, set: Partial<SiteHoldRow>): Promise<SiteHoldRow> {
   const [row] = await tx
     .update(siteLegalHolds)
     .set(set)
@@ -67,7 +67,7 @@ async function update(tx: KobeTx, id: string, set: Partial<SiteHoldRow>): Promis
  * Asks for a Site-wide hold. Several may be open at once (one per matter, as Workspace holds):
  * Site memory stays held while any of them is active.
  */
-export function requestSiteHold(db: KobeDb, by: string, reason: string): Promise<SiteHoldResult> {
+export function requestSiteHold(db: KaijuDb, by: string, reason: string): Promise<SiteHoldResult> {
   return db.transaction(async (tx): Promise<SiteHoldResult> => {
     const [row] = await tx.insert(siteLegalHolds).values({ reason, placedBy: by }).returning();
     if (!row) throw new Error("site legal hold insert returned no row");
@@ -80,7 +80,7 @@ export function requestSiteHold(db: KobeDb, by: string, reason: string): Promise
 }
 
 /** Places a pending hold: a second site admin, or the requester on a single-admin site. */
-export function approveSiteHold(db: KobeDb, by: string, id: string): Promise<SiteHoldResult> {
+export function approveSiteHold(db: KaijuDb, by: string, id: string): Promise<SiteHoldResult> {
   return changeHold(db, id, async (tx, current) => {
     if (current.status !== "pending") return { ok: false, error: "not_pending" };
     if (current.placedBy === by && !(await siteHoldSoleAdmin(tx, by)))
@@ -95,7 +95,7 @@ export function approveSiteHold(db: KobeDb, by: string, id: string): Promise<Sit
 }
 
 /** Another site admin turns a pending hold down; the requester withdraws instead. */
-export function denySiteHold(db: KobeDb, by: string, id: string): Promise<SiteHoldResult> {
+export function denySiteHold(db: KaijuDb, by: string, id: string): Promise<SiteHoldResult> {
   return changeHold(db, id, async (tx, current) => {
     if (current.status !== "pending") return { ok: false, error: "not_pending" };
     if (current.placedBy === by) return { ok: false, error: "cannot_deny_own" };
@@ -108,7 +108,7 @@ export function denySiteHold(db: KobeDb, by: string, id: string): Promise<SiteHo
   });
 }
 
-export function withdrawSiteHold(db: KobeDb, by: string, id: string): Promise<SiteHoldResult> {
+export function withdrawSiteHold(db: KaijuDb, by: string, id: string): Promise<SiteHoldResult> {
   return changeHold(db, id, async (tx, current) => {
     if (current.status !== "pending") return { ok: false, error: "not_pending" };
     if (current.placedBy !== by) return { ok: false, error: "not_requester" };
@@ -123,7 +123,7 @@ export function withdrawSiteHold(db: KobeDb, by: string, id: string): Promise<Si
 
 /** Asks to end an active hold; it stays in force until a second site admin approves. */
 export function requestSiteRelease(
-  db: KobeDb,
+  db: KaijuDb,
   by: string,
   id: string,
   reason: string,
@@ -145,7 +145,7 @@ export function requestSiteRelease(
 }
 
 /** Ends the hold: Site memory purges and version pruning may resume. */
-export function approveSiteRelease(db: KobeDb, by: string, id: string): Promise<SiteHoldResult> {
+export function approveSiteRelease(db: KaijuDb, by: string, id: string): Promise<SiteHoldResult> {
   return changeHold(db, id, async (tx, current) => {
     if (current.status !== "active") return { ok: false, error: "not_active" };
     if (current.releaseRequestedBy === null) return { ok: false, error: "no_release_request" };
@@ -167,7 +167,7 @@ const CANCELLED_RELEASE = {
 } as const;
 
 /** Another site admin turns the release down; the hold stays in force. */
-export function denySiteRelease(db: KobeDb, by: string, id: string): Promise<SiteHoldResult> {
+export function denySiteRelease(db: KaijuDb, by: string, id: string): Promise<SiteHoldResult> {
   return changeHold(db, id, async (tx, current) => {
     if (current.status !== "active") return { ok: false, error: "not_active" };
     if (current.releaseRequestedBy === null) return { ok: false, error: "no_release_request" };
@@ -181,7 +181,7 @@ export function denySiteRelease(db: KobeDb, by: string, id: string): Promise<Sit
   });
 }
 
-export function withdrawSiteRelease(db: KobeDb, by: string, id: string): Promise<SiteHoldResult> {
+export function withdrawSiteRelease(db: KaijuDb, by: string, id: string): Promise<SiteHoldResult> {
   return changeHold(db, id, async (tx, current) => {
     if (current.status !== "active") return { ok: false, error: "not_active" };
     if (current.releaseRequestedBy === null) return { ok: false, error: "no_release_request" };
@@ -207,7 +207,7 @@ export interface SiteHoldDetail {
 }
 
 /** Joins each hold's people (one query, whatever the page size). */
-async function withPeople(db: KobeDb, rows: readonly SiteHoldRow[]): Promise<SiteHoldDetail[]> {
+async function withPeople(db: KaijuDb, rows: readonly SiteHoldRow[]): Promise<SiteHoldDetail[]> {
   if (rows.length === 0) return [];
   const ids = [
     ...new Set(
@@ -237,7 +237,7 @@ async function withPeople(db: KobeDb, rows: readonly SiteHoldRow[]): Promise<Sit
 }
 
 /** Site-wide holds with their people, newest first. */
-export async function listSiteHolds(db: KobeDb, limit = 200): Promise<SiteHoldDetail[]> {
+export async function listSiteHolds(db: KaijuDb, limit = 200): Promise<SiteHoldDetail[]> {
   const rows = await db
     .select()
     .from(siteLegalHolds)
@@ -246,7 +246,7 @@ export async function listSiteHolds(db: KobeDb, limit = 200): Promise<SiteHoldDe
   return withPeople(db, rows);
 }
 
-export async function getSiteHold(db: KobeDb, id: string): Promise<SiteHoldDetail | undefined> {
+export async function getSiteHold(db: KaijuDb, id: string): Promise<SiteHoldDetail | undefined> {
   const rows = await db.select().from(siteLegalHolds).where(eq(siteLegalHolds.id, id));
   return (await withPeople(db, rows))[0];
 }

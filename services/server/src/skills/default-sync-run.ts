@@ -14,9 +14,9 @@ import {
   teams,
   withTeam,
   type DefaultSyncKind,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { Mailer } from "../mail/mailer.js";
@@ -48,7 +48,7 @@ import {
 export type Job = typeof skillDefaultSyncs.$inferSelect;
 
 export interface RunDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   readonly mailer?: Mailer | undefined;
   readonly publicUrl?: string | undefined;
@@ -94,7 +94,7 @@ export const isMasked = (
   [j.optedOut, j.optoutsCleared, j.blocked, j.nameConflicts].some((n) => n > 0 && n < 3);
 
 /** Is the job's change still the tag's current state? Read under the shared Default-set lock. */
-async function stillCurrent(tx: KobeTx, job: Job): Promise<boolean> {
+async function stillCurrent(tx: KaijuTx, job: Job): Promise<boolean> {
   await lockDefaultSet(tx, "shared");
   if (job.kind === "remove") return !(await isDefaultSkill(tx, job.skillId));
   if (job.kind === "add") return isDefaultSkill(tx, job.skillId);
@@ -108,14 +108,14 @@ async function stillCurrent(tx: KobeTx, job: Job): Promise<boolean> {
  * installs the new major, like the move and the new-team hook. A `move_major` is only current while
  * its major is the Default's ({@link stillCurrent}).
  */
-async function majorNow(db: KobeDb, job: Job): Promise<number | null> {
+async function majorNow(db: KaijuDb, job: Job): Promise<number | null> {
   if (job.kind !== "add") return job.major;
   const [target] = await defaultTargets(db, job.skillId);
   return target?.major ?? job.major;
 }
 
 async function teamStep(
-  tx: KobeTx,
+  tx: KaijuTx,
   job: Job,
   teamId: string,
   version: TargetVersion | null,
@@ -171,7 +171,7 @@ async function syncTeam(
     return result;
   });
   // Kaiju's own skills (KOBE-317) were there before the upgrade as built-ins: nothing to tell.
-  const notice = job.byKobe ? null : noticeOf(job.kind, step);
+  const notice = job.byKaiju ? null : noticeOf(job.kind, step);
   if (notice && deps.mailer && deps.publicUrl) {
     await notifyTeamAdmins(
       { db: deps.db, mailer: deps.mailer, publicUrl: deps.publicUrl },
@@ -185,7 +185,7 @@ async function syncTeam(
 }
 
 /** Ends the job and records its totals in the site audit (masked per SK26). */
-async function finish(db: KobeDb, jobId: string, skillName: string): Promise<void> {
+async function finish(db: KaijuDb, jobId: string, skillName: string): Promise<void> {
   await db.transaction(async (tx) => {
     const [done] = await tx
       .update(skillDefaultSyncs)
@@ -216,7 +216,7 @@ async function finish(db: KobeDb, jobId: string, skillName: string): Promise<voi
 }
 
 /** Marks a queued job running and records how many teams it starts with. */
-async function start(db: KobeDb, job: Job): Promise<void> {
+async function start(db: KaijuDb, job: Job): Promise<void> {
   if (job.status !== "queued") return;
   await db
     .update(skillDefaultSyncs)
@@ -229,7 +229,7 @@ async function start(db: KobeDb, job: Job): Promise<void> {
 }
 
 /** The version `add`/`move_major` installs now (re-read per batch: it may be withdrawn). */
-async function versionOf(db: KobeDb, job: Job): Promise<TargetVersion | null> {
+async function versionOf(db: KaijuDb, job: Job): Promise<TargetVersion | null> {
   if (job.kind === "remove") return null;
   const major = await majorNow(db, job);
   return major === null ? null : newestApproved(db, job.skillId, major);
@@ -275,7 +275,7 @@ export async function runJob(deps: RunDeps, queued: Job): Promise<void> {
 }
 
 /** Jobs still to run: in `seq` order (commit order), skipping any waiting out a backoff. */
-export const nextJob = (db: KobeDb) =>
+export const nextJob = (db: KaijuDb) =>
   db
     .select()
     .from(skillDefaultSyncs)

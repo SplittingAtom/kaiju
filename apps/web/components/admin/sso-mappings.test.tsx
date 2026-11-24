@@ -113,7 +113,7 @@ describe("Team console: managed memberships", () => {
               id: "m1",
               providerId: P,
               providerName: "Contoso Entra",
-              claimValue: "kobe.fin.builder",
+              claimValue: "kaiju.fin.builder",
               role: "contributor",
             },
           ],
@@ -125,7 +125,7 @@ describe("Team console: managed memberships", () => {
     expect(summary(calls)).not.toContain("GET /v1/team/sso-mappings");
     await userEvent.click(screen.getByRole("button", { name: "Show access mappings" }));
     const table = await screen.findByRole("table", { name: /Access mappings for this team/ });
-    expect(table.textContent).toContain("kobe.fin.builder");
+    expect(table.textContent).toContain("kaiju.fin.builder");
     expect(within(table).queryByRole("button")).toBeNull();
   });
 });
@@ -145,7 +145,7 @@ const SSO = {
     {
       id: "m1",
       providerId: P,
-      claimValue: "kobe.fin.member",
+      claimValue: "kaiju.fin.member",
       teamId: "t-fin",
       teamSlug: "finance",
       teamName: "Finance",
@@ -180,7 +180,7 @@ describe("Site console: SSO access mappings", () => {
     stubApi({ "GET /v1/site/sso/mappings": [200, SSO], "GET /v1/site/teams": [200, TEAMS] });
     renderSite(<SsoMappingsPage />);
     const table = await screen.findByRole("table", { name: "Access mappings of Contoso Entra" });
-    expect(table.textContent).toContain("kobe.fin.member");
+    expect(table.textContent).toContain("kaiju.fin.member");
     expect(table.textContent).toContain("Finance");
     const roles = within(screen.getByRole("form", { name: "Add a mapping to Contoso Entra" }))
       .getByLabelText("Team role")
@@ -197,22 +197,22 @@ describe("Site console: SSO access mappings", () => {
     });
     renderSite(<SsoMappingsPage />);
     const form = await screen.findByRole("form", { name: "Add a mapping to Contoso Entra" });
-    await userEvent.type(within(form).getByLabelText("App role or group"), "kobe.fin.admin");
+    await userEvent.type(within(form).getByLabelText("App role or group"), "kaiju.fin.admin");
     await userEvent.selectOptions(within(form).getByLabelText("Team"), "t-fin");
     await userEvent.selectOptions(within(form).getByLabelText("Team role"), "team_admin");
     await userEvent.click(within(form).getByRole("button", { name: "Add mapping" }));
-    await screen.findByText("kobe.fin.admin now gives Team admin.");
+    await screen.findByText("kaiju.fin.admin now gives Team admin.");
     const post = must(calls.find((c) => c.method === "POST"));
     expect(JSON.parse(String(post.body))).toEqual({
-      claimValue: "kobe.fin.admin",
+      claimValue: "kaiju.fin.admin",
       teamId: "t-fin",
       role: "team_admin",
     });
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Delete mapping kobe.fin.member to Finance" }),
+      screen.getByRole("button", { name: "Delete mapping kaiju.fin.member to Finance" }),
     );
-    await answerConfirm("Delete the mapping kobe.fin.member → Finance?", "Delete mapping");
+    await answerConfirm("Delete the mapping kaiju.fin.member → Finance?", "Delete mapping");
     await waitFor(() =>
       expect(summary(calls)).toContain(`DELETE /v1/site/sso/providers/${P}/mappings/m1`),
     );

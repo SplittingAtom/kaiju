@@ -1,4 +1,4 @@
-import type { JsonObject, PolicyInput, PolicyReason, ToolDescriptor } from "@kobe/protocol";
+import type { JsonObject, PolicyInput, PolicyReason, ToolDescriptor } from "@kaiju/protocol";
 import { allowListLimits } from "./agent-allow.js";
 import { matchAgentToolEntry } from "./patterns.js";
 

@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { pickCatalogVersion, type CatalogVersion } from "../resolver/catalog-pins.js";
 import { blockedAmong } from "./blocklist.js";
 
@@ -13,7 +13,7 @@ export interface PublishedVersion extends CatalogVersion {
   readonly blocklisted: boolean;
 }
 
-export async function publishedVersions(tx: KobeTx, skillId: string): Promise<PublishedVersion[]> {
+export async function publishedVersions(tx: KaijuTx, skillId: string): Promise<PublishedVersion[]> {
   const res = await tx.execute<{
     id: string;
     semver: string;

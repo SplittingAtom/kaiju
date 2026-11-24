@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ScheduleRecurrence } from "@kobe/protocol";
+import type { ScheduleRecurrence } from "@kaiju/protocol";
 import { nextOccurrence, recurrenceToCron } from "./recurrence.js";
 
 const at = (iso: string) => new Date(iso);

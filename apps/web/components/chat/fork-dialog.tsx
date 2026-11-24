@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useState, type FormEvent } from "react";
 import { Dialog } from "radix-ui";
-import { THREAD_TITLE_MAX } from "@kobe/protocol";
+import { THREAD_TITLE_MAX } from "@kaiju/protocol";
 import { forkPointOf, type ForkPoint } from "../../lib/chat/fork";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
 import { IconAction } from "../shell/icon-action";
 import { Button } from "../ui/button";
 import { chatPortalContainer } from "../ui/chat-portal";
-import { useChatSession, useKobeExtras } from "./kobe-runtime";
+import { useChatSession, useKaijuExtras } from "./kaiju-runtime";
 
 /** Opens a thread in the chat (the `?thread=` URL); provided by `ThreadView`. */
 export const OpenThreadContext = createContext<((threadId: string) => void) | undefined>(undefined);
@@ -19,9 +19,9 @@ export const OpenThreadContext = createContext<((threadId: string) => void) | un
  * or up to just before a prompt, which then waits in the new thread's composer (`forkPointOf`).
  * Shown for committed messages only (a pending prompt or a live answer has no entry yet).
  */
-export function ForkAction({ meta }: { readonly meta: KobeMessageMeta | undefined }) {
+export function ForkAction({ meta }: { readonly meta: KaijuMessageMeta | undefined }) {
   const [open, setOpen] = useState(false);
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const point = forkPointOf(meta);
   if (point === undefined || !extras?.controller || extras.state.threadId === null) return null;
   return (
@@ -48,7 +48,7 @@ export function ForkDialog({
   readonly defaultTitle: string;
   readonly onOpenChange: (open: boolean) => void;
 }) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const session = useChatSession();
   const openThread = useContext(OpenThreadContext);
   const [title, setTitle] = useState(defaultTitle);
@@ -84,11 +84,11 @@ export function ForkDialog({
   return (
     <Dialog.Root open onOpenChange={onOpenChange}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
           className="bg-background text-foreground fixed top-1/2 left-1/2 z-50 grid w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-lg border p-5 shadow-lg"
           data-fork-dialog
-          data-kobe-portal
+          data-kaiju-portal
         >
           <Dialog.Title className="m-0 text-base font-semibold">Fork to a new thread</Dialog.Title>
           <Dialog.Description className="text-muted-foreground m-0 text-sm">

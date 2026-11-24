@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
-import { RULE_SET_VERSION, type ScanResult } from "@kobe/skill-scanner";
+import { RULE_SET_VERSION, type ScanResult } from "@kaiju/skill-scanner";
 
 /**
  * Skill scans off the event loop (KOBE-313 review A-S2). A scan is CPU-bound and can take
  * seconds on a crafted bundle, so each runs in a worker thread: at most `concurrency` at once
  * (later ones queue), each killed after `timeoutMs`. A scan that times out is Block
- * `scan-incomplete`, never Pass. The worker unzips and scans with the same `@kobe/skill-scanner`
+ * `scan-incomplete`, never Pass. The worker unzips and scans with the same `@kaiju/skill-scanner`
  * this process loads, so results are identical to an in-process scan.
  */
 export interface ScanOptions {
@@ -76,7 +76,7 @@ const moduleUrl = (name: string) => JSON.stringify(pathToFileURL(require.resolve
 /** The worker: an ES module from a data URL that imports the resolved scanner and fflate. */
 const WORKER_SOURCE = `
 import { parentPort } from "node:worker_threads";
-import { scanSkillBundle } from ${moduleUrl("@kobe/skill-scanner")};
+import { scanSkillBundle } from ${moduleUrl("@kaiju/skill-scanner")};
 import * as fflate from ${moduleUrl("fflate")};
 const unzipSync = fflate.unzipSync ?? fflate.default.unzipSync;
 parentPort.once("message", (zip) => {

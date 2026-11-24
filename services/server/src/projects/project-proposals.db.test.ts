@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { PROJECT_FILES_MAX } from "@kobe/protocol";
-import { type FileEditProposeFrame } from "@kobe/protocol/sandbox-wire";
+import { PROJECT_FILES_MAX } from "@kaiju/protocol";
+import { type FileEditProposeFrame } from "@kaiju/protocol/sandbox-wire";
 import { proposeFileEdit, type ProposeOutcome } from "../sandbox-wire/file-edit-propose.js";
 import { RawBody, type TestBrowser } from "../testing/browser.js";
 import { must } from "../testing/event-stream-fixture.js";
@@ -134,7 +134,7 @@ async function fillHead(w: World, n: number): Promise<void> {
      e AS (
        INSERT INTO project_tree_entries (team_id, commit_id, path, sha256, blob_ref, size_bytes,
                                          mime_type, executable)
-       SELECT $1, c.id, 'fill/' || g || '.txt', repeat('0', 64), 'kobe/fill', 1, 'text/plain', false
+       SELECT $1, c.id, 'fill/' || g || '.txt', repeat('0', 64), 'kaiju/fill', 1, 'text/plain', false
          FROM c, generate_series(1, $5::int) g)
      UPDATE projects SET head_commit_id = (SELECT id FROM c) WHERE team_id = $1 AND id = $2`,
     [w.team, projectId, seq, author, n],

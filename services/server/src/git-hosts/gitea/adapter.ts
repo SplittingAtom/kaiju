@@ -1,4 +1,4 @@
-import type { GitCapability, GitProvider } from "@kobe/db";
+import type { GitCapability, GitProvider } from "@kaiju/db";
 import {
   assertBranch,
   assertNumber,

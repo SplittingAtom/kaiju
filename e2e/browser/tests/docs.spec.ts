@@ -14,14 +14,14 @@ test("Docs opens the guide in a panel from the bar, and agents read it without a
   browser,
 }) => {
   await chat.open();
-  const conversation = page.locator("#kobe-chat-main");
+  const conversation = page.locator("#kaiju-chat-main");
   const firstRow = page.getByRole("banner").locator('[data-bar-row="1"]');
   const icon = firstRow.getByRole("link", { name: "Docs" });
   await icon.click();
   await expect(page).toHaveURL(/\/docs$/, { timeout: SHELL_TIMEOUT_MS });
   const panel = page.getByRole("dialog", { name: "Docs" });
   await expect(panel).toBeVisible();
-  await expect(panel).toHaveAttribute("data-kobe-panel", "docs");
+  await expect(panel).toHaveAttribute("data-kaiju-panel", "docs");
   // The workspace stays mounted underneath.
   await expect(conversation).toBeAttached();
   await expect(panel.getByRole("heading", { level: 1 })).toContainText("guide");

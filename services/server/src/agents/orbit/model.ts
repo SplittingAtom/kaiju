@@ -5,8 +5,8 @@ import {
   modelProviders,
   teamModels,
   withTeam,
-} from "@kobe/db";
-import type { KobeDb, ModelProviderKind } from "@kobe/db";
+} from "@kaiju/db";
+import type { KaijuDb, ModelProviderKind } from "@kaiju/db";
 
 /**
  * The provider model id an Orbit export carries (KOBE-91): Kaiju's catalog aliases mean nothing to
@@ -63,7 +63,7 @@ export function resolveOrbitModel(
 }
 
 /** The team's enabled models with their provider details (enablement is under RLS). */
-export function listOrbitModelOptions(db: KobeDb, teamId: string): Promise<OrbitModelOption[]> {
+export function listOrbitModelOptions(db: KaijuDb, teamId: string): Promise<OrbitModelOption[]> {
   return withTeam(db, teamId, (tx) =>
     tx
       .select({

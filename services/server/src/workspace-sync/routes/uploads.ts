@@ -1,4 +1,4 @@
-import { sha256HexSchema } from "@kobe/protocol";
+import { sha256HexSchema } from "@kaiju/protocol";
 import { Hono } from "hono";
 import { param } from "../../http/request.js";
 import { teamObjectsAllow } from "../../uploads/quota.js";

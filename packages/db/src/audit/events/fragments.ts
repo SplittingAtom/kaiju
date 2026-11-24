@@ -149,7 +149,7 @@ export const notified = {
   teamAdmins: z.number().int().nonnegative().optional(),
 };
 
-/** A Pi tool call id (`idSchema` in @kobe/protocol): no control characters, ≤ 128. */
+/** A Pi tool call id (`idSchema` in @kaiju/protocol): no control characters, ≤ 128. */
 export const toolCallId = z
   .string()
   .min(1)
@@ -197,7 +197,7 @@ export type AuditEventDef = { readonly scope: AuditScope; readonly target: z.Zod
 
 /**
  * An event's row in the docs/audit-log.md taxonomy table (KOBE-815), kept per area in
- * `events/<area>.doc.ts` and rendered by `pnpm --filter @kobe/db audit:doc`. Markdown on one line.
+ * `events/<area>.doc.ts` and rendered by `pnpm --filter @kaiju/db audit:doc`. Markdown on one line.
  */
 export interface AuditEventDoc {
   /** The target fields, with values or meanings where they help; empty for none (shown as "—"). */

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { Envelope } from "@kobe/db";
+import type { Envelope } from "@kaiju/db";
 import { z } from "zod";
 import { OauthError } from "./http.js";
 

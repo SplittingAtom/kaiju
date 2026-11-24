@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Docs" };
 export default async function DocsLayout({ children }: { readonly children: ReactNode }) {
   const { appName } = await getSiteBranding();
   return (
-    <div data-kobe-docs="" className="text-foreground mx-auto max-w-6xl px-4 py-6">
+    <div data-kaiju-docs="" className="text-foreground mx-auto max-w-6xl px-4 py-6">
       <p className="mt-0 mb-4 text-sm">
         <Link href="/docs">{appName} guide home</Link>
       </p>

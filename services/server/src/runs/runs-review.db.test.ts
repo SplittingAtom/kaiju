@@ -1,6 +1,6 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { lockOwnedThread } from "./access.js";
 import { DbRunOrchestrator } from "./orchestrator.js";
 import { RunError } from "./errors.js";

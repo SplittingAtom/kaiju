@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { modelCatalog, modelProviders, recordModelUsage, type ModelUsageRecord } from "@kobe/db";
+import { modelCatalog, modelProviders, recordModelUsage, type ModelUsageRecord } from "@kaiju/db";
 import { FAILURE_MESSAGES } from "../runs/failure-codes.js";
 import type { MemoryMailer } from "../testing/mailer.js";
 import { RunFixture, type FakeWorkspace } from "../testing/run-fixture.js";
@@ -13,7 +13,7 @@ import { RunFixture, type FakeWorkspace } from "../testing/run-fixture.js";
  */
 const f = new RunFixture();
 const PROVIDER = `bud-${randomUUID().slice(0, 6)}`;
-const MODEL = `kobe-${PROVIDER}/m`;
+const MODEL = `kaiju-${PROVIDER}/m`;
 
 beforeAll(async () => {
   await f.setup();

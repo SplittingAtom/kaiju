@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { ToolActivity } from "../../lib/chat/live";
 import { Disclosure } from "./detail";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 import { ApprovalMarkerRow } from "./markers";
 
 /**
@@ -58,7 +58,7 @@ function mustShow(activity: Partial<ToolActivity>): boolean {
 export function withAppAnswerPass(Card: (props: ToolCallMessagePartProps) => ReactNode) {
   return function ToolCallInPass(props: ToolCallMessagePartProps) {
     const pass = useContext(PassContext);
-    const activity = useKobeExtras()?.state.live?.tools[props.toolCallId] ?? NO_ACTIVITY;
+    const activity = useKaijuExtras()?.state.live?.tools[props.toolCallId] ?? NO_ACTIVITY;
     const card = <Card {...props} />;
     const marker = <ApprovalMarkerRow toolCallId={props.toolCallId} />;
     if (pass.mode === "all") {
@@ -88,7 +88,7 @@ function useHasHidden(apps: ReadonlySet<string>, usedSkills: boolean): boolean {
       if (part.type === "reasoning") return true;
       if (part.type === "tool-call") return !apps.has(part.toolCallId);
       if (part.type === "data")
-        return part.name === "kobe-offloaded" || part.name === "kobe-skipped";
+        return part.name === "kaiju-offloaded" || part.name === "kaiju-skipped";
       return false;
     }),
   );
@@ -148,7 +148,7 @@ function AppOnly({
           onOpenChange={setOpen}
           className="text-muted-foreground -ms-2 text-sm"
           bodyClassName="text-foreground flex flex-col gap-2 ps-2 pt-2"
-          summary={<span data-kobe-show-response>Show response</span>}
+          summary={<span data-kaiju-show-response>Show response</span>}
         >
           {open && (
             <PassContext.Provider value={rest}>

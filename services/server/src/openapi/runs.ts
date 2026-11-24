@@ -5,12 +5,12 @@ import {
   submitMessageBodySchema,
   submitMessageResultSchema,
   updateQueuedBodySchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { queueOrderBodySchema } from "../runs/queue-order.js";
 
 /**
  * OpenAPI 3.1 description of messages and runs (spec §6.1, KOBE-30), generated from the zod
- * schemas the routes validate with (`@kobe/protocol` run contract). `document.test.ts` checks that
+ * schemas the routes validate with (`@kaiju/protocol` run contract). `document.test.ts` checks that
  * every mounted route is described.
  */
 

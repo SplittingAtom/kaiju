@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_FILE_EDITS, VIEWING_CONTENT_MAX_BYTES } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { CAPABILITY_FILE_EDITS, VIEWING_CONTENT_MAX_BYTES } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { MemoryObjects } from "../testing/memory-objects.js";
 import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 import { must } from "../testing/event-stream-fixture.js";

@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 // @vitest-environment-options {"settings":{"disableIframePageLoading":true,"handleDisabledFileLoadingAsSuccess":true},"width":1280,"height":800}
-import { withItemReferences } from "@kobe/protocol";
+import { withItemReferences } from "@kaiju/protocol";
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { BRIDGE_ATTACHED_ATTR } from "./app-frame";
 import { chatRequests, composer, openApp, streaming } from "../chat/testing";
@@ -15,7 +15,7 @@ import { chatRequests, composer, openApp, streaming } from "../chat/testing";
  * member's send carries the chips still shown as `references`; a sent message shows its
  * references (the server's line) as chips under its text.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -25,7 +25,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   vi.stubGlobal(
     "IntersectionObserver",
@@ -138,12 +138,12 @@ describe("app item chips (KOBE-490)", () => {
     await message(app, 2, [link("cat", "ns", "orders", "table")]);
     const row = await waitFor(() => must(chipRow()));
     expect(within(row).getAllByRole("listitem")).toHaveLength(3);
-    const icons = [...row.querySelectorAll("[data-kobe-item-icon]")].map((i) =>
-      i.getAttribute("data-kobe-item-icon"),
+    const icons = [...row.querySelectorAll("[data-kaiju-item-icon]")].map((i) =>
+      i.getAttribute("data-kaiju-item-icon"),
     );
     expect(icons).toEqual(["table", "view", "generic"]);
     // Table and view draw different icons.
-    const svgs = [...row.querySelectorAll("svg[data-kobe-item-icon]")].map((s) => s.innerHTML);
+    const svgs = [...row.querySelectorAll("svg[data-kaiju-item-icon]")].map((s) => s.innerHTML);
     expect(svgs[0]).not.toBe(svgs[1]);
     expect(
       screen.getByRole("button", { name: "Table cat.ns.orders, from Lakehouse Picker; remove" }),
@@ -155,7 +155,7 @@ describe("app item chips (KOBE-490)", () => {
     expect(screen.getByTitle("cat.ns.orders")).toBeTruthy();
     expect(screen.queryByTitle("orders in ns")).toBeNull();
     expect(box.value).toBe("");
-    expect(document.querySelector("[data-kobe-app-insert-from]")).toBeNull();
+    expect(document.querySelector("[data-kaiju-app-insert-from]")).toBeNull();
     await waitFor(() =>
       expect(app.replies()).toContainEqual({ jsonrpc: "2.0", id: 1, result: {} }),
     );
@@ -229,8 +229,8 @@ describe("app item chips (KOBE-490)", () => {
     const sent = screen.getByRole("list", { name: "Referenced items" });
     expect(within(sent).getByText("cat.ns.orders")).toBeTruthy();
     expect(
-      [...sent.querySelectorAll("[data-kobe-item-icon]")].map((i) =>
-        i.getAttribute("data-kobe-item-icon"),
+      [...sent.querySelectorAll("[data-kaiju-item-icon]")].map((i) =>
+        i.getAttribute("data-kaiju-item-icon"),
       ),
     ).toEqual(["table", "view"]);
     expect(screen.queryByText(/Referenced:/)).toBeNull();

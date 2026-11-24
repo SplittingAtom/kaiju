@@ -1,4 +1,4 @@
-import { EPILOGUE_EVENT_TYPES, type KobeEvent, type KobeEventType } from "./events.js";
+import { EPILOGUE_EVENT_TYPES, type KaijuEvent, type KaijuEventType } from "./events.js";
 import { SERVER_CALL_EPILOGUE_MAX_MS, type ServerCallPurpose } from "./server-call.js";
 
 /**
@@ -43,7 +43,7 @@ export const SSE_KEEPALIVE_MS = 15_000;
 export const SSE_RETRY_MS = 2_000;
 export const SSE_KEEPALIVE_FRAME = ": keepalive\n\n";
 
-export function formatSseEvent(event: KobeEvent): string {
+export function formatSseEvent(event: KaijuEvent): string {
   return `id: ${event.seq}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
 }
 
@@ -107,7 +107,7 @@ export function decideStreamOpen(run: {
 export function epilogueOpen(input: {
   readonly epilogue: readonly ServerCallPurpose[] | undefined;
   /** Event types already written for the run. */
-  readonly written: ReadonlySet<KobeEventType>;
+  readonly written: ReadonlySet<KaijuEventType>;
   readonly completedAtMs: number;
   readonly nowMs: number;
 }): boolean {

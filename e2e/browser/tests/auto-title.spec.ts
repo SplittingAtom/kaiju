@@ -19,7 +19,7 @@ test("a new thread gets its title after the first answer, in the rail and the he
   const threadId = await chat.ask(PROMPT);
 
   // The header leaves the first line for the server's title, live.
-  const heading = page.locator("#kobe-thread-title");
+  const heading = page.locator("#kaiju-thread-title");
   await expect
     .poll(async () => (await heading.innerText()).trim(), { timeout: TITLE_TIMEOUT_MS })
     .not.toMatch(/^(No tools\. Reply with the single word ALPHA\.|Untitled conversation)$/);
@@ -44,7 +44,7 @@ test("a new thread gets its title after the first answer, in the rail and the he
   const panel = await chat.openThreads();
   const row = panel
     .getByRole("list", { name: "Your threads" })
-    .locator(`li[data-kobe-thread="${threadId}"]`)
+    .locator(`li[data-kaiju-thread="${threadId}"]`)
     .getByRole("button", { name: title, exact: true });
   await expect(row).toBeVisible();
 

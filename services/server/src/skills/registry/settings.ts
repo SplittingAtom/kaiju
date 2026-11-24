@@ -9,17 +9,17 @@ import {
   type RegistrySettings,
   type RegistrySettingsUpdate,
   type RegistryTeamCreate,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   eq,
   modelCatalog,
   siteSkillSettings,
   sql,
   teams,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   pgCodeOf,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { logger } from "../../logger.js";
 import { createTeamWithAdmin } from "../../teams/members.js";
@@ -33,7 +33,7 @@ import { joinRegistryTeamInTx, reviewerIds } from "./grants.js";
  * reviewer grant can never add anyone to an ordinary team; the database refuses naming any other.
  */
 
-type Db = KobeDb | KobeTx;
+type Db = KaijuDb | KaijuTx;
 
 /** A stored document that no longer parses reads as its defaults, and says so (review L3). */
 function parsed<T>(
@@ -150,7 +150,7 @@ function stable(v: unknown): string {
 }
 
 export async function updateRegistrySettings(
-  db: KobeDb,
+  db: KaijuDb,
   update: RegistrySettingsUpdate,
   userId: string,
 ): Promise<RegistryUpdateResult> {
@@ -206,7 +206,7 @@ export type RegistryTeamResult =
  * is refused.
  */
 export async function createRegistryTeam(
-  db: KobeDb,
+  db: KaijuDb,
   input: RegistryTeamCreate,
   adminId: string,
 ): Promise<RegistryTeamResult> {

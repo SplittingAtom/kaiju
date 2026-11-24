@@ -176,7 +176,7 @@ test("an admin brands the site: name, logo, favicon, preset, refusals and reset 
     await openAppearance(page);
     await panel.getByRole("radio", { name: "Plum" }).check();
     await save(page);
-    await rendered(page, "/", (h) => h.includes("data-kobe-branding"));
+    await rendered(page, "/", (h) => h.includes("data-kaiju-branding"));
     for (const theme of ["light", "dark"] as const) {
       await context.addCookies([{ name: THEME_COOKIE, value: theme, url: baseURL }]);
       await checkContrast(page, theme);

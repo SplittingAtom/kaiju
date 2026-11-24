@@ -1,9 +1,9 @@
-import { EVAL_OUTPUT_READ_MAX_BYTES, type EvalWorkspaceEntry } from "@kobe/protocol";
+import { EVAL_OUTPUT_READ_MAX_BYTES, type EvalWorkspaceEntry } from "@kaiju/protocol";
 import {
   EVAL_READ_MAX_FILES,
   EVAL_READ_MAX_TOTAL_BYTES,
   type EvalReadResult,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import type { CommandOutcome, SandboxTarget } from "../../sandbox-wire/types.js";
 import { judgeOutputs } from "./judge-outputs.js";

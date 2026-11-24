@@ -1,4 +1,4 @@
-import type { RunStartFrame } from "@kobe/protocol/sandbox-wire";
+import type { RunStartFrame } from "@kaiju/protocol/sandbox-wire";
 import type { Config } from "../config.js";
 import type { EgressWiring } from "../egress/egress-wiring.js";
 import type { McpWiring } from "../mcp/pi-mcp-config.js";

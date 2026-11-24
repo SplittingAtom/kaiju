@@ -7,14 +7,14 @@ import { users } from "./auth.js";
 // needs no object store). Site-wide (†) like `site_settings`, which holds the name and the theme
 // (`branding.app_name`, `branding.theme`): one organisation, one brand (TH1), so no team_id and no
 // team RLS; the server lets only `site.settings.manage` write. The limits mirror
-// `BRANDING_ASSET_MAX_BYTES` and `BRANDING_ASSET_MAX_SIDE_PX` in `@kobe/protocol` (the server
+// `BRANDING_ASSET_MAX_BYTES` and `BRANDING_ASSET_MAX_SIDE_PX` in `@kaiju/protocol` (the server
 // checks them first; these checks are the backstop).
 
 const KIB = 1024;
 const LOGO_MAX_BYTES = 512 * KIB;
 const FAVICON_MAX_BYTES = 256 * KIB;
 const MAX_SIDE_PX = 4096;
-/** Mirrors `BRANDING_ASSET_CONTENT_TYPES` in `@kobe/protocol` (TH8; ICO only as a favicon). */
+/** Mirrors `BRANDING_ASSET_CONTENT_TYPES` in `@kaiju/protocol` (TH8; ICO only as a favicon). */
 const sqlList = (types: readonly string[]) => types.map((t) => `'${t}'`).join(", ");
 const LOGO_TYPES = sqlList(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]);
 const FAVICON_TYPES = sqlList(["image/png", "image/svg+xml", "image/x-icon"]);

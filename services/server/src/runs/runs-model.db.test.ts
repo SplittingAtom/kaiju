@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { FAILURE_MESSAGES } from "./failure-codes.js";
 import { PINNED_AGENTS } from "./agents.js";
 import { startedModelAlias } from "./lifecycle.js";

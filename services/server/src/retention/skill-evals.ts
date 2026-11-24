@@ -1,4 +1,4 @@
-import { lockLegalHolds, sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { lockLegalHolds, sql, teams, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger } from "../logger.js";
 import type { BlobStore } from "./blobs.js";
 
@@ -32,11 +32,11 @@ async function deleteObjects(blobs: BlobStore | undefined, keys: readonly string
 }
 
 async function purge(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore | undefined,
   teamId: string,
   stop: (() => boolean) | undefined,
-  select: (tx: KobeTx) => ReturnType<KobeTx["execute"]>,
+  select: (tx: KaijuTx) => ReturnType<KaijuTx["execute"]>,
 ): Promise<EvalPurgeCounts> {
   let runs = 0;
   let objects = 0;
@@ -60,7 +60,7 @@ async function purge(
 
 /** Finished eval runs started before `cutoff` (the team's window), with their objects. */
 export function purgeSkillEvals(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore | undefined,
   teamId: string,
   cutoff: Date | null,
@@ -85,7 +85,7 @@ export function purgeSkillEvals(
  * active member, finished more than `retainDays` ago.
  */
 export function purgeDepartedSkillEvals(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore | undefined,
   teamId: string,
   retainDays: number,
@@ -110,7 +110,7 @@ export function purgeDepartedSkillEvals(
 
 /** Every team's departed starters. */
 export async function sweepDepartedSkillEvals(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore | undefined,
   retainDays: number,
 ): Promise<number> {

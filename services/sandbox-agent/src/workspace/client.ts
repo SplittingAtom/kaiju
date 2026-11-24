@@ -12,7 +12,7 @@ import {
   type WorkspaceChange,
   type WorkspaceEntry,
   type WorkspaceRestoreReport,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import type { z } from "zod";
 
 /**

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import type { SandboxAttachment } from "@kobe/protocol/sandbox-wire";
+import type { SandboxAttachment } from "@kaiju/protocol/sandbox-wire";
 import { confineFile, ConfineError } from "../workspace-confine.js";
 
 /**

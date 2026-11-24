@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_THEME, siteBrandingSchema, type BrandingAssetKind } from "@kobe/protocol";
+import { DEFAULT_THEME, siteBrandingSchema, type BrandingAssetKind } from "@kaiju/protocol";
 import { png, svg } from "../testing/branding-fixtures.js";
 import type { BrandingSettings } from "./settings.js";
 import { brandingVariants, publicBranding, sha256Hex, type StoredAsset } from "./store.js";

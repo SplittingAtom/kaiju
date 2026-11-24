@@ -12,7 +12,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kobe-sso-mock
-  labels: { app.kubernetes.io/part-of: kobe-e2e }
+  labels: { app.kubernetes.io/part-of: kaiju-e2e }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -104,7 +104,7 @@ spec:
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
-        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: __KOBE_NS__ } }
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: __KAIJU_NS__ } }
           podSelector: { matchLabels: { app.kubernetes.io/component: server } }
       ports: [{ port: 8443 }]
     - from:

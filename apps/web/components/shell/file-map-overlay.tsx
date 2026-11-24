@@ -42,8 +42,8 @@ function visibleRect(el: Element): Box {
 function rowsOf(column: Element, origin: Box, side: Side): Map<string, Box> {
   const out = new Map<string, Box>();
   if (side === "thread") {
-    for (const li of column.querySelectorAll<HTMLElement>("[data-kobe-thread]")) {
-      const id = li.dataset["kobeThread"];
+    for (const li of column.querySelectorAll<HTMLElement>("[data-kaiju-thread]")) {
+      const id = li.dataset["kaijuThread"];
       // The row itself, not the files list opened under it.
       const row = li.firstElementChild ?? li;
       if (id && !out.has(id)) out.set(id, relativeBox(row.getBoundingClientRect(), origin));
@@ -155,12 +155,12 @@ export function FileMapOverlay({
   return (
     <div
       aria-hidden
-      data-kobe-file-lines=""
+      data-kaiju-file-lines=""
       className="pointer-events-none absolute inset-0 z-10 motion-safe:animate-in motion-safe:fade-in"
     >
       <svg className="absolute inset-0 size-full overflow-visible">
         {plan.lines.map((line) => (
-          <g key={line.id} data-kobe-line={line.anchor} data-access={line.access}>
+          <g key={line.id} data-kaiju-line={line.anchor} data-access={line.access}>
             <path
               d={curvePath(line)}
               fill="none"
@@ -179,7 +179,7 @@ export function FileMapOverlay({
         .map((l) => (
           <span
             key={`${l.id}:n`}
-            data-kobe-line-count={l.anchor}
+            data-kaiju-line-count={l.anchor}
             className="bg-primary text-primary-foreground absolute rounded-full px-1 text-[0.6rem] leading-4 tabular-nums"
             style={{ top: l.y2 - 8, left: l.x2 - 4, transform: "translateX(-100%)" }}
           >
@@ -189,7 +189,7 @@ export function FileMapOverlay({
       {plan.markers.map((m) => (
         <span
           key={m.id}
-          data-kobe-line-marker={m.position}
+          data-kaiju-line-marker={m.position}
           className="bg-background text-muted-foreground absolute rounded-sm border px-1 text-[0.65rem] leading-4"
           style={{
             top: m.position === "above" ? m.y : m.y - 16,
@@ -202,7 +202,7 @@ export function FileMapOverlay({
       ))}
       {plan.overflow > 0 && first && (
         <span
-          data-kobe-line-overflow=""
+          data-kaiju-line-overflow=""
           className="bg-background text-muted-foreground absolute rounded-sm border px-1 text-[0.65rem] leading-4"
           style={{ top: first.y1 - 8, left: (first.x1 + first.x2) / 2 }}
         >

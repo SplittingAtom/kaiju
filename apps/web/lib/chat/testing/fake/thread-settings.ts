@@ -1,5 +1,5 @@
 /** A thread's agent, organization, folder, Learn, context and connectors (KOBE-717 area). */
-import { THREAD_CONTEXT_ERROR_MESSAGES } from "@kobe/protocol";
+import { THREAD_CONTEXT_ERROR_MESSAGES } from "@kaiju/protocol";
 import type { FakeCore } from "./core";
 import { error, json, type FakeThread, type Json } from "./state";
 

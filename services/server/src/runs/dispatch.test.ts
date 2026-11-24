@@ -1,6 +1,6 @@
 import pino from "pino";
 import { describe, expect, it } from "vitest";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import type { SandboxRouter } from "../sandbox-wire/types.js";
 import { RunDispatcher, type DispatchHost } from "./dispatch.js";
 import type { StartPlan } from "./lifecycle.js";
@@ -26,7 +26,7 @@ describe("run start dispatch", () => {
       },
     } as unknown as SandboxRouter;
     const host = {
-      db: undefined as unknown as KobeDb,
+      db: undefined as unknown as KaijuDb,
       router,
       log: pino({ level: "silent" }),
       closed: () => false,

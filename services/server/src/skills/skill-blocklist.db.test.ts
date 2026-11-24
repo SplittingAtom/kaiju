@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { RawBody, type TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -82,7 +82,7 @@ async function resolved(teamId: string, userId: string, skills: string[]) {
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects: new MemoryObjects(), prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects: new MemoryObjects(), prefix: "kaiju/" } });
   ids.root = await h.createUser("root@blocklist.test", "admin");
   for (const who of ["alice", "bob", "dave"]) ids[who] = await h.createUser(`${who}@bl.test`);
   await h.admin.query(

@@ -5,13 +5,13 @@ import {
   MEMORY_PASS_MAX_MS,
   SERVER_CALL_EPILOGUE_MAX_MS,
   EventPayloadTooLargeError,
-  isKobeEventType,
+  isKaijuEventType,
   isTerminalEventType,
   parseEventPayload,
-  type KobeEvent,
-  type KobeEventType,
-} from "@kobe/protocol";
-import { runEvents, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+  type KaijuEvent,
+  type KaijuEventType,
+} from "@kaiju/protocol";
+import { runEvents, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { encodeHint, RUN_EVENTS_CHANNEL } from "./notify.js";
 
 /**
@@ -37,7 +37,7 @@ export interface NewRunEvent {
 }
 
 export type AppendErrorCode =
-  | "invalid_event" // unknown type or payload that fails its @kobe/protocol schema
+  | "invalid_event" // unknown type or payload that fails its @kaiju/protocol schema
   | "batch_too_large" // more than MAX_APPEND_BATCH events
   | "payload_too_large" // one payload over MAX_EVENT_PAYLOAD_BYTES
   | "terminal_not_last" // a terminal run.* event followed by more events in the batch
@@ -57,7 +57,7 @@ export class AppendError extends Error {
 }
 
 interface ValidEvent {
-  readonly type: KobeEventType;
+  readonly type: KaijuEventType;
   readonly payload: Record<string, unknown>;
 }
 
@@ -69,7 +69,7 @@ function validate(events: readonly NewRunEvent[]): ValidEvent[] {
     );
   }
   return events.map((event, i) => {
-    if (!isKobeEventType(event.type)) {
+    if (!isKaijuEventType(event.type)) {
       throw new AppendError("invalid_event", `event ${i}: unknown type ${String(event.type)}`);
     }
     let payload: Record<string, unknown>;
@@ -109,20 +109,20 @@ function validate(events: readonly NewRunEvent[]): ValidEvent[] {
  * of the stream.
  */
 export async function appendRunEventsInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   events: readonly NewRunEvent[],
-): Promise<KobeEvent[]> {
+): Promise<KaijuEvent[]> {
   return appendValid(tx, teamId, runId, validate(events));
 }
 
 async function appendValid(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   valid: readonly ValidEvent[],
-): Promise<KobeEvent[]> {
+): Promise<KaijuEvent[]> {
   if (valid.length === 0) return [];
 
   // Lock first, then read in a separate statement. In READ COMMITTED a statement that waited on the
@@ -161,13 +161,13 @@ async function appendValid(
         ts: r.createdAt.toISOString(),
         type: r.type,
         payload: r.payload,
-      }) as KobeEvent,
+      }) as KaijuEvent,
   );
 }
 
 /** Epilogue event types (KOBE-234) by the server call that writes them. */
-const EPILOGUE_TYPES: ReadonlyMap<KobeEventType, string> = new Map(
-  Object.entries(EPILOGUE_EVENT_TYPES).map(([purpose, type]) => [type as KobeEventType, purpose]),
+const EPILOGUE_TYPES: ReadonlyMap<KaijuEventType, string> = new Map(
+  Object.entries(EPILOGUE_EVENT_TYPES).map(([purpose, type]) => [type as KaijuEventType, purpose]),
 );
 /**
  * At most one event per epilogue purpose follows a terminal event, so a run's terminal event, if
@@ -192,14 +192,14 @@ function isEpilogueEvent(e: ValidEvent): boolean {
 /**
  * The run must still take these events (call with the run row locked). Before its terminal event
  * anything but an epilogue event goes. After it, only the epilogue (KOBE-234,
- * `@kobe/protocol` server-call.ts): the event types `run.completed.epilogue` announced, each at
+ * `@kaiju/protocol` server-call.ts): the event types `run.completed.epilogue` announced, each at
  * most once per run, within `SERVER_CALL_EPILOGUE_MAX_MS` of `run.completed` (database clock);
  * everything else is `run_finished`, so an epilogue event at the end never reopens the run.
  * Learning pass events (KOBE-393) are appended alone, only after the terminal event, and only for
  * an open pass ({@link checkPassesOpen}); the tail read skips them, so any number may follow.
  */
 async function checkRunOpen(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   valid: readonly ValidEvent[],
@@ -213,7 +213,7 @@ async function checkRunOpen(
        WHERE e.team_id = ${teamId} AND e.run_id = ${runId} AND e.type NOT IN (${PASS_TYPE_LIST})
        ORDER BY e.seq DESC LIMIT ${TAIL}) t
      ORDER BY t.seq`);
-  const at = tail.rows.findIndex((r) => isKobeEventType(r.type) && isTerminalEventType(r.type));
+  const at = tail.rows.findIndex((r) => isKaijuEventType(r.type) && isTerminalEventType(r.type));
   const terminal = at < 0 ? undefined : tail.rows[at];
   const passes = valid.filter(isPassEvent);
   if (passes.length > 0) {
@@ -256,13 +256,13 @@ const FINAL_PASS_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Learning pass events (KOBE-393; `@kobe/protocol` semantic-memory/learning.ts) go to an ended run
+ * Learning pass events (KOBE-393; `@kaiju/protocol` semantic-memory/learning.ts) go to an ended run
  * of the pass's thread while the pass runs: its row is `running` on the run's thread, started
  * within `MEMORY_PASS_MAX_MS` (database clock), and the batch ends each pass at most once, last.
  * The pass closes its row in the same transaction as its final event, so nothing follows it.
  */
 async function checkPassesOpen(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   passes: readonly ValidEvent[],
@@ -299,11 +299,11 @@ async function checkPassesOpen(
 
 /** Appends in a transaction of its own (with a lock timeout); commits before returning. */
 export async function appendRunEvents(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   runId: string,
   events: readonly NewRunEvent[],
-): Promise<KobeEvent[]> {
+): Promise<KaijuEvent[]> {
   const valid = validate(events); // fail before opening a transaction
   if (valid.length === 0) return [];
   return withAppendTx(db, teamId, (tx) => appendValid(tx, teamId, runId, valid));
@@ -315,9 +315,9 @@ export async function appendRunEvents(
  * a stuck lock holder surfaces as an error (55P03) instead of a hung writer.
  */
 export async function withAppendTx<T>(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
-  fn: (tx: KobeTx) => Promise<T>,
+  fn: (tx: KaijuTx) => Promise<T>,
 ): Promise<T> {
   return withTeam(db, teamId, async (tx) => {
     await tx.execute(sql`SELECT set_config('lock_timeout', ${APPEND_LOCK_TIMEOUT}, true)`);

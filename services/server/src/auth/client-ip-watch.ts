@@ -1,4 +1,4 @@
-import { and, eq, gt, kobeRateLimits, type KobeDb } from "@kobe/db";
+import { and, eq, gt, kaijuRateLimits, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../background.js";
 import { countRateLimitHit } from "../rate-limit.js";
@@ -28,7 +28,7 @@ export interface ClientIpWatch {
  * stored) so the Site console can say so for a day.
  */
 export function createClientIpWatch(o: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly log: Pick<Logger, "warn">;
   readonly background: BackgroundTasks;
   readonly now?: () => number;
@@ -54,9 +54,9 @@ export function createClientIpWatch(o: {
     },
     async seen() {
       const [row] = await o.db
-        .select({ since: kobeRateLimits.windowStart })
-        .from(kobeRateLimits)
-        .where(and(eq(kobeRateLimits.key, `kobe:${KEY}`), gt(kobeRateLimits.expiresAt, now())));
+        .select({ since: kaijuRateLimits.windowStart })
+        .from(kaijuRateLimits)
+        .where(and(eq(kaijuRateLimits.key, `kobe:${KEY}`), gt(kaijuRateLimits.expiresAt, now())));
       return row ? { since: Number(row.since) } : null;
     },
   };

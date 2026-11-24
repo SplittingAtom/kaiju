@@ -6,7 +6,7 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { LAST_TEAM_KEY } from "../../lib/teams";
 import { must } from "../../lib/testing/must";
@@ -22,13 +22,13 @@ const RAIL_CSS = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "rail.module.css"),
   "utf8",
 );
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push({ alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true });
   vi.stubGlobal("fetch", fake.fetch);
 });
@@ -46,7 +46,7 @@ function withAccess(teamRole: "member" | "team_admin", siteRole: string | null =
   const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
   const permissions = teamRole === "team_admin" ? ["team.members.manage"] : ["team.read"];
   vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
-    const path = new URL(input, "http://kobe.test").pathname;
+    const path = new URL(input, "http://kaiju.test").pathname;
     if (path === "/v1/me") {
       return json({
         user: { id: "u-1", name: "Ada", email: "ada@example.test", twoFactorEnabled: false },
@@ -73,7 +73,7 @@ const toggle = (name: "Threads panel" | "Files panel") =>
 const threadsButton = () => toggle("Threads panel");
 const section = (id: string) => must(document.getElementById(id));
 const rows = () =>
-  must(document.getElementById("kobe-rail-sections")).style.gridTemplateRows.replace(/\s+/g, " ");
+  must(document.getElementById("kaiju-rail-sections")).style.gridTemplateRows.replace(/\s+/g, " ");
 const puts = () => fake.requests.filter((r) => r.method === "PUT" && r.path === PREFERENCES_PATH);
 const names = (root: HTMLElement) =>
   [...root.querySelectorAll<HTMLElement>("a, button, summary, h2")].map(
@@ -339,8 +339,8 @@ describe("Threads and the Files toggle (ac-3, KOBE-453)", { timeout: 30_000 }, (
     await composer();
     await header();
     await new Promise((r) => setTimeout(r, 100));
-    expect(section("kobe-rail-files").hidden).toBe(false);
-    expect(document.getElementById("kobe-rail-threads")).toBeNull();
+    expect(section("kaiju-rail-files").hidden).toBe(false);
+    expect(document.getElementById("kaiju-rail-threads")).toBeNull();
   });
 
   it("Threads opens the Threads panel; Files is pressed by default and fills the rail", async () => {
@@ -364,12 +364,12 @@ describe("Threads and the Files toggle (ac-3, KOBE-453)", { timeout: 30_000 }, (
     expect(toggle("Files panel").hasAttribute("aria-disabled")).toBe(false);
     await user.click(toggle("Files panel"));
     await waitFor(() => expect(rail().hasAttribute("data-collapsed")).toBe(true));
-    expect(section("kobe-rail-files").hidden).toBe(true);
+    expect(section("kaiju-rail-files").hidden).toBe(true);
     // The strip keeps New conversation and Threads; Show files expands with Files on.
     expect(within(rail()).getByRole("button", { name: "Show threads" })).toBeTruthy();
     await user.click(within(rail()).getByRole("button", { name: "Show files" }));
     await waitFor(() => expect(rail().hasAttribute("data-collapsed")).toBe(false));
-    expect(section("kobe-rail-files").hidden).toBe(false);
+    expect(section("kaiju-rail-files").hidden).toBe(false);
     expect(toggle("Files panel").getAttribute("aria-pressed")).toBe("true");
   });
 
@@ -383,7 +383,7 @@ describe("Threads and the Files toggle (ac-3, KOBE-453)", { timeout: 30_000 }, (
     openApp(fake);
     await composer();
     await waitFor(() => expect(rail().hasAttribute("data-collapsed")).toBe(true));
-    expect(section("kobe-rail-files").hidden).toBe(true);
+    expect(section("kaiju-rail-files").hidden).toBe(true);
     // Mod+B expands it again, with Files on (saved like the toggle).
     act(() => {
       fireEvent.keyDown(document.body, {
@@ -403,10 +403,10 @@ describe("existing paths turn a panel on (ac-4)", { timeout: 30_000 }, () => {
     openApp(fake);
     await composer();
     await header();
-    await waitFor(() => expect(section("kobe-rail-files").hidden).toBe(true));
+    await waitFor(() => expect(section("kaiju-rail-files").hidden).toBe(true));
     act(() => void pressModShift("F"));
-    await waitFor(() => expect(section("kobe-rail-files").hidden).toBe(false));
-    await waitFor(() => expect(document.activeElement?.id).toBe("kobe-rail-files"));
+    await waitFor(() => expect(section("kaiju-rail-files").hidden).toBe(false));
+    await waitFor(() => expect(document.activeElement?.id).toBe("kaiju-rail-files"));
     expect(toggle("Files panel").getAttribute("aria-pressed")).toBe("true");
     await waitFor(() => expect(puts().at(-1)?.body).toEqual({ rail_panels: "both" }), WAIT);
   });
@@ -416,7 +416,7 @@ describe("existing paths turn a panel on (ac-4)", { timeout: 30_000 }, () => {
     await composer();
     await header();
     act(() => void pressModShift("F"));
-    await waitFor(() => expect(document.activeElement?.id).toBe("kobe-rail-files"));
+    await waitFor(() => expect(document.activeElement?.id).toBe("kaiju-rail-files"));
     await new Promise((r) => setTimeout(r, 900));
     expect(puts().filter((r) => "rail_panels" in (r.body as object))).toEqual([]);
   });

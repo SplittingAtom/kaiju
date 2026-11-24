@@ -70,14 +70,14 @@ test("pin, archive and move to project, in the Threads panel and after a reload"
 
   await chat.open();
   await chat.ask("No tools. Reply with the single word OK.");
-  const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+  const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
   await header.getByRole("button", { name: /^Rename / }).click();
   const name = page.getByRole("textbox", { name: "Conversation name", exact: true });
   await name.fill(title);
   await name.press("Enter");
   await chat.openThreads();
   const rowIn = (kind: string) =>
-    group(page, kind).locator("[data-kobe-thread]").filter({ hasText: title });
+    group(page, kind).locator("[data-kaiju-thread]").filter({ hasText: title });
   await expect(rowIn("ungrouped")).toHaveCount(1);
 
   // ac-1: Pin → the Pinned group at the top, kept after a reload; Unpin puts it back.
@@ -100,7 +100,7 @@ test("pin, archive and move to project, in the Threads panel and after a reload"
   await expect(rowIn("ungrouped")).toHaveCount(0);
   const archivedRow = threads(page)
     .getByRole("list", { name: "Archived", exact: true })
-    .locator("[data-kobe-thread]")
+    .locator("[data-kaiju-thread]")
     .filter({ hasText: title });
   await page.reload();
   await chat.openThreads();
@@ -114,7 +114,7 @@ test("pin, archive and move to project, in the Threads panel and after a reload"
   const hits = page.getByRole("list", { name: "Search results" });
   const hit = hits.getByRole("listitem").filter({ hasText: title });
   await expect(hit).toHaveCount(1);
-  await expect(hit.locator("[data-kobe-archived]")).toHaveText("Archived");
+  await expect(hit.locator("[data-kaiju-archived]")).toHaveText("Archived");
   await search.press("Escape");
   // The panel reopens on the node last chosen in this tab (Archived).
   await chat.openThreads();
@@ -145,18 +145,18 @@ test("pin, archive and move to project, in the Threads panel and after a reload"
     const projectGroup = threads(page)
       .locator('[data-group="project"]')
       .filter({ has: page.getByRole("button", { name: new RegExp(projectName) }) });
-    await expect(projectGroup.locator("[data-kobe-thread]").filter({ hasText: title })).toHaveCount(
+    await expect(projectGroup.locator("[data-kaiju-thread]").filter({ hasText: title })).toHaveCount(
       1,
     );
     await page.reload();
     await chat.openThreads();
-    await expect(projectGroup.locator("[data-kobe-thread]").filter({ hasText: title })).toHaveCount(
+    await expect(projectGroup.locator("[data-kaiju-thread]").filter({ hasText: title })).toHaveCount(
       1,
     );
 
     await chat.closeThreads();
     await chat.ask("No tools. Reply with the single word MOVED.");
-    const marker = page.locator('[data-kobe-marker="project"]');
+    const marker = page.locator('[data-kaiju-marker="project"]');
     await expect(marker).toHaveCount(1);
     await expect(marker).toContainText(`Moved to project ${projectName}`);
 

@@ -13,8 +13,8 @@ import {
   registryTeamCreateSchema,
   skillEvalLimitsSchema,
   updateTopicTagSchema,
-} from "@kobe/protocol";
-import { skillRescanStatus } from "@kobe/db";
+} from "@kaiju/protocol";
+import { skillRescanStatus } from "@kaiju/db";
 import { z } from "zod";
 import { addSchema } from "../../../routes/site-skill-blocklist.js";
 import { noteSchema, skillSchema } from "../../../routes/site-skill-retire.js";
@@ -87,7 +87,7 @@ const defaultSync = obj({
   nextAttemptAt: nullable(str),
 });
 
-/** `RegistrySettings` of `@kobe/protocol` (an interface there): the settings with defaults. */
+/** `RegistrySettings` of `@kaiju/protocol` (an interface there): the settings with defaults. */
 const registrySettingsSchema = z.object({
   ready: z.boolean(),
   registryTeam: z.object({ id: z.string(), slug: z.string(), name: z.string() }).nullable(),

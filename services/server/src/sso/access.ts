@@ -7,10 +7,10 @@ import {
   teamMembers,
   withTeam,
   type AuditActor,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { currentAuditContext, runWithAuditContext } from "../audit/context.js";
 import { logger } from "../logger.js";
@@ -95,7 +95,7 @@ type Outcome =
  * Applies the provider's mappings to one person (see the module comment). Commits per team; the
  * caller runs {@link followUpIdpAccess} afterwards (or uses {@link applyIdpAccessAndFollowUp}).
  */
-export async function applyIdpAccess(db: KobeDb, input: IdpAccessInput): Promise<IdpAccessResult> {
+export async function applyIdpAccess(db: KaijuDb, input: IdpAccessInput): Promise<IdpAccessResult> {
   const values = normalizeIdpValues(input.values);
   const context = currentAuditContext();
   const actor = input.actor ?? context?.actor ?? SYSTEM_ACTOR;
@@ -162,7 +162,7 @@ export async function applyIdpAccess(db: KobeDb, input: IdpAccessInput): Promise
 
 /** One team, inside its transaction: re-read the row under lock and apply the plan. */
 async function reconcileTeam(
-  tx: KobeTx,
+  tx: KaijuTx,
   p: {
     readonly teamId: string;
     readonly userId: string;
@@ -216,7 +216,7 @@ async function reconcileTeam(
 }
 
 async function refused(
-  tx: KobeTx,
+  tx: KaijuTx,
   p: { readonly teamId: string; readonly userId: string; readonly providerId: string },
   error: MembershipError,
   role: TeamRole,
@@ -227,7 +227,7 @@ async function refused(
 }
 
 async function conflict(
-  tx: KobeTx,
+  tx: KaijuTx,
   p: { readonly teamId: string; readonly userId: string; readonly providerId: string },
   reason: IdpAccessConflict["reason"],
   role: TeamRole | null,

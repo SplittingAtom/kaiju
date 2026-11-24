@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { parseAgentFile, serializeAgentFile } from "@kobe/agent-file";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { parseAgentFile, serializeAgentFile } from "@kaiju/agent-file";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
@@ -15,7 +15,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * Agent definitions over HTTP (KOBE-45): scopes, CRUD, import/export, authorization per role,
  * and cross-team isolation. Own throwaway database (it needs an Owner and fixed teams).
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 const SPEC_EXAMPLE = `---

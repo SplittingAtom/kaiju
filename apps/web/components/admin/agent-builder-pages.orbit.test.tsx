@@ -11,7 +11,7 @@ import { AGENT, VERSIONS, READ, useAgentBuilderStubs } from "./agent-builder-pag
 useAgentBuilderStubs();
 
 describe("Agent builder: Export to Orbit (KOBE-91)", () => {
-  const YAML = "# Note: MCP tools are not included\nname: kobe-triage-v2\n";
+  const YAML = "# Note: MCP tools are not included\nname: kaiju-triage-v2\n";
   const ORBIT_URL = "/v1/agents/a-1/versions/2/orbit";
 
   /** Routes the orbit URL to a raw YAML answer and everything else to `stubApi`. */

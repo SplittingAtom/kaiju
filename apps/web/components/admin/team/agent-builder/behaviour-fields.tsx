@@ -1,6 +1,6 @@
 "use client";
 
-import { AGENT_APPROVAL_MODES, DANGEROUS_APPROVAL_MODE } from "@kobe/agent-file";
+import { AGENT_APPROVAL_MODES, DANGEROUS_APPROVAL_MODE } from "@kaiju/agent-file";
 import {
   splitLines,
   type FieldErrors,

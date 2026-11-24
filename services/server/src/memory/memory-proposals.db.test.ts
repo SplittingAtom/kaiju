@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { buildRunSemantic } from "./items/run-memory.js";
 import { statementHash } from "./learn/validate.js";
 import { sweepMemoryReminders } from "../notifications/memory.js";
@@ -377,7 +377,7 @@ describe("the curators' queue and decisions", () => {
     };
     expect(mine.proposals.find((p) => p.id === first)).toMatchObject({ back_in_review: true });
     const again = await propose(as.member, s.candidateId, {
-      statement: `${s.statement} (the kobe repository)`,
+      statement: `${s.statement} (the kaiju repository)`,
     });
     expect(again.status).toBe(201);
     const second = proposalIdOf(again);

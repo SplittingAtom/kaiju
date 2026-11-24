@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { runMemoryContextSchema } from "@kobe/protocol";
+import { runMemoryContextSchema } from "@kaiju/protocol";
 import { must } from "../testing/event-stream-fixture.js";
 import {
   fx,

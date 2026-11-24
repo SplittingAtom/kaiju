@@ -22,7 +22,7 @@ const wiring = (): EgressWiring => ({
 
 let dir = "";
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-egress-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-egress-"));
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
@@ -109,7 +109,7 @@ describe("egress env for Pi's tools", () => {
     expect(missing.stdout).toBe("[]");
     // Not silent: one line on stderr says why the internet will be unreachable.
     expect(missing.stderr).toBe(
-      "kobe: the sandbox's egress token is not readable; internet access through the egress proxy is unavailable\n",
+      "kaiju: the sandbox's egress token is not readable; internet access through the egress proxy is unavailable\n",
     );
     await writeFile(tokenFile, "abc$(touch pwned)@evil:1\n");
     const malformed = toolShellFull(env, 'printf "[%s]" "${HTTPS_PROXY:-}"');

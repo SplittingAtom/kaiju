@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { idSchema, runStatusSchema, uuidSchema as wireUuidSchema } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { idSchema, runStatusSchema, uuidSchema as wireUuidSchema } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { isMessageRun, threadRunRows } from "../runs/store.js";

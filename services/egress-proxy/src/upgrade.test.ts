@@ -3,10 +3,10 @@ import { request as httpRequest, type IncomingHttpHeaders, type Server } from "n
 import { createServer as createHttpsServer, type Server as HttpsServer } from "node:https";
 import { connect, type AddressInfo } from "node:net";
 import type { TLSSocket } from "node:tls";
-import { generateSessionKeyPair, signSessionToken } from "@kobe/session-token";
+import { generateSessionKeyPair, signSessionToken } from "@kaiju/session-token";
 import { pino } from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import type { EgressDecision } from "./allowlist.js";
 import { egressTokenVerifier } from "./auth.js";
 import type { BlockedAttempt } from "./blocked-reporter.js";

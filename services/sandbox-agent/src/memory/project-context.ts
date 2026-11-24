@@ -1,5 +1,5 @@
-import type { RunProjectContext } from "@kobe/protocol";
-import { REPO_WORKING_COPY_DIR, type RunGitRepo } from "@kobe/protocol/sandbox-wire";
+import type { RunProjectContext } from "@kaiju/protocol";
+import { REPO_WORKING_COPY_DIR, type RunGitRepo } from "@kaiju/protocol/sandbox-wire";
 import { capBytes, sanitizeUntrusted } from "../kobe-tools/memory-fence.js";
 
 /**

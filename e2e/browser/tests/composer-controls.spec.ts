@@ -41,7 +41,7 @@ test("the selectors move below the composer after the first prompt; Pi's command
   const gauge = page.locator("[data-composer-footer] [data-composer-gauge]");
   const [s, g] = [await below.boundingBox(), await gauge.boundingBox()];
   if (s && g && g.width > 0) expect(s.x).toBeLessThan(g.x);
-  await shoot(page, "composer-controls-below", page.locator("[data-kobe-composer]"));
+  await shoot(page, "composer-controls-below", page.locator("[data-kaiju-composer]"));
 
   const actions = page.getByRole("listbox", { name: "Actions" });
   // /session: this conversation's details and usage.
@@ -98,7 +98,7 @@ test("a phone: after the first prompt the selectors wrap below, nothing off the 
   expect(scroll).toBeLessThanOrEqual(width);
   const box = await below.boundingBox();
   if (box) expect(box.x + box.width).toBeLessThanOrEqual(PHONE.width);
-  await shoot(page, "composer-controls-phone", page.locator("[data-kobe-composer]"));
+  await shoot(page, "composer-controls-phone", page.locator("[data-kaiju-composer]"));
 });
 
 for (const width of [768, 1024] as const) {
@@ -114,10 +114,10 @@ for (const width of [768, 1024] as const) {
     await expect(below.getByRole("combobox", MODEL)).toBeVisible();
     await expect(chat.toolbar.getByRole("combobox", MODEL)).toHaveCount(0);
     const line = await page.locator("[data-composer-footer]").boundingBox();
-    const panel = await page.locator("[data-kobe-composer-panel]").boundingBox();
+    const panel = await page.locator("[data-kaiju-composer-panel]").boundingBox();
     if (line && panel) expect(line.x + line.width).toBeLessThanOrEqual(panel.x + panel.width + 1);
     const scroll = await page.evaluate(() => document.scrollingElement?.scrollWidth ?? 0);
     expect(scroll).toBeLessThanOrEqual(width);
-    await shoot(page, `composer-controls-${width}`, page.locator("[data-kobe-composer]"));
+    await shoot(page, `composer-controls-${width}`, page.locator("[data-kaiju-composer]"));
   });
 }

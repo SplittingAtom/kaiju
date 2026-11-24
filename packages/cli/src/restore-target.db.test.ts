@@ -1,5 +1,5 @@
-import { MIGRATION_LOCK_KEY, STARTUP_SEEDED_ROWS } from "@kobe/db";
-import { testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { MIGRATION_LOCK_KEY, STARTUP_SEEDED_ROWS } from "@kaiju/db";
+import { testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 import { listImmediateForeignKeys, listTables, listUserTriggers, readJournal } from "./catalog.js";
@@ -9,7 +9,7 @@ import { freshTarget, serverStarted, sql } from "./testing/fixtures.js";
 /**
  * The restore's target checks (KOBE-422) on a real Postgres, without pg_dump: the prelude the
  * restore sends first runs against a fresh target, then rolls back. A site whose server started
- * holds only startup-seeded rows (`@kobe/db` STARTUP_SEEDED_ROWS): accepted, and those rows are
+ * holds only startup-seeded rows (`@kaiju/db` STARTUP_SEEDED_ROWS): accepted, and those rows are
  * gone before the backup's load. Any other row is real data: refused.
  */
 const server = testServerUrl();
@@ -73,7 +73,7 @@ const HELM_SSO_SEED = `
   INSERT INTO sso_providers (id, slug, display_name, kind, issuer, client_id, tenant_id,
     subject_claim, access_claim, managed_by, enabled)
   VALUES ('00000000-0000-4000-8000-0000000005a1', 'entra', 'Contoso', 'entra',
-    'https://login.microsoftonline.com/11111111-2222-4333-8444-555555555555/v2.0', 'kobe-app',
+    'https://login.microsoftonline.com/11111111-2222-4333-8444-555555555555/v2.0', 'kaiju-app',
     '11111111-2222-4333-8444-555555555555', 'oid', 'roles', 'helm', true);
   INSERT INTO audit_log (actor_kind, action, target) VALUES
     ('system', 'identity.sso.provider.created',
@@ -81,7 +81,7 @@ const HELM_SSO_SEED = `
     ('system', 'identity.sso.provider.enabled',
      '{"providerId":"00000000-0000-4000-8000-0000000005a1","slug":"entra"}');`;
 
-describe("kobe restore's target check on a started site (KOBE-422)", () => {
+describe("kaiju restore's target check on a started site (KOBE-422)", () => {
   it("accepts the rows the server's start wrote and replaces them before the load", async () => {
     const db = await started();
     const [head] = await sql<{ hash: string }>(
@@ -102,7 +102,7 @@ describe("kobe restore's target check on a started site (KOBE-422)", () => {
       skill_rescan_runs: 0,
       // The catalog usage job's snapshot of the last closed window (KOBE-339): replaced too.
       skill_usage_snapshots: 0,
-      // The built-in kobe connector row (KOBE-618): replaced before the load like the others.
+      // The built-in kaiju connector row (KOBE-618): replaced before the load like the others.
       connectors: 0,
       // The chart's SSO providers (KOBE-626): none in this fixture.
       sso_providers: 0,

@@ -1,6 +1,6 @@
 import type { Readable } from "node:stream";
-import { withTeam, type KobeDb } from "@kobe/db";
-import { VIEWING_CONTENT_MAX_BYTES, type RunViewingContext } from "@kobe/protocol";
+import { withTeam, type KaijuDb } from "@kaiju/db";
+import { VIEWING_CONTENT_MAX_BYTES, type RunViewingContext } from "@kaiju/protocol";
 import { logger } from "../logger.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import type { WorkspaceSync } from "../workspace-sync/service.js";
@@ -54,7 +54,7 @@ export function textOf(head: Buffer, cut: boolean): string | undefined {
 }
 
 export function createViewingReader(
-  db: KobeDb,
+  db: KaijuDb,
   sync: WorkspaceSync,
   maxBytes = VIEWING_CONTENT_MAX_BYTES,
 ): ViewingReader {

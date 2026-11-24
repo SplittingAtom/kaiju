@@ -1,4 +1,4 @@
-import type { MemoryScope, SemanticMemoryScope } from "@kobe/protocol";
+import type { MemoryScope, SemanticMemoryScope } from "@kaiju/protocol";
 
 /**
  * The memory switches as values (KOBE-381, SM27), without the database: what each level stores

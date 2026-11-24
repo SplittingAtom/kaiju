@@ -1,4 +1,4 @@
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { ModelTokenDefaults } from "../../models/token-limits.js";
 import type { NotebookFiles } from "../../notebooks/files.js";
@@ -51,7 +51,7 @@ export const RUN_DEFAULTS: RunTuning = {
 };
 
 export interface RunOrchestratorOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly router: SandboxRouter;
   /**
    * D4: new runs start only while this answers `available` (a verified gVisor/Kata

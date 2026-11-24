@@ -6,7 +6,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { sealAuditV1, verifyAuditChain } from "./audit/index.js";
-import { createDb, type KobeDb } from "./client.js";
+import { createDb, type KaijuDb } from "./client.js";
 import { DEFAULT_MIGRATIONS_FOLDER, runMigrations } from "./migrate.js";
 import * as schema from "./schema/index.js";
 import { dropDatabase, testNameSuffix, testServerUrl } from "./test-support/database.js";
@@ -19,8 +19,8 @@ import { dropDatabase, testNameSuffix, testServerUrl } from "./test-support/data
  */
 
 /** A copy of the migrations folder ending just before the KOBE-17 migrations. */
-function migrationsBeforeKobe17(): string {
-  const dir = mkdtempSync(join(tmpdir(), "kobe-migrations-"));
+function migrationsBeforeKaiju17(): string {
+  const dir = mkdtempSync(join(tmpdir(), "kaiju-migrations-"));
   cpSync(DEFAULT_MIGRATIONS_FOLDER, dir, { recursive: true });
   const journalPath = join(dir, "meta", "_journal.json");
   const journal = JSON.parse(readFileSync(journalPath, "utf8")) as {
@@ -164,7 +164,7 @@ async function verifyTampered(url: string, tamper: string) {
 
 beforeAll(async () => {
   await server.connect();
-  oldMigrations = migrationsBeforeKobe17();
+  oldMigrations = migrationsBeforeKaiju17();
 });
 
 afterAll(async () => {
@@ -364,7 +364,7 @@ describe("chain v2 upgrade of a KOBE-15 audit log", () => {
         try {
           await c.query("SET LOCAL session_replication_role = replica");
           await c.query(tamper);
-          const db = drizzle({ client: c, schema, casing: "snake_case" }) as unknown as KobeDb;
+          const db = drizzle({ client: c, schema, casing: "snake_case" }) as unknown as KaijuDb;
           return await verifyAuditChain(db);
         } finally {
           await c.query("ROLLBACK");

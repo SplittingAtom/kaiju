@@ -6,7 +6,7 @@ import {
   LEAF_RATE,
   setLabelBodySchema,
   shareThreadRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { readBranches, setLabel } from "../../threads/branches.js";
 import { readThreadBlocked } from "../../egress/thread-blocked.js";
 import { FORK_RATE, forkThread } from "../../threads/fork.js";

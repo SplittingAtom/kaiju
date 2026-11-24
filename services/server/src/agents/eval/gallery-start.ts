@@ -1,4 +1,4 @@
-import { DEFAULT_EVAL_MAX_ASR, eq, teamMembers, teams, withTeam, type KobeDb } from "@kobe/db";
+import { DEFAULT_EVAL_MAX_ASR, eq, teamMembers, teams, withTeam, type KaijuDb } from "@kaiju/db";
 import type { BackgroundTasks } from "../../background.js";
 import type { TeamRef } from "../../sandbox/manifests.js";
 import { gatewayModelId, listOrbitModelOptions, pickOrbitModel } from "../orbit/model.js";
@@ -29,7 +29,7 @@ const refused = (status: 404 | 409 | 422 | 503, code: string, message: string) =
   ({ ok: false, status, code, message }) as const;
 
 export async function startGalleryEval(input: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly runner: EvalRunner | undefined;
   readonly background: BackgroundTasks;
   readonly userId: string;

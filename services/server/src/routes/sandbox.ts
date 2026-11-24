@@ -3,9 +3,9 @@ import {
   SKILL_BUNDLE_PATH,
   SKILL_EVAL_FIXTURES_PATH,
   WORKSPACE_SYNC_PATH,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { Hono, type Context } from "hono";
-import { honoTracing, skipRequestTrace } from "@kobe/telemetry";
+import { honoTracing, skipRequestTrace } from "@kaiju/telemetry";
 import { IsolationRuntimeMissingError } from "../isolation/gate.js";
 import { logger } from "../logger.js";
 import type { SessionKeys } from "../sandbox/config.js";

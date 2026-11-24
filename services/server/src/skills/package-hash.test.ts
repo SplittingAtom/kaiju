@@ -1,8 +1,8 @@
 import { zipSync } from "fflate";
 import { afterEach, describe, expect, it } from "vitest";
-import { runtimeFiles } from "@kobe/protocol";
-import { runtimeHash, runtimeZip } from "@kobe/protocol/node";
-import { SKILL_HASH_VECTORS } from "@kobe/protocol/testing";
+import { runtimeFiles } from "@kaiju/protocol";
+import { runtimeHash, runtimeZip } from "@kaiju/protocol/node";
+import { SKILL_HASH_VECTORS } from "@kaiju/protocol/testing";
 import { bundleFromSkillMd, validateZipBundle } from "./bundle.js";
 import { sha256Hex } from "./storage.js";
 

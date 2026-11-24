@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import { withTeam, type KobeDb } from "@kobe/db";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import {
   artifactFileExtension,
   artifactFileStem,
@@ -7,7 +7,7 @@ import {
   projectFileNameSchema,
   type ImportProjectFileRequest,
   type ProjectFile,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { findVersionBlob } from "../artifacts/repository.js";
 import { readArtifactVersion } from "../artifacts/serve.js";
 import { logger } from "../logger.js";
@@ -41,7 +41,7 @@ import {
  * then the copy itself. Nothing is read from storage before every check passed.
  */
 export interface ImportDeps extends ProjectFileDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly sync: WorkspaceSync | undefined;
 }

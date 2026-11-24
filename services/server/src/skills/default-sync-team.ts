@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, sql, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, sql, type KaijuTx } from "@kaiju/db";
 import { skillInstallAnswers } from "./skill-install-answers.js";
 import { recordAudit } from "../audit/record.js";
 import {
@@ -55,7 +55,7 @@ const installable = (versionId: string) => sql`
  * admin can rename or archive their skill and reinstall the default.
  */
 export async function addInTeam(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
   version: TargetVersion,
@@ -112,7 +112,7 @@ export async function addInTeam(
  * team's opt-out of the skill is cleared; `kept` counts installs the team made itself.
  */
 export async function removeInTeam(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
 ): Promise<TeamStepResult> {
@@ -142,7 +142,7 @@ export async function removeInTeam(
  * keeps the team's choice for good.
  */
 export async function moveInTeam(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
   version: TargetVersion,
@@ -175,7 +175,7 @@ export function changesOf(step: TeamStepResult): AppliedChange[] {
 
 /** Records each change a Default sync or the new-team hook made in the team (system actor). */
 export async function auditApplied(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skill: { readonly id: string; readonly name: string },
   changes: readonly AppliedChange[],
@@ -201,7 +201,7 @@ export async function auditApplied(
  * against tag changes: a tag change that commits first is seen here; one that commits later queues
  * a job that sees this team.
  */
-export async function seedDefaultSkillInstalls(tx: KobeTx, teamId: string): Promise<number> {
+export async function seedDefaultSkillInstalls(tx: KaijuTx, teamId: string): Promise<number> {
   await lockDefaultSet(tx, "shared");
   const targets = await defaultTargets(tx);
   // The lock order of every other path (Default set, install, names): every install lock first,

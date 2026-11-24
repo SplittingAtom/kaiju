@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { memoryPutRequestSchema, memoryScopeSchema } from "@kobe/protocol";
+import { memoryPutRequestSchema, memoryScopeSchema } from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { listMemory, writeMemory } from "../../memory/store.js";

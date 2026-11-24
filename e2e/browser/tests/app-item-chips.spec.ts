@@ -31,7 +31,7 @@ async function theApp(page: Page): Promise<App | undefined> {
 
 function frameOf(page: Page, app: App): FrameLocator {
   return page
-    .locator('[data-kobe-scroll="messages"]')
+    .locator('[data-kaiju-scroll="messages"]')
     .frameLocator(`iframe[title="${app.title} (app from ${app.connectorName})"]`)
     .first();
 }
@@ -72,7 +72,7 @@ test("an app's resource_links become typed chips; the send carries them and the 
   });
   await expect(tableChip).toBeVisible();
   await expect(
-    page.locator('[data-kobe-app-item="table"] [data-kobe-item-icon="table"]'),
+    page.locator('[data-kaiju-app-item="table"] [data-kaiju-item-icon="table"]'),
   ).toHaveCount(1);
   await expect(chat.composer).toHaveValue("");
   await expect(frame.locator("body")).toHaveAttribute("data-item", "ok");

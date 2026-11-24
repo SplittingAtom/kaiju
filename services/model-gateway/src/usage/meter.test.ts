@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RouteKind } from "../routes.js";
-import { MODEL_OUTPUT_TOKENS_RANGE } from "@kobe/db";
+import { MODEL_OUTPUT_TOKENS_RANGE } from "@kaiju/db";
 import { JsonUsageScanner } from "./json-scan.js";
 import {
   DEFAULT_CHARGED_OUTPUT_TOKENS,

@@ -11,11 +11,11 @@ import {
   teamMembers,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   pgCodeOf,
-} from "@kobe/db";
-import type { AgentTransfer, AgentTransferList, AgentTransferView } from "@kobe/protocol";
+} from "@kaiju/db";
+import type { AgentTransfer, AgentTransferList, AgentTransferView } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import type { RosterActor } from "./access.js";
 import { AGENT_CAPS, lockKey } from "./store.js";
@@ -52,7 +52,7 @@ interface OwnedAgent {
 }
 
 /** The personal agent, locked for the rest of `tx` (`FOR UPDATE`: ownership is changing). */
-async function lockOwned(tx: KobeTx, agentId: string): Promise<OwnedAgent | null> {
+async function lockOwned(tx: KaijuTx, agentId: string): Promise<OwnedAgent | null> {
   const [row] = await tx
     .select({
       id: siteAgents.id,
@@ -93,7 +93,7 @@ const view = (r: OfferRow): AgentTransfer => ({
 });
 
 /** One team's pending offer of the agent. Call inside `withTeam(db, teamId)`. */
-async function pendingIn(tx: KobeTx, teamId: string, agentId: string, lock = false) {
+async function pendingIn(tx: KaijuTx, teamId: string, agentId: string, lock = false) {
   const query = tx
     .select(OFFER)
     .from(agentTransfers)
@@ -109,7 +109,7 @@ async function pendingIn(tx: KobeTx, teamId: string, agentId: string, lock = fal
 }
 
 /** The agent's pending transfer, in whichever team it was offered. Not inside a team transaction. */
-export async function pendingTransfer(db: KobeDb, agentId: string): Promise<AgentTransfer | null> {
+export async function pendingTransfer(db: KaijuDb, agentId: string): Promise<AgentTransfer | null> {
   const [row] = await scanTeams(db, "pendingTransfer", (tx, team) =>
     pendingIn(tx, team.id, agentId).then((r) => r ?? undefined),
   );
@@ -117,7 +117,7 @@ export async function pendingTransfer(db: KobeDb, agentId: string): Promise<Agen
 }
 
 /** An active (not deactivated) member of `teamId`. Call inside `withTeam(db, teamId)`. */
-async function activeMember(tx: KobeTx, teamId: string, userId: string): Promise<boolean> {
+async function activeMember(tx: KaijuTx, teamId: string, userId: string): Promise<boolean> {
   const [row] = await tx
     .select({ userId: teamMembers.userId })
     .from(teamMembers)
@@ -144,7 +144,7 @@ const ref = (agent: OwnedAgent) => ({
  * team must be cancelled first (`409 invalid_transition`).
  */
 export async function requestTransfer(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor,
   agentId: string,
   toUserId: string,
@@ -192,11 +192,11 @@ export async function requestTransfer(
  * `userId` is a party (`as`). A stale offer (the agent changed owner) is cancelled.
  */
 async function withOffer<T>(
-  db: KobeDb,
+  db: KaijuDb,
   agentId: string,
   userId: string,
   as: "either" | "recipient",
-  fn: (tx: KobeTx, agent: OwnedAgent, offer: OfferRow) => Promise<TransferResult<T>>,
+  fn: (tx: KaijuTx, agent: OwnedAgent, offer: OfferRow) => Promise<TransferResult<T>>,
 ): Promise<TransferResult<T>> {
   const party = (o: { fromUserId: string; toUserId: string }) =>
     o.toUserId === userId || (as === "either" && o.fromUserId === userId);
@@ -214,7 +214,7 @@ async function withOffer<T>(
   });
 }
 
-const decide = (tx: KobeTx, offer: OfferRow, state: "accepted" | "declined" | "cancelled") =>
+const decide = (tx: KaijuTx, offer: OfferRow, state: "accepted" | "declined" | "cancelled") =>
   tx
     .update(agentTransfers)
     .set({ state, decidedAt: new Date() })
@@ -222,7 +222,7 @@ const decide = (tx: KobeTx, offer: OfferRow, state: "accepted" | "declined" | "c
 
 /** `DELETE /v1/agents/:id/transfer`: the owner cancels, or the recipient declines. */
 export async function cancelTransfer(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   agentId: string,
 ): Promise<TransferResult<AgentTransfer>> {
@@ -249,7 +249,7 @@ export async function cancelTransfer(
  * own creates.
  */
 export async function acceptTransfer(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   agentId: string,
 ): Promise<TransferResult<AgentTransfer>> {
@@ -284,7 +284,7 @@ export async function acceptTransfer(
 }
 
 /** `GET /v1/agents/transfers`: the caller's pending offers, both ways, with slug and name. */
-export async function listTransfers(db: KobeDb, userId: string): Promise<AgentTransferList> {
+export async function listTransfers(db: KaijuDb, userId: string): Promise<AgentTransferList> {
   const perTeam = await scanTeams(db, "listTransfers", async (tx, team) => {
     const rows = await tx
       .select(OFFER)

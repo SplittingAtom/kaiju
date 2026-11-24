@@ -6,7 +6,7 @@ import { RAIL_STEP_PX, RAIL_WIDTH_VAR } from "../../lib/shell/rail-width";
 import styles from "./shell.module.css";
 import { useSplitter, type SplitterRange } from "./use-splitter";
 
-export const RAIL_ID = "kobe-workspace-rail";
+export const RAIL_ID = "kaiju-workspace-rail";
 
 function regions(handle: HTMLElement | null) {
   const rail = handle?.closest<HTMLElement>('[data-shell-region="rail"]') ?? null;

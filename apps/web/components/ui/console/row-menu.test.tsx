@@ -14,7 +14,7 @@ afterEach(cleanup);
 
 function renderMenu(items: readonly RowMenuItem[], busy = false) {
   return render(
-    <div data-kobe-console="">
+    <div data-kaiju-console="">
       <RowMenu label="Actions for Triage" items={items} busy={busy} />
     </div>,
   );
@@ -43,7 +43,7 @@ describe("RowMenu (KOBE-306)", () => {
     expect(items.map((i) => i.textContent)).toEqual(["Export to Orbit", "Suspend"]);
     expect(must(items[1]).className).toContain("text-console-danger");
     // Portalled into the console root, so it takes the console's tokens and rules.
-    expect(menu.closest("[data-kobe-console]")).not.toBeNull();
+    expect(menu.closest("[data-kaiju-console]")).not.toBeNull();
 
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
@@ -89,7 +89,7 @@ describe("RowMenu (KOBE-306)", () => {
       );
     }
     render(
-      <div data-kobe-console="">
+      <div data-kaiju-console="">
         <Row />
       </div>,
     );

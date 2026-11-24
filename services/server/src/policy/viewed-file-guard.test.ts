@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APPROVAL_TTL_MS, type PolicyDecision, type ToolDescriptor } from "@kobe/protocol";
+import { APPROVAL_TTL_MS, type PolicyDecision, type ToolDescriptor } from "@kaiju/protocol";
 import {
   guardViewedFile,
   isViewedFileAsk,

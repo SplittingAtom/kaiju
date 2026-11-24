@@ -1,9 +1,9 @@
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { decideMcpCall, type McpDecideDeps, type McpPrincipal } from "../mcp/decide.js";
 import { loadActiveRuns, runHasConnector } from "../mcp/run-context.js";
-import { kobeToolName } from "../policy/kobe-admin-guard.js";
-import type { KobeCallAnswer, KobeCallRequest, KobeToolListing } from "../kobe-mcp/service.js";
+import { kaijuToolName } from "../policy/kaiju-admin-guard.js";
+import type { KaijuCallAnswer, KaijuCallRequest, KaijuToolListing } from "../kaiju-mcp/service.js";
 import { decideGitAccess, loadGitToolFacts, namedRunAgent } from "./access.js";
 import { gitToolByName } from "./catalog.js";
 import { runGitTool, type GitToolsDeps } from "./execute.js";
@@ -23,8 +23,8 @@ import { gitConnector, gitPinnedTool, loadGitBuiltin } from "./pinned.js";
 
 export interface GitMcpService {
   /** `tools/list`; undefined when nothing is offered to the sandbox's runs. */
-  list(principal: McpPrincipal): Promise<KobeToolListing | undefined>;
-  call(principal: McpPrincipal, request: KobeCallRequest): Promise<KobeCallAnswer>;
+  list(principal: McpPrincipal): Promise<KaijuToolListing | undefined>;
+  call(principal: McpPrincipal, request: KaijuCallRequest): Promise<KaijuCallAnswer>;
 }
 
 export type GitMcpServiceOptions = Omit<McpDecideDeps, "loadConnector" | "refuse" | "guard"> &
@@ -34,7 +34,7 @@ export type GitMcpServiceOptions = Omit<McpDecideDeps, "loadConnector" | "refuse
 const PLAIN_ID = /^[A-Za-z0-9_.:/-]{1,128}$/;
 
 export function createGitMcpService(options: GitMcpServiceOptions): GitMcpService {
-  const db: KobeDb = options.db;
+  const db: KaijuDb = options.db;
   const gitDeps: GitToolsDeps = {
     db,
     envelope: options.envelope,
@@ -80,7 +80,7 @@ export function createGitMcpService(options: GitMcpServiceOptions): GitMcpServic
           },
           // The person half: input, connection, role, agents of the sandbox's runs, Site, now.
           refuse: async (pinned) => {
-            const name = kobeToolName(pinned.pi_name);
+            const name = kaijuToolName(pinned.pi_name);
             const def = name === undefined ? undefined : gitToolByName(name);
             if (def === undefined) return { code: "unknown_tool", message: "Unknown git tool." };
             const parsed = def.input.safeParse(request.arguments ?? {});

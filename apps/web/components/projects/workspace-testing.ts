@@ -49,7 +49,7 @@ export function routedFetch(routes: Record<string, Reply | readonly Reply[]>) {
   const calls: Call[] = [];
   const served = new Map<string, number>();
   const fetchFn: typeof fetch = async (input, init = {}) => {
-    const url = new URL(String(input), "http://kobe.test");
+    const url = new URL(String(input), "http://kaiju.test");
     const method = init.method ?? "GET";
     const key = `${method} ${url.pathname}${url.search}`;
     const body = typeof init.body === "string" ? (JSON.parse(init.body) as unknown) : undefined;

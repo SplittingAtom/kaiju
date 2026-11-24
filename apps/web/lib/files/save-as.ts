@@ -4,7 +4,7 @@
  * (path rules, read-only areas) and never overwrites: a save without a base version creates the
  * file or answers 409 `version_conflict` when one is there.
  */
-import { mentionPathIssue } from "@kobe/protocol";
+import { mentionPathIssue } from "@kaiju/protocol";
 import { isReadOnlyPath, parentPath } from "./format";
 import { baseName, joinPath } from "./tree";
 

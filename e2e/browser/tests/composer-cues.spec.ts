@@ -65,7 +65,7 @@ async function workspace(page: Page, method: "POST" | "DELETE", path: string): P
   );
 }
 
-const panelOf = (page: Page) => page.locator("[data-kobe-composer-panel]");
+const panelOf = (page: Page) => page.locator("[data-kaiju-composer-panel]");
 
 test("gold tool badge on a tool step, outcome colour unchanged (KOBE-374 ac-1)", async ({
   chat,
@@ -73,10 +73,10 @@ test("gold tool badge on a tool step, outcome colour unchanged (KOBE-374 ac-1)",
 }) => {
   await chat.open();
   await chat.ask("Use the bash tool to run `echo kobe-374`, then reply with the single word OK.");
-  const badge = page.locator("[data-kobe-tool-badge]").first();
+  const badge = page.locator("[data-kaiju-tool-badge]").first();
   await expect(badge).toBeVisible({ timeout: RUN_TIMEOUT_MS });
   expect(goldish(await rgbOf(badge, "backgroundColor"))).toBe(true);
-  const done = page.locator('[data-kobe-outcome-label="done"]').first();
+  const done = page.locator('[data-kaiju-outcome-label="done"]').first();
   expect(greenish(await rgbOf(done, "color"))).toBe(true);
   await shoot(page, "tool-badge", page.getByRole("region", { name: /^Tool call / }).first());
 });
@@ -109,11 +109,11 @@ test("the composer pulses while a run goes and stops after Stop (ac-3)", async (
   const panel = panelOf(page);
   await expect(panel).toHaveAttribute("data-running", "true", { timeout: RUN_START_TIMEOUT_MS });
   expect(await panel.evaluate((el) => getComputedStyle(el).animationName)).toContain(
-    "kobe-composer-pulse",
+    "kaiju-composer-pulse",
   );
   expect(greenish(await rgbOf(panel, "outlineColor"))).toBe(true);
   await shoot(page, "composer-pulsing", panel, "allow");
-  await chat.steering.locator("[data-kobe-stop]").click();
+  await chat.steering.locator("[data-kaiju-stop]").click();
   await chat.waitForIdle();
   await expect(panel).not.toHaveAttribute("data-running");
 });
@@ -125,7 +125,7 @@ test("reduced motion: the running composer does not move (ac-3)", async ({ chat,
   const panel = panelOf(page);
   await expect(panel).toHaveAttribute("data-running", "true", { timeout: RUN_START_TIMEOUT_MS });
   expect(await panel.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
-  await chat.steering.locator("[data-kobe-stop]").click();
+  await chat.steering.locator("[data-kaiju-stop]").click();
   await chat.waitForIdle();
 });
 

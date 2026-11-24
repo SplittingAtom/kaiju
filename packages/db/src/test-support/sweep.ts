@@ -117,7 +117,7 @@ export async function sweepStaleTestDatabases(
 }
 
 /** Temp dir prefixes the DB package's tests create (copies of the migrations folder, ~100 MB). */
-export const TEST_TEMP_DIR_PREFIXES = ["kobe-upgrade-"] as const;
+export const TEST_TEMP_DIR_PREFIXES = ["kaiju-upgrade-"] as const;
 export const STALE_TEMP_DIR_AGE_MS = 60 * 60 * 1000;
 
 /**

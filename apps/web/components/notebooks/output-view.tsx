@@ -6,7 +6,7 @@
  * Markdown through the safe Markdown component, and other HTML only in the output frame.
  */
 import { useMemo } from "react";
-import type { NotebookOutput } from "@kobe/protocol";
+import type { NotebookOutput } from "@kaiju/protocol";
 import {
   browserHtmlParser,
   outputView,
@@ -21,7 +21,7 @@ const PRE = "overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs";
 
 function TableOutput({ view }: { readonly view: Extract<OutputView, { kind: "table" }> }) {
   return (
-    <div className="overflow-auto" data-kobe-output="table">
+    <div className="overflow-auto" data-kaiju-output="table">
       <table className="border-collapse text-xs">
         {view.header.length > 0 && (
           <thead>
@@ -60,7 +60,7 @@ function OneView({ view, teamId }: { readonly view: OutputView; readonly teamId:
     case "stream":
       return (
         <pre
-          data-kobe-output={view.name}
+          data-kaiju-output={view.name}
           className={view.name === "stderr" ? `${PRE} text-destructive` : PRE}
         >
           {view.text}
@@ -68,16 +68,16 @@ function OneView({ view, teamId }: { readonly view: OutputView; readonly teamId:
       );
     case "error":
       return (
-        <div role="group" aria-label="Error" data-kobe-output="error" className="text-destructive">
+        <div role="group" aria-label="Error" data-kaiju-output="error" className="text-destructive">
           <p className="font-mono text-xs font-semibold">{view.title}</p>
           {view.traceback !== "" && <pre className={PRE}>{view.traceback}</pre>}
         </div>
       );
     case "image":
-      return <img src={view.src} alt={view.alt} data-kobe-output="image" className="max-w-full" />;
+      return <img src={view.src} alt={view.alt} data-kaiju-output="image" className="max-w-full" />;
     case "image_too_large":
       return (
-        <p className="text-muted-foreground text-xs" data-kobe-output="image_too_large">
+        <p className="text-muted-foreground text-xs" data-kaiju-output="image_too_large">
           {`Image too large to show (${formatBytes(view.bytes)}).`}
         </p>
       );
@@ -89,7 +89,7 @@ function OneView({ view, teamId }: { readonly view: OutputView; readonly teamId:
       return <Markdown text={view.text} />;
     case "text":
       return (
-        <pre data-kobe-output="text" className={PRE}>
+        <pre data-kaiju-output="text" className={PRE}>
           {view.text}
         </pre>
       );
@@ -123,7 +123,7 @@ export function NotebookOutputs({
   const shown = outputs.filter((o) => o !== undefined);
   if (shown.length === 0) return null;
   return (
-    <div className="flex flex-col gap-1" data-kobe-outputs="">
+    <div className="flex flex-col gap-1" data-kaiju-outputs="">
       {shown.map((output, i) => (
         <OneOutput key={i} output={output ?? null} parse={parse} teamId={teamId} />
       ))}

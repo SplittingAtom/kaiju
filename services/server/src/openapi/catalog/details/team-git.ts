@@ -6,7 +6,7 @@ import {
   gitConnectionSavedSchema,
   gitConnectionTestAnswerSchema,
   gitTeamSettingsSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   gitConnectionCreateBodySchema,
   gitConnectionCredentialBodySchema,
@@ -19,7 +19,7 @@ import { named, type CatalogDetail } from "../build.js";
 /**
  * Request and response schemas of the Workspace git connection routes (KOBE-760, spec
  * workspace-git §3, §4, §7). Bodies are the routes' own zod schemas; answers are the
- * `@kobe/protocol` shapes the Git section reads. The credential is write-only: it appears in the
+ * `@kaiju/protocol` shapes the Git section reads. The credential is write-only: it appears in the
  * create, test and replace bodies and in no answer.
  */
 

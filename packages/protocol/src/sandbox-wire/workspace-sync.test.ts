@@ -56,7 +56,7 @@ describe("workspace sync contract", () => {
     expect(isServerOwnedPath("uploadsx/a")).toBe(false);
     expect(isExcludedPath(".kobe/sessions/t.jsonl")).toBe(true);
     expect(isExcludedPath(".kobe")).toBe(true);
-    expect(isExcludedPath(".kobex")).toBe(false);
+    expect(isExcludedPath(".kaijux")).toBe(false);
   });
 
   it("parses entries and changes strictly", () => {

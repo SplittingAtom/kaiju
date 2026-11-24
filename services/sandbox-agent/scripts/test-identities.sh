@@ -50,7 +50,7 @@ if [ -n "${CI:-}" ]; then
   open_path "$(dirname "$(command -v node)")"
 fi
 gcc -std=c11 -O2 -Wall -Wextra -Werror -D_FORTIFY_SOURCE=2 -fstack-protector-strong \
-  -DKOBE_AGENT_UID="$uid" -DKOBE_WORKSPACE_GID="$gid" \
+  -DKAIJU_AGENT_UID="$uid" -DKAIJU_WORKSPACE_GID="$gid" \
   -o "$work/kobe-runas" ../../images/sandbox/runas/kobe-runas.c
 sudo groupadd -f kobe-test-agent
 agent_gid=$(getent group kobe-test-agent | cut -d: -f3)

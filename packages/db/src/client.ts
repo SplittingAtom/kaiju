@@ -2,11 +2,11 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema/index.js";
 
-export type KobeDb = NodePgDatabase<typeof schema>;
-export type KobeTx = Parameters<Parameters<KobeDb["transaction"]>[0]>[0];
+export type KaijuDb = NodePgDatabase<typeof schema>;
+export type KaijuTx = Parameters<Parameters<KaijuDb["transaction"]>[0]>[0];
 
-export interface KobeDatabase {
-  readonly db: KobeDb;
+export interface KaijuDatabase {
+  readonly db: KaijuDb;
   readonly pool: pg.Pool;
   close(): Promise<void>;
 }
@@ -83,7 +83,7 @@ export interface CreateDbOptions extends AppSessionOptions {
   readonly max?: number;
   /**
    * `application_name` of the pool's sessions (KOBE-736), so `pg_stat_activity` attributes each
-   * connection to its service (e.g. `kobe-server`, `kobe-gateway`).
+   * connection to its service (e.g. `kobe-server`, `kaiju-gateway`).
    */
   readonly applicationName?: string;
   /** How long to wait for a free pooled connection before failing (default 10 s). */
@@ -147,7 +147,7 @@ export function appSessionHook(
 export const DEFAULT_POOL_MAX = 10;
 
 /** Connects as the app role. Team data is reachable only through `withTeam()`. */
-export function createDb(connectionString: string, options: CreateDbOptions = {}): KobeDatabase {
+export function createDb(connectionString: string, options: CreateDbOptions = {}): KaijuDatabase {
   const pool = new pg.Pool({
     connectionString,
     max: options.max ?? DEFAULT_POOL_MAX,

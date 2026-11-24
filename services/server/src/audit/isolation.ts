@@ -1,5 +1,5 @@
 import { hostname } from "node:os";
-import { count, eq, siteRoles, SYSTEM_ACTOR, type KobeDb } from "@kobe/db";
+import { count, eq, siteRoles, SYSTEM_ACTOR, type KaijuDb } from "@kaiju/db";
 import type { IsolationStatus } from "../isolation/gate.js";
 import { recordAuditAfter } from "./record.js";
 
@@ -9,11 +9,11 @@ type State = IsolationStatus["state"];
  * Audits this server replica's isolation state changes (spec D4; KOBE-15) as system events:
  * isolation lost or restored, or missing at startup. The normal boot (checking → verified) is not
  * recorded, or every rollout would add one row per replica. Nothing is recorded before first-run
- * setup: a fresh install that is about to be restored must stay empty (`kobe restore` refuses a
+ * setup: a fresh install that is about to be restored must stay empty (`kaiju restore` refuses a
  * database with data).
  */
 export function isolationAuditor(
-  db: KobeDb,
+  db: KaijuDb,
   replica: string = hostname(),
 ): (status: IsolationStatus) => Promise<void> {
   let previous: State = "checking";

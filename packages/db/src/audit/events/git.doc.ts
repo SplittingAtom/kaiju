@@ -3,7 +3,7 @@ import type { GIT_EVENTS } from "./git.js";
 
 /**
  * The docs/audit-log.md rows of the Workspace git area's events (KOBE-760), in name order; the
- * table is generated from these (`pnpm --filter @kobe/db audit:doc`). Add an event's row here in
+ * table is generated from these (`pnpm --filter @kaiju/db audit:doc`). Add an event's row here in
  * name order.
  */
 export const GIT_EVENT_DOCS = {

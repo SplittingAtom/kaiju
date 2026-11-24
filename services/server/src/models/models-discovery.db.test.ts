@@ -1,6 +1,6 @@
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PROVIDER_KEY_PURPOSE, SecretBox, VIRTUAL_KEY_PURPOSE } from "@kobe/db";
+import { PROVIDER_KEY_PURPOSE, SecretBox, VIRTUAL_KEY_PURPOSE } from "@kaiju/db";
 import { catalogModelIds, failureReason } from "./discovery.js";
 import { ModelGatewaySync } from "./sync.js";
 import { FakeBifrost } from "./testing/fake-bifrost.js";

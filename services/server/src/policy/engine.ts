@@ -8,7 +8,7 @@ import {
   type PolicyReason,
   type RiskClass,
   type ToolRegistry,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { evaluatePolicy } from "./evaluate.js";
 import type { ConnectorPolicyState } from "./gates.js";
 import { createToolRegistry } from "./registry.js";

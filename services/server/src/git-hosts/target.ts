@@ -1,4 +1,4 @@
-import { decideGitHost, type GitSiteSettings } from "@kobe/db";
+import { decideGitHost, type GitSiteSettings } from "@kaiju/db";
 import { GitHostError } from "./adapter.js";
 
 /**
@@ -7,7 +7,7 @@ import { GitHostError } from "./adapter.js";
  * hostRequest} in `http.ts`) re-checks the actual request host against the same decision, so the
  * Site switch, the host limit (with its `*.` patterns) and the base URL rules (https, no IP
  * literal, no user, query or fragment) are enforced by one matcher: `decideGitHost()` in
- * `@kobe/db`. There is no other host check in `git-hosts/`.
+ * `@kaiju/db`. There is no other host check in `git-hosts/`.
  *
  * A target is opaque: only {@link gitHostTarget} makes one (it is registered in a module-private
  * set, so a look-alike object is refused). Callers build a fresh target per operation (connection

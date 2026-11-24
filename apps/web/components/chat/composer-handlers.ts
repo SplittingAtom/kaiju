@@ -5,7 +5,7 @@ import type { useAui } from "@assistant-ui/react";
 import type { DragEvent, KeyboardEvent } from "react";
 import type { useComposerMentionDrop } from "./composer-mention-drop";
 import type { useComposerDictation } from "./composer-steer";
-import type { useChatSession, KobeThreadExtras } from "./kobe-runtime";
+import type { useChatSession, KaijuThreadExtras } from "./kaiju-runtime";
 import { IN_TRASH, READ_ONLY } from "../../lib/chat/thread-commands";
 import type { MenuBinding, MenuBindings } from "../../lib/shell/menu";
 
@@ -70,7 +70,7 @@ type Session = ReturnType<typeof useChatSession>;
 
 /** What the queue action reads from the render it was made in. */
 export interface QueueInput {
-  readonly controller: KobeThreadExtras["controller"];
+  readonly controller: KaijuThreadExtras["controller"];
   readonly empty: boolean;
   readonly blocker: string | undefined;
   readonly piRefusal: string | null;
@@ -152,8 +152,8 @@ export function createDragHandlers(
 /** What the input's key handler reads from the render it was made in. */
 export interface KeyDownInput {
   readonly rowDrop: RowDrop;
-  readonly state: KobeThreadExtras["state"];
-  readonly controller: KobeThreadExtras["controller"];
+  readonly state: KaijuThreadExtras["state"];
+  readonly controller: KaijuThreadExtras["controller"];
   readonly session: Session;
   readonly draft: string;
   readonly editLast: MenuBinding | undefined;

@@ -19,7 +19,7 @@ import {
 import type { FilesApi } from "../../lib/files/api";
 import type { FileReviewStore } from "../../lib/files/editor-state";
 import { useArtifactPanel } from "../chat/artifact-state";
-import { useChatSession, useKobeExtras } from "../chat/kobe-runtime";
+import { useChatSession, useKaijuExtras } from "../chat/kaiju-runtime";
 import { useSyncConflicts } from "../chat/use-sync-conflicts";
 
 const BUTTON = "hover:bg-muted rounded-md border px-2 py-0.5 text-xs";
@@ -30,14 +30,14 @@ export const COMPARE_FAILED = "The agent's copy could not be read. Try again, or
 export const DELETE_FAILED = "The copy could not be deleted. Try again.";
 
 export function SyncConflictNotices() {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const threadId = extras?.state.threadId ?? undefined;
   const readOnly = extras?.state.summary?.readOnly === true;
   const { conflicts, settle } = useSyncConflicts(threadId);
   const session = useChatSession();
   if (conflicts.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2" data-kobe-sync-conflicts>
+    <div className="flex flex-col gap-2" data-kaiju-sync-conflicts>
       {conflicts.map((c) => (
         <ConflictNotice
           key={c.id}

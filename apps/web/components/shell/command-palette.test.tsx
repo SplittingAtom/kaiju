@@ -6,7 +6,7 @@ import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatApp } from "../chat/chat-app";
 import { chatRequests, composer, openApp } from "../chat/testing";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { paletteActions } from "../../lib/shell/palette";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import { must } from "../../lib/testing/must";
@@ -17,13 +17,13 @@ import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
  * grouped list of the registry's actions, thread titles and workspace file names. Actions run
  * through the same live bindings as their buttons and the `/` menu; threads and files open.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },
     { alias: "glm", label: "GLM 5.3", enabled: true, is_default: false },

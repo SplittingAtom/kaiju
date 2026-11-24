@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { strToU8, zipSync } from "fflate";
-import { recordModelUsage, type UsageKind } from "@kobe/db";
-import { SERVER_CALL_TOKEN_HEADER, type ServerCallClaims } from "@kobe/protocol";
-import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+import { recordModelUsage, type UsageKind } from "@kaiju/db";
+import { SERVER_CALL_TOKEN_HEADER, type ServerCallClaims } from "@kaiju/protocol";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kaiju/session-token";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { RawBody, type TestBrowser } from "../../testing/browser.js";
 import { openHarness, type Harness } from "../../testing/harness.js";
@@ -116,7 +116,7 @@ async function draftFiles(who: TestBrowser, draftId: string) {
 
 beforeAll(async () => {
   h = await openHarness({
-    blobs: { objects, prefix: "kobe/" },
+    blobs: { objects, prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.invalid", key: PAIR.signing, fetch: gatewayFetch },
   });
   builderId = await h.createUser("builder@manifest.test");

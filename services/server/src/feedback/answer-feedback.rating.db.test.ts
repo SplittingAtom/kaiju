@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { runTraceId } from "@kobe/protocol";
-import type { TraceScore } from "@kobe/telemetry";
+import { runTraceId } from "@kaiju/protocol";
+import type { TraceScore } from "@kaiju/telemetry";
 import { FeedbackScores } from "./scores.js";
 import {
   sink,

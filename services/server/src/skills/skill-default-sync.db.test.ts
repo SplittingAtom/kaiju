@@ -27,7 +27,7 @@ const sync = () =>
     database: h.deps.database,
     log: logger,
     mailer: h.mailer,
-    publicUrl: "https://kobe.test",
+    publicUrl: "https://kaiju.test",
   });
 
 async function install(teamId: string) {

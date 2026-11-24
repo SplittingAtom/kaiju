@@ -1,6 +1,6 @@
 "use client";
 
-import type { ThreadBranchesResponse, ThreadLineageResponse } from "@kobe/protocol";
+import type { ThreadBranchesResponse, ThreadLineageResponse } from "@kaiju/protocol";
 import { createContext, useContext } from "react";
 
 /**

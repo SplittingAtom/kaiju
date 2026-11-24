@@ -6,10 +6,10 @@ import {
   MEMORY_RECALL_MAX_FILES,
   MEMORY_RECALL_MAX_ITEMS,
   SHOW_MEMORY_ITEM_TOOL,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import type { ToolsOutcome } from "./client.js";
-import { filesEnabled, memoryEnabled, registerKobeTools } from "./extension.js";
+import { filesEnabled, memoryEnabled, registerKaijuTools } from "./extension.js";
 import { MARKER_BEGIN, MARKER_END, sanitizeForStorage, sanitizeUntrusted } from "./memory-fence.js";
 import {
   RECALL_FILE_MAX_BYTES,
@@ -261,7 +261,7 @@ describe("sanitising", () => {
 describe("registration", () => {
   const register = (memory: boolean): string[] => {
     const names: string[] = [];
-    registerKobeTools(
+    registerKaijuTools(
       { registerTool: (t: ToolDefinitionLike) => names.push(t.name) },
       transport({ ok: true, op: "read", files: [], truncated: false }),
       { memory },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { mentionPathIssue } from "@kobe/protocol";
+import { mentionPathIssue } from "@kaiju/protocol";
 import type { FileEntry } from "../../lib/files/api";
 import { parentPath } from "../../lib/files/format";
 import { canMoveInto, joinPath } from "../../lib/files/tree";
@@ -57,7 +57,7 @@ export function ConfirmDelete({
   return (
     <div
       role="alertdialog"
-      aria-labelledby="kobe-files-confirm"
+      aria-labelledby="kaiju-files-confirm"
       className="border-destructive/40 mt-1 flex flex-wrap items-center gap-2 rounded-md border p-2 text-xs"
       onKeyDown={(e) => {
         if (e.key === "Escape") {
@@ -66,7 +66,7 @@ export function ConfirmDelete({
         }
       }}
     >
-      <p id="kobe-files-confirm" className="m-0 min-w-0 flex-1">
+      <p id="kaiju-files-confirm" className="m-0 min-w-0 flex-1">
         {entry.type === "dir"
           ? `Delete the folder ${entry.name} and everything in it? This cannot be undone.`
           : `Delete ${entry.name}? This cannot be undone.`}

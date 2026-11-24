@@ -1,4 +1,4 @@
-import type { PinnedTool } from "@kobe/db";
+import type { PinnedTool } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { applyDrift, approvedHash, approveTools } from "./drift.js";
 import { buildSnapshot } from "./pin.js";

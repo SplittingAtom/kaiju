@@ -49,7 +49,7 @@ export function offloadedOnBranch(projection: Projection): readonly string[] {
     const content = item.message.content;
     if (typeof content === "string") return [];
     return content.flatMap((part) =>
-      part.type === "data-kobe-offloaded" ? [(part.data as { entryId: string }).entryId] : [],
+      part.type === "data-kaiju-offloaded" ? [(part.data as { entryId: string }).entryId] : [],
     );
   });
 }
@@ -67,7 +67,7 @@ function textOf(
   let partial = false;
   const texts = content.flatMap((part) => {
     if (part.type === "text") return [part.text.trim()];
-    if (part.type !== "data-kobe-offloaded") return [];
+    if (part.type !== "data-kaiju-offloaded") return [];
     if (toolOutputs.has((part.data as { entryId: string }).entryId)) return [];
     partial = true;
     return [LONG_ANSWER_LEFT_OUT];

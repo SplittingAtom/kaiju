@@ -5,7 +5,7 @@ import { EditorView } from "@codemirror/view";
 import { getChunks } from "@codemirror/merge";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { sha256Hex } from "../../lib/files/editor";
 import { must } from "../../lib/testing/must";
 import { composer, openApp } from "../chat/testing";
@@ -16,7 +16,7 @@ import { EXPIRED_NOTE } from "./file-edit-card";
  * KOBE-463: workspace text files in the artifact column get Rendered and Raw modes with Save
  * (ac-1), the composer's Viewing chip (ac-2) and the inline review of a proposal (ac-3).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 const sha = (s: string) => sha256Hex(enc(s));
 
@@ -30,7 +30,7 @@ function answerConfirm(answer: boolean) {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {
@@ -335,7 +335,7 @@ async function reviewProposal(path = "notes.txt") {
   const user = userEvent.setup();
   expect(await screen.findByText("Capitalises beta and adds delta")).toBeTruthy();
   // The card is the server's record, never the call's (model-written) input.
-  const card = must(document.querySelector(`[data-kobe-file-edit="${path}"]`));
+  const card = must(document.querySelector(`[data-kaiju-file-edit="${path}"]`));
   expect(card.textContent).not.toContain("forged");
   await user.click(screen.getByRole("button", { name: `Review the proposed edit to ${path}` }));
   const view = await editorView(`Proposed content of ${path}`);
@@ -351,9 +351,9 @@ describe("reviewing a proposal (ac-3)", () => {
       within(region).getByText("2 changes to accept or reject. Commit all saves what is shown."),
     ).toBeTruthy();
     // KOBE-615: the Proposed edit bubble with the gold glow, then the review row.
-    const bubble = must(region.querySelector("[data-kobe-proposal-bubble]"));
+    const bubble = must(region.querySelector("[data-kaiju-proposal-bubble]"));
     expect(bubble.textContent).toBe("Proposed edit: Capitalises beta and adds delta");
-    expect(bubble.classList.contains("kobe-glow-gold")).toBe(true);
+    expect(bubble.classList.contains("kaiju-glow-gold")).toBe(true);
     const row = within(region).getByRole("toolbar", { name: "Review changes" });
     for (const name of [
       "Previous change",

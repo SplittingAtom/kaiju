@@ -1,5 +1,5 @@
-import { mcpServerSegment, parseMcpToolName } from "@kobe/protocol";
-import { slugFromName, type AgentDefinition } from "@kobe/agent-file";
+import { mcpServerSegment, parseMcpToolName } from "@kaiju/protocol";
+import { slugFromName, type AgentDefinition } from "@kaiju/agent-file";
 import { stringify } from "yaml";
 import type { ToolManifest } from "../manifest.js";
 import {

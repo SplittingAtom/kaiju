@@ -9,8 +9,8 @@ import {
   listMemberships,
   teams,
   type ConnectorGrantKind,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { z } from "zod";
 import { recordAudit } from "../audit/record.js";
 import {
@@ -98,7 +98,7 @@ const summaryColumns = {
 };
 
 /** The caller's own grants (masked). */
-export function listGrants(db: KobeDb, teamId: string, userId: string): Promise<GrantSummary[]> {
+export function listGrants(db: KaijuDb, teamId: string, userId: string): Promise<GrantSummary[]> {
   return withTeam(db, teamId, (tx) =>
     tx
       .select(summaryColumns)
@@ -127,7 +127,7 @@ export interface GrantMaterial {
  * material's kind. Shared by API keys (KOBE-108) and OAuth tokens (KOBE-109).
  */
 export async function storeGrant(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   material: GrantMaterial,
@@ -196,7 +196,7 @@ export async function storeGrant(
 
 /** Adds or replaces the caller's key for a connector. */
 export function putGrant(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   apiKey: string,
@@ -209,7 +209,7 @@ export function putGrant(
 }
 
 /** Removes the caller's key; false when there was none. */
-export function removeGrant(db: KobeDb, subject: Subject): Promise<boolean> {
+export function removeGrant(db: KaijuDb, subject: Subject): Promise<boolean> {
   return withTeam(db, subject.teamId, async (tx) => {
     const removed = await tx
       .delete(connectorGrants)
@@ -249,7 +249,7 @@ export function removeGrant(db: KobeDb, subject: Subject): Promise<boolean> {
  * cannot make each call spend a refresh.
  */
 export async function revealCredential(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   now: Date = new Date(),
@@ -284,7 +284,7 @@ const forceable = (grant: GrantRow, now: Date, refresh: RefreshSupport | undefin
  * does not open) is `not_connected`: the site admin has not provided one.
  */
 async function revealSiteCredential(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   connectorId: string,
 ): Promise<RevealOutcome> {
@@ -302,7 +302,7 @@ async function revealSiteCredential(
  * The value is for `initialize` / `tools/list`-type probes only, never for a tool call.
  */
 export async function adminProbeGrant(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope | undefined,
   adminUserId: string,
   connectorId: string,
@@ -339,7 +339,7 @@ export async function adminProbeGrant(
  * (users re-enter them), never the other way round.
  */
 export async function dropConnectorGrants(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   name: string,
 ): Promise<number> {

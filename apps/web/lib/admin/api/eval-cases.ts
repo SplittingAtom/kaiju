@@ -1,5 +1,5 @@
 /**
- * Shared eval cases in the consoles (KOBE-276), camelized from `@kobe/protocol` eval-cases.ts.
+ * Shared eval cases in the consoles (KOBE-276), camelized from `@kaiju/protocol` eval-cases.ts.
  *
  * - The agent's owner lists, reads and reviews the cases shared on their agent
  *   (`/v1/agents/{id}/eval-cases`): never who shared one, and the UTC day only (`sharedOn`).
@@ -7,7 +7,7 @@
  * - A member lists their own shared cases (`GET /v1/eval-cases`), also once the rating is cleared,
  *   and withdraws one (`DELETE /v1/eval-cases/{id}`: always 204, a legal hold answers the same).
  */
-import { EVAL_CASE_EXPECTED_MAX_CHARS, type EvalCaseStatus } from "@kobe/protocol";
+import { EVAL_CASE_EXPECTED_MAX_CHARS, type EvalCaseStatus } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../api/client";
 import type { EvalCaseContent } from "../../chat/eval-cases";
 import type { FeedbackReason } from "../../chat/feedback";

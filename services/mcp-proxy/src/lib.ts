@@ -1,4 +1,4 @@
-// Library entry (`@kobe/mcp-proxy`): the proxy's building blocks, for the server's cross-process
+// Library entry (`@kaiju/mcp-proxy`): the proxy's building blocks, for the server's cross-process
 // integration tests (KOBE-58 Gate 2). The process entry point is `index.ts` (Dockerfile CMD).
 export { createApp, createInternalApp } from "./app.js";
 export {

@@ -1,7 +1,7 @@
 import type { FeedbackReason } from "./feedback";
 
 /**
- * Sharing an answer as an eval case (KOBE-276), camelized from `@kobe/protocol` eval-cases.ts. The
+ * Sharing an answer as an eval case (KOBE-276), camelized from `@kaiju/protocol` eval-cases.ts. The
  * conversation's owner previews exactly what the agent's owner would get, adds earlier turns, tool
  * outputs or file names only by ticking them, and shares with the preview's digest. The agent's
  * owner never sees who shared it; withdrawing deletes the copy.

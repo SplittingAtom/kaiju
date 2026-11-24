@@ -33,7 +33,7 @@ import type { Panel } from "../../lib/shell/panels";
 import { useShellBand } from "../shell/shell-band";
 import { WorkspacePanel } from "../shell/workspace-panel";
 import { OpenThreadContext } from "./fork-dialog";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { useMarkerData } from "./markers";
 import { NodeMenu, useTreeActions } from "./tree-actions";
 import type { TreeData } from "./tree-context";
@@ -59,7 +59,7 @@ const KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /** The tree of the thread on screen, its layout and forks, memoised as CT4 asks. */
-export function useTreeModel(extras: KobeThreadExtras, data: TreeData) {
+export function useTreeModel(extras: KaijuThreadExtras, data: TreeData) {
   const { state } = extras;
   const { agentsAt } = useMarkerData();
   const agents = useMemo(() => [...agentsAt.values()].flat(), [agentsAt]);
@@ -104,7 +104,7 @@ function Graph({
       className={styles.graph}
       width={layout.lanes * LANE_W + 4}
       height={layout.rows.length * ROW_H}
-      data-kobe-tree-graph=""
+      data-kaiju-tree-graph=""
     >
       {layout.rows.map((r) =>
         r.parentRow === null || r.parentLane === null ? null : (
@@ -116,7 +116,7 @@ function Graph({
             strokeDasharray={
               r.kind === "fork" || nodes.get(r.id)?.pending ? "4 3" : r.dotted ? "1 3" : undefined
             }
-            style={{ stroke: `var(--kobe-lane-${r.lane})` }}
+            style={{ stroke: `var(--kaiju-lane-${r.lane})` }}
           />
         ),
       )}
@@ -131,8 +131,8 @@ function Graph({
             cy={y(r.row)}
             r={NODE_R}
             className={`${hollow ? styles.hollow : styles.node} ${node.live ? styles.live : ""}`}
-            style={hollow ? undefined : { color: `var(--kobe-lane-${r.lane})` }}
-            data-kobe-tree-node={r.id}
+            style={hollow ? undefined : { color: `var(--kaiju-lane-${r.lane})` }}
+            data-kaiju-tree-node={r.id}
           />
         );
       })}
@@ -183,7 +183,7 @@ function TreeGraph({
   onClose,
   onOpenThread,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly data: TreeData;
   readonly model: ReturnType<typeof useTreeModel>;
   readonly onClose: () => void;
@@ -246,8 +246,8 @@ function TreeGraph({
     if (e.target instanceof HTMLInputElement) return;
     // The row the key was pressed on (focus may not have reached the state yet).
     const on = (e.target as Element)
-      .closest?.("[data-kobe-tree-row]")
-      ?.getAttribute("data-kobe-tree-row");
+      .closest?.("[data-kaiju-tree-row]")
+      ?.getAttribute("data-kaiju-tree-row");
     const current = on ?? currentRow;
     if (KEYS.has(e.key)) {
       e.preventDefault();
@@ -290,7 +290,7 @@ function TreeGraph({
           {...common}
           className={`${styles.row} ${styles.fork}`}
           aria-label={`Fork, ${title}`}
-          data-kobe-tree-row={r.id}
+          data-kaiju-tree-row={r.id}
         >
           <span className={styles.text}>
             ⑂ {title} <span className={styles.trail}>(fork, another thread)</span>
@@ -310,7 +310,7 @@ function TreeGraph({
         aria-label={name}
         aria-current={node.id === tree.headId ? "true" : undefined}
         className={`${styles.row} ${node.role === "assistant" ? styles.assistant : ""} ${node.empty ? styles.ghost : ""} ${dim ? styles.dimmed : ""}`}
-        data-kobe-tree-row={r.id}
+        data-kaiju-tree-row={r.id}
         data-dimmed={dim || undefined}
       >
         <span className={styles.text}>
@@ -357,7 +357,7 @@ function TreeGraph({
         aria-label="Branches of this conversation"
         className={styles.tree}
         onKeyDown={onKeyDown}
-        data-kobe-tree=""
+        data-kaiju-tree=""
       >
         <Graph layout={layout} nodes={nodes} />
         {layout.rows.map(row)}
@@ -379,7 +379,7 @@ export function ConversationTreePanel({
   onClose,
   onOpenThread,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly data: TreeData;
   readonly onClose: () => void;
   readonly onOpenThread?: ((threadId: string) => void) | undefined;
@@ -392,7 +392,7 @@ export function ConversationTreePanel({
   return (
     <WorkspacePanel panel={PANEL} path="/tree" onClose={onClose}>
       <OpenThreadContext.Provider value={onOpenThread}>
-        <div className={styles.view} data-kobe-tree-panel={narrow ? "list" : "graph"}>
+        <div className={styles.view} data-kaiju-tree-panel={narrow ? "list" : "graph"}>
           <div className={styles.toolbar}>
             <p className={styles.title}>{title}</p>
             <p className={styles.counts}>{headerCounts(model.junctions, model.forkCount)}</p>

@@ -1,4 +1,4 @@
-import { thinkingControlSchema, thinkingLevelSchema, thinkingLowestSchema } from "@kobe/protocol";
+import { thinkingControlSchema, thinkingLevelSchema, thinkingLowestSchema } from "@kaiju/protocol";
 import { z } from "zod";
 import { aliasSchema, teamModelSchema } from "../models/schemas.js";
 

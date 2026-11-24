@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import {
   exhaustedLine,
   loadMemberBudgetState,
@@ -25,13 +25,13 @@ import {
 import { withTeam } from "./with-team.js";
 
 /** KOBE-42: budgets, the daily spend counters kept by the run_usage trigger, budget state. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const alice = randomUUID();
 const bob = randomUUID();
 const provider = `b-${teamA.slice(0, 8)}`;
-const model = `kobe-${provider}/m`;
+const model = `kaiju-${provider}/m`;
 const now = new Date("2026-10-15T12:00:00Z");
 
 const usage = (over: Partial<ModelUsageRecord>): ModelUsageRecord => ({
@@ -187,7 +187,7 @@ describe("budget state", () => {
     await recordModelUsage(app.db, [
       usage({
         teamId: team,
-        model: "kobe-unpriced/m",
+        model: "kaiju-unpriced/m",
         inputTokens: 500,
         outputTokens: 400,
         cacheReadTokens: 500,

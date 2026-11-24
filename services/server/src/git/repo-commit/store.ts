@@ -4,9 +4,9 @@ import {
   sql,
   type GitConnectionRecord,
   type GitSealedCredentialRow,
-  type KobeTx,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 
 /**
  * What a commit to a Repo reads and writes in the database (KOBE-767): the Repo's repository row
@@ -55,7 +55,7 @@ export interface RepoCommitFacts {
  * `FOR SHARE`, so the mirror head and Kaiju's head are one consistent snapshot.
  */
 export async function loadRepoCommitFacts(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   projectId: string,
@@ -156,7 +156,7 @@ export async function loadRepoCommitFacts(
 
 /** Records (or replaces) the member's pull request branch of a Repo. */
 export async function saveBranch(
-  tx: KobeTx,
+  tx: KaijuTx,
   key: { readonly teamId: string; readonly projectId: string; readonly userId: string },
   row: BranchRow,
 ): Promise<void> {

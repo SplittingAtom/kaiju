@@ -2,8 +2,8 @@
 // (split from memory-agent.db.test.ts, KOBE-725).
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, expect } from "vitest";
-import { CAPABILITY_MEMORY, type PolicyEngine } from "@kobe/protocol";
-import { memoryResultFrameSchema } from "@kobe/protocol/sandbox-wire";
+import { CAPABILITY_MEMORY, type PolicyEngine } from "@kaiju/protocol";
+import { memoryResultFrameSchema } from "@kaiju/protocol/sandbox-wire";
 import { approvalKeyring } from "../approvals/index.js";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
@@ -19,7 +19,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
 export const fx = new EventStreamFixture();
 export const auth = new FakeSandboxAuth();
 export const objects = new MemoryObjects();
-export const PREFIX = "kobe/";
+export const PREFIX = "kaiju/";
 export const KEY = approvalKeyring("approval-key-for-tests-".padEnd(48, "k"));
 export const sandboxes: FakeSandbox[] = [];
 export let listener: Awaited<ReturnType<typeof sandboxListener>>;
@@ -255,11 +255,11 @@ export async function refusals(team: string): Promise<string[]> {
 }
 
 export async function decide(p: Person, approvalId: string, decision: "allow" | "deny") {
-  const res = await fx.replica(0).app.request(`http://kobe.test/v1/approvals/${approvalId}`, {
+  const res = await fx.replica(0).app.request(`http://kaiju.test/v1/approvals/${approvalId}`, {
     method: "POST",
     headers: {
       cookie: [...p.browser.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
-      origin: "http://kobe.test",
+      origin: "http://kaiju.test",
       "content-type": "application/json",
       "x-forwarded-for": p.browser.ip,
       ...(p.browser.team ? { "x-kobe-team": p.browser.team } : {}),

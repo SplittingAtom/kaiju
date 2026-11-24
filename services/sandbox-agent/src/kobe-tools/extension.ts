@@ -31,7 +31,7 @@ export interface ExtensionApiLike extends Partial<MemoryHooksApi> {
   registerTool(tool: ToolDefinitionLike): unknown;
 }
 
-export interface KobeToolsDeps {
+export interface KaijuToolsDeps {
   /** `process.env`: the fd variable is read once and deleted, so tools Pi spawns never see it. */
   readonly env: Record<string, string | undefined>;
   readonly openChannel?: (fd: number) => Duplex;
@@ -44,7 +44,7 @@ export interface KobeToolsDeps {
  * `artifacts` capability passes no fd): then no tool is registered, so old agents keep working and
  * the model is never offered a tool that cannot work.
  */
-export function connectTools(deps: KobeToolsDeps): ToolsTransport | undefined {
+export function connectTools(deps: KaijuToolsDeps): ToolsTransport | undefined {
   const raw = deps.env[TOOLS_FD_ENV];
   Reflect.deleteProperty(deps.env, TOOLS_FD_ENV);
   if (raw === undefined) return undefined;
@@ -115,7 +115,7 @@ export function memoryFile(env: Record<string, string | undefined>): string | un
   return raw === undefined || raw === "" ? undefined : raw;
 }
 
-export function registerKobeTools(
+export function registerKaijuTools(
   pi: ExtensionApiLike,
   transport: ToolsTransport | undefined,
   options: {

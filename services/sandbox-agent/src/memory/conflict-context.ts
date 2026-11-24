@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { SyncConflict } from "@kobe/protocol";
+import type { SyncConflict } from "@kaiju/protocol";
 import { sanitizeUntrusted } from "../kobe-tools/memory-fence.js";
 
 /**

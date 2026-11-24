@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { PRESETS } from "../lib/theme/presets";
 
 /**
- * KOBE-615 ac-4: the Proposed edit bubble's gold glow. `--kobe-glow-gold` (and its border) are
+ * KOBE-615 ac-4: the Proposed edit bubble's gold glow. `--kaiju-glow-gold` (and its border) are
  * fixed tokens (docs/theming.md §4.4), set in light and both dark blocks of app/theme.css, so every
  * preset has them in both schemes; the glow breathes only without prefers-reduced-motion.
  */
@@ -38,21 +38,21 @@ describe("the gold glow (ac-4)", () => {
   };
   for (const [scheme, body] of Object.entries(blocks)) {
     it(`is set in ${scheme}`, () => {
-      expect(body).toMatch(/--kobe-glow-gold:\s*rgb\(/u);
-      expect(body).toMatch(/--kobe-glow-gold-border:\s*#/u);
+      expect(body).toMatch(/--kaiju-glow-gold:\s*rgb\(/u);
+      expect(body).toMatch(/--kaiju-glow-gold-border:\s*#/u);
     });
   }
 
   it("no preset overrides it (fixed, like the tool badge)", () => {
-    expect(JSON.stringify(PRESETS)).not.toContain("--kobe-glow-gold");
+    expect(JSON.stringify(PRESETS)).not.toContain("--kaiju-glow-gold");
   });
 
   it("the bubble's class reads the tokens and stops moving under reduced motion", () => {
-    const rule = block(CHAT, "[data-kobe-chat] .kobe-glow-gold");
-    expect(rule).toContain("var(--kobe-glow-gold-border)");
-    expect(rule).toContain("var(--kobe-glow-gold)");
-    expect(rule).toContain("animation: kobe-glow-gold");
+    const rule = block(CHAT, "[data-kaiju-chat] .kaiju-glow-gold");
+    expect(rule).toContain("var(--kaiju-glow-gold-border)");
+    expect(rule).toContain("var(--kaiju-glow-gold)");
+    expect(rule).toContain("animation: kaiju-glow-gold");
     const reduced = CHAT.slice(CHAT.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
-    expect(block(reduced, "[data-kobe-chat] .kobe-glow-gold")).toContain("animation: none");
+    expect(block(reduced, "[data-kaiju-chat] .kaiju-glow-gold")).toContain("animation: none");
   });
 });

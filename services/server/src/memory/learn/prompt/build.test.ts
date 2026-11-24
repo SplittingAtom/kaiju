@@ -2,7 +2,7 @@ import {
   SERVER_CALL_LIMITS,
   SERVER_CALL_RESPONSE_FORMATS,
   serverCallRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { buildExtractorMessages, EXTRACTOR_MAX_EXISTING_ITEMS } from "./build.js";
 import { CURRENT_EXTRACTOR_PROMPT, extractorMessages, type ExtractorPromptInput } from "./index.js";

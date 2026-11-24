@@ -67,7 +67,7 @@ test("proposed edits: the auto-open switch opens the next live proposal with its
       }),
     );
     await chat.threadId();
-    const first = page.locator(`[data-kobe-file-edit="${path}"]`).first();
+    const first = page.locator(`[data-kaiju-file-edit="${path}"]`).first();
     await expect(first).toContainText("Capitalise beta", { timeout: RUN_TIMEOUT_MS });
     await chat.waitForIdle();
     await expect(review).toHaveCount(0);

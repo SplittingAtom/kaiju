@@ -7,7 +7,7 @@ import { snapshotWorkspace } from "./snapshot.js";
 
 let ws = "";
 beforeEach(async () => {
-  ws = await mkdtemp(path.join(tmpdir(), "kobe-eval-snap-"));
+  ws = await mkdtemp(path.join(tmpdir(), "kaiju-eval-snap-"));
 });
 afterEach(async () => {
   await rm(ws, { recursive: true, force: true });

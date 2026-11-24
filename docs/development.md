@@ -19,7 +19,7 @@ described by hand in `openapi/<area>.ts`; the rest are one line each in `openapi
 catalog area marked `detailed: true` gives every line a `CatalogDetail` in
 `openapi/catalog/details/<area>.ts` (KOBE-771): the request body, query, success status and body,
 and extra error statuses. Bodies and answers are referenced from the zod schemas the route
-validates with or the `@kobe/protocol` contract (`named("Name", schema)`; export the route's
+validates with or the `@kaiju/protocol` contract (`named("Name", schema)`; export the route's
 schema if it is a local const); only an answer the route builds without any schema is written
 out as the fields the handler sends (`untyped(...)`, marked `x-kobe-untyped`). Errors use the
 shared `components.responses` (400, 401 and 403 by default; add 404, 409, 413, 429 and so on as
@@ -33,11 +33,11 @@ neither documented nor allowlisted, and on a stale entry in either list; `catalo
 fails on an operation of a detailed area without its schemas, a dangling `$ref` or an undeclared
 path parameter. After adding a route, add its line to the catalog (with its detail in a detailed
 area) and update the route-inventory snapshot
-(`pnpm --filter @kobe/server exec vitest run src/routes/route-inventory.test.ts -u`), which is how route
-changes show in review. The OpenAPI JSON is not committed (KOBE-815): `pnpm --filter @kobe/server
-build && pnpm --filter @kobe/server openapi` writes it to `services/server/openapi.json`
+(`pnpm --filter @kaiju/server exec vitest run src/routes/route-inventory.test.ts -u`), which is how route
+changes show in review. The OpenAPI JSON is not committed (KOBE-815): `pnpm --filter @kaiju/server
+build && pnpm --filter @kaiju/server openapi` writes it to `services/server/openapi.json`
 (gitignored), and CI keeps every push's copy as the `openapi` artifact of the `unit` job.
-`pnpm --filter @kobe/server openapi:diff [base-ref]` prints how the document changes against a
+`pnpm --filter @kaiju/server openapi:diff [base-ref]` prints how the document changes against a
 base (default `origin/main`), building both sides.
 
 ## Dev loop
@@ -69,7 +69,7 @@ KOBE_DEV_CONTEXT=<kube-context> KOBE_DEV_REGISTRY=<registry the cluster can pull
   KOBE_DEV_VALUES=<values.yaml> tilt up
 ```
 
-The dev release lives in namespace `kobe-dev` (or `kobe-dev-<suffix>` via `KOBE_DEV_NAMESPACE`, with `KOBE_DEV_WEB_PORT` for the port-forward; see [parallel-work.md](parallel-work.md)), never `kobe`.
+The dev release lives in namespace `kobe-dev` (or `kobe-dev-<suffix>` via `KOBE_DEV_NAMESPACE`, with `KOBE_DEV_WEB_PORT` for the port-forward; see [parallel-work.md](parallel-work.md)), never `kaiju`.
 
 The cluster must already meet the prerequisites in [install.md](install.md#isolation).
 
@@ -103,7 +103,7 @@ every image build and every shard passed.
 
 ## Migrations
 
-Schema changes go through drizzle (`pnpm --filter @kobe/db db:generate`; never edit snapshots by
+Schema changes go through drizzle (`pnpm --filter @kaiju/db db:generate`; never edit snapshots by
 hand); the rules for parallel branches, `db:rebase` and `-- kobe:hand-written` files are in
 [parallel-work.md](parallel-work.md#migrations). The runner (`packages/db/src/migration-runner.ts`,
 KOBE-734) commits each migration in its own transaction together with its

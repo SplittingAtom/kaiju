@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
-import type { GitCommitEmailMode } from "@kobe/protocol";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
+import type { GitCommitEmailMode } from "@kaiju/protocol";
 import { z } from "zod";
 import { recordAudit } from "../audit/record.js";
 import {
@@ -19,7 +19,7 @@ export const gitTeamSettingsBodySchema = z.strictObject({
 });
 export type GitTeamSettingsBody = z.infer<typeof gitTeamSettingsBodySchema>;
 
-export async function readGitCommitEmail(db: KobeDb, teamId: string): Promise<GitCommitEmailMode> {
+export async function readGitCommitEmail(db: KaijuDb, teamId: string): Promise<GitCommitEmailMode> {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute<{ settings: unknown }>(
       sql`SELECT settings FROM teams WHERE id = ${teamId}`,
@@ -30,7 +30,7 @@ export async function readGitCommitEmail(db: KobeDb, teamId: string): Promise<Gi
 
 /** Stores the choice (team row locked, so two saves don't interleave); audits a real change. */
 export async function writeGitCommitEmail(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   mode: GitCommitEmailMode,
 ): Promise<GitCommitEmailMode> {

@@ -105,7 +105,7 @@ describe("projectThread markers", () => {
       ["a1", "u1", "assistant"],
     ]);
     const content = must(p.items[1]).message.content as readonly { type: string }[];
-    expect(content.map((part) => part.type)).toEqual(["tool-call", "data-kobe-marker", "text"]);
+    expect(content.map((part) => part.type)).toEqual(["tool-call", "data-kaiju-marker", "text"]);
     expect(content[1]).toMatchObject({ data: { kind: "compaction", folded: 1 } });
     expect(meta(p, "a1")).not.toHaveProperty("after");
   });

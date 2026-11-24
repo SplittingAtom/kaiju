@@ -3,7 +3,7 @@ import {
   sessionTokenClaimsSchema,
   type SessionTokenAudience,
   type SessionTokenClaims,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { SessionTokenError, signJws, verifyJws } from "./jws.js";
 import type { SessionSigningKey, SessionVerifyKeys } from "./keys.js";
 

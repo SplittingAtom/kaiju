@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import { SseReader } from "../testing/sse.js";
 import type { HubSubscriber, RunEventHub } from "./hub.js";
 import { PAGE_MAX_ROWS, type Page } from "./read.js";
@@ -9,13 +9,13 @@ import {
   type StreamEndReason,
   type StreamTimings,
 } from "./stream.js";
-import { SERVER_CALL_EPILOGUE_MAX_MS } from "@kobe/protocol";
+import { SERVER_CALL_EPILOGUE_MAX_MS } from "@kaiju/protocol";
 
 const RUN = "0b6f0d4e-5a3c-4d8e-9a43-5f7b0f2d1c11";
 
 /** In-memory run log standing in for Postgres. */
 class FakeLog {
-  events: KobeEvent[] = [];
+  events: KaijuEvent[] = [];
   ended = false;
   compacted = false;
   exists = true;
@@ -42,7 +42,7 @@ class FakeLog {
               ts: new Date().toISOString(),
               type: "text.delta",
               payload: { message_id: "m", content_index: 0, delta: String(seq) },
-            }) as KobeEvent,
+            }) as KaijuEvent,
       );
     }
     if (terminal) this.ended = true;
@@ -56,7 +56,7 @@ class FakeLog {
       ts: new Date(Date.now() - ageMs).toISOString(),
       type: "run.completed",
       payload: { leaf_entry_id: null, epilogue: ["title"] },
-    } as KobeEvent);
+    } as KaijuEvent);
     this.ended = true;
   }
 
@@ -67,7 +67,7 @@ class FakeLog {
       ts: new Date().toISOString(),
       type: "thread.updated",
       payload: { thread_id: RUN, title: "Revenue" },
-    } as KobeEvent);
+    } as KaijuEvent);
   }
 
   source = {
@@ -156,7 +156,7 @@ async function stillOpenAfterReread(reader: SseReader, log: FakeLog): Promise<vo
   expect(log.reads).toBeGreaterThan(reads);
 }
 
-const seqs = (events: KobeEvent[]) => events.map((e) => e.seq);
+const seqs = (events: KaijuEvent[]) => events.map((e) => e.seq);
 const range = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i);
 

@@ -1,5 +1,5 @@
-import { MANIFEST_PATH, type KobeSkillManifest } from "@kobe/protocol";
-import { withTeam, type KobeDb, type TeamRole } from "@kobe/db";
+import { MANIFEST_PATH, type KaijuSkillManifest } from "@kaiju/protocol";
+import { withTeam, type KaijuDb, type TeamRole } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import type { BlobStore } from "../../retention/blobs.js";
@@ -23,7 +23,7 @@ import type { PromoteSource } from "./promote-check.js";
  */
 
 export interface ManifestDraftDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly store: SkillStore;
   readonly blobs: BlobStore;
   readonly generator: SkillManifestGenerator;
@@ -45,7 +45,7 @@ export type ManifestDraftResult =
   | {
       readonly ok: true;
       readonly draft: DraftRecord;
-      readonly manifest: KobeSkillManifest;
+      readonly manifest: KaijuSkillManifest;
       readonly model: { readonly alias: string; readonly gatewayModel: string };
       readonly source: "model" | "seed";
     }

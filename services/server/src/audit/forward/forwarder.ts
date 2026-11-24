@@ -1,4 +1,4 @@
-import { listAuditEvents, type KobeDb } from "@kobe/db";
+import { listAuditEvents, type KaijuDb } from "@kaiju/db";
 import type { ReconcileLock } from "../../sandbox/reconcile-lock.js";
 import { siteViewEvent } from "../site-view.js";
 import { redactForwardingError } from "./redact.js";
@@ -25,7 +25,7 @@ interface Log {
 }
 
 export interface AuditForwarderOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly sinks: readonly AuditSink[];
   readonly lock: ReconcileLock;
   readonly log: Log;

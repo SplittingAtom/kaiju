@@ -4,9 +4,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   NO_PORTABLE_HOLDS,
   portableHoldsUnchanged,
@@ -104,7 +104,7 @@ async function* pages(store: BlobStore, prefix: string, delimiter?: string) {
 
 const old = (o: ListedObject, cutoff: number) => o.lastModified.getTime() < cutoff;
 
-async function workspaceUsers(db: KobeDb, teamId: string): Promise<string[]> {
+async function workspaceUsers(db: KaijuDb, teamId: string): Promise<string[]> {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute<{ user_id: string }>(sql`
       SELECT user_id FROM team_members WHERE team_id = ${teamId}
@@ -119,7 +119,7 @@ async function workspaceUsers(db: KobeDb, teamId: string): Promise<string[]> {
  * members whose uploads died with a crash. The same grace, reference and hold checks apply to them
  * (a hold on a removed user still protects their staging objects).
  */
-async function stagingUsers(db: KobeDb, teamId: string, store: BlobStore): Promise<string[]> {
+async function stagingUsers(db: KaijuDb, teamId: string, store: BlobStore): Promise<string[]> {
   const known = await workspaceUsers(db, teamId);
   const root = `${store.prefix}teams/${teamId}/users/`;
   const folder = new RegExp(`^${escape(root)}(${UUID})/$`);
@@ -168,7 +168,7 @@ async function candidatesIn(
 }
 
 async function stagingCandidates(
-  _db: KobeDb,
+  _db: KaijuDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
@@ -186,7 +186,7 @@ async function stagingCandidates(
 
 /** KOBE-740: member-level uploads (`uploads/store.ts`), also of removed members (KOBE-243). */
 async function uploadCandidates(
-  _db: KobeDb,
+  _db: KaijuDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
@@ -209,7 +209,7 @@ const SKILL_ATTEMPT = `[0-9a-f]{64}/${UUID}`;
  * personal ones of the team's members and workspace users.
  */
 async function skillCandidates(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
@@ -228,7 +228,7 @@ async function skillCandidates(
   return candidatesIn(store, listings, cutoff, max, stop);
 }
 
-async function existingThreads(db: KobeDb, teamId: string, ids: string[]): Promise<Set<string>> {
+async function existingThreads(db: KaijuDb, teamId: string, ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute<{ id: string }>(sql`
@@ -242,7 +242,7 @@ async function existingThreads(db: KobeDb, teamId: string, ids: string[]): Promi
 }
 
 async function forkCandidates(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
@@ -275,7 +275,7 @@ async function forkCandidates(
  * `site`, also the site-wide columns (personal and catalog skill versions, which have no team).
  */
 async function protectedKeys(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   keys: string[],
   site: boolean,
@@ -305,7 +305,7 @@ async function protectedKeys(
  * `lockLegalHolds`. When the team-wide holds changed since the snapshot, every user counts as held.
  */
 async function heldAnywhere(
-  tx: KobeTx,
+  tx: KaijuTx,
   userIds: readonly string[],
   snapshot: PortableHoldSnapshot,
 ): Promise<Set<string>> {
@@ -323,7 +323,7 @@ async function heldAnywhere(
 
 /** Deletes one batch under the shared legal-hold lock; returns how many objects went. */
 async function deleteBatch(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
   batch: Candidate[],
@@ -359,7 +359,7 @@ async function deleteBatch(
 }
 
 async function deleteAll(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
   found: Candidate[],
@@ -375,7 +375,7 @@ export const NO_ORPHANS: OrphanCounts = { staging: 0, forks: 0, uploads: 0, skil
 
 /** KOBE-740: skill eval objects (`skills/evals/storage.ts evalTree`) no run row names. */
 async function evalCandidates(
-  _db: KobeDb,
+  _db: KaijuDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
@@ -391,7 +391,7 @@ async function evalCandidates(
 }
 
 type Finder = (
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
@@ -410,7 +410,7 @@ const SHAPES: readonly (readonly [keyof OrphanCounts, Finder])[] = [
 ];
 
 export async function sweepOrphanObjects(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
   options: OrphanOptions = {},

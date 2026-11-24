@@ -1,4 +1,4 @@
-import { splitAppContext, splitSkillRequest } from "@kobe/protocol";
+import { splitAppContext, splitSkillRequest } from "@kaiju/protocol";
 import {
   isActiveRunStatus,
   queueMayAdvance,
@@ -8,15 +8,15 @@ import {
   type RunProjectContext,
   type RunViewingContext,
   type ThinkingLevel,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   type PiThreadConfig,
   type RunMcpContext,
   type SandboxAttachment,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { projectRunContext } from "../projects/run-context.js";
 import { listRunAttachments } from "../uploads/attach-list.js";
-import { and, eq, runs, sql, type KobeTx } from "@kobe/db";
+import { and, eq, runs, sql, type KaijuTx } from "@kaiju/db";
 import { omittedItems } from "./omitted-event.js";
 import { appCardChain, insertQueuedAppCardsInTx } from "../apps/app-cards.js";
 import { piBranchPoint } from "./run-prompt.js";
@@ -130,7 +130,7 @@ const MAX_PROMOTION_STEPS = 64;
  * agent unavailable) fails visibly and the next one is tried. Locks the thread first.
  */
 export async function promoteInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   agents: RunAgentResolver,
   teamId: string,
   threadId: string,
@@ -330,7 +330,7 @@ export function requestedModel(
  * MCP proxy's decisions, lists and reveals allow only these for it (`mcp/run-context.ts`).
  */
 async function recordRunMcpInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   resolved: Resolved,
@@ -349,7 +349,7 @@ export function requestedSkill(input: string): string | null {
 
 /** The thread's agent version for a start; the resolver may only tighten the run's mode. */
 export async function resolveForStart(
-  tx: KobeTx,
+  tx: KaijuTx,
   agents: RunAgentResolver,
   thread: ThreadRow,
   run: RunRow,
@@ -431,7 +431,7 @@ function planOf(
  * resolve (the caller fails the run).
  */
 export async function restartPlanInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   agents: RunAgentResolver,
   thread: ThreadRow,
   run: RunRow,
@@ -506,7 +506,7 @@ function startThinkingLevel(
 
 /** The level a run started with (`runs.thinking_level`), if any. */
 async function recordedThinkingLevel(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<ThinkingLevel | undefined> {
@@ -519,7 +519,7 @@ async function recordedThinkingLevel(
 
 /** The alias in the run's `run.started` event, if any. */
 export async function startedModelAlias(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<string | undefined> {

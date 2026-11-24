@@ -1,4 +1,4 @@
-import type { KobeToolsResponse } from "@kobe/protocol";
+import type { KaijuToolsResponse } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { PendingRequests } from "./pending-requests.js";
 
@@ -9,8 +9,8 @@ function must(id: string | undefined): string {
 
 function setup(max = 4, maxPerThread = 2) {
   const pending = new PendingRequests({ prefix: "xy", max, maxPerThread });
-  const replies: KobeToolsResponse[] = [];
-  const reply = (r: KobeToolsResponse) => replies.push(r);
+  const replies: KaijuToolsResponse[] = [];
+  const reply = (r: KaijuToolsResponse) => replies.push(r);
   return { pending, replies, reply };
 }
 

@@ -35,7 +35,7 @@ async function setup(readyTimeoutMs = 90_000) {
     apiVersion: "v1",
     kind: "PersistentVolumeClaim",
     metadata: { name: workspacePvcName(handle.sandboxName), namespace: NS },
-    spec: { storageClassName: "kobe-abc123-workspace-strict-local" },
+    spec: { storageClassName: "kaiju-abc123-workspace-strict-local" },
     status: { phase: "Bound" },
   });
   const podEvent = (reason: string, message: string, extra: Record<string, unknown> = {}) =>

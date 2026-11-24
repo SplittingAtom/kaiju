@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
-import { putMemberSkillAddSchema } from "@kobe/protocol";
+import { putMemberSkillAddSchema } from "@kaiju/protocol";
 import { listSkillChoices, setEnablement } from "../skills/enablements.js";
 import { addForMe, listMyAdds, removeMyAdd, type AddRefusal } from "../skills/member-adds.js";
 import { invalidRequest, notFound, param, parseBody } from "../http/request.js";

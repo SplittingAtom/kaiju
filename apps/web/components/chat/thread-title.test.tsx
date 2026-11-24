@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chatRequests, composer, openApp, threadGroup } from "./testing";
 
@@ -10,12 +10,12 @@ import { chatRequests, composer, openApp, threadGroup } from "./testing";
  * KOBE-292 (ac-2): the conversation header shows the thread's name with a pencil; the name edits
  * in place (Enter saves through the rename API, Escape cancels) and the rail follows at once.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 

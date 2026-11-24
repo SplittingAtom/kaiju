@@ -1,5 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
-import type { KobeTx } from "./client.js";
+import type { KaijuTx } from "./client.js";
 import type { ThinkingLevelValue } from "./schema/models.js";
 import type { ThreadStatus } from "./schema/threads.js";
 import { TEAM_ID_SETTING } from "./settings.js";
@@ -129,7 +129,7 @@ interface HitRow extends Record<string, unknown> {
  * leaves the caller's transaction usable. Throws only `ThreadSearchError` (no SQL or parameters).
  */
 export async function searchThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: SearchThreadsInput,
 ): Promise<ThreadSearchPage> {
   const parsed = searchThreadsInputSchema.safeParse(input);
@@ -162,9 +162,9 @@ export async function searchThreads(
  * Database errors become ThreadSearchError carrying only the SQLSTATE.
  */
 async function runBounded<T>(
-  tx: KobeTx,
+  tx: KaijuTx,
   timeoutMs: number,
-  fn: (sp: KobeTx) => Promise<T>,
+  fn: (sp: KaijuTx) => Promise<T>,
 ): Promise<T> {
   try {
     return await tx.transaction(async (sp) => {
@@ -193,7 +193,7 @@ async function runBounded<T>(
 }
 
 /** The team set by withTeam; refuses to run without one rather than silently finding nothing. */
-async function activeTeam(tx: KobeTx): Promise<string> {
+async function activeTeam(tx: KaijuTx): Promise<string> {
   const result = await tx.execute<{ team: string | null }>(
     sql`SELECT NULLIF(current_setting(${TEAM_ID_SETTING}, true), '') AS team`,
   );

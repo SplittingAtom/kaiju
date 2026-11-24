@@ -1,4 +1,4 @@
-import { checkFloor, type CustomThemeSettings } from "@kobe/protocol";
+import { checkFloor, type CustomThemeSettings } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { contrastLine, failureText, floorReason } from "./appearance-contrast";
 

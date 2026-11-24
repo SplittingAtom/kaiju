@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { catalogModelOf, rerunProblem, type ApproveNow } from "./authoritative.js";
 
 /**
@@ -50,7 +50,7 @@ export function authoritativeScorecardProblem(
 
 /** The Site judge: its alias and the `provider/model` it names now (null: none set). */
 export async function siteJudge(
-  tx: KobeTx,
+  tx: KaijuTx,
 ): Promise<{ readonly alias: string | null; readonly model: string | null }> {
   const res = await tx.execute<{ alias: string | null }>(sql`
     SELECT judge_alias AS alias FROM site_skill_settings WHERE id = 1`);
@@ -63,7 +63,7 @@ export async function siteJudge(
  * active Site admin and no other active Skill reviewer exists. Takes the site admin-set lock, which
  * role, grant and deactivation changes also take, so the answer holds until the transaction ends.
  */
-export async function soleReviewer(tx: KobeTx, userId: string): Promise<boolean> {
+export async function soleReviewer(tx: KaijuTx, userId: string): Promise<boolean> {
   await tx.execute(sql`SELECT public.break_glass_lock_admin_set()`);
   const res = await tx.execute<{ admin: boolean; others: boolean }>(sql`
     SELECT public.break_glass_is_site_admin(${userId}) AS admin,
@@ -77,7 +77,7 @@ export async function soleReviewer(tx: KobeTx, userId: string): Promise<boolean>
 }
 
 /** Whether `userId` is an active Site admin or the Owner (the Block-verdict override, SK32). */
-export async function isSiteAdmin(tx: KobeTx, userId: string): Promise<boolean> {
+export async function isSiteAdmin(tx: KaijuTx, userId: string): Promise<boolean> {
   const res = await tx.execute<{ admin: boolean }>(sql`
     SELECT public.break_glass_is_site_admin(${userId}) AS admin`);
   return res.rows[0]?.admin === true;

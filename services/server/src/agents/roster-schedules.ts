@@ -10,12 +10,12 @@ import {
   sql,
   teamAgentSuspensions,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { atCap, countActiveHere, nextDueAt } from "../schedules/store.js";
-import type { ScheduleRecurrence } from "@kobe/protocol";
+import type { ScheduleRecurrence } from "@kaiju/protocol";
 import { lentAgents, ownerStates } from "./roster-resolution.js";
 import { SITE, toRecord } from "./store.js";
 import { canPinAgent } from "./versions.js";
@@ -50,7 +50,7 @@ export type AgentScheduleFilter =
  * Rows a fire or an owner edit holds are skipped (`SKIP LOCKED`): the next tick retries.
  */
 export async function syncAgentSchedules(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   filter: AgentScheduleFilter = {},
 ): Promise<AgentScheduleChanges> {
@@ -108,7 +108,7 @@ const NOBODY = "00000000-0000-0000-0000-000000000000";
  * agents, active here (team and site-wide suspensions), not archived, published.
  */
 async function startableHere(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   agentIds: readonly string[],
 ): Promise<ReadonlySet<string>> {
@@ -142,7 +142,7 @@ interface ScheduleRow {
   readonly tz: string;
 }
 
-async function pause(tx: KobeTx, teamId: string, row: ScheduleRow): Promise<void> {
+async function pause(tx: KaijuTx, teamId: string, row: ScheduleRow): Promise<void> {
   await tx
     .update(schedules)
     .set({ active: false, pausedBy: "agent_unavailable", nextDueAt: null, updatedAt: new Date() })
@@ -160,7 +160,7 @@ async function pause(tx: KobeTx, teamId: string, row: ScheduleRow): Promise<void
 }
 
 /** False when it can't resume now: no next occurrence, or the owner is at the cap in this team. */
-async function resume(tx: KobeTx, teamId: string, row: ScheduleRow): Promise<boolean> {
+async function resume(tx: KaijuTx, teamId: string, row: ScheduleRow): Promise<boolean> {
   const due = nextDueAt(row.recurrence as ScheduleRecurrence, row.tz);
   if (due === null || atCap(await countActiveHere(tx, teamId, row.userId))) return false;
   await tx
@@ -181,7 +181,7 @@ async function resume(tx: KobeTx, teamId: string, row: ScheduleRow): Promise<boo
  * run inside a team transaction. A failure is left to the next scheduler tick.
  */
 export async function syncAgentSchedulesEverywhere(
-  db: KobeDb,
+  db: KaijuDb,
   agentId: string,
 ): Promise<AgentScheduleChanges> {
   const perTeam = await scanTeams(db, "syncAgentSchedulesEverywhere", (tx, team) =>
@@ -194,6 +194,6 @@ export async function syncAgentSchedulesEverywhere(
 }
 
 /** The scheduler tick's pass over one team (`scheduler/runner.ts`). */
-export function sweepAgentSchedules(db: KobeDb, teamId: string): Promise<AgentScheduleChanges> {
+export function sweepAgentSchedules(db: KaijuDb, teamId: string): Promise<AgentScheduleChanges> {
   return withTeam(db, teamId, (tx) => syncAgentSchedules(tx, teamId));
 }

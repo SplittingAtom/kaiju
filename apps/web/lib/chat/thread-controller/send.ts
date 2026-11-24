@@ -2,7 +2,7 @@
  * Sending a message (D17): starts a run on an idle thread, otherwise it queues (KOBE-716: moved out
  * of `ThreadController`, which keeps the stream it opens).
  */
-import type { ItemReference } from "@kobe/protocol";
+import type { ItemReference } from "@kaiju/protocol";
 import type { ApiError } from "../../api/client";
 import type { AppContextWire } from "../api";
 import type { MessageFiles } from "../attachments";

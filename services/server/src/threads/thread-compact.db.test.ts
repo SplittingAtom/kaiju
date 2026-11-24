@@ -5,9 +5,9 @@ import {
   CAPABILITY_THREAD_COMPACT,
   compactThreadError,
   type CompactThreadErrorCode,
-} from "@kobe/protocol";
-import { generateSessionKeyPair } from "@kobe/session-token";
-import { recordModelUsage, type ModelUsageRecord } from "@kobe/db";
+} from "@kaiju/protocol";
+import { generateSessionKeyPair } from "@kaiju/session-token";
+import { recordModelUsage, type ModelUsageRecord } from "@kaiju/db";
 import { must } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, isFake } from "../testing/fake-sandbox.js";
 import { loadActiveRuns } from "../mcp/run-context.js";

@@ -8,13 +8,13 @@ import {
   USAGE_KINDS,
   connectorExposure,
   pinnedToolAnnotationsSchema,
-} from "@kobe/db";
+} from "@kaiju/db";
 import {
   THINKING_CONTROLS,
   THINKING_LEVELS,
   THINKING_LOWEST,
   rememberLimitsSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { approveSchema } from "../../../connectors/reapproval.js";
 import { AUTH_KINDS, STATUSES, createSchema, updateSchema } from "../../../connectors/registry.js";
 import { putGrantSchema } from "../../../connectors/grants.js";

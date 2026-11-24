@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
-import { getMembership, sql, withTeam } from "@kobe/db";
-import { WORKSPACE_SYNC_WAIT_MS, workspaceEventsQuerySchema } from "@kobe/protocol";
+import { getMembership, sql, withTeam } from "@kaiju/db";
+import { WORKSPACE_SYNC_WAIT_MS, workspaceEventsQuerySchema } from "@kaiju/protocol";
 import { teamRoleAllows } from "../authz/permissions.js";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
@@ -23,7 +23,7 @@ export interface WorkspaceEventsOptions {
 }
 
 /**
- * The Files panel keeping itself current (KOBE-599, contract `@kobe/protocol` workspace-events.ts).
+ * The Files panel keeping itself current (KOBE-599, contract `@kaiju/protocol` workspace-events.ts).
  * Mounted inside the workspace file routes, so `requireTeam` and `team.chat` already ran; the
  * owner is always the session's (team, user).
  *

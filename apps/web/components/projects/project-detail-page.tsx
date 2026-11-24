@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { projectPermissions } from "@kobe/protocol";
+import { projectPermissions } from "@kaiju/protocol";
 import { saveBytes } from "../../lib/files/save";
 import { worded, type Project, type ProjectInput } from "../../lib/projects/api";
 import { useTeamAccess } from "../admin/console-context";

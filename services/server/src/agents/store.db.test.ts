@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDb, users, withTeam, teams, type KobeDatabase } from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createDb, users, withTeam, teams, type KaijuDatabase } from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import {
   createAgent,
   findAgent,
@@ -30,7 +30,7 @@ import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
  * apply it, and must refuse a location without an owner.
  */
 let database: TestDatabase;
-let db: KobeDatabase;
+let db: KaijuDatabase;
 const alice = randomUUID();
 const bob = randomUUID();
 const definition = { frontmatter: { name: "Private" }, prompt: "Alice only." };

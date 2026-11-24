@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { appendBackdatedAuditRow } from "@kobe/db/testing";
+import { appendBackdatedAuditRow } from "@kaiju/db/testing";
 import { runWithAuditContext } from "./context.js";
 import { sweepAuditPii } from "./pii-sweeper.js";
 import { createTeamWithAdmin } from "../teams/members.js";

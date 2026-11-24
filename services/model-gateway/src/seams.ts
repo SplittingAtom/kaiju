@@ -1,4 +1,4 @@
-import type { ServerCallTokenPurpose } from "@kobe/protocol";
+import type { ServerCallTokenPurpose } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import type { RouteKind } from "./routes.js";
 import type { UsageReading } from "./usage/meter.js";

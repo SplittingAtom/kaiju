@@ -1,14 +1,14 @@
-import type { SessionSigningKey } from "@kobe/session-token";
+import type { SessionSigningKey } from "@kaiju/session-token";
 import type { QueryEmbedder } from "../memory/embeddings/service.js";
-import type { ServerCallPurpose, ToolRegistry } from "@kobe/protocol";
+import type { ServerCallPurpose, ToolRegistry } from "@kaiju/protocol";
 import type { NotebookFiles } from "../notebooks/files.js";
 import type {
   ARTIFACT_PUT_REFUSALS,
   FILE_SHARE_REFUSALS,
   MEMORY_REFUSALS,
   SKILL_DRAFT_REFUSALS,
-  KobeDb,
-} from "@kobe/db";
+  KaijuDb,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import type { SandboxBus } from "./bus.js";
 import type { WireTuning } from "./constants.js";
@@ -93,7 +93,7 @@ export interface TraceRelayContext {
 
 /** Everything a connection shares with its replica. */
 export interface WireContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly bus: SandboxBus;
   readonly tuning: WireTuning;
   readonly replicaId: string;

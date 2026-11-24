@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RunTransition, RunTransitionListener } from "@kobe/protocol";
+import type { RunTransition, RunTransitionListener } from "@kaiju/protocol";
 import { onScheduledRunEnded } from "./run-hook.js";
 
 const transition = (trigger: "user" | "schedule", to: string) =>

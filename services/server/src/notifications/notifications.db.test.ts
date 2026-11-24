@@ -3,8 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   listNotificationsResponseSchema,
   markNotificationsReadResponseSchema,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { NOTIFICATION_EMAIL_MAX_ATTEMPTS, deliverNotificationEmails } from "./email.js";
 import { notifyScheduledRunEndInTx } from "./record.js";
 import { endRunInTx } from "../sandbox-wire/run-state.js";

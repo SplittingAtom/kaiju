@@ -4,7 +4,7 @@ import {
   type GitIdentity,
   type RunGitContext,
   type RunGitRemote,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { isTempOf, writeFileAtomic } from "../atomic-file.js";
 
 /**
@@ -78,7 +78,7 @@ export function remoteRewrites(remotes: readonly RunGitRemote[]): RemoteRewrite[
 
 /** What `core.sshCommand` runs: a message on stderr, then failure (git appends its arguments). */
 export const SSH_REFUSAL =
-  "echo 'kobe: SSH is not available in the sandbox; use the https:// URL of a repository in a connected organization' >&2; false";
+  "echo 'kaiju: SSH is not available in the sandbox; use the https:// URL of a repository in a connected organization' >&2; false";
 
 /** A config value in double quotes (the schema and `validIdentity` keep `"`, `\` and controls out). */
 const quoted = (value: string): string => `"${value}"`;

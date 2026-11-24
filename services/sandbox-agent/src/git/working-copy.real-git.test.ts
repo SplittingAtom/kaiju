@@ -5,7 +5,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RunGitContext, RunGitRepo } from "@kobe/protocol/sandbox-wire";
+import type { RunGitContext, RunGitRepo } from "@kaiju/protocol/sandbox-wire";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { egressEnv, EgressTokenFile, type EgressWiring } from "../egress/egress-wiring.js";
 import { TIMEOUT_BIN, toolCommandRunner } from "../threads/tool-command.js";
@@ -111,7 +111,7 @@ describe.skipIf(backend === undefined || !existsSync(TIMEOUT_BIN))(
       }).trim();
 
     beforeAll(async () => {
-      root = mkdtempSync(path.join(tmpdir(), "kobe-working-copy-"));
+      root = mkdtempSync(path.join(tmpdir(), "kaiju-working-copy-"));
       workspace = path.join(root, "workspace");
       mkdirSync(workspace);
       const repos = path.join(root, "host");

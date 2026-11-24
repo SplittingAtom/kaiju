@@ -1,4 +1,4 @@
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { Hono } from "hono";
 import type { TeamVariables } from "../../authz/middleware.js";
 import { hitRateLimit } from "../../rate-limit.js";

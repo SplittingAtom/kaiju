@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UPLOAD_DEFAULT_MAX_FILE_BYTES, UPLOAD_DEFAULT_MAX_MESSAGE_BYTES } from "@kobe/protocol";
+import { UPLOAD_DEFAULT_MAX_FILE_BYTES, UPLOAD_DEFAULT_MAX_MESSAGE_BYTES } from "@kaiju/protocol";
 import { DEFAULT_UPLOAD_SETTINGS, loadUploadSettings } from "./settings.js";
 
 describe("upload settings", () => {

@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../retention/blobs.js";
 import {
   publishedVersions,
@@ -61,7 +61,7 @@ const delta = (a: number | null | undefined, b: number | null | undefined) =>
  * before it, so both are skipped: a second Roll back goes further back, never forward again.
  */
 export async function rollbackTarget(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
   current: string,
@@ -94,7 +94,7 @@ export async function rollbackTarget(
   return null;
 }
 
-async function skillInstallRow(tx: KobeTx, teamId: string, skillId: string) {
+async function skillInstallRow(tx: KaijuTx, teamId: string, skillId: string) {
   const res = await tx.execute<{
     name: string;
     version_id: string;
@@ -111,7 +111,7 @@ async function skillInstallRow(tx: KobeTx, teamId: string, skillId: string) {
  * runnable version below what runs; otherwise the audit chain's previous version (review-337 M1).
  */
 async function rollbackOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
   versions: readonly PublishedVersion[],
@@ -134,7 +134,7 @@ async function rollbackOf(
 }
 
 export async function skillInstallUpdates(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   skillId: string,
 ): Promise<SkillInstallUpdates | null> {
@@ -196,7 +196,7 @@ export async function skillInstallUpdates(
  * `toSemver` (published versions only).
  */
 export async function skillInstallDiff(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   teamId: string,
   skillId: string,

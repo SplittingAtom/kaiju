@@ -19,7 +19,7 @@ LOCK = threading.Lock()
 
 
 def load_bridge(path):
-    spec = importlib.util.spec_from_file_location("kobe_kernel_bridge", path)
+    spec = importlib.util.spec_from_file_location("kaiju_kernel_bridge", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

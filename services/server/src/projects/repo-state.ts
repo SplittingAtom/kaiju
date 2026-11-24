@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * Whether Kaiju may write a project's files now (KOBE-765, spec workspace-git G16, G17, GQ4).
@@ -19,7 +19,7 @@ import { sql, type KobeTx } from "@kobe/db";
 export type ProjectWriteBlock = "repo" | "converting";
 
 export async function projectWriteBlock(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
 ): Promise<ProjectWriteBlock | null> {

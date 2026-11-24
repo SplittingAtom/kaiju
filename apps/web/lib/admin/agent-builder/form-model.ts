@@ -5,7 +5,7 @@ import {
   validateAgentDefinition,
   type AgentApprovalMode,
   type AgentDefinition,
-} from "@kobe/agent-file";
+} from "@kaiju/agent-file";
 
 /** The builder's form state: plain strings (one entry per line for lists), never the wire shape. */
 export interface FormState {
@@ -184,7 +184,7 @@ function fieldOf(path: string): { field: FieldKey; entry: number | null } {
   return { field: PATH_FIELDS[key] ?? "form", entry: index };
 }
 
-/** Validates with the same schema the server applies (`@kobe/agent-file`), per form field. */
+/** Validates with the same schema the server applies (`@kaiju/agent-file`), per form field. */
 export function validateForm(form: FormState, prompt: string): Validation {
   const result = validateAgentDefinition({ frontmatter: toFrontmatter(form), prompt });
   if (result.ok) {

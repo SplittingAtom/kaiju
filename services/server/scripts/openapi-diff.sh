@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Shows how the OpenAPI document changes against a base ref (KOBE-815): openapi.json is not
-# committed, so request/response shape changes (zod schemas in routes or @kobe/protocol) do not
+# committed, so request/response shape changes (zod schemas in routes or @kaiju/protocol) do not
 # show as a file diff in a PR. Builds the server for the working tree and for the base (in a
 # temporary git worktree, reusing this checkout's Turbo cache), then prints the JSON diff.
 #
-#   pnpm --filter @kobe/server openapi:diff [base-ref]     # default origin/main
+#   pnpm --filter @kaiju/server openapi:diff [base-ref]     # default origin/main
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
@@ -36,7 +36,7 @@ write_doc() {
 }
 
 echo "openapi:diff: building the working tree" >&2
-"$PNPM" exec turbo run build --filter=@kobe/server --output-logs=errors-only >&2
+"$PNPM" exec turbo run build --filter=@kaiju/server --output-logs=errors-only >&2
 write_doc "$ROOT" "$TMP/head.json"
 
 echo "openapi:diff: building $BASE in a temporary worktree" >&2
@@ -44,7 +44,7 @@ git worktree add -q --detach "$TMP/base" "$BASE"
 (
   cd "$TMP/base"
   "$PNPM" install --frozen-lockfile --prefer-offline >/dev/null
-  "$PNPM" exec turbo run build --filter=@kobe/server --output-logs=errors-only >&2
+  "$PNPM" exec turbo run build --filter=@kaiju/server --output-logs=errors-only >&2
 )
 write_doc "$TMP/base" "$TMP/base.json"
 

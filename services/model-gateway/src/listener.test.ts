@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { SecretBox, VIRTUAL_KEY_PURPOSE, virtualKeyContext } from "@kobe/db";
+import { SecretBox, VIRTUAL_KEY_PURPOSE, virtualKeyContext } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { applyModelsHint } from "./listener.js";
 import { PrincipalCache } from "./principals.js";

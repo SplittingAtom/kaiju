@@ -1,5 +1,5 @@
 /** Projects, their files and commits (KOBE-163/585/586/592) (KOBE-717 area). */
-import type { ProjectCommit, ProjectFile } from "@kobe/protocol";
+import type { ProjectCommit, ProjectFile } from "@kaiju/protocol";
 import type { FakeCore } from "./core";
 import { error, json, NOW, uuid, type FakeAnswer, type FakeRequest, type Json } from "./state";
 

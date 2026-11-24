@@ -21,8 +21,8 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs ./
 RUN pnpm fetch
 COPY . .
 RUN pnpm install --offline --frozen-lockfile \
- && pnpm turbo run build --filter=@kobe/sandbox-agent... \
- && pnpm --filter=@kobe/sandbox-agent deploy --prod --legacy /out
+ && pnpm turbo run build --filter=@kaiju/sandbox-agent... \
+ && pnpm --filter=@kaiju/sandbox-agent deploy --prod --legacy /out
 
 # kobe-runas (KOBE-71): the one privileged file in the image. Starts each Pi process (and so the
 # tools it runs) under its own uid; static, so the runtime image needs no compiler.

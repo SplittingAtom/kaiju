@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { skillPackageHashes } from "@kobe/protocol/node";
+import { skillPackageHashes } from "@kaiju/protocol/node";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   selfSignedCert,
@@ -36,7 +36,7 @@ afterAll(async () => {
 describe("mirrorHttpClient (KOBE-343)", () => {
   it("pushes over TLS through the egress proxy with a site token (ac-4)", async () => {
     const url = server.repo("proxied");
-    const dir = mkdtempSync(path.join(tmpdir(), "kobe-mirror-proxy-"));
+    const dir = mkdtempSync(path.join(tmpdir(), "kaiju-mirror-proxy-"));
     dirs.push(dir);
     const http = mirrorHttpClient({
       remote: url,

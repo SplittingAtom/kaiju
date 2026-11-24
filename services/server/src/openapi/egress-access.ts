@@ -1,4 +1,4 @@
-import { EGRESS_REQUEST_SCOPES } from "@kobe/db";
+import { EGRESS_REQUEST_SCOPES } from "@kaiju/db";
 import { z } from "zod";
 import { decisionWithPatternBodySchema } from "../egress/decision-http.js";
 import { ceilingFlagsBodySchema, egressRequestCreateBodySchema } from "../egress/schemas.js";

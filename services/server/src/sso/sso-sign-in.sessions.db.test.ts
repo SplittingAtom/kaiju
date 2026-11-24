@@ -52,7 +52,7 @@ describe("one browser code for no access and an existing account (review finding
 
 describe("break-glass (SSO10): local sign-in never contacts the IdP", () => {
   it("signs the setup Owner in with a password and a passkey while the IdP is down", async () => {
-    const authenticator = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
+    const authenticator = new SoftwareAuthenticator("kaiju.test", "http://kaiju.test");
     const ownerB = await h.signIn("owner@sso-signin.test");
     const options = await ownerB.get("/api/auth/passkey/generate-register-options");
     const registered = await ownerB.post("/api/auth/passkey/verify-registration", {

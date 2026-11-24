@@ -55,7 +55,7 @@ export function LinePin({
       aria-pressed={pinned}
       aria-label={`Keep lines shown for ${name}`}
       title={pinned ? "Lines kept shown" : "Keep lines shown"}
-      data-kobe-line-pin={pinned ? "on" : "off"}
+      data-kaiju-line-pin={pinned ? "on" : "off"}
       className={cn(
         "text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex size-5 shrink-0 items-center justify-center rounded-sm border-0 bg-transparent p-0 outline-none focus-visible:ring-2",
         pinned
@@ -95,13 +95,13 @@ function FilesList({
       ref={ref}
       id={id}
       aria-label={`Files ${title} used`}
-      data-kobe-thread-files=""
+      data-kaiju-thread-files=""
       className="m-0 ms-6 list-none ps-0 text-xs"
       onKeyDown={(e) => {
         if (e.key !== "Escape") return;
         e.stopPropagation();
         // Back to the row's ⋯ menu button, where the list was opened from.
-        const row = ref.current?.closest("[data-kobe-thread]");
+        const row = ref.current?.closest("[data-kaiju-thread]");
         row?.querySelector<HTMLElement>('[aria-label^="Actions for "]')?.focus();
         onClose();
       }}

@@ -1,4 +1,4 @@
-import type { SemanticMemoryKind, SemanticMemoryScope } from "@kobe/protocol";
+import type { SemanticMemoryKind, SemanticMemoryScope } from "@kaiju/protocol";
 import type { StoredCandidate } from "./stored.js";
 
 /**

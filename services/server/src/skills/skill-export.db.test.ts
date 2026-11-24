@@ -7,10 +7,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { strToU8, unzipSync, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PROVENANCE_API_VERSION, provenanceSchema } from "@kobe/protocol";
-import { skillPackageHashes } from "@kobe/protocol/node";
+import { PROVENANCE_API_VERSION, provenanceSchema } from "@kaiju/protocol";
+import { skillPackageHashes } from "@kaiju/protocol/node";
 import { validateZipBundle } from "./bundle.js";
-import { ensureObject } from "./kobe-seed.js";
+import { ensureObject } from "./kaiju-seed.js";
 import { mirrorHttpClient } from "./mirror/http-client.js";
 import { sha256Hex } from "./storage.js";
 import { RawBody, type TestBrowser } from "../testing/browser.js";
@@ -29,7 +29,7 @@ import { CASES, manifest, skillMd } from "../testing/registry-fixtures.js";
 const team = randomUUID();
 const otherTeam = randomUUID();
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 let h: Harness;
 let builder: TestBrowser;
 let outsider: TestBrowser;
@@ -224,7 +224,7 @@ describe("exports (KOBE-345)", () => {
       "scripts/run.py",
     ]);
     // It unpacks into .agents/skills/<name>/ (and is a Pi --skill dir) as is.
-    const root = mkdtempSync(path.join(tmpdir(), "kobe-export-"));
+    const root = mkdtempSync(path.join(tmpdir(), "kaiju-export-"));
     dirs.push(root);
     for (const [p, b] of files) {
       const dest = path.join(root, ".agents/skills", folder, p);
@@ -310,7 +310,7 @@ describe("exports (KOBE-345)", () => {
         [v.id],
       )
     ).rows[0];
-    expect(skillPackageHashes(files, { kobeProvenance: true })).toEqual({
+    expect(skillPackageHashes(files, { kaijuProvenance: true })).toEqual({
       runtimeHash: row?.runtime_hash,
       packageHash: row?.package_hash,
     });

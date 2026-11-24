@@ -1,10 +1,10 @@
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SEEDED_TABLES } from "./seeded.js";
 
 /**
- * `kobe restore` refuses a target with rows in any table not listed in SEEDED_TABLES (KOBE-311
+ * `kaiju restore` refuses a target with rows in any table not listed in SEEDED_TABLES (KOBE-311
  * review B1), so every table a migration seeds must be listed: a freshly migrated database has
  * rows in exactly the listed tables. Needs only Postgres (no pg_dump), so it runs everywhere.
  */

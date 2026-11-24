@@ -4,7 +4,7 @@ import { AUDIT_CATEGORIES } from "./audit";
 
 /**
  * The Category filter offers exactly the categories the server accepts (KOBE-291 review): the
- * first segment of every action in AUDIT_EVENTS. The web app can't import @kobe/db, so this reads
+ * first segment of every action in AUDIT_EVENTS. The web app can't import @kaiju/db, so this reads
  * the source of truth and fails on drift.
  */
 function serverCategories(): string[] {

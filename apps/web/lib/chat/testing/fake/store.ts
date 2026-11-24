@@ -1,9 +1,9 @@
 /**
- * What the fake server holds (KOBE-717: the fields of `FakeKobe`, out of `fake-kobe.ts`). Tests
- * read and set these on `FakeKobe` as before; the area handlers read them through `FakeCore`.
+ * What the fake server holds (KOBE-717: the fields of `FakeKaiju`, out of `fake-kaiju.ts`). Tests
+ * read and set these on `FakeKaiju` as before; the area handlers read them through `FakeCore`.
  */
-import type { KobeEventPayload } from "@kobe/protocol";
-import type { FakeEventSource } from "../fake-kobe";
+import type { KaijuEventPayload } from "@kaiju/protocol";
+import type { FakeEventSource } from "../fake-kaiju";
 import { FakeFileLinks } from "../fake-file-links";
 import { FakeFolders } from "../fake-folders";
 import { FakeWorkspaceChanges } from "../fake-workspace-changes";
@@ -71,7 +71,7 @@ export class FakeStore {
   /** Approvals asked with `requestApproval` (KOBE-37), by id. */
   readonly approvals = new Map<
     string,
-    { runId: string; payload: KobeEventPayload<"approval.requested">; status: string }
+    { runId: string; payload: KaijuEventPayload<"approval.requested">; status: string }
   >();
 
   /** Request-access requests (KOBE-39), newest last; `enabled`: domains already enabled. */
@@ -245,7 +245,7 @@ export class FakeStore {
   /** The team's next retention shortening (KOBE-18 banner); null: none. */
   upcomingRetention: { period: string; effective_at: string } | null = null;
 
-  // --- the server's own counters and connections (were private to `FakeKobe`) -----------------
+  // --- the server's own counters and connections (were private to `FakeKaiju`) -----------------
 
   /** Ids handed out so far, per kind. */
   readonly counters = {

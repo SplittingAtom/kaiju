@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sql, withTeam, type AgentScope } from "@kobe/db";
+import { sql, withTeam, type AgentScope } from "@kaiju/db";
 import { skillUsageQuery } from "./usage.js";
 import { PINNED_AGENTS } from "../runs/agents.js";
 import { RunFixture, type FakeWorkspace, type RunStart } from "../testing/run-fixture.js";

@@ -1,6 +1,6 @@
-import type { SKILL_DRAFT_SAVE_ERROR_CODES } from "@kobe/protocol";
-import type { SkillDraftSaveFrame } from "@kobe/protocol/sandbox-wire";
-import { getMembership, sql, withTeam, type KobeDb, type SKILL_DRAFT_REFUSALS } from "@kobe/db";
+import type { SKILL_DRAFT_SAVE_ERROR_CODES } from "@kaiju/protocol";
+import type { SkillDraftSaveFrame } from "@kaiju/protocol/sandbox-wire";
+import { getMembership, sql, withTeam, type KaijuDb, type SKILL_DRAFT_REFUSALS } from "@kaiju/db";
 import { runWithAuditContext } from "../../audit/context.js";
 import { appendRunEventsInTx, withAppendTx } from "../../event-stream/append.js";
 import { logger } from "../../logger.js";
@@ -62,7 +62,7 @@ const RUN_ENDED = fail(
 
 /** The run is this user's message run on this thread and still active (as `share_file`). */
 async function runActive(
-  db: KobeDb,
+  db: KaijuDb,
   target: { readonly teamId: string; readonly userId: string },
   frame: SkillDraftSaveFrame,
 ): Promise<boolean> {
@@ -131,7 +131,7 @@ function refusalOf(result: Extract<WorkspaceSaveResult, { ok: false }>, folder: 
  * of the run's event cap like `file.shared`; the draft is saved either way.
  */
 async function recordSaved(
-  db: KobeDb,
+  db: KaijuDb,
   runMaxEvents: number,
   teamId: string,
   frame: SkillDraftSaveFrame,
@@ -161,7 +161,7 @@ async function recordSaved(
 }
 
 export function createSkillDraftTool(
-  db: KobeDb,
+  db: KaijuDb,
   options: { readonly runMaxEvents?: number } = {},
 ): SkillDraftTool {
   const runMaxEvents = options.runMaxEvents ?? WIRE_DEFAULTS.runMaxEvents;

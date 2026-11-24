@@ -2,7 +2,7 @@
 import { act, cleanup, render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ThreadLineageResponse } from "@kobe/protocol";
+import type { ThreadLineageResponse } from "@kaiju/protocol";
 import type { ChatSession } from "../../lib/chat/session";
 import { initialThreadState } from "../../lib/chat/thread-state";
 import type { Projection } from "../../lib/chat/tree";
@@ -11,7 +11,7 @@ import { useLineage, type LineageSource } from "../../lib/chat/use-lineage";
 import { SELF, ancestor, lineageOf, relative, tid } from "../../lib/chat/testing/lineage-fixtures";
 import { must } from "../../lib/testing/must";
 import { OpenThreadContext } from "./fork-dialog";
-import { ChatSessionContext, type KobeThreadExtras } from "./kobe-runtime";
+import { ChatSessionContext, type KaijuThreadExtras } from "./kaiju-runtime";
 import { LineageStrip, LineageStripView } from "./lineage-strip";
 
 /** KOBE-535 (TL3, TL4): the lineage chip above the conversation (TL3 as amended 2026-11-06). */
@@ -22,7 +22,7 @@ afterEach(() => {
 
 function view(lineage: ThreadLineageResponse, onOpenThread = vi.fn()) {
   render(
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <LineageStripView lineage={lineage} onOpenThread={onOpenThread} />
     </div>,
   );
@@ -62,7 +62,7 @@ describe("the chip (ac-1)", () => {
       ["Budget 2027", "true"],
       ["Try the Q3 numbers", "true"],
     ]);
-    expect(menu.closest("[data-kobe-chat]")).not.toBeNull();
+    expect(menu.closest("[data-kaiju-chat]")).not.toBeNull();
     await userEvent
       .setup()
       .click(within(menu).getByRole("menuitemcheckbox", { name: "Budget 2027" }));
@@ -213,13 +213,13 @@ const EMPTY: Projection = {
 };
 
 function connected(source: LineageSource, openThread = vi.fn(), threadId = SELF) {
-  const extras: KobeThreadExtras = {
+  const extras: KaijuThreadExtras = {
     controller: null,
     state: initialThreadState(threadId),
     projection: EMPTY,
   };
   render(
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <ChatSessionContext.Provider value={source as unknown as ChatSession}>
         <OpenThreadContext.Provider value={openThread}>
           <LineageStrip extras={extras} />

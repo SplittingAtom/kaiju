@@ -1,4 +1,4 @@
-import type { SiteBranding } from "@kobe/protocol";
+import type { SiteBranding } from "@kaiju/protocol";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_BRANDING } from "../lib/theme/branding-defaults";

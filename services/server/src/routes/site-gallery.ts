@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { agentWarnings, isDangerousMode } from "@kobe/agent-file";
+import { agentWarnings, isDangerousMode } from "@kaiju/agent-file";
 import { z } from "zod";
 import { GALLERY_ADMIN_ACCESS } from "../agents/access.js";
 import {

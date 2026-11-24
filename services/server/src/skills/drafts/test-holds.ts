@@ -1,4 +1,4 @@
-import { lockLegalHolds, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { lockLegalHolds, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../../retention/blobs.js";
 import { draftBundlePrefix, hashOfBundleKey } from "./test-bundle.js";
 
@@ -34,7 +34,7 @@ async function listAll(blobs: BlobStore, prefix: string): Promise<Listed[]> {
 
 /** The hashes among `hashes` a hold keeps; every one when it covers the author or a writer. */
 async function heldHashes(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   draftId: string,
   hashes: readonly string[],
@@ -73,7 +73,7 @@ async function heldHashes(
 
 /** Deletes `keys` of the draft's folder except those a hold keeps; how many were deleted. */
 async function deleteUnheld(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   teamId: string,
   draftId: string,
@@ -92,7 +92,7 @@ async function deleteUnheld(
 
 /** Every test bundle of a draft, but those a hold keeps (its delete and purge). */
 export async function deleteDraftBundles(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   teamId: string,
   draftId: string,
@@ -109,7 +109,7 @@ export async function deleteDraftBundles(
 
 /** After a store: the draft keeps its newest {@link DRAFT_BUNDLES_KEPT} bundles (and held ones). */
 export async function pruneDraftBundles(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   teamId: string,
   draftId: string,
@@ -129,7 +129,7 @@ export async function pruneDraftBundles(
  * behind for good.
  */
 export async function sweepOrphanDraftBundles(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   teamId: string,
   options: { readonly stop?: () => boolean } = {},
@@ -157,7 +157,7 @@ export async function sweepOrphanDraftBundles(
   }
 }
 
-async function liveDrafts(db: KobeDb, teamId: string, ids: readonly string[]): Promise<string[]> {
+async function liveDrafts(db: KaijuDb, teamId: string, ids: readonly string[]): Promise<string[]> {
   const res = await withTeam(db, teamId, (tx) =>
     tx.execute<{ id: string }>(sql`
       SELECT id FROM skill_drafts WHERE team_id = ${teamId} AND id IN (${sql.join(

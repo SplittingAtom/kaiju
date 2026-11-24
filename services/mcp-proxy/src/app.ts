@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { honoTracing } from "@kobe/telemetry";
+import { honoTracing } from "@kaiju/telemetry";
 import { mcpRoutes, type McpRouteDeps } from "./mcp.js";
 import { appCallRoutes, type AppCallDeps } from "./app-calls.js";
 import { logger } from "./logger.js";

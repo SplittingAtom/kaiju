@@ -48,7 +48,7 @@ import { fileTabId } from "../../lib/files/preview";
 import { appTabId, isAppTab, type AppTabSpec } from "../../lib/apps/app-tabs";
 import { useRail } from "../shell/rail-state";
 import { useShellBand } from "../shell/shell-band";
-import { kobeExtrasOf, useChatSession } from "./kobe-runtime";
+import { kaijuExtrasOf, useChatSession } from "./kaiju-runtime";
 import { useArtifactTabs, type OpenRequest } from "./use-artifact-tabs";
 import { useThreadFiles } from "./use-thread-files";
 import { useFollowMoves } from "./use-follow-moves";
@@ -155,7 +155,7 @@ function artifactEvents(live: LiveRun | undefined): readonly ArtifactEvent[] {
 export function useArtifactEventCount(id?: string): number {
   return useAuiState(
     (s) =>
-      artifactEvents(kobeExtrasOf(s)?.state.live).filter(
+      artifactEvents(kaijuExtrasOf(s)?.state.live).filter(
         (e) => id === undefined || e.artifact_id === id,
       ).length,
   );
@@ -167,7 +167,7 @@ export function useArtifactEventCount(id?: string): number {
  */
 function useCreatedOn(threadId: string | undefined): string {
   return useAuiState((s) => {
-    const extras = kobeExtrasOf(s);
+    const extras = kaijuExtrasOf(s);
     if (threadId === undefined || extras?.state.threadId !== threadId) return "";
     return artifactEvents(extras.state.live)
       .filter((e) => e.version === 1)

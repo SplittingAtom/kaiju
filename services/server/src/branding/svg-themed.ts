@@ -24,8 +24,8 @@ import { checkSvg, length, type SvgSink } from "./svg.js";
 export type ThemedSvg =
   { readonly ok: true; readonly svg: string } | { readonly ok: false; readonly reason: string };
 
-export const LOGO_ID_PREFIX = "kobe-logo-";
-export const FAVICON_ID_PREFIX = "kobe-favicon-";
+export const LOGO_ID_PREFIX = "kaiju-logo-";
+export const FAVICON_ID_PREFIX = "kaiju-favicon-";
 /** A favicon never sees the page's CSS: fixed high-contrast colours per browser scheme. */
 export const FAVICON_SCHEME_STYLE =
   "svg{color:#1b1b1f}@media (prefers-color-scheme: dark){svg{color:#ffffff}}";

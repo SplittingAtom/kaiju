@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming } from "./testing";
 
@@ -25,12 +25,12 @@ function rule(css: string, selector: string): string {
   return css.slice(start, css.indexOf("}", start));
 }
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -40,7 +40,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const panel = () => must(document.querySelector<HTMLElement>("[data-kobe-composer-panel]"));
+const panel = () => must(document.querySelector<HTMLElement>("[data-kaiju-composer-panel]"));
 
 async function running(title = "Work") {
   const t = fake.addThread(title);
@@ -63,7 +63,7 @@ describe("whole-composer focus (ac-2)", () => {
     // The old border-only cue is gone; the outline is the panel's.
     expect(box.className).not.toContain("focus-within:");
     expect(rule(CSS, ".panel:focus-within")).toMatch(
-      /outline-color:\s*var\(--kobe-composer-focus\)/,
+      /outline-color:\s*var\(--kaiju-composer-focus\)/,
     );
     // 2px, never taking layout space; none at rest (a transparent one would show in forced colours).
     expect(rule(CSS, ".panel")).toMatch(/outline:\s*2px none /);
@@ -101,7 +101,7 @@ describe("whole-composer focus (ac-2)", () => {
     fake.addEntry(id, null, { role: "user", content: "from the author" });
     openApp(fake, id);
     expect(await screen.findByText(/You are reading a shared conversation/)).toBeTruthy();
-    expect(document.querySelector("[data-kobe-composer-panel]")).toBeNull();
+    expect(document.querySelector("[data-kaiju-composer-panel]")).toBeNull();
   });
 });
 
@@ -141,20 +141,20 @@ describe("pulse while running (ac-3)", () => {
 
   it("uses the running token and moves only the shadow, so nothing shifts", () => {
     const on = rule(CSS, ".panel[data-running]");
-    expect(on).toMatch(/border-color:\s*var\(--kobe-status-running\)/);
-    expect(on).toMatch(/animation:\s*kobe-composer-pulse /);
+    expect(on).toMatch(/border-color:\s*var\(--kaiju-status-running\)/);
+    expect(on).toMatch(/animation:\s*kaiju-composer-pulse /);
     expect(rule(CSS, ".panel[data-running]:focus-within")).toMatch(
-      /outline-color:\s*var\(--kobe-status-running\)/,
+      /outline-color:\s*var\(--kaiju-status-running\)/,
     );
-    const frames = keyframes("kobe-composer-pulse");
-    expect(frames).toContain("var(--kobe-status-running)");
+    const frames = keyframes("kaiju-composer-pulse");
+    expect(frames).toContain("var(--kaiju-status-running)");
     const animated = [...frames.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
     expect(new Set(animated)).toEqual(new Set(["box-shadow"]));
   });
 
   it("has no motion under prefers-reduced-motion", () => {
     const at = CSS.indexOf("@media (prefers-reduced-motion: reduce)");
-    expect(at).toBeGreaterThan(CSS.indexOf("@keyframes kobe-composer-pulse"));
+    expect(at).toBeGreaterThan(CSS.indexOf("@keyframes kaiju-composer-pulse"));
     const reduced = rule(CSS.slice(at), ".panel[data-running]");
     expect(reduced).toMatch(/animation:\s*none/);
   });

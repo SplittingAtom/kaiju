@@ -67,7 +67,7 @@ const taken = (path: string) =>
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 
 const fetchFn: typeof fetch = async (input, init = {}) => {
-  const url = new URL(String(input), "http://kobe.test");
+  const url = new URL(String(input), "http://kaiju.test");
   const method = init.method ?? "GET";
   const body = typeof init.body === "string" ? (JSON.parse(init.body) as unknown) : undefined;
   seen.push({ method, url: `${url.pathname}${url.search}`, ...(body ? { body } : {}) });
@@ -124,7 +124,7 @@ const fetchFn: typeof fetch = async (input, init = {}) => {
 
 function mount(props: Partial<Parameters<typeof FileBrowser>[0]> = {}) {
   return render(
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <IconActionProvider>
         <FileBrowser api={createFilesApi(TEAM, fetchFn)} refreshAfterWakeMs={60_000} {...props} />
       </IconActionProvider>
@@ -282,7 +282,7 @@ describe("the tree (ac-1, ac-5)", () => {
     expect(await findItem("drop.pdf")).toBeTruthy();
     files.set("uploads/new.pdf", 3);
     view.rerender(
-      <div data-kobe-chat>
+      <div data-kaiju-chat>
         <IconActionProvider>
           <FileBrowser
             api={createFilesApi(TEAM, fetchFn)}
@@ -640,9 +640,9 @@ describe("moving (ac-7)", () => {
   it("files from the computer dropped on a folder upload into it", async () => {
     mount();
     const notes = await findItem("notes");
-    expect(notes.hasAttribute("data-kobe-drop-folder")).toBe(true);
-    expect(item("report.csv").hasAttribute("data-kobe-drop-folder")).toBe(false);
-    expect((await findProject("plan")).hasAttribute("data-kobe-drop-folder")).toBe(false);
+    expect(notes.hasAttribute("data-kaiju-drop-folder")).toBe(true);
+    expect(item("report.csv").hasAttribute("data-kaiju-drop-folder")).toBe(false);
+    expect((await findProject("plan")).hasAttribute("data-kaiju-drop-folder")).toBe(false);
     const file = new File(["hello"], "up.txt", { type: "text/plain" });
     const dt = transfer(["Files"], [file]);
     fireEvent.dragOver(notes, { dataTransfer: dt });

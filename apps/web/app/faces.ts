@@ -22,7 +22,7 @@ const outfit = localFont({
   weight: "100 900",
   style: "normal",
   display: "swap",
-  variable: "--kobe-face-outfit",
+  variable: "--kaiju-face-outfit",
   preload: false,
   adjustFontFallback: "Arial",
 });
@@ -32,7 +32,7 @@ const jetbrainsMono = localFont({
   weight: "100 800",
   style: "normal",
   display: "swap",
-  variable: "--kobe-face-jetbrains-mono",
+  variable: "--kaiju-face-jetbrains-mono",
   preload: false,
   adjustFontFallback: false,
 });

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { strToU8, unzipSync, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { provenanceSchema } from "@kobe/protocol";
+import { provenanceSchema } from "@kaiju/protocol";
 import { RawBody, type TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -107,7 +107,7 @@ async function evaluated(
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   for (const who of Object.keys(ids) as (keyof typeof ids)[])
     ids[who] = await h.createUser(`${who}@promote.test`);
   await h.admin.query(

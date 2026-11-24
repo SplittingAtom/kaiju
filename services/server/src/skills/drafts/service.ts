@@ -1,5 +1,5 @@
-import type { SkillImportOrigin } from "@kobe/protocol";
-import { withTeam, type KobeDb, type KobeTx, isUniqueViolation } from "@kobe/db";
+import type { SkillImportOrigin } from "@kaiju/protocol";
+import { withTeam, type KaijuDb, type KaijuTx, isUniqueViolation } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { parseSkillMd } from "../skill-md.js";
 import { DRAFT_LIMITS, SKILL_MD_PATH, draftPathProblem, skeletonSkillMd } from "./files.js";
@@ -18,7 +18,7 @@ import {
   type DraftRecord,
   type DraftViewer,
 } from "./records.js";
-import type { SkillDraftStart } from "@kobe/db";
+import type { SkillDraftStart } from "@kaiju/db";
 
 /**
  * Draft operations (KOBE-320, SK11). Each change runs in one team transaction holding the draft's
@@ -27,7 +27,7 @@ import type { SkillDraftStart } from "@kobe/db";
  */
 
 export interface DraftContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly teamId: string;
   readonly viewer: DraftViewer;
 }
@@ -54,7 +54,7 @@ const fail = (failure: DraftFailure): { ok: false } & DraftFailure => ({ ok: fal
 
 /** Locks a draft the viewer may edit and checks their revision; the failure otherwise. */
 async function lockedAt(
-  tx: KobeTx,
+  tx: KaijuTx,
   ctx: DraftContext,
   id: string,
   rev: number,

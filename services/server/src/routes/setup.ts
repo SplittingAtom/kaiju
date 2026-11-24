@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { count, eq, siteRoles } from "@kobe/db";
+import { count, eq, siteRoles } from "@kaiju/db";
 import type { ServerDeps } from "../deps.js";
 import { readJson } from "../http/request.js";
 import { currentAuditContext } from "../audit/context.js";

@@ -115,7 +115,7 @@ const theme = EditorView.theme({
     height: "100%",
   },
   "&.cm-focused": { outline: "2px solid var(--ring)", outlineOffset: "-2px" },
-  ".cm-scroller": { fontFamily: "var(--kobe-font-mono)" },
+  ".cm-scroller": { fontFamily: "var(--kaiju-font-mono)" },
   ".cm-content": { caretColor: "var(--foreground)" },
   ".cm-cursor": { borderLeftColor: "var(--foreground)" },
   ".cm-gutters": {
@@ -166,21 +166,21 @@ const theme = EditorView.theme({
   },
   // The diff (unified merge view): added on green, deleted on red and struck through.
   "&.cm-merge-b .cm-changedLine, .cm-inlineChangedLine": {
-    backgroundColor: "var(--kobe-diff-added-bg)",
+    backgroundColor: "var(--kaiju-diff-added-bg)",
   },
   "&.cm-merge-b .cm-changedText": {
-    background: "color-mix(in srgb, var(--kobe-diff-added) 25%, var(--kobe-diff-added-bg))",
+    background: "color-mix(in srgb, var(--kaiju-diff-added) 25%, var(--kaiju-diff-added-bg))",
   },
-  ".cm-deletedChunk": { backgroundColor: "var(--kobe-diff-deleted-bg)" },
+  ".cm-deletedChunk": { backgroundColor: "var(--kaiju-diff-deleted-bg)" },
   ".cm-deletedChunk del, &.cm-merge-b .cm-deletedText": {
     textDecoration: "line-through",
-    textDecorationColor: "var(--kobe-diff-deleted)",
+    textDecorationColor: "var(--kaiju-diff-deleted)",
   },
   ".cm-deletedChunk .cm-deletedText, &.cm-merge-b .cm-deletedText": {
-    background: "color-mix(in srgb, var(--kobe-diff-deleted) 25%, var(--kobe-diff-deleted-bg))",
+    background: "color-mix(in srgb, var(--kaiju-diff-deleted) 25%, var(--kaiju-diff-deleted-bg))",
   },
-  "&.cm-merge-b .cm-changedLineGutter": { background: "var(--kobe-diff-added)" },
-  ".cm-deletedLineGutter": { background: "var(--kobe-diff-deleted)" },
+  "&.cm-merge-b .cm-changedLineGutter": { background: "var(--kaiju-diff-added)" },
+  ".cm-deletedLineGutter": { background: "var(--kaiju-diff-deleted)" },
   ".cm-deletedChunk .cm-chunkButtons": { display: "flex", gap: "0.25rem", padding: "0.125rem 0" },
   ".cm-chunkButtons button": {
     display: "inline-flex",
@@ -195,8 +195,8 @@ const theme = EditorView.theme({
   ".cm-chunkButtons button:hover": { background: "var(--muted)" },
   ".cm-chunkButtons button:focus-visible": { outline: "2px solid var(--ring)" },
   ".cm-chunkButtons button svg": { width: "1.125rem", height: "1.125rem" },
-  ".cm-chunkButtons button[name=accept]": { color: "var(--kobe-diff-added)" },
-  ".cm-chunkButtons button[name=reject]": { color: "var(--kobe-diff-deleted)" },
+  ".cm-chunkButtons button[name=accept]": { color: "var(--kaiju-diff-added)" },
+  ".cm-chunkButtons button[name=reject]": { color: "var(--kaiju-diff-deleted)" },
 });
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -582,7 +582,7 @@ export default function CodeEditor({
     <div className={compact ? "flex flex-col" : "flex min-h-0 min-w-0 flex-1 flex-col"}>
       <div
         ref={host}
-        data-kobe-code-editor
+        data-kaiju-code-editor
         className={
           compact
             ? "min-h-10 overflow-hidden rounded-md border"
@@ -592,7 +592,7 @@ export default function CodeEditor({
       {!compact && (
         <div
           className="text-muted-foreground flex items-center justify-between gap-2 px-1 pt-1 text-xs"
-          data-kobe-editor-status
+          data-kaiju-editor-status
         >
           <button
             type="button"
@@ -609,13 +609,13 @@ export default function CodeEditor({
               <span
                 role="status"
                 aria-live="off"
-                data-kobe-kernel-completion={kernelState}
+                data-kaiju-kernel-completion={kernelState}
                 className="ml-auto truncate"
                 title="Completion from the conversation's Python kernel, added to the editor's own"
               >
                 {KERNEL_STATE_TEXT[kernelState]}
               </span>
-              <span className="sr-only" aria-live="polite" data-kobe-kernel-announce>
+              <span className="sr-only" aria-live="polite" data-kaiju-kernel-announce>
                 {announced}
               </span>
             </>

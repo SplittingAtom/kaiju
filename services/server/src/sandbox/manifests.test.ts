@@ -232,7 +232,7 @@ describe("team NetworkPolicy (D11, D28)", () => {
     policy.spec.egress.map((rule) => {
       expect(rule.to).toHaveLength(1);
       expect(must(rule.to[0]).namespaceSelector).toEqual({
-        matchLabels: { "kubernetes.io/metadata.name": "kobe" },
+        matchLabels: { "kubernetes.io/metadata.name": "kaiju" },
       });
       const labels = (must(rule.to[0]).podSelector as { matchLabels: Record<string, string> })
         .matchLabels;

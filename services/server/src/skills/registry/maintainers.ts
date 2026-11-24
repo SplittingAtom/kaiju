@@ -10,9 +10,9 @@ import {
   registryVersions,
   siteRoles,
   users,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { siteRoleAllows, type SiteRole } from "../../authz/permissions.js";
 import { logger } from "../../logger.js";
@@ -29,7 +29,7 @@ import { isReservedName } from "./names.js";
  * emailed; an active maintainer again (added, reassigned or reactivated) makes it active.
  */
 
-type Db = KobeDb | KobeTx;
+type Db = KaijuDb | KaijuTx;
 
 /** A submission still waiting on its review or its author: it holds a never-approved name. */
 const OPEN_STATES = ["submitted", "in_review", "changes_requested"] as const;
@@ -94,7 +94,7 @@ function mayManage(list: readonly Maintainer[], actor: Actor): boolean {
 }
 
 /** Unmaintained → active once an active maintainer exists again (audited). */
-async function maintainedAgain(tx: KobeTx, skill: { id: string; name: string; status: string }) {
+async function maintainedAgain(tx: KaijuTx, skill: { id: string; name: string; status: string }) {
   if (skill.status !== "unmaintained") return;
   await tx
     .update(registrySkills)
@@ -132,7 +132,7 @@ const fail = (code: Extract<MaintainerResult, { ok: false }>["code"], message: s
   ({ ok: false, code, message }) as const;
 
 /** Checks every change shares: the skill exists, isn't Kaiju's, and the actor may manage it. */
-async function guard(tx: KobeTx, skillId: string, actor: Actor) {
+async function guard(tx: KaijuTx, skillId: string, actor: Actor) {
   const skill = await skillOf(tx, skillId, true);
   if (!skill) return fail("not_found", "No catalog skill with that id.");
   if (skill.publisher === "kobe") return fail("kobe_skill", "Kaiju maintains its own skills.");
@@ -143,7 +143,7 @@ async function guard(tx: KobeTx, skillId: string, actor: Actor) {
 }
 
 export async function addMaintainer(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   userId: string,
   actor: Actor,
@@ -164,7 +164,7 @@ export async function addMaintainer(
 }
 
 export async function removeMaintainer(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   userId: string,
   actor: Actor,
@@ -190,7 +190,7 @@ export async function removeMaintainer(
 
 /** A Site admin replaces the whole list (SK24 "Site admins can reassign"). */
 export async function reassignMaintainers(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   userIds: readonly string[],
   actor: Actor,
@@ -227,7 +227,7 @@ export async function reassignMaintainers(
  * ticket's approve transaction; does nothing once the skill has maintainers.
  */
 export async function recordFirstMaintainer(
-  tx: KobeTx,
+  tx: KaijuTx,
   skillId: string,
   userId: string,
 ): Promise<void> {
@@ -275,7 +275,7 @@ export async function submissionRight(
     .from(registrySkills)
     .where(eq(registrySkills.name, name));
   // Kaiju's names are Kaiju's; only a skill that held a name before Kaiju reserved it (KOBE-620,
-  // `KOBE_SKILL_NAMES_ADDED_LATER`) keeps working under it.
+  // `KAIJU_SKILL_NAMES_ADDED_LATER`) keeps working under it.
   if (isReservedName(name) && (row === undefined || row.publisher === "kobe"))
     return { ok: false, code: "reserved", message: `${name} is reserved for Kaiju's own skill.` };
   if (!row) return { ok: true, skill: null };
@@ -330,7 +330,7 @@ export interface UnmaintainedSkill {
  * The user was deactivated: every active catalog skill they maintain with no other active
  * maintainer becomes Unmaintained (audited, system). Returns those skills.
  */
-export async function markUnmaintained(db: KobeDb, userId: string): Promise<UnmaintainedSkill[]> {
+export async function markUnmaintained(db: KaijuDb, userId: string): Promise<UnmaintainedSkill[]> {
   return db.transaction(async (tx) => {
     const mine = await tx
       .select({ id: registrySkills.id, name: registrySkills.name })
@@ -357,7 +357,7 @@ export async function markUnmaintained(db: KobeDb, userId: string): Promise<Unma
 }
 
 /** The user was reactivated: their Unmaintained skills are maintained again. */
-export async function markMaintainedAgain(db: KobeDb, userId: string): Promise<void> {
+export async function markMaintainedAgain(db: KaijuDb, userId: string): Promise<void> {
   await db.transaction(async (tx) => {
     const mine = await tx
       .select({ id: registrySkills.id, name: registrySkills.name, status: registrySkills.status })
@@ -371,7 +371,7 @@ export async function markMaintainedAgain(db: KobeDb, userId: string): Promise<v
 
 /** Emails the Owner and every active Site admin about skills that became Unmaintained. */
 export async function notifyUnmaintained(
-  deps: { readonly db: KobeDb; readonly mailer: Mailer; readonly publicUrl: string },
+  deps: { readonly db: KaijuDb; readonly mailer: Mailer; readonly publicUrl: string },
   skills: readonly UnmaintainedSkill[],
 ): Promise<number> {
   if (skills.length === 0) return 0;

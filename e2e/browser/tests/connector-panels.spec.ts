@@ -14,7 +14,7 @@ const TEAM_KEYS = ["enabled_tools", "exposure", "id", "name", "slug"];
 
 /** The MCP-UI badges' accessible names (a focusable trigger each, KOBE-640). */
 async function badgeNames(scope: Locator): Promise<string[]> {
-  const badges = scope.locator("button[data-kobe-app-badge]");
+  const badges = scope.locator("button[data-kaiju-app-badge]");
   return badges.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
 }
 
@@ -60,7 +60,7 @@ test("team Connectors: tools in Read only and Write columns, MCP-UI badges (KOBE
   for (const n of names) expect(n).toMatch(UI_NAME);
   // The badge's tooltip opens on hover and on keyboard focus (Tab, which also scrolls it into view;
   // Radix closes a tooltip on scroll, so this guards KOBE-654), and Escape closes it.
-  const badge = card.locator("button[data-kobe-app-badge]").first();
+  const badge = card.locator("button[data-kaiju-app-badge]").first();
   await badge.hover();
   await expect(page.getByRole("tooltip").first()).toContainText("Opens an app: ui://");
   // Leaving closes it. Move in steps, as a real pointer does: Radix keeps a hoverable tooltip open

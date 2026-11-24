@@ -28,7 +28,7 @@ import {
   serverCallOutputCap,
   serverCallOutputCapFor,
   serverCallRequestSchema,
-  type KobeEventType,
+  type KaijuEventType,
   type ServerCallClaims,
 } from "./index.js";
 import { EXAMPLE_IDS } from "./testing/index.js";
@@ -417,10 +417,10 @@ describe("epilogue events", () => {
 
   it("keeps the stream open until each announced result arrived or the deadline", () => {
     const at = 1_000_000;
-    const written = (...t: KobeEventType[]) => new Set<KobeEventType>(t);
+    const written = (...t: KaijuEventType[]) => new Set<KaijuEventType>(t);
     const open = (
       epilogue: ("title" | "followups")[] | undefined,
-      w: Set<KobeEventType>,
+      w: Set<KaijuEventType>,
       now = at,
     ) => epilogueOpen({ epilogue, written: w, completedAtMs: at, nowMs: now });
     expect(open(undefined, written())).toBe(false);

@@ -7,8 +7,8 @@ import {
   memoryDocVersions,
   memoryDocs,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { BlobStore } from "../retention/blobs.js";
 import { logger } from "../logger.js";
 import { readVersionContent } from "./store.js";
@@ -28,7 +28,7 @@ export interface ExportedMemoryFile {
  * (logged), as an unreadable artifact is.
  */
 export async function* personalMemoryForExport(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: { readonly teamId: string; readonly userId: string },
   blobs: BlobStore,
 ): AsyncGenerator<ExportedMemoryFile> {

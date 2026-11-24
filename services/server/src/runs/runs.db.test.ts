@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runSnapshotSchema, submitMessageResultSchema } from "@kobe/protocol";
+import { runSnapshotSchema, submitMessageResultSchema } from "@kaiju/protocol";
 import { must } from "../testing/event-stream-fixture.js";
 import { threadRunsSchema } from "../openapi/runs.js";
 import { RunFixture, piDelta } from "../testing/run-fixture.js";

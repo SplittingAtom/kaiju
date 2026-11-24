@@ -114,11 +114,11 @@ executor_first_token_trials() {
 executor_sync_checks() {
   local content="kobe-168 $(date +%s) $RANDOM" out claim old_pvc new_pvc row
   echo "==> workspace sync with the paired tool uid (KOBE-168)"
-  out=$(chat_run "bash: mkdir -p /workspace/kobe168-sync && printf '%s' '$content' > /workspace/kobe168-sync/q3.md && stat -c %u /workspace/kobe168-sync/q3.md" 240000)
+  out=$(chat_run "bash: mkdir -p /workspace/kaiju168-sync && printf '%s' '$content' > /workspace/kaiju168-sync/q3.md && stat -c %u /workspace/kaiju168-sync/q3.md" 240000)
   contains "a tool wrote the report as a partner uid" '^text=fake-openai: tool said: 30[0-9]{2}$' "$out"
   if owner_hibernate "sync"; then ok "the idle sandbox hibernates"; else fail "the idle sandbox hibernates"; fi
   until_ok 120 owner_pod_gone || true
-  sync_row_of() { psql_kobe "SELECT sha256 FROM workspace_files WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND path = 'kobe168-sync/q3.md' AND NOT deleted"; }
+  sync_row_of() { psql_kobe "SELECT sha256 FROM workspace_files WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND path = 'kaiju168-sync/q3.md' AND NOT deleted"; }
   row_ready() { [[ "$(sync_row_of)" =~ ^[0-9a-f]{64}$ ]]; }
   if until_ok 60 row_ready; then ok "hibernation pushed the tool-written file to the durable copy"
   else fail "hibernation pushed the tool-written file to the durable copy: got [$(sync_row_of)]"; fi
@@ -130,8 +130,8 @@ executor_sync_checks() {
   else fail "the workspace volume is destroyed (uid ${old_pvc:-none} → ${new_pvc:-none})"; fi
   contains "the sandbox is woken onto a new volume" '"woken":true' "$(owner_lifecycle wake)"
   # A tool of a new Pi reads the restored file, appends to it and adds a file in the restored directory.
-  out=$(chat_run "bash: cat /workspace/kobe168-sync/q3.md && echo ' appended' >> /workspace/kobe168-sync/q3.md && echo new > /workspace/kobe168-sync/new.txt && echo writable" 300000)
+  out=$(chat_run "bash: cat /workspace/kaiju168-sync/q3.md && echo ' appended' >> /workspace/kaiju168-sync/q3.md && echo new > /workspace/kaiju168-sync/new.txt && echo writable" 300000)
   contains "the file is back after the volume was lost, readable by a tool" "tool said: ${content}writable" "$out"
   contains "the restored file is group 1000 and group-writable (agent-owned, shared with every tool uid)" '^1000:66[46]$' \
-    "$(in_owner 'stat -c "%g:%a" /workspace/kobe168-sync/q3.md')"
+    "$(in_owner 'stat -c "%g:%a" /workspace/kaiju168-sync/q3.md')"
 }

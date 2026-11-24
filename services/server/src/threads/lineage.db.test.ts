@@ -5,8 +5,8 @@ import {
   LINEAGE_MAX_SIBLINGS,
   threadLineageResponseSchema,
   type ThreadLineageResponse,
-} from "@kobe/protocol";
-import { withTeam, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam, type KaijuTx } from "@kaiju/db";
 import { RunFixture } from "../testing/run-fixture.js";
 import type { Person } from "../testing/event-stream-fixture.js";
 import { readLineage } from "./lineage.js";
@@ -255,7 +255,7 @@ describe("Trash (ac-4)", () => {
  * A transaction that counts the statements it runs: a query builder counts when it is awaited
  * (a builder only used as a subquery never is), `execute` when called.
  */
-function counting(tx: KobeTx): { tx: KobeTx; count: () => number } {
+function counting(tx: KaijuTx): { tx: KaijuTx; count: () => number } {
   let n = 0;
   const builder = (v: unknown): v is object => typeof v === "object" && v !== null;
   const track = <T extends object>(obj: T, root: boolean): T =>

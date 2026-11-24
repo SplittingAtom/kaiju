@@ -182,7 +182,7 @@ export const IDENTITY_EVENTS = {
    * It was turned off: by the Owner (`admin`), by the last enabled provider being disabled or
    * deleted (`last_provider`, naming it and, from the console, the acting admin `byUserId`), by the
    * chart's providers leaving the Owner without an identity at an enabled provider
-   * (`owner_unlinked`, at start-up), or by the Site owner's `kobe sso allow-local-sign-in`
+   * (`owner_unlinked`, at start-up), or by the Site owner's `kaiju sso allow-local-sign-in`
    * break-glass command (`break_glass`, with the operator it recorded).
    */
   "identity.sso.required.disabled": event("site", {

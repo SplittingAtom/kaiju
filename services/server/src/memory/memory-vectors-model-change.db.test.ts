@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { generateSessionKeyPair } from "@kobe/session-token";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import { TestBrowser } from "../testing/browser.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -32,7 +32,7 @@ let team: string;
 beforeAll(async () => {
   await fx.setup([{}, {}], () => ({
     models: { providerKeySecrets: ["p".repeat(40)] },
-    blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
+    blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
     embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));

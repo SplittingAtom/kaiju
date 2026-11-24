@@ -8,7 +8,7 @@ import type { ExecTransport } from "../kobe-exec/client.js";
 
 let base: string;
 beforeEach(async () => {
-  base = await mkdtemp(path.join(tmpdir(), "kobe-private-"));
+  base = await mkdtemp(path.join(tmpdir(), "kaiju-private-"));
 });
 afterEach(async () => {
   await rm(base, { recursive: true, force: true });

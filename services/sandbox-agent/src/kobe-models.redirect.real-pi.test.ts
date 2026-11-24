@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLocalGateway, type LocalGateway } from "@kobe/model-gateway/testing";
+import { startLocalGateway, type LocalGateway } from "@kaiju/model-gateway/testing";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { GUARDED_CONFIG, writeGuardedConfig } from "./models/agent-config.js";
 import {
@@ -75,7 +75,7 @@ if (process.env.CI !== undefined && !existsSync(MODELS_EXTENSION)) {
 }
 
 /** The planted models.json carries a model entry with its own baseUrl. */
-const LEAKING = ["models.json: provider kobe models with their own baseUrl", "everything at once"];
+const LEAKING = ["models.json: provider kaiju models with their own baseUrl", "everything at once"];
 
 let gateway: LocalGateway | undefined;
 let tap: Listener | undefined;

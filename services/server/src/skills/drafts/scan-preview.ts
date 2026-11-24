@@ -1,6 +1,6 @@
-import { canonicalZip, checkPackagePaths } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
-import type { ScanResult } from "@kobe/skill-scanner";
+import { canonicalZip, checkPackagePaths } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
+import type { ScanResult } from "@kaiju/skill-scanner";
 import { ScanBusyError, ScanCancelledError, scanIncomplete, scanPool } from "../scan-pool.js";
 import { readAllFiles, visibleDraft } from "./records.js";
 import type { DraftContext } from "./service.js";

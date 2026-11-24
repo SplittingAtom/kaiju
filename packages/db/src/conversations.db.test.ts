@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase, type KobeTx } from "./client.js";
+import { createDb, type KaijuDatabase, type KaijuTx } from "./client.js";
 import {
   events,
   runEvents,
@@ -21,7 +21,7 @@ import { pgCodeOf } from "./pg-errors.js";
  */
 const teamA = randomUUID();
 const teamB = randomUUID();
-let app: KobeDatabase;
+let app: KaijuDatabase;
 
 beforeAll(async () => {
   const owner = createDb(inject("ownerUrl"));
@@ -54,7 +54,7 @@ async function errorMessage(promise: Promise<unknown>): Promise<string> {
   return `${e?.message ?? ""} ${e?.cause?.message ?? ""}`;
 }
 
-async function insertThread(tx: KobeTx, teamId: string): Promise<string> {
+async function insertThread(tx: KaijuTx, teamId: string): Promise<string> {
   const userId = randomUUID();
   await tx.insert(users).values({ id: userId, name: "Conv", email: `${userId}@conv.test` });
   const [row] = await tx
@@ -66,7 +66,7 @@ async function insertThread(tx: KobeTx, teamId: string): Promise<string> {
 }
 
 async function insertRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   status: RunStatus = "running",

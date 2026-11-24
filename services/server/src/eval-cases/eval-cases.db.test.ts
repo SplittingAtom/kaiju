@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { acceptedCases } from "./review.js";
 import { purgeDepartedCasesInTx } from "../retention/eval-cases.js";
 import { runRetentionPass } from "../retention/index.js";

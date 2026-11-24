@@ -275,7 +275,7 @@ using the same mock and variables: the Owner (`KOBE_USER`/`KOBE_PW`, no authenti
 their account to the mock once, turns the setting on from that SSO session and off again. Turning
 it on ends every local session, the suite's stored one included, so run it on its own:
 `npx playwright test sign-in-sso-only`. If a run dies with the setting on, turn it off in the Site
-console or with `kobe sso allow-local-sign-in` (see the guide's Single sign-on page).
+console or with `kaiju sso allow-local-sign-in` (see the guide's Single sign-on page).
 
 The spec imports the mock's SCIM client from `../sso/`, so copy `e2e/sso` beside `e2e/browser`
 when you run the suite elsewhere (for example in the Playwright container:
@@ -295,8 +295,8 @@ against a real host and is skipped unless `KOBE_GIT_PROVIDER` (`github`, `gitea`
 
 ## Writing specs
 
-- Select by role and accessible name, labels and `data-kobe-*` attributes (`data-kobe-steering`,
-  `data-kobe-scroll`, `data-kobe-follow`, `data-kobe-marker`), never by CSS class.
+- Select by role and accessible name, labels and `data-kaiju-*` attributes (`data-kaiju-steering`,
+  `data-kaiju-scroll`, `data-kaiju-follow`, `data-kaiju-marker`), never by CSS class.
 - Use the `chat` fixture from `tests/support/chat.ts`: `open()` starts a new conversation,
   `ask()` sends and waits for the run to finish, and every thread it saw goes to Trash afterwards.
 - Keep prompts short and tool-free; allow generous timeouts for runs (`RUN_TIMEOUT_MS`).

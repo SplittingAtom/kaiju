@@ -1,4 +1,4 @@
-import { sql, teams, withTeam, type KobeDb } from "@kobe/db";
+import { sql, teams, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { ServerRunOrchestrator } from "../../runs/orchestrator.js";
 import type { SandboxProvider } from "../../sandbox/provider.js";
@@ -28,7 +28,7 @@ export const SKILL_EVAL_HEARTBEAT_TIMEOUT_MS = 60_000;
 export const SKILL_EVAL_MAX_TAKEOVERS = 2;
 
 export interface SkillEvalReaperDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly provider: Pick<SandboxProvider, "listEvalSandboxes" | "deleteEvalSandbox">;
   readonly runs: Pick<ServerRunOrchestrator, "cancel">;
   readonly log: Pick<Logger, "warn" | "info">;

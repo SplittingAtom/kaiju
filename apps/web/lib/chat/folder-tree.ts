@@ -4,7 +4,7 @@
  * with Archived folded under it, Deleted), the visible rows for a fold state, paths for notes,
  * and which folders a folder may move into without passing the depth limit (TF1).
  */
-import { THREAD_FOLDER_MAX_DEPTH } from "@kobe/protocol";
+import { THREAD_FOLDER_MAX_DEPTH } from "@kaiju/protocol";
 import type { FolderView } from "./folders-api";
 
 /** A node of the tree: a built-in one or a team folder. */

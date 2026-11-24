@@ -6,34 +6,34 @@
 @import "./tailwind.css";
 
 /* Only for pages that render the chat (KOBE-32): the app paints edge to edge. */
-body:has([data-kobe-chat]) {
+body:has([data-kaiju-chat]) {
   margin: 0;
 }
 
 /* The slice of Tailwind's preflight the components rely on, scoped to the chat. The chat's portals
    (tooltips, dialogs, menus) mount inside the chat root (components/ui/chat-portal.ts), so it
    applies to them too; tooltips also carry their own box-sizing for any surface without a root.
-   A page in a panel over the workspace (`[data-kobe-console]`, KOBE-424, KOBE-452) is left out:
+   A page in a panel over the workspace (`[data-kaiju-console]`, KOBE-424, KOBE-452) is left out:
    it keeps the console's own styling. */
 @layer base {
-  [data-kobe-chat] *:where(:not([data-kobe-console], [data-kobe-console] *)),
-  [data-kobe-chat] :where(:not([data-kobe-console], [data-kobe-console] *))::before,
-  [data-kobe-chat] :where(:not([data-kobe-console], [data-kobe-console] *))::after,
+  [data-kaiju-chat] *:where(:not([data-kaiju-console], [data-kaiju-console] *)),
+  [data-kaiju-chat] :where(:not([data-kaiju-console], [data-kaiju-console] *))::before,
+  [data-kaiju-chat] :where(:not([data-kaiju-console], [data-kaiju-console] *))::after,
   [data-slot="tooltip-content"],
   [data-slot="tooltip-content"] * {
     box-sizing: border-box;
     border-color: var(--border);
   }
 
-  [data-kobe-chat]
+  [data-kaiju-chat]
     :where(button, input, select, textarea):where(
-      :not([data-kobe-console], [data-kobe-console] *)
+      :not([data-kaiju-console], [data-kaiju-console] *)
     ) {
     font: inherit;
     color: inherit;
   }
 
-  [data-kobe-chat] :where(svg):where(:not([data-kobe-console], [data-kobe-console] *)) {
+  [data-kaiju-chat] :where(svg):where(:not([data-kaiju-console], [data-kaiju-console] *)) {
     display: block;
   }
 
@@ -41,8 +41,8 @@ body:has([data-kobe-chat]) {
      trigger) is styled by its utilities alone: no browser border, face or padding (KOBE-558; the
      bell, the theme toggle and the composer's + showed the user agent's outset border while the
      area links, being links, did not). */
-  [data-kobe-chat]
-    :where(button[data-slot]):where(:not([data-kobe-console], [data-kobe-console] *)) {
+  [data-kaiju-chat]
+    :where(button[data-slot]):where(:not([data-kaiju-console], [data-kaiju-console] *)) {
     padding: 0;
     border: 0;
     background: transparent;
@@ -50,57 +50,57 @@ body:has([data-kobe-chat]) {
 
   /* The artifact sheet at 768–820 px ends above the composer box: the steering panel (Stop,
      queue) and the input, not the footer's notices or welcome space (KOBE-269, shell.module.css). */
-  [data-kobe-chat] [data-kobe-composer-box] {
-    anchor-name: --kobe-composer;
+  [data-kaiju-chat] [data-kaiju-composer-box] {
+    anchor-name: --kaiju-composer;
   }
 
-  [data-kobe-chat]
+  [data-kaiju-chat]
     :where(button:not(:disabled), [role="button"]:not(:disabled)):where(
-      :not([data-kobe-console], [data-kobe-console] *)
+      :not([data-kaiju-console], [data-kaiju-console] *)
     ) {
     cursor: pointer;
   }
 
   /* Kaiju's own controls (queue, run panel, approvals, thread list) look like shadcn's outline
      button. `:where` keeps specificity at zero, so any utility class overrides it. */
-  [data-kobe-chat]
-    :where(button:not([data-slot])):where(:not([data-kobe-console], [data-kobe-console] *)) {
+  [data-kaiju-chat]
+    :where(button:not([data-slot])):where(:not([data-kaiju-console], [data-kaiju-console] *)) {
     padding: 0.25rem 0.75rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
     background: var(--background);
     border: 1px solid var(--border);
-    border-radius: var(--kobe-radius-md);
+    border-radius: var(--kaiju-radius-md);
   }
 
-  [data-kobe-chat]
+  [data-kaiju-chat]
     :where(button:not([data-slot]):hover:not(:disabled, [aria-disabled="true"])):where(
-      :not([data-kobe-console], [data-kobe-console] *)
+      :not([data-kaiju-console], [data-kaiju-console] *)
     ) {
     background: var(--accent);
     color: var(--accent-foreground);
   }
 
-  [data-kobe-chat]
+  [data-kaiju-chat]
     :where(button:not([data-slot]):disabled):where(
-      :not([data-kobe-console], [data-kobe-console] *)
+      :not([data-kaiju-console], [data-kaiju-console] *)
     ) {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
-  [data-kobe-chat]
+  [data-kaiju-chat]
     :where(input:not([type="checkbox"], [type="radio"]), select, textarea):where(
-      :not([data-kobe-console], [data-kobe-console] *)
+      :not([data-kaiju-console], [data-kaiju-console] *)
     ) {
     background: var(--background);
     border: 1px solid var(--input);
-    border-radius: var(--kobe-radius-md);
+    border-radius: var(--kaiju-radius-md);
   }
 
-  [data-kobe-chat]
+  [data-kaiju-chat]
     :where(input, select, textarea):where(
-      :not([data-kobe-console], [data-kobe-console] *)
+      :not([data-kaiju-console], [data-kaiju-console] *)
     ):focus-visible {
     outline: none;
     border-color: var(--ring);
@@ -109,10 +109,10 @@ body:has([data-kobe-chat]) {
 }
 
 /* Streaming arrival fade (CE11, KOBE-207). Words that arrive while a part streams are
-   `[data-kobe-word]` spans that mount as they arrive (components/chat/arriving-words.tsx); the
+   `[data-kaiju-word]` spans that mount as they arrive (components/chat/arriving-words.tsx); the
    animation runs once per span, from the tint to the text colour, while the part is being written
-   (`data-kobe-arrive`). The tint is the accent only while the message list follows the stream
-   (`data-kobe-follow`, KOBE-205); scrolled up, it is the text colour, so words arrive plain.
+   (`data-kaiju-arrive`). The tint is the accent only while the message list follows the stream
+   (`data-kaiju-follow`, KOBE-205); scrolled up, it is the text colour, so words arrive plain.
    Swapping the variable, rather than the animation, means re-pinning never restarts the fade on
    words already there. Code and tool output never have word spans.
    The animation moves a registered percentage, not the colour (KOBE-269): each frame mixes the
@@ -121,56 +121,56 @@ body:has([data-kobe-chat]) {
    (the build emits tokens as lab), and Chromium painted words red and green mid-fade. At rest
    (100%: the end, no animation, reduced motion) the word is the text colour; the text colour comes
    first so that the build's fallback without color-mix is the plain text colour too. */
-@property --kobe-arrived {
+@property --kaiju-arrived {
   syntax: "<percentage>";
   inherits: false;
   initial-value: 100%;
 }
 
-@keyframes kobe-arrive {
+@keyframes kaiju-arrive {
   from {
-    --kobe-arrived: 0%;
+    --kaiju-arrived: 0%;
   }
   to {
-    --kobe-arrived: 100%;
+    --kaiju-arrived: 100%;
   }
 }
 
-[data-kobe-scroll="messages"] {
-  --kobe-arrive-tint: currentColor;
+[data-kaiju-scroll="messages"] {
+  --kaiju-arrive-tint: currentColor;
 }
 
-[data-kobe-scroll="messages"][data-kobe-follow="pinned"] {
-  --kobe-arrive-tint: var(--admin-accent, var(--primary));
+[data-kaiju-scroll="messages"][data-kaiju-follow="pinned"] {
+  --kaiju-arrive-tint: var(--admin-accent, var(--primary));
 }
 
-[data-kobe-arrive="running"] [data-kobe-word] {
-  color: color-mix(in srgb, currentColor var(--kobe-arrived), var(--kobe-arrive-tint));
-  animation: kobe-arrive 600ms ease-out;
+[data-kaiju-arrive="running"] [data-kaiju-word] {
+  color: color-mix(in srgb, currentColor var(--kaiju-arrived), var(--kaiju-arrive-tint));
+  animation: kaiju-arrive 600ms ease-out;
 }
 
 /* Reduced motion: no fade; a static 2 px accent bar inside the left edge of the block being
    written. Prose blocks of agent text keep a constant inset for it, so the bar never reflows. */
 @media (prefers-reduced-motion: reduce) {
-  [data-kobe-arrive="running"] [data-kobe-word] {
+  [data-kaiju-arrive="running"] [data-kaiju-word] {
     animation: none;
   }
 
-  [data-kobe-words] > :is(p, h1, h2, h3, h4, h5, h6, ul, ol) {
+  [data-kaiju-words] > :is(p, h1, h2, h3, h4, h5, h6, ul, ol) {
     padding-inline-start: 0.5rem;
   }
 
-  [data-kobe-follow="pinned"] [data-kobe-arrive="running"] > :last-child {
-    box-shadow: inset 2px 0 0 0 var(--kobe-arrive-tint);
+  [data-kaiju-follow="pinned"] [data-kaiju-arrive="running"] > :last-child {
+    box-shadow: inset 2px 0 0 0 var(--kaiju-arrive-tint);
   }
 }
 
-/* A panel's glow (KOBE-550, after the Catalyst query tool): a card-like surface with `kobe-panel`
+/* A panel's glow (KOBE-550, after the Catalyst query tool): a card-like surface with `kaiju-panel`
    eases its border toward the brand and a halo outside it when the pointer rests on it, through
    the tokens in app/theme.css (every theme glows in its own colour). Unlayered and scoped to the
    root: it outranks the modules' resting border and shadow, and stays where this root is. Only on
    devices with a hover pointer; no easing for people who asked for less motion. */
-[data-kobe-chat] .kobe-panel {
+[data-kaiju-chat] .kaiju-panel {
   transition:
     border-color 300ms ease,
     box-shadow 300ms ease;
@@ -179,14 +179,14 @@ body:has([data-kobe-chat]) {
 /* One halo at a time: a panel holding the hovered panel (the shell's columns, the console's page
    around its cards, KOBE-554) keeps its resting border and shadow. */
 @media (hover: hover) {
-  [data-kobe-chat] .kobe-panel:hover:not(:has(.kobe-panel:hover)) {
-    border-color: var(--kobe-panel-border-hover);
-    box-shadow: var(--kobe-glow-panel);
+  [data-kaiju-chat] .kaiju-panel:hover:not(:has(.kaiju-panel:hover)) {
+    border-color: var(--kaiju-panel-border-hover);
+    box-shadow: var(--kaiju-glow-panel);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-kobe-chat] .kobe-panel {
+  [data-kaiju-chat] .kaiju-panel {
     transition: none;
   }
 }
@@ -195,37 +195,37 @@ body:has([data-kobe-chat]) {
    panel (the shell's columns and the console's sidebar and page among them, KOBE-554) shows its
    hover with the highlight colour instead. */
 @media (forced-colors: active) {
-  [data-kobe-chat] .kobe-panel:hover:not(:has(.kobe-panel:hover)) {
+  [data-kaiju-chat] .kaiju-panel:hover:not(:has(.kaiju-panel:hover)) {
     border-color: Highlight;
   }
 }
 
 /* The file editor's Proposed edit bubble (KOBE-615): a gold border and halo (app/theme.css
-   `--kobe-glow-gold`, fixed for every preset in both schemes) that breathes slowly; still for
+   `--kaiju-glow-gold`, fixed for every preset in both schemes) that breathes slowly; still for
    people who asked for less motion, and a plain system border under forced colours. */
-[data-kobe-chat] .kobe-glow-gold {
-  border: 1px solid var(--kobe-glow-gold-border);
-  box-shadow: 0 0 12px 1px var(--kobe-glow-gold);
-  animation: kobe-glow-gold 2.4s ease-in-out infinite alternate;
+[data-kaiju-chat] .kaiju-glow-gold {
+  border: 1px solid var(--kaiju-glow-gold-border);
+  box-shadow: 0 0 12px 1px var(--kaiju-glow-gold);
+  animation: kaiju-glow-gold 2.4s ease-in-out infinite alternate;
 }
 
-@keyframes kobe-glow-gold {
+@keyframes kaiju-glow-gold {
   from {
-    box-shadow: 0 0 6px 0 var(--kobe-glow-gold);
+    box-shadow: 0 0 6px 0 var(--kaiju-glow-gold);
   }
   to {
-    box-shadow: 0 0 14px 2px var(--kobe-glow-gold);
+    box-shadow: 0 0 14px 2px var(--kaiju-glow-gold);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-kobe-chat] .kobe-glow-gold {
+  [data-kaiju-chat] .kaiju-glow-gold {
     animation: none;
   }
 }
 
 @media (forced-colors: active) {
-  [data-kobe-chat] .kobe-glow-gold {
+  [data-kaiju-chat] .kaiju-glow-gold {
     border-color: Highlight;
     box-shadow: none;
   }

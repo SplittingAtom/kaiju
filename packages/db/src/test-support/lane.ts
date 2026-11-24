@@ -165,7 +165,7 @@ export async function dropTestLane(serverUrl: string, lane: string): Promise<Lan
 
 /**
  * Vitest global setup step for every DB suite: sweeps leftovers of crashed runs (KOBE-743: stale
- * throwaway databases on the KOBE_TEST_DATABASE_URL server, stale `kobe-upgrade-*` temp dirs), then
+ * throwaway databases on the KOBE_TEST_DATABASE_URL server, stale `kaiju-upgrade-*` temp dirs), then
  * creates the lane's maintenance database when this run has a lane. Returns the lane (undefined in
  * CI).
  */

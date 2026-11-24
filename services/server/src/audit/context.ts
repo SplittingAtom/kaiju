@@ -2,10 +2,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { BlockList, isIP } from "node:net";
 import type { Context, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
-import { SYSTEM_ACTOR, type AuditActor, type AuditVia } from "@kobe/db";
+import { SYSTEM_ACTOR, type AuditActor, type AuditVia } from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import type { ServerDeps } from "../deps.js";
-import { delegationOf } from "../kobe-mcp/delegation.js";
+import { delegationOf } from "../kaiju-mcp/delegation.js";
 
 /**
  * The request an audited action happens in: who (once authenticated) and from where. Set by
@@ -16,7 +16,7 @@ import { delegationOf } from "../kobe-mcp/delegation.js";
 export interface RequestAuditContext {
   readonly actor?: AuditActor;
   /**
-   * The person acts through an agent (KOBE-619, spec kobe-admin-mcp §7): set from a Kaiju MCP
+   * The person acts through an agent (KOBE-619, spec kaiju-admin-mcp §7): set from a Kaiju MCP
    * delegation, recorded with every event the request's person causes.
    */
   readonly via?: AuditVia;

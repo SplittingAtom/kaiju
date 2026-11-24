@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import {
   CAPABILITY_NOTEBOOKS,
   NOTEBOOK_CODE_MAX_BYTES,
   NOTEBOOK_TIMEOUT_DEFAULT_S,
   workspaceToolPath,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   type NotebookExecuteFrame,
   type NotebookRunFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import {
   finishExecution,
@@ -34,7 +34,7 @@ import type { CommandOutcome, SandboxTarget } from "./types.js";
  * and the model gets a text summary.
  */
 export interface NotebookRunConnection {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly target: SandboxTarget;
   readonly files: NotebookFiles | undefined;
   readonly log: Pick<Logger, "error" | "warn">;

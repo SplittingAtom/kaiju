@@ -5,7 +5,7 @@ import { WandSparklesIcon } from "lucide-react";
 import { recordedSkillDraftSaves, type SavedSkillDraft } from "../../lib/skills/draft-tool-result";
 import { draftHref } from "../skills/draft-href";
 import { InlineLink } from "../shell/text-links";
-import { ChatSessionContext, useKobeExtras } from "./kobe-runtime";
+import { ChatSessionContext, useKaijuExtras } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
 export const NEW_DRAFT_NOTE = "Your earlier draft was shared or edited, so this is a new draft.";
@@ -13,7 +13,7 @@ export const NEW_DRAFT_NOTE = "Your earlier draft was shared or edited, so this 
 /** The server's record of this call's save, once the call has a result (KOBE-442 review L4). */
 function useRecordedSave(toolCallId: string, done: boolean): SavedSkillDraft | undefined {
   const teamId = useContext(ChatSessionContext)?.teamId;
-  const threadId = useKobeExtras()?.state.threadId ?? undefined;
+  const threadId = useKaijuExtras()?.state.threadId ?? undefined;
   const [save, setSave] = useState<SavedSkillDraft | undefined>(undefined);
   useEffect(() => {
     if (!done || !teamId || !threadId) return;
@@ -43,7 +43,7 @@ export function SkillDraftCard({
   const draft = useRecordedSave(toolCallId, done);
   if (!draft) return null;
   return (
-    <div className={`${styles.fileCard} kobe-panel`}>
+    <div className={`${styles.fileCard} kaiju-panel`}>
       <WandSparklesIcon aria-hidden className="size-4" />
       <div className={styles.fileInfo}>
         <span className={styles.fileName}>

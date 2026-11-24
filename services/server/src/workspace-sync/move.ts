@@ -1,5 +1,5 @@
-import { lockLegalHolds, sql, type KobeTx } from "@kobe/db";
-import { workspacePathIssue } from "@kobe/protocol";
+import { lockLegalHolds, sql, type KaijuTx } from "@kaiju/db";
+import { workspacePathIssue } from "@kaiju/protocol";
 import type { WorkspaceOwner } from "./keys.js";
 import { movedRecently, recentRepeat, recordMove } from "./move-journal.js";
 import { lockWorkspace, roomForRows, saveState } from "./store.js";
@@ -77,7 +77,7 @@ type SourceRow = { path: string; size: string };
 
 /** The live rows the move takes: the file at `from`, else everything under `from/`. */
 async function sources(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   from: string,
   limit: number,
@@ -101,7 +101,7 @@ async function sources(
  * would show as one name twice). The source itself is never in the way.
  */
 async function destinationTaken(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   from: string,
   to: string,
@@ -136,7 +136,7 @@ function sourceFilter(owner: WorkspaceOwner, from: string, type: "file" | "dir")
 
 /** Moves `from` to `to` in the caller's team transaction. The caller checks the path rules. */
 export async function moveFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   request: MoveRequest,
 ): Promise<MoveOutcome> {

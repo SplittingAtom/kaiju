@@ -6,7 +6,7 @@
  * the stream's path limit and gets no live changes (only checks on focus).
  */
 import { useCallback, useEffect, useSyncExternalStore } from "react";
-import type { WorkspaceFileChange } from "@kobe/protocol";
+import type { WorkspaceFileChange } from "@kaiju/protocol";
 import type { WorkspaceChangeFeed } from "../../lib/files/remote-changes";
 
 export interface RemoteChange {

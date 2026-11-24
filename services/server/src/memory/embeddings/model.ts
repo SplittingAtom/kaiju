@@ -1,4 +1,4 @@
-import { gatewayProviderName, modelProviders, type KobeDb, type KobeTx } from "@kobe/db";
+import { gatewayProviderName, modelProviders, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { catalogModelIds, type ModelDiscovery } from "../../models/discovery.js";
 import { gatewayProviderOf, readMemorySiteSettings } from "../site-settings.js";
 
@@ -17,7 +17,7 @@ export type EmbeddingModel =
  * in-cluster embedding provider when it runs one (`localModel`, e.g. `kobe-local/nomic-embed-text`).
  */
 export async function gatewayProviderNames(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   localModel: string | undefined,
 ): Promise<Set<string>> {
   const rows = await db
@@ -39,7 +39,7 @@ export function pickEmbeddingModel(
 }
 
 export async function embeddingModelFor(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   localModel: string | undefined,
 ): Promise<EmbeddingModel> {
   const settings = await readMemorySiteSettings(db);

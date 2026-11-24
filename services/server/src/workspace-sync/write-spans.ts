@@ -1,4 +1,4 @@
-import { withSpan, type Attributes } from "@kobe/telemetry";
+import { withSpan, type Attributes } from "@kaiju/telemetry";
 
 /**
  * Child spans of a workspace write (KOBE-529) that split its time between the object store and

@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { agentMemorySettingSchema, type AgentMemorySetting } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { agentMemorySettingSchema, type AgentMemorySetting } from "@kaiju/protocol";
 
 /**
  * What memory a run gets from its agent version's memory setting (KOBE-646, v1.3 SM23, Chris
@@ -57,7 +57,7 @@ interface PlanRow extends Record<string, unknown> {
  * for an unknown run or an unreadable setting (callers fail closed: no memory).
  */
 export async function readRunMemoryPlan(
-  tx: KobeTx,
+  tx: KaijuTx,
   run: { readonly teamId: string; readonly runId: string },
 ): Promise<RunMemoryPlan> {
   const res = await tx.execute<PlanRow>(sql`

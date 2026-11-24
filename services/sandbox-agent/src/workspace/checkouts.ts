@@ -1,5 +1,5 @@
 import path from "node:path";
-import { PROJECT_WORKSPACE_DIR } from "@kobe/protocol";
+import { PROJECT_WORKSPACE_DIR } from "@kaiju/protocol";
 import {
   OWNED_DIR_MODE,
   PROJECTS_PREFIX,

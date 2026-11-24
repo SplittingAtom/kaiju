@@ -9,7 +9,7 @@ const SEMVER = /^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$/
 /** The largest part SEMVER admits (nine digits). */
 const PART_MAX = 999_999_999;
 
-/** Mirrors `CHANGELOG_MAX` in @kobe/db's schema/skills.ts (the `*_changelog_size` checks). */
+/** Mirrors `CHANGELOG_MAX` in @kaiju/db's schema/skills.ts (the `*_changelog_size` checks). */
 export const CHANGELOG_MAX = 1024;
 
 export interface Semver {

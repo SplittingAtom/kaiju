@@ -63,9 +63,9 @@ until_ok() { # seconds command... → succeeds as soon as the command does, fail
 }
 
 # The fake model upstream e2e/run.sh deployed (and removed on exit): the catalog's providers point
-# at llm.kobe-e2e-llm.svc, so recreate it from the installed model-gateway image when it is gone.
+# at llm.kaiju-e2e-llm.svc, so recreate it from the installed model-gateway image when it is gone.
 ensure_fake_llm() {
-  local ns=kobe-e2e-llm image phase
+  local ns=kaiju-e2e-llm image phase
   # e2e/run.sh deletes the namespace on exit (`--wait=false`): it may still be terminating here,
   # with its Service listed but its pod on the way out. Wait for it to go, then recreate.
   phase=$($KUBECTL get namespace "$ns" -o jsonpath='{.status.phase}' 2>/dev/null || true)

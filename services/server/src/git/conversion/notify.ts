@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { readAppName } from "../../branding/settings.js";
 import type { MailMessage, Mailer } from "../../mail/mailer.js";
@@ -15,7 +15,7 @@ import type { ConversionRow } from "./store.js";
  * the end itself, in `bell.ts`.
  */
 export interface ConversionNotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
   readonly log: Pick<Logger, "warn">;

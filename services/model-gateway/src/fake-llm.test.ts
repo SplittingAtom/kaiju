@@ -182,7 +182,7 @@ describe("steps script (KOBE-244: several tool calls in one run)", () => {
 });
 
 describe("fake LLM slow start (KOBE-290 e2e)", () => {
-  it("holds back the answer to a 'kobe-slow-start' prompt until the caller goes away", async () => {
+  it("holds back the answer to a 'kaiju-slow-start' prompt until the caller goes away", async () => {
     const abort = new AbortController();
     const pending = fetch(`${base}/v1/chat/completions`, {
       method: "POST",
@@ -190,7 +190,7 @@ describe("fake LLM slow start (KOBE-290 e2e)", () => {
       body: JSON.stringify({
         model: "gpt-fake",
         stream: true,
-        messages: [{ role: "user", content: "kobe-slow-start stop me" }],
+        messages: [{ role: "user", content: "kaiju-slow-start stop me" }],
       }),
       signal: abort.signal,
     }).then(
@@ -262,9 +262,9 @@ describe("fake LLM long answers and prompt sizes (KOBE-227 Gate 5)", () => {
       .map((e) => (e.choices as { delta?: { content?: string } }[])[0]?.delta?.content ?? "")
       .join("");
 
-  it("streams a 'kobe-long-answer=<n>' prompt as n numbered lines, one at a time", async () => {
+  it("streams a 'kaiju-long-answer=<n>' prompt as n numbered lines, one at a time", async () => {
     const started = Date.now();
-    const r = await stream("kobe-long-answer=6 please");
+    const r = await stream("kaiju-long-answer=6 please");
     const events = streamed(await r.text());
     const lines = textOf(events).trim().split("\n");
     expect(lines).toHaveLength(6);
@@ -281,7 +281,7 @@ describe("fake LLM long answers and prompt sizes (KOBE-227 Gate 5)", () => {
       body: JSON.stringify({
         model: "gpt-fake",
         stream: true,
-        messages: [{ role: "user", content: "kobe-long-answer=2000" }],
+        messages: [{ role: "user", content: "kaiju-long-answer=2000" }],
       }),
       signal: abort.signal,
     });
@@ -291,16 +291,16 @@ describe("fake LLM long answers and prompt sizes (KOBE-227 Gate 5)", () => {
     expect(res.choices[0]?.message.content).toBe("fake-openai: hello");
   });
 
-  it("reports the prompt tokens a 'kobe-prompt-tokens=<n>' prompt asks for", async () => {
-    const plain = (await chat([{ role: "user", content: "kobe-prompt-tokens=140000 hi" }])) as {
+  it("reports the prompt tokens a 'kaiju-prompt-tokens=<n>' prompt asks for", async () => {
+    const plain = (await chat([{ role: "user", content: "kaiju-prompt-tokens=140000 hi" }])) as {
       usage?: { prompt_tokens: number };
     };
     expect(plain.usage?.prompt_tokens).toBe(140000);
-    const events = streamed(await (await stream("kobe-prompt-tokens=176000 hi")).text());
+    const events = streamed(await (await stream("kaiju-prompt-tokens=176000 hi")).text());
     const usage = events
       .map((e) => e.usage as { prompt_tokens?: number } | undefined)
       .find(Boolean);
     expect(usage?.prompt_tokens).toBe(176000);
-    expect(textOf(events)).toBe("fake-openai: kobe-prompt-tokens=176000 hi");
+    expect(textOf(events)).toBe("fake-openai: kaiju-prompt-tokens=176000 hi");
   });
 });

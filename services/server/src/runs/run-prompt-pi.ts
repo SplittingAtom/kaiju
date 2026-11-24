@@ -1,4 +1,4 @@
-import type { PiSessionEntry } from "@kobe/protocol/sandbox-wire";
+import type { PiSessionEntry } from "@kaiju/protocol/sandbox-wire";
 
 /**
  * Finding a run's prompt in Pi's entries after the run has ended (KOBE-290). The sandbox is
@@ -66,7 +66,7 @@ const ATTACHED = "\n\nAttached files:\n";
 const SHOWN = " - shown to you as an image";
 const BY_PATH = " - not shown inline; open it from this path";
 
-const KOBE_PROVIDER = "kobe";
+const KAIJU_PROVIDER = "kobe";
 const THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 /** Setup entries Pi writes before a prompt. */
 const MAX_SETUP = 4;
@@ -115,7 +115,7 @@ export function isRunSetup(entry: PiSessionEntry, gatewayModel: string | undefin
     return (
       gatewayModel !== undefined &&
       entryShape(entry, ["provider", "modelId"]) &&
-      e.provider === KOBE_PROVIDER &&
+      e.provider === KAIJU_PROVIDER &&
       e.modelId === gatewayModel
     );
   }

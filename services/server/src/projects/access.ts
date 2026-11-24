@@ -1,11 +1,11 @@
-import { and, eq, projectMembers, projects, sql, teamMembers, type KobeTx } from "@kobe/db";
+import { and, eq, projectMembers, projects, sql, teamMembers, type KaijuTx } from "@kaiju/db";
 import {
   effectiveProjectRole,
   projectPermissions,
   type ProjectAction,
   type ProjectRole,
-} from "@kobe/protocol";
-import type { TeamRole } from "@kobe/db";
+} from "@kaiju/protocol";
+import type { TeamRole } from "@kaiju/db";
 
 export type ProjectRow = typeof projects.$inferSelect;
 
@@ -32,7 +32,7 @@ export function decide(
   return { role, can: projectPermissions(teamRole, explicit) };
 }
 
-async function teamRoleOf(tx: KobeTx, teamId: string, userId: string): Promise<TeamRole | null> {
+async function teamRoleOf(tx: KaijuTx, teamId: string, userId: string): Promise<TeamRole | null> {
   const [row] = await tx
     .select({ role: teamMembers.role })
     .from(teamMembers)
@@ -46,7 +46,7 @@ async function teamRoleOf(tx: KobeTx, teamId: string, userId: string): Promise<T
  * views every project of the workspace (RV1).
  */
 export async function loadAccess(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   projectId: string,
   options: { lock?: boolean } = {},
@@ -92,7 +92,7 @@ export function viewableBy(userId: string | ReturnType<typeof sql>, alias = "p")
  * not in the team.
  */
 export async function memberProjectIds(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<readonly string[]> {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { loadEnvelope } from "@kobe/db";
+import { loadEnvelope } from "@kaiju/db";
 import type { ProbeResult } from "./probe.js";
 import {
   connectorRefreshLockName,

@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sql, withTeam } from "@kobe/db";
+import { sql, withTeam } from "@kaiju/db";
 import {
   AGENT_MEMORY_SETTINGS,
   CAPABILITY_MEMORY,
@@ -8,8 +8,8 @@ import {
   agentVersionMemoryFieldSchema,
   runMemoryContextSchema,
   type AgentMemorySetting,
-} from "@kobe/protocol";
-import { memoryResultFrameSchema } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { memoryResultFrameSchema } from "@kaiju/protocol/sandbox-wire";
 import { readRunMemoryPlan } from "./run-memory.js";
 import { loadRunAgentTools } from "../policy/run-agent-tools.js";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
@@ -35,7 +35,7 @@ let team: string;
 
 beforeAll(async () => {
   await fx.setup([{}], () => ({
-    blobs: { objects, prefix: "kobe/" },
+    blobs: { objects, prefix: "kaiju/" },
     agents: { publishRate: { windowMs: 60_000, max: 10_000 } },
     // The real policy engine (KOBE-646 L1): an `off` run's memory tools are denied by it.
     sandboxWire: {

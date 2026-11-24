@@ -65,7 +65,7 @@ export function ReloadNotice({
     reload();
   };
   return (
-    <div role="status" className={styles.region} data-kobe-new-build>
+    <div role="status" className={styles.region} data-kaiju-new-build>
       {shown && (
         <div className={styles.banner}>
           <p className={styles.text}>{RELOAD_NOTICE}</p>

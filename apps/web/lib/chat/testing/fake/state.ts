@@ -1,8 +1,8 @@
 /**
- * The fake server's records and helpers (KOBE-717: out of `fake-kobe.ts`): the wire shapes it
+ * The fake server's records and helpers (KOBE-717: out of `fake-kaiju.ts`): the wire shapes it
  * stores, as the server's tables hold them, and the JSON answers every area builds.
  */
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 
 export type Json = Record<string, unknown>;
 
@@ -106,7 +106,7 @@ export interface FakeRun {
   parent_entry_id: string | null;
   queue_pos: number;
   retry_of_run_id?: string;
-  events: KobeEvent[];
+  events: KaijuEvent[];
   compacted: boolean;
   /** Last entry this run committed (where its next entry hangs). */
   tip: string | null;

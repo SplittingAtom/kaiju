@@ -1,4 +1,4 @@
-import { and, eq, sql, threads, type KobeTx } from "@kobe/db";
+import { and, eq, sql, threads, type KaijuTx } from "@kaiju/db";
 import type { ThreadActivityList } from "./schemas.js";
 
 /** Most threads one answer lists (a member rarely has more than a few runs at once). */
@@ -13,7 +13,7 @@ export const MAX_ACTIVE_THREADS = 200;
  * would bind to `approvals`. A thread waiting for an approval is `running` too (`waiting_approval` holds it).
  */
 export async function listThreadActivity(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { readonly teamId: string; readonly userId: string },
 ): Promise<ThreadActivityList> {
   const rows = await tx

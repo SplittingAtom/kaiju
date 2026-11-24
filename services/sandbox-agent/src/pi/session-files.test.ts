@@ -1,9 +1,9 @@
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { EXAMPLE_IDS } from "@kobe/protocol/testing";
+import { EXAMPLE_IDS } from "@kaiju/protocol/testing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { APP_CARD_CUSTOM_TYPE, appCardEntryId, type AppCardEntry } from "@kobe/protocol";
+import { APP_CARD_CUSTOM_TYPE, appCardEntryId, type AppCardEntry } from "@kaiju/protocol";
 import {
   BRANCH_CUSTOM_TYPE,
   SessionRestore,
@@ -16,7 +16,7 @@ import {
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-sessions-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-sessions-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });

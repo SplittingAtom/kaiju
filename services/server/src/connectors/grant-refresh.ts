@@ -10,8 +10,8 @@ import {
   withTeam,
   Envelope,
   SYSTEM_ACTOR,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { logger } from "../logger.js";
 import { recordAudit } from "../audit/record.js";
 import { parseOauthBundle, serializeOauthBundle, type OauthBundle } from "./oauth/bundle.js";
@@ -96,7 +96,7 @@ const leaseFree = (owner?: string) =>
 
 /** Takes the lease if the row still holds `stale` and nobody else holds one. */
 async function takeLease(
-  db: KobeDb,
+  db: KaijuDb,
   subject: Subject,
   stale: GrantRow,
   owner: string,
@@ -117,7 +117,7 @@ async function takeLease(
 }
 
 /** Gives the lease back after a transient failure (the stored grant is unchanged). */
-async function releaseLease(db: KobeDb, subject: Subject, owner: string): Promise<void> {
+async function releaseLease(db: KaijuDb, subject: Subject, owner: string): Promise<void> {
   try {
     await withTeam(db, subject.teamId, (tx) =>
       tx
@@ -132,7 +132,7 @@ async function releaseLease(db: KobeDb, subject: Subject, owner: string): Promis
 }
 
 export function refreshAndReveal(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   now: Date,
@@ -145,7 +145,7 @@ export function refreshAndReveal(
 }
 
 async function refreshOnce(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   now: Date,
@@ -187,7 +187,7 @@ async function refreshOnce(
 
 /** Calls the token endpoint under the lease `owner` holds, and stores or drops the grant. */
 async function refreshHolding(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   now: Date,
@@ -256,7 +256,7 @@ export const defaultExpiry = (now: Date): Date =>
  * refresh token is already spent, so giving up on a transient database error loses the grant.
  */
 async function writeRefreshed(
-  db: KobeDb,
+  db: KaijuDb,
   subject: Subject,
   stale: GrantRow,
   owner: string,
@@ -308,7 +308,7 @@ function bundleWithoutVersion(bundle: OauthBundle): Omit<OauthBundle, "v"> {
  * deactivated, or another replica refreshed. Re-read (liveness included) and serve what is stored.
  */
 async function afterLostRace(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   now: Date,
@@ -329,7 +329,7 @@ async function afterLostRace(
  * replica holds a live refresh lease on it (`owner`: the caller's own lease, which does not count).
  */
 async function dropIfUnchanged(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   now: Date,

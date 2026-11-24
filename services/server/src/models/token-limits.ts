@@ -1,5 +1,5 @@
-import { MODEL_CONTEXT_WINDOW_RANGE, MODEL_OUTPUT_TOKENS_RANGE } from "@kobe/db";
-import type { ModelLimits } from "@kobe/protocol/sandbox-wire";
+import { MODEL_CONTEXT_WINDOW_RANGE, MODEL_OUTPUT_TOKENS_RANGE } from "@kaiju/db";
+import type { ModelLimits } from "@kaiju/protocol/sandbox-wire";
 import { z } from "zod";
 
 /**

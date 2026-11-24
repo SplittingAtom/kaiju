@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import type { WorkspaceEvent } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import type { WorkspaceEvent } from "@kaiju/protocol";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 
 /**
@@ -10,7 +10,7 @@ import type { WorkspaceOwner } from "../workspace-sync/keys.js";
  * reach another member's or another team's rows, and the digest says only "something changed".
  */
 export async function readWorkspaceVersions(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
 ): Promise<WorkspaceEvent> {
   const res = await tx.execute<{ files_rev: string | null; projects_rev: string }>(sql`

@@ -3,7 +3,7 @@ import {
   addProjectMemberRequestSchema,
   transferOwnerRequestSchema,
   updateProjectMemberRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { endCheckoutsWithoutEditInTx } from "../../projects/offboard.js";
 import {

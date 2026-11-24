@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, sql, withTeam, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, sql, withTeam, type KaijuTx } from "@kaiju/db";
 import type { Context } from "hono";
 import { recordAudit, type ServerAuditEvent } from "../../audit/record.js";
 import { createRateLimiter } from "../../sandbox/rate-limit.js";
@@ -85,7 +85,7 @@ export function workspaceKit(deps: WorkspaceRoutesDeps) {
    * (throws {@link Busy}), and lock/statement timeouts so a queue on one workspace's row lock
    * can't pin pool connections.
    */
-  const bounded = <T>(teamId: string, lockMs: number, fn: (tx: KobeTx) => Promise<T>): Promise<T> =>
+  const bounded = <T>(teamId: string, lockMs: number, fn: (tx: KaijuTx) => Promise<T>): Promise<T> =>
     withTeam(db, teamId, async (t) => {
       await t.execute(sql`
         SELECT set_config('lock_timeout', ${String(lockMs)}, true),
@@ -100,7 +100,7 @@ export function workspaceKit(deps: WorkspaceRoutesDeps) {
   const tx = async <T>(
     caller: SandboxCaller,
     kind: "commit" | "other",
-    fn: (tx: KobeTx) => Promise<T>,
+    fn: (tx: KaijuTx) => Promise<T>,
   ): Promise<T> => {
     const mine =
       kind === "commit"
@@ -126,7 +126,7 @@ export function workspaceKit(deps: WorkspaceRoutesDeps) {
    * timeout, and retries with backoff on a lock timeout — releasing both slots while it backs off,
    * so a sandbox whose own commit holds its workspace lock never holds a shared slot meanwhile.
    */
-  const finishTx = async <T>(caller: SandboxCaller, fn: (tx: KobeTx) => Promise<T>) => {
+  const finishTx = async <T>(caller: SandboxCaller, fn: (tx: KaijuTx) => Promise<T>) => {
     for (let attempt = 0; ; attempt++) {
       const own = await finishOwn.wait(caller.sandboxId, 1, 60_000);
       if (!own) throw new Busy(503);

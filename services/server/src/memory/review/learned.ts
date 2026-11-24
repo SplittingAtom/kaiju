@@ -1,4 +1,4 @@
-import { MEMORY_INDEX_MAX_LINES } from "@kobe/protocol";
+import { MEMORY_INDEX_MAX_LINES } from "@kaiju/protocol";
 import { lineCount } from "../store.js";
 
 /**

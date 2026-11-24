@@ -1,4 +1,4 @@
-import { SKILL_NAME_PATTERN as SKILL_NAME } from "@kobe/protocol";
+import { SKILL_NAME_PATTERN as SKILL_NAME } from "@kaiju/protocol";
 import { splitSkillMd } from "./skill-md";
 
 /**

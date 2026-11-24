@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { threadFilesResponseSchema } from "@kobe/protocol";
-import { runEvents, runs, threadEntries, withTeam } from "@kobe/db";
+import { threadFilesResponseSchema } from "@kaiju/protocol";
+import { runEvents, runs, threadEntries, withTeam } from "@kaiju/db";
 import { readAgentFiles } from "./agent-files.js";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { MemoryObjects } from "../testing/memory-objects.js";

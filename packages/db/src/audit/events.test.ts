@@ -389,7 +389,7 @@ describe("audit event docs (KOBE-815)", () => {
   const page = () =>
     readFileSync(new URL("../../../../docs/audit-log.md", import.meta.url), "utf8");
 
-  it("docs/audit-log.md has the generated table (else: pnpm --filter @kobe/db audit:doc)", () => {
+  it("docs/audit-log.md has the generated table (else: pnpm --filter @kaiju/db audit:doc)", () => {
     expect(withAuditEventTable(page()) === page()).toBe(true);
   });
 

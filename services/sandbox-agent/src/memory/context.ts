@@ -8,7 +8,7 @@ import {
   type RunMemoryContext,
   type RunViewingContext,
   type SyncConflict,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   beginMarker,
   capBytes,
@@ -19,7 +19,7 @@ import {
 } from "../kobe-tools/memory-fence.js";
 import type { MemoryFileContent, PicksPlacement } from "./context-file.js";
 import { projectContextText } from "./project-context.js";
-import type { RunGitRepo } from "@kobe/protocol/sandbox-wire";
+import type { RunGitRepo } from "@kaiju/protocol/sandbox-wire";
 import { viewingContextText } from "./viewing-context.js";
 import { conflictNoteText } from "./conflict-context.js";
 import { semanticContextText, type SemanticRender } from "./semantic-context.js";

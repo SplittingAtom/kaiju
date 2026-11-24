@@ -81,13 +81,13 @@ const leak = mode === "leak";
 fs.mkdirSync("/tmp/pi-agent", { recursive: true });
 fs.writeFileSync("/tmp/faux.mjs", `import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai";
 export default function (pi) {
-  const f = fauxProvider({ provider: "kobe-faux", models: [{ id: "scripted" }] });
+  const f = fauxProvider({ provider: "kaiju-faux", models: [{ id: "scripted" }] });
   f.setResponses([
     fauxAssistantMessage(${leak ? `fauxToolCall("bash", { command: "ls -l /proc/$$/fd/" }, { id: "ca1" })` : `fauxToolCall("create_artifact", { kind: "markdown", title: "T", content: "# hi" }, { id: "ca1" })`}, { stopReason: "toolUse" }),
     fauxAssistantMessage("done"),
   ]);
   pi.registerProvider(f.provider);
-  const select = async (_e, ctx) => { if (ctx.model?.provider !== "kobe-faux") await pi.setModel(f.getModel()); };
+  const select = async (_e, ctx) => { if (ctx.model?.provider !== "kaiju-faux") await pi.setModel(f.getModel()); };
   pi.on("session_start", select);
   pi.on("input", select);
 }`);
@@ -148,13 +148,13 @@ const { spawn } = require("node:child_process");
 fs.mkdirSync("/tmp/pi-agent", { recursive: true });
 fs.writeFileSync("/tmp/faux.mjs", `import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai";
 export default function (pi) {
-  const f = fauxProvider({ provider: "kobe-faux", models: [{ id: "scripted" }] });
+  const f = fauxProvider({ provider: "kaiju-faux", models: [{ id: "scripted" }] });
   f.setResponses([
     fauxAssistantMessage(fauxToolCall("bash", { command: "ls -l /proc/$$/fd/" }, { id: "fd1" }), { stopReason: "toolUse" }),
     fauxAssistantMessage("done"),
   ]);
   pi.registerProvider(f.provider);
-  const select = async (_e, ctx) => { if (ctx.model?.provider !== "kobe-faux") await pi.setModel(f.getModel()); };
+  const select = async (_e, ctx) => { if (ctx.model?.provider !== "kaiju-faux") await pi.setModel(f.getModel()); };
   pi.on("session_start", select);
   pi.on("input", select);
 }`);

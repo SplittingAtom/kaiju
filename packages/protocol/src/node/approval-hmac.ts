@@ -13,7 +13,7 @@ import {
 import { toolInputSchema } from "../common.js";
 
 /**
- * Reference HMAC for approvals (Node only; import from `@kobe/protocol/node`). The server (KOBE-37)
+ * Reference HMAC for approvals (Node only; import from `@kaiju/protocol/node`). The server (KOBE-37)
  * signs; the executing enforcement point (MCP proxy, KOBE-58) verifies and consumes. Never import
  * this into sandbox code: the key must not exist there.
  */

@@ -3,9 +3,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { workspaceBlobKey, type WorkspaceOwner } from "./keys.js";
 import { DELETE_TIMEOUT_MS, deleteBounded } from "../retention/bounded-delete.js";
@@ -45,7 +45,7 @@ export const LOST_LIST_MAX = 1000;
  * this call set the mark. A row being collected is left alone.
  */
 export async function markBlobLost(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   sha256: string,
   size: number,
@@ -69,7 +69,7 @@ export async function markBlobLost(
 
 /** The workspace's lost hashes (oldest mark first), for `GET blobs/lost`. */
 export async function lostBlobs(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   limit = LOST_LIST_MAX,
 ): Promise<string[]> {
@@ -83,7 +83,7 @@ export async function lostBlobs(
 
 /** The recorded size of lost content, or undefined when it is not lost (or being collected). */
 export async function lostBlobSize(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   sha256: string,
 ): Promise<number | undefined> {
@@ -100,7 +100,7 @@ export async function lostBlobSize(
  * `deleting` (collected meanwhile: retry later), or `held` (no longer lost: another upload won).
  */
 export async function healBlob(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   sha256: string,
   size: number,
@@ -125,7 +125,7 @@ export async function healBlob(
  * Returns whether the content is now listed for the sandbox.
  */
 export async function reportMissingContent(
-  db: KobeDb,
+  db: KaijuDb,
   owner: WorkspaceOwner,
   entry: Pick<StoredEntry, "sha256" | "size" | "blobKey">,
   prefix: string,
@@ -164,7 +164,7 @@ export async function reportMissingContent(
  * back and the claim stays `deleting` for collection to finish.
  */
 export async function discardOrphanedResend(
-  db: KobeDb,
+  db: KaijuDb,
   objects: ObjectStore,
   owner: WorkspaceOwner,
   prefix: string,

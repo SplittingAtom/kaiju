@@ -3,7 +3,7 @@
  * the workspace files API and sync on the next run. Never attached to a message (the composer is
  * the attach path, KOBE-145).
  */
-import { WORKSPACE_DROP_FOLDER } from "@kobe/protocol";
+import { WORKSPACE_DROP_FOLDER } from "@kaiju/protocol";
 import type { ApiError } from "../api/client";
 import type { FilesApi } from "./api";
 import { describeFileError } from "./format";

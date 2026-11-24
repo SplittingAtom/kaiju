@@ -1,6 +1,6 @@
 "use client";
 
-import { SEMANTIC_MEMORY_KINDS, SEMANTIC_MEMORY_SCOPE_LABELS } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_KINDS, SEMANTIC_MEMORY_SCOPE_LABELS } from "@kaiju/protocol";
 import type { ItemKind, ItemStatus } from "../../lib/memory/items-api";
 import { Field, Select, TextInput } from "../ui/console";
 import { KIND_LABELS } from "./item-fields";

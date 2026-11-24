@@ -9,7 +9,7 @@ import type {
   RunStatus,
   RunViewingContext,
   SessionTokenClaims,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type {
   PiBridgeCommand,
   PiExtensionUiRequest,
@@ -19,8 +19,8 @@ import type {
   RunMcpContext,
   SandboxAttachment,
   SealedReplyKey,
-} from "@kobe/protocol/sandbox-wire";
-import type { KobeTx } from "@kobe/db";
+} from "@kaiju/protocol/sandbox-wire";
+import type { KaijuTx } from "@kaiju/db";
 
 /**
  * The sandbox a connection is, or a command targets: the (team, user) member sandbox (D11), or,
@@ -415,7 +415,7 @@ export interface RunPolicyContext {
 /** KOBE-30/46/47 seam: run-specific policy inputs, read inside the team's transaction. */
 export interface RunPolicyContextSource {
   load(
-    tx: KobeTx,
+    tx: KaijuTx,
     run: { readonly teamId: string; readonly runId: string; readonly threadId: string },
   ): Promise<RunPolicyContext>;
 }

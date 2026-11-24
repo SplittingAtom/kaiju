@@ -1,4 +1,4 @@
-import { TRACE_DROPPED_ATTRIBUTE, runRootSpanId, runTraceId } from "@kobe/protocol";
+import { TRACE_DROPPED_ATTRIBUTE, runRootSpanId, runTraceId } from "@kaiju/protocol";
 import {
   SANDBOX_SPAN_CONTENT_KEYS,
   TRACE_SPAN_CLOCK_SKEW_MS,
@@ -10,19 +10,19 @@ import {
   parseSandboxSpan,
   type SandboxSpan,
   type TraceSpansFrame,
-} from "@kobe/protocol/sandbox-wire";
-import { mapSandboxSpanId } from "@kobe/protocol/node";
+} from "@kaiju/protocol/sandbox-wire";
+import { mapSandboxSpanId } from "@kaiju/protocol/node";
 import {
   idAttributes,
   sessionAttributes,
   type Attributes,
   type RelaySpan,
   type RunRootSpan,
-} from "@kobe/telemetry";
+} from "@kaiju/telemetry";
 import type { RelayBudget } from "./trace-budget.js";
 
 /**
- * Relayed sandbox spans, one instance per replica (KOBE-274; contract in `@kobe/protocol`
+ * Relayed sandbox spans, one instance per replica (KOBE-274; contract in `@kaiju/protocol`
  * sandbox-wire/trace-frames.ts). Per-run state (span cap, seen-set, command span ids) lives here,
  * not on a connection, so a reconnect to this replica keeps it; it is bounded and freed after the
  * run's grace period. A run resumed on another replica starts afresh there (documented). The

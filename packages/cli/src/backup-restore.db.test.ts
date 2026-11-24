@@ -2,13 +2,13 @@ import { randomBytes } from "node:crypto";
 import { cp, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { MIGRATION_LOCK_KEY, createDb, verifyAuditChain } from "@kobe/db";
+import { MIGRATION_LOCK_KEY, createDb, verifyAuditChain } from "@kaiju/db";
 import {
   createTestDatabase,
   testNameSuffix,
   testServerUrl,
   type TestDatabase,
-} from "@kobe/db/testing";
+} from "@kaiju/db/testing";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runBackup, type BackupOptions } from "./backup.js";
@@ -56,10 +56,10 @@ async function auditHashAt(url: string, seq: number): Promise<string | undefined
   return row?.hash;
 }
 
-describe("kobe backup → kobe restore (real Postgres, pg_dump, pg_restore, psql)", () => {
+describe("kaiju backup → kaiju restore (real Postgres, pg_dump, pg_restore, psql)", () => {
   const server = testServerUrl();
   const suffix = testNameSuffix();
-  const backupRole = `kobe_backup_${suffix}`;
+  const backupRole = `kaiju_backup_${suffix}`;
   const password = randomBytes(16).toString("hex");
   const created: TestDatabase[] = [];
   let src: TestDatabase;
@@ -107,7 +107,7 @@ describe("kobe backup → kobe restore (real Postgres, pg_dump, pg_restore, psql
     url.username = backupRole;
     url.password = password;
     backupUrl = url.toString();
-    work = await mkdtemp(join(tmpdir(), "kobe-backup-test-"));
+    work = await mkdtemp(join(tmpdir(), "kaiju-backup-test-"));
     backupDir = join(work, "b1");
   });
 
@@ -153,7 +153,7 @@ describe("kobe backup → kobe restore (real Postgres, pg_dump, pg_restore, psql
       );
       expect(manifest.migrations.map((m) => m.hash)).toEqual(journal.map((j) => j.hash));
       expect(manifest.objectStorage).toMatchObject({
-        bucket: "kobe",
+        bucket: "kaiju",
         objects: 2,
         bytes: 1333,
         referencedObjects: 2,
@@ -326,7 +326,7 @@ describe("kobe backup → kobe restore (real Postgres, pg_dump, pg_restore, psql
     it("restores into a fresh install: same rows, RLS still forced, triggers back, teams still walls", async () => {
       const dst = await target();
       const forcedBefore = await forcedTables(dst.adminUrl);
-      const tmp = await mkdtemp(join(tmpdir(), "kobe-tmpdir-"));
+      const tmp = await mkdtemp(join(tmpdir(), "kaiju-tmpdir-"));
       // The signed manifest carries the snapshot's audit head; an off-box anchor can be checked too.
       expect(manifest.auditHead).toMatchObject({
         seq: 2,

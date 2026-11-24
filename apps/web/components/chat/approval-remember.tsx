@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import type { RememberScope } from "@kobe/protocol";
+import type { RememberScope } from "@kaiju/protocol";
 import type { RememberOptions } from "../../lib/chat/types";
 import { visible } from "../../lib/security/visible";
 import styles from "./chat.module.css";

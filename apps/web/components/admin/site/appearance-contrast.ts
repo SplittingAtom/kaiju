@@ -3,7 +3,7 @@ import {
   relativeLuminance,
   type FloorFailure,
   type FloorReport,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * The Appearance page's contrast wording (KOBE-501, TH4): the live line under a custom accent and

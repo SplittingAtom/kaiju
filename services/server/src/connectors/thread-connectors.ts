@@ -8,10 +8,10 @@ import {
   threadConnectorsOff,
   threads,
   isNull,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
-import { allowedKobeTools, loadKobeAccess, loadKobeBuiltin } from "../kobe-mcp/access.js";
+import { allowedKaijuTools, loadKaijuAccess, loadKaijuBuiltin } from "../kaiju-mcp/access.js";
 import { exposedTools } from "../mcp/catalog.js";
 import {
   loadTeamConnectorRows,
@@ -74,7 +74,7 @@ export interface ChatConnector {
   /** Why it is not working; null when it works. */
   readonly problem: ConnectorProblem | null;
   /**
-   * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp KA7): its docs tools are on in every
+   * The built-in Kaiju connector (KOBE-623, spec kaiju-admin-mcp KA7): its docs tools are on in every
    * conversation, so it has no toggle; `admin` says which admin tools the member gets where the
    * agent uses the Kaiju connector (`off` while the switches or their role give none).
    */
@@ -110,7 +110,7 @@ function credentialProblem(
 
 /** The thread's off connectors (ids); the caller checks the thread is the viewer's. */
 export async function connectorsOffIn(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<Set<string>> {
@@ -127,15 +127,15 @@ export async function connectorsOffIn(
  * not listed (the team shows the member nothing of it).
  */
 export async function listChatConnectors(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: ChatViewer,
   threadId: string | null,
   now = new Date(),
 ): Promise<ChatConnector[]> {
-  const kobe = await kobeChatConnector(tx, viewer);
+  const kaiju = await kaijuChatConnector(tx, viewer);
   const git = await gitChatConnector(tx, viewer);
   const listed = await listRegisteredChatConnectors(tx, viewer, threadId, now);
-  return [...[kobe, git].filter((c) => c !== undefined), ...listed];
+  return [...[kaiju, git].filter((c) => c !== undefined), ...listed];
 }
 
 /**
@@ -144,7 +144,7 @@ export async function listChatConnectors(
  * connections are its ceiling). No toggle; connections limited to chosen agents are not counted.
  */
 async function gitChatConnector(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: ChatViewer,
 ): Promise<ChatConnector | undefined> {
   const row = await loadGitBuiltin(tx);
@@ -169,13 +169,13 @@ async function gitChatConnector(
  * The built-in Kaiju connector's row (first in the list) while the site switch is not `off`: always
  * on, and the admin tools the member would get now (switches and role).
  */
-async function kobeChatConnector(
-  tx: KobeTx,
+async function kaijuChatConnector(
+  tx: KaijuTx,
   viewer: ChatViewer,
 ): Promise<ChatConnector | undefined> {
-  const row = await loadKobeBuiltin(tx);
+  const row = await loadKaijuBuiltin(tx);
   if (row === undefined) return undefined;
-  const tools = allowedKobeTools(await loadKobeAccess(tx, viewer.teamId, viewer.userId));
+  const tools = allowedKaijuTools(await loadKaijuAccess(tx, viewer.teamId, viewer.userId));
   const admin = tools.length === 0 ? "off" : tools.some((t) => !t.readOnly) ? "read_write" : "read";
   return {
     id: row.id,
@@ -187,7 +187,7 @@ async function kobeChatConnector(
 }
 
 async function listRegisteredChatConnectors(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: ChatViewer,
   threadId: string | null,
   now: Date,
@@ -236,7 +236,7 @@ export type ToggleError =
  * working now: the server, not the client, decides what can be toggled.
  */
 export async function setThreadConnector(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: ChatViewer,
   threadId: string,
   connectorId: string,
@@ -294,7 +294,7 @@ export async function setThreadConnector(
  * Null when they all are, else the refusal.
  */
 export async function checkConnectorsOff(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: ChatViewer,
   ids: readonly string[],
 ): Promise<"connector_not_found" | "connector_not_working" | null> {
@@ -311,7 +311,7 @@ export async function checkConnectorsOff(
 
 /** Writes a new thread's off connectors (checked by `checkConnectorsOff`), each audited. */
 export async function turnOffAtCreation(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: ChatViewer,
   threadId: string,
   ids: readonly string[],

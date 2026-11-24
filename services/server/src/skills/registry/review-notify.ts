@@ -1,4 +1,4 @@
-import { eq, users, type KobeDb } from "@kobe/db";
+import { eq, users, type KaijuDb } from "@kaiju/db";
 import { logger } from "../../logger.js";
 import { CONSOLE_PATHS } from "../../mail/console-paths.js";
 import type { Mailer } from "../../mail/mailer.js";
@@ -12,7 +12,7 @@ import { oneLine } from "../../mail/messages.js";
  */
 
 export interface ReviewNotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }

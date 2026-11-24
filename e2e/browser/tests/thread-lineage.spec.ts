@@ -54,12 +54,12 @@ test("three generations: the chip, switching by its menu from the root and from 
   try {
     await chat.open();
     const source = await chat.ask("No tools. Reply with the single word ALPHA.");
-    const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+    const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
     await header.getByRole("button", { name: /^Rename / }).click();
     const name = page.getByRole("textbox", { name: "Conversation name", exact: true });
     await name.fill(sourceTitle);
     await name.press("Enter");
-    await expect(page.locator("#kobe-thread-title")).toHaveText(sourceTitle);
+    await expect(page.locator("#kaiju-thread-title")).toHaveText(sourceTitle);
 
     // Two sibling forks of the root from the same answer (back to the root by the chip's menu).
     const forkA = await fork(chat, page, first, source);

@@ -6,13 +6,13 @@
  * Immutable snapshots for `useSyncExternalStore`.
  */
 import type {
-  KobeEvent,
-  KobeEventPayload,
+  KaijuEvent,
+  KaijuEventPayload,
   NotebookExecStatus,
   NotebookFinishedPayload,
   NotebookHistoryEntry,
   NotebookOutput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 export interface ExecutionEnd {
   readonly status: NotebookExecStatus;
@@ -62,7 +62,7 @@ export interface Execution {
 
 export interface BlockedDomain {
   readonly runId: string;
-  readonly payload: KobeEventPayload<"egress.blocked">;
+  readonly payload: KaijuEventPayload<"egress.blocked">;
   /** The event's server time (KOBE-609): the card ignores decisions older than the block. */
   readonly blockedAt: string;
 }
@@ -72,7 +72,7 @@ type Listener = () => void;
 /** Executions kept per session; the oldest are forgotten first. */
 export const EXECUTIONS_KEPT = 200;
 
-const RUN_END_STATUS: Partial<Record<KobeEvent["type"], NotebookExecStatus>> = {
+const RUN_END_STATUS: Partial<Record<KaijuEvent["type"], NotebookExecStatus>> = {
   "run.completed": "failed",
   "run.failed": "failed",
   "run.budget_stopped": "failed",
@@ -158,7 +158,7 @@ export class NotebookExecStore {
   }
 
   /** A batch of one run's events of thread `threadId`, in seq order. */
-  apply(threadId: string, events: readonly KobeEvent[]): void {
+  apply(threadId: string, events: readonly KaijuEvent[]): void {
     let execs = this.#execs;
     let egress = this.#egress;
     for (const event of events) {
@@ -201,7 +201,7 @@ function endOf(p: NotebookFinishedPayload): ExecutionEnd {
   };
 }
 
-function withBlocked(egress: readonly BlockedDomain[], event: KobeEvent): readonly BlockedDomain[] {
+function withBlocked(egress: readonly BlockedDomain[], event: KaijuEvent): readonly BlockedDomain[] {
   if (event.type !== "egress.blocked") return egress;
   const known = egress.some(
     (b) => b.runId === event.run_id && b.payload.domain === event.payload.domain,
@@ -238,7 +238,7 @@ function update(
 function applyOne(
   execs: readonly Execution[],
   threadId: string,
-  event: KobeEvent,
+  event: KaijuEvent,
 ): readonly Execution[] {
   switch (event.type) {
     case "notebook.started": {

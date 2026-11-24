@@ -6,7 +6,7 @@ import {
   type Omission,
   type SkillRef,
 } from "../resolver/resolve.js";
-import { agentSkills } from "@kobe/agent-file";
+import { agentSkills } from "@kaiju/agent-file";
 import { bundleRefsWithGaps } from "../skills/materialize.js";
 import { runSkillRefs } from "../skills/detect.js";
 import {
@@ -16,7 +16,7 @@ import {
   loadTeamFacts,
   type SkillFacts,
 } from "./resolver-input.js";
-import type { AgentScope, KobeTx } from "@kobe/db";
+import type { AgentScope, KaijuTx } from "@kaiju/db";
 import {
   buildRunMcp,
   connectedConnectorNames,
@@ -27,8 +27,8 @@ import {
 import type { AgentResolution, AgentResolutionInput, RunAgentResolver } from "./seams.js";
 import { connectorsOffIn } from "../connectors/thread-connectors.js";
 import { gitRunServer } from "../git-tools/run.js";
-import { kobeRunServer } from "../kobe-mcp/run.js";
-import { kobeBuiltinName } from "../kobe-mcp/access.js";
+import { kaijuRunServer } from "../kaiju-mcp/run.js";
+import { kaijuBuiltinName } from "../kaiju-mcp/access.js";
 import { hiddenBuiltins } from "../policy/agent-allow.js";
 
 /** The skill facts of a test chat's run: its draft as the agent's only skill, nothing else. */
@@ -91,7 +91,7 @@ const unavailableOmissions = (names: readonly string[]): Omission[] =>
  * materialized and recorded like an agent's. Empty when the team has none.
  */
 async function requiredOnly(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: AgentResolutionInput,
 ): Promise<Pick<Extract<AgentResolution, { ok: true }>, "config" | "omissions" | "skillRefs">> {
   const owner = { teamId: input.teamId, userId: input.ownerUserId };
@@ -132,7 +132,7 @@ async function requiredOnly(
  * runs the agent's draft; every other thread its exact pinned version.
  */
 function resolveRunAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: { teamId: string; userId: string },
   {
     agentScope,
@@ -178,7 +178,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
     if (input.agentId === null || input.agentScope === null) {
       const required = await requiredOnly(tx, input);
       // KOBE-620 (KA7): a run without an agent still gets the Kaiju docs tools.
-      const kobe = await kobeRunServer(tx, {
+      const kaiju = await kaijuRunServer(tx, {
         teamId: input.teamId,
         userId: input.ownerUserId,
         answerable: false,
@@ -193,7 +193,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
         eligible: gitEligible(input),
         frontmatter: undefined,
       });
-      const builtins = [kobe, git].filter((s) => s !== undefined);
+      const builtins = [kaiju, git].filter((s) => s !== undefined);
       const config =
         builtins.length === 0
           ? required.config
@@ -207,7 +207,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
         approvalMode: strictestApprovalMode(input.approvalMode, floor),
         ...required,
         ...(config === undefined ? {} : { config }),
-        ...(kobe === undefined ? {} : { mcp: { servers: [kobe] } }),
+        ...(kaiju === undefined ? {} : { mcp: { servers: [kaiju] } }),
       };
     }
     const owner = { teamId: input.teamId, userId: input.ownerUserId };
@@ -265,7 +265,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
     const teamMcp = buildRunMcp(connectorRows, value.connectors, frontmatter.tools);
     // KOBE-619/620: the built-in Kaiju connector: docs tools on every run (KA7), admin tools for a
     // run its person can answer when the agent names the connector.
-    const kobe = await kobeRunServer(tx, {
+    const kaiju = await kaijuRunServer(tx, {
       teamId: input.teamId,
       userId: input.ownerUserId,
       answerable:
@@ -287,7 +287,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
     });
     const mcp = {
       ...teamMcp,
-      servers: [...teamMcp.servers, ...[kobe, git].filter((s) => s !== undefined)],
+      servers: [...teamMcp.servers, ...[kaiju, git].filter((s) => s !== undefined)],
     };
     const mcpServers = mcp.servers.map((s) => ({ name: s.name, connector_id: s.connector_id }));
     // Both this and `resolveRunModel` (lifecycle.ts) exist because the resolver sees aliases only:
@@ -311,7 +311,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
           );
     // A connector the owner turned off here is no "connect it" notice (review LOW-4): left out.
     // The built-in Kaiju connector is never a "connect it" notice (KOBE-619): it has no team row.
-    const builtinName = await kobeBuiltinName(tx);
+    const builtinName = await kaijuBuiltinName(tx);
     const omissions = [
       ...value.omissions.filter(
         (o) => !(o.kind === "connector" && (offNames.has(o.name) || o.name === builtinName)),

@@ -52,7 +52,7 @@ test("open_file: asking the agent to open notes.md opens it in the editor tab", 
         : `Open ${path}`,
     );
     await chat.threadId();
-    const card = page.locator(`[data-kobe-opened-file="${path}"]`);
+    const card = page.locator(`[data-kaiju-opened-file="${path}"]`);
     await expect(card).toContainText("Opened notes.md", { timeout: RUN_TIMEOUT_MS });
     // The file's tab opened by itself, in the editor: Rendered first, Raw one click away.
     const tab = page
@@ -63,7 +63,7 @@ test("open_file: asking the agent to open notes.md opens it in the editor tab", 
     await expect(tab.getByText("Opened by the agent.")).toBeVisible();
     await chat.waitForIdle();
     // Not a download card or an artifact copy.
-    await expect(page.locator("[data-kobe-file-edit]")).toHaveCount(0);
+    await expect(page.locator("[data-kaiju-file-edit]")).toHaveCount(0);
     await expect(card.getByRole("button", { name: "Open notes.md again" })).toBeVisible();
   } finally {
     expect(await workspace(page, "delete", dir)).toBe(204);

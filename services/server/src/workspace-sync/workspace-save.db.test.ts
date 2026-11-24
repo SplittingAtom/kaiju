@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { workspaceFileEntrySchema, workspaceSaveConflictSchema } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { workspaceFileEntrySchema, workspaceSaveConflictSchema } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import { MemoryObjects } from "../testing/memory-objects.js";

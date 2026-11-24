@@ -4,10 +4,10 @@ import {
   workspaceCommitRequestSchema,
   workspaceFlushedRequestSchema,
   workspaceRestoreReportSchema,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { Readable } from "node:stream";
-import { SYSTEM_ACTOR } from "@kobe/db";
-import { workspacePathSchema } from "@kobe/protocol";
+import { SYSTEM_ACTOR } from "@kaiju/db";
+import { workspacePathSchema } from "@kaiju/protocol";
 import { Hono } from "hono";
 import { recordAudit } from "../../audit/record.js";
 import { recordFlushProof } from "../../sandbox-lifecycle/reclaim.js";

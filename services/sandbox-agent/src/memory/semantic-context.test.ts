@@ -9,7 +9,7 @@ import {
   semanticMemoryRenderedBytes,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { MARKER_BEGIN, MARKER_END, sanitizeForStorage } from "../kobe-tools/memory-fence.js";
 import {

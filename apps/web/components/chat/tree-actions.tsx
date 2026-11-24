@@ -8,7 +8,7 @@ import { forkPointOf, type ForkPoint } from "../../lib/chat/fork";
 import { branchLeafOf, messagesDiffer } from "../../lib/chat/head";
 import { isThreadRunning } from "../../lib/chat/thread-state";
 import { comparable } from "../../lib/chat/compare";
-import { branchPointOfMeta, type KobeMessageMeta } from "../../lib/chat/tree";
+import { branchPointOfMeta, type KaijuMessageMeta } from "../../lib/chat/tree";
 import type { TreeNode, TreeProjection } from "../../lib/chat/tree-nodes";
 import {
   FILES_LEFT_NOTE,
@@ -27,7 +27,7 @@ import { chatPortalContainer } from "../ui/chat-portal";
 import { LEAF_BUSY_NOTE } from "./branch-bar";
 import { BranchSummaryDialog } from "./branch-summary-dialog";
 import { ForkDialog } from "./fork-dialog";
-import { ChatSessionContext, type KobeThreadExtras } from "./kobe-runtime";
+import { ChatSessionContext, type KaijuThreadExtras } from "./kaiju-runtime";
 import type { TreeData } from "./tree-context";
 import styles from "./conversation-tree.module.css";
 
@@ -42,7 +42,7 @@ export const CANNOT_MAKE_CURRENT = "This branch can't be made current now.";
 /** Frames to wait for a message to show before opening its editor. */
 const EDIT_FRAMES = 20;
 
-function textOf(meta: KobeMessageMeta | undefined, content: unknown): string {
+function textOf(meta: KaijuMessageMeta | undefined, content: unknown): string {
   if (meta?.kind === "user") return meta.text;
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return "";
@@ -56,7 +56,7 @@ function textOf(meta: KobeMessageMeta | undefined, content: unknown): string {
 export function focusComposerSoon(): void {
   requestAnimationFrame(() =>
     requestAnimationFrame(() =>
-      document.querySelector<HTMLTextAreaElement>("[data-kobe-composer] textarea")?.focus(),
+      document.querySelector<HTMLTextAreaElement>("[data-kaiju-composer] textarea")?.focus(),
     ),
   );
 }
@@ -67,7 +67,7 @@ export function focusComposerSoon(): void {
  * or the label route; nothing else is written.
  */
 export function useTreeActions(
-  extras: KobeThreadExtras,
+  extras: KaijuThreadExtras,
   tree: TreeProjection,
   data: TreeData,
   onClose: () => void,
@@ -214,7 +214,7 @@ export function useTreeActions(
   const below: ReactNode = (
     <>
       {note !== null && (
-        <p className={styles.note} role="status" data-kobe-tree-note="">
+        <p className={styles.note} role="status" data-kaiju-tree-note="">
           {note}
         </p>
       )}
@@ -294,7 +294,7 @@ function LabelEditor({
       .finally(() => setSaving(false));
   };
   return (
-    <form className={styles.editor} onSubmit={submit} data-kobe-label-editor="">
+    <form className={styles.editor} onSubmit={submit} data-kaiju-label-editor="">
       <input
         aria-label="Label"
         aria-invalid={error !== null || undefined}
@@ -367,7 +367,7 @@ export function NodeMenu({
       <DropdownMenu.Portal container={chatPortalContainer()}>
         {/* Portaled, but React events still bubble to the row: they stop here. */}
         <DropdownMenu.Content
-          data-kobe-portal
+          data-kaiju-portal
           align="end"
           sideOffset={4}
           className={CONTENT}

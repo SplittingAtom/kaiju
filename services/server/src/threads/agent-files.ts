@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { THREAD_FILE_WRITE_TOOLS, THREAD_FILES_MAX, workspaceToolPath } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { THREAD_FILE_WRITE_TOOLS, THREAD_FILES_MAX, workspaceToolPath } from "@kaiju/protocol";
 import { isInternalPath } from "../workspace-files/paths.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { currentEntries, type StoredEntry } from "../workspace-sync/store.js";
@@ -94,7 +94,7 @@ const toolNames = sql.join(
 );
 
 /** The thread's write/edit events and proposals (only the fields used; no file content). */
-async function eventRows(tx: KobeTx, teamId: string, threadId: string, max: number) {
+async function eventRows(tx: KaijuTx, teamId: string, threadId: string, max: number) {
   const res = await tx.execute<EventRow>(sql`
     SELECT e.type, e.run_id, e.payload->>'tool_call_id' AS call_id, e.payload->>'tool' AS tool,
            CASE WHEN e.type = 'file.edit_proposed' THEN e.payload->>'path'
@@ -128,7 +128,7 @@ type EntryRow = {
  * thread's append order (`seq`, then the part's place in its message), so the cap keeps a prefix
  * and a call always comes before its result.
  */
-async function entryRows(tx: KobeTx, teamId: string, threadId: string, max: number) {
+async function entryRows(tx: KaijuTx, teamId: string, threadId: string, max: number) {
   const res = await tx.execute<EntryRow>(sql`
     SELECT kind, call_id, tool, path, is_error, at_ms FROM (
       SELECT 'call' AS kind, p.part->>'id' AS call_id, p.part->>'name' AS tool,
@@ -201,7 +201,7 @@ function proposals(rows: readonly EventRow[]): Proposal[] {
  * caps the rows read per source (tests).
  */
 export async function readAgentFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   threadId: string,
   options: { readonly rowsMax?: number } = {},

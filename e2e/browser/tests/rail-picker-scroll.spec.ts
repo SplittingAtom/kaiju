@@ -8,7 +8,7 @@ import { pageApi } from "./support/gate5.js";
  * iframe is display block (no baseline gap under it), and when the section changes height the
  * frame fills it again instead of keeping the height the app reported before (the picker is
  * `100vh` in its frame, so it would re-report the old height). At 1440x900, then 700, then 1100,
- * the rail's scrolling section `[data-kobe-app-scroll]` has nothing to scroll. Skips without a
+ * the rail's scrolling section `[data-kaiju-app-scroll]` has nothing to scroll. Skips without a
  * live picker (`KOBE_APPS_PICKER`, default "Lakehouse Picker") for the member.
  */
 const TITLE = process.env["KOBE_APPS_PICKER"] ?? "Lakehouse Picker";
@@ -52,7 +52,7 @@ test("the rail picker has no scrollbar at 900, 700 and 1100 px high (KOBE-575)",
   await expect(
     appsPanel(page).frameLocator(`iframe[title^="${TITLE}"]`).locator("body"),
   ).toBeVisible({ timeout: RUN_TIMEOUT_MS });
-  const scroll = appsPanel(page).locator("[data-kobe-app-scroll]");
+  const scroll = appsPanel(page).locator("[data-kaiju-app-scroll]");
 
   await expectNoScroll(scroll, iframe);
   const tall = await scroll.evaluate((el) => el.clientHeight);

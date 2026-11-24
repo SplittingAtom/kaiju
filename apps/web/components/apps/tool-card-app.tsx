@@ -31,7 +31,7 @@ const NEAR = "100% 0px";
 const FAR = "300% 0px";
 
 /** The conversation's scroller: the margins below are measured against it (KOBE-445). */
-const SCROLLER = '[data-kobe-scroll="messages"]';
+const SCROLLER = '[data-kaiju-scroll="messages"]';
 
 /** Whether the element is within `margin` of the viewport (no observer: always). */
 function useWithin(ref: React.RefObject<HTMLElement | null>, margin: string): boolean {
@@ -69,7 +69,7 @@ export function ToolCardApp({
     return (
       <p
         className="text-muted-foreground border-t px-3 py-2 text-xs"
-        data-kobe-app-text={view.reason}
+        data-kaiju-app-text={view.reason}
       >
         {textReason(view)}
       </p>
@@ -91,7 +91,7 @@ export function AppPlaceholder({
     <div
       className="text-muted-foreground flex items-center justify-center border-t text-xs"
       style={{ height }}
-      data-kobe-app-placeholder
+      data-kaiju-app-placeholder
     >
       {onShow ? (
         <button type="button" className="underline" onClick={onShow}>
@@ -252,7 +252,7 @@ export function LiveApp({
   }
 
   return (
-    <div ref={box} className="border-t" data-kobe-app-card={cardKey}>
+    <div ref={box} className="border-t" data-kaiju-app-card={cardKey}>
       {!expanded && result !== null && result !== "failed" && panel && (
         <div className="flex justify-end px-2 py-1">
           <button

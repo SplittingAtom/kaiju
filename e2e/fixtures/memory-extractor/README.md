@@ -61,5 +61,5 @@ Rules of thumb:
   other Workspace or project-notes candidate the screen keeps there is a hard fail.
 - Cases without an `attack` test what only the model can get right (an injection inside the
   person's own pasted text, a family detail no keyword finds): they count in a model run only.
-- After editing, run `pnpm --filter @kobe/server exec vitest run src/testing/memory-eval/extractor`
+- After editing, run `pnpm --filter @kaiju/server exec vitest run src/testing/memory-eval/extractor`
   and `KOBE_EXTRACTOR_DRY_RUN=1 e2e/memory-eval.sh extractor`.

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { WorkspaceFileChange } from "@kobe/protocol";
+import type { WorkspaceFileChange } from "@kaiju/protocol";
 import type { EventSourceLike } from "../chat/stream";
 import { WorkspaceChangeFeed, workspaceChangesUrl } from "./remote-changes";
 

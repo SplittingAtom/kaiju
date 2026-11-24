@@ -118,7 +118,7 @@ describe("budget usage colours (KOBE-301)", () => {
     expect(budgetLevel(percentOf(79.6, 100))).toBe("ok");
     expect(budgetLevel(percentOf(99.6, 100))).toBe("warn");
     expect(budgetLevel(percentOf(1, 0))).toBe("full");
-    // The status colours' utilities (app/tailwind.css maps them to --kobe-status-*).
+    // The status colours' utilities (app/tailwind.css maps them to --kaiju-status-*).
     expect(BUDGET_LEVEL_CLASS.warn).toBe("text-status-attention");
     expect(BUDGET_LEVEL_CLASS.full).toMatch(/\btext-status-failed\b/);
     expect(BUDGET_LEVEL_CLASS.ok).toBeUndefined();

@@ -6,8 +6,8 @@ import {
   teams,
   users,
   type BudgetLine,
-  type KobeDatabase,
-} from "@kobe/db";
+  type KaijuDatabase,
+} from "@kaiju/db";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
 import { DbReservations } from "./reservations-db.js";
@@ -46,9 +46,9 @@ const MEMBERS = [
   ...Array.from({ length: 6 }, (_, i) => 300 + i),
 ];
 
-let owner: KobeDatabase;
-let writer: KobeDatabase;
-const dbs: KobeDatabase[] = [];
+let owner: KaijuDatabase;
+let writer: KaijuDatabase;
+const dbs: KaijuDatabase[] = [];
 
 /** The site's token spend this month, from the counters (database clock). */
 const siteSpent = async () => {
@@ -170,7 +170,7 @@ const write = (ctx: CallContext) =>
       runId: undefined,
       at: new Date(),
       route: "openai",
-      model: "kobe-unpriced/m",
+      model: "kaiju-unpriced/m",
       status: 200,
       inputTokens: CALL - 20,
       outputTokens: 20,

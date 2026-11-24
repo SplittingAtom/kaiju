@@ -1,5 +1,5 @@
-import type { KobeDb } from "@kobe/db";
-import type { WorkspaceConflictFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuDb } from "@kaiju/db";
+import type { WorkspaceConflictFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it, vi } from "vitest";
 import { ConflictRate, checkConflict, onWorkspaceConflict } from "./sync-conflict.js";
 
@@ -74,7 +74,7 @@ describe("workspace.conflict checks (KOBE-492)", () => {
     const send = vi.fn();
     const warn = vi.fn();
     const base = {
-      db: {} as KobeDb,
+      db: {} as KaijuDb,
       target: { teamId: "t", userId: "u" },
       log: { warn, error: vi.fn(), info: vi.fn() },
       hasCapability: true,

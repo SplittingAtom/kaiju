@@ -125,7 +125,7 @@ export interface CheckPackageOptions {
    * Authored content (uploads, drafts, imports, built-ins) never carries one: an incoming one is
    * refused, and Kaiju writes its own.
    */
-  readonly kobeProvenance?: boolean;
+  readonly kaijuProvenance?: boolean;
 }
 
 /** The reserved root names, exact spelling; case variants are refused (`reserved_name_case`). */
@@ -150,7 +150,7 @@ function fold(s: string): string {
  *    `skill.md`): refused rather than treated as payload or as reserved, so an author on a
  *    case-insensitive filesystem never ships evals into the runtime by accident;
  *  - a file named `evals` (the directory is reserved);
- *  - a `provenance.json` without {@link CheckPackageOptions.kobeProvenance};
+ *  - a `provenance.json` without {@link CheckPackageOptions.kaijuProvenance};
  *  - no `SKILL.md` at the root.
  */
 export function checkPackagePaths(
@@ -190,7 +190,7 @@ export function checkPackagePaths(
       problems.push({ path, problem: "reserved_name_case" });
     if (path === SKILL_MD_PATH) skillMd = true;
     if (path === EVALS_DIR.slice(0, -1)) problems.push({ path, problem: "reserved_directory" });
-    if (path === PROVENANCE_PATH && !options.kobeProvenance)
+    if (path === PROVENANCE_PATH && !options.kaijuProvenance)
       problems.push({ path, problem: "provenance_not_allowed" });
   }
   if (!skillMd) problems.push({ path: SKILL_MD_PATH, problem: "skill_md_missing" });

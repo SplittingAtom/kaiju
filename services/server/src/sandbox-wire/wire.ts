@@ -1,5 +1,5 @@
 import type { RepoCommitWiring } from "../git/repo-commit/dispatch.js";
-import type { SessionSigningKey } from "@kobe/session-token";
+import type { SessionSigningKey } from "@kaiju/session-token";
 import type { QueryEmbedder } from "../memory/embeddings/service.js";
 import { randomUUID } from "node:crypto";
 import type { NotebookFiles } from "../notebooks/files.js";
@@ -10,10 +10,10 @@ import {
   type ServerCallPurpose,
   type ToolRegistry,
   type WorkspaceSyncStatus,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
-import { recordRunRootSpan, spanRelay, telemetryState } from "@kobe/telemetry";
-import { SYSTEM_ACTOR, eq, getMembership, users, withTeam, type KobeDb } from "@kobe/db";
+import { recordRunRootSpan, spanRelay, telemetryState } from "@kaiju/telemetry";
+import { SYSTEM_ACTOR, eq, getMembership, users, withTeam, type KaijuDb } from "@kaiju/db";
 import { logger as rootLogger } from "../logger.js";
 import { recordAudit, type ServerAuditEvent } from "../audit/record.js";
 import { BackgroundTasks } from "../background.js";
@@ -55,7 +55,7 @@ import type {
 } from "./types.js";
 
 export interface SandboxWireOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /**
    * App-role URL for a LISTEN connection of the wire's own, used only without `listen` (the
    * operator CLI's router-only replica). Direct or session-mode pooler.

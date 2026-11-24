@@ -1,5 +1,5 @@
 import type { Context, Hono } from "hono";
-import { transferAgentRequestSchema, type AgentRosterErrorCode } from "@kobe/protocol";
+import { transferAgentRequestSchema, type AgentRosterErrorCode } from "@kaiju/protocol";
 import type { RosterTarget } from "../agents/access.js";
 import { entryView } from "../agents/roster.js";
 import { adoptEntry, type AdoptError } from "../agents/roster-adopt.js";

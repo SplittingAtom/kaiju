@@ -28,7 +28,7 @@ export type { AuditScope } from "./events/fragments.js";
  * Adding an event: add an entry to its area's file in `events/` (a new area is a new file, listed
  * in both `AUDIT_EVENT_AREAS` and `AUDIT_EVENTS` below) and its docs/audit-log.md row, in name
  * order, to the area's `events/<area>.doc.ts` (a new area's doc file is listed in
- * `event-docs.ts`); then `pnpm --filter @kobe/db audit:doc` regenerates the page (KOBE-815). Never reuse or rename a published action
+ * `event-docs.ts`); then `pnpm --filter @kaiju/db audit:doc` regenerates the page (KOBE-815). Never reuse or rename a published action
  * (export and SIEM consumers key on it); call `audit()` in the transaction that performs the
  * action, and test it.
  * The one rename so far (KOBE-255, "install" became "site") is listed in

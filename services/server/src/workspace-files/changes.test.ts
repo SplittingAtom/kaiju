@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { workspaceChangeActorSchema } from "@kobe/protocol";
+import { workspaceChangeActorSchema } from "@kaiju/protocol";
 import { actorName } from "./changes.js";
 
 describe("actorName (KOBE-496 review)", () => {

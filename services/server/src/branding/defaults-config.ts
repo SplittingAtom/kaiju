@@ -1,4 +1,4 @@
-import { PRESET_IDS, appNameSchema, type PresetId } from "@kobe/protocol";
+import { PRESET_IDS, appNameSchema, type PresetId } from "@kaiju/protocol";
 import { z } from "zod";
 
 /**

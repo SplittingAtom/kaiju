@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SEMANTIC_MEMORY_KINDS, type SemanticMemoryKind } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_KINDS, type SemanticMemoryKind } from "@kaiju/protocol";
 import {
   eligible,
   memoryScore,

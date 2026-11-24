@@ -1,9 +1,9 @@
-import { formatTraceparent, runTraceId } from "@kobe/protocol";
+import { formatTraceparent, runTraceId } from "@kaiju/protocol";
 import {
   CAPABILITY_TRACE_SPANS,
   parseSandboxSpan,
   type SandboxToServerFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";

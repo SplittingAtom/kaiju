@@ -6,7 +6,7 @@
 //
 // The model is the fake provider (services/model-gateway/src/testing/fake-llm.ts): chat turns echo,
 // `tool: <name> <json>` calls a tool, and a `memory_learn` extractor call is answered by
-// fake-extractor.ts from markers in the transcript (`kobe-learn {json}`, "I prefer …",
+// fake-extractor.ts from markers in the transcript (`kaiju-learn {json}`, "I prefer …",
 // "For the record: …"). The database is read for evidence only (pass rows, usage rows, audit
 // rows), except where noted: a proposal's clock moved back (U42: 30 days cannot pass in CI) and
 // rate-limit fixtures (U47: 20 passes in a day), both on the gate's own throwaway rows.
@@ -34,12 +34,12 @@ const asOwner = async (team = TEAM_A) => {
 };
 const json1 = (v) => oneLine(JSON.stringify(v ?? null)).slice(0, 600);
 const has = (list, text) => (list ?? []).some((x) => String(x.statement ?? "").includes(text));
-const directive = (fields) => `kobe-learn ${JSON.stringify(fields)}`;
+const directive = (fields) => `kaiju-learn ${JSON.stringify(fields)}`;
 
 /** Runs `fn(tx, sql)` in `teamId`'s RLS context (evidence reads; the noted fixtures). */
 async function inTeam(teamId, fn) {
   const database = await db();
-  const m = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const m = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     return await m.withTeam(database.db, teamId, (tx) => fn(tx, m.sql));
   } finally {

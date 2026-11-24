@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { siteBrandingSchema } from "@kobe/protocol";
+import { siteBrandingSchema } from "@kaiju/protocol";
 import { brandingPutSchema } from "../routes/site-branding.js";
 
 /**

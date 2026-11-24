@@ -1,4 +1,4 @@
-import { TEAM_ROLES, type TeamRole } from "@kobe/db";
+import { TEAM_ROLES, type TeamRole } from "@kaiju/db";
 
 /**
  * The pure half of the access-mapping engine (KOBE-627, spec sso-oidc-scim §7): which team roles a

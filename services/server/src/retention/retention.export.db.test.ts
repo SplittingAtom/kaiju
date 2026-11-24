@@ -45,7 +45,7 @@ describe("export (D18)", () => {
     const res = await download(as.bob, `/v1/threads/export?team=${team}`);
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/zip");
-    expect(res.headers.get("content-disposition")).toMatch(/^attachment; filename="kobe-finance-/);
+    expect(res.headers.get("content-disposition")).toMatch(/^attachment; filename="kaiju-finance-/);
     const files = unzipSync(res.bytes);
     const names = Object.keys(files).sort();
     const sessions = names.filter((n) => n.startsWith("sessions/"));
@@ -88,7 +88,7 @@ describe("export (D18)", () => {
       id: "e2",
       parentId: "e1",
       timestamp: expect.any(String),
-      kobe_unavailable: true,
+      kaiju_unavailable: true,
     });
 
     const transcript = names.find((n) => n.startsWith("transcripts/") && n.includes("budget-2027"));
@@ -154,9 +154,9 @@ describe("/export of one conversation (KOBE-450, Pi's /export)", () => {
   it("one export at a time per user, shared with the full export: 429 (review MEDIUM-1)", async () => {
     const mine = await thread({ owner: ids.bob, title: "Slot", entries: 2 });
     const req = (path: string) =>
-      h.app.request(`http://kobe.test${path}`, {
+      h.app.request(`http://kaiju.test${path}`, {
         headers: {
-          origin: "http://kobe.test",
+          origin: "http://kaiju.test",
           "x-forwarded-for": as.bob.ip,
           cookie: [...as.bob.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
         },
@@ -234,9 +234,9 @@ describe("/export of one conversation (KOBE-450, Pi's /export)", () => {
     const mine = await thread({ owner: ids.bob, title: "Plan" });
     expect((await download(as.bob, `/v1/threads/${mine}/export?team=${other}`)).status).toBe(409);
     expect((await download(as.bob, "/v1/threads/not-a-uuid/export")).status).toBe(400);
-    const cross = await h.app.request(`http://kobe.test/v1/threads/${mine}/export`, {
+    const cross = await h.app.request(`http://kaiju.test/v1/threads/${mine}/export`, {
       headers: {
-        origin: "http://kobe.test",
+        origin: "http://kaiju.test",
         "sec-fetch-site": "cross-site",
         "x-forwarded-for": as.bob.ip,
         cookie: [...as.bob.cookies].map(([k, v]) => `${k}=${v}`).join("; "),

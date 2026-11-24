@@ -4,7 +4,7 @@ import type {
   RunStartFrame,
   RunStopFrame,
   WorkspaceConflictNoteFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { buildPiLaunch } from "../pi/pi-launch.js";
 import {
   type SessionRestore,

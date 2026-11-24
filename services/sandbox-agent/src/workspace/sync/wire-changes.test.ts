@@ -1,4 +1,4 @@
-import { workspaceCommitRequestSchema } from "@kobe/protocol/sandbox-wire";
+import { workspaceCommitRequestSchema } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { toWire } from "./push.js";
 import type { PlannedChange } from "./state.js";

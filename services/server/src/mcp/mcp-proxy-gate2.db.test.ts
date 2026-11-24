@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { serve, type ServerType } from "@hono/node-server";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import {
   DEFAULT_LIMITS,
   FakeUpstream,
@@ -13,7 +13,7 @@ import {
   createPolicyServer,
   createUpstreamClient,
   type UpstreamClient,
-} from "@kobe/mcp-proxy";
+} from "@kaiju/mcp-proxy";
 import { approvalKeyring } from "../approvals/index.js";
 import { createInternalApp } from "../routes/internal.js";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";

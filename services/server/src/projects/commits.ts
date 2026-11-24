@@ -1,6 +1,6 @@
 import { fireAndLog } from "../async-util.js";
-import { isLegalHoldViolation, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kobe/protocol";
+import { isLegalHoldViolation, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -52,7 +52,7 @@ import {
  */
 
 export interface CommitDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   /** Reconciles other mounted members after a commit; absent in tests without workspaces. */
   readonly mounts: Pick<ProjectMounts, "reconcileProject" | "workspace"> | undefined;
@@ -156,7 +156,7 @@ const refused = (
 
 /** Contents the project already holds, by hash: a key and its mime type. */
 export async function heldContents(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   hashes: readonly string[],
@@ -176,7 +176,7 @@ export async function heldContents(
 
 /** Step 1 (and again in step 3): see the module header. */
 export async function planCommit(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: Pick<CommitDeps, "blobs" | "limits">,
   req: Pick<CommitRequest, "owner" | "projectId" | "expect">,
   options: { lock?: boolean; repo?: boolean } = {},
@@ -263,7 +263,7 @@ export async function planCommit(
  * size are verified on the copy whatever the source.
  */
 export async function sourceCheck(
-  tx: KobeTx,
+  tx: KaijuTx,
   prefix: string,
   owner: WorkspaceOwner,
   keys: readonly string[],
@@ -350,7 +350,7 @@ export async function commitWorkingCopy(
  * row counts 0 against their scratchspace (the project counts it). Under the workspace lock.
  */
 async function repointRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: CommitDeps,
   owner: WorkspaceOwner,
   plan: Plan,

@@ -1,5 +1,5 @@
-import type { GitConnectionRecord } from "@kobe/db";
-import type { GitConnectionAdminView, GitConnectionMemberView } from "@kobe/protocol";
+import type { GitConnectionRecord } from "@kaiju/db";
+import type { GitConnectionAdminView, GitConnectionMemberView } from "@kaiju/protocol";
 
 /**
  * What the connection routes answer (KOBE-760). Both views are built from a

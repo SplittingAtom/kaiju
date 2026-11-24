@@ -1,8 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { workspaceEventSchema, type WorkspaceEvent } from "@kobe/protocol";
-import { CAPABILITY_WORKSPACE_SYNC_NOW } from "@kobe/protocol/sandbox-wire";
-import { withTeam } from "@kobe/db";
+import { workspaceEventSchema, type WorkspaceEvent } from "@kaiju/protocol";
+import { CAPABILITY_WORKSPACE_SYNC_NOW } from "@kaiju/protocol/sandbox-wire";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { notifyTeamWorkspaces } from "../event-stream/access.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";

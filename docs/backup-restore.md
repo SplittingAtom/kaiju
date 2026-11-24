@@ -1,6 +1,6 @@
 # Backup and restore
 
-`kobe backup` and `kobe restore` (spec D31) back up Kaiju's durable record (Postgres) together
+`kaiju backup` and `kaiju restore` (spec D31) back up Kaiju's durable record (Postgres) together
 with a manifest of the objects in the external S3 bucket. Sandbox volumes are not backed up because
 they are rebuildable working copies (spec D15).
 
@@ -55,12 +55,12 @@ Generate the key once and keep it in your secret store, next to the Kubernetes S
 the key, a backup cannot be restored.**
 
 ```bash
-openssl rand -base64 32 > kobe-backup.key && chmod 600 kobe-backup.key
-export KOBE_BACKUP_KEY_FILE=$PWD/kobe-backup.key     # or KOBE_BACKUP_KEY=<the key>, never argv
+openssl rand -base64 32 > kaiju-backup.key && chmod 600 kaiju-backup.key
+export KOBE_BACKUP_KEY_FILE=$PWD/kaiju-backup.key     # or KOBE_BACKUP_KEY=<the key>, never argv
 ```
 
 The key must be at least 32 bytes of random data, given as base64 or hex. Keys with fewer than 16
-distinct byte values are refused because they look typed or patterned. `kobe` warns when the key
+distinct byte values are refused because they look typed or patterned. `kaiju` warns when the key
 file is readable by group or others.
 
 Each backup draws a random salt and uses HKDF-SHA256 to derive two keys from it: an AES-256-GCM key
@@ -77,7 +77,7 @@ all refused at this point.
 
 `psql` runs without `psqlrc` and with `ON_ERROR_STOP`. The client must be 17.6+, so that
 `pg_restore` wraps its script in `\restrict <key>` and psql refuses meta-commands (such as `\!`)
-from inside the archive. As defence in depth, `kobe` holds the script back until it has seen that
+from inside the archive. As defence in depth, `kaiju` holds the script back until it has seen that
 the script starts with `\restrict`. It also refuses to commit unless the script ends with the
 matching `\unrestrict`.
 
@@ -86,7 +86,7 @@ directory for the length of the restore. That directory is `KOBE_TMPDIR` if set,
 temp directory, and it is deleted:
 
 - at the end of the restore, whether it succeeds or fails;
-- on `SIGINT`, `SIGTERM` or `SIGHUP` (Ctrl-C, a Job deadline, pod deletion), after which `kobe`
+- on `SIGINT`, `SIGTERM` or `SIGHUP` (Ctrl-C, a Job deadline, pod deletion), after which `kaiju`
   exits non-zero and Postgres rolls back.
 
 A `SIGKILL` cannot be caught. Point `KOBE_TMPDIR` at memory-backed storage so the plaintext never
@@ -157,7 +157,7 @@ for s in auth envelope-key model-keys egress-headers sandbox-session-keys mcp-pr
 done
 ```
 
-`kobe backup` cannot include them: the CLI talks to Postgres and S3 only, and bundling the keys with
+`kaiju backup` cannot include them: the CLI talks to Postgres and S3 only, and bundling the keys with
 the ciphertext they protect would defeat the separation.
 
 Secrets you created yourself and named in values are not in the table above but belong in the
@@ -233,10 +233,10 @@ object storage is configured.
   The client must not be older than the server, and a restore needs the same client as the backup
   or a newer one.
 
-- The CLI: run `pnpm install && pnpm build`, then `node packages/cli/dist/cli.js` (called `kobe`
+- The CLI: run `pnpm install && pnpm build`, then `node packages/cli/dist/cli.js` (called `kaiju`
   below).
 - Network access to Postgres (for example with `kubectl port-forward`) and to the S3 endpoint.
-  `kobe` warns when a remote database is reached without `sslmode=require` or `verify-full`.
+  `kaiju` warns when a remote database is reached without `sslmode=require` or `verify-full`.
 - Child tools get a minimal environment (`PATH`, `HOME`, locale and libpq's `PG*` settings). S3
   credentials and the backup key are never passed to them.
 
@@ -244,8 +244,8 @@ object storage is configured.
 
 | Command        | Connects as                                                          | Why                                                                                                         |
 | -------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `kobe backup`  | a **backup role**: `BYPASSRLS` + `pg_read_all_data` (or a superuser) | every team table forces RLS, so any other role would silently miss team rows; the backup refuses such roles |
-| `kobe restore` | the **owner role** (the chart's `migrate-url`)                       | it owns every table, so it can lift `FORCE ROW LEVEL SECURITY` for itself inside the restore transaction    |
+| `kaiju backup`  | a **backup role**: `BYPASSRLS` + `pg_read_all_data` (or a superuser) | every team table forces RLS, so any other role would silently miss team rows; the backup refuses such roles |
+| `kaiju restore` | the **owner role** (the chart's `migrate-url`)                       | it owns every table, so it can lift `FORCE ROW LEVEL SECURITY` for itself inside the restore transaction    |
 
 The app role is never used. Create a dedicated backup user once, as a superuser. Put its password
 in a Kubernetes Secret or your secret store, not in shell history: the `\password` prompt below
@@ -264,7 +264,7 @@ CloudNativePG leaves unmanaged roles alone. With external Postgres, run the same
 your administrator.
 
 Do not give this role a `statement_timeout` or `idle_in_transaction_session_timeout` default (the
-app role has them, KOBE-732): `kobe backup` holds its snapshot transaction open, idle, while
+app role has them, KOBE-732): `kaiju backup` holds its snapshot transaction open, idle, while
 `pg_dump` reads, and turns both off for its own sessions. Its S3 listing gives up on a store that
 does not connect within 5 s or stays silent for 60 s.
 
@@ -273,20 +273,20 @@ does not connect within 5 s or stays silent for 60 s.
 ```bash
 kubectl -n kobe port-forward svc/kobe-pg-rw 5432:5432 &   # CloudNativePG; or reach your Postgres
 
-export KOBE_BACKUP_KEY_FILE=/secure/kobe-backup.key
+export KOBE_BACKUP_KEY_FILE=/secure/kaiju-backup.key
 export KOBE_BACKUP_DATABASE_URL="postgres://kobe_backup:$(cat /secure/kobe-backup-db-password)@localhost:5432/kobe"
 export KOBE_S3_ENDPOINT=https://s3.example.com KOBE_S3_BUCKET=kobe KOBE_S3_REGION=us-east-1
 export KOBE_S3_ACCESS_KEY_ID=... KOBE_S3_SECRET_ACCESS_KEY=...   # read-only (List) is enough
 
-kobe backup --out /backups/kobe-$(date -u +%Y%m%dT%H%M%SZ)
+kaiju backup --out /backups/kaiju-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
 The directory must not exist yet. The backup is written to `<dir>.partial` and renamed when it
 is complete, so a directory without `.partial` holds a finished backup.
 
-`kobe backup` prints the backup's **manifest fingerprint** (sha256 of `manifest.json`) and its
+`kaiju backup` prints the backup's **manifest fingerprint** (sha256 of `manifest.json`) and its
 creation time. Record both outside the backup storage, for example in your runbook or ticket.
-`kobe restore` prints the same two values before it loads anything, so you can confirm you are
+`kaiju restore` prints the same two values before it loads anything, so you can confirm you are
 restoring the backup you meant to. The signature proves a backup is genuine. It cannot tell you
 whether someone with write access to the backup store swapped in an older genuine backup; the
 recorded fingerprint can.
@@ -372,11 +372,11 @@ target someone has already configured is not a fresh install.
    ```bash
    kubectl -n kobe port-forward svc/kobe-pg-rw 5432:5432 &
    # CloudNativePG owner credentials: secret kobe-pg-app (username, password)
-   export KOBE_BACKUP_KEY_FILE=/secure/kobe-backup.key
+   export KOBE_BACKUP_KEY_FILE=/secure/kaiju-backup.key
    export KOBE_DB_MIGRATE_URL="postgres://kobe_owner:$(kubectl -n kobe get secret kobe-pg-app -o jsonpath='{.data.password}' | base64 -d)@localhost:5432/kobe"
    export KOBE_S3_ENDPOINT=... KOBE_S3_BUCKET=... KOBE_S3_ACCESS_KEY_ID=... KOBE_S3_SECRET_ACCESS_KEY=...
    export KOBE_TMPDIR=/dev/shm          # memory-backed; the decrypted dump never touches disk
-   kobe restore --from /backups/kobe-20261002T120000Z
+   kaiju restore --from /backups/kaiju-20261002T120000Z
    ```
 
    Before the load starts, check that the printed fingerprint and creation time match the
@@ -453,7 +453,7 @@ How restore works:
   own version and then run `helm upgrade`, which runs the migrations as usual.
   For example, a backup taken before KOBE-256 (migration `0091_site_rename`) names the old
   `install_*` tables: a site on a newer release refuses it ("schema does not match the backup")
-  before loading anything. Restore it on its own release with that release's `kobe restore`, then
+  before loading anything. Restore it on its own release with that release's `kaiju restore`, then
   upgrade: the migration renames the tables in place with their rows.
 - Foreign keys: inside the transaction, every non-deferrable foreign key is made `DEFERRABLE
 INITIALLY DEFERRED` (the owner may do this), so FK cycles such as `threads.leaf_entry_id` ⇄

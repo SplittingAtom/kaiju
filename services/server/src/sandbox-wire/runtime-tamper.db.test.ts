@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_RUN_TOKEN, CAPABILITY_THREAD_COMPACT } from "@kobe/protocol";
-import { generateSessionKeyPair } from "@kobe/session-token";
-import { auditQuerySchema, listAuditEvents, listTeamAuditEvents, withTeam } from "@kobe/db";
+import { CAPABILITY_RUN_TOKEN, CAPABILITY_THREAD_COMPACT } from "@kaiju/protocol";
+import { generateSessionKeyPair } from "@kaiju/session-token";
+import { auditQuerySchema, listAuditEvents, listTeamAuditEvents, withTeam } from "@kaiju/db";
 import { must } from "../testing/event-stream-fixture.js";
 import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
 import { TAMPER_AUDIT_ATTEMPTS, auditRuntimeTamperInTx } from "./runtime-tamper.js";
@@ -107,33 +107,33 @@ function expectIdsOnly(target: Record<string, unknown>): void {
 async function failTamperInserts(team: string, failures: number | null) {
   const admin = f.fx.admin;
   await admin.query(
-    `DROP SEQUENCE IF EXISTS kobe_test_tamper_tries; CREATE SEQUENCE kobe_test_tamper_tries`,
+    `DROP SEQUENCE IF EXISTS kaiju_test_tamper_tries; CREATE SEQUENCE kaiju_test_tamper_tries`,
   );
   await admin.query(`
-    CREATE OR REPLACE FUNCTION kobe_test_tamper_fault() RETURNS trigger
+    CREATE OR REPLACE FUNCTION kaiju_test_tamper_fault() RETURNS trigger
       LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
     BEGIN
       IF NEW.action = '${ACTION}' AND NEW.team_id = '${team}' THEN
-        IF nextval('kobe_test_tamper_tries') <= ${failures ?? 1_000_000} THEN
+        IF nextval('kaiju_test_tamper_tries') <= ${failures ?? 1_000_000} THEN
           RAISE EXCEPTION 'test: audit insert refused';
         END IF;
       END IF;
       RETURN NEW;
     END $$`);
   await admin.query(`
-    CREATE TRIGGER kobe_test_tamper_fault BEFORE INSERT ON audit_log
-      FOR EACH ROW EXECUTE FUNCTION kobe_test_tamper_fault()`);
+    CREATE TRIGGER kaiju_test_tamper_fault BEFORE INSERT ON audit_log
+      FOR EACH ROW EXECUTE FUNCTION kaiju_test_tamper_fault()`);
   return {
     tries: async () => {
       const { rows } = await admin.query<{ n: string }>(
-        `SELECT CASE WHEN is_called THEN last_value ELSE 0 END AS n FROM kobe_test_tamper_tries`,
+        `SELECT CASE WHEN is_called THEN last_value ELSE 0 END AS n FROM kaiju_test_tamper_tries`,
       );
       return Number(must(rows[0], "sequence").n);
     },
     drop: async () => {
-      await admin.query(`DROP TRIGGER kobe_test_tamper_fault ON audit_log`);
-      await admin.query(`DROP FUNCTION kobe_test_tamper_fault()`);
-      await admin.query(`DROP SEQUENCE kobe_test_tamper_tries`);
+      await admin.query(`DROP TRIGGER kaiju_test_tamper_fault ON audit_log`);
+      await admin.query(`DROP FUNCTION kaiju_test_tamper_fault()`);
+      await admin.query(`DROP SEQUENCE kaiju_test_tamper_tries`);
     },
   };
 }

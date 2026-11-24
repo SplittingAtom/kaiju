@@ -2,7 +2,7 @@ import type pg from "pg";
 import { serverInfo } from "./catalog.js";
 
 /**
- * `kobe projects restricted` (KOBE-587, projects-in-conversations RV2): the dry-run an admin runs
+ * `kaiju projects restricted` (KOBE-587, projects-in-conversations RV2): the dry-run an admin runs
  * before upgrading to the release that removes restricted project visibility. It lists every
  * restricted project of every team with its explicit members, so the admin sees what becomes
  * visible to the whole workspace (and which reader rows the migration deletes). Read-only: one
@@ -91,7 +91,7 @@ async function readProjects(client: pg.ClientBase): Promise<RestrictedProject[]>
 
 /**
  * Lists the restricted projects. The role must read every team's rows (superuser or BYPASSRLS,
- * as `kobe backup`): under FORCE ROW LEVEL SECURITY any other role would see none and report a
+ * as `kaiju backup`): under FORCE ROW LEVEL SECURITY any other role would see none and report a
  * misleading empty list, so it is refused.
  */
 export async function listRestrictedProjects(

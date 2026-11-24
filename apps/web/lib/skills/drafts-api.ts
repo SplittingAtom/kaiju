@@ -3,7 +3,7 @@
  * change names the revision it was made against (`If-Match`), and a stale one comes back as 409
  * `stale_revision` whose message says who changed the draft.
  */
-import type { SkillImportOrigin, SkillImportRequest } from "@kobe/protocol";
+import type { SkillImportOrigin, SkillImportRequest } from "@kaiju/protocol";
 import { apiRequest, apiTextFile, type ApiResult } from "../api/client";
 import {
   manifestChoiceJson,

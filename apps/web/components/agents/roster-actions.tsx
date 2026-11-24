@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentRosterRow, AgentRosterTab, AgentRosterTarget } from "@kobe/protocol";
+import type { AgentRosterRow, AgentRosterTab, AgentRosterTarget } from "@kaiju/protocol";
 import { useState, type ReactNode } from "react";
 import { agentPageHref } from "../../lib/agents/redirects";
 import { galleryExportHref, runGalleryEval } from "../../lib/admin/api/site/gallery";

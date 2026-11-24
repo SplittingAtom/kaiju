@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, teamMembers, users, withTeam, type KobeDb } from "@kobe/db";
+import { and, eq, inArray, isNull, teamMembers, users, withTeam, type KaijuDb } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { Mailer, MailMessage } from "../mail/mailer.js";
@@ -14,7 +14,7 @@ export type DefaultNotice =
   { readonly kind: "added"; readonly installed: boolean } | { readonly kind: "removed" };
 
 export interface DefaultNotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }

@@ -1,7 +1,7 @@
 import type { Readable } from "node:stream";
 import busboy from "busboy";
 import type { z } from "zod";
-import { uploadFieldsSchema, uploadFileNameSchema } from "@kobe/protocol";
+import { uploadFieldsSchema, uploadFileNameSchema } from "@kaiju/protocol";
 
 /**
  * Streaming parse of `POST /v1/uploads` (multipart/form-data): optional text field `thread_id`

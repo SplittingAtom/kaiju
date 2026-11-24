@@ -109,7 +109,7 @@ describe.skipIf(!BIN)("against a real Bifrost", () => {
       env: {
         ...process.env,
         BIFROST_ENCRYPTION_KEY: "integration-encryption-key-0001",
-        BIFROST_ADMIN_USERNAME: "kobe",
+        BIFROST_ADMIN_USERNAME: "kaiju",
         BIFROST_ADMIN_PASSWORD: PASSWORD,
       },
       stdio: "ignore",
@@ -133,7 +133,7 @@ describe.skipIf(!BIN)("against a real Bifrost", () => {
   });
 
   it("reconciles, then each provider kind answers through a member's virtual key", async () => {
-    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kobe", password: PASSWORD });
+    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kaiju", password: PASSWORD });
     const teamId = randomUUID();
     const userId = randomUUID();
     const providers: ProviderInput[] = [
@@ -245,7 +245,7 @@ describe.skipIf(!BIN)("against a real Bifrost", () => {
   }, 60_000);
 
   it("KOBE-42: enforces a member's request rate on the virtual key with logging off", async () => {
-    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kobe", password: PASSWORD });
+    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kaiju", password: PASSWORD });
     const teamId = randomUUID();
     const userId = randomUUID();
     const providers: ProviderInput[] = [
@@ -284,7 +284,7 @@ describe.skipIf(!BIN)("against a real Bifrost", () => {
   }, 60_000);
 
   it("KOBE-265: an install synced under kobe-install converges on the site customer", async () => {
-    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kobe", password: PASSWORD });
+    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kaiju", password: PASSWORD });
     const teams = [0, 1, 2].map(() => ({
       teamId: randomUUID(),
       members: [randomUUID(), randomUUID()],

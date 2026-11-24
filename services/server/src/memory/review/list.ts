@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { locate } from "../items/location.js";
 import { readItem } from "../items/rows.js";
 import { curates, type MemoryWho } from "../items/who.js";
@@ -27,7 +27,7 @@ interface Related {
 }
 
 async function relatedItem(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: MemoryWho,
   scope: "user" | "portable" | "team",
   id: string,
@@ -39,7 +39,7 @@ async function relatedItem(
 }
 
 export async function policyStatements(
-  tx: KobeTx,
+  tx: KaijuTx,
   refs: readonly { id: string; version: number }[],
 ): Promise<Related[]> {
   if (refs.length === 0) return [];
@@ -53,7 +53,7 @@ export async function policyStatements(
   return rows;
 }
 
-async function card(tx: KobeTx, who: MemoryWho, row: CandidateRow) {
+async function card(tx: KaijuTx, who: MemoryWho, row: CandidateRow) {
   const c = row.candidate;
   const scope = suggestedScope(c);
   const target = c.target_id === null ? null : await relatedItem(tx, who, scope, c.target_id);
@@ -92,7 +92,7 @@ async function card(tx: KobeTx, who: MemoryWho, row: CandidateRow) {
 
 export type ReviewCard = Awaited<ReturnType<typeof card>>;
 
-export function listReview(db: KobeDb, who: MemoryWho, threadId: string) {
+export function listReview(db: KaijuDb, who: MemoryWho, threadId: string) {
   const teamId = workspaceOf(who);
   return withTeam(db, teamId, async (tx) => {
     const { rows } = await tx.execute<{ owner_user_id: string | null }>(sql`

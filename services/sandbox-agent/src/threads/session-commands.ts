@@ -1,5 +1,5 @@
-import type { ThreadContextResult } from "@kobe/protocol";
-import { sealReply } from "@kobe/protocol/node";
+import type { ThreadContextResult } from "@kaiju/protocol";
+import { sealReply } from "@kaiju/protocol/node";
 import { fromCapture, fromSession, readCapture } from "../context/assemble.js";
 import { replaySession } from "../context/session-replay.js";
 import { SessionRestore, ensureSessionDir } from "../pi/session-files.js";

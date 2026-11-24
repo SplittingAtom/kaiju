@@ -1,6 +1,6 @@
 import type { Context, Hono } from "hono";
 import { z } from "zod";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { forbidden, notFound } from "../http.js";
 import type { ResolvedAgent } from "../version-routes.js";
 import { getEval, listAgentEvals, type EvalRecord } from "./store.js";
@@ -37,7 +37,7 @@ export function evalView(e: EvalRecord, withReport = false) {
 }
 
 export interface EvalRouteOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly resolve: (c: Context) => Promise<ResolvedAgent | null>;
   readonly teamId: (c: Context) => string;
 }

@@ -9,7 +9,7 @@
  * - Markdown through the chat's safe Markdown component.
  * Kernel HTML is never put into the page.
  */
-import type { NotebookOutput } from "@kobe/protocol";
+import type { NotebookOutput } from "@kaiju/protocol";
 
 export type OutputView =
   | { readonly kind: "stream"; readonly name: "stdout" | "stderr"; readonly text: string }

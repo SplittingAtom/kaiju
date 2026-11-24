@@ -5,8 +5,8 @@ import {
   rememberLimitsSchema,
   tightenRememberLimits,
   type RememberLimits,
-} from "@kobe/protocol";
-import { siteSettings, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { siteSettings, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -44,7 +44,7 @@ export interface TeamRememberLimits {
 
 /** The floor and a team's limits in one statement (site_settings and teams are site tables). */
 export async function readTeamRememberLimits(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   teamId: string,
 ): Promise<TeamRememberLimits> {
   const res = await db.execute<{ site: string | null; team: unknown }>(sql`
@@ -58,14 +58,14 @@ export async function readTeamRememberLimits(
   return { site, team, effective: tightenRememberLimits(site, team) };
 }
 
-export async function readSiteRememberLimits(db: KobeDb): Promise<RememberLimits> {
+export async function readSiteRememberLimits(db: KaijuDb): Promise<RememberLimits> {
   const res = await db.execute<{ value: string }>(sql`
     SELECT value FROM site_settings WHERE key = ${SITE_REMEMBER_LIMITS_KEY}`);
   return parseStored(res.rows[0]?.value ?? null);
 }
 
 /** Saves the site floor's limits, audited (`policy.remember_limits.updated`, scope site). */
-export async function writeSiteRememberLimits(db: KobeDb, limits: RememberLimits): Promise<void> {
+export async function writeSiteRememberLimits(db: KaijuDb, limits: RememberLimits): Promise<void> {
   const text = JSON.stringify(limits);
   await db.transaction(async (tx) => {
     await tx
@@ -92,7 +92,7 @@ export type TeamLimitsResult =
  * the transaction; the team row is locked so two saves don't interleave.
  */
 export async function writeTeamRememberLimits(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   limits: RememberLimits,
 ): Promise<TeamLimitsResult> {

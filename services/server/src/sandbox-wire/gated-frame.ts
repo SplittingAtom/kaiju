@@ -1,4 +1,4 @@
-import { type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import { type SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import type { AllowedArtifactCalls, AllowedVerdict } from "../artifacts/allowed.js";
 
 /**

@@ -46,7 +46,7 @@ export const CONNECTOR_GRANTS_EVENTS = {
   "mcp.web_search.team_changed": event("team", { enabled: z.boolean() }),
   /**
    * A team admin changed the team's level of the built-in Kaiju connector (KOBE-623, spec
-   * kobe-admin-mcp §6, KA5): `docs` (docs tools only), `read` or `read_write` (admin tools).
+   * kaiju-admin-mcp §6, KA5): `docs` (docs tools only), `read` or `read_write` (admin tools).
    */
   "mcp.kobe.team_level_changed": event("team", {
     from: z.enum(["docs", "read", "read_write"]),

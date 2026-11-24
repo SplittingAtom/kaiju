@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import {
   CEILING_CHANGED,
   EGRESS_CHANGES_CHANNEL,
@@ -17,7 +17,7 @@ import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
 
 /** KOBE-38: egress ceiling (site-wide) and team enablement (team table, RLS). */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

@@ -1,4 +1,4 @@
-import type { SemanticMemoryActorKind, SemanticMemoryKind } from "@kobe/protocol";
+import type { SemanticMemoryActorKind, SemanticMemoryKind } from "@kaiju/protocol";
 import type { SelectLane } from "./select.js";
 
 /** One row of a lane read (run-memory.ts), and of the vector leg (vector-leg.ts, KOBE-409). */

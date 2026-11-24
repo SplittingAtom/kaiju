@@ -1,4 +1,4 @@
-import { and, connectors, eq, isNull, type Envelope, type KobeDb } from "@kobe/db";
+import { and, connectors, eq, isNull, type Envelope, type KaijuDb } from "@kaiju/db";
 import { recordAuditAfter } from "../audit/record.js";
 import { hitRateLimit, type RateLimitRule } from "../rate-limit.js";
 import type { ReconcileLock } from "../sandbox/reconcile-lock.js";
@@ -52,7 +52,7 @@ export type ReprobeResult =
   | { readonly kind: "done"; readonly outcome: ReprobeOutcome };
 
 export interface ReprobeDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly prober: ConnectorProbe;
   readonly envelope: Envelope | undefined;
   /** Refreshes an admin's expired OAuth token for the probe (KOBE-784). */
@@ -135,7 +135,7 @@ const counts = (outcome: ReprobeOutcome) => {
 
 /** Counts and the credential's kind only: no tool names, URLs or keys. */
 function auditReprobe(
-  db: KobeDb,
+  db: KaijuDb,
   connector: { readonly id: string; readonly name: string },
   probed: Probed,
 ): Promise<void> {

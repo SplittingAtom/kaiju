@@ -5,8 +5,8 @@ import {
   sql,
   teams,
   withTeam,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { auditTimeout } from "../retention/locks.js";
 import { memoryRecorder, purgeMemoryBatchInTx } from "../retention/memory.js";
@@ -36,7 +36,7 @@ interface Counts {
  * is still offboarded and past `retain_until` (a returning member's wake, reinstate.ts, takes the
  * same lock).
  */
-async function guard(tx: KobeTx, target: Departed): Promise<"ok" | "held" | "not_due"> {
+async function guard(tx: KaijuTx, target: Departed): Promise<"ok" | "held" | "not_due"> {
   await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
   await lockLegalHolds(tx);
   if (await isUnderLegalHold(tx, target.teamId, target.userId)) return "held";

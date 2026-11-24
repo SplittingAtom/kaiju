@@ -1,4 +1,4 @@
-import type { GitCredentialKind } from "@kobe/db";
+import type { GitCredentialKind } from "@kaiju/db";
 import {
   assertBranch,
   assertNumber,

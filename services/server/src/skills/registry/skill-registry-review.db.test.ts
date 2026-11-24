@@ -35,7 +35,7 @@ const as = {} as Record<Who, TestBrowser>;
 const email = (who: Who) => `${who}@review.test`;
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   for (const who of Object.keys(ids) as Who[])
     ids[who] = await h.createUser(email(who), who.startsWith("admin") ? "admin" : undefined);
   await h.admin.query(

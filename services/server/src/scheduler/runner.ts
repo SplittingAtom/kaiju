@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, isNotNull, lte, schedules, teams, withTeam, type KobeDb } from "@kobe/db";
-import type { ActorContext } from "@kobe/protocol";
+import { and, asc, eq, isNotNull, lte, schedules, teams, withTeam, type KaijuDb } from "@kaiju/db";
+import type { ActorContext } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { logger as rootLogger } from "../logger.js";
 import { RunError } from "../runs/errors.js";
@@ -10,7 +10,7 @@ import { sweepInactiveOwners } from "./owner-sweep.js";
 import { sweepAgentSchedules } from "../agents/roster-schedules.js";
 
 export interface SchedulerRunnerOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly runs: Pick<ServerRunOrchestrator, "submitMessage" | "cancelScheduledRuns">;
   /** The clock; tests inject a fixed one. */
   readonly now?: () => Date;

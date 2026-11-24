@@ -3,7 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { THREAD_DRAG_TYPE } from "../../lib/chat/organize";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chooseNode, openApp, openRowMenu, openThreads } from "./testing";
 
@@ -12,12 +12,12 @@ import { chooseNode, openApp, openRowMenu, openThreads } from "./testing";
  * row onto a project header). The rail's groups follow at once and after a reload; a refused move
  * says why; the run after a move is marked in the conversation; search marks archived threads.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -31,7 +31,7 @@ afterEach(() => {
 function groups(): [string, string[]][] {
   return [...document.querySelectorAll<HTMLElement>("[data-group]")].map((g) => [
     g.dataset.group ?? "",
-    [...g.querySelectorAll("[data-kobe-thread]")].map(
+    [...g.querySelectorAll("[data-kaiju-thread]")].map(
       (row) => row.querySelector("button")?.textContent ?? "",
     ),
   ]);
@@ -58,7 +58,7 @@ async function submenu(menuName: string, item: string): Promise<HTMLElement> {
   return screen.findByRole("menu", { name: item });
 }
 
-const status = () => document.querySelector("[data-kobe-rail-status]")?.textContent ?? "";
+const status = () => document.querySelector("[data-kaiju-rail-status]")?.textContent ?? "";
 
 describe("pin and archive (ac-1)", () => {
   it("pins a thread to the top group and back, kept after a reload", async () => {
@@ -193,7 +193,7 @@ describe("move to project (ac-2)", () => {
     await openThreads();
     await screen.findByRole("button", { name: "Actions for Budget" });
     await waitFor(() => expect(groups()[0]?.[0]).toBe("project"));
-    const row = must(document.querySelector(`[data-kobe-thread="${budget}"]`));
+    const row = must(document.querySelector(`[data-kaiju-thread="${budget}"]`));
     expect(row.getAttribute("draggable")).toBe("true");
     const data = new Map<string, string>();
     const dataTransfer = {
@@ -249,7 +249,7 @@ describe("move to project (ac-2)", () => {
     openApp(fake, t);
     await openThreads();
     const markers = await waitFor(() => {
-      const found = [...document.querySelectorAll<HTMLElement>('[data-kobe-marker="project"]')];
+      const found = [...document.querySelectorAll<HTMLElement>('[data-kaiju-marker="project"]')];
       expect(found).toHaveLength(2);
       return found;
     });

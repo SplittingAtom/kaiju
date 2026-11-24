@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { loadAccess, memberProjectIds } from "../projects/access.js";
 
 /**
@@ -14,7 +14,7 @@ import { loadAccess, memberProjectIds } from "../projects/access.js";
  */
 
 export function viewerProjectIds(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<readonly string[]> {
@@ -22,7 +22,7 @@ export function viewerProjectIds(
 }
 
 export async function canCreateInProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   projectId: string,
 ): Promise<boolean> {

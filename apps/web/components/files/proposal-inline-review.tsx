@@ -15,7 +15,7 @@ import { lineDiff, type DiffRow } from "../../lib/files/line-diff";
 import { fileName } from "../../lib/files/preview";
 import type { ProposalView, ReviewOutcome } from "../../lib/files/editor-state";
 import type { ApiError } from "../../lib/api/client";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import styles from "../chat/chat.module.css";
 
 export const STALE_NOTE =
@@ -85,8 +85,8 @@ function useBase(proposal: ProposalView): Base {
 const ROW_MARK = { same: "  ", removed: "- ", added: "+ " } as const;
 const ROW_STYLE = {
   same: "",
-  removed: "bg-[var(--kobe-diff-deleted-bg)] line-through",
-  added: "bg-[var(--kobe-diff-added-bg)]",
+  removed: "bg-[var(--kaiju-diff-deleted-bg)] line-through",
+  added: "bg-[var(--kaiju-diff-added-bg)]",
 } as const;
 
 function Diff({ rows, name }: { readonly rows: readonly DiffRow[]; readonly name: string }) {

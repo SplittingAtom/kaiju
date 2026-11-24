@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chatRequests, openApp, openRowMenu, openThreads } from "./testing";
 
@@ -12,12 +12,12 @@ import { chatRequests, openApp, openRowMenu, openThreads } from "./testing";
  * Fork; the rail lists others' shared threads under Shared with me, project-scoped ones also in
  * their project group.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -30,7 +30,7 @@ afterEach(() => {
 function groups(): [string, string[]][] {
   return [...document.querySelectorAll<HTMLElement>("[data-group]")].map((g) => [
     g.dataset.group ?? "",
-    [...g.querySelectorAll("[data-kobe-thread]")].map(
+    [...g.querySelectorAll("[data-kaiju-thread]")].map(
       (row) => row.querySelector("button")?.textContent ?? "",
     ),
   ]);
@@ -54,7 +54,7 @@ const choices = (sub: HTMLElement) =>
     .getAllByRole("menuitem")
     .map((i) => i.textContent);
 
-const status = () => document.querySelector("[data-kobe-rail-status]")?.textContent ?? "";
+const status = () => document.querySelector("[data-kaiju-rail-status]")?.textContent ?? "";
 
 /** Someone else's thread shared with the viewer. */
 function sharedWithMe(title: string, visibility: "project" | "team", projectId?: string) {

@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import {
@@ -19,13 +19,13 @@ import {
  * Archived folded under it, the team's folders, Deleted) beside the chosen node's threads; the
  * folder actions; the phone dropdown; the node remembered while the tab lives.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -42,7 +42,7 @@ const nodes = (panel: HTMLElement) =>
     .map((n) => [n.getAttribute("aria-label"), n.getAttribute("aria-level"), n.textContent]);
 
 const rowsIn = (panel: HTMLElement) =>
-  [...panel.querySelectorAll<HTMLElement>("[data-kobe-thread] button")]
+  [...panel.querySelectorAll<HTMLElement>("[data-kaiju-thread] button")]
     .filter((b) => !b.getAttribute("aria-label"))
     .map((b) => b.textContent);
 
@@ -236,7 +236,7 @@ describe("folder actions (ac-2)", () => {
     await user.type(field, "Budgets{Enter}");
     expect(await within(panel).findByRole("treeitem", { name: "Budgets" }, WAIT)).toBeTruthy();
     expect(within(panel).queryByRole("textbox")).toBeNull();
-    expect(panel.querySelector("[data-kobe-rail-status]")?.textContent).toBe(
+    expect(panel.querySelector("[data-kaiju-rail-status]")?.textContent).toBe(
       "Created the folder “Budgets”.",
     );
   });

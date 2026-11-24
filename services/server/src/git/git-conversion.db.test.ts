@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { GIT_SITE_ENABLED_KEY } from "@kobe/db";
+import { GIT_SITE_ENABLED_KEY } from "@kaiju/db";
 import { sweepGitConversions } from "./conversion/job.js";
 import { runConversion, type ConversionDeps } from "./conversion/runner.js";
 import { LeaseLost } from "./conversion/store.js";

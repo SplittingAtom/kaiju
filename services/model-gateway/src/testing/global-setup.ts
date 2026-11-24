@@ -1,5 +1,5 @@
 import type { TestProject } from "vitest/node";
-import { createTestDatabase, prepareTestLane, testServerUrl } from "@kobe/db/testing";
+import { createTestDatabase, prepareTestLane, testServerUrl } from "@kaiju/db/testing";
 
 declare module "vitest" {
   export interface ProvidedContext {

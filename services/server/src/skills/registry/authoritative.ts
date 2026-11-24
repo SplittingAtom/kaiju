@@ -1,9 +1,9 @@
-import { SYSTEM_ACTOR, sql, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, sql, type KaijuTx } from "@kaiju/db";
 import {
   scorecardForProvenance,
   type SkillEvalJudgeModel,
   type SkillEvalScorecard,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { logger } from "../../logger.js";
 import { registryTeamFor } from "./settings.js";
@@ -42,7 +42,7 @@ export interface ApproveNow {
 export const AUTHORITATIVE_MAX_AGE_DAYS = 30;
 
 /** `provider/model` an alias names in the catalog now; null when none. */
-export async function catalogModelOf(tx: KobeTx, alias: string | null): Promise<string | null> {
+export async function catalogModelOf(tx: KaijuTx, alias: string | null): Promise<string | null> {
   if (!alias) return null;
   const res = await tx.execute<{ provider_id: string; model: string }>(sql`
     SELECT provider_id, model FROM model_catalog WHERE alias = ${alias}`);
@@ -54,7 +54,7 @@ const OPEN = ["submitted", "in_review"];
 
 /** Called by the eval store in the transaction that completes a `registry` eval run. */
 export async function recordAuthoritativeScorecard(
-  tx: KobeTx,
+  tx: KaijuTx,
   run: {
     readonly teamId: string;
     readonly evalRunId: string;

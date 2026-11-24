@@ -11,12 +11,12 @@ import {
   ssoLinkExpectations,
   ssoProviders,
   users,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   isUniqueViolation,
   lockSsoRequired,
   readSsoRequiredIn,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { endSsoSessions, isProtectedUser } from "./sso-sessions.js";
 import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "./owner-invariant.js";
@@ -82,7 +82,7 @@ export interface ExpectationView {
  * when the user's address is not in the provider's verified domains (`allowed_email_domains`).
  */
 export async function expectLink(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly providerId: string; readonly userId: string; readonly actorId: string },
 ): Promise<
   { ok: true; expectation: ExpectationView } | { ok: false; failure: ExpectationFailure }
@@ -146,7 +146,7 @@ export async function expectLink(
 
 /** Withdraws an unused expectation; false when there was none. */
 export async function withdrawExpectation(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly providerId: string; readonly userId: string },
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
@@ -172,7 +172,7 @@ export async function withdrawExpectation(
  * link (single use). False, with nothing changed, otherwise (including a race on either key).
  */
 export async function linkExpected(
-  db: KobeDb,
+  db: KaijuDb,
   provider: { readonly id: string; readonly allowedEmailDomains: readonly string[] },
   identity: VerifiedIdentity & { readonly email: string },
   userId: string,
@@ -236,7 +236,7 @@ export type LocalProofIdentity = Pick<LinkIntent, "providerId" | "subject" | "em
  * signed-in user confirmed it (review M1). Any other outcome changes nothing.
  */
 export async function linkByLocalProof(
-  db: KobeDb,
+  db: KaijuDb,
   intent: LocalProofIdentity,
   userId: string,
   { commit }: { readonly commit: boolean },
@@ -304,7 +304,7 @@ export interface LinkView {
   readonly lastSignInAt: string | null;
 }
 
-export async function listLinks(db: KobeDb, userId: string): Promise<LinkView[]> {
+export async function listLinks(db: KaijuDb, userId: string): Promise<LinkView[]> {
   const rows = await db
     .select({
       providerId: ssoIdentities.providerId,
@@ -325,7 +325,7 @@ export async function listLinks(db: KobeDb, userId: string): Promise<LinkView[]>
   }));
 }
 
-export async function listExpectations(db: KobeDb, userId: string): Promise<ExpectationView[]> {
+export async function listExpectations(db: KaijuDb, userId: string): Promise<ExpectationView[]> {
   const rows = await db
     .select({
       providerId: ssoLinkExpectations.providerId,
@@ -352,7 +352,7 @@ export async function listExpectations(db: KobeDb, userId: string): Promise<Expe
  * concurrent removal waits for this transaction (the user row is locked by the caller).
  */
 export async function hasOtherSignIn(
-  tx: KobeTx,
+  tx: KaijuTx,
   userId: string,
   exceptProviderId: string | null,
   exceptPasskeyId: string | null = null,
@@ -376,7 +376,7 @@ export async function hasOtherSignIn(
 
 /** A link to an enabled provider other than `exceptProviderId`. */
 async function enabledLinkBesides(
-  tx: KobeTx,
+  tx: KaijuTx,
   userId: string,
   exceptProviderId: string | null,
 ): Promise<boolean> {
@@ -399,7 +399,7 @@ async function enabledLinkBesides(
  * locked user row; `/passkey/delete-passkey` is refused then.
  */
 export async function passkeyIsLastSignIn(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   passkeyId: string,
 ): Promise<boolean> {
@@ -421,7 +421,7 @@ export type UnlinkOutcome =
  * link at an enabled provider counts. Takes the setting's lock first and keeps its invariant.
  */
 export async function unlinkIdentity(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly userId: string; readonly providerId: string; readonly by: "user" | "admin" },
 ): Promise<UnlinkOutcome> {
   try {
@@ -434,7 +434,7 @@ export async function unlinkIdentity(
 }
 
 function unlinkInTx(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly userId: string; readonly providerId: string; readonly by: "user" | "admin" },
 ): Promise<UnlinkOutcome> {
   return db.transaction(async (tx): Promise<UnlinkOutcome> => {

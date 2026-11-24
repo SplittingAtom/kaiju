@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { RUN_TOKEN_HEADER as PROTOCOL_HEADER } from "@kobe/protocol";
-import { registerKobeModels, type ExtensionApiLike, type InputContextLike } from "./register.js";
+import { RUN_TOKEN_HEADER as PROTOCOL_HEADER } from "@kaiju/protocol";
+import { registerKaijuModels, type ExtensionApiLike, type InputContextLike } from "./register.js";
 import { RUN_TOKEN_HEADER, RUN_TOKEN_UI_TITLE, type ModelFileState } from "./protocol.js";
 
 /** KOBE-118: the extension fetches the run token over Pi's RPC channel, once per run. */
@@ -32,7 +32,7 @@ async function setup(states: () => ModelFileState, selected: unknown[] = []) {
       return true;
     },
   } as unknown as ExtensionApiLike;
-  await registerKobeModels(api, {
+  await registerKaijuModels(api, {
     env: { KOBE_MODEL_FILE: "/x/model.json" },
     readState: async () => states(),
     pi: {

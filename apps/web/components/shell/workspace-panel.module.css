@@ -5,7 +5,7 @@
   position: fixed;
   z-index: 45;
   inset: 0;
-  background: var(--kobe-console-overlay);
+  background: var(--kaiju-console-overlay);
 }
 
 .panel {
@@ -18,8 +18,8 @@
   color: var(--foreground);
   background: var(--background);
   border: 1px solid var(--border);
-  border-radius: var(--kobe-radius-xl);
-  box-shadow: var(--kobe-shadow-panel);
+  border-radius: var(--kaiju-radius-xl);
+  box-shadow: var(--kaiju-shadow-panel);
   outline: none;
 }
 

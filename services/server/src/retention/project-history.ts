@@ -1,4 +1,4 @@
-import { lockLegalHolds, SYSTEM_ACTOR, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { lockLegalHolds, SYSTEM_ACTOR, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { historyKeep, type HistoryKeep } from "../projects/storage.js";
 import { queueProjectBlobs, referencedKeys, refreshProjectStorage } from "../projects/tree.js";
@@ -32,7 +32,7 @@ export const NO_HISTORY_PRUNE: HistoryPruneCounts = {
 
 type Rule = "commits" | "days" | "hard_cap";
 
-async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
+async function teamHeld(tx: KaijuTx, teamId: string): Promise<boolean> {
   const res = await tx.execute<{ held: boolean }>(
     sql`SELECT public.memory_legal_hold_covers(${teamId}, NULL) AS held`,
   );
@@ -41,7 +41,7 @@ async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
 
 /** The highest seq the rule lets go (0 = nothing), and which rule set it. */
 async function cutoff(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   headSeq: number,
@@ -66,7 +66,7 @@ async function cutoff(
 
 /** One project, in its own transaction under the project row lock. */
 async function pruneProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   keep: HistoryKeep,
@@ -129,7 +129,7 @@ async function pruneProject(
 
 /** The team's sweep: every project with more than one commit. */
 export async function pruneProjectHistory(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   options: { readonly maxCommits: number; readonly stop?: () => boolean; readonly now?: Date },
 ): Promise<HistoryPruneCounts> {

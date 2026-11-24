@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { OPEN_FILE_TOOL, kobeToolsResponseSchema, openFileInputSchema } from "@kobe/protocol";
+import { OPEN_FILE_TOOL, kaijuToolsResponseSchema, openFileInputSchema } from "@kaiju/protocol";
 import type { ToolsOutcome } from "./client.js";
-import { registerKobeTools } from "./extension.js";
+import { registerKaijuTools } from "./extension.js";
 import { openFileTool, parseFileOpenReply } from "./open-file-tool.js";
 import * as P from "./protocol.js";
 import { shareFileTool, type ToolsTransport } from "./tools.js";
@@ -63,7 +63,7 @@ describe("open_file (KOBE-484)", () => {
 
   it("parses the agent's answer and fails closed on a malformed one", () => {
     const reply = { id: "k1", ...OPENED };
-    expect(kobeToolsResponseSchema.safeParse(reply).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse(reply).success).toBe(true);
     expect(parseFileOpenReply(reply)).toEqual(reply);
     expect(parseFileOpenReply({ id: "k1", ok: true, op: "file_open", path: "" })).toBeUndefined();
   });
@@ -71,7 +71,7 @@ describe("open_file (KOBE-484)", () => {
   it("is registered only with file_edits", () => {
     const names = (fileEdits: boolean) => {
       const tools: string[] = [];
-      registerKobeTools({ registerTool: (tool) => tools.push(tool.name) }, transport(OPENED).t, {
+      registerKaijuTools({ registerTool: (tool) => tools.push(tool.name) }, transport(OPENED).t, {
         fileEdits,
       });
       return tools;

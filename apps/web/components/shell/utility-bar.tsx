@@ -13,7 +13,7 @@ import { ShellSlotTarget, useBarMenu } from "./shell-slots";
 import { useNavigate } from "./use-navigate";
 import styles from "./shell.module.css";
 
-const MENU_ID = "kobe-bar-menu";
+const MENU_ID = "kaiju-bar-menu";
 
 /**
  * The one-row bar's menu closes on a press outside the bar and on Escape (focus to its button). A

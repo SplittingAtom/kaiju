@@ -1,4 +1,4 @@
-import type { SemanticMemoryWarningCode } from "@kobe/protocol";
+import type { SemanticMemoryWarningCode } from "@kaiju/protocol";
 import { plainText } from "./text.js";
 
 /**

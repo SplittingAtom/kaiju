@@ -14,7 +14,7 @@ import { IconAction } from "../shell/icon-action";
 import { threadScale } from "../shell/context-gauge";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { BranchSummaryDialog } from "./branch-summary-dialog";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { useThreadTeamModels } from "./use-team-models";
 import styles from "./chat.module.css";
 
@@ -29,12 +29,12 @@ export const SCHEDULE_NOTE = "The schedule will continue on this branch.";
 
 /** This thread view's root (found before the bar goes, so a detached button still knows it). */
 function threadRootOf(from: Element): Element | null {
-  return from.closest("[data-kobe-thread-root]");
+  return from.closest("[data-kaiju-thread-root]");
 }
 
 /** Focus moves to this thread view's composer once the bar is gone (never another view's). */
 function focusComposer(root: Element | null): void {
-  root?.querySelector<HTMLTextAreaElement>("[data-kobe-composer] textarea")?.focus();
+  root?.querySelector<HTMLTextAreaElement>("[data-kaiju-composer] textarea")?.focus();
 }
 
 /**
@@ -47,7 +47,7 @@ export function BranchBar({
   filesChanged,
   tree,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly filesChanged?: ReactNode;
   /** The way to the Conversation tree (KOBE-546), after Make it current. */
   readonly tree?: ReactNode;
@@ -65,7 +65,7 @@ function BranchBarBody({
   filesChanged,
   tree,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly filesChanged?: ReactNode;
   readonly tree?: ReactNode;
 }) {
@@ -108,7 +108,7 @@ function BranchBarBody({
   };
 
   return (
-    <section aria-label="Another branch" data-kobe-branch-bar="" className={styles.branchBar}>
+    <section aria-label="Another branch" data-kaiju-branch-bar="" className={styles.branchBar}>
       <p className={styles.branchBarLine}>
         <span aria-hidden>⑂ </span>
         Showing another branch
@@ -142,7 +142,7 @@ function BranchBarBody({
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal container={chatPortalContainer()}>
             <DropdownMenu.Content
-              data-kobe-portal
+              data-kaiju-portal
               align="end"
               sideOffset={4}
               className="bg-background text-foreground z-50 min-w-48 rounded-lg border p-1 shadow-md"
@@ -188,7 +188,7 @@ function BranchBarBody({
           {overWindow && <p className={styles.hint}>{OVER_WINDOW_NOTE}</p>}
           {scheduled && <p className={styles.hint}>{SCHEDULE_NOTE}</p>}
           {note !== undefined && (
-            <p className={styles.hint} role="status" data-kobe-branch-note="">
+            <p className={styles.hint} role="status" data-kaiju-branch-note="">
               {note}
             </p>
           )}

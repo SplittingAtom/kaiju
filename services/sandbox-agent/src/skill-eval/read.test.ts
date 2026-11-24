@@ -2,14 +2,14 @@ import { execFileSync } from "node:child_process";
 import { link, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { EVAL_OUTPUT_READ_MAX_BYTES } from "@kobe/protocol";
-import { EVAL_READ_MAX_TOTAL_BYTES } from "@kobe/protocol/sandbox-wire";
+import { EVAL_OUTPUT_READ_MAX_BYTES } from "@kaiju/protocol";
+import { EVAL_READ_MAX_TOTAL_BYTES } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readOutputs } from "./read.js";
 
 let ws = "";
 beforeEach(async () => {
-  ws = await mkdtemp(path.join(tmpdir(), "kobe-eval-read-"));
+  ws = await mkdtemp(path.join(tmpdir(), "kaiju-eval-read-"));
   await mkdir(path.join(ws, "outputs"));
 });
 afterEach(async () => {

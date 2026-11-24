@@ -5,10 +5,10 @@ import {
   inArray,
   skillBlocklist,
   sql,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   makeCursorCodec,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { hashGroups } from "./hash-checks.js";
 
@@ -42,7 +42,7 @@ export interface BlockedEntry {
  * Which of `hashes` are blocked: listed themselves or through a member of their alias group (two
  * small indexed reads; call it inside the enforcing transaction).
  */
-export async function blockedAmong(tx: KobeTx, hashes: readonly string[]): Promise<string[]> {
+export async function blockedAmong(tx: KaijuTx, hashes: readonly string[]): Promise<string[]> {
   if (hashes.length === 0) return [];
   const groups = await hashGroups(tx, hashes);
   const members = [...new Set([...groups.values()].flat())];
@@ -54,7 +54,7 @@ export async function blockedAmong(tx: KobeTx, hashes: readonly string[]): Promi
   return [...groups].filter(([, group]) => group.some((h) => listed.has(h))).map(([h]) => h);
 }
 
-export async function isBlocked(tx: KobeTx, hash: string): Promise<boolean> {
+export async function isBlocked(tx: KaijuTx, hash: string): Promise<boolean> {
   return (await blockedAmong(tx, [hash])).length > 0;
 }
 
@@ -77,7 +77,7 @@ export interface BlockPage {
 
 /** Newest first, keyset-paged on (added_at, hash). */
 export async function listBlocked(
-  db: KobeDb,
+  db: KaijuDb,
   page: { limit?: number; cursor?: Cursor } = {},
 ): Promise<BlockPage> {
   const limit = Math.min(page.limit ?? PAGE_MAX, PAGE_MAX);
@@ -114,7 +114,7 @@ export async function listBlocked(
  * already blocked). Audited (hash only) in the same transaction.
  */
 export function addBlocked(
-  db: KobeDb,
+  db: KaijuDb,
   entry: { hash: string; reason: string; userId: string },
 ): Promise<BlockedEntry | null> {
   return db.transaction((tx) => addBlockedInTx(tx, entry));
@@ -122,7 +122,7 @@ export function addBlocked(
 
 /** {@link addBlocked} inside the caller's transaction (Reject and block, KOBE-334). */
 export async function addBlockedInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   entry: { hash: string; reason: string; userId: string },
 ): Promise<BlockedEntry | null> {
   await lockBlocklist(tx);
@@ -141,12 +141,12 @@ export async function addBlockedInTx(
  * Unblocks `hash` and its whole alias group: every listed member is removed (each audited, hash
  * only, in the same transaction); false when nothing in the group was listed.
  */
-export function removeBlocked(db: KobeDb, hash: string): Promise<boolean> {
+export function removeBlocked(db: KaijuDb, hash: string): Promise<boolean> {
   return db.transaction((tx) => removeBlockedInTx(tx, hash));
 }
 
 /** {@link removeBlocked} inside the caller's transaction (Unrevoke, KOBE-340). */
-export function removeBlockedInTx(tx: KobeTx, hash: string): Promise<boolean> {
+export function removeBlockedInTx(tx: KaijuTx, hash: string): Promise<boolean> {
   return (async () => {
     await lockBlocklist(tx);
     const group = (await hashGroups(tx, [hash])).get(hash) ?? [hash];
@@ -162,11 +162,11 @@ export function removeBlockedInTx(tx: KobeTx, hash: string): Promise<boolean> {
 }
 
 /** Serializes blocklist writes, so two adds in one alias group can't both see it unblocked. */
-const lockBlocklist = (tx: KobeTx) =>
+const lockBlocklist = (tx: KaijuTx) =>
   tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended('kobe.skill_blocklist', 0))`);
 
 /** The listed entry for exactly `hash` (its `added_at` as Postgres prints it), or null. */
-export async function blockEntryOf(tx: KobeTx, hash: string): Promise<string | null> {
+export async function blockEntryOf(tx: KaijuTx, hash: string): Promise<string | null> {
   const r = await tx.execute<{ at: string }>(sql`
     SELECT added_at::text AS at FROM skill_blocklist WHERE content_hash = ${hash}`);
   return r.rows[0]?.at ?? null;
@@ -177,7 +177,7 @@ export async function blockEntryOf(tx: KobeTx, hash: string): Promise<string | n
  * removed and added again since (another reason) stays (Unrevoke, KOBE-340 review L2). Audited.
  */
 export async function removeBlockEntryInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   entry: { readonly hash: string; readonly addedAt: string },
 ): Promise<boolean> {
   await lockBlocklist(tx);

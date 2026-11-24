@@ -1,5 +1,5 @@
-import { RUN_TOKEN_HEADER } from "@kobe/protocol";
-import { verifyRunToken } from "@kobe/session-token";
+import { RUN_TOKEN_HEADER } from "@kaiju/protocol";
+import { verifyRunToken } from "@kaiju/session-token";
 import type { IncomingHttpHeaders } from "node:http";
 import type { GatewayOptions } from "./gateway/options.js";
 

@@ -79,7 +79,7 @@ export function safeToolErrors(stderr: string): string {
 
 /**
  * psql runs with VERBOSITY=verbose (so ERROR lines carry the SQLSTATE) and SHOW_CONTEXT=never.
- * Kaiju's own checks (P0001 "kobe restore: …") are shown in full; any other server error only as
+ * Kaiju's own checks (P0001 "kaiju restore: …") are shown in full; any other server error only as
  * its SQLSTATE, because messages, DETAIL and CONTEXT can quote row data. Client-side errors
  * (connection, invalid meta-command) are shown.
  */
@@ -90,7 +90,7 @@ export function safePsqlErrors(stderr: string): string {
     if (server) {
       const [, level, code, message = ""] = server;
       out.push(
-        code === "P0001" && message.startsWith("kobe restore:")
+        code === "P0001" && message.startsWith("kaiju restore:")
           ? message
           : `${level} ${code} (message withheld: it can contain row data; see the Postgres server log)`,
       );

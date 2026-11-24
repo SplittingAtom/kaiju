@@ -11,8 +11,8 @@ import {
   type ActorContext,
   type SubmitMessageResult,
   type UpdateQueuedBody,
-} from "@kobe/protocol";
-import { RUN_INPUT_MAX_CHARS, sql, type AuditActor } from "@kobe/db";
+} from "@kaiju/protocol";
+import { RUN_INPUT_MAX_CHARS, sql, type AuditActor } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { readApprovalFloor } from "../../policy/approval-floor.js";
 import { clampApprovalMode } from "../../sandbox-wire/policy-check.js";

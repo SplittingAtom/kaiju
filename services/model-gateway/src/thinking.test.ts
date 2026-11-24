@@ -1,5 +1,5 @@
-import type { GatewayThinkingRow } from "@kobe/db";
-import type { ThinkingLevel } from "@kobe/protocol";
+import type { GatewayThinkingRow } from "@kaiju/db";
+import type { ThinkingLevel } from "@kaiju/protocol";
 import { afterEach, describe, expect, it } from "vitest";
 import { topLevelModel } from "./body-model.js";
 import { classify, type Route } from "./routes.js";

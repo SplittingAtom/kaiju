@@ -26,7 +26,7 @@ import { idSchema, uuidSchema } from "./common.js";
  *   authorisation.
  *
  * Verification is normative and has two halves; a call runs only if both pass:
- * 1. **Stateless** (`verifyApproval` in `@kobe/protocol/node`): token schema; `kid` known; token
+ * 1. **Stateless** (`verifyApproval` in `@kaiju/protocol/node`): token schema; `kid` known; token
  *    (team, run, tool_call_id, tool) equal the verifier's own view of the call; `now < expires_at`;
  *    MAC over the input about to run matches (constant time).
  * 2. **Stateful** (`authorizeApprovedCall`, against an {@link ApprovalStore}): the `approvals` row

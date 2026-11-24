@@ -52,13 +52,13 @@ const auditCount = async (action: string, agentId: string) =>
 
 beforeAll(async () => {
   h = await openHarness();
-  const id = await h.createUser("carol@kobe-gallery.test");
+  const id = await h.createUser("carol@kaiju-gallery.test");
   await h.admin.query(`INSERT INTO teams (id, slug, name) VALUES ($1, 'ops', 'Ops')`, [team]);
   await h.admin.query(
     `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
     [team, id],
   );
-  carol = await h.signIn("carol@kobe-gallery.test");
+  carol = await h.signIn("carol@kaiju-gallery.test");
   expect((await carol.put("/v1/me/teams/active", { teamId: team })).status).toBe(200);
   carol.team = team;
 });
@@ -69,26 +69,26 @@ afterAll(async () => {
 
 describe("the one gallery agent (KOBE-254)", () => {
   it("ac-1: a fresh install seeds exactly Kobe, published, with every tool and `all` connectors", async () => {
-    expect(await seed()).toEqual([expect.objectContaining({ key: "kobe", action: "created" })]);
+    expect(await seed()).toEqual([expect.objectContaining({ key: "kaiju", action: "created" })]);
     const rows = await galleryRows();
     expect(rows.map((r) => [r.gallery_key, r.current_version, r.archived_at])).toEqual([
-      ["kobe", 1, null],
+      ["kaiju", 1, null],
     ]);
-    expect(await listedSlugs()).toEqual(["kobe"]);
-    const kobeId = rows[0]?.id ?? "";
-    const one = await carol.get(`/v1/agents/${kobeId}`);
+    expect(await listedSlugs()).toEqual(["kaiju"]);
+    const kaijuId = rows[0]?.id ?? "";
+    const one = await carol.get(`/v1/agents/${kaijuId}`);
     expect(one.json.agent).toMatchObject({ scope: "gallery", name: "Kobe", currentVersion: 1 });
     const { rows: versions } = await h.admin.query<{
       frontmatter: Record<string, unknown>;
       tool_manifest: { connectors: unknown; excluded: { reason: string }[] };
-    }>(`SELECT frontmatter, tool_manifest FROM site_agent_versions WHERE agent_id = $1`, [kobeId]);
+    }>(`SELECT frontmatter, tool_manifest FROM site_agent_versions WHERE agent_id = $1`, [kaijuId]);
     expect(versions).toHaveLength(1);
     expect(versions[0]?.frontmatter).toMatchObject({ name: "Kobe", connectors: "all" });
     expect(versions[0]?.frontmatter).not.toHaveProperty("tools");
     expect(versions[0]?.tool_manifest.connectors).toBe("all");
     for (const e of versions[0]?.tool_manifest.excluded ?? []) expect(e.reason).toBe("unavailable");
     // New chats can start with it in every team.
-    expect((await carol.post("/v1/threads", { agent_id: kobeId })).status).toBe(201);
+    expect((await carol.post("/v1/threads", { agent_id: kaijuId })).status).toBe(201);
   });
 
   it("ac-2: an upgrade archives the five old agents, keeps their threads, never revives them", async () => {
@@ -112,7 +112,7 @@ describe("the one gallery agent (KOBE-254)", () => {
 
     // The upgrade, then two more restarts: same outcome each time.
     for (let restart = 0; restart < 3; restart += 1) {
-      expect(await seed()).toEqual([expect.objectContaining({ key: "kobe", action: "unchanged" })]);
+      expect(await seed()).toEqual([expect.objectContaining({ key: "kaiju", action: "unchanged" })]);
       const rows = await galleryRows();
       expect(rows).toHaveLength(7);
       for (const r of rows.filter((x) => x.gallery_key !== "kobe")) {
@@ -120,7 +120,7 @@ describe("the one gallery agent (KOBE-254)", () => {
         expect(r.archived_by, r.gallery_key).toBe("seed");
       }
       expect(rows.find((r) => r.gallery_key === "kobe")?.archived_at).toBeNull();
-      expect(await listedSlugs()).toEqual(["kobe"]);
+      expect(await listedSlugs()).toEqual(["kaiju"]);
     }
     for (const r of [...old, { id: draftId }]) {
       expect(await auditCount("agent.archived", r.id)).toEqual([

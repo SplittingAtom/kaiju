@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GIT_CAPABILITIES_UNKNOWN, type GitConnectionRecord } from "@kobe/db";
+import { GIT_CAPABILITIES_UNKNOWN, type GitConnectionRecord } from "@kaiju/db";
 import { decideGitAccess, usableConnections, type GitToolFacts } from "./access.js";
 import { gitToolByName, type GitToolDef } from "./catalog.js";
 import { offeredGitTools } from "./listing.js";

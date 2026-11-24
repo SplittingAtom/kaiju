@@ -1,15 +1,15 @@
 // Shared setup for the git-tools.*.db.test.ts files (split from git-tools.db.test.ts, KOBE-725).
 import { afterAll, beforeAll, beforeEach, expect } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import {
   GIT_SITE_ALLOWED_HOSTS_KEY,
   GIT_SITE_ENABLED_KEY,
   loadEnvelope,
   type Envelope,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { rawRequest } from "../connectors/oauth/http.js";
 import { GIT_TOOLS } from "./catalog.js";
-import { KobeMcpHarness, type KobeSandbox } from "../testing/kobe-mcp-harness.js";
+import { KaijuMcpHarness, type KaijuSandbox } from "../testing/kaiju-mcp-harness.js";
 import type { Person } from "../testing/event-stream-fixture.js";
 import { FAKE_GITEA_TOKEN, FakeGitea } from "../testing/fake-gitea.js";
 import { FAKE_PAT, FakeGithub } from "../testing/fake-github.js";
@@ -28,7 +28,7 @@ export const must = <T>(v: T | undefined | null): T => {
   if (v === undefined || v === null) throw new Error("expected a value");
   return v;
 };
-export const h = new KobeMcpHarness();
+export const h = new KaijuMcpHarness();
 export const forgejo = new FakeGitea("forgejo");
 export const gitea = new FakeGitea("gitea");
 export const github = new FakeGithub();
@@ -90,7 +90,7 @@ export async function connect(
 
 export const GIT = GIT_TOOLS.map((t) => t.name);
 export const READS = GIT_TOOLS.filter((t) => t.readOnly).map((t) => t.name);
-export const gitNames = async (s: KobeSandbox) =>
+export const gitNames = async (s: KaijuSandbox) =>
   (await h.listNames(s)).filter((n) => n.startsWith("git_"));
 
 export async function auditRows(team: string, prefix = "git.") {
@@ -108,7 +108,7 @@ export async function auditRows(team: string, prefix = "git.") {
 }
 
 export const call = async (
-  s: KobeSandbox,
+  s: KaijuSandbox,
   tool: string,
   input: Record<string, unknown>,
   id?: string,
@@ -117,7 +117,7 @@ export const call = async (
   seen.push(out.text);
   return out;
 };
-export const approved = async (s: KobeSandbox, tool: string, input: Record<string, unknown>) => {
+export const approved = async (s: KaijuSandbox, tool: string, input: Record<string, unknown>) => {
   const { approval, out } = await h.approvedCall(s, tool, input);
   seen.push(out.text);
   return { approval, out };

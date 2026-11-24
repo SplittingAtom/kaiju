@@ -9,8 +9,8 @@ export interface ArtifactTabView {
   readonly title: string;
 }
 
-export const artifactTabId = (id: string) => `kobe-artifact-tab-${tabDomId(id)}`;
-export const artifactTabpanelId = (id: string) => `kobe-artifact-tabpanel-${tabDomId(id)}`;
+export const artifactTabId = (id: string) => `kaiju-artifact-tab-${tabDomId(id)}`;
+export const artifactTabpanelId = (id: string) => `kaiju-artifact-tabpanel-${tabDomId(id)}`;
 
 /**
  * The artifact column's tabs (CE6, KOBE-200): WAI-ARIA tabs with automatic activation. Arrow

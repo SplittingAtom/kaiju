@@ -1,6 +1,6 @@
-import { agentConnectors, agentSkills, type AgentFrontmatter } from "@kobe/agent-file";
-import { PUBLISHED_VERSION_STATES, isKobeSkillName, type ApprovalMode } from "@kobe/protocol";
-import { and, connectors, eq, sql, teamConnectors, teamModels, type KobeTx } from "@kobe/db";
+import { agentConnectors, agentSkills, type AgentFrontmatter } from "@kaiju/agent-file";
+import { PUBLISHED_VERSION_STATES, isKaijuSkillName, type ApprovalMode } from "@kaiju/protocol";
+import { and, connectors, eq, sql, teamConnectors, teamModels, type KaijuTx } from "@kaiju/db";
 import type { ResolveInput, SkillOmission, SkillRef } from "../resolver/resolve.js";
 import { blockedAmong } from "../skills/blocklist.js";
 import { frozenStates, type FrozenSkill } from "../skills/frozen.js";
@@ -61,7 +61,7 @@ export interface SkillFacts {
  * rollback across KOBE-308), until KOBE-316 retires it.
  */
 async function teamSkillAccess(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   /** Null: no member's toggles (publish, KOBE-318, reads only which names are local). */
   userId: string | null,
@@ -107,7 +107,7 @@ const inList = (names: readonly string[]) =>
  * version, so a name that exists only as another team's submission in review is not revealed
  * (review N7: it reads as `not_approved`, like any unknown name).
  */
-async function catalogNamesAmong(tx: KobeTx, names: readonly string[]): Promise<string[]> {
+async function catalogNamesAmong(tx: KaijuTx, names: readonly string[]): Promise<string[]> {
   if (names.length === 0) return [];
   const { rows } = await tx.execute<{ name: string }>(sql`
     SELECT s.name FROM registry_skills s
@@ -119,7 +119,7 @@ async function catalogNamesAmong(tx: KobeTx, names: readonly string[]): Promise<
 
 /** Which of `names` the team installed from the catalog (RLS: inside `withTeam`). */
 async function installedNamesAmong(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
 ): Promise<Set<string>> {
@@ -139,7 +139,7 @@ async function installedNamesAmong(
  * reserved for the built-in before, so an agent naming `pdf` keeps getting Kaiju's.
  */
 async function catalogNamed(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   listed: readonly string[],
   access: { local: Set<string>; archived: Set<string> },
@@ -156,14 +156,14 @@ async function catalogNamed(
   const reviewed = new Set([...localStates.approved.map((s) => s.name), ...localStates.suspended]);
   return catalog.filter(
     (n) =>
-      isKobeSkillName(n) ||
+      isKaijuSkillName(n) ||
       !access.local.has(n) ||
       (installed.has(n) && (access.archived.has(n) || !reviewed.has(n))),
   );
 }
 
 /** The team's enabled models and connectors (RLS: inside `withTeam`). */
-export async function loadTeamFacts(tx: KobeTx, teamId: string): Promise<TeamResolverFacts> {
+export async function loadTeamFacts(tx: KaijuTx, teamId: string): Promise<TeamResolverFacts> {
   const models = await tx
     .select({ alias: teamModels.alias, isDefault: teamModels.isDefault })
     .from(teamModels)
@@ -190,7 +190,7 @@ export async function loadTeamFacts(tx: KobeTx, teamId: string): Promise<TeamRes
  * republish, whatever was approved since. Kaiju's names are never frozen.
  */
 async function namedLocalSkills(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   listed: readonly string[],
   access: { local: Set<string>; archived: Set<string> },
@@ -203,7 +203,7 @@ async function namedLocalSkills(
 }> {
   const pinned = new Map(
     (frozen ?? [])
-      .filter((f) => listed.includes(f.name) && !isKobeSkillName(f.name))
+      .filter((f) => listed.includes(f.name) && !isKaijuSkillName(f.name))
       .map((f) => [f.name, f]),
   );
   const routed = listed.filter((n) => !pinned.has(n));
@@ -211,7 +211,7 @@ async function namedLocalSkills(
   const localStates = await teamSkillStates(
     tx,
     teamId,
-    routed.filter((n) => access.local.has(n) && !isKobeSkillName(n)),
+    routed.filter((n) => access.local.has(n) && !isKaijuSkillName(n)),
   );
   const namedCatalog = await catalogNamed(tx, teamId, routed, access, localStates);
   const teamNames = listed.filter((n) => !namedCatalog.includes(n));
@@ -241,14 +241,14 @@ async function namedLocalSkills(
  * (KOBE-318): the same split as run start, unfrozen, in the agent's order.
  */
 export async function localNamedSkills(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
 ): Promise<string[]> {
   const listed = [...new Set(names)];
   const access = await teamSkillAccess(tx, teamId, null);
   const { teamNames } = await namedLocalSkills(tx, teamId, listed, access, undefined);
-  return teamNames.filter((n) => access.local.has(n) && !isKobeSkillName(n));
+  return teamNames.filter((n) => access.local.has(n) && !isKaijuSkillName(n));
 }
 
 /**
@@ -257,7 +257,7 @@ export async function localNamedSkills(
  * team switch is on: the resolver omits them with a visible `team_disabled` notice.
  */
 export async function loadSkillFacts(
-  tx: KobeTx,
+  tx: KaijuTx,
   args: {
     teamId: string;
     userId: string;
@@ -327,7 +327,7 @@ export async function loadSkillFacts(
  * such runs carry no named, offered or personal skills, as before.
  */
 export async function loadRequiredSkillFacts(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<Pick<SkillFacts, "required" | "requiredOmissions" | "blockedHashes">> {
@@ -355,7 +355,7 @@ const byName = (a: SkillRef, b: SkillRef) => (a.name < b.name ? -1 : a.name > b.
  * its name too (review S2).
  */
 async function localByAccess(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
   required: boolean,

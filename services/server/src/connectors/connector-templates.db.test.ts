@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { loadEnvelope } from "@kobe/db";
-import { canonicalJson } from "@kobe/protocol";
+import { loadEnvelope } from "@kaiju/db";
+import { canonicalJson } from "@kaiju/protocol";
 import { driftNoticesFor } from "./drift-recipients.js";
 import { notifyDrift } from "./drift-notify.js";
 import type { ProbeResult } from "./probe.js";
@@ -245,7 +245,7 @@ describe("template drift (ac-2)", () => {
       (n) => n.connectorId === id,
     );
     expect(notice?.templates).toEqual(["ui://d/app", "ui://d/new"]);
-    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kobe.test" });
+    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kaiju.test" });
     const mail = h.mailer.to("root@apps.test").filter((m) => m.subject.includes("apps-drift"));
     expect(mail).toHaveLength(1);
     expect(must(mail[0]).text).toContain("ui://d/app");
@@ -402,7 +402,7 @@ describe("review fixes (KOBE-433 review)", () => {
       (n) => n.connectorId === id,
     );
     expect(notice).toMatchObject({ templatesSkipped: "proxy_outdated" });
-    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kobe.test" });
+    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kaiju.test" });
     const mail = h.mailer.to("root@apps.test").filter((m) => m.subject.includes("apps-outdated"));
     expect(mail).toHaveLength(1);
     expect(must(mail[0]).subject).toMatch(/app templates are not checked/);
@@ -446,7 +446,7 @@ describe("review fixes (KOBE-433 review)", () => {
       templates: ["ui://v/bad"],
       invalidTemplates: [{ uri: "ui://v/bad", reason: "ui_resource_hash_mismatch" }],
     });
-    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kobe.test" });
+    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kaiju.test" });
     const mail = h.mailer.to("root@apps.test").filter((m) => m.subject.includes("apps-report"));
     expect(mail).toHaveLength(1);
     expect(must(mail[0]).text).toMatch(/ui:\/\/v\/bad \(its declared contentHash does not match/);

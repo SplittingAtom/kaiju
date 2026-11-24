@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { agentChoices, chatRequests, composer, openApp } from "./testing";
 
@@ -12,8 +12,8 @@ import { agentChoices, chatRequests, composer, openApp } from "./testing";
  * fixed chip then names it. A thread with an agent keeps today's chip; the chip never names the
  * draft's default for a thread that has no agent.
  */
-let fake: FakeKobe;
-const KOBE = {
+let fake: FakeKaiju;
+const KAIJU = {
   id: "aaaaaaaa-0000-4000-8000-0000000000k0",
   scope: "gallery",
   galleryKey: "kobe",
@@ -25,8 +25,8 @@ const KOBE = {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
-  fake.runnableAgents.push(KOBE);
+  fake = new FakeKaiju();
+  fake.runnableAgents.push(KAIJU);
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -47,17 +47,17 @@ describe("an agentless started thread takes an agent (KOBE-458 ac-3)", () => {
     expect(await screen.findByRole("button", { name: /Chat with: No agent/ })).toBeTruthy();
     await user.click(within(await agentChoices()).getByRole("radio", { name: /Kobe/ }));
     await waitFor(() => expect(chooses()).toHaveLength(1));
-    expect(must(chooses()[0]).body).toEqual({ agent_id: KOBE.id });
+    expect(must(chooses()[0]).body).toEqual({ agent_id: KAIJU.id });
     expect(await screen.findByText("Agent: Kobe")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Chat with:/ })).toBeNull();
-    expect(must(fake.threads.get(t)).agent_id).toBe(KOBE.id);
+    expect(must(fake.threads.get(t)).agent_id).toBe(KAIJU.id);
     await composer();
   });
 
   it("keeps the fixed chip for a thread that has an agent", async () => {
     const t = fake.addThread("Lakehouse Picker");
     Object.assign(must(fake.threads.get(t)), {
-      agent_id: KOBE.id,
+      agent_id: KAIJU.id,
       agent_name: "Kobe",
       agent_status: "active",
       agent_version: 1,

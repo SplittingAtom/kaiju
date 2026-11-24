@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import type { SANDBOX_TURN_STOP_REASONS } from "@kobe/protocol/sandbox-wire";
-import { formatTraceparent, parseTraceparent } from "@kobe/protocol";
+import type { SANDBOX_TURN_STOP_REASONS } from "@kaiju/protocol/sandbox-wire";
+import { formatTraceparent, parseTraceparent } from "@kaiju/protocol";
 import {
   SANDBOX_SPAN_CONTENT_MAX_CHARS,
   TRACE_SPANS_AGENT_BUFFER_MAX,
@@ -13,10 +13,10 @@ import {
   type SandboxSpan,
   type TraceSpansFrame,
   type WireTraceContext,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 
 /**
- * Run spans of this sandbox (KOBE-274, contract in `@kobe/protocol` sandbox-wire/trace-frames.ts).
+ * Run spans of this sandbox (KOBE-274, contract in `@kaiju/protocol` sandbox-wire/trace-frames.ts).
  * Recorded from Pi's RPC events only for runs whose start carried a trace context, and sent to the
  * server as `trace.spans` frames over the existing wire: the sandbox holds no collector endpoint
  * or credential. Bounded memory and never in a run's way: a full buffer drops spans and counts them.

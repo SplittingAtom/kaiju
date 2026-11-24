@@ -2,7 +2,7 @@ import {
   isTerminalRunStatus,
   type RunTransition,
   type RunTransitionListener,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * The seam for what happens when a scheduled run ends (KOBE-174): KOBE-178 (deny-don't-wait

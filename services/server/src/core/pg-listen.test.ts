@@ -69,7 +69,7 @@ let listen: ListenClient | undefined;
 function make(behaviour: Behaviour = ok, options: Partial<ListenClientOptions> = {}) {
   listen = createListenClient({
     connectionString: "postgres://fake",
-    applicationName: "kobe-test-listen",
+    applicationName: "kaiju-test-listen",
     reconnectMinMs: 100,
     reconnectMaxMs: 1_000,
     pingMs: 1_000,
@@ -124,23 +124,23 @@ describe("createListenClient", () => {
     const l = make();
     expect(clients).toHaveLength(0);
     const r = recorder();
-    l.subscribe("kobe_a", r.sub);
+    l.subscribe("kaiju_a", r.sub);
     expect(r.events).toEqual(["polling"]); // not listening yet: subscribers poll
     await settle();
     expect(clients).toHaveLength(1);
     const c = clients[0] as FakeClient;
-    expect(c.config.application_name).toBe("kobe-test-listen");
+    expect(c.config.application_name).toBe("kaiju-test-listen");
     expect(c.queries[0]).toBe("SET idle_session_timeout = 0");
     // Server-side keepalives: Postgres drops a dead client (and its locks) in about a minute.
     expect(c.queries[1]).toBe(
       "SET tcp_keepalives_idle = 30; SET tcp_keepalives_interval = 10; SET tcp_keepalives_count = 3",
     );
-    expect(c.listened()).toContain("kobe_a");
+    expect(c.listened()).toContain("kaiju_a");
     expect(c.queries.some((q) => q.startsWith("SELECT pg_notify"))).toBe(true);
     expect(l.state).toBe("listening");
     expect(r.events).toEqual(["polling", "listening"]);
-    c.notify("kobe_a", "hello");
-    c.notify("kobe_b", "not ours");
+    c.notify("kaiju_a", "hello");
+    c.notify("kaiju_b", "not ours");
     expect(r.events).toEqual(["polling", "listening", "n:hello"]);
   });
 
@@ -151,7 +151,7 @@ describe("createListenClient", () => {
         failures-- > 0 ? Promise.reject(new Error("ECONNREFUSED")) : Promise.resolve(),
     });
     const r = recorder();
-    l.subscribe("kobe_a", r.sub);
+    l.subscribe("kaiju_a", r.sub);
     await settle();
     expect(clients).toHaveLength(1);
     expect(l.state).toBe("down");
@@ -176,8 +176,8 @@ describe("createListenClient", () => {
     const l = make();
     const a = recorder();
     const b = recorder();
-    l.subscribe("kobe_a", a.sub);
-    l.subscribe("kobe_b", b.sub);
+    l.subscribe("kaiju_a", a.sub);
+    l.subscribe("kaiju_b", b.sub);
     await settle();
     expect(l.state).toBe("listening");
     const first = clients[0] as FakeClient;
@@ -194,12 +194,12 @@ describe("createListenClient", () => {
     expect(clients).toHaveLength(2);
     expect(l.state).toBe("listening");
     expect((clients[1] as FakeClient).listened().sort()).toEqual(
-      ["kobe_a", "kobe_b", "kobe_listen_probe"].sort(),
+      ["kaiju_a", "kaiju_b", "kobe_listen_probe"].sort(),
     );
     expect(a.events.at(-1)).toBe("listening");
     expect(b.events.at(-1)).toBe("listening");
     // A late event from the dead client is ignored.
-    first.notify("kobe_a", "stale");
+    first.notify("kaiju_a", "stale");
     expect(a.events).not.toContain("n:stale");
   });
 
@@ -210,7 +210,7 @@ describe("createListenClient", () => {
       query: (_c, text) => (hang && text === "SELECT 1" ? new Promise(() => undefined) : undefined),
     });
     const r = recorder();
-    l.subscribe("kobe_a", r.sub);
+    l.subscribe("kaiju_a", r.sub);
     await settle();
     expect(l.state).toBe("listening");
     hang = true;
@@ -228,7 +228,7 @@ describe("createListenClient", () => {
       query: (_c, text) =>
         text.startsWith("SELECT pg_notify") ? Promise.resolve({ rows: [] }) : undefined,
     });
-    l.subscribe("kobe_a", recorder().sub);
+    l.subscribe("kaiju_a", recorder().sub);
     await settle();
     expect(l.state).toBe("connecting");
     await vi.advanceTimersByTimeAsync(500);
@@ -238,7 +238,7 @@ describe("createListenClient", () => {
   it("leaves no client when close() runs during connect", async () => {
     let release: (() => void) | undefined;
     const l = make({ connect: () => new Promise<void>((r) => (release = r)) });
-    l.subscribe("kobe_a", recorder().sub);
+    l.subscribe("kaiju_a", recorder().sub);
     await settle();
     expect(l.state).toBe("connecting");
     const closing = l.close();
@@ -257,7 +257,7 @@ describe("createListenClient", () => {
     const errors: unknown[] = [];
     const l = make(ok, { log: { warn: () => undefined, error: (o) => errors.push(o) } });
     const got: string[] = [];
-    l.subscribe("kobe_a", {
+    l.subscribe("kaiju_a", {
       notification: () => {
         throw new Error("boom");
       },
@@ -265,16 +265,16 @@ describe("createListenClient", () => {
         throw new Error("boom too");
       },
     });
-    l.subscribe("kobe_a", {
+    l.subscribe("kaiju_a", {
       // never settles: the client must not wait on it
       notification: () => void new Promise(() => undefined),
     });
-    l.subscribe("kobe_a", { notification: (p) => got.push(p) });
+    l.subscribe("kaiju_a", { notification: (p) => got.push(p) });
     await settle();
     expect(l.state).toBe("listening");
     const c = clients[0] as FakeClient;
-    c.notify("kobe_a", "1");
-    c.notify("kobe_a", "2");
+    c.notify("kaiju_a", "1");
+    c.notify("kaiju_a", "2");
     expect(got).toEqual(["1", "2"]); // in order, despite the others
     expect(errors.length).toBeGreaterThanOrEqual(3);
     expect(l.state).toBe("listening");
@@ -282,36 +282,36 @@ describe("createListenClient", () => {
 
   it("LISTENs a channel added later once, and UNLISTENs when its last subscriber leaves", async () => {
     const l = make();
-    l.subscribe("kobe_a", recorder().sub);
+    l.subscribe("kaiju_a", recorder().sub);
     await settle();
     const c = clients[0] as FakeClient;
     const b1 = recorder();
     const b2 = recorder();
-    const off1 = l.subscribe("kobe_b", b1.sub);
-    const off2 = l.subscribe("kobe_b", b2.sub);
+    const off1 = l.subscribe("kaiju_b", b1.sub);
+    const off2 = l.subscribe("kaiju_b", b2.sub);
     await settle();
-    expect(c.listened().filter((ch) => ch === "kobe_b")).toHaveLength(1);
+    expect(c.listened().filter((ch) => ch === "kaiju_b")).toHaveLength(1);
     expect(b1.events).toEqual(["listening"]);
     expect(b2.events).toEqual(["listening"]);
-    c.notify("kobe_b", "x");
+    c.notify("kaiju_b", "x");
     expect(b1.events.at(-1)).toBe("n:x");
     expect(b2.events.at(-1)).toBe("n:x");
     off1();
     await settle();
-    expect(c.queries).not.toContain("UNLISTEN kobe_b");
+    expect(c.queries).not.toContain("UNLISTEN kaiju_b");
     off2();
     off2(); // idempotent
     await settle();
-    expect(c.queries.filter((q) => q === "UNLISTEN kobe_b")).toHaveLength(1);
-    expect(l.channels).toEqual(["kobe_a"]);
-    c.notify("kobe_b", "after");
+    expect(c.queries.filter((q) => q === "UNLISTEN kaiju_b")).toHaveLength(1);
+    expect(l.channels).toEqual(["kaiju_a"]);
+    c.notify("kaiju_b", "after");
     expect(b2.events).not.toContain("n:after");
   });
 
   it("runs session queries on the listening connection only", async () => {
     const l = make();
     const r = recorder();
-    l.subscribe("kobe_a", r.sub);
+    l.subscribe("kaiju_a", r.sub);
     await settle();
     const session = r.sessions[0] as ListenSession;
     await session.query("SELECT pg_try_advisory_lock($1)", [1]);
@@ -325,18 +325,18 @@ describe("createListenClient", () => {
     const l = make({
       connect: () => Promise.resolve(),
       query: (_c, text) =>
-        text === "LISTEN kobe_b"
+        text === "LISTEN kaiju_b"
           ? new Promise((r) => (releaseListen = () => r({ rows: [] })))
           : undefined,
     });
-    l.subscribe("kobe_a", recorder().sub);
+    l.subscribe("kaiju_a", recorder().sub);
     await settle();
     expect(l.state).toBe("listening");
     const first = recorder();
     const second = recorder();
-    l.subscribe("kobe_b", first.sub);
+    l.subscribe("kaiju_b", first.sub);
     await settle();
-    l.subscribe("kobe_b", second.sub);
+    l.subscribe("kaiju_b", second.sub);
     await settle();
     expect(first.events).toEqual([]);
     expect(second.events).toEqual([]); // not before LISTEN completed
@@ -354,14 +354,14 @@ describe("createListenClient", () => {
           ? Promise.reject(Object.assign(new Error("unsupported"), { code: "08P01" }))
           : undefined,
     });
-    l.subscribe("kobe_a", recorder().sub);
+    l.subscribe("kaiju_a", recorder().sub);
     await settle();
     expect(l.state).toBe("listening");
   });
 
   it("destroys the socket when end() does not return on close (half-open)", async () => {
     const l = make({ connect: () => Promise.resolve(), end: () => new Promise(() => undefined) });
-    l.subscribe("kobe_a", recorder().sub);
+    l.subscribe("kaiju_a", recorder().sub);
     await settle();
     expect(l.state).toBe("listening");
     let closed = false;
@@ -377,14 +377,14 @@ describe("createListenClient", () => {
 
   it("refuses channel names that are not plain identifiers", () => {
     const l = make();
-    expect(() => l.subscribe("kobe; DROP TABLE x", recorder().sub)).toThrow(/channel/);
+    expect(() => l.subscribe("kaiju; DROP TABLE x", recorder().sub)).toThrow(/channel/);
   });
 
   it("answers a subscribe after close with nothing and never connects", async () => {
     const l = make();
     await l.close();
     const r = recorder();
-    const off = l.subscribe("kobe_a", r.sub);
+    const off = l.subscribe("kaiju_a", r.sub);
     off();
     await settle();
     expect(clients).toHaveLength(0);

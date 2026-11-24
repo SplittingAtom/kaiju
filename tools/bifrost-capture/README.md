@@ -20,7 +20,7 @@ Records what Bifrost forwards upstream for the request bodies Kaiju's model gate
   given two result files it prints both versions side by side.
 
 ```bash
-npx pnpm@12.8.1 --filter @kobe/model-gateway... build
+npx pnpm@12.8.1 --filter @kaiju/model-gateway... build
 node tools/bifrost-capture/make-cases.mjs > /tmp/cases.json
 tools/bifrost-capture/run.sh docker.io/maximhq/bifrost@sha256:<digest> v225 /tmp/cases.json /tmp/out
 tools/bifrost-capture/run.sh docker.io/maximhq/bifrost:v2.5.1 v251 /tmp/cases.json /tmp/out

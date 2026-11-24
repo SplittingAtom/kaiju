@@ -32,7 +32,7 @@ git push -u origin fix/typo
 - Clone, fetch, pull and push work, and so do submodules whose URLs are in a connected
   organization. Git LFS is not supported. There are no SSH connections: `git@…` URLs of connected
   organizations are carried over HTTPS for you, and any other SSH remote fails at once with
-  `kobe: SSH is not available in the sandbox`; use the `https://` URL instead.
+  `kaiju: SSH is not available in the sandbox`; use the `https://` URL instead.
 - A single git request may run for up to 30 minutes. Start each long operation in a new `bash` call.
 
 Repositories outside the connected organizations: public ones can be cloned only when the

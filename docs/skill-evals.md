@@ -5,8 +5,8 @@ v1.2 Skills System, SK15–SK18). The code is the contract: `packages/protocol/s
 (`cases.ts` format and limits, `parse.ts` located issues, `plan.ts` executions and expected checks,
 `outputs.ts` what a glob matches, `judge.ts` judge isolation, `scorecard.ts` the team scorecard,
 `compute.ts` its numbers and verification, `catalog-scorecard.ts` what may leave the team and the
-SK20 rules, `api.ts` routes, events and settings). The root entry `@kobe/protocol` exports all but
-the parser; `@kobe/protocol/skill-evals` adds `parseSkillEvalSuite` (and so loads `yaml`). Golden
+SK20 rules, `api.ts` routes, events and settings). The root entry `@kaiju/protocol` exports all but
+the parser; `@kaiju/protocol/skill-evals` adds `parseSkillEvalSuite` (and so loads `yaml`). Golden
 fixtures: `packages/protocol/src/skill-evals/fixtures/` (`cases/*.yaml` with `cases/issues.json`,
 `scorecard/valid-full.json`, and `scorecard/forged-*.json`, which must fail verification). The runner (KOBE-325), judge and run model (KOBE-326), budgets
 (KOBE-327) and the Workbench panel (KOBE-328) build on it.

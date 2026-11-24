@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
-import type { RunSession } from "@kobe/db";
-import { parseTraceparent, runTraceId, type ServerCallClaims } from "@kobe/protocol";
-import { mapSandboxSpanId } from "@kobe/protocol/node";
+import type { RunSession } from "@kaiju/db";
+import { parseTraceparent, runTraceId, type ServerCallClaims } from "@kaiju/protocol";
+import { mapSandboxSpanId } from "@kaiju/protocol/node";
 import {
   ROOT_CONTEXT,
   idAttributes,
@@ -10,7 +10,7 @@ import {
   telemetryState,
   type Attributes,
   type Context,
-} from "@kobe/telemetry";
+} from "@kaiju/telemetry";
 
 /** What the gateway needs to place its spans in run traces (KOBE-274). */
 export interface GatewayTracing {
@@ -29,7 +29,7 @@ const FRESH: Placement = { parent: ROOT_CONTEXT, attributes: {} };
 
 /**
  * Where `model_gateway.request` goes, decided **after** run attribution (contract in
- * `@kobe/protocol` tracing.ts, listener rule): the attributed run's trace, never the caller's.
+ * `@kaiju/protocol` tracing.ts, listener rule): the attributed run's trace, never the caller's.
  * The parent is the caller's span, remapped as the server remaps relayed sandbox spans, only when
  * the caller named this very run's trace; otherwise the run's root. A server call hangs under the
  * root. No run: a fresh trace. `session.id` / `user.id` come from the server-call claims or the

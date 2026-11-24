@@ -1,5 +1,5 @@
-import { imitatesAppContext, imitatesSkillRequest } from "@kobe/protocol";
-import { listMemberships, withTeam, type KobeTx } from "@kobe/db";
+import { imitatesAppContext, imitatesSkillRequest } from "@kaiju/protocol";
+import { listMemberships, withTeam, type KaijuTx } from "@kaiju/db";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import type { ServerDeps } from "../../deps.js";
 import { RunError } from "../../runs/errors.js";
@@ -25,7 +25,7 @@ export const serverMarkers = (prompt: string) =>
 
 /** A schedule's `@file` mentions checked against the owner's workspace now (KOBE-223 S3). */
 export async function mentionsAnswer(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: { readonly teamId: string; readonly userId: string },
   mentions: readonly string[],
 ): Promise<Answer | null> {
@@ -45,7 +45,7 @@ export async function mentionsAnswer(
  * only once the agent (or the one the same edit switches to) can start a thread for its owner.
  */
 export async function agentBack(
-  tx: KobeTx,
+  tx: KaijuTx,
   row: { teamId: string; userId: string; agentId: string; pausedBy: string | null },
   newAgent?: string,
 ): Promise<boolean> {
@@ -79,7 +79,7 @@ export function scheduleKit(deps: ServerDeps) {
     teamId: string,
     owner: string,
     capped: boolean,
-    fn: (tx: KobeTx, elsewhere: number) => Promise<T>,
+    fn: (tx: KaijuTx, elsewhere: number) => Promise<T>,
   ): Promise<T> => {
     if (!capped) return withTeam(db, teamId, (tx) => fn(tx, 0));
     const others = await otherTeams(owner, teamId);
@@ -94,7 +94,7 @@ export function scheduleKit(deps: ServerDeps) {
    * else learns only the code, never the owner's cross-team count.
    */
   const capAnswer = async (
-    tx: KobeTx,
+    tx: KaijuTx,
     owner: string,
     teamId: string,
     elsewhere: number,
@@ -107,7 +107,7 @@ export function scheduleKit(deps: ServerDeps) {
 
   /** The caller's own schedule, locked for update; null (404) for anyone else's. */
   const loadOwn = async (
-    tx: KobeTx,
+    tx: KaijuTx,
     teamId: string,
     userId: string,
     id: string,

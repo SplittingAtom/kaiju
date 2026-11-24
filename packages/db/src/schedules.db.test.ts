@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { events, schedules, teams, threads, users } from "./schema/index.js";
 import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
 
 /** KOBE-172: schedules (team table), fire dedup on events, threads.schedule_id. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

@@ -26,7 +26,7 @@ test("U22: a fork marker at each entry with two branches", async ({ chat, page }
   await chat.waitForIdle();
   await page.reload();
   await expect(chat.composer).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
-  const markers = page.locator('[data-kobe-marker="fork"]');
+  const markers = page.locator('[data-kaiju-marker="fork"]');
   await expect(markers).toHaveCount(2, { timeout: RUN_TIMEOUT_MS });
   for (const m of await markers.all()) await expect(m).toContainText("2 branches");
 });

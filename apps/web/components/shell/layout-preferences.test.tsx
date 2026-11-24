@@ -2,20 +2,20 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { must } from "../../lib/testing/must";
 import { openApp, pressModShift } from "../chat/testing";
 
 /** KOBE-202 (CE8): the member's layout, loaded at shell start and saved per user. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 /** The grid's columns as laid out: 1,000 px right of the rail, shared by the column and the chat. */
 let space = { artifact: 0, conversation: 1000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   space = { artifact: 0, conversation: 1000 };
   const real = HTMLElement.prototype.getBoundingClientRect;
@@ -56,7 +56,7 @@ const loads = () => fake.requests.filter((r) => r.method === "GET" && r.path ===
 const gridWidth = () =>
   must(
     document.querySelector<HTMLElement>('[data-shell-region="artifact"]')?.parentElement,
-  ).style.getPropertyValue("--kobe-artifact-width");
+  ).style.getPropertyValue("--kaiju-artifact-width");
 
 async function openShell() {
   const before = loads().length;

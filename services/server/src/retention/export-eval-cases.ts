@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { caseCutoff } from "../eval-cases/visibility.js";
 
 /**
@@ -31,7 +31,7 @@ const iso = (t: Date | string) => (t instanceof Date ? t : new Date(t)).toISOStr
 
 /** The viewer's own cases in the team, oldest id first, a page at a time. */
 export async function* evalCasesForExport(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: { readonly teamId: string; readonly userId: string },
 ): AsyncGenerator<ExportedEvalCase[]> {
   let after: string | null = null;

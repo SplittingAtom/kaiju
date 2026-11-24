@@ -5,7 +5,7 @@ import {
   type ServerResponse,
 } from "node:http";
 import { request as httpsRequest, Agent as HttpsAgent } from "node:https";
-import { injectTraceHeaders, type Context } from "@kobe/telemetry";
+import { injectTraceHeaders, type Context } from "@kaiju/telemetry";
 import { forwardRequestHeaders, forwardResponseHeaders } from "../headers.js";
 import { MODEL_LIST_MAX_BYTES, filterModelList } from "../model-list.js";
 import type { RouteKind } from "../routes.js";

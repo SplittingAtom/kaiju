@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import type { ObjectStore } from "../workspace-sync/object-store.js";
 
 /** Longest one batch's object delete may take while the legal-hold lock is held. */
@@ -12,7 +12,7 @@ export const SETTLE_GRACE_MS = 10_000;
  * harmless). `unsettled`: the store ignored the abort and was still running when we gave up.
  */
 /** Follow-up work for the keys a timed-out delete did remove (runs in a new short transaction). */
-export type Recover = (tx: KobeTx) => Promise<void>;
+export type Recover = (tx: KaijuTx) => Promise<void>;
 export type Forget = (deleted: readonly string[]) => Recover;
 
 export class DeleteAbortedError extends Error {

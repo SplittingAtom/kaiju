@@ -1,5 +1,5 @@
-import type { PiGetEntriesData, PiSessionEntry } from "@kobe/protocol/sandbox-wire";
-import { sql, threadEntries, type KobeTx } from "@kobe/db";
+import type { PiGetEntriesData, PiSessionEntry } from "@kaiju/protocol/sandbox-wire";
+import { sql, threadEntries, type KaijuTx } from "@kaiju/db";
 import type { NewRunEvent } from "../event-stream/append.js";
 import { WIRE_DEFAULTS } from "../sandbox-wire/constants.js";
 import { listRunAttachments } from "../uploads/attach-list.js";
@@ -58,7 +58,7 @@ export type LeafMove = "always" | "if_latest";
  * the bound id (or the one already set).
  */
 export async function bindUserEntry(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<string | null> {
@@ -87,7 +87,7 @@ type PromptRun = {
 };
 
 async function lockPromptRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<PromptRun | undefined> {
@@ -105,7 +105,7 @@ async function lockPromptRun(
 }
 
 /** No run of the thread started after this one: the conversation has not moved on. */
-async function isLatestRun(tx: KobeTx, teamId: string, runId: string, run: PromptRun) {
+async function isLatestRun(tx: KaijuTx, teamId: string, runId: string, run: PromptRun) {
   if (run.started_at === null) return true;
   const later = await tx.execute(sql`
     SELECT 1 FROM runs
@@ -115,7 +115,7 @@ async function isLatestRun(tx: KobeTx, teamId: string, runId: string, run: Promp
   return later.rows.length === 0;
 }
 
-async function setUserEntry(tx: KobeTx, teamId: string, runId: string, entryId: string) {
+async function setUserEntry(tx: KaijuTx, teamId: string, runId: string, entryId: string) {
   await tx.execute(sql`
     UPDATE runs SET user_entry_id = ${entryId}
      WHERE team_id = ${teamId} AND id = ${runId} AND user_entry_id IS NULL`);
@@ -123,7 +123,7 @@ async function setUserEntry(tx: KobeTx, teamId: string, runId: string, entryId: 
 
 /** What the server itself knows of the run's prompt: its text, branch, files and model. */
 async function promptRecord(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   run: PromptRun,
@@ -145,7 +145,7 @@ async function promptRecord(
 
 /** Not already some other run's prompt (a stop-then-resend race, or a forged reuse). */
 async function boundElsewhere(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   run: PromptRun,
@@ -161,7 +161,7 @@ async function boundElsewhere(
 
 /** Adds `bytes` to the run's sandbox bytes if they fit its budget (the active path's rule). */
 async function chargeBytes(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   bytes: number,
@@ -175,7 +175,7 @@ async function chargeBytes(
 }
 
 async function mirrorPiPrompt(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   run: PromptRun,
@@ -213,7 +213,7 @@ async function mirrorPiPrompt(
 }
 
 async function writeUnsentPrompt(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   run: PromptRun,
@@ -276,7 +276,7 @@ async function writeUnsentPrompt(
  * already ended gets none). Locks thread, then run.
  */
 export async function keepRunPromptInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   source: PromptSource | undefined,
@@ -312,7 +312,7 @@ export async function keepRunPromptInTx(
  * no `source`, a run no sandbox ever leased never reached Pi: its prompt is the server's to keep.
  */
 export async function keepPromptAtEndInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   source?: PromptSource,
@@ -337,7 +337,7 @@ export async function keepPromptAtEndInTx(
  * entry): an unsent prompt is not in Pi's session, so its parent (repeatedly). Null: Pi's leaf.
  */
 export async function piBranchPoint(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   entryId: string | null,

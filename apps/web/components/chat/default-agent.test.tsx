@@ -2,7 +2,7 @@
 import { cleanup, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { agentChoices, chatRequests, composer, openApp } from "./testing";
 
@@ -10,10 +10,10 @@ import { agentChoices, chatRequests, composer, openApp } from "./testing";
  * KOBE-124, KOBE-254, KOBE-458: new chats preselect the agent the server marks `default` (gallery
  * Kobe when runnable): the server owns the rule, so a rail launch's new thread gets the same agent.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
-const KOBE = {
-  id: "a-kobe",
+const KAIJU = {
+  id: "a-kaiju",
   scope: "gallery",
   galleryKey: "kobe",
   default: true,
@@ -23,7 +23,7 @@ const KOBE = {
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.runnableAgents.push({ id: "a-team", scope: "team", name: "Kobe", model: null });
   vi.stubGlobal("fetch", fake.fetch);
 });
@@ -41,17 +41,17 @@ const checked = async () =>
 
 describe("default agent", () => {
   it("preselects the agent the server marks default, not one by display name or key", async () => {
-    fake.runnableAgents.push(KOBE);
+    fake.runnableAgents.push(KAIJU);
     openApp(fake);
     await waitFor(async () => expect(await checked()).toEqual(["Helper"]));
     await userEvent.setup().type(await composer(), "hi{Enter}");
     await waitFor(() => expect(fake.threads.size).toBe(1));
-    expect(must(chatRequests(fake, "POST")[0]).body).toMatchObject({ agent_id: "a-kobe" });
+    expect(must(chatRequests(fake, "POST")[0]).body).toMatchObject({ agent_id: "a-kaiju" });
   });
 
   it("falls back to No agent when Kobe is not runnable (suspended or missing)", async () => {
     // A gallery Kobe the server doesn't mark default (say, an older server) is not preselected.
-    const { default: _default, ...notDefault } = KOBE;
+    const { default: _default, ...notDefault } = KAIJU;
     fake.runnableAgents.push(notDefault);
     openApp(fake);
     expect(await checked()).toEqual(["No agent"]);
@@ -61,7 +61,7 @@ describe("default agent", () => {
   });
 
   it("lets the user change the selection back to No agent", async () => {
-    fake.runnableAgents.push(KOBE);
+    fake.runnableAgents.push(KAIJU);
     openApp(fake);
     const user = userEvent.setup();
     await waitFor(async () => expect(await checked()).toEqual(["Helper"]));

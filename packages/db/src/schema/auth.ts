@@ -52,7 +52,7 @@ export const users = pgTable(
     /**
      * Layout preferences that follow the user across devices (KOBE-202, CE8): rail state, divider
      * share, artifact column width. NULL means defaults. The server validates the shape (zod schema
-     * in @kobe/protocol); the CHECK only bounds it to a small JSON object. Not a Better Auth field.
+     * in @kaiju/protocol); the CHECK only bounds it to a small JSON object. Not a Better Auth field.
      */
     uiPreferences: jsonb(),
     /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_TOOLS, builtinToolDescriptor, type ToolDescriptor } from "@kobe/protocol";
-import type { AgentFrontmatter } from "@kobe/agent-file";
+import { BUILTIN_TOOLS, builtinToolDescriptor, type ToolDescriptor } from "@kaiju/protocol";
+import type { AgentFrontmatter } from "@kaiju/agent-file";
 import { checkAgentTools } from "../policy/gates.js";
 import type { PolicyRule } from "../policy/rules.js";
 import {

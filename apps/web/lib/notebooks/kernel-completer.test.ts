@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { NotebookCompletionBody } from "@kobe/protocol";
+import type { NotebookCompletionBody } from "@kaiju/protocol";
 import type { ApiResult } from "../api/client";
 import type { KernelCompletionAnswer, NotebookApi } from "./api";
 import {

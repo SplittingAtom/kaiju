@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PolicyDecision } from "@kobe/protocol";
+import type { PolicyDecision } from "@kaiju/protocol";
 import { distinctSiblings, mapLimited } from "./fan-out.js";
 import type { ActiveRunContext } from "./run-context.js";
 

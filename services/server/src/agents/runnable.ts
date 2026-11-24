@@ -1,4 +1,4 @@
-import { AGENT_SLUG_MAX } from "@kobe/agent-file";
+import { AGENT_SLUG_MAX } from "@kaiju/agent-file";
 import {
   and,
   eq,
@@ -11,8 +11,8 @@ import {
   teamAgentVersions,
   withTeam,
   type AgentScope,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { z } from "zod";
 import { canPinAgent } from "./versions.js";
 import { isDefaultNewThreadAgent, teamDefaultAgentId } from "./default-agent.js";
@@ -105,7 +105,7 @@ const published = (agent: AgentRecord): Published[] =>
     : [];
 
 export async function listRunnableAgents(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: { teamId: string; userId: string },
   query: z.infer<typeof runnableQuerySchema>,
 ): Promise<RunnablePage> {

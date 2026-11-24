@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { z } from "zod";
-import { withTeam, type KobeTx, isUniqueViolation } from "@kobe/db";
-import { type ProjectAction } from "@kobe/protocol";
+import { withTeam, type KaijuTx, isUniqueViolation } from "@kaiju/db";
+import { type ProjectAction } from "@kaiju/protocol";
 import { type TeamVariables } from "../../authz/middleware.js";
 import type { ServerDeps } from "../../deps.js";
 import { loadAccess, type ProjectAccess } from "../../projects/access.js";
@@ -120,7 +120,7 @@ export function projectKit(deps: ServerDeps, sync: WorkspaceSync | undefined) {
   const withProject = async (
     c: ProjectContext,
     action: ProjectAction,
-    fn: (tx: KobeTx, access: ProjectAccess) => Promise<Response>,
+    fn: (tx: KaijuTx, access: ProjectAccess) => Promise<Response>,
   ): Promise<Response> => {
     const id = param(c, "id", idParam);
     if (!id.success) return failure(c, "not_found");

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { waitForMigrations } from "../wait.js";
 
 // initContainer for the server and scheduler: wait (as the app role) for this build's migrations.
-const logger = pino({ base: { service: "kobe-db-wait" } });
+const logger = pino({ base: { service: "kaiju-db-wait" } });
 
 const envSchema = z.object({
   KOBE_DATABASE_URL: z.url({

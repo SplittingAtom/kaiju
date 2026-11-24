@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { threadStatus } from "@kobe/db";
-import { THREAD_STATUSES } from "@kobe/protocol";
+import { threadStatus } from "@kaiju/db";
+import { THREAD_STATUSES } from "@kaiju/protocol";
 import {
   ENTRY_PAGE_DEFAULT,
   THREAD_PAGE_DEFAULT,
@@ -15,7 +15,7 @@ import {
 const ID = "0F8FAD5B-D9CB-469F-A165-70867728950E";
 
 describe("thread API schemas", () => {
-  it("uses the same thread statuses as the database and @kobe/protocol", () => {
+  it("uses the same thread statuses as the database and @kaiju/protocol", () => {
     expect([...threadStatus.enumValues]).toEqual([...THREAD_STATUSES]);
   });
 

@@ -1,5 +1,5 @@
-import { isExcludedPath } from "@kobe/protocol";
-import { type RunStartFrame } from "@kobe/protocol/sandbox-wire";
+import { isExcludedPath } from "@kaiju/protocol";
+import { type RunStartFrame } from "@kaiju/protocol/sandbox-wire";
 import { MoveReplay } from "./moves.js";
 import { NO_CHECKOUTS, statLocal, type Checkouts } from "./fs.js";
 import { pull } from "./sync/pull.js";

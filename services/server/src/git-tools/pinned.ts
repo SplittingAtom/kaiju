@@ -1,19 +1,19 @@
-import { GIT_BUILTIN_CONNECTOR_URL, sql, type KobeTx, type PinnedTool } from "@kobe/db";
+import { GIT_BUILTIN_CONNECTOR_URL, sql, type KaijuTx, type PinnedTool } from "@kaiju/db";
 import type { EnabledConnector } from "../mcp/catalog.js";
-import { kobePinnedTool, type KobePinnable } from "../kobe-mcp/pinned.js";
+import { kaijuPinnedTool, type KaijuPinnable } from "../kaiju-mcp/pinned.js";
 import { GIT_TOOLS, type GitToolDef } from "./catalog.js";
 
 /**
  * The built-in git connector (KOBE-762, owner decision 2026-11-22): the git host tools as their
  * own connector row (`builtin = 'git'`, fixed id), in the shape the MCP decision path already
- * understands, exactly as the Kaiju connector's tools are (`kobe-mcp/pinned.ts`): each tool a
+ * understands, exactly as the Kaiju connector's tools are (`kaiju-mcp/pinned.ts`): each tool a
  * "pinned" tool from the code's catalog (never drifted), the connector a team connector with
  * `custom` exposure over every git tool. It has no switch of its own: the Site's Git switch and
  * each connection's settings are the ceiling (`access.ts`), so the Kaiju MCP switch and the Kaiju
  * connector's thread toggle never reach these tools.
  */
 
-type Reader = Pick<KobeTx, "execute">;
+type Reader = Pick<KaijuTx, "execute">;
 
 export interface GitBuiltinRow {
   readonly id: string;
@@ -29,7 +29,7 @@ export async function loadGitBuiltin(db: Reader): Promise<GitBuiltinRow | undefi
 }
 
 /** A git host tool as a pinned entry: open world (it acts on the git host), never destructive. */
-export function gitPinnable(tool: GitToolDef): KobePinnable {
+export function gitPinnable(tool: GitToolDef): KaijuPinnable {
   const common = {
     name: tool.name,
     title: tool.title,
@@ -43,7 +43,7 @@ export function gitPinnable(tool: GitToolDef): KobePinnable {
 }
 
 export function gitPinnedTool(connectorName: string, tool: GitToolDef): PinnedTool {
-  return kobePinnedTool(connectorName, gitPinnable(tool));
+  return kaijuPinnedTool(connectorName, gitPinnable(tool));
 }
 
 export function gitPinnedTools(connectorName: string): PinnedTool[] {

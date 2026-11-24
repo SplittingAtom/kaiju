@@ -4,10 +4,10 @@ import path from "node:path";
 import { unzipSync } from "fflate";
 import type { HttpClient } from "isomorphic-git";
 import type pg from "pg";
-import { PROVENANCE_PATH, canonicalJsonBytes, provenanceSchema } from "@kobe/protocol";
-import { skillPackageHashes } from "@kobe/protocol/node";
-import { signSiteEgressToken, type SessionSigningKey } from "@kobe/session-token";
-import type { KobeDb } from "@kobe/db";
+import { PROVENANCE_PATH, canonicalJsonBytes, provenanceSchema } from "@kaiju/protocol";
+import { skillPackageHashes } from "@kaiju/protocol/node";
+import { signSiteEgressToken, type SessionSigningKey } from "@kaiju/session-token";
+import type { KaijuDb } from "@kaiju/db";
 import { logger } from "../../logger.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import { createPgReconcileLock } from "../../sandbox/reconcile-lock.js";
@@ -39,7 +39,7 @@ export const SKILL_MIRROR_SWEEP_MS = 5 * 60_000;
 export const SKILL_MIRROR_BATCH = 25;
 
 export interface SkillMirrorDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly pool: Pick<pg.Pool, "connect">;
   readonly blobs: BlobStore;
   readonly credentials: { readonly username: string; readonly token: string } | null;
@@ -156,7 +156,7 @@ export class SkillMirror {
     const pending = await pendingMirrorVersions(this.deps.db, url, this.now(), SKILL_MIRROR_BATCH);
     if (pending.length === 0 && plan.toCommit.length === 0)
       return { ran: true, pushed: 0, failed: 0 };
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-skill-mirror-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-skill-mirror-"));
     try {
       let session: MirrorSession;
       try {

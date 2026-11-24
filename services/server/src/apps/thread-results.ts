@@ -8,10 +8,10 @@ import {
   or,
   runs,
   threadAppResults,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type UiResourcePlacement,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { appVisible } from "../connectors/visibility.js";
 import { servedTemplateHash } from "../connectors/template-store.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -90,8 +90,8 @@ function decide(
 
 /** The thread's claimed results as the viewer sees them; the caller checked the thread is theirs to read. */
 export async function appResultViews(
-  db: KobeDb,
-  tx: KobeTx,
+  db: KaijuDb,
+  tx: KaijuTx,
   ids: { readonly teamId: string; readonly userId: string; readonly threadId: string },
 ): Promise<{ results: AppResultView[]; truncated: boolean }> {
   const rows = await tx
@@ -197,8 +197,8 @@ export type StoredResult =
  * (review LOW-5), with the call's stored input (LOW-2).
  */
 export async function readAppResult(
-  db: KobeDb,
-  tx: KobeTx,
+  db: KaijuDb,
+  tx: KaijuTx,
   blobs: BlobStore | undefined,
   ids: { readonly teamId: string; readonly userId: string; readonly threadId: string },
   ref: string,

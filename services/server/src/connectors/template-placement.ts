@@ -7,9 +7,9 @@ import {
   isNull,
   sql,
   UI_RESOURCE_PLACEMENTS,
-  type KobeDb,
+  type KaijuDb,
   type UiResourcePlacement,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -30,7 +30,7 @@ export type SetPlacementOutcome =
 
 /** Each template's placement of a connector, by URI. */
 export async function templatePlacements(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
 ): Promise<ReadonlyMap<string, UiResourcePlacement>> {
   const rows = await db
@@ -42,7 +42,7 @@ export async function templatePlacements(
 
 /** Sets one template's placement; audited (site event) only when it changes. */
 export async function setTemplatePlacement(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   input: SetPlacementInput,
 ): Promise<SetPlacementOutcome> {

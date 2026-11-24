@@ -4,8 +4,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { RawBody, type TestBrowser } from "../../testing/browser.js";
 import { openHarness, type Harness } from "../../testing/harness.js";
 import { MemoryObjects } from "../../testing/memory-objects.js";
-import { seedKobeSkills } from "../kobe-seed.js";
-import { withTeam } from "@kobe/db";
+import { seedKaijuSkills } from "../kaiju-seed.js";
+import { withTeam } from "@kaiju/db";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
@@ -47,7 +47,7 @@ async function filesOf(who: TestBrowser, id: string) {
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } }, (deps) => {
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } }, (deps) => {
     sync = createWorkspaceSync({
       db: deps.database.db,
       objects: workspaceObjects,
@@ -290,7 +290,7 @@ describe("fork (ac-1, ac-3)", () => {
   });
 
   it("copies an installed catalog version; a catalog skill the team hasn't installed is not found", async () => {
-    await seedKobeSkills({
+    await seedKaijuSkills({
       db: h.deps.database.db,
       blobs: h.deps.blobs as NonNullable<typeof h.deps.blobs>,
       log: silent,
@@ -445,7 +445,7 @@ async function inOtherTeam<T>(fn: () => Promise<T>): Promise<T> {
 
 describe("teams are walls (review S3)", () => {
   it("forks nothing of another team: its skill, its catalog install, its versions", async () => {
-    await seedKobeSkills({
+    await seedKaijuSkills({
       db: h.deps.database.db,
       blobs: h.deps.blobs as NonNullable<typeof h.deps.blobs>,
       log: silent,
@@ -474,7 +474,7 @@ describe("teams are walls (review S3)", () => {
   });
 
   it("copies only published catalog versions: submitted, withdrawn or revoked ones are not found", async () => {
-    await seedKobeSkills({
+    await seedKaijuSkills({
       db: h.deps.database.db,
       blobs: h.deps.blobs as NonNullable<typeof h.deps.blobs>,
       log: silent,
@@ -511,7 +511,7 @@ describe("teams are walls (review S3)", () => {
   });
 
   it("copies no catalog skill that is archived or that this team blocked (review N4)", async () => {
-    await seedKobeSkills({
+    await seedKaijuSkills({
       db: h.deps.database.db,
       blobs: h.deps.blobs as NonNullable<typeof h.deps.blobs>,
       log: silent,

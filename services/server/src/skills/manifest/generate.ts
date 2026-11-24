@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, registryTags, withTeam, type KobeDb } from "@kobe/db";
-import { MANIFEST_PATH, SERVER_CALL_LIMITS, type KobeSkillManifest } from "@kobe/protocol";
+import { and, eq, registryTags, withTeam, type KaijuDb } from "@kaiju/db";
+import { MANIFEST_PATH, SERVER_CALL_LIMITS, type KaijuSkillManifest } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
 import { resolveRunModel } from "../../runs/models.js";
@@ -46,7 +46,7 @@ export type SkillManifestFailure =
 export type SkillManifestOutcome =
   | {
       readonly ok: true;
-      readonly manifest: KobeSkillManifest;
+      readonly manifest: KaijuSkillManifest;
       readonly yaml: Uint8Array;
       /** The model that answered (alias and gateway id). */
       readonly model: { readonly alias: string; readonly gatewayModel: string };
@@ -75,7 +75,7 @@ export type ModelTarget =
   | { readonly ok: false; readonly code: "model_not_enabled" | "no_model" };
 
 export interface SkillManifestGeneratorOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly client: ServerCallClient;
   readonly log: Pick<Logger, "info" | "warn">;
   /** The call's own timeout (default the purpose's `timeout_ms`). */
@@ -88,7 +88,7 @@ export interface SkillManifestGeneratorOptions {
 
 /** The alias's gateway model if the team enables it now; the team default without an alias. */
 export async function resolveManifestModel(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   alias: string | undefined,
 ): Promise<ModelTarget> {
@@ -106,7 +106,7 @@ export async function resolveManifestModel(
 }
 
 /** The Site's active topic tags (never the system ones such as `default`). */
-async function activeTopicTags(db: KobeDb): Promise<string[]> {
+async function activeTopicTags(db: KaijuDb): Promise<string[]> {
   const rows = await db
     .select({ name: registryTags.name })
     .from(registryTags)

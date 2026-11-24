@@ -8,7 +8,7 @@ import {
   type EvalCaseErrorCode,
   type FeedbackReason,
   type ReviewEvalCaseBody,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   agentEvalCases,
   and,
@@ -18,8 +18,8 @@ import {
   sql,
   teamMembers,
   users,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { teamRoleAllows } from "../authz/permissions.js";
 import { recordAudit } from "../audit/record.js";
 import { cutText } from "../threads/entry-output.js";
@@ -95,7 +95,7 @@ const ofAgent = (key: AgentKey) =>
  * The agent's cases its owner may see (visibility.ts): live (within the window, sharer still a
  * member: a case a hold keeps looks purged) and shared on a UTC day that has ended.
  */
-async function ownerView(tx: KobeTx, key: AgentKey) {
+async function ownerView(tx: KaijuTx, key: AgentKey) {
   return and(ofAgent(key), liveCase(await caseCutoff(tx, key.teamId)), sharedOnFinishedDay);
 }
 
@@ -105,7 +105,7 @@ async function ownerView(tx: KobeTx, key: AgentKey) {
  */
 const LIST_LIMIT = 500;
 
-export async function listAgentCases(tx: KobeTx, key: AgentKey): Promise<AgentEvalCases> {
+export async function listAgentCases(tx: KaijuTx, key: AgentKey): Promise<AgentEvalCases> {
   const rows = await tx
     .select(columns)
     .from(agentEvalCases)
@@ -124,7 +124,7 @@ export async function listAgentCases(tx: KobeTx, key: AgentKey): Promise<AgentEv
   };
 }
 
-async function acceptedCount(tx: KobeTx, key: AgentKey): Promise<number> {
+async function acceptedCount(tx: KaijuTx, key: AgentKey): Promise<number> {
   const [row] = await tx
     .select({ n: sql<number>`count(*)::int` })
     .from(agentEvalCases)
@@ -133,7 +133,7 @@ async function acceptedCount(tx: KobeTx, key: AgentKey): Promise<number> {
 }
 
 export async function getAgentCase(
-  tx: KobeTx,
+  tx: KaijuTx,
   key: AgentKey,
   caseId: string,
 ): Promise<AgentEvalCase | null> {
@@ -151,7 +151,7 @@ export async function getAgentCase(
  * (ids and status only).
  */
 export async function reviewAgentCase(
-  tx: KobeTx,
+  tx: KaijuTx,
   key: AgentKey,
   caseId: string,
   body: ReviewEvalCaseBody,
@@ -206,7 +206,7 @@ export async function reviewAgentCase(
  * what its next gated publish runs (KOBE-93).
  */
 export async function acceptedCases(
-  tx: KobeTx,
+  tx: KaijuTx,
   key: AgentKey,
 ): Promise<{ id: string; content: EvalCaseContent; expected: string }[]> {
   const rows = await tx
@@ -232,7 +232,7 @@ export async function acceptedCases(
  * can't read cases, so without such an owner the gate leaves them out.
  */
 export async function caseReviewerPresent(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   agent: { readonly scope: string; readonly ownerUserId: string | null },
 ): Promise<boolean> {

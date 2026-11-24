@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import type { EgressWiring } from "./egress/egress-wiring.js";
 import { THREAD, runStart, startHarness, until, type Harness } from "./testing/harness.js";

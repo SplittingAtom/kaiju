@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, expect } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { TestBrowser } from "../testing/browser.js";
@@ -10,7 +10,7 @@ import { MemoryMailer } from "../testing/mailer.js";
 import { fakeIsolation } from "../testing/isolation.js";
 
 // KOBE-34 Thread API against a real Postgres: own throwaway database (it needs an Owner).
-export const PUBLIC_URL = "http://kobe.test";
+export const PUBLIC_URL = "http://kaiju.test";
 export const PASSWORD = "a long enough password";
 
 export const PEOPLE = ["owner", "siteAdmin", "alice", "bob", "carol", "dave", "erin"] as const;

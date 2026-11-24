@@ -1,11 +1,11 @@
-import { type RunStartFrame } from "@kobe/protocol/sandbox-wire";
-import { withTeam } from "@kobe/db";
+import { type RunStartFrame } from "@kaiju/protocol/sandbox-wire";
+import { withTeam } from "@kaiju/db";
 import {
   CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { readRunMemoryPlan, type RunMemoryPlan } from "../../agents/run-memory.js";
 import { buildRunMemory } from "../../memory/agent.js";
 import { buildPolicyOnly, buildRunSemantic } from "../../memory/items/run-memory.js";

@@ -1,6 +1,6 @@
 import { Readable } from "node:stream";
 import { Zip, ZipDeflate, strToU8 } from "fflate";
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { threadKey, type BlobStore } from "./blobs.js";
 import { evalCasesForExport } from "./export-eval-cases.js";
@@ -112,7 +112,7 @@ export interface ExportSummary {
 }
 
 /** Counts what the export holds and audits it (`thread.exported`) before the download starts. */
-export async function recordExport(db: KobeDb, viewer: ExportViewer): Promise<ExportSummary> {
+export async function recordExport(db: KaijuDb, viewer: ExportViewer): Promise<ExportSummary> {
   return withTeam(db, viewer.teamId, async (tx) => {
     const res = await tx.execute<{ threads: string; entries: string | null }>(sql`
       SELECT count(*) AS threads, sum(t.last_entry_seq) AS entries
@@ -148,7 +148,7 @@ export function transcriptName(thread: {
   return `transcripts/${day}-${slug(thread.title)}-${thread.id.slice(0, 8)}.md`;
 }
 
-async function threadPage(db: KobeDb, viewer: ExportViewer, after: string | null) {
+async function threadPage(db: KaijuDb, viewer: ExportViewer, after: string | null) {
   const cursor = after === null ? sql.raw("") : sql`AND t.id > ${after}`;
   return withTeam(db, viewer.teamId, async (tx) => {
     const res = await tx.execute<ThreadRow>(sql`
@@ -161,7 +161,7 @@ async function threadPage(db: KobeDb, viewer: ExportViewer, after: string | null
   });
 }
 
-async function entryPage(db: KobeDb, viewer: ExportViewer, threadId: string, after: number) {
+async function entryPage(db: KaijuDb, viewer: ExportViewer, threadId: string, after: number) {
   return withTeam(db, viewer.teamId, async (tx) => {
     // The join re-checks ownership on every page: a thread re-owned or purged meanwhile stops.
     const res = await tx.execute<EntryRow>(sql`
@@ -175,7 +175,7 @@ async function entryPage(db: KobeDb, viewer: ExportViewer, threadId: string, aft
   });
 }
 
-export async function* entries(db: KobeDb, viewer: ExportViewer, threadId: string) {
+export async function* entries(db: KaijuDb, viewer: ExportViewer, threadId: string) {
   let after = 0;
   for (;;) {
     const rows = await entryPage(db, viewer, threadId, after);
@@ -187,7 +187,7 @@ export async function* entries(db: KobeDb, viewer: ExportViewer, threadId: strin
 
 /** The entry ids on the active branch (leaf to root), walked in Postgres. */
 export async function activeBranchIds(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
   leaf: string | null,
@@ -243,7 +243,7 @@ export async function piEntry(
       typeof (entry as { timestamp?: unknown }).timestamp === "string"
         ? (entry as { timestamp: string }).timestamp
         : iso(row.created_at),
-    ...(row.blob_ref !== null && body === undefined ? { kobe_unavailable: true } : {}),
+    ...(row.blob_ref !== null && body === undefined ? { kaiju_unavailable: true } : {}),
   };
 }
 
@@ -259,7 +259,7 @@ type ArtifactVersionRow = {
 
 /** One page of the thread's artifact versions in (artifact, version) order, owner re-checked. */
 async function artifactVersionPage(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
   after: { artifactId: string; version: number } | null,
@@ -287,7 +287,7 @@ const FILE_PAGE = 50;
 type FileRow = { readonly id: string; readonly name: string; readonly blob_ref: string };
 
 /** One page of the thread's files (uploads and shared), by id, owner re-checked. */
-async function filePage(db: KobeDb, viewer: ExportViewer, threadId: string, after: string | null) {
+async function filePage(db: KaijuDb, viewer: ExportViewer, threadId: string, after: string | null) {
   return withTeam(db, viewer.teamId, async (tx) => {
     const res = await tx.execute<FileRow>(sql`
       SELECT f.id, f.name, f.blob_ref
@@ -315,7 +315,7 @@ type FeedbackExportRow = {
 };
 
 /** One page of the viewer's own ratings in the team (KOBE-275), by id: their rows only. */
-async function feedbackPage(db: KobeDb, viewer: ExportViewer, after: string | null) {
+async function feedbackPage(db: KaijuDb, viewer: ExportViewer, after: string | null) {
   return withTeam(db, viewer.teamId, async (tx) => {
     const res = await tx.execute<FeedbackExportRow>(sql`
       SELECT f.id, f.thread_id, f.run_id, f.entry_id, f.rating, f.reasons, f.comment,
@@ -330,7 +330,7 @@ async function feedbackPage(db: KobeDb, viewer: ExportViewer, after: string | nu
 
 /** A branch's file (CT14): `branches/<transcript name>/<n>-<label-or-first-words>.md`. */
 async function branchFileName(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
   transcript: string,
@@ -394,7 +394,7 @@ This archive holds the conversations you own in one Kaiju team.
 - \`eval-cases.json\`: the answers you shared with agents' owners as eval cases, as shared.
 - \`threads.json\`: an index (id, title, dates, folder path when filed, file names).
 
-Entries marked \`kobe_unavailable\` had a large body Kaiju could not read back from storage.
+Entries marked \`kaiju_unavailable\` had a large body Kaiju could not read back from storage.
 `;
 
 /** Where the export writes: zip entries, and the compressed bytes ready to send. */
@@ -407,7 +407,7 @@ interface ZipSink {
 
 /** The parts of an export the threads' loop writes into (one thread at a time). */
 interface ExportScope {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly viewer: ExportViewer;
   readonly blobs: BlobStore | undefined;
   readonly zip: ZipSink;
@@ -709,7 +709,7 @@ async function* storedFiles(x: ExportScope, blobs: BlobStore) {
  * bytes, so a slow download holds no more than a page in memory.
  */
 export async function* exportZip(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   blobs: BlobStore | undefined,
 ): AsyncGenerator<Uint8Array> {
@@ -766,7 +766,7 @@ export async function* exportZip(
 
 /** The export as a web stream for a Response body. */
 export function exportResponseBody(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   blobs: BlobStore | undefined,
 ): ReadableStream<Uint8Array> {

@@ -6,7 +6,7 @@ import { piSessionEntrySchema } from "./pi-rpc.js";
  * against docs/json.md in the 1.0.0 tarball). The server validates a bridged `pi.event` with
  * `parseTranslatedPiEvent` before reading any field: a known type that fails its schema is an
  * `error` `malformed_frame` (the frame is dropped, the run keeps going); unknown types are ignored
- * (including the agent's {@link KOBE_EVENT_DROPPED_TYPE} placeholder).
+ * (including the agent's {@link KAIJU_EVENT_DROPPED_TYPE} placeholder).
  * Objects stay loose (a Pi 1.0.x patch may add fields); the fields Kaiju reads are required.
  */
 
@@ -113,14 +113,14 @@ export function parseTranslatedPiEvent(event: { readonly type: string }): Transl
  * and not translated: the server accepts it, advances the cursor and produces no Kaiju event.
  * `reason` is the encoder's code (`frame_too_large` | `malformed_frame`).
  */
-export const KOBE_EVENT_DROPPED_TYPE = "kobe.event_dropped";
-export const kobeEventDroppedSchema = z.strictObject({
-  type: z.literal(KOBE_EVENT_DROPPED_TYPE),
+export const KAIJU_EVENT_DROPPED_TYPE = "kobe.event_dropped";
+export const kaijuEventDroppedSchema = z.strictObject({
+  type: z.literal(KAIJU_EVENT_DROPPED_TYPE),
   /** The dropped Pi event's `type`, truncated to 64 chars. */
   original_type: z.string().max(64),
   reason: z.enum(["frame_too_large", "malformed_frame"]),
 });
-export type KobeEventDropped = z.infer<typeof kobeEventDroppedSchema>;
+export type KaijuEventDropped = z.infer<typeof kaijuEventDroppedSchema>;
 
 /**
  * `data` of a successful `get_entries` response, validated before mirroring into `thread_entries`
@@ -140,7 +140,7 @@ export type PiGetEntriesData = z.infer<typeof piGetEntriesDataSchema>;
  * text is untrusted; the server has its own message per code). A run whose last assistant message
  * ended that way fails with that code instead of completing silently.
  */
-export const KOBE_MODEL_ERROR_PREFIX = "kobe.model_error:";
+export const KAIJU_MODEL_ERROR_PREFIX = "kobe.model_error:";
 
 export const MODEL_RUN_ERROR_CODES = [
   /** 403 `model_not_enabled` (the shim or Bifrost): not in the team's enabled models. */
@@ -169,17 +169,17 @@ export const MODEL_RUN_ERROR_CODES = [
 export type ModelRunErrorCode = (typeof MODEL_RUN_ERROR_CODES)[number];
 
 const MODEL_ERROR_RE = new RegExp(
-  `^${KOBE_MODEL_ERROR_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([a-z_]+)(?::|$)`,
+  `^${KAIJU_MODEL_ERROR_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([a-z_]+)(?::|$)`,
 );
 const MODEL_ERROR_CODE_SET: ReadonlySet<string> = new Set(MODEL_RUN_ERROR_CODES);
 
 /** The message kobe-models puts in `errorMessage` (`detail` is for logs, never for users). */
-export function kobeModelErrorMessage(code: ModelRunErrorCode, detail: string): string {
-  return `${KOBE_MODEL_ERROR_PREFIX}${code}: ${detail}`;
+export function kaijuModelErrorMessage(code: ModelRunErrorCode, detail: string): string {
+  return `${KAIJU_MODEL_ERROR_PREFIX}${code}: ${detail}`;
 }
 
 /** The code in a kobe-models error message; undefined for any other (untrusted) text. */
-export function parseKobeModelError(errorMessage: unknown): ModelRunErrorCode | undefined {
+export function parseKaijuModelError(errorMessage: unknown): ModelRunErrorCode | undefined {
   if (typeof errorMessage !== "string") return undefined;
   const match = MODEL_ERROR_RE.exec(errorMessage);
   const code = match?.[1];

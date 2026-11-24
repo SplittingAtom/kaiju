@@ -10,9 +10,9 @@ import {
   teamConnectors,
   withTeam,
   type ConnectorExposureKind,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { usableSiteKeyIds } from "./site-key.js";
 import { modelVisible } from "./visibility.js";
@@ -56,7 +56,7 @@ export type TemplateStates = ReadonlyMap<string, ReadonlyMap<string, boolean>>;
 
 /** The templates of these connectors, keyed by connector then URI (site-wide table, D27). */
 export async function templateStates(
-  tx: KobeTx,
+  tx: KaijuTx,
   connectorIds: readonly string[],
 ): Promise<TemplateStates> {
   if (connectorIds.length === 0) return new Map();
@@ -146,7 +146,7 @@ function view(
 }
 
 /** Registered (not removed) connectors with this team's enablement. */
-export async function listTeamConnectors(db: KobeDb, teamId: string): Promise<TeamConnectorView[]> {
+export async function listTeamConnectors(db: KaijuDb, teamId: string): Promise<TeamConnectorView[]> {
   return withTeam(db, teamId, async (tx) => {
     const [rows, enabled] = await Promise.all([
       tx
@@ -175,7 +175,7 @@ export async function listTeamConnectors(db: KobeDb, teamId: string): Promise<Te
  * every team, so site admins pick from every active site connector (each team's exposure still
  * applies at run time, and the frozen manifest is computed against the site floor).
  */
-export async function listGalleryConnectors(db: KobeDb): Promise<TeamConnectorView[]> {
+export async function listGalleryConnectors(db: KaijuDb): Promise<TeamConnectorView[]> {
   return db.transaction(async (tx) => {
     const rows = await tx
       .select()
@@ -223,7 +223,7 @@ const same = (a: readonly string[], b: readonly string[]) =>
 
 /** Enables the connector for the team or changes its exposure; audits only real changes. */
 export async function setTeamConnector(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   connectorId: string,
   input: ExposureInput,
@@ -298,7 +298,7 @@ export async function setTeamConnector(
 
 /** Disables the connector for the team; false when it was not enabled. */
 export async function disableTeamConnector(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   connectorId: string,
   /** KOBE-621: disable only while the team's exposure is still this one (approved before-state). */

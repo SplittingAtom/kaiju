@@ -76,7 +76,7 @@ export function ChangedBadge({
 }) {
   return (
     <div
-      data-kobe-changed-badge=""
+      data-kaiju-changed-badge=""
       className="bg-muted/50 flex flex-wrap items-center gap-2 rounded-md border px-2 py-1 text-sm"
     >
       <p className="min-w-0 flex-1">{changedBadgeText(by)}</p>
@@ -90,7 +90,7 @@ export function ChangedBadge({
 /** The always-mounted live region at the top of the editor that the badge appears in. */
 export function ChangesStatus({ children }: { readonly children?: ReactNode }) {
   return (
-    <div role="status" data-kobe-changes-status="">
+    <div role="status" data-kaiju-changes-status="">
       {children}
     </div>
   );

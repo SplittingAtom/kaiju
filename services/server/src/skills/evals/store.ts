@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx, type TeamRole } from "@kaiju/db";
 import {
   computeSkillEvalScorecard,
   skillEvalExecutionSchema,
@@ -8,7 +8,7 @@ import {
   type SkillEvalMode,
   type SkillEvalRunModel,
   type SkillEvalSuite,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { createThread } from "../../threads/repository.js";
 import type { AgentPin } from "../../agents/versions.js";
 import { executionFromAttempts, retries, type EvalAttempt } from "./execution.js";
@@ -24,7 +24,7 @@ export const SKILL_EVAL_CHANNEL = "kobe_skill_eval";
 const ACTIVE = sql.raw(`('starting', 'running', 'collecting')`);
 const OPEN = sql.raw(`('queued', 'running')`);
 
-export async function notifyEval(tx: KobeTx, teamId: string, evalRunId: string): Promise<void> {
+export async function notifyEval(tx: KaijuTx, teamId: string, evalRunId: string): Promise<void> {
   await tx.execute(sql`SELECT pg_notify(${SKILL_EVAL_CHANNEL}, ${`${teamId}:${evalRunId}`})`);
 }
 
@@ -63,7 +63,7 @@ export function storedSuite(suite: SkillEvalSuite): Record<string, unknown> {
 }
 
 /** Inserts the run and one queued result per planned execution. */
-export async function insertEvalRun(tx: KobeTx, r: NewEvalRun): Promise<void> {
+export async function insertEvalRun(tx: KaijuTx, r: NewEvalRun): Promise<void> {
   await tx.execute(sql`
     INSERT INTO skill_eval_runs (team_id, id, started_by, subject_kind, subject_id, subject_rev,
       skill_name, package_hash, runtime_hash, bundle_key, bundle_size, fixtures_key, mode, suite,
@@ -106,7 +106,7 @@ export interface ClaimedExecution {
  * team's lock): executions of closed runs never count (P2-37), so a team with nothing to start is
  * skipped without the lock.
  */
-export async function hasQueuedExecution(db: KobeDb, teamId: string): Promise<boolean> {
+export async function hasQueuedExecution(db: KaijuDb, teamId: string): Promise<boolean> {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute(sql`
       SELECT 1 FROM skill_eval_results x
@@ -127,7 +127,7 @@ export async function hasQueuedExecution(db: KobeDb, teamId: string): Promise<bo
  * what an older release left.
  */
 export async function settleClosedExecutions(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   evalRunId: string | null,
 ): Promise<number> {
@@ -148,14 +148,14 @@ export async function settleClosedExecutions(
  * (the Kobe agent `pin`, the run's model), its wall-clock deadline and state `starting`.
  */
 export async function claimNextExecution(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   opts: {
     readonly cap: number;
     /** Used when the eval run stored no wall clock (it normally keeps the one it started with). */
     readonly wallClockMs: number;
     /** The Kobe agent's pin for the eval's thread (null: unavailable, the eval run fails). */
-    readonly pinFor: (tx: KobeTx, teamId: string, userId: string) => Promise<AgentPin | null>;
+    readonly pinFor: (tx: KaijuTx, teamId: string, userId: string) => Promise<AgentPin | null>;
   },
 ): Promise<ClaimedExecution | null> {
   return withTeam(db, teamId, async (tx) => {
@@ -272,7 +272,7 @@ export async function claimNextExecution(
 
 /** Fails the run of an execution being claimed (in the claim's transaction), settling the rest. */
 async function failClaimedRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   evalRunId: string,
   failure: { readonly code: string; readonly message: string },
@@ -298,7 +298,7 @@ const keyOf = (e: ExecutionKey) => sql`team_id = ${e.teamId} AND eval_run_id = $
  * The running replica's heartbeat (review M2): the reaper takes over an execution whose heartbeat
  * stopped (its replica died), never one whose runner is still working, deadline or not.
  */
-export async function heartbeat(db: KobeDb, e: ExecutionKey): Promise<boolean> {
+export async function heartbeat(db: KaijuDb, e: ExecutionKey): Promise<boolean> {
   return withTeam(db, e.teamId, async (tx) => {
     const res = await tx.execute(sql`
       UPDATE skill_eval_results SET updated_at = now() WHERE ${keyOf(e)} AND state IN ${ACTIVE}`);
@@ -312,7 +312,7 @@ export async function heartbeat(db: KobeDb, e: ExecutionKey): Promise<boolean> {
  * runner that beat meanwhile keeps it; a second reaper pass waits again). What it needs next.
  */
 export async function claimTakeover(
-  db: KobeDb,
+  db: KaijuDb,
   e: ExecutionKey,
   silentSec: number,
 ): Promise<{
@@ -353,7 +353,7 @@ export async function claimTakeover(
  * Puts an execution back to queued without using up its attempt (a shutdown or a dead replica:
  * an infrastructure event, never the skill's result). Its thread stays as history.
  */
-export async function requeueExecution(db: KobeDb, e: ExecutionKey): Promise<boolean> {
+export async function requeueExecution(db: KaijuDb, e: ExecutionKey): Promise<boolean> {
   return withTeam(db, e.teamId, async (tx) => {
     const res = await tx.execute(sql`
       UPDATE skill_eval_results
@@ -369,7 +369,7 @@ export async function requeueExecution(db: KobeDb, e: ExecutionKey): Promise<boo
 
 /** The execution's state moves on (only while it is still this attempt's). */
 export async function markExecution(
-  db: KobeDb,
+  db: KaijuDb,
   e: Pick<ClaimedExecution, "teamId" | "evalRunId" | "caseId" | "withSkill" | "threadId">,
   state: "running" | "collecting",
   runId?: string,
@@ -385,7 +385,7 @@ export async function markExecution(
 }
 
 /** Whether the eval run was cancelled (or ended) under a running execution. */
-export async function evalRunOpen(db: KobeDb, teamId: string, evalRunId: string): Promise<boolean> {
+export async function evalRunOpen(db: KaijuDb, teamId: string, evalRunId: string): Promise<boolean> {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute(sql`
       SELECT 1 FROM skill_eval_runs
@@ -405,7 +405,7 @@ export type RecordOutcome = "retry" | "done" | "completed" | "stale";
  * result.
  */
 export async function recordAttempt(
-  db: KobeDb,
+  db: KaijuDb,
   e: Pick<
     ClaimedExecution,
     "teamId" | "evalRunId" | "caseId" | "withSkill" | "threadId" | "attempt" | "firstAttempt"
@@ -457,7 +457,7 @@ export async function recordAttempt(
 }
 
 /** Scores and completes the eval run once every execution is done (in the caller's lock). */
-async function completeIfDone(tx: KobeTx, teamId: string, evalRunId: string): Promise<boolean> {
+async function completeIfDone(tx: KaijuTx, teamId: string, evalRunId: string): Promise<boolean> {
   const rows = await tx.execute<{ state: string; execution: unknown }>(sql`
     SELECT state, execution FROM skill_eval_results
      WHERE team_id = ${teamId} AND eval_run_id = ${evalRunId}`);
@@ -518,7 +518,7 @@ async function completeIfDone(tx: KobeTx, teamId: string, evalRunId: string): Pr
  * partial results. Returns whether it was open.
  */
 export async function cancelEvalRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   evalRunId: string,
 ): Promise<boolean> {
@@ -537,7 +537,7 @@ export async function cancelEvalRun(
  * R3): offboarding may have missed them (no sandbox in that team, a failed step); the runner
  * never starts them, so they would hold the team's open-eval slots for good.
  */
-export async function cancelDepartedStartersEvals(db: KobeDb, teamId: string): Promise<number> {
+export async function cancelDepartedStartersEvals(db: KaijuDb, teamId: string): Promise<number> {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute<{ id: string }>(sql`
       UPDATE skill_eval_runs r
@@ -558,7 +558,7 @@ export async function cancelDepartedStartersEvals(db: KobeDb, teamId: string): P
 
 /** Fails an open eval run that cannot go on (its package is unreadable, a model is gone). */
 export async function failEvalRun(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   evalRunId: string,
   failure: { readonly code: string; readonly message: string },
@@ -582,7 +582,7 @@ export async function failEvalRun(
  * Only a completed run has a scorecard, so a budget-stopped one is never evidence.
  */
 export async function budgetStopEvalRun(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   evalRunId: string,
   failure: { readonly code: string; readonly message: string },

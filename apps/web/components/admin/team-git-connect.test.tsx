@@ -126,7 +126,7 @@ describe("Connect a git organization (KOBE-761 ac-1, ac-2)", () => {
     await userEvent.click(d.getByRole("button", { name: "Test" }));
     const live = d.getByRole("status");
     await within(live).findByText(/Test passed/);
-    expect(live.textContent).toMatch(/Acts as.*The App's bot \(kobe-acme\[bot\]\)/);
+    expect(live.textContent).toMatch(/Acts as.*The App's bot \(kaiju-acme\[bot\]\)/);
     expect(live.textContent).toMatch(/more than Kaiju needs \(members:write\)/);
     expect(bodyOf(calls, "POST", `${GIT_BASE}/test`)).toEqual({
       provider: "github",

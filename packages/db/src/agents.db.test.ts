@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { siteAgents, teamAgents, teams, users } from "./schema/index.js";
 import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
@@ -14,7 +14,7 @@ const teamA = randomUUID();
 const teamB = randomUUID();
 const alice = randomUUID();
 const bob = randomUUID();
-let app: KobeDatabase;
+let app: KaijuDatabase;
 
 beforeAll(async () => {
   const owner = createDb(inject("ownerUrl"));

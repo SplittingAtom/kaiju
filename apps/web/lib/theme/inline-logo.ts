@@ -16,9 +16,9 @@ const REFUSED: readonly RegExp[] = [
   /[\s/"']on[a-z]+\s*=/i,
   /[\s/"']style\s*=/i,
   /javascript:|data:/i,
-  /href\s*=\s*"(?!#kobe-logo-)/i,
-  /url\(\s*(?!#kobe-logo-)/i,
-  /[\s/"']id\s*=\s*"(?!kobe-logo-)/i,
+  /href\s*=\s*"(?!#kaiju-logo-)/i,
+  /url\(\s*(?!#kaiju-logo-)/i,
+  /[\s/"']id\s*=\s*"(?!kaiju-logo-)/i,
 ];
 
 /** The markup when it is the server's variant, else null (then the page shows the image). */

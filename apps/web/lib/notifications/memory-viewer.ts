@@ -5,7 +5,7 @@
  * links each reader to a page they can open. Unknown (not asked yet, or the answer failed): the
  * reader's own My memory, which everyone can open.
  */
-import type { KobeNotification } from "./api";
+import type { KaijuNotification } from "./api";
 import { fetchSiteAccess, fetchTeamAccess } from "../admin/api/access";
 
 export interface MemoryViewer {
@@ -20,7 +20,7 @@ export const UNKNOWN_VIEWER: MemoryViewer = { siteCurator: false, workspaceCurat
 const SITE_PROPOSAL = "memory.site_proposal.";
 
 /** The notice's link depends on who reads it. */
-export function needsViewer(n: KobeNotification): boolean {
+export function needsViewer(n: KaijuNotification): boolean {
   return n.kind.startsWith(SITE_PROPOSAL) || (n.relatedKind?.startsWith(SITE_PROPOSAL) ?? false);
 }
 

@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import {
   announcement,
   chatRequests,
@@ -19,12 +19,12 @@ import {
 } from "./testing";
 import { must } from "../../lib/testing/must";
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear(); // resume points are per tab; each test is a fresh tab
   localStorage.clear(); // a closed retention notice is remembered per browser
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -107,7 +107,7 @@ describe("thread list (RemoteThreadListAdapter)", () => {
       await within(await list()).findByRole("button", { name: "Revenue drivers" }),
     ).toBeTruthy();
     await waitFor(() =>
-      expect(document.getElementById("kobe-thread-title")?.textContent).toBe("Revenue drivers"),
+      expect(document.getElementById("kaiju-thread-title")?.textContent).toBe("Revenue drivers"),
     );
     // No rename was sent: the title stays unlocked on the server.
     expect(chatRequests(fake, "PATCH")).toEqual([]);
@@ -383,13 +383,13 @@ describe("accessibility", () => {
     const t = fake.addThread("A11y");
     openApp(fake, t);
     const skip = await screen.findByRole("link", { name: "Skip to the conversation" });
-    expect(skip.getAttribute("href")).toBe("#kobe-chat-main");
-    expect(document.getElementById("kobe-chat-main")?.tagName).toBe("MAIN");
+    expect(skip.getAttribute("href")).toBe("#kaiju-chat-main");
+    expect(document.getElementById("kaiju-chat-main")?.tagName).toBe("MAIN");
     expect(screen.getByRole("complementary", { name: "Workspace" })).toBeTruthy();
     expect(screen.getByRole("search")).toBeTruthy();
     expect(await screen.findByRole("region", { name: "A11y" })).toBeTruthy();
     const box = await composer();
-    expect(box.getAttribute("aria-describedby")).toBe("kobe-composer-hint");
+    expect(box.getAttribute("aria-describedby")).toBe("kaiju-composer-hint");
 
     const user = userEvent.setup();
     await user.type(box, "hi{Enter}");

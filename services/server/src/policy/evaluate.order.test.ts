@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { rule } from "../testing/policy-fixtures.js";
 import { EARLY_CASES } from "./evaluate.cases-early.test-helpers.js";
 import { LATE_CASES } from "./evaluate.cases-late.test-helpers.js";
-import { run, bash, kobeWrite, type Case } from "./evaluate.test-helpers.js";
+import { run, bash, kaijuWrite, type Case } from "./evaluate.test-helpers.js";
 
 // Each row isolates one layer of the D29 order winning or losing against the layers after it.
 // Inputs default to a valid sample for the tool (SAMPLE_INPUTS).
@@ -27,7 +27,7 @@ describe("evaluatePolicy: D29 order, table-driven", () => {
 
   it("names the user rule that removed a prompt", () => {
     const allow = rule("user", "allow", "share_file");
-    expect(run({ tool: kobeWrite, rules: [allow] }).reasons[0]).toMatchObject({
+    expect(run({ tool: kaijuWrite, rules: [allow] }).reasons[0]).toMatchObject({
       code: "user_allow_rule",
       stage: "user_allow",
       rule_id: allow.id,
@@ -37,12 +37,12 @@ describe("evaluatePolicy: D29 order, table-driven", () => {
   it("in auto mode only the team's allow rule allow-lists, never the member's own (KOBE-289)", () => {
     const team = rule("team", "allow", "share_file");
     const user = rule("user", "allow", "share_file");
-    const decision = run({ tool: kobeWrite, rules: [team, user], options: { mode: "auto" } });
+    const decision = run({ tool: kaijuWrite, rules: [team, user], options: { mode: "auto" } });
     expect(decision.reasons[0]).toMatchObject({ code: "team_allow_rule", rule_id: team.id });
   });
 
   it("sets a 1 h approval expiry on prompts", () => {
-    const decision = run({ tool: kobeWrite });
+    const decision = run({ tool: kaijuWrite });
     expect(decision).toMatchObject({
       effect: "require_approval",
       expires_at: "2026-10-02T13:00:00.000Z",

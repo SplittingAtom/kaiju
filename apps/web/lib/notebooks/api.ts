@@ -12,7 +12,7 @@ import {
   type NotebookKernelResponse,
   type NotebookOutput,
   type NotebookRunBody,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { z } from "zod";
 import { apiRequest, apiTextFile, type ApiError, type ApiResult } from "../api/client";
 import type { VariablesResult } from "./variables";

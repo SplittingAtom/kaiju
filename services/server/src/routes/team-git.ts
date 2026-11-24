@@ -4,7 +4,7 @@ import {
   readGitConnections,
   readGitSiteSettings,
   withTeam,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";

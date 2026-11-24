@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { InMemorySpanExporter, initTelemetry } from "@kobe/telemetry";
+import { InMemorySpanExporter, initTelemetry } from "@kaiju/telemetry";
 import { BackgroundTasks } from "../background.js";
 import { ServerCallError, type ServerCallInput } from "../models/gateway-client.js";
 import { CURRENT_EXTRACTOR_PROMPT } from "./learn/prompt/index.js";

@@ -1,6 +1,6 @@
-import type { ServerCallPurpose } from "@kobe/protocol";
-import type { PiEventFrame, PiGetEntriesData } from "@kobe/protocol/sandbox-wire";
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import type { ServerCallPurpose } from "@kaiju/protocol";
+import type { PiEventFrame, PiGetEntriesData } from "@kaiju/protocol/sandbox-wire";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import {
   appendRunEventsInTx,
   MAX_APPEND_BATCH,
@@ -41,7 +41,7 @@ export interface IngestHost {
 }
 
 export interface RunIngestOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly teamId: string;
   readonly runId: string;
   readonly threadId: string;

@@ -8,10 +8,10 @@ import {
   skillDrafts,
   sql,
   users,
-  type KobeTx,
+  type KaijuTx,
   type SkillDraftStart,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import { draftContent } from "./files.js";
 
@@ -88,7 +88,7 @@ const byId = (teamId: string, id: string) =>
 
 /** The draft if `viewer` may see it; `lock` takes its row lock (writers serialize on it). */
 export async function visibleDraft(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
   viewer: DraftViewer,
@@ -113,7 +113,7 @@ export const DRAFT_PAGE = 100;
  * page of {@link DRAFT_PAGE} after `cursor` (one more row read to tell whether there is a next).
  */
 export async function listVisibleDrafts(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   viewer: DraftViewer,
   cursor: DraftCursor | null = null,
@@ -146,7 +146,7 @@ export async function listVisibleDrafts(
 }
 
 /** The author's drafts in the team, under a lock per (team, author) so creates don't race the cap. */
-export async function countOwnDrafts(tx: KobeTx, teamId: string, userId: string): Promise<number> {
+export async function countOwnDrafts(tx: KaijuTx, teamId: string, userId: string): Promise<number> {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.skill_drafts:${teamId}:${userId}`}, 0))`,
   );
@@ -168,7 +168,7 @@ export interface NewDraft {
 
 /** Inserts the draft and its first files; the database counts their size. */
 export async function insertDraft(
-  tx: KobeTx,
+  tx: KaijuTx,
   draft: NewDraft,
   files: ReadonlyMap<string, Uint8Array>,
 ): Promise<DraftRecord> {
@@ -196,7 +196,7 @@ export async function insertDraft(
 }
 
 export async function fileInfos(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   draftId: string,
 ): Promise<DraftFileInfo[]> {
@@ -220,7 +220,7 @@ export async function fileInfos(
 
 /** One file's bytes and kind, or null. */
 export async function readFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   draftId: string,
   path: string,
@@ -237,7 +237,7 @@ export async function readFile(
 
 /** Every file of the draft, path to bytes (Save version). */
 export async function readAllFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   draftId: string,
 ): Promise<Map<string, Uint8Array>> {
@@ -264,7 +264,7 @@ const fileKey = (teamId: string, draftId: string, path: string) =>
 
 /** Writes one file: text (valid UTF-8 without NUL) inline, anything else as bytes. */
 export async function putFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   draftId: string,
   path: string,
@@ -287,7 +287,7 @@ export async function putFile(
 
 /** Removes one file; whether it was there. */
 export async function removeFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   draftId: string,
   path: string,
@@ -301,7 +301,7 @@ export async function removeFile(
 
 /** One change to the draft: the next revision, by `userId`, with any column changes. */
 export async function bumpRevision(
-  tx: KobeTx,
+  tx: KaijuTx,
   draft: DraftRecord,
   userId: string,
   changes: { readonly name?: string; readonly shared?: boolean } = {},
@@ -321,7 +321,7 @@ export async function bumpRevision(
 }
 
 /** The draft's current revision is what its conversation saved (KOBE-442). */
-export async function markSynced(tx: KobeTx, teamId: string, id: string): Promise<void> {
+export async function markSynced(tx: KaijuTx, teamId: string, id: string): Promise<void> {
   await tx
     .update(skillDrafts)
     .set({ syncedRev: sql`${skillDrafts.rev}` })
@@ -329,17 +329,17 @@ export async function markSynced(tx: KobeTx, teamId: string, id: string): Promis
 }
 
 /** Its conversation no longer saves into the draft (it was shared or edited since; KOBE-442). */
-export async function detachSynced(tx: KobeTx, teamId: string, id: string): Promise<void> {
+export async function detachSynced(tx: KaijuTx, teamId: string, id: string): Promise<void> {
   await tx.update(skillDrafts).set({ syncedRev: null }).where(byId(teamId, id));
 }
 
-export async function deleteDraft(tx: KobeTx, teamId: string, id: string): Promise<void> {
+export async function deleteDraft(tx: KaijuTx, teamId: string, id: string): Promise<void> {
   await tx.delete(skillDrafts).where(byId(teamId, id));
 }
 
 /** Who made the draft's last change, for a stale write's "changed by" (SK11). */
 export async function changedBy(
-  tx: KobeTx,
+  tx: KaijuTx,
   userId: string,
 ): Promise<{ readonly id: string; readonly name: string }> {
   const [row] = await tx.select({ name: users.name }).from(users).where(eq(users.id, userId));

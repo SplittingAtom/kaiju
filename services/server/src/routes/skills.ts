@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import type { KobeDb, SkillReviewStatus } from "@kobe/db";
+import type { KaijuDb, SkillReviewStatus } from "@kaiju/db";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -168,7 +168,7 @@ export function skillRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }
 
 /** What the bigger handlers share with `skillRoutes`. */
 interface SkillRouteContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly skillStore: () => SkillStore | null;
   readonly locationFor: (c: Ctx, scope: SkillScope) => SkillLocation;
   readonly visible: (c: Ctx) => Promise<{ skill: SkillRecord; location: SkillLocation } | null>;

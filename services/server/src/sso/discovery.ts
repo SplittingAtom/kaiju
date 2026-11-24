@@ -166,7 +166,7 @@ async function checkDiscovery(
   try {
     const config = await oidc.discovery(
       new URL(issuer),
-      "kobe-discovery-check",
+      "kaiju-discovery-check",
       undefined,
       undefined,
       {

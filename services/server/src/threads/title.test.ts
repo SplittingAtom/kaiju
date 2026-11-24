@@ -4,7 +4,7 @@ import {
   SERVER_CALL_MAX_BODY_BYTES,
   SERVER_CALL_MESSAGE_MAX_CHARS,
   serverCallRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { fallbackTitle, normaliseTitle, titleMessages } from "./title.js";
 
 describe("normaliseTitle (KOBE-219 ac-5: generatedTitleSchema)", () => {

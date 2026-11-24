@@ -10,7 +10,7 @@ import {
   type HelloAckFrame,
   type HelloFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import WebSocket from "ws";
 import { DEFAULT_BACKOFF, backoffDelay, type BackoffPolicy } from "./backoff.js";
 import { encodeOutbound, type OutboundFrame } from "./encode.js";

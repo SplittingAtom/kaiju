@@ -103,8 +103,8 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0
   approve() { # tool-call-id input-json → kid|expires_at|mac|canonical input
     $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
       const { approvalKeyring } = await import('/app/dist/approvals/keys.js');
-      const { signApproval } = await import('/app/node_modules/@kobe/protocol/dist/node/index.js');
-      const { canonicalJson } = await import('/app/node_modules/@kobe/protocol/dist/index.js');
+      const { signApproval } = await import('/app/node_modules/@kaiju/protocol/dist/node/index.js');
+      const { canonicalJson } = await import('/app/node_modules/@kaiju/protocol/dist/index.js');
       const [tcid, raw] = process.argv.slice(1);
       const input = JSON.parse(raw);
       const t = signApproval({ key: approvalKeyring(process.env.KOBE_APPROVAL_KEY).current,
@@ -133,7 +133,7 @@ if [[ -n "${KOBE_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-0
   # and sets the key once; two members (the e2e user and the workspace-sync user, each with their own
   # sandbox claim and run) call a tool without adding keys. The fake server sees the site key on
   # every call; the key is in no sandbox env or template, no API answer and no audit row.
-  SITE_KEY="e2e-site-key-$(date +%s)-Kobe303"
+  SITE_KEY="e2e-site-key-$(date +%s)-Kaiju303"
   site_reg=$(as_owner "POST /v1/site/connectors {\"name\":\"e2e-site\",\"url\":\"http://$fake_mcp_ip/mcp\",\"authKind\":\"api_key\",\"credentialSource\":\"site\"}")
   SITE_CONNECTOR=$(printf '%s' "$site_reg" | sed -n 's/.*"connector":{"id":"\([0-9a-f-]*\)".*/\1/p' | head -1)
   contains "KOBE-303: the Owner registers a site-key connector" '^[0-9a-f-]{36}$' "${SITE_CONNECTOR:-$site_reg}"

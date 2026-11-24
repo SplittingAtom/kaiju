@@ -1,4 +1,4 @@
-import type { PolicyDecision, PolicyEngine, ToolRegistry } from "@kobe/protocol";
+import type { PolicyDecision, PolicyEngine, ToolRegistry } from "@kaiju/protocol";
 import {
   createPolicyEngine,
   type ConnectorStateSource,

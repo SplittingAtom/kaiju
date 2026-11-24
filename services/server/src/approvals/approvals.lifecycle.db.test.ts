@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { APPROVAL_TTL_MS, canonicalJson, type PolicyInput } from "@kobe/protocol";
+import { APPROVAL_TTL_MS, canonicalJson, type PolicyInput } from "@kaiju/protocol";
 import { approvalKeyring } from "./index.js";
 import { createPolicyEngine } from "../policy/engine.js";
 import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
@@ -319,7 +319,7 @@ describe("Gate 2: a tampered kobe-policy cannot run an MCP write without a signe
       `SELECT token_expires_at FROM approvals WHERE id = $1`,
       [id],
     );
-    const { computeApprovalMac } = await import("@kobe/protocol/node");
+    const { computeApprovalMac } = await import("@kaiju/protocol/node");
     const mac = computeApprovalMac(
       forged.current.secret,
       {

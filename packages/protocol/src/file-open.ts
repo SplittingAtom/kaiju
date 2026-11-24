@@ -48,7 +48,7 @@ export const fileOpenCallShape = {
   input: openFileInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4); member of `kobeToolsRequestSchema`. */
+/** kobe-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
 export const fileOpenToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("file.open"),

@@ -13,7 +13,7 @@ import { openHarness, type Harness } from "../testing/harness.js";
 let h: Harness;
 const ids = { admin: "", alice: "", bob: "", carol: "", pending: "" };
 const as = {} as Record<"admin" | "alice" | "bob", TestBrowser>;
-const skill = { checker: "", fresh: "", kobe: "" };
+const skill = { checker: "", fresh: "", kaiju: "" };
 
 const skillRow = async (name: string, publisher = "maintainer") =>
   (
@@ -31,7 +31,7 @@ beforeAll(async () => {
   await h.admin.query(`UPDATE users SET name = initcap(split_part(email, '@', 1))`);
   skill.checker = await skillRow("invoice-checker");
   skill.fresh = await skillRow("fresh-skill");
-  skill.kobe = await skillRow("pdf", "kobe");
+  skill.kobe = await skillRow("pdf", "kaiju");
   await h.admin.query(`INSERT INTO registry_maintainers (skill_id, user_id) VALUES ($1, $2)`, [
     skill.checker,
     ids.alice,

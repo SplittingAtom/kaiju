@@ -28,13 +28,13 @@ type LegacyInput = Omit<ResolveInput, "agent"> & {
   readonly agent: ResolveInput["agent"] & { readonly builtinSkills?: readonly string[] };
 };
 
-const kobeRef = (name: string): SkillRef => ({ name, hash: `kobe-${name}`, source: "catalog" });
+const kaijuRef = (name: string): SkillRef => ({ name, hash: `kaiju-${name}`, source: "catalog" });
 
 /**
  * The same site before and after KOBE-317: the legacy input without local entries under a
  * built-in name (D5), and the new input where each built-in is a named Kaiju catalog skill.
  */
-function split(input: LegacyInput): { legacy: LegacyInput; now: ResolveInput; kobe: SkillRef[] } {
+function split(input: LegacyInput): { legacy: LegacyInput; now: ResolveInput; kaiju: SkillRef[] } {
   const builtins = [...new Set(input.agent.builtinSkills ?? [])];
   const local = (n: string) => !builtins.includes(n);
   const agent = {
@@ -43,12 +43,12 @@ function split(input: LegacyInput): { legacy: LegacyInput; now: ResolveInput; ko
     unapprovedSkills: (input.agent.unapprovedSkills ?? []).filter(local),
     suspendedSkills: (input.agent.suspendedSkills ?? []).filter(local),
   };
-  const kobe = builtins.map(kobeRef);
+  const kaiju = builtins.map(kaijuRef);
   const { builtinSkills: _gone, ...nowAgent } = agent;
   return {
     legacy: { ...input, agent },
-    now: { ...input, agent: { ...nowAgent, catalogSkills: kobe } },
-    kobe,
+    now: { ...input, agent: { ...nowAgent, catalogSkills: kaiju } },
+    kaiju,
   };
 }
 
@@ -175,7 +175,7 @@ const omissionKey = (o: { name: string; reason: string }) => `${o.name}:${o.reas
 
 describe("resolver v2 parity with today's runs (ac-4)", () => {
   it.each(Array.from({ length: 200 }, (_, i) => `parity-${i}`))("%s", (seed) => {
-    const { legacy: input, now, kobe } = split(fixture(seed));
+    const { legacy: input, now, kaiju } = split(fixture(seed));
     const before = legacySkills(input);
     const after = resolveEffective(now);
     if (!after.ok) throw new Error("resolve failed");
@@ -232,7 +232,7 @@ function clashFixture(seed: string): LegacyInput {
 }
 
 /** The legacy result with D1–D5 applied (see the header). */
-function expectedNow(input: LegacyInput, kobe: readonly SkillRef[]) {
+function expectedNow(input: LegacyInput, kaiju: readonly SkillRef[]) {
   const blocked = new Set(input.blockedHashes);
   const { agent, team, user } = input;
   const ex = agent.exclusiveSkills;
@@ -262,7 +262,7 @@ function expectedNow(input: LegacyInput, kobe: readonly SkillRef[]) {
   const rank = (s: SkillRef) =>
     agent.skills.includes(s)
       ? 0
-      : kobe.includes(s)
+      : kaiju.includes(s)
         ? 0.5
         : (team.offeredSkills ?? []).includes(s)
           ? 1
@@ -284,8 +284,8 @@ describe("resolver v2 parity with name clashes and the cap (D1–D5)", () => {
   const seeds = Array.from({ length: 300 }, (_, i) => `clash-${i}`);
 
   it.each(seeds)("%s", (seed) => {
-    const { legacy, now, kobe } = split(clashFixture(seed));
-    const want = expectedNow(legacy, kobe);
+    const { legacy, now, kaiju } = split(clashFixture(seed));
+    const want = expectedNow(legacy, kaiju);
     const after = resolveEffective(now);
     if (!after.ok) throw new Error("resolve failed");
     expect(after.value.skills.map(key)).toEqual(want.skills.map(key));
@@ -300,7 +300,7 @@ describe("resolver v2 parity with name clashes and the cap (D1–D5)", () => {
   it("the fixtures reach every documented difference", () => {
     const inputs = seeds.map((seed) => split(clashFixture(seed)));
     const reasons = inputs.flatMap((i) =>
-      expectedNow(i.legacy, i.kobe).omissions.map((o) => o.reason),
+      expectedNow(i.legacy, i.kaiju).omissions.map((o) => o.reason),
     );
     for (const r of ["shadowed", "shadowed_by_agent", "blocklisted", "skill_limit"])
       expect(reasons).toContain(r);

@@ -49,7 +49,7 @@ describe("ConsoleLayout", () => {
   it("marks the console root, skips to the page, and has a header and a main landmark", () => {
     const { container } = renderConsole();
     const root = container.firstElementChild as HTMLElement;
-    expect(root.hasAttribute("data-kobe-console")).toBe(true);
+    expect(root.hasAttribute("data-kaiju-console")).toBe(true);
     const skip = screen.getByRole("link", { name: "Skip to content" });
     expect(skip.getAttribute("href")).toBe("#console-main");
     expect(root.firstElementChild).toBe(skip);
@@ -76,7 +76,7 @@ describe("ConsoleLayout", () => {
       </ConsoleLayout>,
     );
     const root = container.firstElementChild as HTMLElement;
-    expect(root.hasAttribute("data-kobe-console")).toBe(true);
+    expect(root.hasAttribute("data-kaiju-console")).toBe(true);
     expect(root.className).toContain("min-h-full");
     expect(root.className).not.toContain("min-h-screen");
     expect(screen.queryByRole("link", { name: "Kaiju" })).toBeNull();
@@ -103,7 +103,7 @@ describe("ConsoleLayout", () => {
     const cards = [...grid.children] as HTMLElement[];
     expect(cards.map((c) => c.getAttribute("data-console-region"))).toEqual(["nav", "content"]);
     for (const card of cards) {
-      for (const cls of ["kobe-panel", "bg-card", "border", "rounded-lg"]) {
+      for (const cls of ["kaiju-panel", "bg-card", "border", "rounded-lg"]) {
         expect(card.classList.contains(cls), cls).toBe(true);
       }
     }

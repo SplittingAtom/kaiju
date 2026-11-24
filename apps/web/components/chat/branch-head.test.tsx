@@ -2,20 +2,20 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { LEAF_BUSY_NOTE, OVER_WINDOW_NOTE } from "./branch-bar";
 import { announcement, chatRequests, composer, openApp, openThreads, streaming } from "./testing";
 
 /** The local head in the app (CT3, CT13, CT15; KOBE-544): picker, bar, send, search hit. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 let scrolled: Element[];
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   scrolled = [];
   Element.prototype.scrollIntoView = function scrollIntoView(this: Element) {

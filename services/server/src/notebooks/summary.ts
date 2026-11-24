@@ -1,4 +1,4 @@
-import { NOTEBOOK_TOOL_TEXT_MAX_BYTES, type NotebookOutput } from "@kobe/protocol";
+import { NOTEBOOK_TOOL_TEXT_MAX_BYTES, type NotebookOutput } from "@kaiju/protocol";
 
 /**
  * What the model gets back from `run_python` (docs/specs/notebooks.md NB13): stream text, results

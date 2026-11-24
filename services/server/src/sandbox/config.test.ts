@@ -1,4 +1,4 @@
-import { generateSessionKeyPair } from "@kobe/session-token";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import { describe, expect, it } from "vitest";
 import { createSandboxRuntime } from "./runtime.js";
 import { KEYS, KEY_PAIRS, SETTINGS } from "../testing/sandbox-fixtures.js";

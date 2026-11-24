@@ -1,4 +1,4 @@
-import type { MemorySteward } from "@kobe/protocol";
+import type { MemorySteward } from "@kaiju/protocol";
 import {
   and,
   asc,
@@ -9,9 +9,9 @@ import {
   teamMembers,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -39,7 +39,7 @@ const toWire = (r: Row): MemorySteward => ({
 });
 
 /** The Workspace's stewards with active accounts, by name (a deactivated one counts for nothing). */
-export async function listWorkspaceStewards(db: KobeDb, teamId: string): Promise<MemorySteward[]> {
+export async function listWorkspaceStewards(db: KaijuDb, teamId: string): Promise<MemorySteward[]> {
   const rows = await withTeam(db, teamId, (tx) =>
     tx
       .select(STEWARD_COLUMNS)
@@ -56,7 +56,7 @@ export async function listWorkspaceStewards(db: KobeDb, teamId: string): Promise
  * once; a deactivated account is never a steward, as in `grantsOf`).
  */
 export async function isWorkspaceSteward(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<boolean> {
@@ -85,7 +85,7 @@ export type GrantStewardResult =
  * deactivated account is refused (as `giveGrant`), so a grant never springs to life on reactivation.
  */
 export async function grantWorkspaceSteward(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   by: string,
@@ -120,7 +120,7 @@ export async function grantWorkspaceSteward(
 
 /** Takes the grant inside the caller's team transaction; audited when there was one. */
 export async function revokeWorkspaceStewardInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<boolean> {
@@ -134,7 +134,7 @@ export async function revokeWorkspaceStewardInTx(
 }
 
 export async function revokeWorkspaceSteward(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<boolean> {
@@ -142,7 +142,7 @@ export async function revokeWorkspaceSteward(
 }
 
 /** The Site's stewards (the `memory_steward` site grant), active accounts only, by name. */
-export async function listSiteStewards(db: KobeDb): Promise<MemorySteward[]> {
+export async function listSiteStewards(db: KaijuDb): Promise<MemorySteward[]> {
   const rows = await db
     .select({
       userId: siteGrants.userId,

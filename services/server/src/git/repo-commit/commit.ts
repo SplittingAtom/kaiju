@@ -8,9 +8,9 @@ import {
   withTeam,
   type Envelope,
   type GitConnectionRecord,
-  type KobeDb,
-} from "@kobe/db";
-import type { AuditVia } from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
+import type { AuditVia } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import {
@@ -251,7 +251,7 @@ class PeekDone extends Error {}
 
 /** The limiter's verdict for one more hit, without taking it (the hit rolls back). */
 async function peekRateLimit(
-  db: KobeDb,
+  db: KaijuDb,
   key: string,
   rule: RateLimitRule,
 ): Promise<{ readonly allowed: boolean; readonly retryAfterSeconds: number }> {
@@ -272,7 +272,7 @@ async function peekRateLimit(
  * at, not taken: L2, it is taken only when a commit goes out) and gets one attempt from the larger
  * attempt bucket. An over-limit member makes no host request at all.
  */
-async function limitsBeforeHost(db: KobeDb, userId: string): Promise<Refused | undefined> {
+async function limitsBeforeHost(db: KaijuDb, userId: string): Promise<Refused | undefined> {
   const commits = await peekRateLimit(db, `git-repo-commits:${userId}`, GIT_REPO_COMMIT_RATE);
   if (!commits.allowed) return rateLimited(commits.retryAfterSeconds);
   const attempts = await checkRateLimit(
@@ -710,7 +710,7 @@ async function directCommit(
     }
     return "fallback";
   }
-  let kobe: { readonly seq: number; readonly commitId: string } | undefined;
+  let kaiju: { readonly seq: number; readonly commitId: string } | undefined;
   // Kaiju's copy takes the same commit only when it stood exactly on the head pushed onto: the
   // checkout's base is the copy of `mirror_head_sha` and that is the host's head (review H1).
   const inSync =
@@ -727,7 +727,7 @@ async function directCommit(
       expect: { baseSeq: ctx.plan.checkout.baseSeq, diffHash: ctx.plan.hash },
       repoMirror: { repositoryId: ctx.facts.repo.id, baseSha: head, headSha: commit },
     });
-    if (mirrored.status === "committed") kobe = mirrored;
+    if (mirrored.status === "committed") kaiju = mirrored;
   });
   // The mirror catches up either way: its commit list, or Kaiju's copy when it was not written.
   ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
@@ -735,8 +735,8 @@ async function directCommit(
     status: "pushed",
     branch,
     commitSha: commit,
-    seq: kobe?.seq ?? null,
-    commitId: kobe?.commitId ?? null,
+    seq: kaiju?.seq ?? null,
+    commitId: kaiju?.commitId ?? null,
   };
 }
 

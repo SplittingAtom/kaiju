@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { chmodSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
-import { repoCommitInfoSchema } from "@kobe/protocol";
+import { withTeam } from "@kaiju/db";
+import { repoCommitInfoSchema } from "@kaiju/protocol";
 import { applyMirror } from "./mirror/apply.js";
 import { mirrorDeps } from "./mirror/deps.js";
 import { refreshRepository } from "./mirror/refresh.js";
@@ -157,7 +157,7 @@ describe("a commit from the Commit dialog on a Repo (ac-1)", () => {
       fallback: false,
     });
     const branch = first.json.branch as string;
-    expect(branch).toMatch(/^kobe\/[a-z0-9-]+\/explain-more-[0-9a-f]{7}$/);
+    expect(branch).toMatch(/^kaiju\/[a-z0-9-]+\/explain-more-[0-9a-f]{7}$/);
     // main is untouched; the branch holds a commit on top of it, authored as the owner.
     expect(bare(r.full, ["rev-parse", "main"]).trim()).toBe(main);
     expect(bare(r.full, ["rev-parse", branch]).trim()).toBe(first.json.commit_sha);
@@ -395,7 +395,7 @@ describe("a conversation on a Repo gets a git working copy (ac-3)", () => {
     );
     const runId = must(rows[0]).id;
     const target = { teamId: w.team, userId: w.owner.id };
-    const context = must(await loadRunGitContext(fx.db, target, "kobe.test"));
+    const context = must(await loadRunGitContext(fx.db, target, "kaiju.test"));
     // The fake host is served on a port; the sandbox's git reaches only https on 443, so the
     // remote is given as the test's own (as for a connection on 443).
     const base = forgejo.baseUrl.replace(/^http:/, "https:").replace(/:\d+$/, "");
@@ -612,7 +612,7 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
     expect(res).toMatchObject({ status: "refused", error: "repo_unavailable" });
     expect(res.status === "refused" && res.detail).toMatch(/limited to chosen agents/);
     // Review R2-L1: an agent's commit approved for Kaiju's own copy never pushes to the host.
-    const asKobe = await commitToRepo(repoDeps(), {
+    const asKaiju = await commitToRepo(repoDeps(), {
       owner: { teamId: w.team, userId: w.owner.id },
       projectId: r.id,
       message: "By an agent",
@@ -620,8 +620,8 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
       via: { kind: "agent", threadId, runId, toolCallId: "call-2" },
       approvedAs: "commit_project",
     });
-    expect(asKobe).toMatchObject({ status: "refused", error: "repo_unavailable" });
-    expect(asKobe.status === "refused" && asKobe.detail).toMatch(/approved for Kaiju's own copy/);
+    expect(asKaiju).toMatchObject({ status: "refused", error: "repo_unavailable" });
+    expect(asKaiju.status === "refused" && asKaiju.detail).toMatch(/approved for Kaiju's own copy/);
   });
 
   it("answers 429 with Retry-After past the limit before any host call (L2, N1)", async () => {

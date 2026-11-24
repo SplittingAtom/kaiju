@@ -14,7 +14,7 @@ import {
   type FontStack,
   type PresetId,
   type ThemeSettings,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { PRESETS } from "../../../lib/theme/presets";
 import { ChoiceGroup, Field, FOCUS_RING, Radio, TextInput } from "../../ui/console";
 import { contrastLine, failureTexts } from "./appearance-contrast";
@@ -49,7 +49,7 @@ const FONT_LABELS: Readonly<Record<FontStack, string>> = {
 };
 
 function presetAccent(id: PresetId): string {
-  const value = PRESETS[id].light["--kobe-brand-primary"];
+  const value = PRESETS[id].light["--kaiju-brand-primary"];
   return ACCENT_PATTERN.test(value) ? value : DEFAULT_ACCENT;
 }
 
@@ -77,10 +77,10 @@ export function themeOf(draft: StyleDraft): ThemeSettings | null {
 }
 
 const SWATCH_TOKENS = [
-  "--kobe-console-bg",
-  "--kobe-console-panel",
-  "--kobe-brand-primary",
-  "--kobe-console-fg",
+  "--kaiju-console-bg",
+  "--kaiju-console-panel",
+  "--kaiju-brand-primary",
+  "--kaiju-console-fg",
 ] as const;
 
 /** Page, panel, accent and text of one scheme, as an SVG strip (fill attributes, no styles). */
@@ -98,8 +98,8 @@ function swatchColours(id: PresetId | "custom", accent: string | null, scheme: "
   if (id !== "custom") return SWATCH_TOKENS.map((t) => PRESETS[id][scheme][t]);
   const base = PRESETS.default[scheme];
   const primary =
-    accent === null ? base["--kobe-brand-primary"] : deriveAccent(accent).primary[scheme];
-  return SWATCH_TOKENS.map((t) => (t === "--kobe-brand-primary" ? primary : base[t]));
+    accent === null ? base["--kaiju-brand-primary"] : deriveAccent(accent).primary[scheme];
+  return SWATCH_TOKENS.map((t) => (t === "--kaiju-brand-primary" ? primary : base[t]));
 }
 
 function StyleCard({

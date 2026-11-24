@@ -2,7 +2,7 @@ import {
   notebookStartResultSchema,
   type ActorContext,
   type NotebookStartResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { hitRateLimit } from "../rate-limit.js";
 import { lockOwnedThread } from "../runs/access.js";
 import { COMMAND_FAILURES, SandboxWakeError } from "../sandbox-wire/types.js";

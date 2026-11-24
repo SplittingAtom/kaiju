@@ -1,4 +1,4 @@
-import type { AuditEvent } from "@kobe/db";
+import type { AuditEvent } from "@kaiju/db";
 import type { ConnectionLimits } from "../limits.js";
 import type { RateBuckets } from "../rate-buckets.js";
 import type { GitDecisionCache } from "./decisions.js";

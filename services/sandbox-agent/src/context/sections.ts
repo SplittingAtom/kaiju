@@ -2,7 +2,7 @@ import {
   kindOfSection,
   labelOfSection,
   splitForcedPrompt,
-  type KobePromptParts,
+  type KaijuPromptParts,
   type RawSection,
 } from "./system-prompt.js";
 import { PICKS_HEADER, headerForms } from "../memory/semantic-context.js";
@@ -69,7 +69,7 @@ function toolSection(tool: unknown): RawSection {
   };
 }
 
-function systemSections(message: Rec, leading: boolean, parts?: KobePromptParts): RawSection[] {
+function systemSections(message: Rec, leading: boolean, parts?: KaijuPromptParts): RawSection[] {
   const out: RawSection[] = [];
   const { text } = contentOf(message.content);
   const sections = isRecord(message.sections) ? message.sections : undefined;
@@ -138,7 +138,7 @@ function assistantSections(message: Rec): RawSection[] {
   });
 }
 
-function messageSections(message: unknown, index: number, parts?: KobePromptParts): RawSection[] {
+function messageSections(message: unknown, index: number, parts?: KaijuPromptParts): RawSection[] {
   if (!isRecord(message)) return [];
   switch (message.role) {
     case "system":
@@ -192,8 +192,8 @@ export function contextMessages(context: unknown): unknown[] {
   return [{ role: "system", content: prompt, toolsAdded: tools }, ...messages];
 }
 
-export function sectionsOf(messages: readonly unknown[], parts?: KobePromptParts): RawSection[] {
+export function sectionsOf(messages: readonly unknown[], parts?: KaijuPromptParts): RawSection[] {
   return messages.flatMap((m, i) => messageSections(m, i, parts));
 }
 
-export type { RawSection, KobePromptParts };
+export type { RawSection, KaijuPromptParts };

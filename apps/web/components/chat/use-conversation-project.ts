@@ -5,7 +5,7 @@ import { useContext, useSyncExternalStore } from "react";
 import type { ProjectRef } from "../projects/project-work";
 import { visibilityOf } from "../../lib/chat/share";
 import { isThreadRunning, queuedRuns } from "../../lib/chat/thread-state";
-import { ChatSessionContext, useKobeExtras } from "./kobe-runtime";
+import { ChatSessionContext, useKaijuExtras } from "./kaiju-runtime";
 import { ThreadOnScreenContext } from "./thread-on-screen";
 
 const noSubscribe = () => () => {};
@@ -31,7 +31,7 @@ export function showsEditingMarks(
 export function useConversationProject() {
   const session = useContext(ChatSessionContext);
   const aui = useAui();
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const threadId = useContext(ThreadOnScreenContext);
   const draft = useSyncExternalStore(
     session?.subscribeDraftProject ?? noSubscribe,

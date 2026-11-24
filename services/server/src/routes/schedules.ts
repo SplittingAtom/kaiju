@@ -7,7 +7,7 @@ import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz
 import type { ServerDeps } from "../deps.js";
 
 /**
- * Schedules API (KOBE-173, spec D32; contract in @kobe/protocol `schedules.ts`): a member's
+ * Schedules API (KOBE-173, spec D32; contract in @kaiju/protocol `schedules.ts`): a member's
  * personal scheduled runs in the active team. Everything is scoped to the owner and the team
  * under RLS; someone else's schedule, or another team's, is a 404 like a missing one. Team
  * admins (`team.schedules.pause`) see the team's inventory and pause or resume, nothing else.

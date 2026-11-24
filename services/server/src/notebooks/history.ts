@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   NOTEBOOK_HISTORY_MAX,
   notebookFinishedPayloadSchema,
@@ -7,7 +7,7 @@ import {
   type NotebookExecOutputsResponse,
   type NotebookHistoryEntry,
   type NotebookHistoryResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { RunError } from "../runs/errors.js";
 import { findThread } from "../threads/repository.js";
 import { viewerProjectIds } from "../threads/references.js";
@@ -24,7 +24,7 @@ import { uuidArray } from "../retention/purge.js";
  * their own (at most the run's cap, 200 outputs and 2 MB).
  */
 
-async function assertOwner(tx: KobeTx, actor: ActorContext, threadId: string): Promise<void> {
+async function assertOwner(tx: KaijuTx, actor: ActorContext, threadId: string): Promise<void> {
   const viewer = {
     teamId: actor.team_id,
     userId: actor.user_id,
@@ -36,7 +36,7 @@ async function assertOwner(tx: KobeTx, actor: ActorContext, threadId: string): P
 }
 
 export async function fileHistory(
-  db: KobeDb,
+  db: KaijuDb,
   actor: ActorContext,
   threadId: string,
   path: string,
@@ -87,7 +87,7 @@ export async function fileHistory(
 }
 
 export async function execOutputs(
-  db: KobeDb,
+  db: KaijuDb,
   actor: ActorContext,
   threadId: string,
   execId: string,

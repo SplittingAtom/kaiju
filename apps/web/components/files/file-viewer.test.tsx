@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
 import { ARTIFACT_FRAME_SANDBOX } from "../../lib/chat/artifacts";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { openPdf, type PdfDocument } from "../../lib/files/pdfjs";
 import { workspaceFrameUrl } from "../../lib/files/preview";
 import { must } from "../../lib/testing/must";
@@ -16,7 +16,7 @@ import { browserSpaced, composer, crushedIconButtons, openRowMenu } from "../cha
 vi.mock("../../lib/files/pdfjs", () => ({ openPdf: vi.fn(), createTextLayer: vi.fn() }));
 
 /** KOBE-268: workspace files open as tabs of the artifact column. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 /** The synced workspace: path -> content. */
 let files: Map<string, Uint8Array>;
 /** Requests for a file's content, and the bytes of it the page actually pulled. */
@@ -58,7 +58,7 @@ function listing(dir: string) {
 }
 
 const fetchFn: typeof fetch = async (input, init = {}) => {
-  const url = new URL(String(input), "http://kobe.test");
+  const url = new URL(String(input), "http://kaiju.test");
   const method = init.method ?? "GET";
   if (!url.pathname.startsWith("/v1/workspace/")) return fake.fetch(input, init);
   if (method === "POST" && url.pathname === "/v1/workspace/wake") {
@@ -153,7 +153,7 @@ beforeEach(() => {
     settings.disableIframePageLoading = true;
     settings.handleDisabledFileLoadingAsSuccess = true;
   }
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   // The change stream reports this same workspace (KOBE-516: a move's stream names the new path).
   files = fake.workspaceFiles;
   reads = [];

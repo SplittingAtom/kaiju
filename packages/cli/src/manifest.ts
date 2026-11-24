@@ -14,7 +14,7 @@ export const DATABASE_FILE = "database.dump.enc";
 export const OBJECTS_FILE = "objects.jsonl.enc";
 const MAX_MANIFEST_BYTES = 10 * 1024 * 1024;
 
-/** Same rule as @kobe/db's quoteIdent: plain lowercase identifiers only. */
+/** Same rule as @kaiju/db's quoteIdent: plain lowercase identifiers only. */
 const tableName = z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, "invalid table name");
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/, "invalid sha256");
 const hex = (bytes: number) =>

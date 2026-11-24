@@ -30,7 +30,7 @@ import {
  * one too: run this spec on its own (`npx playwright test sign-in-sso-only`). KOBE_USER must be the
  * Owner, without an authenticator app (the link step signs in with the password only). If a run
  * dies with the setting on, the Owner turns it off in Site console › Single sign-on, or with
- * cluster access: `KOBE_DB_MIGRATE_URL=… kobe sso allow-local-sign-in`. No model tokens.
+ * cluster access: `KOBE_DB_MIGRATE_URL=… kaiju sso allow-local-sign-in`. No model tokens.
  */
 const OWNER = process.env["KOBE_USER"] ?? "";
 const OWNER_PW = process.env["KOBE_PW"] ?? "";
@@ -45,7 +45,7 @@ let ownerSso: Page | null = null;
 
 /** A stable mock identity for the Owner, so later runs reuse the link this one made. */
 function ownerOid(email: string): string {
-  const h = createHash("sha256").update(`kobe-e2e-owner:${email.toLowerCase()}`).digest("hex");
+  const h = createHash("sha256").update(`kaiju-e2e-owner:${email.toLowerCase()}`).digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
@@ -169,7 +169,7 @@ test("setting on: only the provider buttons, and the server refuses local sign-i
   }
 
   const off = await pageApi(ownerSso, "PUT", SETTINGS, { requireSso: false });
-  expect(off.status, "the Owner turns it off (else: kobe sso allow-local-sign-in)").toBe(200);
+  expect(off.status, "the Owner turns it off (else: kaiju sso allow-local-sign-in)").toBe(200);
   const back = await freshBrowser(browser);
   try {
     const panel = await signInPage(back);

@@ -1,6 +1,6 @@
-import type { ApprovalMode, ErrorInfo, RunTrigger } from "@kobe/protocol";
-import type { PiThreadConfig, RunMcpContext, SkillBundleRef } from "@kobe/protocol/sandbox-wire";
-import type { AgentScope, KobeTx, RunSkillRef } from "@kobe/db";
+import type { ApprovalMode, ErrorInfo, RunTrigger } from "@kaiju/protocol";
+import type { PiThreadConfig, RunMcpContext, SkillBundleRef } from "@kaiju/protocol/sandbox-wire";
+import type { AgentScope, KaijuTx, RunSkillRef } from "@kaiju/db";
 import type { Omission, SkillRef } from "../resolver/resolve.js";
 
 /**
@@ -74,7 +74,7 @@ export type AgentResolution =
  * error fails the run (`run.failed`).
  */
 export interface RunAgentResolver {
-  resolve(tx: KobeTx, input: AgentResolutionInput): Promise<AgentResolution>;
+  resolve(tx: KaijuTx, input: AgentResolutionInput): Promise<AgentResolution>;
   /**
    * KOBE-44 seam for KOBE-47: the model alias the thread's agent pins, if any — the same alias
    * `resolve` puts in `config.model.alias`. The chat shows it (the picker is locked: the agent's
@@ -82,7 +82,7 @@ export interface RunAgentResolver {
    * agent pins no model (today's resolvers: agents carry no model until KOBE-47). Called on thread
    * reads: it must only read Postgres through `tx` (history reads never wake a sandbox, D14).
    */
-  pinnedModel?(tx: KobeTx, input: AgentPinInput): Promise<string | undefined>;
+  pinnedModel?(tx: KaijuTx, input: AgentPinInput): Promise<string | undefined>;
 }
 
 /** The thread's agent pin as `pinnedModel` reads it (no run yet). */
@@ -114,7 +114,7 @@ export const PASS_THROUGH_AGENTS: RunAgentResolver = {
 /** KOBE-42 seam: may this user start a new run in this team now (D30: blocked at 100 %)? */
 export interface RunBudgetGate {
   allowsNewRun(
-    tx: KobeTx,
+    tx: KaijuTx,
     input: { readonly teamId: string; readonly userId: string },
   ): Promise<boolean>;
 }

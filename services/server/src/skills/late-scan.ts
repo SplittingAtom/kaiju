@@ -9,8 +9,8 @@ import {
   scanTeams,
   teamSkillReviews,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import { SCAN_DID_NOT_FINISH, ScanCache, scanStored } from "./rescan-cache.js";
@@ -43,7 +43,7 @@ export const LATE_SCAN_BACKOFF_MAX_MS = 6 * 60 * 60_000;
 const BACKOFF_MAX_ENTRIES = 10_000;
 
 export interface LateScanDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   readonly now?: () => number;

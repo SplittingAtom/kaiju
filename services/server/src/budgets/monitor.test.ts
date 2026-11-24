@@ -1,6 +1,6 @@
 import pino from "pino";
 import { describe, expect, it, vi } from "vitest";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { BudgetMonitor, type Evaluation } from "./monitor.js";
 
 const TEAM = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
@@ -8,11 +8,11 @@ const TEAM = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
 /** A monitor whose evaluations are scripted: each one waits for the test, then answers. */
 function scripted() {
   const monitor = new BudgetMonitor({
-    db: {} as KobeDb,
+    db: {} as KaijuDb,
     connectionString: "postgres://unused",
     runs: { stopForBudget: () => Promise.resolve([]) },
     mailer: { send: () => Promise.resolve() } as never,
-    publicUrl: "http://kobe.test",
+    publicUrl: "http://kaiju.test",
     logger: pino({ level: "silent" }),
   });
   const started: { finish: (e: Evaluation) => void }[] = [];

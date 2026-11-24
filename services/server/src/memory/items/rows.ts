@@ -1,5 +1,5 @@
 import { presentedActorKind } from "./actor-kind.js";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type {
   SemanticMemoryActorKind,
   SemanticMemoryItem,
@@ -7,7 +7,7 @@ import type {
   SemanticMemoryKind,
   SemanticMemoryStatus,
   SemanticMemoryVersion,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { findThreads } from "../../threads/repository.js";
 import { viewerProjectIds } from "../../threads/references.js";
 import { workspaceTeam, type Location } from "./location.js";
@@ -53,7 +53,7 @@ export const itemColumns = (loc: Location) => sql`
 
 /** One item of this scope; `lock` takes a row lock for a write. */
 export async function readItem(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   id: string,
   lock = false,
@@ -112,7 +112,7 @@ export interface DetailView {
 
 /** The item with its versions, newest first; thread links only for their author and curators. */
 export async function detailOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   who: MemoryWho,
   row: ItemRow,
@@ -154,7 +154,7 @@ export async function detailOf(
 
 /** The source conversations among `rows` the caller may open (the thread routes' predicate). */
 async function openableThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   who: MemoryWho,
   rows: readonly VersionRow[],

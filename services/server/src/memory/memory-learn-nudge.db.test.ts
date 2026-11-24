@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { LEARN_NUDGE_MESSAGES, learnStateSchema, type LearnState } from "@kobe/protocol";
-import { generateSessionKeyPair } from "@kobe/session-token";
+import { LEARN_NUDGE_MESSAGES, learnStateSchema, type LearnState } from "@kaiju/protocol";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import { SITE_SWITCH_KEYS } from "./switches.js";
 import { TestBrowser } from "../testing/browser.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";

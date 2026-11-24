@@ -4,7 +4,7 @@ import { threadKey } from "./blobs.js";
 const T = "11111111-1111-4111-8111-111111111111";
 const H = "22222222-2222-4222-8222-222222222222";
 const O = "33333333-3333-4333-8333-333333333333";
-const P = "kobe/";
+const P = "kaiju/";
 
 describe("which object keys retention and export may touch", () => {
   it("only keys in the thread's own tree", () => {

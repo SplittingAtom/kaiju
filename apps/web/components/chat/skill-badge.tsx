@@ -3,8 +3,8 @@
 import { useAuiState } from "@assistant-ui/react";
 import { SparklesIcon } from "lucide-react";
 import { approvalKey, runToolKey, type SkillMarker } from "../../lib/chat/markers";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
-import { useKobeExtras } from "./kobe-runtime";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
+import { useKaijuExtras } from "./kaiju-runtime";
 import { useMarkerData } from "./markers";
 
 /**
@@ -21,8 +21,8 @@ interface Where {
 }
 
 function useWhere(): Where {
-  const meta = useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
-  const runId = useKobeExtras()?.state.live?.runId;
+  const meta = useAuiState((s) => s.message.metadata.custom as KaijuMessageMeta | undefined);
+  const runId = useKaijuExtras()?.state.live?.runId;
   const assistant = meta?.kind === "assistant" ? meta : undefined;
   return {
     prompt: assistant?.promptEntryId,
@@ -74,7 +74,7 @@ export function UsedSkills({ names }: { readonly names: readonly string[] }) {
   return (
     <ul
       aria-label="Skills used"
-      data-kobe-used-skills
+      data-kaiju-used-skills
       className="text-muted-foreground m-0 flex list-none flex-wrap items-center gap-1.5 p-0 text-xs"
     >
       {names.map((name) => (

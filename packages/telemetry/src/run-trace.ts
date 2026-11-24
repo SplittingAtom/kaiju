@@ -14,12 +14,12 @@ import {
   TRACE_USER_ID_ATTRIBUTE,
   runRootSpanId,
   runTraceId,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { epochTime } from "./spans.js";
 import { telemetryState } from "./state.js";
 
 /**
- * Run traces (KOBE-274, `@kobe/protocol` tracing.ts): one run is one trace whose id is the run
+ * Run traces (KOBE-274, `@kaiju/protocol` tracing.ts): one run is one trace whose id is the run
  * id's hex digits, under a root span `kobe.run` with a fixed id, so every replica and the model
  * gateway place spans in it without a lookup.
  */

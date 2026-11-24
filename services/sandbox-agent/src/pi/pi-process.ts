@@ -1,11 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import type { Duplex } from "node:stream";
-import { type JsonValue } from "@kobe/protocol";
+import { type JsonValue } from "@kaiju/protocol";
 import {
   piRpcResponseSchema,
   piSessionEventSchema,
   type PiRpcResponse,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { LineSplitter, encodeJsonl } from "../jsonl.js";
 import { parsePiRecord, sanitizeString } from "../sanitize.js";
 import { descendantPids, killPids } from "./descendants.js";

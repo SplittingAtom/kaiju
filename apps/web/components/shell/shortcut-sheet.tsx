@@ -47,10 +47,10 @@ export function ShortcutSheet() {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
-          data-kobe-portal
-          data-kobe-shortcut-sheet
+          data-kaiju-portal
+          data-kaiju-shortcut-sheet
           onCloseAutoFocus={(e) => {
             // Back to what had the focus when `?` (or the palette) opened it.
             const back = before.current;
@@ -70,9 +70,9 @@ export function ShortcutSheet() {
           </Dialog.Description>
           <ul className="m-0 list-none p-0" aria-label="Shortcuts">
             {CE23_SHORTCUTS.map((id) => (
-              <li key={id} className={ROW} data-kobe-shortcut={id}>
+              <li key={id} className={ROW} data-kaiju-shortcut={id}>
                 <span>
-                  <span data-kobe-shortcut-name="">{SHEET_NAMES[id] ?? command(id).name}</span>
+                  <span data-kaiju-shortcut-name="">{SHEET_NAMES[id] ?? command(id).name}</span>
                   {SHEET_NOTES[id] && (
                     <span className="text-muted-foreground block text-xs">{SHEET_NOTES[id]}</span>
                   )}
@@ -88,7 +88,7 @@ export function ShortcutSheet() {
           <h3 className="m-0 text-sm font-semibold">Memory</h3>
           <ul className="m-0 list-none p-0" aria-label="Memory shortcuts">
             {MORE_SHORTCUTS.map((id) => (
-              <li key={id} className={ROW} data-kobe-shortcut-more={id}>
+              <li key={id} className={ROW} data-kaiju-shortcut-more={id}>
                 <span>{command(id).name}</span>
                 <span className="flex shrink-0 gap-1">
                   {shortcutsOf(command(id)).map((k) => (

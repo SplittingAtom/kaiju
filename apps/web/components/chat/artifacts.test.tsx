@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FAKE_FRAME_CSP, FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FAKE_FRAME_CSP, FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { buildCsp } from "../../lib/security/csp";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming } from "./testing";
@@ -13,7 +13,7 @@ const mermaid = vi.hoisted(() => ({
 }));
 vi.mock("mermaid", () => ({ default: mermaid }));
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -27,7 +27,7 @@ beforeEach(() => {
   }
   mermaid.initialize.mockClear();
   mermaid.render.mockClear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -36,7 +36,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function threadWith(artifact: Parameters<FakeKobe["addArtifact"]>[1]) {
+function threadWith(artifact: Parameters<FakeKaiju["addArtifact"]>[1]) {
   const t = fake.addThread("Reports");
   const u = fake.addEntry(t, null, { role: "user", content: "make it" });
   fake.addEntry(t, u, { role: "assistant", content: [{ type: "text", text: "done" }] });

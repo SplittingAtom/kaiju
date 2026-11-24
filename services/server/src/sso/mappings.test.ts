@@ -6,9 +6,9 @@ const TEAM = "00000000-0000-4000-8000-000000000001";
 describe("parseCreateMapping (SSO6)", () => {
   it("accepts a team role mapping", () => {
     for (const role of ["member", "contributor", "team_admin"]) {
-      expect(parseCreateMapping({ claimValue: "kobe.fin.member", teamId: TEAM, role })).toEqual({
+      expect(parseCreateMapping({ claimValue: "kaiju.fin.member", teamId: TEAM, role })).toEqual({
         ok: true,
-        value: { claimValue: "kobe.fin.member", teamId: TEAM, role },
+        value: { claimValue: "kaiju.fin.member", teamId: TEAM, role },
       });
     }
     // Group names of generic providers may hold inner spaces; Entra group ids are GUIDs.

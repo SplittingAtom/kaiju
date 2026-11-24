@@ -1,11 +1,11 @@
 /**
  * Semantic memory items over the shared API client (`/v1/memory/semantic/items`, KOBE-378;
- * contract KOBE-377 in `@kobe/protocol` semantic-memory/items.ts). Responses arrive camelized;
+ * contract KOBE-377 in `@kaiju/protocol` semantic-memory/items.ts). Responses arrive camelized;
  * request bodies use the routes' snake_case. Every call sends `X-Kobe-Team` and keeps a refusal's
  * check results (`warnings`, `duplicates`, `policy_conflicts`, `current_version`, `capacity`) in
  * `error.details`, read with {@link checksOf}.
  */
-import type { SemanticMemoryKind, SemanticMemoryScope, SemanticMemoryStatus } from "@kobe/protocol";
+import type { SemanticMemoryKind, SemanticMemoryScope, SemanticMemoryStatus } from "@kaiju/protocol";
 import { apiRequest, type ApiError, type ApiResult } from "../api/client";
 
 export type ItemScope = SemanticMemoryScope;

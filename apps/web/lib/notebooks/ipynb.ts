@@ -9,7 +9,7 @@ import {
   notebookCellIdSchema,
   notebookOutputSchema,
   type NotebookOutput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import "../security/zod-jitless";
 
 export type Cell = Readonly<Record<string, unknown>>;

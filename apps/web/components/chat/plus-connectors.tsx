@@ -10,7 +10,7 @@ import {
 } from "../../lib/chat/composer-plus-api";
 import { useNavigate } from "../shell/use-navigate";
 import { chatPortalContainer } from "../ui/chat-portal";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { PLUS_CONTENT, PLUS_ITEM } from "./plus-menu-styles";
 
 /** What a toggle means before the first message (KOBE-451 review MEDIUM-3). */
@@ -54,8 +54,8 @@ function Broken({ connector }: { readonly connector: ChatConnector }) {
     <>
       <DropdownMenu.Item
         className={PLUS_ITEM}
-        data-kobe-connector={connector.connectorId}
-        data-kobe-connector-problem={problem.code}
+        data-kaiju-connector={connector.connectorId}
+        data-kaiju-connector-problem={problem.code}
         aria-disabled={fix === null || undefined}
         aria-describedby={reasonId}
         onSelect={(e) => {
@@ -76,7 +76,7 @@ function Broken({ connector }: { readonly connector: ChatConnector }) {
   );
 }
 
-const KOBE_ADMIN_TEXT = {
+const KAIJU_ADMIN_TEXT = {
   off: "Docs always on. No admin tools for you here.",
   read: "Docs always on. Admin tools: read, as you, when the agent uses Kaiju.",
   read_write:
@@ -92,17 +92,17 @@ const GIT_TEXT = {
 } as const;
 
 /**
- * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp KA7): no toggle, its docs tools are
+ * The built-in Kaiju connector (KOBE-623, spec kaiju-admin-mcp KA7): no toggle, its docs tools are
  * in every conversation; the line says which admin tools the member has, as the server decided.
  */
-function BuiltinKobe({ connector }: { readonly connector: ChatConnector }) {
+function BuiltinKaiju({ connector }: { readonly connector: ChatConnector }) {
   const textId = useId();
   const admin = connector.builtin?.admin ?? "off";
   return (
     <DropdownMenu.Item
       className={PLUS_ITEM}
-      data-kobe-connector={connector.connectorId}
-      data-kobe-connector-builtin={connector.builtin?.kind ?? "kobe"}
+      data-kaiju-connector={connector.connectorId}
+      data-kaiju-connector-builtin={connector.builtin?.kind ?? "kobe"}
       aria-disabled
       aria-describedby={textId}
       onSelect={(e) => e.preventDefault()}
@@ -111,7 +111,7 @@ function BuiltinKobe({ connector }: { readonly connector: ChatConnector }) {
       <span className="flex min-w-0 flex-col">
         <span className="truncate">{connector.name}</span>
         <span id={textId} className="text-muted-foreground text-xs whitespace-normal">
-          {connector.builtin?.kind === "git" ? GIT_TEXT[admin] : KOBE_ADMIN_TEXT[admin]}
+          {connector.builtin?.kind === "git" ? GIT_TEXT[admin] : KAIJU_ADMIN_TEXT[admin]}
         </span>
       </span>
     </DropdownMenu.Item>
@@ -169,13 +169,13 @@ export function ConnectorsSubmenu({
   );
   return (
     <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kobe-plus="connectors">
+      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kaiju-plus="connectors">
         <PlugIcon aria-hidden className="size-4 shrink-0" />
         Connectors
       </DropdownMenu.SubTrigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
         <DropdownMenu.SubContent
-          data-kobe-portal
+          data-kaiju-portal
           aria-label="Connectors"
           sideOffset={4}
           className={PLUS_CONTENT}
@@ -196,14 +196,14 @@ export function ConnectorsSubmenu({
           {load.status === "ready" &&
             load.list.map((c) =>
               c.builtin !== undefined ? (
-                <BuiltinKobe key={c.connectorId} connector={c} />
+                <BuiltinKaiju key={c.connectorId} connector={c} />
               ) : c.problem !== null ? (
                 <Broken key={c.connectorId} connector={c} />
               ) : (
                 <DropdownMenu.CheckboxItem
                   key={c.connectorId}
                   className={PLUS_ITEM}
-                  data-kobe-connector={c.connectorId}
+                  data-kaiju-connector={c.connectorId}
                   checked={enabledOf(c)}
                   onSelect={(e) => {
                     // The menu stays open: several can be turned off in a row.

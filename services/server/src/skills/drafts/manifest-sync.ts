@@ -1,5 +1,5 @@
 import { isMap, parseDocument } from "yaml";
-import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kobe/protocol";
+import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
 
 /**
  * A draft's `kobe.skill.yaml` at Save version (KOBE-322). The manifest's `version` and

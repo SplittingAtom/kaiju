@@ -1,11 +1,11 @@
-import { createDb, verifyAuditChain } from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createDb, verifyAuditChain } from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { allowLocalSignIn } from "./sso-break-glass.js";
 
 /**
- * `kobe sso allow-local-sign-in` (KOBE-774): the Site owner's break-glass when "Require single
+ * `kaiju sso allow-local-sign-in` (KOBE-774): the Site owner's break-glass when "Require single
  * sign-on" locks everyone out (the identity provider is down or misconfigured). Needs the owner
  * role's URL, i.e. cluster access, never the web UI. Turns the setting off and records
  * `identity.sso.required.disabled` (`break_glass`, the operator) in the audit chain.

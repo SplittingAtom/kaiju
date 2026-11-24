@@ -9,7 +9,7 @@
  * Paths are the workspace tree's (`GET /v1/workspace/files`; project files under
  * `projects/<slug>/…`). `hiddenCount` and `more` count what the viewer may not see by name (TFM7).
  *
- * Answers are checked against the `@kobe/protocol` schemas (KOBE-611, strict) in wire casing: the
+ * Answers are checked against the `@kaiju/protocol` schemas (KOBE-611, strict) in wire casing: the
  * client camelizes every answer, so each one goes back to snake_case before the check (as
  * `lib/chat/folders-api.ts` does) and the checked value is handed out camelized again.
  */
@@ -24,7 +24,7 @@ import {
   type ThreadFileAccessValue,
   type ThreadFileLink as WireLinkedFile,
   type ThreadFileLinks as WireThreadLinks,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { z } from "zod";
 import "../security/zod-jitless";
 import { apiRequest, type ApiError, type ApiResult } from "../api/client";

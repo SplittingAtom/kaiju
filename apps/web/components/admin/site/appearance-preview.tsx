@@ -1,6 +1,6 @@
 "use client";
 
-import type { SiteBranding } from "@kobe/protocol";
+import type { SiteBranding } from "@kaiju/protocol";
 import { useSyncExternalStore } from "react";
 import { documentCspNonce } from "../../../lib/security/csp-nonce";
 import { PREVIEW_IDS } from "../../../lib/theme/preview-css";
@@ -26,7 +26,7 @@ function PreviewStyle({ css }: { readonly css: string }) {
   );
   if (nonce === null || css === "") return null;
   return (
-    <style nonce={nonce === "" ? undefined : nonce} data-kobe-preview="">
+    <style nonce={nonce === "" ? undefined : nonce} data-kaiju-preview="">
       {css}
     </style>
   );

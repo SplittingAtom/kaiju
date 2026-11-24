@@ -1,4 +1,4 @@
-import { injectedHeadersSchema } from "@kobe/db";
+import { injectedHeadersSchema } from "@kaiju/db";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";

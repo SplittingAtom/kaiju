@@ -93,7 +93,7 @@ The source of truth is `AUDIT_EVENTS` in `packages/db/src/audit/events.ts`, asse
 file per area in `packages/db/src/audit/events/`. Each target is a
 strict zod object, and unknown keys are rejected. The table below is generated (KOBE-815) from
 each area's rows in `events/<area>.doc.ts`, sorted by action: edit a row there, never here, and run
-`pnpm --filter @kobe/db build && pnpm --filter @kobe/db audit:doc`. A unit test fails if the table
+`pnpm --filter @kaiju/db build && pnpm --filter @kaiju/db audit:doc`. A unit test fails if the table
 is stale, or if a field name suggests content or credentials. Scope `site` means no team.
 Scope `team` means the team view shows the event. Scope `any` means team for team agents and
 site for personal and gallery agents.
@@ -108,7 +108,7 @@ row's stored name, so a SIEM rule keyed on an old name should match the new one 
 values follow since KOBE-256: new `policy.rule.*`, `models.budget.*` and `run.budget_stopped`
 events say `scope: "site"`; rows recorded before say `scope: "install"` and keep it (same meaning).
 
-<!-- audit-events:start: generated from packages/db/src/audit/events/*.doc.ts by `pnpm --filter @kobe/db audit:doc`; do not edit by hand -->
+<!-- audit-events:start: generated from packages/db/src/audit/events/*.doc.ts by `pnpm --filter @kaiju/db audit:doc`; do not edit by hand -->
 <!-- prettier-ignore-start -->
 
 | Action | Scope | Target fields (allowlist) | Recorded when |
@@ -274,7 +274,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `identity.sso.provider.disabled` | site | `providerId`, `slug` | Provider turned off; its sessions end |
 | `identity.sso.provider.enabled` | site | `providerId`, `slug` | Provider turned on |
 | `identity.sso.provider.updated` | site | `providerId`, `slug`, `sessionsEnded?` | Provider settings changed; `sessionsEnded` when the MFA rule changed and the provider's SSO sessions ended |
-| `identity.sso.required.disabled` | site | `reason` (`admin`, `last_provider`, `owner_unlinked`, `break_glass`), `providerId`, `slug`, `byUserId`, `operator` | "Require single sign-on" turned off: by the Owner, by the last enabled provider being disabled or deleted (`byUserId`: the admin who did it in the console; system actor when the chart did it), by the chart leaving the Owner without an identity at an enabled provider (`owner_unlinked`, system actor), or by `kobe sso allow-local-sign-in` (system actor, `operator`) |
+| `identity.sso.required.disabled` | site | `reason` (`admin`, `last_provider`, `owner_unlinked`, `break_glass`), `providerId`, `slug`, `byUserId`, `operator` | "Require single sign-on" turned off: by the Owner, by the last enabled provider being disabled or deleted (`byUserId`: the admin who did it in the console; system actor when the chart did it), by the chart leaving the Owner without an identity at an enabled provider (`owner_unlinked`, system actor), or by `kaiju sso allow-local-sign-in` (system actor, `operator`) |
 | `identity.sso.required.enabled` | site | `sessionsEnded` | "Require single sign-on" turned on (KOBE-774); sessions not signed in through an identity provider end |
 | `identity.team.created` | team | `slug`, `name`, `adminUserId` | Team created with its first team admin |
 | `identity.team.renamed` | team | `name` | Team renamed |
@@ -362,7 +362,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `models.provider.removed` | site | `providerId`, `kind` | A provider without catalog models was removed |
 | `models.team.changed` | team | `alias`, `enabled`, `isDefault` | A team admin enabled or disabled a catalog model for the team, or changed its default |
 | `platform.isolation.changed` | site | `from`, `to`, `runtimeClass?`, `handler?`, `replica` | A server replica lost or regained isolation, or started without it (system) |
-| `platform.restore.completed` | site | `backupCreatedAt`, `tables`, `rows`, `operator`, `auditHeadSeq?`, `auditHeadHash?`, `replacedAuditHeadSeq?`, `replacedAuditHeadHash?`, `replacedAuditRows?` | `kobe restore` loaded and verified a backup (system, same transaction) |
+| `platform.restore.completed` | site | `backupCreatedAt`, `tables`, `rows`, `operator`, `auditHeadSeq?`, `auditHeadHash?`, `replacedAuditHeadSeq?`, `replacedAuditHeadHash?`, `replacedAuditRows?` | `kaiju restore` loaded and verified a backup (system, same transaction) |
 | `policy.dangerous_mode.applied` | team | `runId`, `toolCallId`, `tool`, `agentId?`, `agentVersion?`, `enforcementPoint` (sandbox, mcp_proxy) | An admin's Dangerous agent let a call run without asking (AC1, KOBE-476), one row per call and enforcement point |
 | `policy.remember_limits.updated` | any | `scope` (site, team), `scopes`, `maxDurationSeconds`, `mcpTools`, `exactOnly`, `approveAll` | The site floor's or a team's limits on remembered approvals were saved (KOBE-289) |
 | `policy.rule.applied` | team | `ruleId`, `runId`, `toolCallId`, `tool`, `rememberScope`, `enforcementPoint` (sandbox, mcp_proxy) | A member's remembered approval let a call run without asking (KOBE-289), one row per call |
@@ -612,7 +612,7 @@ state at every replica start; and anything before first-run setup, so that a sit
 restored stays empty. Better Auth's own writes (sign-in, credential changes) are recorded right
 after the endpoint finishes, in a transaction of their own, because Better Auth owns those
 transactions. A failure to record them is logged at error level and doesn't fail the request.
-`kobe backup` is not recorded in the database, because the backup role is read-only. `kobe
+`kaiju backup` is not recorded in the database, because the backup role is read-only. `kaiju
 restore` is recorded.
 
 ## Recording events (developers)
@@ -630,7 +630,7 @@ await withTeam(db, teamId, async (tx) => {
 });
 ```
 
-- **Same transaction, last write.** Pass the action's transaction (`KobeTx`). `audit()` doesn't
+- **Same transaction, last write.** Pass the action's transaction (`KaijuTx`). `audit()` doesn't
   accept the pool. Append last, because the chain lock is held until commit.
 - **Actor.** In a signed-in request the actor is the session user. Middleware sets it for the whole
   request (`auditUserContext`), so store functions don't pass it. Unauthenticated routes (Better
@@ -648,7 +648,7 @@ await withTeam(db, teamId, async (tx) => {
 - **New events:** add the action to its area's file in `events/` with the smallest target that
   identifies the object (ids, enums, counts, short labels), add its row (`fields`, `when`) in name
   order to the area's `events/<area>.doc.ts` (the typecheck fails without one), regenerate the
-  table above (`pnpm --filter @kobe/db build && pnpm --filter @kobe/db audit:doc`), and test it.
+  table above (`pnpm --filter @kaiju/db build && pnpm --filter @kaiju/db audit:doc`), and test it.
   Never rename or reuse a published action.
 
 ### What later tickets must record
@@ -823,7 +823,7 @@ It walks the log by `seq` from a stored position (`site_settings['audit.pii_swee
 pages of 5000 rows (at most 100 pages a run), erases the due rows, moves past held rows, and stops
 at the first row still inside the period: each row is read about once, and held rows are not
 re-read every run. Releasing a hold resets the position (the `legal_holds_guard` trigger), so the
-rows it kept are erased on the next run. **After `kobe restore`** the job is paused for 24 hours
+rows it kept are erased on the next run. **After `kaiju restore`** the job is paused for 24 hours
 (`audit.pii_sweep_resume_at`): holds are as of the backup, so re-place any placed since then
 within that time (the CLI says so).
 
@@ -899,7 +899,7 @@ mac }` at startup and every 5 minutes (all replicas; the lines are the same apar
 - **MAC.** `mac` is HMAC-SHA256 over `seq:hash` under a key derived from the auth secret (a
   Kubernetes Secret, never in the database), so a database-only attacker can't mint an anchor for
   a head they invented. Verify one with `anchorMac(anchorKey(authSecret), seq, hash)`.
-- **Backups.** The signed backup manifest records the snapshot's head, and `kobe restore` requires
+- **Backups.** The signed backup manifest records the snapshot's head, and `kaiju restore` requires
   the restored chain to end there. `--expect-audit-head <seq>:<hash>` additionally requires a head
   you recorded earlier (from the log or a SIEM) to be in the restored chain.
 

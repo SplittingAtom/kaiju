@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RunSkillRef } from "@kobe/db";
+import type { RunSkillRef } from "@kaiju/db";
 import { matchSkillRead, runSkillRefs, skillUsesFrom } from "./detect.js";
 
 const A = "a".repeat(64);

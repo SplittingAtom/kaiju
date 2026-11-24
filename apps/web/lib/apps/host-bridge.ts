@@ -387,7 +387,7 @@ export function attachHostBridge(
     notify: (method, params) => post({ method, params }),
     teardown: (timeoutMs) =>
       new Promise<boolean>((resolve) => {
-        const id = `kobe-${nextId++}`;
+        const id = `kaiju-${nextId++}`;
         const timer = setTimeout(() => settle(false), timeoutMs);
         function settle(ok: boolean) {
           clearTimeout(timer);

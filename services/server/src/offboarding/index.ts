@@ -1,4 +1,4 @@
-import { sql, teams, withTeam, type KobeDb } from "@kobe/db";
+import { sql, teams, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import type { ReconcileLock } from "../sandbox/reconcile-lock.js";
@@ -97,7 +97,7 @@ export interface Offboarding {
 }
 
 export interface OffboardingOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly log: Pick<Logger, "info" | "warn" | "error" | "debug">;
   /** KOBE_RETENTION_PAUSED (KOBE-243): the sweep and the purge do nothing. */

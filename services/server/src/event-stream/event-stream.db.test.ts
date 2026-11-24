@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
-import { sql, withTeam } from "@kobe/db";
+import type { KaijuEvent } from "@kaiju/protocol";
+import { sql, withTeam } from "@kaiju/db";
 import {
   AppendError,
   MAX_APPEND_BATCH,
@@ -49,7 +49,7 @@ beforeAll(async () => {
 
 afterAll(() => fx.teardown());
 
-const seqs = (events: readonly KobeEvent[]) => events.map((e) => e.seq);
+const seqs = (events: readonly KaijuEvent[]) => events.map((e) => e.seq);
 
 /** Waits until some backend is blocked on a lock while touching `runId` (B queued behind A). */
 async function waitForLockWaiter(runId: string): Promise<void> {
@@ -344,7 +344,7 @@ describe("GET /v1/runs/{id}/events (ac-3)", () => {
     expect(reader.readPage(finance, run, 0)).not.toBe(a); // finished reads are not cached
     const { rows } = await fx.admin.query<{ n: number }>(
       `SELECT count(*)::int AS n FROM pg_stat_activity
-        WHERE datname = current_database() AND application_name = 'kobe-event-stream'`,
+        WHERE datname = current_database() AND application_name = 'kaiju-event-stream'`,
     );
     expect(rows[0]?.n).toBeGreaterThan(0);
   });
@@ -408,7 +408,7 @@ describe("GET /v1/runs/{id}/events (ac-3)", () => {
     });
     const done = Promise.all(writers).then(() => fx.complete(finance, run));
 
-    const received: KobeEvent[] = [];
+    const received: KaijuEvent[] = [];
     let reconnects = 0;
     for (;;) {
       const last = received.at(-1)?.seq ?? 0;
@@ -462,7 +462,7 @@ describe("authorization (ac-4)", () => {
 
   it("requires a session and an active team", async () => {
     const run = await fx.run(finance, alice);
-    const anon = await fx.replica(0).app.request(`http://kobe.test/v1/runs/${run}/events`);
+    const anon = await fx.replica(0).app.request(`http://kaiju.test/v1/runs/${run}/events`);
     expect(anon.status).toBe(401);
     const loner = await fx.person("loner");
     expect((await fx.open(0, loner, run)).status).toBe(409); // no_active_team

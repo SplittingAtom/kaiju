@@ -12,9 +12,9 @@ export async function watchStyleViolations(page: Page): Promise<void> {
   await page.evaluate(() => {
     const seen: string[] = [];
     const unnonced: string[] = [];
-    const w = window as unknown as { kobeStyleViolations: string[]; kobeUnnoncedStyles: string[] };
-    w.kobeStyleViolations = seen;
-    w.kobeUnnoncedStyles = unnonced;
+    const w = window as unknown as { kaijuStyleViolations: string[]; kaijuUnnoncedStyles: string[] };
+    w.kaijuStyleViolations = seen;
+    w.kaijuUnnoncedStyles = unnonced;
     new MutationObserver((records) => {
       for (const r of records) {
         for (const node of r.addedNodes) {
@@ -38,6 +38,6 @@ export async function watchStyleViolations(page: Page): Promise<void> {
 /** The style-src violations seen since `watchStyleViolations`. */
 export async function styleViolations(page: Page): Promise<string[]> {
   return page.evaluate(
-    () => (window as unknown as { kobeStyleViolations: string[] }).kobeStyleViolations,
+    () => (window as unknown as { kaijuStyleViolations: string[] }).kaijuStyleViolations,
   );
 }

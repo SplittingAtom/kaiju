@@ -3,7 +3,7 @@ import {
   createLangfuseScoreSink,
   loadTelemetryConfig,
   type TelemetryConfig,
-} from "@kobe/telemetry";
+} from "@kaiju/telemetry";
 import {
   PROVIDER_KEY_PURPOSE,
   SecretBox,
@@ -11,7 +11,7 @@ import {
   headerBox,
   loadEnvelope,
   type Envelope,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { approvalKeyring } from "../approvals/index.js";
 import { destinationsOf } from "../audit/forward/index.js";
@@ -120,7 +120,7 @@ function schedulerDeps(i: ProcessDepsInput): ServerDeps {
     isolation: i.isolation,
     // KOBE-736: the scheduler serves no event streams, so its stream pool never opens.
     dbPool: { max: config.dbPools.max, applicationName: "kobe-scheduler" },
-    listen: { applicationName: "kobe-scheduler-listen" },
+    listen: { applicationName: "kaiju-scheduler-listen" },
     ...schedulerAuthStandIn(),
     // No run-token key: the wire host that delivers run.start mints run tokens, not the scheduler.
     sandboxWire: { waker: i.waker },
@@ -159,7 +159,7 @@ function apiServerDeps(
     dbTimeouts: config.dbTimeouts,
     isolation: i.isolation,
     dbPool: { max: config.dbPools.max, applicationName: "kobe-server" },
-    listen: { applicationName: "kobe-server-listen" },
+    listen: { applicationName: "kaiju-server-listen" },
     eventStream: { poolMax: config.dbPools.streamMax },
     retentionPaused: config.retentionPaused,
     usageRetentionMonths: config.retentionSweeps.runUsageMonths,

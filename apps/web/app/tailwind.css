@@ -7,7 +7,7 @@
    Both stylesheets import this file, so a page that has both (after client navigation) gets two
    identical copies: keep every theme token here, never in one of them, or the copies differ.
    The tokens and both themes live in app/theme.css (KOBE-282). */
-@layer theme, base, kobe-legacy, components, utilities;
+@layer theme, base, kaiju-legacy, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
@@ -44,49 +44,49 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   /* Status colours (KOBE-301, app/theme.css): text-status-running, bg-status-running-bg, … */
-  --color-status-running: var(--kobe-status-running);
-  --color-status-running-bg: var(--kobe-status-running-bg);
-  --color-status-attention: var(--kobe-status-attention);
-  --color-status-attention-bg: var(--kobe-status-attention-bg);
-  --color-status-failed: var(--kobe-status-failed);
-  --color-status-failed-bg: var(--kobe-status-failed-bg);
-  --color-status-done: var(--kobe-status-done);
-  --color-status-idle: var(--kobe-status-idle);
-  --color-status-accent: var(--kobe-status-accent);
-  --color-status-accent-fg: var(--kobe-status-accent-fg);
+  --color-status-running: var(--kaiju-status-running);
+  --color-status-running-bg: var(--kaiju-status-running-bg);
+  --color-status-attention: var(--kaiju-status-attention);
+  --color-status-attention-bg: var(--kaiju-status-attention-bg);
+  --color-status-failed: var(--kaiju-status-failed);
+  --color-status-failed-bg: var(--kaiju-status-failed-bg);
+  --color-status-done: var(--kaiju-status-done);
+  --color-status-idle: var(--kaiju-status-idle);
+  --color-status-accent: var(--kaiju-status-accent);
+  --color-status-accent-fg: var(--kaiju-status-accent-fg);
   /* The confirm call to action (app/theme.css): bg-confirm, hover:bg-confirm-hover, text-confirm-fg. */
-  --color-confirm: var(--kobe-confirm);
-  --color-confirm-hover: var(--kobe-confirm-hover);
-  --color-confirm-fg: var(--kobe-confirm-fg);
+  --color-confirm: var(--kaiju-confirm);
+  --color-confirm-hover: var(--kaiju-confirm-hover);
+  --color-confirm-fg: var(--kaiju-confirm-fg);
   /* The gold tool badge (KOBE-374): text-tool-badge, bg-tool-badge-bg, border-tool-badge-border. */
-  --color-tool-badge: var(--kobe-tool-badge);
-  --color-tool-badge-bg: var(--kobe-tool-badge-bg);
-  --color-tool-badge-border: var(--kobe-tool-badge-border);
+  --color-tool-badge: var(--kaiju-tool-badge);
+  --color-tool-badge-bg: var(--kaiju-tool-badge-bg);
+  --color-tool-badge-border: var(--kaiju-tool-badge-border);
   /* The consoles' and My area's palette (KOBE-294, app/theme.css): text-console-fg,
      bg-console-panel, border-console-border, text-console-accent, bg-console-danger-bg, … */
-  --color-console-fg: var(--kobe-console-fg);
-  --color-console-muted: var(--kobe-console-muted);
-  --color-console-bg: var(--kobe-console-bg);
-  --color-console-panel: var(--kobe-console-panel);
-  --color-console-border: var(--kobe-console-border);
-  --color-console-control: var(--kobe-console-control-border);
-  --color-console-overlay: var(--kobe-console-overlay);
+  --color-console-fg: var(--kaiju-console-fg);
+  --color-console-muted: var(--kaiju-console-muted);
+  --color-console-bg: var(--kaiju-console-bg);
+  --color-console-panel: var(--kaiju-console-panel);
+  --color-console-border: var(--kaiju-console-border);
+  --color-console-control: var(--kaiju-console-control-border);
+  --color-console-overlay: var(--kaiju-console-overlay);
   --color-console-accent: var(--admin-accent);
   --color-console-danger: var(--admin-danger);
   --color-console-danger-bg: var(--admin-danger-bg);
   --color-console-warn-bg: var(--admin-warn-bg);
   /* Brand (KOBE-498, app/theme.css): bg-brand-primary, text-brand-link, ring-brand-focus, … */
-  --color-brand-primary: var(--kobe-brand-primary);
-  --color-brand-primary-hover: var(--kobe-brand-primary-hover);
-  --color-brand-primary-fg: var(--kobe-brand-primary-fg);
-  --color-brand-link: var(--kobe-brand-link);
-  --color-brand-focus: var(--kobe-brand-focus);
+  --color-brand-primary: var(--kaiju-brand-primary);
+  --color-brand-primary-hover: var(--kaiju-brand-primary-hover);
+  --color-brand-primary-fg: var(--kaiju-brand-primary-fg);
+  --color-brand-link: var(--kaiju-brand-link);
+  --color-brand-focus: var(--kaiju-brand-focus);
   /* Typography: font-sans, font-mono. */
-  --font-sans: var(--kobe-font-sans);
-  --font-mono: var(--kobe-font-mono);
+  --font-sans: var(--kaiju-font-sans);
+  --font-mono: var(--kaiju-font-mono);
   /* Corners: rounded-sm..xl follow the radius tokens; rounded-full stays Tailwind's (circles). */
-  --radius-sm: var(--kobe-radius-sm);
-  --radius-md: var(--kobe-radius-md);
-  --radius-lg: var(--kobe-radius-lg);
-  --radius-xl: var(--kobe-radius-xl);
+  --radius-sm: var(--kaiju-radius-sm);
+  --radius-md: var(--kaiju-radius-md);
+  --radius-lg: var(--kaiju-radius-lg);
+  --radius-xl: var(--kaiju-radius-xl);
 }

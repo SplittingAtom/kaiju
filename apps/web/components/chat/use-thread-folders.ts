@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import type { FoldersState } from "../../lib/chat/folders-store";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 /** The team's folders as this tab last read them (KOBE-536); `read` asks once if none yet. */
 export function useThreadFolders(read = false): FoldersState {

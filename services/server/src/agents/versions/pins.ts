@@ -1,5 +1,5 @@
 import { suspendedInTeam } from "../inventory.js";
-import { validateAgentDefinition } from "@kobe/agent-file";
+import { validateAgentDefinition } from "@kaiju/agent-file";
 import {
   and,
   eq,
@@ -7,8 +7,8 @@ import {
   teamAgents,
   teamMembers,
   type AgentScope,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { agentAccess, type AgentActor } from "../access.js";
 import { readPublishFloor } from "../floor.js";
 import {
@@ -59,7 +59,7 @@ export type PinError = "agent_not_found" | "agent_unavailable" | "version_not_fo
  * (if any) before agent row; agent changes (`lockAgent`) never lock threads.
  */
 export async function findPinnableAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: PinViewer,
   agentId: string,
   options: { lock?: boolean } = {},
@@ -106,7 +106,7 @@ export const canPinAgent = (agent: AgentRecord): boolean => !unavailable(agent);
  * published agents can't start threads.
  */
 export async function resolveAgentPin(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: PinViewer,
   agentId: string | null,
 ): Promise<Result<AgentPin | null, PinError>> {
@@ -128,7 +128,7 @@ export async function resolveAgentPin(
  * can't, like for any thread. A draft that was never published is fine.
  */
 export async function resolveDraftPin(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: PinViewer,
   actor: AgentActor,
   agentId: string,
@@ -146,7 +146,7 @@ export async function resolveDraftPin(
  * agent's current version) of the agent the thread is already pinned to, in the same scope.
  */
 export async function resolveSwitchPin(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: PinViewer,
   current: Pick<AgentPin, "agentScope" | "agentId">,
   version: number | undefined,
@@ -168,7 +168,7 @@ export async function resolveSwitchPin(
  * owner sees it. Null when the thread has no agent or the agent is gone from the owner's view.
  */
 export async function latestPinnedVersion(
-  tx: KobeTx,
+  tx: KaijuTx,
   thread: { teamId: string; ownerUserId: string; agentId: string | null },
 ): Promise<number | null> {
   if (thread.agentId === null) return null;
@@ -203,7 +203,7 @@ export type PinnedAgent =
  * (`effectiveApprovalMode`, the team's models and connectors; per call `loadRunAgentTools`).
  */
 export async function resolvePinnedAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: PinViewer,
   pin: AgentPin,
 ): Promise<PinnedAgent> {
@@ -228,7 +228,7 @@ export async function resolvePinnedAgent(
  * publish, against today's floor. An invalid draft is `version_unreadable` (the run fails).
  */
 export async function resolveDraftAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: PinViewer,
   pin: Pick<DraftPin, "agentScope" | "agentId">,
 ): Promise<PinnedAgent> {

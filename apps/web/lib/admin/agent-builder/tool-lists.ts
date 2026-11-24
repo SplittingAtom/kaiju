@@ -60,12 +60,12 @@ export function withConnectorTools(
 }
 
 /**
- * Keeps Kaiju's docs tools on (KOBE-623, spec kobe-admin-mcp KA7): they attach to every run, but an
+ * Keeps Kaiju's docs tools on (KOBE-623, spec kaiju-admin-mcp KA7): they attach to every run, but an
  * agent that narrows its tools with an allow list only keeps the tools that list names. So while
  * the allow list names anything else, the docs tools are named too (unless denied); once it
  * names nothing else they leave it again, so an empty list keeps meaning "not narrowed".
  */
-export function withKobeDocs(form: FormState, docsTools: readonly string[]): FormState {
+export function withKaijuDocs(form: FormState, docsTools: readonly string[]): FormState {
   if (docsTools.length === 0) return form;
   const docs = new Set(docsTools);
   const allow = splitLines(form.toolsAllow);

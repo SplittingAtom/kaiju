@@ -1,4 +1,4 @@
-import type { InjectedHeader } from "@kobe/db";
+import type { InjectedHeader } from "@kaiju/db";
 
 /** Header names compared the way CGI-style servers see them (`X_Api_Key` = `X-Api-Key`). */
 const headerKey = (name: string) => name.toLowerCase().replace(/_/g, "-");

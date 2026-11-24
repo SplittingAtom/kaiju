@@ -1,4 +1,4 @@
-import { eq, users, type TeamRole } from "@kobe/db";
+import { eq, users, type TeamRole } from "@kaiju/db";
 import { readAppName } from "../branding/settings.js";
 import type { ServerDeps } from "../deps.js";
 import { teamMemberAddedMessage } from "../mail/messages.js";

@@ -15,7 +15,7 @@ import {
   verifyAuditChain,
   type AuditEvent,
 } from "./audit/index.js";
-import { createDb, type KobeDb } from "./client.js";
+import { createDb, type KaijuDb } from "./client.js";
 import * as schema from "./schema/index.js";
 import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
@@ -248,7 +248,7 @@ describe("hash chain verification", () => {
       await client.query("BEGIN");
       await client.query("SET LOCAL session_replication_role = replica"); // skips user triggers
       await tamper(client);
-      const db = drizzle({ client, schema, casing: "snake_case" }) as unknown as KobeDb;
+      const db = drizzle({ client, schema, casing: "snake_case" }) as unknown as KaijuDb;
       return await verifyAuditChain(db);
     } finally {
       await client.query("ROLLBACK");
@@ -426,7 +426,7 @@ describe("reading the audit log", () => {
     await record({
       action: "platform.isolation.changed",
       actor: SYSTEM_ACTOR,
-      target: { from: "verified", to: "missing", replica: "kobe-server-0" },
+      target: { from: "verified", to: "missing", replica: "kaiju-server-0" },
     });
     const page = await listAuditEvents(app.db, { action: "platform.isolation.changed" });
     expect(page.events[0]?.actor).toEqual({ kind: "system", id: null, name: null, email: null });

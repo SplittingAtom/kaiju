@@ -6,7 +6,7 @@ import type { ApiError } from "../../lib/api/client";
 import type { FileEntry, FilesApi } from "../../lib/files/api";
 import { ErrorNotice } from "../admin/error-notice";
 import { useArtifactPanel } from "../chat/artifact-state";
-import { ChatSessionContext } from "../chat/kobe-runtime";
+import { ChatSessionContext } from "../chat/kaiju-runtime";
 import { useEndDraftProject } from "../chat/use-draft-project";
 import { useConversationProject } from "../chat/use-conversation-project";
 import { mentionRefusal } from "../../lib/chat/mention-insert";
@@ -93,7 +93,7 @@ function CollapsedIcons({
         variant={RAIL_ACTION_VARIANT}
         className={RAIL_ACTION}
         aria-expanded={false}
-        aria-controls="kobe-rail-sections"
+        aria-controls="kaiju-rail-sections"
         onClick={() => rail.toggle(false)}
       />
       <RailTeamIcon teams={teams} teamName={teamName} />
@@ -141,7 +141,7 @@ function ThreadsButton({
     <IconAction
       command={command}
       badge={activity === "idle" ? undefined : OVERALL_LABEL[activity]}
-      data-kobe-activity={activity}
+      data-kaiju-activity={activity}
       size={size}
       side={side}
       variant={variant}
@@ -250,7 +250,7 @@ function RailHeader({
             variant={RAIL_HEADER_VARIANT}
             className={`size-7 ${RAIL_ACTION}`}
             aria-expanded
-            aria-controls="kobe-rail-sections"
+            aria-controls="kaiju-rail-sections"
             onClick={() => rail.toggle(true)}
           />
         </div>
@@ -352,7 +352,7 @@ function RailFiles({
     <>
       <div className={styles.sectionHeader}>
         <h3
-          id="kobe-rail-files-title"
+          id="kaiju-rail-files-title"
           className={tabbed ? `${styles.sectionTitle} sr-only` : styles.sectionTitle}
         >
           Files
@@ -404,7 +404,7 @@ function RailFiles({
   return (
     <section
       id={SECTION_IDS.files}
-      aria-labelledby="kobe-rail-files-title"
+      aria-labelledby="kaiju-rail-files-title"
       tabIndex={-1}
       className={styles.section}
       hidden={hidden}
@@ -486,7 +486,7 @@ export function WorkspaceRail({
             </div>
           )}
           <div
-            id="kobe-rail-sections"
+            id="kaiju-rail-sections"
             className={styles.sections}
             style={{ gridTemplateRows: gridRows }}
           >

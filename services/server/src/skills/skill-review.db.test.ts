@@ -5,7 +5,7 @@ import { strToU8, zipSync } from "fflate";
 import { RawBody, type TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import pino from "pino";
 import { LateScanner } from "./late-scan.js";
 import { reviewRowsOf, usablePersonalSkills } from "./review.js";
@@ -25,7 +25,7 @@ const finance = randomUUID();
 const marketing = randomUUID();
 let h: Harness;
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 let lateScanner: LateScanner;
 /** One pass of the late scan job (P2-35); the queue GET never scans. */
 const lateScan = () => lateScanner.pass();

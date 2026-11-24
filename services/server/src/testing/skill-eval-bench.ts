@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { expect } from "vitest";
-import type { EvalWorkspaceSnapshot } from "@kobe/protocol";
-import type { EvalReadResult } from "@kobe/protocol/sandbox-wire";
+import type { EvalWorkspaceSnapshot } from "@kaiju/protocol";
+import type { EvalReadResult } from "@kaiju/protocol/sandbox-wire";
 import { seedGalleryAgents } from "../gallery/seed.js";
 import { SkillEvalRunner, type SkillEvalRunnerOptions } from "../skills/evals/runner.js";
 import { RawBody } from "./browser.js";
@@ -132,7 +132,7 @@ export type SkillEvalWorld = Awaited<ReturnType<RunFixture["world"]>>;
 
 export class SkillEvalBench {
   readonly objects = new MemoryObjects();
-  readonly blobs = { objects: this.objects, prefix: "kobe/" };
+  readonly blobs = { objects: this.objects, prefix: "kaiju/" };
   readonly f = new RunFixture();
   readonly silent = pino({ level: process.env.EVAL_TEST_LOG ?? "silent" });
 

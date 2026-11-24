@@ -1,5 +1,5 @@
-import type { ActorContext, RunTransition, RunTransitionListener } from "@kobe/protocol";
-import { withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import type { ActorContext, RunTransition, RunTransitionListener } from "@kaiju/protocol";
+import { withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 import { appendRunEventsInTx } from "../../event-stream/append.js";
 import { logger as rootLogger } from "../../logger.js";
@@ -41,7 +41,7 @@ export const delay = (ms: number) =>
  * Internal to `runs/orchestrator*`.
  */
 export class RunCore {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly router: SandboxRouter;
   readonly agents: RunAgentResolver;
   readonly budget: RunBudgetGate;
@@ -116,7 +116,7 @@ export class RunCore {
   }
 
   /** A team transaction as `actor` (thread lock timeout set); a busy thread is 409 thread_busy. */
-  async threadTx<T>(actor: ActorContext, fn: (tx: KobeTx, viewer: Viewer) => Promise<T>) {
+  async threadTx<T>(actor: ActorContext, fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>) {
     try {
       return await withTeam(this.db, actor.team_id, async (tx) => {
         await setThreadLockTimeout(tx);
@@ -128,11 +128,11 @@ export class RunCore {
     }
   }
 
-  readTx<T>(actor: ActorContext, fn: (tx: KobeTx, viewer: Viewer) => Promise<T>): Promise<T> {
+  readTx<T>(actor: ActorContext, fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>): Promise<T> {
     return withTeam(this.db, actor.team_id, async (tx) => fn(tx, await this.#viewer(tx, actor)));
   }
 
-  async #viewer(tx: KobeTx, actor: ActorContext): Promise<Viewer> {
+  async #viewer(tx: KaijuTx, actor: ActorContext): Promise<Viewer> {
     return {
       teamId: actor.team_id,
       userId: actor.user_id,
@@ -141,7 +141,7 @@ export class RunCore {
   }
 
   /** KOBE-13: deactivated or removed users can't start or steer runs (budget gate: KOBE-42). */
-  async assertMayRun(tx: KobeTx, actor: ActorContext, checkBudget = true): Promise<void> {
+  async assertMayRun(tx: KaijuTx, actor: ActorContext, checkBudget = true): Promise<void> {
     if (!(await principalActive(tx, actor.team_id, actor.user_id))) {
       throw new RunError("forbidden", "Your account can't run agents in this team.");
     }
@@ -155,7 +155,7 @@ export class RunCore {
 
   /** Promotes the thread; if `runId` did not start, records `run.queued` with its position. */
   async promoteOrQueue(
-    tx: KobeTx,
+    tx: KaijuTx,
     teamId: string,
     threadId: string,
     runId: string,

@@ -3,7 +3,7 @@ import type { MEMORY_EVENTS } from "./memory.js";
 
 /**
  * The docs/audit-log.md rows of the memory area's events (KOBE-815), in name order; the table is
- * generated from these (`pnpm --filter @kobe/db audit:doc`). Add an event's row here in name order.
+ * generated from these (`pnpm --filter @kaiju/db audit:doc`). Add an event's row here in name order.
  */
 export const MEMORY_EVENT_DOCS = {
   "memory.candidate.accepted": {

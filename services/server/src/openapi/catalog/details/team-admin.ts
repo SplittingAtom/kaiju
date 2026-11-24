@@ -1,5 +1,5 @@
-import { RETENTION_PERIODS, TEAM_ROLES, USAGE_KINDS } from "@kobe/db";
-import { REMEMBER_SCOPES, rememberLimitsSchema } from "@kobe/protocol";
+import { RETENTION_PERIODS, TEAM_ROLES, USAGE_KINDS } from "@kaiju/db";
+import { REMEMBER_SCOPES, rememberLimitsSchema } from "@kaiju/protocol";
 import { z } from "zod";
 import { teamRuleBodySchema } from "../../../policy/schemas.js";
 import { bodySchema as evalSettingsBodySchema } from "../../../routes/team-eval-settings.js";

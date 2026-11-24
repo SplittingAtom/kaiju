@@ -1,4 +1,4 @@
-import { RULE_SET_VERSION, type ScanResult } from "@kobe/skill-scanner";
+import { RULE_SET_VERSION, type ScanResult } from "@kaiju/skill-scanner";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import { IntegrityError, readVerified } from "./blob-read.js";

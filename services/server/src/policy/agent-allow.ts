@@ -1,4 +1,4 @@
-import { BUILTIN_TOOLS, type ToolDescriptor } from "@kobe/protocol";
+import { BUILTIN_TOOLS, type ToolDescriptor } from "@kaiju/protocol";
 import { matchSubject, splitAgentToolEntry } from "./patterns.js";
 
 /**
@@ -8,7 +8,7 @@ import { matchSubject, splitAgentToolEntry } from "./patterns.js";
  * and the frozen manifest's exclusions:
  *
  * - an empty or absent list limits nothing (the builder never writes an empty list; it drops the
- *   key, and `withKobeDocs` keeps "empty = not narrowed");
+ *   key, and `withKaijuDocs` keeps "empty = not narrowed");
  * - connector (MCP) tools, the Kaiju connector's included, are limited whenever the list is not
  *   empty: only those it matches;
  * - built-in tools (`BUILTIN_TOOLS`, Pi's and Kaiju's own) are limited only when the list names at

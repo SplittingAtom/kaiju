@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sql, threadAppResults, type KobeTx, type ThreadAppResultStorage } from "@kobe/db";
+import { sql, threadAppResults, type KaijuTx, type ThreadAppResultStorage } from "@kaiju/db";
 import { storageLimit, storageUsed } from "../uploads/quota.js";
 
 /**
@@ -51,7 +51,7 @@ export interface AppCopy {
 }
 
 export async function planAppCopies(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   sourceThreadId: string,
   path: readonly PathEntry[],
@@ -127,7 +127,7 @@ export function forkedAppResultKey(
 }
 
 export async function storeAppCopies(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   copies: readonly AppCopy[],

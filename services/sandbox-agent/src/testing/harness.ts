@@ -3,7 +3,7 @@ import type { KernelManager } from "../notebook/manager.js";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EXAMPLE_IDS } from "@kobe/protocol/testing";
+import { EXAMPLE_IDS } from "@kaiju/protocol/testing";
 import { Agent, type WorkspaceHooks } from "../agent.js";
 import { loadConfig } from "../config.js";
 import { FakeServer, type FakeServerOptions } from "./fake-server.js";
@@ -91,7 +91,7 @@ export const FAKE_POLICY_EXTENSION = "/opt/kobe/pi-extensions/kobe-policy/index.
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
   const server = await FakeServer.start({ token: TOKEN, ...options.server });
-  const dir = await mkdtemp(path.join(tmpdir(), "kobe-agent-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "kaiju-agent-"));
   const workspace = path.join(dir, "workspace");
   const sessions = path.join(workspace, ".kobe", "sessions");
   await mkdir(workspace, { recursive: true });

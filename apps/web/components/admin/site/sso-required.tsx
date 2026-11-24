@@ -9,7 +9,7 @@ import { ResourceView } from "../parts";
 import { useMutation, useResource } from "../use-resource";
 
 /** The break-glass command the confirmation names (packages/cli, KOBE-774). */
-export const BREAK_GLASS_COMMAND = "kobe sso allow-local-sign-in";
+export const BREAK_GLASS_COMMAND = "kaiju sso allow-local-sign-in";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -28,7 +28,7 @@ function strandedLine({ unlinked }: SsoSettings): string {
  * "Require single sign-on" (KOBE-774, `/v1/site/sso/settings`): turns password and passkey
  * sign-in off. It turns on only from a session signed in through an enabled identity provider,
  * and only the Owner turns it off. The confirmation names the break-glass path: with cluster
- * access, `kobe sso allow-local-sign-in` turns it off when nobody can sign in.
+ * access, `kaiju sso allow-local-sign-in` turns it off when nobody can sign in.
  */
 export function SsoRequiredSection() {
   const { state, reload } = useResource(getSsoSettings);

@@ -7,9 +7,9 @@ import {
   virtualKeyContext,
   type GatewayPrincipal,
   type GatewayThinkingRow,
-} from "@kobe/db";
-import type { ThinkingLevel } from "@kobe/protocol";
-import { generateSessionKeyPair, signSessionToken, verifySessionToken } from "@kobe/session-token";
+} from "@kaiju/db";
+import type { ThinkingLevel } from "@kaiju/protocol";
+import { generateSessionKeyPair, signSessionToken, verifySessionToken } from "@kaiju/session-token";
 import pino from "pino";
 import { createModelGateway } from "../gateway.js";
 import { ByteBudget, CallLimiter, RequestRate } from "../limits.js";

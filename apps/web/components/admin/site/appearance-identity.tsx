@@ -1,6 +1,6 @@
 "use client";
 
-import { APP_NAME_MAX_LENGTH, appNameSchema, type SiteBranding } from "@kobe/protocol";
+import { APP_NAME_MAX_LENGTH, appNameSchema, type SiteBranding } from "@kaiju/protocol";
 import { Checkbox, Field, TextInput } from "../../ui/console";
 
 /** The rule a draft name breaks, in the schema's own words (packages/protocol branding.ts). */

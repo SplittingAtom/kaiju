@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseMemoryExtractorOutput } from "@kobe/protocol";
+import { parseMemoryExtractorOutput } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { screenExtractorOutput } from "../../screen.js";
 import { buildExtractorMessages } from "../build.js";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger as rootLogger } from "../logger.js";
 import { createListenClient, type ListenClient } from "../pg-listen.js";
 import { SANDBOX_CHANNEL } from "./constants.js";
@@ -60,7 +60,7 @@ export function decodeBusHint(payload: string | undefined): BusHint | undefined 
 }
 
 /** Queues a hint inside `tx` (delivered on commit) without a bus instance (any process). */
-export async function notifyHintInTx(tx: KobeTx, hint: BusHint): Promise<void> {
+export async function notifyHintInTx(tx: KaijuTx, hint: BusHint): Promise<void> {
   await tx.execute(sql`SELECT pg_notify(${SANDBOX_CHANNEL}, ${encodeBusHint(hint)})`);
 }
 
@@ -70,9 +70,9 @@ export interface SandboxBus {
   /** Starts listening (idempotent). */
   start(): void;
   /** Queues a hint inside `tx`: Postgres delivers it on commit, never for a rollback. */
-  notifyInTx(tx: KobeTx, hint: BusHint): Promise<void>;
+  notifyInTx(tx: KaijuTx, hint: BusHint): Promise<void>;
   /** Sends a hint now (outside any transaction). */
-  notify(db: KobeDb, hint: BusHint): Promise<void>;
+  notify(db: KaijuDb, hint: BusHint): Promise<void>;
   readonly state: BusState;
   close(): Promise<void>;
 }

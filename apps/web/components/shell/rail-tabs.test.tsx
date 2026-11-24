@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, pressModShift } from "../chat/testing";
@@ -12,7 +12,7 @@ import { composer, openApp, pressModShift } from "../chat/testing";
  * KOBE-453). The tab is remembered per member, Files the first time; without apps (and no key to
  * add) there is no tablist and the section is Files alone.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 /** Lets effects and any late request started by a tab switch run, so "no new wake" is a real check. */
 const settle = () =>
@@ -33,7 +33,7 @@ const APP = {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -148,7 +148,7 @@ describe("Files | Apps (ac-1, ac-3)", () => {
     const files = tab("Files");
     expect(files.tabIndex).toBe(0);
     expect(tab("Apps").tabIndex).toBe(-1);
-    expect(files.getAttribute("aria-controls")).toBe("kobe-rail-files");
+    expect(files.getAttribute("aria-controls")).toBe("kaiju-rail-files");
     files.focus();
     const user = userEvent.setup();
     await user.keyboard("{ArrowRight}");
@@ -171,7 +171,7 @@ describe("Files | Apps (ac-1, ac-3)", () => {
     await waitFor(() => expect(tab("Apps").getAttribute("aria-selected")).toBe("true"));
     act(() => void pressModShift("F"));
     await waitFor(() => expect(tab("Files").getAttribute("aria-selected")).toBe("true"));
-    await waitFor(() => expect(document.activeElement?.id).toBe("kobe-rail-files"));
+    await waitFor(() => expect(document.activeElement?.id).toBe("kaiju-rail-files"));
   });
 
   it("the toggle on the top line says Files and apps, and hiding it hides both", async () => {
@@ -221,7 +221,7 @@ describe("the collapsed rail (ac-3)", () => {
     await userEvent.setup().click(within(rail()).getByRole("button", { name: "Show apps" }));
     await waitFor(() => expect(rail().hasAttribute("data-collapsed")).toBe(false));
     expect(tab("Apps").getAttribute("aria-selected")).toBe("true");
-    await waitFor(() => expect(document.activeElement?.id).toBe("kobe-rail-apps"));
+    await waitFor(() => expect(document.activeElement?.id).toBe("kaiju-rail-apps"));
   });
 
   it("opens on Files the first time", async () => {
@@ -241,14 +241,14 @@ describe("review fixes (KOBE-448)", () => {
     const held = new Promise<void>((r) => (release = r));
     const inner = fake.fetch;
     vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
-      if (new URL(String(input), "http://kobe.test").pathname === "/v1/team/apps") await held;
+      if (new URL(String(input), "http://kaiju.test").pathname === "/v1/team/apps") await held;
       return inner(input, init);
     });
     openApp(fake);
     await composer();
     await waitFor(() => expect(screen.getByText("Loading apps…")).toBeTruthy());
     // Files stays hidden meanwhile: no flash of the wrong tab.
-    expect(must(document.getElementById("kobe-rail-files")).hidden).toBe(true);
+    expect(must(document.getElementById("kaiju-rail-files")).hidden).toBe(true);
     release();
     await tablist();
     expect(tab("Apps").getAttribute("aria-selected")).toBe("true");
@@ -261,7 +261,7 @@ describe("review fixes (KOBE-448)", () => {
     openApp(fake);
     await composer();
     await waitFor(() =>
-      expect(must(document.getElementById("kobe-rail-files")).hidden).toBe(false),
+      expect(must(document.getElementById("kaiju-rail-files")).hidden).toBe(false),
     );
     expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.queryByText("Loading apps…")).toBeNull();
@@ -283,7 +283,7 @@ describe("review fixes (KOBE-448)", () => {
   it("the Files tab's panel is the one Files element: no region inside it", async () => {
     await withApps();
     const panel = screen.getByRole("tabpanel", { name: "Files" });
-    expect(panel.id).toBe("kobe-rail-files");
+    expect(panel.id).toBe("kaiju-rail-files");
     expect(within(panel).queryByRole("region")).toBeNull();
   });
 });

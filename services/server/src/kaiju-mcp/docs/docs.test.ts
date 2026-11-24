@@ -1,0 +1,132 @@
+import { describe, expect, it } from "vitest";
+import { groupBySection, llmsFullTxt, llmsTxt, pageMarkdown, PAGES } from "@kaiju/guide";
+import { kaijuPinnedTool } from "../pinned.js";
+import {
+  DOCS_FULL_MAX_BYTES,
+  isKaijuDocsToolName,
+  KAIJU_DOCS_TOOLS,
+  kaijuDocsToolByName,
+  runKaijuDocsTool,
+} from "./index.js";
+
+/**
+ * KOBE-620 (KA-3, spec kaiju-admin-mcp §4, KA4): the docs tools of the built-in Kaiju connector
+ * answer the guide the web serves, byte for byte, for the deployment's origin and app name.
+ */
+const CTX = { appName: "Acme Chat", origin: "https://chat.example.com" };
+const run = (name: string, input: unknown, pages = PAGES) =>
+  runKaijuDocsTool(
+    kaijuDocsToolByName(name) as NonNullable<ReturnType<typeof kaijuDocsToolByName>>,
+    input,
+    CTX,
+    pages,
+  );
+const textOf = (out: ReturnType<typeof run>) => {
+  if (!out.ok) throw new Error(`${out.code}: ${out.message}`);
+  return out.result.content[0]?.text ?? "";
+};
+
+describe("the docs tools", () => {
+  it("are four read-only, closed-world tools with strict inputs", () => {
+    expect(KAIJU_DOCS_TOOLS.map((t) => t.name).sort()).toEqual([
+      "docs_full",
+      "docs_index",
+      "docs_page",
+      "docs_search",
+    ]);
+    for (const tool of KAIJU_DOCS_TOOLS) {
+      expect(isKaijuDocsToolName(tool.name)).toBe(true);
+      expect(tool.input.safeParse({ unexpected: 1 }).success).toBe(false);
+      const pinned = kaijuPinnedTool("kaiju", tool);
+      expect(pinned.pi_name).toBe(`mcp__kobe__${tool.name}`);
+      expect(pinned.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });
+    }
+    expect(isKaijuDocsToolName("team_members_list")).toBe(false);
+  });
+
+  it("docs_index is /llms.txt for the same origin and branding (ac-1)", () => {
+    expect(textOf(run("docs_index", {}))).toBe(llmsTxt(PAGES, CTX));
+  });
+
+  it("docs_page is the page's .md; slugs may carry .md or the /docs/ path", () => {
+    const page = PAGES[0] as (typeof PAGES)[number];
+    const expected = pageMarkdown(page, CTX.origin);
+    expect(textOf(run("docs_page", { slug: page.slug }))).toBe(expected);
+    expect(textOf(run("docs_page", { slug: `${page.slug}.md` }))).toBe(expected);
+    expect(textOf(run("docs_page", { slug: `/docs/${page.slug}.md` }))).toBe(expected);
+    expect(textOf(run("docs_page", { slug: `${CTX.origin}/docs/${page.slug}.md` }))).toBe(expected);
+  });
+
+  it("an unknown slug is a tool error; traversal is only ever an unknown slug (ac-2)", () => {
+    for (const slug of [
+      "no-such-page",
+      "../../etc/passwd",
+      "../package.json",
+      "chat/../../../../etc/passwd",
+      "/etc/passwd",
+      "%2e%2e/secrets",
+      "C:\\Windows\\win.ini",
+    ]) {
+      const out = run("docs_page", { slug });
+      expect(out.ok, slug).toBe(false);
+      if (!out.ok) {
+        expect(["unknown_page", "invalid_input"]).toContain(out.code);
+        expect(out.message).not.toMatch(/root|ENOENT/);
+      }
+    }
+    expect(run("docs_page", { slug: "x".repeat(1000) }).ok).toBe(false);
+    expect(run("docs_page", {}).ok).toBe(false);
+  });
+
+  // The cap bounds one result (about 65k tokens); the guide as a whole may outgrow it, so the
+  // contract is: every section fits, and the whole guide is served only while it fits.
+  it("docs_full serves every section under the cap", () => {
+    for (const { section } of groupBySection(PAGES)) {
+      const text = llmsFullTxt(PAGES, CTX, section);
+      expect(Buffer.byteLength(text), section).toBeLessThan(DOCS_FULL_MAX_BYTES);
+      expect(textOf(run("docs_full", { section }))).toBe(text);
+    }
+    expect(run("docs_full", { section: "Nope" }).ok).toBe(false);
+  });
+
+  it("docs_full without a section is the whole guide while it fits, too_large once it does not", () => {
+    const whole = llmsFullTxt(PAGES, CTX);
+    const out = run("docs_full", {});
+    if (Buffer.byteLength(whole) <= DOCS_FULL_MAX_BYTES) {
+      expect(textOf(out)).toBe(whole);
+    } else {
+      expect(out.ok).toBe(false);
+      if (!out.ok) {
+        expect(out.code).toBe("too_large");
+        for (const { section } of groupBySection(PAGES)) expect(out.message).toContain(section);
+      }
+    }
+  });
+
+  it("docs_full refuses a text above the cap and points at sections", () => {
+    const big = PAGES.map((p) => ({
+      ...p,
+      markdown: p.markdown + "x".repeat(DOCS_FULL_MAX_BYTES),
+    }));
+    const out = run("docs_full", {}, big);
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.code).toBe("too_large");
+      expect(out.message).toMatch(/section/);
+    }
+  });
+
+  it("docs_search finds pages by title, summary and heading, ranked and capped", () => {
+    const out = run("docs_search", { query: "approvals" });
+    if (!out.ok) throw new Error(out.message);
+    const results = out.result.structuredContent?.results as { slug: string; url: string }[];
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.length).toBeLessThanOrEqual(20);
+    expect(results[0]?.url.startsWith(`${CTX.origin}/docs/`)).toBe(true);
+    expect(JSON.parse(textOf(out))).toEqual(out.result.structuredContent);
+    expect(run("docs_search", { query: "" }).ok).toBe(false);
+    const limited = run("docs_search", { query: "a", limit: 2 });
+    if (!limited.ok) throw new Error(limited.message);
+    expect((limited.result.structuredContent?.results as unknown[]).length).toBeLessThanOrEqual(2);
+  });
+});

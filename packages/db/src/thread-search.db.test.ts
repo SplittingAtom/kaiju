@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase, type KobeTx } from "./client.js";
+import { createDb, type KaijuDatabase, type KaijuTx } from "./client.js";
 import { projects, teamMembers, teams, threadEntries, threads, users } from "./schema/index.js";
 import {
   searchThreads,
@@ -19,8 +19,8 @@ import { withTeam } from "./with-team.js";
  */
 const teamA = randomUUID();
 const teamB = randomUUID();
-let app: KobeDatabase;
-let owner: KobeDatabase;
+let app: KaijuDatabase;
+let owner: KaijuDatabase;
 
 beforeAll(async () => {
   owner = createDb(inject("ownerUrl"));
@@ -453,7 +453,7 @@ describe("team isolation (ac-3)", () => {
   it("refuses to run outside withTeam", async () => {
     const me = await newUser(teamA);
     await expect(
-      app.db.transaction((tx: KobeTx) => searchThreads(tx, { viewerUserId: me, query: "x" })),
+      app.db.transaction((tx: KaijuTx) => searchThreads(tx, { viewerUserId: me, query: "x" })),
     ).rejects.toThrow(/withTeam/);
   });
 });

@@ -14,7 +14,7 @@ import { listAppResults, type AppResultView } from "../../lib/apps/app-results";
 import { MAX_LIVE_FRAMES, releaseSlot, takeSlot } from "../../lib/apps/live-slots";
 import { approvalKey, runToolKey } from "../../lib/chat/markers";
 import { isThreadRunning } from "../../lib/chat/thread-state";
-import { useChatSession, useKobeExtras } from "../chat/kobe-runtime";
+import { useChatSession, useKaijuExtras } from "../chat/kaiju-runtime";
 
 /**
  * MCP Apps in the thread on screen (KOBE-438, spec MA10): the server's per-viewer list of the
@@ -83,7 +83,7 @@ export function useThreadApps(): ThreadApps | null {
 
 /** The live run's app markers: a new one means the list is stale. */
 function useLiveMarkers(): string {
-  const tools = useKobeExtras()?.state.live?.tools;
+  const tools = useKaijuExtras()?.state.live?.tools;
   return useMemo(
     () =>
       tools
@@ -109,7 +109,7 @@ function uniqueByToolCall(results: readonly AppResultView[]): ReadonlyMap<string
 }
 
 export function ThreadAppsProvider({ children }: { readonly children: ReactNode }) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const { teamId } = useChatSession();
   const threadId = extras?.state.threadId ?? null;
   const ended = extras?.state.live?.terminal ? extras.state.live.runId : null;

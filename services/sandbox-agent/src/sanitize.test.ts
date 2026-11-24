@@ -1,5 +1,5 @@
-import { decodeSandboxFrame, encodeFrame } from "@kobe/protocol/sandbox-wire";
-import { EXAMPLE_IDS } from "@kobe/protocol/testing";
+import { decodeSandboxFrame, encodeFrame } from "@kaiju/protocol/sandbox-wire";
+import { EXAMPLE_IDS } from "@kaiju/protocol/testing";
 import { describe, expect, it } from "vitest";
 import { TOO_DEEP_MARKER, parsePiRecord, sanitizeJson } from "./sanitize.js";
 

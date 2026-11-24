@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { serializeAgentFile } from "@kobe/agent-file";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
+import { serializeAgentFile } from "@kaiju/agent-file";
 import { createApp } from "../app.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
@@ -14,7 +14,7 @@ import { fakeIsolation } from "../testing/isolation.js";
 /**
  * Runnable agents for the chat picker (KOBE-122). Own throwaway database.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 /** If-Match for edits that aren't about concurrency: overwrite whatever is there. */

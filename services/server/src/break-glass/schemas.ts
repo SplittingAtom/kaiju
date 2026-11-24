@@ -5,7 +5,7 @@ import {
   BREAK_GLASS_MAX_MINUTES,
   BREAK_GLASS_REASON_MAX,
   BREAK_GLASS_THREADS_MAX,
-} from "@kobe/db";
+} from "@kaiju/db";
 
 const id = z.uuid().transform((v) => v.toLowerCase());
 

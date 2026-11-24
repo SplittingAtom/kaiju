@@ -1,11 +1,11 @@
-import { and, eq, inArray, lte, sql, threads, type KobeTx } from "@kobe/db";
+import { and, eq, inArray, lte, sql, threads, type KaijuTx } from "@kaiju/db";
 import {
   LINEAGE_MAX_DEPTH,
   LINEAGE_MAX_SIBLINGS,
   type LineageAncestor,
   type LineageRelative,
   type ThreadLineageResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { findThread, readableBy, type Viewer } from "./repository.js";
 
 /**
@@ -41,7 +41,7 @@ const memberColumns = {
 
 /** The thread, or null when the viewer may not read it (as every thread read: 404). */
 export async function readLineage(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
 ): Promise<ThreadLineageResponse | null> {
@@ -73,7 +73,7 @@ export async function readLineage(
  * so the walk simply ends. The provenance trigger rules out cycles (TL5).
  */
 async function walkUp(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   self: LineageMember,
 ): Promise<{ path: LineageMember[]; rootHidden: boolean }> {
@@ -98,7 +98,7 @@ async function walkUp(
  * per parent (to know whether a list was cut). One query over `threads_forked_from_idx`.
  */
 async function forksOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   parents: readonly string[],
 ): Promise<Map<string, LineageMember[]>> {

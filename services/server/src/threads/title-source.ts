@@ -1,5 +1,5 @@
-import type { ServerCallRequest } from "@kobe/protocol";
-import { sql, type AgentScope, type KobeTx } from "@kobe/db";
+import type { ServerCallRequest } from "@kaiju/protocol";
+import { sql, type AgentScope, type KaijuTx } from "@kaiju/db";
 import { resolveRunModel } from "../runs/models.js";
 import type { RunAgentResolver } from "../runs/seams.js";
 import { firstAnswerAfter, firstUserMessage } from "./messages.js";
@@ -58,7 +58,7 @@ export type ServerCallTargetResult =
  * `run.start`); a model no longer enabled is a skip.
  */
 export async function loadServerCallTarget(
-  tx: KobeTx,
+  tx: KaijuTx,
   agents: RunAgentResolver,
   ids: { readonly teamId: string; readonly runId: string; readonly threadId: string },
   /** Stop before resolving the model when the thread is titled (the title call's early out). */
@@ -99,7 +99,7 @@ export async function loadServerCallTarget(
 
 /** The title call's member, model and prompt (the shared target, then the first exchange). */
 export async function loadTitleSource(
-  tx: KobeTx,
+  tx: KaijuTx,
   agents: RunAgentResolver,
   ids: { readonly teamId: string; readonly runId: string; readonly threadId: string },
 ): Promise<TitleSourceResult> {

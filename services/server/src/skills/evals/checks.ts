@@ -12,7 +12,7 @@ import {
   type SkillEvalCheck,
   type SkillEvalCheckReason,
   type SkillEvalCheckResult,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 // The checks of one eval execution (KOBE-325, contract KOBE-324 `docs/skill-evals.md`): pure, on
 // the server, from what the run recorded (skill uses, cost, turns, denials) and the sandbox's

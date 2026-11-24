@@ -117,13 +117,13 @@ export const artifactFailFields = { ok: z.literal(false), error: artifactErrorSc
 /**
  * File descriptor of the kobe-tools channel (D13): inherited by the Pi process like the policy
  * channel, JSON lines with the same framing and fail-closed rules (a closed or silent channel is a
- * tool error, never a retry elsewhere). 30 s timeout per request ({@link KOBE_TOOLS_TIMEOUT_MS}).
+ * tool error, never a retry elsewhere). 30 s timeout per request ({@link KAIJU_TOOLS_TIMEOUT_MS}).
  * Later ops get their own `op`: `file.share` (files.ts, KOBE-147); `remember` is not defined yet.
  */
 export const KOBE_TOOLS_FD = 4;
-export const KOBE_TOOLS_TIMEOUT_MS = 30_000;
+export const KAIJU_TOOLS_TIMEOUT_MS = 30_000;
 
-export const kobeToolsRequestSchema = z.union([
+export const kaijuToolsRequestSchema = z.union([
   z.strictObject({
     id: idSchema,
     op: z.literal("artifact.put"),
@@ -144,9 +144,9 @@ export const kobeToolsRequestSchema = z.union([
   fileOpenToolsRequestSchema, // KOBE-484 (file-open.ts)
   notebookToolsRequestSchema, // KOBE-464 (notebooks.ts)
 ]);
-export type KobeToolsRequest = z.infer<typeof kobeToolsRequestSchema>;
+export type KaijuToolsRequest = z.infer<typeof kaijuToolsRequestSchema>;
 
-export const kobeToolsResponseSchema = z.union([
+export const kaijuToolsResponseSchema = z.union([
   z.strictObject({ id: idSchema, ...artifactOkFields }),
   z.strictObject({ id: idSchema, ...fileShareOkFields }), // KOBE-147 (files.ts)
   z.strictObject({ id: idSchema, ...projectCommitOkFields }), // KOBE-576 (project-commits.ts)
@@ -160,7 +160,7 @@ export const kobeToolsResponseSchema = z.union([
   z.strictObject({ id: idSchema, ...notebookRunOkFields }), // KOBE-464 (notebooks.ts)
   z.strictObject({ id: idSchema, ...artifactFailFields }),
 ]);
-export type KobeToolsResponse = z.infer<typeof kobeToolsResponseSchema>;
+export type KaijuToolsResponse = z.infer<typeof kaijuToolsResponseSchema>;
 
 // ----------------------------------------------------------------------------- REST (/v1/artifacts)
 

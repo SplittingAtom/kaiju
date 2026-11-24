@@ -2,7 +2,7 @@
  * The thread's history as a controller reads it (pure planners, KOBE-716): runs and pending
  * messages folded into the state, where a run's history ends, and which live file events are new.
  */
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import type { ApiError, ApiResult } from "../../api/client";
 import type { ChatApi } from "../api";
 import { newLiveRun, type CommittedEntry } from "../live";
@@ -130,7 +130,7 @@ export function liveFileRequest(
   runId: string,
   afterSeq: number,
   historySeq: number | undefined,
-  events: readonly KobeEvent[],
+  events: readonly KaijuEvent[],
 ): ThreadState["fileOpenRequest"] {
   const history = Math.max(afterSeq, historySeq ?? Number.POSITIVE_INFINITY);
   const last = events.findLast((e) => e.type === type && e.seq > history);

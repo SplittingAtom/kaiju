@@ -1,4 +1,4 @@
-import type { AuditEntry, TeamAuditEntry } from "@kobe/db";
+import type { AuditEntry, TeamAuditEntry } from "@kaiju/db";
 import { formatPage, csvHeader, type ExportFormat, type ExportScope } from "./format.js";
 
 export const EXPORT_PAGE_SIZE = 200;

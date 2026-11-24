@@ -6,11 +6,11 @@ import {
   registrySkillTags,
   registrySkills,
   registryTags,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import { pgCodeOf } from "@kobe/db";
-import type { SystemTag } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { pgCodeOf } from "@kaiju/db";
+import type { SystemTag } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import {
   defaultTargets,
@@ -29,12 +29,12 @@ export type Tag = typeof registryTags.$inferSelect;
 
 const isUniqueViolation = (err: unknown) => pgCodeOf(err) === "23505";
 
-export const listTags = (db: KobeDb): Promise<Tag[]> =>
+export const listTags = (db: KaijuDb): Promise<Tag[]> =>
   db.select().from(registryTags).orderBy(asc(registryTags.kind), asc(registryTags.name));
 
 export type TagResult = { ok: true; tag: Tag } | { ok: false; code: "exists" | "not_found" };
 
-export async function createTopicTag(db: KobeDb, name: string): Promise<TagResult> {
+export async function createTopicTag(db: KaijuDb, name: string): Promise<TagResult> {
   try {
     return await db.transaction(async (tx) => {
       const [tag] = await tx.insert(registryTags).values({ name, kind: "topic" }).returning();
@@ -50,7 +50,7 @@ export async function createTopicTag(db: KobeDb, name: string): Promise<TagResul
 
 /** Renames, retires or restores a topic tag. System tags are not changed here (or anywhere). */
 export async function updateTopicTag(
-  db: KobeDb,
+  db: KaijuDb,
   id: string,
   change: {
     readonly name?: string | undefined;
@@ -107,7 +107,7 @@ const diff = (from: readonly string[], to: readonly string[]) => ({
   removed: from.filter((t) => !to.includes(t)),
 });
 
-async function currentTags(tx: KobeTx, skillId: string) {
+async function currentTags(tx: KaijuTx, skillId: string) {
   return tx
     .select({ id: registryTags.id, name: registryTags.name, kind: registryTags.kind })
     .from(registrySkillTags)
@@ -122,7 +122,7 @@ async function currentTags(tx: KobeTx, skillId: string) {
  * change, its audit and the job commit together under the exclusive Default-set lock.
  */
 export async function setSkillTags(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   want: { readonly system: readonly SystemTag[]; readonly topic: readonly string[] },
   actorId: string,
@@ -226,7 +226,7 @@ export type MoveMajorResult =
  * major from then on.
  */
 export async function moveDefaultMajor(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   to: number,
   actorId: string,

@@ -5,10 +5,10 @@ import {
   riskFromAnnotations,
   type ToolAnnotations,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   GIT_BUILTIN_CONNECTOR_ID,
-  KOBE_BUILTIN_CONNECTOR_ID,
+  KAIJU_BUILTIN_CONNECTOR_ID,
   and,
   connectors,
   eq,
@@ -19,15 +19,15 @@ import {
   type ConnectorAuthKind,
   type ConnectorCredentialSource,
   type ConnectorExposureKind,
-  type KobeDb,
+  type KaijuDb,
   type PinnedTool,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { ConnectorStateSource } from "../policy/engine.js";
 import type { ConnectorPolicyState } from "../policy/gates.js";
 import type { McpToolCatalog } from "../policy/registry.js";
-import { loadKobeBuiltin, loadKobeSwitches, switchesAllow } from "../kobe-mcp/access.js";
-import { kobeConnector, kobePinnedTools } from "../kobe-mcp/pinned.js";
-import { KOBE_ADMIN_TOOLS } from "../kobe-mcp/tools/index.js";
+import { loadKaijuBuiltin, loadKaijuSwitches, switchesAllow } from "../kaiju-mcp/access.js";
+import { kaijuConnector, kaijuPinnedTools } from "../kaiju-mcp/pinned.js";
+import { KAIJU_ADMIN_TOOLS } from "../kaiju-mcp/tools/index.js";
 import { gitConnector, gitPinnedTools, loadGitBuiltin } from "../git-tools/pinned.js";
 
 /**
@@ -65,7 +65,7 @@ export function credentialUsed(
 
 /** The connector as enabled in `teamId`, or undefined (not registered, disabled, not enabled). */
 export async function loadTeamConnector(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   connectorId: string,
 ): Promise<EnabledConnector | undefined> {
@@ -145,7 +145,7 @@ export function exposedTools(connector: TeamConnector): PinnedTool[] {
  *   server, unique site-wide). Drifted tools resolve too, so the engine can say `tool_drifted`.
  * - `get(team, connectorId)`: enablement, exposure, custom tools and drifted tools in that team.
  */
-export function createDbMcpCatalog(db: KobeDb): McpToolCatalog & ConnectorStateSource {
+export function createDbMcpCatalog(db: KaijuDb): McpToolCatalog & ConnectorStateSource {
   return {
     async resolve(_teamId, toolName) {
       const parsed = parseMcpToolName(toolName);
@@ -164,7 +164,7 @@ export function createDbMcpCatalog(db: KobeDb): McpToolCatalog & ConnectorStateS
       // KOBE-762: the built-in git connector's from the git tools' catalog.
       const tools =
         row.builtin === "kobe"
-          ? kobePinnedTools(row.name)
+          ? kaijuPinnedTools(row.name)
           : row.builtin === "git"
             ? gitPinnedTools(row.name)
             : parseToolsSnapshot(row.snapshot);
@@ -184,15 +184,15 @@ export function createDbMcpCatalog(db: KobeDb): McpToolCatalog & ConnectorStateS
           drifted_tools: [],
         };
       }
-      if (connectorId === KOBE_BUILTIN_CONNECTOR_ID) {
+      if (connectorId === KAIJU_BUILTIN_CONNECTOR_ID) {
         // Enabled while the site switch is not off; `custom` over what the switches allow (the
         // person's own permission is the Kaiju MCP service's check, which knows the person).
-        const row = await loadKobeBuiltin(db);
+        const row = await loadKaijuBuiltin(db);
         if (!row) return undefined;
-        const switches = await loadKobeSwitches(db, teamId);
-        const connector = kobeConnector(
+        const switches = await loadKaijuSwitches(db, teamId);
+        const connector = kaijuConnector(
           row,
-          KOBE_ADMIN_TOOLS.filter((t) => switchesAllow(t, switches)),
+          KAIJU_ADMIN_TOOLS.filter((t) => switchesAllow(t, switches)),
         );
         return {
           enabled: true,

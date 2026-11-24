@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   BUILTIN_TOOLS,
   OPEN_FILE_TOOL,
-  kobeEventSchema,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
+  kaijuEventSchema,
+  kaijuToolsRequestSchema,
+  kaijuToolsResponseSchema,
   openFileInputSchema,
 } from "./index.js";
 import {
@@ -68,7 +68,7 @@ describe("open_file contract (KOBE-484)", () => {
     };
     expect(fileOpenResultFrameSchema.safeParse(fail).success).toBe(true);
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         id: "k1",
         op: "file.open",
         tool_call_id: "call_1",
@@ -77,7 +77,7 @@ describe("open_file contract (KOBE-484)", () => {
       }).success,
     ).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({ id: "k1", ok: true, op: "file_open", path: "a.md" })
+      kaijuToolsResponseSchema.safeParse({ id: "k1", ok: true, op: "file_open", path: "a.md" })
         .success,
     ).toBe(true);
   });
@@ -90,9 +90,9 @@ describe("open_file contract (KOBE-484)", () => {
       type: "file.opened",
       payload: { tool_call_id: "call_1", path: "notes.md" },
     };
-    expect(kobeEventSchema.safeParse(event).success).toBe(true);
+    expect(kaijuEventSchema.safeParse(event).success).toBe(true);
     expect(
-      kobeEventSchema.safeParse({ ...event, payload: { ...event.payload, content: "x" } }).success,
+      kaijuEventSchema.safeParse({ ...event, payload: { ...event.payload, content: "x" } }).success,
     ).toBe(false);
   });
 });

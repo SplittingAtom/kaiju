@@ -13,9 +13,9 @@ import {
   type SandboxToServerFrame,
   type ServerToSandboxFrame,
   type WorkspaceConflictFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { randomUUID } from "node:crypto";
-import { CAPABILITY_SYNC_CONFLICTS } from "@kobe/protocol";
+import { CAPABILITY_SYNC_CONFLICTS } from "@kaiju/protocol";
 import type WebSocket from "ws";
 import { AllowedArtifactCalls } from "../artifacts/allowed.js";
 import { RecalledItems } from "../memory/recalled.js";
@@ -77,7 +77,7 @@ export interface ConnectionClaims {
 type State = "hello" | "starting" | "ready" | "closed";
 
 /**
- * One authenticated sandbox WebSocket (D13, `@kobe/protocol` sandbox-wire/connection.ts):
+ * One authenticated sandbox WebSocket (D13, `@kaiju/protocol` sandbox-wire/connection.ts):
  * `hello` → registration and leases → `hello.ack`, then inbound frames checked against this
  * connection's leases (runs, threads, command ids), heartbeats, periodic revalidation of the
  * principal, and command delivery. Never trusts a frame beyond what its lease allows: a frame

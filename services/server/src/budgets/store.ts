@@ -15,9 +15,9 @@ import {
   users,
   withTeam,
   type BudgetLine,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -98,7 +98,7 @@ export interface TeamBudgetsView {
 }
 
 /** The team's spend this month by usage kind (from the ledger; the team index on `at`). */
-async function spendByKind(tx: KobeTx, teamId: string, month: string) {
+async function spendByKind(tx: KaijuTx, teamId: string, month: string) {
   const res = await tx.execute<Row>(sql`
     SELECT kind, COALESCE(sum(cost_usd), 0) AS usd,
            sum(input_tokens::bigint + output_tokens + cache_read_tokens + cache_write_tokens) AS tokens
@@ -115,7 +115,7 @@ async function spendByKind(tx: KobeTx, teamId: string, month: string) {
 }
 
 /** The eval cap and this month's eval spend (the counters' eval columns). */
-async function evalCapOf(tx: KobeTx, teamId: string, month: string) {
+async function evalCapOf(tx: KaijuTx, teamId: string, month: string) {
   const res = await tx.execute<Row>(sql`
     SELECT (SELECT eval_cap_usd FROM team_skill_settings WHERE team_id = ${teamId}::uuid) AS usd,
            (SELECT eval_cap_tokens FROM team_skill_settings WHERE team_id = ${teamId}::uuid) AS tokens,
@@ -135,7 +135,7 @@ type Row = Record<string, unknown>;
 const percentOf = (spent: number, limit: number | null): number | null =>
   limit === null ? null : limit <= 0 ? 100 : Math.min(100, Math.round((spent / limit) * 100));
 
-export async function getSiteLimits(db: KobeDb | KobeTx): Promise<SiteLimitsView> {
+export async function getSiteLimits(db: KaijuDb | KaijuTx): Promise<SiteLimitsView> {
   const [row] = await db.select().from(siteModelLimits).where(eq(siteModelLimits.id, 1));
   return {
     monthly_usd: row?.monthlyUsd ?? null,
@@ -162,7 +162,7 @@ export interface SiteLimitsInput {
 const pick = <T>(next: T | undefined, before: T): T => (next === undefined ? before : next);
 
 export async function setSiteLimits(
-  db: KobeDb,
+  db: KaijuDb,
   input: SiteLimitsInput,
   actorId: string,
 ): Promise<SiteLimitsView | "changed"> {
@@ -209,7 +209,7 @@ export async function setSiteLimits(
 
 /** Spend of the team (or one member) this month and today, from the daily counters. */
 async function spendOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string | undefined,
   starts: { month: string; day: string },
@@ -236,7 +236,7 @@ const spendView = (r: Row | undefined): SpendView => ({
 });
 
 export async function teamBudgetsView(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   now = new Date(),
 ): Promise<TeamBudgetsView> {
@@ -361,7 +361,7 @@ export function budgetMatches(
   );
 }
 
-async function currentRow(tx: KobeTx, teamId: string, userId: string | null) {
+async function currentRow(tx: KaijuTx, teamId: string, userId: string | null) {
   const [row] = await tx
     .select()
     .from(teamBudgets)
@@ -398,7 +398,7 @@ function nextTeamBudget(input: TeamBudgetInput, before: BudgetRow) {
 
 /** Sets the team's own budget and request rate (team admins). */
 export async function setTeamBudget(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   input: TeamBudgetInput,
   actorId: string,
@@ -462,7 +462,7 @@ export async function setTeamBudget(
   });
 }
 
-async function isMember(tx: KobeTx, teamId: string, userId: string): Promise<boolean> {
+async function isMember(tx: KaijuTx, teamId: string, userId: string): Promise<boolean> {
   const [row] = await tx
     .select({ userId: teamMembers.userId })
     .from(teamMembers)
@@ -472,7 +472,7 @@ async function isMember(tx: KobeTx, teamId: string, userId: string): Promise<boo
 
 /** Sets (or, with both amounts null, removes) one member's budget in the team. */
 export async function setMemberBudget(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   input: BudgetAmounts | null,
@@ -560,7 +560,7 @@ export const stateOf = (line: BudgetLine): BudgetState => {
  * its state. Their own budget only: never another member's.
  */
 export async function memberBudgetStatus(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<{ readonly state: BudgetState; readonly lines: readonly BudgetStatusLine[] }> {

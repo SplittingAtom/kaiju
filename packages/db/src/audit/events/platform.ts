@@ -64,7 +64,7 @@ export const PLATFORM_EVENTS = {
     handler: z.string().max(63).optional(),
     replica: z.string().max(253),
   }),
-  /** `kobe restore` loaded a backup into this database (written by the restore transaction). */
+  /** `kaiju restore` loaded a backup into this database (written by the restore transaction). */
   "platform.restore.completed": event("site", {
     backupCreatedAt: z.iso.datetime(),
     tables: z.number().int().nonnegative(),

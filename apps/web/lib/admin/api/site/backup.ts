@@ -1,5 +1,5 @@
 /**
- * Site console: what the server knows about backups (KOBE-291). `kobe backup` runs outside the
+ * Site console: what the server knows about backups (KOBE-291). `kaiju backup` runs outside the
  * server, as a CLI or a Job with a read-only database role (docs/backup-restore.md), so no backup
  * is ever recorded; a restore is, as `platform.restore.completed` in the audit log (KOBE-11, KOBE-15).
  */

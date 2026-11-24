@@ -7,7 +7,7 @@ import {
   MODEL_PROVIDER_KINDS,
   PROVIDER_ID_PATTERN,
   PROVIDER_MODEL_PATTERN,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { z } from "zod";
 import { LOCAL_EMBEDDING_PROVIDER_ID } from "./local-embedding.js";
 import { teamThinkingMaxSchema, thinkingPolicySchema } from "./thinking.js";

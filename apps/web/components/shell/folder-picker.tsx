@@ -60,7 +60,7 @@ export function FolderPicker({
     <div className="flex items-center gap-2">
       <select
         aria-label="Show threads in"
-        data-kobe-folder-picker=""
+        data-kaiju-folder-picker=""
         value={nodeKey(chosen)}
         onChange={(e) => {
           const next = list.find((o) => nodeKey(o.node) === e.target.value);

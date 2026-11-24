@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { desc, eq, verifyAuditChain, auditLog, type KobeDb } from "@kobe/db";
+import { desc, eq, verifyAuditChain, auditLog, type KaijuDb } from "@kaiju/db";
 import { logger } from "../logger.js";
 
 /** Every replica logs the head this often (and once at startup). */
@@ -54,7 +54,7 @@ export class AuditAnchorLogger {
   private current: Promise<unknown> = Promise.resolve();
 
   constructor(
-    private readonly db: KobeDb,
+    private readonly db: KaijuDb,
     secret: string,
     private readonly log: Log = logger,
   ) {

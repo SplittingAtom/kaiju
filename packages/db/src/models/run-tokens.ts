@@ -1,5 +1,5 @@
 import { and, eq, gt, inArray, isNull } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import { withTeam } from "../with-team.js";
 import { ACTIVE_RUN_STATUSES, runTokens, runs, sandboxRunLeases } from "../schema/index.js";
 
@@ -13,12 +13,12 @@ export interface RunTokenRecord {
 }
 
 /** Records a minted token, in the transaction that leases the run to the sandbox. */
-export async function recordRunToken(tx: KobeTx, record: RunTokenRecord): Promise<void> {
+export async function recordRunToken(tx: KaijuTx, record: RunTokenRecord): Promise<void> {
   await tx.insert(runTokens).values({ ...record });
 }
 
 /** Revokes every live token of a run (run end), in the transaction that ends it. */
-export async function revokeRunTokens(tx: KobeTx, teamId: string, runId: string): Promise<void> {
+export async function revokeRunTokens(tx: KaijuTx, teamId: string, runId: string): Promise<void> {
   await tx
     .update(runTokens)
     .set({ revokedAt: new Date() })
@@ -42,7 +42,7 @@ export interface RunTokenSubject {
  * missed the revocation).
  */
 export async function isRunTokenActive(
-  db: KobeDb,
+  db: KaijuDb,
   subject: RunTokenSubject,
   now: Date = new Date(),
 ): Promise<boolean> {

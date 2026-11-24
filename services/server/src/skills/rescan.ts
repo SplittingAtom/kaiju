@@ -1,4 +1,4 @@
-import { RULE_SET, RULE_SET_VERSION } from "@kobe/skill-scanner";
+import { RULE_SET, RULE_SET_VERSION } from "@kaiju/skill-scanner";
 import {
   RESCAN_SUSPENDED_MAX,
   eq,
@@ -6,10 +6,10 @@ import {
   skillRescanRuns,
   sql,
   teams,
-  type KobeDatabase,
-  type KobeDb,
+  type KaijuDatabase,
+  type KaijuDb,
   type RescanSuspension,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import type { Mailer } from "../mail/mailer.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -46,7 +46,7 @@ import {
 const RESCAN_LOCK = "kobe.skills.rescan";
 
 export interface RescanDeps {
-  readonly database: KobeDatabase;
+  readonly database: KaijuDatabase;
   readonly blobs: BlobStore;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   readonly mailer?: Mailer;
@@ -86,7 +86,7 @@ const suspensionOf = (s: SuspendedVersion): RescanSuspension => ({
 });
 
 /** The run row of this rule set (created on first use); null when a newer rule set has one. */
-async function openRun(db: KobeDb, ruleSet: number, ruleSetVersion: string) {
+async function openRun(db: KaijuDb, ruleSet: number, ruleSetVersion: string) {
   const [newer] = await db
     .select({ ruleSet: skillRescanRuns.ruleSet })
     .from(skillRescanRuns)
@@ -100,7 +100,7 @@ async function openRun(db: KobeDb, ruleSet: number, ruleSetVersion: string) {
 }
 
 /** Adds one batch's work to the run row (the console's progress); the run is `running` again. */
-async function flush(db: KobeDb, runId: string, tally: Tally): Promise<void> {
+async function flush(db: KaijuDb, runId: string, tally: Tally): Promise<void> {
   if (tally.scanned === 0 && tally.failed === 0 && tally.suspended.length === 0) return;
   const added = JSON.stringify(tally.suspended.map(suspensionOf));
   await db

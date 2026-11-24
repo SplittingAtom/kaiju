@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { z } from "zod";
-import { withTeam, type KobeTx } from "@kobe/db";
+import { withTeam, type KaijuTx } from "@kaiju/db";
 import { type TeamVariables } from "../../authz/middleware.js";
 import type { ServerDeps } from "../../deps.js";
 import { loadAccess, type ProjectAccess } from "../../projects/access.js";
@@ -209,7 +209,7 @@ export function commitKit(deps: ServerDeps, sync: WorkspaceSync | undefined) {
   const withProject = async (
     c: Ctx,
     action: ProjectAction,
-    fn: (tx: KobeTx, access: ProjectAccess) => Promise<Response>,
+    fn: (tx: KaijuTx, access: ProjectAccess) => Promise<Response>,
     lock = false,
   ): Promise<Response> => {
     const id = param(c, "id", idParam);

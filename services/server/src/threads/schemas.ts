@@ -1,4 +1,4 @@
-import { MODEL_ALIAS_PATTERN } from "@kobe/db";
+import { MODEL_ALIAS_PATTERN } from "@kaiju/db";
 import { z } from "zod";
 import {
   idSchema,
@@ -13,10 +13,10 @@ import {
   timestampSchema,
   threadVisibilitySchema,
   uuidSchema as wireUuidSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
- * Thread API wire schemas (spec §6.1). Keys are snake_case as in §6.1 and `@kobe/protocol`; ids
+ * Thread API wire schemas (spec §6.1). Keys are snake_case as in §6.1 and `@kaiju/protocol`; ids
  * Kaiju mints are uuids, Pi entry ids are opaque strings (1–128 chars, no control characters, the
  * `thread_entries.entry_id` check). Request schemas are strict: unknown keys are a 400. Response
  * schemas document the shape for OpenAPI (see `openapi.ts`).
@@ -33,9 +33,9 @@ export const TRASH_RETENTION_DAYS = 30;
 
 /** A uuid as sent by a client (any case), normalized to the canonical lowercase form. */
 export const uuidSchema = z.uuid().transform((s) => s.toLowerCase());
-/** Pi entry id (`@kobe/protocol` idSchema: 1–128 chars, no control characters). */
+/** Pi entry id (`@kaiju/protocol` idSchema: 1–128 chars, no control characters). */
 export const entryIdSchema = idSchema;
-/** Create, rename and fork share one title rule (`@kobe/protocol`). */
+/** Create, rename and fork share one title rule (`@kaiju/protocol`). */
 export const titleSchema = threadTitleSchema;
 /** A model catalog alias (KOBE-44): must be enabled for the team when it is chosen. */
 export const modelAliasSchema = z.string().max(64).regex(new RegExp(MODEL_ALIAS_PATTERN));

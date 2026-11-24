@@ -49,7 +49,7 @@ export type GitApproval = z.infer<typeof gitApprovalSchema>;
 
 /**
  * The built-in git connector (KOBE-762, owner decision 2026-11-22): the git host tools as their own
- * connector, apart from the Kaiju MCP connector, with a fixed id the same on every site (`@kobe/db`
+ * connector, apart from the Kaiju MCP connector, with a fixed id the same on every site (`@kaiju/db`
  * `GIT_BUILTIN_CONNECTOR_ID`). The MCP proxy routes `POST /v1/mcp/<this id>` to the server's
  * internal listener (`/internal/v1/mcp/git/*`).
  */

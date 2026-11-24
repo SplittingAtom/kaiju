@@ -3,9 +3,9 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ITEM_REFERENCES_MAX } from "@kobe/protocol";
+import { ITEM_REFERENCES_MAX } from "@kaiju/protocol";
 import { LAKEHOUSE_DROP_REFUSED } from "../../lib/apps/lakehouse-drop";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { BRIDGE_ATTACHED_ATTR } from "../apps/app-frame";
@@ -18,12 +18,12 @@ import { chatRequests, composer, openApp } from "./testing";
  * lights the composer while the point is over its panel, and on release there inserts exactly
  * the click's state: the chip from the app's title, `references` on send, no text.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   resizeWindow(DESKTOP_WIDTH);
 });
@@ -75,9 +75,9 @@ const rect = (left: number, top: number, right: number, bottom: number): DOMRect
   toJSON: () => ({}),
 });
 
-const panel = () => document.querySelector<HTMLElement>("[data-kobe-composer-panel]");
-const hint = () => document.getElementById("kobe-composer-hint")?.textContent;
-const ghost = () => document.querySelector<HTMLElement>("[data-kobe-frame-drag-ghost]");
+const panel = () => document.querySelector<HTMLElement>("[data-kaiju-composer-panel]");
+const hint = () => document.getElementById("kaiju-composer-hint")?.textContent;
+const ghost = () => document.querySelector<HTMLElement>("[data-kaiju-frame-drag-ghost]");
 const chips = () =>
   screen
     .queryByRole("list", { name: "Items sent with your next message" })
@@ -152,7 +152,7 @@ describe("a pointer drag from the picker frame onto the composer (KOBE-553)", ()
     expect(g.style.left).toBe("1020px");
     expect(g.style.top).toBe("130px");
     expect(g.textContent).toContain("mlb.lahman.batting");
-    expect(g.querySelector('[data-kobe-item-icon="table"]')).not.toBeNull();
+    expect(g.querySelector('[data-kaiju-item-icon="table"]')).not.toBeNull();
     expect(panel()?.hasAttribute("data-mention-drop")).toBe(false);
 
     picker.drag("drag-move", OVER_THREAD);
@@ -240,7 +240,7 @@ describe("a pointer drag from the picker frame onto the composer (KOBE-553)", ()
       const input = await placedComposer();
       picker.drag("drag-start", { item: { kind, identifier: "x" }, ...ON_ROW });
       const g = must(ghost());
-      expect(g.querySelector('[data-kobe-item-icon="generic"]')).not.toBeNull();
+      expect(g.querySelector('[data-kaiju-item-icon="generic"]')).not.toBeNull();
       expect(g.textContent).toContain("x");
       picker.drag("drag-end", OVER_COMPOSER);
       await waitFor(() => expect(hint()).toBe(LAKEHOUSE_DROP_REFUSED));
@@ -258,7 +258,7 @@ describe("a pointer drag from the picker frame onto the composer (KOBE-553)", ()
     picker.drag("drag-end", OVER_COMPOSER);
     await waitFor(() => expect(hint()).toBe(LAKEHOUSE_DROP_REFUSED));
     expect(
-      within(must(document.getElementById("kobe-composer-hint"))).getByRole("status").textContent,
+      within(must(document.getElementById("kaiju-composer-hint"))).getByRole("status").textContent,
     ).toBe(LAKEHOUSE_DROP_REFUSED);
     expect(input.value).toBe("Hello");
     expect(chips()).toHaveLength(0);

@@ -2,17 +2,17 @@
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming } from "./testing";
 
 /** The "Note saved" chip and its Undo (KOBE-158, ac-1) in the chat over the fake server. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const DOC = "00000000-0000-4000-8000-0000000d0c01";
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 

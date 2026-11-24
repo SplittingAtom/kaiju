@@ -1,5 +1,5 @@
-import type { KobeDb } from "@kobe/db";
-import type { AgentLineage, AgentRosterKind } from "@kobe/protocol";
+import type { KaijuDb } from "@kaiju/db";
+import type { AgentLineage, AgentRosterKind } from "@kaiju/protocol";
 import { teamRoleAllows } from "../authz/permissions.js";
 import type { ForkVia, RosterActor } from "./access.js";
 import { findForkSource, forkDefinition } from "./fork.js";
@@ -30,7 +30,7 @@ function readsDefinition(actor: RosterActor, via: ForkVia): boolean {
 
 /** The lineage of one source as the viewer may see it. */
 async function lineageOne(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor,
   sourceId: string,
   version: number | null,
@@ -48,7 +48,7 @@ async function lineageOne(
 
 /** Lineage per fork (agent id → lineage) for the given own agents. */
 export async function lineageOf(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor,
   agents: readonly {
     readonly id: string;

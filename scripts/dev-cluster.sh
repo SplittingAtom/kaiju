@@ -19,7 +19,7 @@ REGISTRY_PORT="${KOBE_REGISTRY_PORT:-5005}"
 GVISOR_RELEASE="${GVISOR_RELEASE:-20260928.0}"
 K3D="${K3D:-k3d}"
 KUBECTL="${KUBECTL:-kubectl}"
-CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/kobe/gvisor-${GVISOR_RELEASE}"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/kaiju/gvisor-${GVISOR_RELEASE}"
 # Downloads retry transient failures (a 502 from the release host must not fail a CI run).
 CURL=(curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20)
 

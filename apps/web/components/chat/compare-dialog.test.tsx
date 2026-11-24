@@ -3,20 +3,20 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPARING, NO_COMPARE } from "../../lib/chat/compare";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { announcement, chatRequests, openApp } from "./testing";
 
 /** KOBE-547 (CT10, CT19): Compare versions side by side. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   resizeWindow(DESKTOP_WIDTH);
   Element.prototype.scrollIntoView = () => {};
@@ -86,7 +86,7 @@ function versionedThread(options: { readOnly?: boolean; test?: boolean } = {}) {
 const dialog = () => screen.queryByRole("dialog", { name: "Compare versions" });
 const column = (name: string | RegExp) => within(must(dialog())).getByRole("region", { name });
 const regionNames = () =>
-  [...must(dialog()).querySelectorAll("[data-kobe-compare-column]")].map((r) =>
+  [...must(dialog()).querySelectorAll("[data-kaiju-compare-column]")].map((r) =>
     r.getAttribute("aria-label"),
   );
 const leafPosts = () => chatRequests(fake, "POST").filter((r) => r.path.endsWith("/leaf"));
@@ -250,11 +250,11 @@ describe("the columns (ac-2)", () => {
     expect(fake.feedback.get(must(runs[2]))).toBeUndefined();
     const right = within(column("Version 3")).getByRole("button", { name: "Good answer" });
     expect(right.getAttribute("aria-pressed")).toBe("false");
-    expect(must(dialog()).getAttribute("data-kobe-compare")).toBe("dialog");
+    expect(must(dialog()).getAttribute("data-kaiju-compare")).toBe("dialog");
     await user.keyboard("{Escape}");
     await waitFor(() => expect(dialog()).toBeNull());
     resizeWindow(390);
     await fromPicker();
-    await waitFor(() => expect(must(dialog()).getAttribute("data-kobe-compare")).toBe("sheet"));
+    await waitFor(() => expect(must(dialog()).getAttribute("data-kaiju-compare")).toBe("sheet"));
   });
 });

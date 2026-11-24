@@ -1,5 +1,5 @@
-import type { SemanticMemoryWarningCode } from "@kobe/protocol";
-import { PROSE_RULES } from "@kobe/skill-scanner";
+import type { SemanticMemoryWarningCode } from "@kaiju/protocol";
+import { PROSE_RULES } from "@kaiju/skill-scanner";
 import { extractLinkHosts } from "./links.js";
 import { lintViews } from "./text.js";
 

@@ -79,7 +79,7 @@ export async function downloadPack(
   const caps = wantedCapabilities(advertised);
   const deepen = caps.includes("shallow");
   const body = [
-    pkt(`want ${head} ${[...caps, "agent=kobe"].join(" ")}\n`),
+    pkt(`want ${head} ${[...caps, "agent=kaiju"].join(" ")}\n`),
     ...(deepen ? [pkt(`deepen ${depth}\n`)] : []),
     Buffer.from("0000"),
     pkt("done\n"),

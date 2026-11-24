@@ -1,4 +1,4 @@
-import { accounts, and, asc, eq, gt, invitations, isNull, sql, users, type KobeDb } from "@kobe/db";
+import { accounts, and, asc, eq, gt, invitations, isNull, sql, users, type KaijuDb } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { hashToken, newToken, sameHash, TOKEN_PATTERN } from "./tokens.js";
 
@@ -31,7 +31,7 @@ const open = () => and(isNull(invitations.acceptedAt), isNull(invitations.revoke
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-async function userExists(db: KobeDb, email: string): Promise<boolean> {
+async function userExists(db: KaijuDb, email: string): Promise<boolean> {
   const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
   return row !== undefined;
 }
@@ -42,7 +42,7 @@ async function userExists(db: KobeDb, email: string): Promise<boolean> {
  * reported plainly here.
  */
 export async function issueInvite(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly email: string; readonly invitedBy: string },
 ): Promise<IssuedInvite | "user_exists"> {
   const email = normalizeEmail(input.email);
@@ -75,7 +75,7 @@ export async function issueInvite(
 
 /** Re-issues an open invitation by id (new token and expiry); null if it is accepted or revoked. */
 export async function reissueInvite(
-  db: KobeDb,
+  db: KaijuDb,
   id: string,
   invitedBy: string,
 ): Promise<IssuedInvite | null> {
@@ -100,7 +100,7 @@ export async function reissueInvite(
 }
 
 /** The address of an open invitation, or null. */
-export async function findOpenInviteEmail(db: KobeDb, id: string): Promise<string | null> {
+export async function findOpenInviteEmail(db: KaijuDb, id: string): Promise<string | null> {
   const [row] = await db
     .select({ email: invitations.email })
     .from(invitations)
@@ -110,7 +110,7 @@ export async function findOpenInviteEmail(db: KobeDb, id: string): Promise<strin
 
 /** Revokes an open invitation; its link stops working at once. */
 export async function revokeInvite(
-  db: KobeDb,
+  db: KaijuDb,
   id: string,
   /**
    * KOBE-623: the invitation's address as the caller saw it (a Kaiju MCP call's approved
@@ -142,7 +142,7 @@ export async function revokeInvite(
 }
 
 /** Open invitations (pending or expired), oldest first. */
-export async function listInvites(db: KobeDb): Promise<InviteSummary[]> {
+export async function listInvites(db: KaijuDb): Promise<InviteSummary[]> {
   const rows = await db
     .select({
       id: invitations.id,
@@ -169,7 +169,7 @@ export async function listInvites(db: KobeDb): Promise<InviteSummary[]> {
 
 /** The open, unexpired invitation a token belongs to, or null (one answer for every failure). */
 export async function findInviteByToken(
-  db: KobeDb,
+  db: KaijuDb,
   token: unknown,
 ): Promise<{ readonly id: string; readonly email: string; readonly expiresAt: Date } | null> {
   if (typeof token !== "string" || !TOKEN_PATTERN.test(token)) return null;
@@ -193,7 +193,7 @@ export async function findInviteByToken(
  * token single-use under concurrency. Null when the token is not open (any reason).
  */
 export async function acceptInvite(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly token: unknown; readonly name: string; readonly passwordHash: string },
 ): Promise<{ readonly userId: string } | null> {
   if (typeof input.token !== "string" || !TOKEN_PATTERN.test(input.token)) return null;

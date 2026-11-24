@@ -16,7 +16,7 @@ const f = new RunFixture();
 const objects = new MemoryObjects();
 
 beforeAll(async () => {
-  await f.setup({ blobs: { objects, prefix: "kobe/" } });
+  await f.setup({ blobs: { objects, prefix: "kaiju/" } });
 });
 afterAll(async () => {
   await f.teardown();
@@ -40,7 +40,7 @@ async function create(p: Person, body: Record<string, unknown>) {
 }
 
 function upload(p: Person, project: string, name: string) {
-  const boundary = `----kobe${randomBytes(6).toString("hex")}`;
+  const boundary = `----kaiju${randomBytes(6).toString("hex")}`;
   const body =
     `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\n` +
     `Content-Type: text/markdown\r\n\r\n# ${name}\r\n--${boundary}--\r\n`;

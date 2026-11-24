@@ -1,6 +1,6 @@
 "use client";
 
-import type { TeamDefaultAgent } from "@kobe/protocol";
+import type { TeamDefaultAgent } from "@kaiju/protocol";
 import { useState, type FormEvent } from "react";
 import { getTeamDefaultAgent, setTeamDefaultAgent } from "../../../lib/agents/roster-api";
 import { Button, Field, Notice, PageHeader, Select } from "../../ui/console";

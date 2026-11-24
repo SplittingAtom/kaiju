@@ -1,4 +1,4 @@
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { purgeThreads } from "./purge.js";
 
@@ -6,7 +6,7 @@ const TEAM = "00000000-0000-4000-8000-000000000001";
 const pgError = (code: string) => Object.assign(new Error("Failed query"), { cause: { code } });
 /** A database whose every transaction fails with `err`. */
 const failingDb = (err: unknown) =>
-  ({ transaction: () => Promise.reject(err) }) as unknown as KobeDb;
+  ({ transaction: () => Promise.reject(err) }) as unknown as KaijuDb;
 
 describe("purgeThreads on a lock conflict (KOBE-216 ac-4)", () => {
   it.each(["55P03", "40P01"])("stops as busy on %s instead of failing the step", async (code) => {

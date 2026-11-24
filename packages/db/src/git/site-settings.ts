@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import type { KobeTx } from "../client.js";
+import type { KaijuTx } from "../client.js";
 import { findMatchingPattern, normalizeHost, parseDomainPattern } from "../egress/domain.js";
 import { GIT_ALLOWED_HOSTS_MAX, GIT_BASE_URL_MAX } from "./types.js";
 
@@ -70,7 +70,7 @@ export function parseGitSiteSettings(rows: ReadonlyMap<string, string>): GitSite
 }
 
 /** Reads the Site ceiling (`site_settings` is site-wide: no team needed). */
-export async function readGitSiteSettings(db: Pick<KobeTx, "execute">): Promise<GitSiteSettings> {
+export async function readGitSiteSettings(db: Pick<KaijuTx, "execute">): Promise<GitSiteSettings> {
   const res = await db.execute<{ key: string; value: string }>(sql`
     SELECT key, value FROM public.site_settings
      WHERE key IN (${GIT_SITE_ENABLED_KEY}, ${GIT_SITE_ALLOWED_HOSTS_KEY})`);

@@ -3,7 +3,7 @@ import {
   BRANDING_ASSET_MAX_SIDE_PX,
   type BrandingAssetContentType,
   type BrandingAssetKind,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { checkSvg } from "./svg.js";
 
 /**

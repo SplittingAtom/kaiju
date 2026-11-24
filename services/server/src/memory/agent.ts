@@ -11,7 +11,7 @@ import {
   type RunSemanticMemoryItem,
   type SemanticMemoryScope,
   type ShowMemoryItemInput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   and,
   eq,
@@ -19,9 +19,9 @@ import {
   memoryDocs,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import {
   approvalHolds,
@@ -71,7 +71,7 @@ import { readRunMemoryPlan } from "../agents/run-memory.js";
  */
 
 export interface MemoryAgentDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly runMaxEvents: number;
   readonly approvals: ApprovalBroker;
@@ -142,7 +142,7 @@ type Gate =
 
 /** Run active and owned by the caller; the thread's project. Undefined: not found or ended. */
 async function loadRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   c: MemoryCaller,
 ): Promise<{ projectId: string | null } | undefined> {
   // A compaction (KOBE-213) makes no tool calls: refused from the database, not only the lease.
@@ -159,7 +159,7 @@ async function loadRun(
 
 /** Every check between the sandbox's request and the store, in one transaction's view. */
 async function gate(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: MemoryAgentDeps,
   c: MemoryCaller,
   scope: MemoryScope,
@@ -178,7 +178,7 @@ async function gate(
 }
 
 /** The version this tool call already wrote, if any. */
-async function replayOf(tx: KobeTx, c: MemoryCaller, toolCallId: string) {
+async function replayOf(tx: KaijuTx, c: MemoryCaller, toolCallId: string) {
   const [row] = await tx
     .select({
       scope: memoryDocs.scope,
@@ -216,7 +216,7 @@ function replyFor(prior: { scope: MemoryScope; path: string; version: number }):
 }
 
 async function appendUpdated(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: MemoryAgentDeps,
   c: MemoryCaller,
   payload: Record<string, unknown>,
@@ -457,7 +457,7 @@ export interface ReadRequest extends MemoryCaller {
 }
 
 async function targetsFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   req: ReadRequest,
 ): Promise<{ targets: MemoryTarget[] } | { fail: MemoryReply; reason: MemoryRefusal }> {
   const run = await loadRun(tx, req);
@@ -670,7 +670,7 @@ export async function buildRunMemory(
 }
 
 async function loadIndex(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore | undefined,
   teamId: string,
   target: MemoryTarget,

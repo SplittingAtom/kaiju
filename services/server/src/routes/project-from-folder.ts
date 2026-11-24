@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
-import { withTeam, isUniqueViolation } from "@kobe/db";
-import { PROJECT_FILES_MAX, promoteFolderRequestSchema } from "@kobe/protocol";
+import { withTeam, isUniqueViolation } from "@kaiju/db";
+import { PROJECT_FILES_MAX, promoteFolderRequestSchema } from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";

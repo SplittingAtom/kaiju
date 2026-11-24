@@ -1,4 +1,4 @@
-import { type SandboxErrorCode, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
+import { type SandboxErrorCode, type ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
 import type { CommandDelivery } from "../delivery.js";
 import { RunIngest } from "../ingest.js";
 import type { RunLatency } from "../run-latency-spans.js";

@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import {
   REGENERATE_FIRST_WITH_OTHER_MODEL,
   SAME_MODEL_RESELECT,
@@ -15,7 +15,7 @@ import { browserSpaced, composer, crushedIconButtons, openApp, streaming } from 
  * KOBE-209 (CE12, CE16): thin marker rows between messages for what is not a conversation turn:
  * model changes, compactions, forks, interrupted and budget-stopped runs, approval outcomes.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -26,7 +26,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -54,7 +54,7 @@ function recordedThread() {
     fake.addEntry(thread, parent, message);
   const m0 = fake.addSystemEntry(thread, null, "model_change", {
     provider: "kobe",
-    modelId: "kobe/fast",
+    modelId: "kaiju/fast",
   });
   const u1 = add(m0, ask("Plan the launch"));
   const a1 = add(u1, call("tc1", "bash"));
@@ -71,7 +71,7 @@ function recordedThread() {
   });
   const m1 = fake.addSystemEntry(thread, c1, "model_change", {
     provider: "kobe",
-    modelId: "kobe/deep",
+    modelId: "kaiju/deep",
   });
   const u3 = add(m1, ask("Final?"));
   const a5 = add(u3, say("Final."));
@@ -106,14 +106,14 @@ function approval(toolCallId: string, status: string, cause: string, userEntryId
 
 /** Each marker's kind and visible text (a closed compaction's summary is hidden). */
 const markers = () =>
-  [...document.querySelectorAll<HTMLElement>("[data-kobe-marker]")].map((el) => {
+  [...document.querySelectorAll<HTMLElement>("[data-kaiju-marker]")].map((el) => {
     const shown = el.cloneNode(true) as HTMLElement;
     for (const hidden of shown.querySelectorAll("[hidden]")) hidden.remove();
-    return [el.dataset.kobeMarker, (shown.textContent ?? "").replace(/\s+/g, " ").trim()];
+    return [el.dataset.kaijuMarker, (shown.textContent ?? "").replace(/\s+/g, " ").trim()];
   });
 
 const marker = (kind: string) =>
-  must(document.querySelector<HTMLElement>(`[data-kobe-marker="${kind}"]`));
+  must(document.querySelector<HTMLElement>(`[data-kaiju-marker="${kind}"]`));
 
 describe("how a stopped or failed run ended, after a reload (KOBE-290)", () => {
   it("shows Stopped after the stopped run's answer and Run failed under a prompt without one", async () => {
@@ -145,12 +145,12 @@ describe("inline markers on a recorded thread (ac-1, ac-3)", () => {
     await screen.findByText("Final version.");
     await waitFor(() => expect(markers().map(([kind]) => kind)).toContain("budget"));
     expect(markers()).toEqual([
-      ["model", "Model: kobe/fast"],
+      ["model", "Model: kaiju/fast"],
       ["approval", "Approval granted"],
       ["approval", "Approval denied"],
       ["run", "Run interrupted"],
       ["compaction", "Context compacted"],
-      ["model", "Model changed to kobe/deep"],
+      ["model", "Model changed to kaiju/deep"],
       ["fork", expect.stringMatching(/^Forked here · 2 branches/)],
       ["budget", "Run stopped by the budget"],
     ]);
@@ -162,9 +162,9 @@ describe("inline markers on a recorded thread (ac-1, ac-3)", () => {
     expect(card.nextElementSibling?.textContent).toContain("Approval denied");
     expect(crushedIconButtons()).toEqual([]);
     // Marker chrome resets its own spacing; Pi's summary is Markdown and keeps its own.
-    const chrome = [...document.querySelectorAll("[data-kobe-marker]")].map((el) => {
+    const chrome = [...document.querySelectorAll("[data-kaiju-marker]")].map((el) => {
       const copy = el.cloneNode(true) as HTMLElement;
-      copy.querySelector("[data-kobe-summary]")?.remove();
+      copy.querySelector("[data-kaiju-summary]")?.remove();
       return copy;
     });
     expect(chrome.flatMap((el) => browserSpaced(el))).toEqual([]);
@@ -242,7 +242,7 @@ describe("a compaction's open state (KOBE-302)", () => {
     fake.agent.complete(runId, { epilogue: ["title"] });
     fake.agent.retitle(runId, "Launch plan, final");
     await waitFor(() =>
-      expect(document.getElementById("kobe-thread-title")?.textContent).toBe("Launch plan, final"),
+      expect(document.getElementById("kaiju-thread-title")?.textContent).toBe("Launch plan, final"),
     );
     await waitFor(() => expect(markerReads(thread).length).toBeGreaterThan(reads));
 
@@ -289,7 +289,7 @@ describe("fork markers (ac-2)", () => {
     );
     expect(marker("fork").textContent).toContain("Version 1 of 2");
     // The budget stop belonged to the other branch.
-    expect(document.querySelector('[data-kobe-marker="budget"]')).toBeNull();
+    expect(document.querySelector('[data-kaiju-marker="budget"]')).toBeNull();
   });
 });
 

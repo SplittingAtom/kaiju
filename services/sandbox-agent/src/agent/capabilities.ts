@@ -17,7 +17,7 @@ import {
   CAPABILITY_THREAD_BRANCH_SUMMARY,
   CAPABILITY_THREAD_COMPACT,
   CAPABILITY_SYNC_CONFLICTS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   CAPABILITY_GIT,
   CAPABILITY_MCP,
@@ -28,7 +28,7 @@ import {
   CAPABILITY_WORKSPACE_MOVES,
   CAPABILITY_WORKSPACE_SYNC_NOW,
   CAPABILITY_THREAD_CONTEXT,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import type { AgentDeps } from "./deps.js";
 
 /**

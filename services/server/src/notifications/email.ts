@@ -1,9 +1,9 @@
-import { and, eq, notificationEmails, sql, teams, withTeam, type KobeDb } from "@kobe/db";
+import { and, eq, notificationEmails, sql, teams, withTeam, type KaijuDb } from "@kaiju/db";
 import {
   scheduleRecurrenceSchema,
   type NotificationKind,
   type ScheduleRecurrence,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import { readAppName } from "../branding/settings.js";
@@ -66,7 +66,7 @@ function whenOf(row: Claimed): string | null {
   return parsed.success && row.tz ? scheduleWhen(parsed.data, row.tz) : null;
 }
 
-async function claim(db: KobeDb, teamId: string): Promise<Claimed[]> {
+async function claim(db: KaijuDb, teamId: string): Promise<Claimed[]> {
   return withTeam(db, teamId, async (tx) => {
     // A row whose last attempt never settled (crash, DB error) is given up once its lease ends.
     await tx.execute(sql`
@@ -96,7 +96,7 @@ async function claim(db: KobeDb, teamId: string): Promise<Claimed[]> {
 }
 
 async function settle(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   row: Claimed,
   outcome: "sent" | "skipped" | "retry",
@@ -138,7 +138,7 @@ const fenced = (teamId: string, row: Claimed) =>
   );
 
 /** Extends our lease right before a send; false when another replica owns the row now. */
-async function renew(db: KobeDb, teamId: string, row: Claimed): Promise<boolean> {
+async function renew(db: KaijuDb, teamId: string, row: Claimed): Promise<boolean> {
   const renewed = await withTeam(db, teamId, (tx) =>
     tx
       .update(notificationEmails)
@@ -157,7 +157,7 @@ function mailError(err: unknown): { code?: unknown; responseCode?: unknown; name
 }
 
 /** The recipient's address while they are active and still in the team; null otherwise. */
-async function recipient(db: KobeDb, teamId: string, userId: string): Promise<string | null> {
+async function recipient(db: KaijuDb, teamId: string, userId: string): Promise<string | null> {
   const res = await withTeam(db, teamId, (tx) =>
     tx.execute<{ email: string }>(sql`
       SELECT u.email FROM users u

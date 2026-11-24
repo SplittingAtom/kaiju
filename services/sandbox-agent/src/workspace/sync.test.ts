@@ -14,11 +14,11 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import type { RunStartFrame } from "@kobe/protocol/sandbox-wire";
+import type { RunStartFrame } from "@kaiju/protocol/sandbox-wire";
 import { FakeSyncServer } from "../testing/fake-sync-server.js";
 import { SyncClient } from "./client.js";
 import { createHash } from "node:crypto";
-import { isConflictCopyOf } from "@kobe/protocol";
+import { isConflictCopyOf } from "@kaiju/protocol";
 import { WorkspaceSync, type ConflictReport } from "./sync.js";
 
 const CONN = "6f1d2c3b-4a59-4e6d-8c7b-9a0b1c2d3e4f";
@@ -70,7 +70,7 @@ async function chmodTree(dir: string): Promise<void> {
 }
 
 async function volume(): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), "kobe-ws-"));
+  const root = await mkdtemp(path.join(tmpdir(), "kaiju-ws-"));
   roots.push(root);
   return root;
 }

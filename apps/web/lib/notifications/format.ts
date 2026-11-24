@@ -3,8 +3,8 @@
  * schedule by when it runs ("Every day at 09:00 (Europe/Berlin)"); a schedule deleted since has
  * nothing to show and is called that.
  */
-import type { ScheduleRecurrence } from "@kobe/protocol";
-import type { KobeNotification } from "./api";
+import type { ScheduleRecurrence } from "@kaiju/protocol";
+import type { KaijuNotification } from "./api";
 import { describeRecurrence } from "../schedules/format";
 import { pausedByLabel } from "../schedules/paused-by";
 import { roleLabel } from "../teams";
@@ -19,12 +19,12 @@ function skipped(count: number): string {
   return count === 1 ? "1 action was skipped" : `${count} actions were skipped`;
 }
 
-const skillVersion = (n: KobeNotification) =>
+const skillVersion = (n: KaijuNotification) =>
   `${n.skillName ?? "A catalog skill"}${n.skillSemver ? ` ${n.skillSemver}` : ""}`;
 
-const siteAdmin = (n: KobeNotification) => `${n.actorName ?? "A site admin"} (site admin)`;
-const member = (n: KobeNotification) => n.subjectName ?? "a member";
-const asRole = (n: KobeNotification) => (n.teamRole ? ` as ${roleLabel(n.teamRole)}` : "");
+const siteAdmin = (n: KaijuNotification) => `${n.actorName ?? "A site admin"} (site admin)`;
+const member = (n: KaijuNotification) => n.subjectName ?? "a member";
+const asRole = (n: KaijuNotification) => (n.teamRole ? ` as ${roleLabel(n.teamRole)}` : "");
 
 /** The day of an instant (UTC), as the expiry email says it. */
 const day = (iso: string) => iso.slice(0, 10);
@@ -34,7 +34,7 @@ const day = (iso: string) => iso.slice(0, 10);
  * an expiry its connection and the day the credential expires (or expired, when it had already
  * lapsed as the notice was written).
  */
-function gitTitle(n: KobeNotification): string | null {
+function gitTitle(n: KaijuNotification): string | null {
   const project = n.projectName ?? "A project";
   switch (n.kind) {
     case "git.conversion.completed":
@@ -59,7 +59,7 @@ export const GIT_SECTION_HREF = "/admin/team/git";
 
 /** Where a git notice sends its reader (KOBE-819): an expiry to the Git section; else none. */
 export function gitNotificationLink(
-  n: KobeNotification,
+  n: KaijuNotification,
 ): { readonly href: string; readonly label: string } | null {
   return n.kind === "git.connection.token_expiring"
     ? { href: GIT_SECTION_HREF, label: "Open the Git section" }
@@ -70,12 +70,12 @@ export function gitNotificationLink(
  * A line under the headline, when the notice has one: why a conversion failed, in the same
  * member-safe words the Convert to repo dialog shows (KOBE-819).
  */
-export function notificationDetail(n: KobeNotification): string | null {
+export function notificationDetail(n: KaijuNotification): string | null {
   return n.kind === "git.conversion.failed" ? (n.gitFailureMessage ?? null) : null;
 }
 
 /** The headline: what happened to the run (or the schedule), or to a catalog skill. */
-export function notificationTitle(n: KobeNotification): string {
+export function notificationTitle(n: KaijuNotification): string {
   const memory = memoryNotificationTitle(n);
   if (memory !== null) return memory;
   const git = gitTitle(n);
@@ -123,7 +123,7 @@ export function notificationTitle(n: KobeNotification): string {
 
 /** What the notification is about: its schedule, or the catalog skill (KOBE-338). */
 export function notificationLabel(
-  n: KobeNotification,
+  n: KaijuNotification,
   known: ReadonlyMap<string, ScheduleWhen> | null,
 ): string {
   if (n.kind.startsWith("skill.")) return `Catalog skill ${n.skillName ?? ""}`.trim();

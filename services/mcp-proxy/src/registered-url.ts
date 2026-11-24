@@ -1,4 +1,4 @@
-import { injectTraceHeaders } from "@kobe/telemetry";
+import { injectTraceHeaders } from "@kaiju/telemetry";
 import { z } from "zod";
 
 /**

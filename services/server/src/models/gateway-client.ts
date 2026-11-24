@@ -11,13 +11,13 @@ import {
   serverCallRequestSchema,
   type ServerCallRequest,
   type ServerCallTokenPurpose,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   loadSigningKey,
   signServerCallToken,
   signingKeyEnvName,
   type SessionSigningKey,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 import {
   SpanKind,
   idAttributes,
@@ -26,7 +26,7 @@ import {
   sessionAttributes,
   trace,
   withSpan,
-} from "@kobe/telemetry";
+} from "@kaiju/telemetry";
 import { readCapped } from "../http/read-capped.js";
 
 /**

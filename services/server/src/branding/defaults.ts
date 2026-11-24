@@ -1,5 +1,5 @@
-import { BRANDING_SETTING_KEYS, type ThemeSettings } from "@kobe/protocol";
-import { SYSTEM_ACTOR, siteSettings, type KobeDb, type KobeTx } from "@kobe/db";
+import { BRANDING_SETTING_KEYS, type ThemeSettings } from "@kaiju/protocol";
+import { SYSTEM_ACTOR, siteSettings, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import type { BrandingDefaults } from "./defaults-config.js";
 import { themeLabel } from "./settings.js";
@@ -51,7 +51,7 @@ export type WrittenDefault = Seed;
  * key, so two replicas starting together seed once). Returns what it wrote, for the audit.
  */
 export async function writeBrandingDefaults(
-  tx: KobeTx,
+  tx: KaijuTx,
   defaults: BrandingDefaults,
 ): Promise<WrittenDefault[]> {
   const done: Seed[] = [];
@@ -71,7 +71,7 @@ export async function writeBrandingDefaults(
  * its agents). The transaction's last writes: audit after every write.
  */
 export async function auditBrandingDefaults(
-  tx: KobeTx,
+  tx: KaijuTx,
   written: readonly WrittenDefault[],
 ): Promise<void> {
   for (const seed of written) {
@@ -88,7 +88,7 @@ export async function auditBrandingDefaults(
  * replica's branding cache. Returns the settings it wrote.
  */
 export async function seedBrandingDefaults(
-  db: KobeDb,
+  db: KaijuDb,
   defaults: BrandingDefaults,
 ): Promise<Setting[]> {
   if (seedsOf(defaults).length === 0) return [];

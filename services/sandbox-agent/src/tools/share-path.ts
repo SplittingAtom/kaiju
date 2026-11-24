@@ -1,5 +1,5 @@
 import path from "node:path";
-import { FILE_SHARE_MAX_BYTES, isExcludedPath, workspacePathIssue } from "@kobe/protocol";
+import { FILE_SHARE_MAX_BYTES, isExcludedPath, workspacePathIssue } from "@kaiju/protocol";
 import { confineFile, ConfineError } from "../workspace-confine.js";
 
 /**

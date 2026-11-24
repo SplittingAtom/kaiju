@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuiState } from "@assistant-ui/react";
 import type { SyncConflictView } from "../../lib/files/sync-conflicts";
-import { kobeExtrasOf, useChatSession } from "./kobe-runtime";
+import { kaijuExtrasOf, useChatSession } from "./kaiju-runtime";
 
 /** Re-reads after a run ends (ms after the previous read). */
 export const SYNC_CONFLICTS_RETRY_MS: readonly number[] = [2_500, 5_000, 10_000];
@@ -25,7 +25,7 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 /** The last ended run of the thread on screen ("" while none ended on this page). */
 function useEndedRun(threadId: string | undefined): string {
   return useAuiState((s) => {
-    const extras = kobeExtrasOf(s);
+    const extras = kaijuExtrasOf(s);
     const live = extras?.state.live;
     if (!live || threadId === undefined || extras?.state.threadId !== threadId) return "";
     return live.terminal === undefined ? "" : live.runId;

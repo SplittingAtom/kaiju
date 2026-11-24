@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { LEARN_NUDGE_MESSAGES, type LearnState } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { LEARN_NUDGE_MESSAGES, type LearnState } from "@kaiju/protocol";
 import type { Viewer } from "../../threads/repository.js";
 import { PATH_MAX_ENTRIES } from "./pass-input/read.js";
 
@@ -41,7 +41,7 @@ const USER_MESSAGE = (alias: string) =>
 
 /** The signals for the person's thread in one read (every query states `team_id`). */
 export async function readNudgeSignals(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   thread: {
     readonly id: string;

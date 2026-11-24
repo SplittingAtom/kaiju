@@ -8,15 +8,15 @@ import {
   teamAgentRoster,
   teamAgentSuspensions,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   AGENT_ROSTER_CAP,
   AGENT_ROSTER_PROPOSALS_CAP,
   type AgentRosterErrorCode,
   type AgentVersionRuleInput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ServerAuditEvent } from "../audit/record.js";
 import { recordAudit } from "../audit/record.js";
 import {
@@ -69,7 +69,7 @@ interface PersonalAgent {
 }
 
 /** Locks the personal agent against deletion for this transaction (`FOR SHARE`). */
-export async function lockPersonalAgent(tx: KobeTx, id: string): Promise<PersonalAgent | null> {
+export async function lockPersonalAgent(tx: KaijuTx, id: string): Promise<PersonalAgent | null> {
   const [row] = await tx
     .select({
       id: siteAgents.id,
@@ -87,7 +87,7 @@ export async function lockPersonalAgent(tx: KobeTx, id: string): Promise<Persona
 
 /** Serializes writes to one roster, so caps and re-assignments can't race. */
 export async function lockRoster(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: RosterTarget,
   teamId: string | null,
 ): Promise<void> {
@@ -97,10 +97,10 @@ export async function lockRoster(
 
 /** Runs `fn` in the target roster's transaction: team-scoped (RLS) or plain for the site. */
 function inRoster<T>(
-  db: KobeDb,
+  db: KaijuDb,
   target: RosterTarget,
   teamId: string | null,
-  fn: (tx: KobeTx) => Promise<T>,
+  fn: (tx: KaijuTx) => Promise<T>,
 ) {
   return target === "team" ? withTeam(db, teamOf(teamId), fn) : db.transaction(fn);
 }
@@ -111,11 +111,11 @@ function inRoster<T>(
  * team's are, once it committed (a failure is left to the next scheduler tick).
  */
 async function inRosterSynced<T extends { ok: boolean } | null>(
-  db: KobeDb,
+  db: KaijuDb,
   target: RosterTarget,
   teamId: string | null,
   agentId: string,
-  fn: (tx: KobeTx) => Promise<T>,
+  fn: (tx: KaijuTx) => Promise<T>,
 ): Promise<T> {
   const result = await inRoster(db, target, teamId, async (tx) => {
     const r = await fn(tx);
@@ -138,12 +138,12 @@ function teamOf(teamId: string | null): string {
   return teamId;
 }
 
-const entryOf = (tx: KobeTx, target: RosterTarget, teamId: string | null, agentId: string) =>
+const entryOf = (tx: KaijuTx, target: RosterTarget, teamId: string | null, agentId: string) =>
   target === "team" ? teamEntry(tx, teamOf(teamId), agentId, true) : siteEntry(tx, agentId, true);
 
 /** Entries holding `states` on the roster (the caps count assigned entries and proposals apart). */
 async function countEntries(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: RosterTarget,
   teamId: string | null,
   states: readonly RosterEntryState[],
@@ -166,7 +166,7 @@ async function countEntries(
   return row?.n ?? 0;
 }
 
-async function hasRoom(tx: KobeTx, target: RosterTarget, teamId: string | null, proposal: boolean) {
+async function hasRoom(tx: KaijuTx, target: RosterTarget, teamId: string | null, proposal: boolean) {
   return proposal
     ? (await countEntries(tx, target, teamId, ["proposed"])) < AGENT_ROSTER_PROPOSALS_CAP
     : (await countEntries(tx, target, teamId, ["active", "suspended"])) < AGENT_ROSTER_CAP;
@@ -195,7 +195,7 @@ type EntryChange = Partial<{
 }>;
 
 export async function writeEntry(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: RosterTarget,
   rosterTeam: string | null,
   agentId: string,
@@ -246,7 +246,7 @@ type RosterAction =
   | "resumed";
 
 export function audit(
-  tx: KobeTx,
+  tx: KaijuTx,
   action: RosterAction,
   target: RosterTarget,
   teamId: string | null,
@@ -274,7 +274,7 @@ export interface AssignInput {
 
 /** `POST /v1/agents/:id/assignments`: an active entry (direct) or a proposal (AR6). */
 export async function assignAgent(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor,
   input: AssignInput,
 ): Promise<RosterResult<{ entry: RosterEntryRecord; mode: "direct" | "propose" }>> {
@@ -348,7 +348,7 @@ export async function assignAgent(
  * from a team they have left (its Reach lists it), or it could never be deleted (§6.3).
  */
 export async function withdrawAgent(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor,
   agentId: string,
   target: RosterTarget,
@@ -403,7 +403,7 @@ function transition(from: RosterEntryState, to: AdminUpdate["state"], hasRule: b
  * record of "suspended here", also for team roster entries (whose state stays `active`).
  */
 async function setSuspendedHere(
-  tx: KobeTx,
+  tx: KaijuTx,
   actor: RosterActor,
   agentId: string,
   scope: "personal" | "gallery",
@@ -433,7 +433,7 @@ async function setSuspendedHere(
  * `team_agent_suspensions`. `state = suspended` is a site roster state (site-wide).
  */
 export async function updateEntry(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor | SiteRosterActor,
   input: AdminUpdate,
 ): Promise<RosterResult<RosterEntryRecord> | null> {
@@ -511,7 +511,7 @@ const sameRule = (entry: RosterEntryRecord, rule: Rule) =>
 
 /** Pinning a following entry is `pinned`; moving a pin (or back to latest) is `updated` (AR5). */
 async function auditRule(
-  tx: KobeTx,
+  tx: KaijuTx,
   before: RosterEntryRecord,
   rule: Rule,
   target: RosterTarget,
@@ -529,7 +529,7 @@ async function auditRule(
  * site roster entry, or an assigned entry of this team's roster. Not found otherwise.
  */
 export async function setTeamSuspension(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor,
   agentId: string,
   suspended: boolean,

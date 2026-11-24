@@ -67,7 +67,7 @@ export function siteSsoSettingsOpenApiPaths(): Record<string, Record<string, unk
           "that was not (`identity.sso.required.enabled`). While in force the server refuses " +
           "password sign-in, password reset, invitation acceptance and passkey sign-in " +
           "(`403 SSO_REQUIRED` on `/api/auth/*`). It turns itself off when the last enabled " +
-          "provider is disabled or deleted, and `kobe sso allow-local-sign-in` turns it off " +
+          "provider is disabled or deleted, and `kaiju sso allow-local-sign-in` turns it off " +
           "with cluster access (`identity.sso.required.disabled`). While it is stored on, the " +
           "Owner keeps an identity at an enabled provider: disabling or deleting the Owner's only " +
           "one answers 409 `owner_would_lose_sign_in`, transferring ownership to an unlinked user " +

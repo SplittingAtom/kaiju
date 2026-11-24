@@ -1,14 +1,14 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { sql, withTeam } from "@kobe/db";
+import { sql, withTeam } from "@kaiju/db";
 import {
   CAPABILITY_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY,
   runMemoryContextSchema,
   type PolicyEngine,
   type RunMemoryContext,
-} from "@kobe/protocol";
-import { memoryResultFrameSchema } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { memoryResultFrameSchema } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import { readMemory, showMemory } from "./agent.js";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
@@ -45,7 +45,7 @@ const item: Record<string, string> = {};
 
 beforeAll(async () => {
   await fx.setup([{}], () => ({
-    blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
+    blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     agents: { publishRate: { windowMs: 60_000, max: 10_000 } },
     sandboxWire: {
       engine,

@@ -5,15 +5,15 @@ import {
   canonicalZip,
   checkPackagePaths,
   hashedPackageFiles,
-  kobeSkillManifestSchema,
+  kaijuSkillManifestSchema,
   MANIFEST_MAX_BYTES,
   MANIFEST_PATH,
   MANIFEST_YAML_OPTIONS,
   manifestMismatches,
   runtimeFiles,
-  type KobeSkillManifest,
+  type KaijuSkillManifest,
   type PackageProblem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { SKILL_LIMITS, type SkillLimits } from "./limits.js";
 import { parseSkillMd, type SkillMd } from "./skill-md.js";
 import { readZipEntries, ZipFormatError, type ZipEntry } from "./zip-entries.js";
@@ -55,7 +55,7 @@ export interface ValidBundle extends SkillMd {
   /** SHA-256 of `packageZip`, or of `zip` when there is none. */
   readonly packageHash: string;
   /** The parsed `kobe.skill.yaml`, if the package has one (its name matches SKILL.md). */
-  readonly manifest: KobeSkillManifest | null;
+  readonly manifest: KaijuSkillManifest | null;
   /** Files and bytes of the runtime payload (what a sandbox unpacks). */
   readonly fileCount: number;
   readonly uncompressedBytes: number;
@@ -173,7 +173,7 @@ function checkContract(names: readonly string[]): Result<never> | null {
 export function readManifest(
   bytes: Uint8Array | undefined,
   skillName: string,
-): Result<KobeSkillManifest | null> {
+): Result<KaijuSkillManifest | null> {
   if (!bytes) return { ok: true, value: null };
   const bad = (why: string) => fail("invalid_manifest", `kobe.skill.yaml: ${why}`);
   if (bytes.length > MANIFEST_MAX_BYTES) return bad(`larger than ${MANIFEST_MAX_BYTES} bytes.`);
@@ -184,7 +184,7 @@ export function readManifest(
   } catch {
     return bad("not valid UTF-8 YAML (one document, unique keys, no aliases).");
   }
-  const parsed = kobeSkillManifestSchema.safeParse(value);
+  const parsed = kaijuSkillManifestSchema.safeParse(value);
   if (!parsed.success) {
     const where = parsed.error.issues[0]?.path.join(".") || "(root)";
     return bad(`invalid at ${where}.`);

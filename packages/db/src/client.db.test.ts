@@ -6,7 +6,7 @@ import {
   APP_STATEMENT_TIMEOUT_MS,
   IdleInTransactionTimeoutError,
   createDb,
-  type KobeDatabase,
+  type KaijuDatabase,
 } from "./client.js";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "./test-support/database.js";
 
@@ -19,8 +19,8 @@ const database = (): TestDatabase => {
   if (!db) throw new Error("database not created");
   return db;
 };
-const opened: KobeDatabase[] = [];
-const open = (options: Parameters<typeof createDb>[1] = {}): KobeDatabase => {
+const opened: KaijuDatabase[] = [];
+const open = (options: Parameters<typeof createDb>[1] = {}): KaijuDatabase => {
   const d = createDb(database().appUrl, { max: 2, ...options });
   opened.push(d);
   return d;
@@ -35,7 +35,7 @@ afterAll(async () => {
   await db?.drop();
 });
 
-const setting = async (d: KobeDatabase, name: string): Promise<string> => {
+const setting = async (d: KaijuDatabase, name: string): Promise<string> => {
   const { rows } = await d.pool.query<{ v: string }>(`SELECT current_setting($1) AS v`, [name]);
   return rows[0]?.v ?? "";
 };
@@ -96,8 +96,8 @@ describe("app-role connection timeouts (KOBE-732)", () => {
 
 describe("pool size and application_name (KOBE-736)", () => {
   it("names every pooled session and keeps to the configured size", async () => {
-    const d = open({ max: 3, applicationName: "kobe-test-pool" });
+    const d = open({ max: 3, applicationName: "kaiju-test-pool" });
     expect(d.pool.options.max).toBe(3);
-    expect(await setting(d, "application_name")).toBe("kobe-test-pool");
+    expect(await setting(d, "application_name")).toBe("kaiju-test-pool");
   });
 });

@@ -11,11 +11,11 @@
  * a message that never carries a credential, URL query or response body.
  */
 
-import type { GitCapabilities, GitCapability, GitCredentialKind, GitProvider } from "@kobe/db";
+import type { GitCapabilities, GitCapability, GitCredentialKind, GitProvider } from "@kaiju/db";
 import type { GitTree } from "./trees.js";
 
 /**
- * The provider, credential kinds and capabilities are declared once, in `@kobe/db` (shared with
+ * The provider, credential kinds and capabilities are declared once, in `@kaiju/db` (shared with
  * the `git_connections` table, which stores probe capabilities as they are); re-exported here for
  * the adapters' convenience.
  */

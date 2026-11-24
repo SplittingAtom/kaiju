@@ -9,8 +9,8 @@ import {
   teams,
   users,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { recordAuditAfter } from "../audit/record.js";
 import type { MailMessage, Mailer } from "../mail/mailer.js";
 import { oneLine } from "../mail/messages.js";
@@ -62,7 +62,7 @@ export function shorteningMessage(input: {
 }
 
 export interface NotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }

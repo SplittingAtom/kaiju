@@ -1,0 +1,130 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import {
+  KAIJU_LEVEL_LABELS,
+  getTeamKaiju,
+  setTeamKaijuLevel,
+  type KaijuLevel,
+  type KaijuTeamConnector,
+} from "../../../lib/admin/api/team/connectors";
+import { Badge, Button, ChoiceGroup, Notice, Radio } from "../../ui/console";
+import { useTeamAccess } from "../console-context";
+import { MutationStatus } from "../error-notice";
+import { ResourceView } from "../parts";
+import { useMutation, useResource, type Mutation } from "../use-resource";
+
+const HINT = "text-sm text-console-muted";
+
+const LEVEL_HINTS: Readonly<Record<KaijuLevel, string>> = {
+  docs: "Agents can read the Kaiju user guide. No admin tools.",
+  read: "Agents can also read this team's settings as the person in the conversation, within that person's own permissions.",
+  read_write:
+    "Agents can also change this team's settings as the person. Every change shows an Admin change card and runs only after that person approves it.",
+};
+
+/**
+ * The built-in Kaiju connector in Team console › Connectors (KOBE-623, spec kaiju-admin-mcp §6, KA5):
+ * its docs tools are on for every agent; the team's level adds Kaiju's admin tools (`read`, or
+ * `read and write`), gated by `team.connectors.manage` and only while the site switch allows
+ * admin tools. The server decides and audits the change.
+ */
+export function KaijuConnectorCard() {
+  const access = useTeamAccess();
+  const { state, reload } = useResource(() => getTeamKaiju(access.team.id));
+  // Kept here: the card below is re-created when the saved level comes back, the notice stays.
+  const mutation = useMutation();
+  // A server without the built-in connector (before KOBE-623) answers 404: nothing to show.
+  if (state.status === "error" && state.error.status === 404) return null;
+  return (
+    <ResourceView state={state} label="Kaiju connector">
+      {(kaiju) =>
+        kaiju.mode === "off" || kaiju.name === null ? null : (
+          <KaijuCard
+            key={kaiju.level}
+            kaiju={kaiju}
+            canManage={access.permissions.includes("team.connectors.manage")}
+            mutation={mutation}
+            onSaved={reload}
+          />
+        )
+      }
+    </ResourceView>
+  );
+}
+
+function KaijuCard({
+  kaiju,
+  canManage,
+  mutation,
+  onSaved,
+}: {
+  readonly kaiju: KaijuTeamConnector;
+  readonly canManage: boolean;
+  readonly mutation: Mutation;
+  readonly onSaved: () => void;
+}) {
+  const teamId = useTeamAccess().team.id;
+  const [level, setLevel] = useState<KaijuLevel>(kaiju.level);
+  const siteAllows = kaiju.mode === "admin";
+
+  async function save(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const done = await mutation.run(
+      () => setTeamKaijuLevel(teamId, level, kaiju.level),
+      (saved) => `Kaiju connector: ${KAIJU_LEVEL_LABELS[saved.level]}.`,
+    );
+    if (done) onSaved();
+  }
+
+  return (
+    <article
+      aria-label="Kaiju"
+      data-kobe-builtin-connector=""
+      className="box-border rounded-lg border border-console-border bg-console-bg p-4"
+    >
+      <h2 className="m-0 text-lg font-semibold">Kaiju</h2>
+      <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
+        <Badge tone="running">Built in</Badge>
+        <span className={HINT}>
+          {KAIJU_LEVEL_LABELS[kaiju.level]}. The docs tools are on for every agent; admin tools act as
+          the person in the conversation, never with more than their permissions.
+        </span>
+      </p>
+      {!siteAllows && (
+        <Notice tone="warn">
+          <p>
+            A site admin has limited Kaiju to its docs tools, so admin tools stay off whatever the
+            team chooses.
+          </p>
+        </Notice>
+      )}
+      <form onSubmit={save} aria-label="Kaiju connector level" className="mt-3">
+        <ChoiceGroup legend="Admin tools for the team's agents" stacked>
+          {(Object.keys(KAIJU_LEVEL_LABELS) as KaijuLevel[]).map((x) => (
+            <Radio
+              key={x}
+              name="kaiju-level"
+              label={KAIJU_LEVEL_LABELS[x]}
+              hint={LEVEL_HINTS[x]}
+              checked={level === x}
+              disabled={!canManage || mutation.pending}
+              onChange={() => setLevel(x)}
+            />
+          ))}
+        </ChoiceGroup>
+        {canManage && (
+          <Button
+            type="submit"
+            variant="primary"
+            className="mt-3"
+            disabled={mutation.pending || level === kaiju.level}
+          >
+            Save level<span className="sr-only"> for Kaiju</span>
+          </Button>
+        )}
+        <MutationStatus error={mutation.error} notice={mutation.notice} />
+      </form>
+    </article>
+  );
+}

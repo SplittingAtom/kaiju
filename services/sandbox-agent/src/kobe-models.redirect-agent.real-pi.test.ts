@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLocalGateway, type LocalGateway } from "@kobe/model-gateway/testing";
+import { startLocalGateway, type LocalGateway } from "@kaiju/model-gateway/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ModelWiring } from "./models/types.js";
 import { RUN_TOKEN as runToken } from "./testing/redirect-plants.js";
@@ -136,7 +136,7 @@ describe.skipIf(!PI_AVAILABLE)(
   "the agent closes the Pi agent/ provider redirect (KOBE-169)",
   () => {
     const LEAKING = [
-      "models.json: provider kobe models with their own baseUrl",
+      "models.json: provider kaiju models with their own baseUrl",
       "everything at once",
     ];
 

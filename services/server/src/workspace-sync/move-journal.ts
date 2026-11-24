@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { WORKSPACE_MOVES_PAGE, type WorkspaceMoveRecord } from "@kobe/protocol/sandbox-wire";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { WORKSPACE_MOVES_PAGE, type WorkspaceMoveRecord } from "@kaiju/protocol/sandbox-wire";
 import type { WorkspaceOwner } from "./keys.js";
 
 /**
@@ -25,7 +25,7 @@ export interface JournalEntry {
 }
 
 export async function recordMove(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   entry: JournalEntry,
 ): Promise<void> {
@@ -41,7 +41,7 @@ export async function recordMove(
 
 /** Files and bytes the member moved in the last `windowMs`. */
 export async function movedRecently(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   windowMs: number,
 ): Promise<{ readonly files: number; readonly bytes: number }> {
@@ -59,7 +59,7 @@ export async function movedRecently(
  * the latest journal row from `from` to `to`, and something live at `to`.
  */
 export async function recentRepeat(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   from: string,
   to: string,
@@ -80,7 +80,7 @@ export async function recentRepeat(
 
 /** Moves whose rows are newer than `since`, oldest first (the sandbox's `GET moves`). */
 export async function movesSince(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   since: number,
   after = 0,

@@ -9,10 +9,10 @@ import {
   sandboxRunLeases,
   sql,
   teams,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import { EGRESS_BLOCKED_REASONS, type EgressBlockedReason } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { EGRESS_BLOCKED_REASONS, type EgressBlockedReason } from "@kaiju/protocol";
 import { z } from "zod";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { logger as rootLogger } from "../logger.js";
@@ -70,7 +70,7 @@ const BATCH = 50;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Processes the team's pending egress.blocked events; returns how many it handled. */
-export async function relayBlockedEvents(db: KobeDb, teamId: string): Promise<number> {
+export async function relayBlockedEvents(db: KaijuDb, teamId: string): Promise<number> {
   return withAppendTx(db, teamId, async (tx) => {
     const pending = await tx
       .select()
@@ -97,7 +97,7 @@ export async function relayBlockedEvents(db: KobeDb, teamId: string): Promise<nu
 }
 
 async function appendToActiveRuns(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   ref: z.infer<typeof refSchema>,
 ): Promise<string[]> {
@@ -131,7 +131,7 @@ async function appendToActiveRuns(
 }
 
 async function activeNotebookRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   ref: z.infer<typeof refSchema>,
 ): Promise<{ runId: string; threadId: string }[]> {
@@ -146,7 +146,7 @@ async function activeNotebookRun(
 }
 
 export interface BlockedRelayOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The process's shared LISTEN connection (KOBE-704); never closed here. */
   readonly listen?: ListenClient;
   /** Without `listen`: app-role URL of a LISTEN connection of the relay's own (tests). */
@@ -212,7 +212,7 @@ export class EgressBlockedRelay {
       if (!this.options.connectionString) throw new Error("egress relay: no LISTEN connection");
       listen = this.owned = createListenClient({
         connectionString: this.options.connectionString,
-        applicationName: "kobe-egress-relay",
+        applicationName: "kaiju-egress-relay",
       });
     }
     this.unlisten = listen.subscribe(EGRESS_BLOCKED_CHANNEL, {

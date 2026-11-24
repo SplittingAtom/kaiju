@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx, type ThreadFileAccess } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx, type ThreadFileAccess } from "@kaiju/db";
 import { threadAttachmentPaths } from "../uploads/attach-list.js";
 import { LINK_TOOLS, toolCallLink } from "./paths.js";
 import { recordLinks, resolveTarget, type LinkInput, type LinkTarget } from "./record.js";
@@ -40,7 +40,7 @@ export interface BackfillResult {
 
 type StoredCursor = BackfillCursor | "done" | undefined;
 
-async function readCursor(db: KobeDb): Promise<StoredCursor> {
+async function readCursor(db: KaijuDb): Promise<StoredCursor> {
   const res = await db.execute<{ value: string }>(
     sql`SELECT value FROM public.site_settings WHERE key = ${BACKFILL_CURSOR_KEY}`,
   );
@@ -57,14 +57,14 @@ async function readCursor(db: KobeDb): Promise<StoredCursor> {
   }
 }
 
-async function writeCursor(db: KobeDb | KobeTx, value: string): Promise<void> {
+async function writeCursor(db: KaijuDb | KaijuTx, value: string): Promise<void> {
   await db.execute(sql`
     INSERT INTO public.site_settings (key, value) VALUES (${BACKFILL_CURSOR_KEY}, ${value})
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`);
 }
 
 /** The team ids at or after `from`, in order (teams is site-wide: no team scope needed). */
-async function teamIds(db: KobeDb, from: string | undefined): Promise<string[]> {
+async function teamIds(db: KaijuDb, from: string | undefined): Promise<string[]> {
   const res = await db.execute<{ id: string }>(
     from === undefined
       ? sql`SELECT id FROM public.teams ORDER BY id`
@@ -74,7 +74,7 @@ async function teamIds(db: KobeDb, from: string | undefined): Promise<string[]> 
 }
 
 async function nextThread(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   after: string | undefined,
 ): Promise<{ id: string; owner: string; eval: boolean } | undefined> {
@@ -106,7 +106,7 @@ const linkToolNames = sql.join(
 );
 
 /** File tool calls and their results in the thread's inline message entries, in append order. */
-async function toolRows(tx: KobeTx, teamId: string, threadId: string): Promise<Row[]> {
+async function toolRows(tx: KaijuTx, teamId: string, threadId: string): Promise<Row[]> {
   const res = await tx.execute<Row>(sql`
     SELECT kind, call_id, tool, args, is_error, at FROM (
       SELECT 'call' AS kind, p.part->>'id' AS call_id, p.part->>'name' AS tool,
@@ -190,7 +190,7 @@ function aggregate(
 }
 
 /** Attachments of the thread (write, TFM1) at their upload time. */
-async function attachmentUses(tx: KobeTx, teamId: string, threadId: string): Promise<CallUse[]> {
+async function attachmentUses(tx: KaijuTx, teamId: string, threadId: string): Promise<CallUse[]> {
   const paths = await threadAttachmentPaths(tx, teamId, threadId);
   if (paths.size === 0) return [];
   const res = await tx.execute<{ id: string; created_at: Date | string }>(sql`
@@ -206,7 +206,7 @@ async function attachmentUses(tx: KobeTx, teamId: string, threadId: string): Pro
 }
 
 /** Paths each commit made from the thread changed (against its parent), as project links. */
-async function commitLinks(tx: KobeTx, teamId: string, threadId: string): Promise<LinkInput[]> {
+async function commitLinks(tx: KaijuTx, teamId: string, threadId: string): Promise<LinkInput[]> {
   const res = await tx.execute<{
     project_id: string;
     path: string;
@@ -244,7 +244,7 @@ async function commitLinks(tx: KobeTx, teamId: string, threadId: string): Promis
 
 /** Backfills one thread (inside its team's transaction); returns the links written. */
 export async function backfillThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   thread: { readonly id: string; readonly owner: string },
 ): Promise<number> {
@@ -268,7 +268,7 @@ export async function backfillThread(
 
 /** Walks every team's threads from the stored cursor; see the module comment. */
 export async function backfillThreadFileLinks(
-  db: KobeDb,
+  db: KaijuDb,
   options: BackfillOptions = {},
 ): Promise<BackfillResult> {
   const stored = options.restart ? undefined : await readCursor(db);

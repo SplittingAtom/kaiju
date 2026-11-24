@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { makeCursorCodec } from "@kobe/db";
+import { makeCursorCodec } from "@kaiju/db";
 
 /**
  * Keyset position after the last row of a page, ordered by (timestamp DESC, id DESC). The

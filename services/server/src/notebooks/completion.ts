@@ -4,7 +4,7 @@ import {
   type ActorContext,
   type NotebookCompletionBody,
   type NotebookCompletionResult,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { hitRateLimit, type RateLimitRule } from "../rate-limit.js";
 import { RunError } from "../runs/errors.js";
 import { COMMAND_FAILURES } from "../sandbox-wire/types.js";

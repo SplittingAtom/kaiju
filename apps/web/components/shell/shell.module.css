@@ -17,8 +17,8 @@
 
 .wordmark {
   margin: 0;
-  font-size: var(--kobe-brand-wordmark-size);
-  font-weight: var(--kobe-brand-wordmark-weight);
+  font-size: var(--kaiju-brand-wordmark-size);
+  font-weight: var(--kaiju-brand-wordmark-weight);
 }
 
 .actions {
@@ -42,7 +42,7 @@
   width: 2rem;
   height: 2rem;
   color: var(--admin-muted);
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
   cursor: pointer;
   list-style: none;
 }
@@ -61,11 +61,11 @@
 
 /* The theme toggle's icons (KOBE-282): the current theme's one, from app/theme.css. */
 .whenLight {
-  display: var(--kobe-when-light);
+  display: var(--kaiju-when-light);
 }
 
 .whenDark {
-  display: var(--kobe-when-dark);
+  display: var(--kaiju-when-dark);
 }
 
 /* --- thread search ------------------------------------------------------------------------- */
@@ -87,7 +87,7 @@
   color: inherit;
   background: transparent;
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-lg);
+  border-radius: var(--kaiju-radius-lg);
 }
 
 .results,
@@ -97,8 +97,8 @@
   top: calc(100% + 0.25rem);
   background: var(--admin-bg);
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-lg);
-  box-shadow: var(--kobe-shadow-drawer);
+  border-radius: var(--kaiju-radius-lg);
+  box-shadow: var(--kaiju-shadow-drawer);
 }
 
 .results {
@@ -134,7 +134,7 @@
   color: var(--admin-muted);
   font-size: 0.75rem;
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-pill);
+  border-radius: var(--kaiju-radius-pill);
 }
 
 .snippet {
@@ -172,7 +172,7 @@
   text-decoration: none;
   background: none;
   border: 0;
-  border-radius: var(--kobe-radius-sm);
+  border-radius: var(--kaiju-radius-sm);
   font: inherit;
   cursor: pointer;
 }
@@ -248,33 +248,33 @@
    on `.app`) showing between them. Plain layout, not theme tokens (docs/theming.md §9); the
    numbers are `SHELL_SPACING_PX` in lib/shell/layout.ts. */
 .grid {
-  --kobe-shell-gutter: 16px;
-  --kobe-shell-gap: 16px;
+  --kaiju-shell-gutter: 16px;
+  --kaiju-shell-gap: 16px;
   /* The drag handles' visible line (the rail's, the artifact column's). */
-  --kobe-handle-width: 6px;
+  --kaiju-handle-width: 6px;
   display: grid;
   flex: 1;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
-  column-gap: var(--kobe-shell-gap);
+  column-gap: var(--kaiju-shell-gap);
   min-height: 0;
-  padding: var(--kobe-shell-gutter);
+  padding: var(--kaiju-shell-gutter);
 }
 
 /* The workspace rail is 280 px, 48 px while collapsed (CE5); on wide windows a dragged width
-   (inline `--kobe-rail-expanded-width`, KOBE-305) replaces the 280, within the room the columns
+   (inline `--kaiju-rail-expanded-width`, KOBE-305) replaces the 280, within the room the columns
    right of it need: the conversation's 400 px, plus the artifact column's 360 px while it is a
    column (below), and the gaps beside them. The artifact column defaults to half the space right
    of the rail (CE6); a dragged width (inline, KOBE-200) replaces it. `100%` is the grid's content
    box, inside the gutters. */
 .grid {
-  --kobe-rail-room: calc(400px + var(--kobe-shell-gap));
-  --kobe-rail-width: min(var(--kobe-rail-expanded-width, 280px), 100% - var(--kobe-rail-room));
-  --kobe-artifact-width: calc((100% - var(--kobe-rail-width) - 2 * var(--kobe-shell-gap)) / 2);
+  --kaiju-rail-room: calc(400px + var(--kaiju-shell-gap));
+  --kaiju-rail-width: min(var(--kaiju-rail-expanded-width, 280px), 100% - var(--kaiju-rail-room));
+  --kaiju-artifact-width: calc((100% - var(--kaiju-rail-width) - 2 * var(--kaiju-shell-gap)) / 2);
 }
 
 .grid:has(> .rail > [data-collapsed]) {
-  --kobe-rail-width: 48px;
+  --kaiju-rail-width: 48px;
 }
 
 .rail,
@@ -286,7 +286,7 @@
 }
 
 /* Each column is a card (KOBE-554): the card colour, a 1 px border and the panel radius, and the
-   class `kobe-panel` (shell-grid.tsx) so it glows on hover like the cards inside it (KOBE-550,
+   class `kaiju-panel` (shell-grid.tsx) so it glows on hover like the cards inside it (KOBE-550,
    app/chat-global.css; forced colours keep the border). Its overflow clips the content to the
    rounded corners. */
 .rail,
@@ -295,7 +295,7 @@
   box-sizing: border-box;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--kobe-radius-lg);
+  border-radius: var(--kaiju-radius-lg);
 }
 
 .rail,
@@ -356,35 +356,35 @@
 @media (width >= 768px) {
   .grid {
     position: relative; /* the drawer and the overlay sheet lie over the grid, under the bar */
-    grid-template-columns: var(--kobe-rail-width) minmax(0, 1fr);
+    grid-template-columns: var(--kaiju-rail-width) minmax(0, 1fr);
   }
 }
 
 /* The rail yields first: below 1100 px it keeps 48 px, collapsed or open as a drawer over it. */
 @media (width < 1100px) {
   .grid {
-    --kobe-rail-width: 48px;
+    --kaiju-rail-width: 48px;
   }
 }
 
 /* 768–820: the artifact column is a sheet over the conversation, which keeps the width. The sheet
    ends above the composer box, so Stop and Send stay reachable while it is open (KOBE-269): anchor
-   positioning on `[data-kobe-composer-box]` (chat-global.css). With no composer on screen the
+   positioning on `[data-kaiju-composer-box]` (chat-global.css). With no composer on screen the
    fallback keeps it full height; where unsupported, the declaration drops, with the same result.
    A card inside the gutters like the columns (KOBE-554); `100%` is the grid's padding box here. */
 @media (768px <= width < 820px) {
   .artifact {
     position: absolute;
     z-index: 20;
-    inset-block: var(--kobe-shell-gutter);
-    bottom: anchor(--kobe-composer top, var(--kobe-shell-gutter));
-    inset-inline-end: var(--kobe-shell-gutter);
+    inset-block: var(--kaiju-shell-gutter);
+    bottom: anchor(--kaiju-composer top, var(--kaiju-shell-gutter));
+    inset-inline-end: var(--kaiju-shell-gutter);
     width: clamp(
       360px,
       50%,
-      100% - var(--kobe-rail-width) - 2 * var(--kobe-shell-gutter) - var(--kobe-shell-gap)
+      100% - var(--kaiju-rail-width) - 2 * var(--kaiju-shell-gutter) - var(--kaiju-shell-gap)
     );
-    box-shadow: var(--kobe-shadow-drawer);
+    box-shadow: var(--kaiju-shadow-drawer);
   }
 
   .artifact:not([data-sheet-open]) {
@@ -422,13 +422,13 @@
   /* The room beside the conversation's floor; under 872 px the gutters leave less than 360 px,
      and the column takes that (the conversation keeps its 400 px; KOBE-554). */
   .grid:has(> .artifact:not(:empty):not([data-hidden])) {
-    --kobe-rail-room: calc(760px + 2 * var(--kobe-shell-gap));
-    --kobe-artifact-room: calc(100% - var(--kobe-rail-width) - 2 * var(--kobe-shell-gap) - 400px);
+    --kaiju-rail-room: calc(760px + 2 * var(--kaiju-shell-gap));
+    --kaiju-artifact-room: calc(100% - var(--kaiju-rail-width) - 2 * var(--kaiju-shell-gap) - 400px);
     grid-template-columns:
-      var(--kobe-rail-width)
+      var(--kaiju-rail-width)
       minmax(
-        min(360px, var(--kobe-artifact-room)),
-        min(var(--kobe-artifact-width), var(--kobe-artifact-room))
+        min(360px, var(--kaiju-artifact-room)),
+        min(var(--kaiju-artifact-width), var(--kaiju-artifact-room))
       )
       minmax(400px, 1fr);
   }
@@ -436,7 +436,7 @@
   /* The handle gets its own strip at the column's edge, so it never covers the scrollbar. */
   .artifact {
     position: relative;
-    padding-inline-end: var(--kobe-handle-width);
+    padding-inline-end: var(--kaiju-handle-width);
   }
 
   .resizeHandle {
@@ -445,7 +445,7 @@
     inset-block: 0;
     inset-inline-end: 0;
     display: block;
-    width: var(--kobe-handle-width);
+    width: var(--kaiju-handle-width);
     cursor: col-resize;
     touch-action: none;
   }
@@ -461,7 +461,7 @@
    renders it there, while the rail is expanded). It is laid out against the grid, so it never
    scrolls with the rail; it sits in the middle of the gap between the rail card and the next one
    (KOBE-554), as tall as the cards. Positioned, its `100%` is the grid's padding box, not the
-   content box the columns' `--kobe-rail-width` resolves against: it repeats that clamp less the
+   content box the columns' `--kaiju-rail-width` resolves against: it repeats that clamp less the
    two gutters, so a clamped rail (dragged wide, artifact column open) keeps the handle in the gap. */
 .railHandle {
   display: none;
@@ -469,20 +469,20 @@
 
 @media (width >= 1100px) {
   .railHandle {
-    --kobe-rail-handle-track: min(
-      var(--kobe-rail-expanded-width, 280px),
-      100% - 2 * var(--kobe-shell-gutter) - var(--kobe-rail-room)
+    --kaiju-rail-handle-track: min(
+      var(--kaiju-rail-expanded-width, 280px),
+      100% - 2 * var(--kaiju-shell-gutter) - var(--kaiju-rail-room)
     );
     position: absolute;
     z-index: 10;
-    inset-block: var(--kobe-shell-gutter);
+    inset-block: var(--kaiju-shell-gutter);
     inset-inline-start: calc(
-      var(--kobe-shell-gutter) + var(--kobe-rail-handle-track) +
-        (var(--kobe-shell-gap) - var(--kobe-handle-width)) / 2
+      var(--kaiju-shell-gutter) + var(--kaiju-rail-handle-track) +
+        (var(--kaiju-shell-gap) - var(--kaiju-handle-width)) / 2
     );
     display: block;
-    width: var(--kobe-handle-width);
-    border-radius: var(--kobe-radius-pill);
+    width: var(--kaiju-handle-width);
+    border-radius: var(--kaiju-radius-pill);
     cursor: col-resize;
     touch-action: none;
   }
@@ -498,13 +498,13 @@
   .railHandle::before {
     position: absolute;
     inset-block: 0;
-    inset-inline: calc((var(--kobe-handle-width) - var(--kobe-shell-gap)) / 2);
+    inset-inline: calc((var(--kaiju-handle-width) - var(--kaiju-shell-gap)) / 2);
     content: "";
   }
 }
 
 @media (width >= 1100px) and (pointer: coarse) {
   .railHandle::before {
-    inset-inline: calc((var(--kobe-handle-width) - var(--kobe-shell-gap)) / 2 - 4px);
+    inset-inline: calc((var(--kaiju-handle-width) - var(--kaiju-shell-gap)) / 2 - 4px);
   }
 }

@@ -11,9 +11,9 @@ import {
   eq,
   isNull,
   sql,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { dropConnectorGrants } from "./grants.js";
 import { dropSiteKey } from "./site-key.js";
@@ -156,11 +156,11 @@ const columns = {
 // edits, probes, pins or removes it (the site switch `kobe_mcp.mode` governs it).
 const live = and(isNull(connectors.deletedAt), isNull(connectors.builtin));
 
-export async function listConnectors(db: KobeDb): Promise<ConnectorView[]> {
+export async function listConnectors(db: KaijuDb): Promise<ConnectorView[]> {
   return db.select(columns).from(connectors).where(live).orderBy(asc(connectors.name));
 }
 
-export async function getConnector(db: KobeDb, id: string): Promise<ConnectorView | undefined> {
+export async function getConnector(db: KaijuDb, id: string): Promise<ConnectorView | undefined> {
   const [row] = await db
     .select(columns)
     .from(connectors)
@@ -172,7 +172,7 @@ export type NameConflict = "name_taken" | "name_removed";
 
 /** The conflicting row's state, for a precise message (a removed connector still holds its name). */
 async function nameConflict(
-  tx: KobeTx,
+  tx: KaijuTx,
   name: string,
   exceptId?: string,
 ): Promise<NameConflict | undefined> {
@@ -186,7 +186,7 @@ async function nameConflict(
 }
 
 export async function createConnector(
-  db: KobeDb,
+  db: KaijuDb,
   input: CreateInput & { readonly url: string },
   userId: string,
 ): Promise<{ ok: true; connector: ConnectorView } | { ok: false; error: NameConflict }> {
@@ -214,7 +214,7 @@ export async function createConnector(
 }
 
 export async function updateConnector(
-  db: KobeDb,
+  db: KaijuDb,
   id: string,
   input: UpdateInput,
 ): Promise<
@@ -317,14 +317,14 @@ function nextSource(
   return input.credentialSource ?? (current.credentialSource === "site" ? "site" : "member");
 }
 
-async function view(tx: KobeTx, id: string): Promise<ConnectorView> {
+async function view(tx: KaijuTx, id: string): Promise<ConnectorView> {
   const [row] = await tx.select(columns).from(connectors).where(eq(connectors.id, id));
   if (!row) throw new Error("connector vanished inside its transaction");
   return row;
 }
 
 /** How many teams have the connector enabled (one walk shared with the team list, KOBE-784). */
-export async function countTeamsUsing(db: KobeDb, connectorId: string): Promise<number> {
+export async function countTeamsUsing(db: KaijuDb, connectorId: string): Promise<number> {
   return (await teamIdsUsing(db, connectorId)).length;
 }
 
@@ -347,7 +347,7 @@ export interface RemovalResult {
  * revoked at the provider (Kaiju has no revocation client). The MCP proxy caches no credential
  * (it asks the server per call), so the next call is refused. Audited with counts, never values.
  */
-export async function removeConnector(db: KobeDb, id: string): Promise<RemovalResult | undefined> {
+export async function removeConnector(db: KaijuDb, id: string): Promise<RemovalResult | undefined> {
   const usedBy = await countTeamsUsing(db, id);
   return db.transaction(async (tx) => {
     const [row] = await tx

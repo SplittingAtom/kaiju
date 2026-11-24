@@ -6,7 +6,7 @@ import {
   MEMORY_CANDIDATE_OPERATIONS,
   SEMANTIC_MEMORY_KINDS,
   semanticMemoryScopeSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   extractorPromptInputSchema,
   extractorSpeakerSchema,

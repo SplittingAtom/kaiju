@@ -2,7 +2,7 @@ import type {
   MemoryExtractorCandidate,
   MemoryExtractorOutput,
   MemorySkillHint,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { capitalisedWords, findPersonalData, namesNearSensitiveData } from "../checks/personal.js";
 import { lintInstructions } from "../checks/lint.js";
 import { findSecret } from "../checks/secrets.js";

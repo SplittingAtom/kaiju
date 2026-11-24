@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import { initTelemetry, loadTelemetryConfig } from "@kobe/telemetry";
+import { initTelemetry, loadTelemetryConfig } from "@kaiju/telemetry";
 import { createApp, createInternalApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createServerCredentials } from "./credentials.js";

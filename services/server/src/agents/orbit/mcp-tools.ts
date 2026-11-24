@@ -1,5 +1,5 @@
-import { withTeam, type KobeDb } from "@kobe/db";
-import type { AgentDefinition } from "@kobe/agent-file";
+import { withTeam, type KaijuDb } from "@kaiju/db";
+import type { AgentDefinition } from "@kaiju/agent-file";
 import { buildRunMcp, loadTeamConnectorRows, type AgentToolGlobs } from "../../runs/run-mcp.js";
 import { manifestConnectorNames, type ToolManifest } from "../manifest.js";
 
@@ -12,7 +12,7 @@ import { manifestConnectorNames, type ToolManifest } from "../manifest.js";
  * A user's grants are not applied: an export describes the agent's tool surface, not one user's.
  */
 export async function orbitMcpToolNames(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   toolManifest: Pick<ToolManifest, "connectors">,
   agentTools: AgentDefinition["frontmatter"]["tools"],

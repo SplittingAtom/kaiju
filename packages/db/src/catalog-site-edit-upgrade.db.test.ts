@@ -28,8 +28,8 @@ const ids = {
   team: randomUUID(),
   skill: randomUUID(),
   version: randomUUID(),
-  kobe: randomUUID(),
-  kobeVersion: randomUUID(),
+  kaiju: randomUUID(),
+  kaijuVersion: randomUUID(),
 };
 const database = (): TestDatabase => {
   if (!db) throw new Error("database not created");
@@ -93,7 +93,7 @@ beforeAll(async () => {
     ]);
     await c.query(
       `INSERT INTO registry_skills (id, name, summary, publisher) VALUES ($1, 'docx', 'D.', 'kobe')`,
-      [ids.kobe],
+      [ids.kaiju],
     );
     await c.query(
       `INSERT INTO registry_versions (id, ${COLUMNS})
@@ -105,7 +105,7 @@ beforeAll(async () => {
       `INSERT INTO registry_versions (id, ${COLUMNS})
        VALUES ($1, $2, 'kobe', '1.0.0', 1, repeat('c', 64), repeat('d', 64), 'k', 10, '{}', '{}',
          '{}', '{}', 'pass', 'approved', now(), NULL, NULL)`,
-      [ids.kobeVersion, ids.kobe],
+      [ids.kaijuVersion, ids.kaiju],
     );
   });
   await runMigrations({ databaseUrl: db.ownerUrl, appRole: db.appRole });
@@ -127,7 +127,7 @@ describe("site-published catalog versions (0180, 0181)", () => {
         submitter: ids.admin,
       });
       const b = await version(c, {
-        skill: ids.kobe,
+        skill: ids.kaiju,
         publisher: "site",
         semver: "1.0.1",
         seq: 2,
@@ -166,7 +166,7 @@ describe("site-published catalog versions (0180, 0181)", () => {
     await withClient(database().appUrl, async (c) => {
       await expect(
         version(c, {
-          skill: ids.kobe,
+          skill: ids.kaiju,
           publisher: "maintainer",
           semver: "3.0.0",
           seq: 9,
@@ -201,24 +201,24 @@ describe("site-published catalog versions (0180, 0181)", () => {
       await expect(detach(ids.skill, "1.0.0")).rejects.toMatchObject({
         constraint: "registry_skills_detached",
       });
-      await expect(detach(ids.kobe, null)).rejects.toMatchObject({
+      await expect(detach(ids.kaiju, null)).rejects.toMatchObject({
         constraint: "registry_skills_detached",
       });
-      await expect(detach(ids.kobe, "1.0")).rejects.toMatchObject({
+      await expect(detach(ids.kaiju, "1.0")).rejects.toMatchObject({
         constraint: "registry_skills_detached",
       });
-      await detach(ids.kobe, "1.0.0");
+      await detach(ids.kaiju, "1.0.0");
       await c.query(`UPDATE registry_skills SET kobe_shipped_version = '1.1.0' WHERE id = $1`, [
-        ids.kobe,
+        ids.kaiju,
       ]);
       // Reset to Kaiju clears it as a whole.
       await expect(
-        c.query(`UPDATE registry_skills SET detached_at = NULL WHERE id = $1`, [ids.kobe]),
+        c.query(`UPDATE registry_skills SET detached_at = NULL WHERE id = $1`, [ids.kaiju]),
       ).rejects.toMatchObject({ constraint: "registry_skills_detached" });
       await c.query(
         `UPDATE registry_skills SET detached_at = NULL, detached_by = NULL,
            detached_from_version = NULL, kobe_shipped_version = NULL WHERE id = $1`,
-        [ids.kobe],
+        [ids.kaiju],
       );
     });
   });
@@ -230,7 +230,7 @@ describe("site-published catalog versions (0180, 0181)", () => {
         c.query(
           `INSERT INTO site_skill_drafts (skill_id, base_version_id, created_by, updated_by)
            VALUES ($1, $2, $3, $3)`,
-          [ids.skill, ids.kobeVersion, ids.admin],
+          [ids.skill, ids.kaijuVersion, ids.admin],
         ),
       ).rejects.toMatchObject({ constraint: "site_skill_drafts_base_fk" });
       const d = await c.query<{ id: string }>(

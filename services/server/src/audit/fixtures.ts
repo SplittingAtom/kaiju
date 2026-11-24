@@ -1,4 +1,4 @@
-import type { AuditEntry } from "@kobe/db";
+import type { AuditEntry } from "@kaiju/db";
 
 /** A fully populated audit entry for formatting tests. */
 export function entry(over: Partial<AuditEntry> & { seq?: number } = {}): AuditEntry {

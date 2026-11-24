@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import {
   decodeMentionPath,
   findMentionMarkers,
@@ -6,7 +6,7 @@ import {
   mentionMarker,
   mentionPathIssue,
   sandboxPathOf,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { isInternalPath } from "../workspace-files/paths.js";
 import { liveFilePaths } from "../workspace-files/search.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
@@ -96,7 +96,7 @@ export interface MentionRewrite {
  * such paths as literal text and counts them in `skipped`.
  */
 export async function rewriteMentions(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   content: string,
   paths: readonly string[],
@@ -120,7 +120,7 @@ export async function rewriteMentions(
  * and is a live file of the owner's workspace now (KOBE-223 S3).
  */
 export async function checkMentionsExist(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   paths: readonly string[],
 ): Promise<void> {

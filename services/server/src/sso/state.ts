@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } from "node:crypto";
 import { z } from "zod";
-import { and, eq, gt, lt, sql, verifications, type KobeDb } from "@kobe/db";
+import { and, eq, gt, lt, sql, verifications, type KaijuDb } from "@kaiju/db";
 
 /**
  * The browser-bound state of one SSO sign-in (spec sso-oidc-scim §5.3–5.4, §13; KOBE-628).
@@ -83,7 +83,7 @@ const identifierOf = (prefix: string, key: string) =>
 
 /** Records a single-use key (its digest only) under a prefix and drops that prefix's expired ones. */
 export async function rememberOnce(
-  db: KobeDb,
+  db: KaijuDb,
   prefix: string,
   key: string,
   value: string,
@@ -104,7 +104,7 @@ export async function rememberOnce(
 
 /** Consumes a single-use key once: true only for the first caller while it is unexpired. */
 export async function consumeOnce(
-  db: KobeDb,
+  db: KaijuDb,
   prefix: string,
   key: string,
   value: string,
@@ -123,9 +123,9 @@ export async function consumeOnce(
 }
 
 /** Records a new state (digest only) and drops expired ones. */
-export const rememberState = (db: KobeDb, state: string, slug: string, expiresAt: Date) =>
+export const rememberState = (db: KaijuDb, state: string, slug: string, expiresAt: Date) =>
   rememberOnce(db, IDENTIFIER_PREFIX, state, slug, expiresAt);
 
 /** Consumes a state once: true only for the first caller while it is unexpired. */
-export const consumeState = (db: KobeDb, state: string, slug: string) =>
+export const consumeState = (db: KaijuDb, state: string, slug: string) =>
   consumeOnce(db, IDENTIFIER_PREFIX, state, slug);

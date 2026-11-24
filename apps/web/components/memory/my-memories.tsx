@@ -4,7 +4,7 @@ import {
   SEMANTIC_MEMORY_NEAR_FULL_RATIO,
   SEMANTIC_MEMORY_PINS_MAX,
   SEMANTIC_MEMORY_SCOPE_LABELS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ApiError } from "../../lib/api/client";
 import { appendPage, listedItems, placeItem, type ScopeLists } from "../../lib/memory/item-lists";

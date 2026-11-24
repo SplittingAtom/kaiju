@@ -5,9 +5,9 @@ import {
   sql,
   teams,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { deleteBounded } from "../retention/bounded-delete.js";
@@ -61,14 +61,14 @@ const STALE_RESERVATION = "2 hours";
 /** Longest one batch's object delete may take while the hold lock is held (approvals wait). */
 
 /** Legal-hold lock (shared) and check, first thing in a transaction that deletes content. */
-async function heldWorkspace(tx: KobeTx, owner: WorkspaceOwner): Promise<boolean> {
+async function heldWorkspace(tx: KaijuTx, owner: WorkspaceOwner): Promise<boolean> {
   await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
   await lockLegalHolds(tx);
   return isUnderLegalHold(tx, owner.teamId, owner.userId);
 }
 
 async function collectBatch(
-  db: KobeDb,
+  db: KaijuDb,
   objects: ObjectStore,
   owner: WorkspaceOwner,
   options: CollectOptions,
@@ -145,7 +145,7 @@ async function collectBatch(
 
 /** Makes marked blobs available again (their objects are still there). */
 async function unmark(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   blobs: readonly { sha256: string }[],
 ): Promise<void> {
@@ -156,7 +156,7 @@ async function unmark(
 }
 
 export async function collectWorkspace(
-  db: KobeDb,
+  db: KaijuDb,
   objects: ObjectStore,
   owner: WorkspaceOwner,
   options: CollectOptions,
@@ -180,7 +180,7 @@ export async function collectWorkspace(
   return total;
 }
 
-async function reconcile(db: KobeDb, owner: WorkspaceOwner, total: CollectResult): Promise<void> {
+async function reconcile(db: KaijuDb, owner: WorkspaceOwner, total: CollectResult): Promise<void> {
   await withTeam(db, owner.teamId, async (tx) => {
     await lockWorkspace(tx, owner);
     // Counters from the rows themselves; reservations no upload can still hold are dropped.
@@ -212,7 +212,7 @@ async function reconcile(db: KobeDb, owner: WorkspaceOwner, total: CollectResult
 
 /** One collection pass over every workspace of every team. Failures are per workspace. */
 export async function collectAll(
-  db: KobeDb,
+  db: KaijuDb,
   objects: ObjectStore,
   options: CollectOptions,
   log: Pick<Logger, "error" | "info">,

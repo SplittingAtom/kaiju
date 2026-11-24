@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import type { z } from "zod";
-import { withTeam, type KobeTx } from "@kobe/db";
-import { BRANCH_LABEL_ERROR_HTTP_STATUS } from "@kobe/protocol";
+import { withTeam, type KaijuTx } from "@kaiju/db";
+import { BRANCH_LABEL_ERROR_HTTP_STATUS } from "@kaiju/protocol";
 import type { TeamVariables } from "../../authz/middleware.js";
 import type { ServerDeps } from "../../deps.js";
 import { param } from "../../http/request.js";
@@ -121,7 +121,7 @@ export function parseQuery<T>(c: Context, schema: z.ZodType<T>): T | undefined {
  * results they lack the permission for replaced (KOBE-623, KA6); the owner sees everything.
  */
 export async function readableEntries(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   ownerUserId: string,
   threadId: string,
@@ -160,12 +160,12 @@ export interface ThreadKit {
   /** Runs `fn` in the active team's transaction as the signed-in viewer. */
   readonly asViewer: <T>(
     c: ThreadContext,
-    fn: (tx: KobeTx, viewer: Viewer) => Promise<T>,
+    fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>,
   ) => Promise<T>;
   /** Runs a change; a thread row held past the lock timeout answers 409 `thread_busy`. */
   readonly change: (
     c: ThreadContext,
-    fn: (tx: KobeTx, viewer: Viewer) => Promise<ThreadResult>,
+    fn: (tx: KaijuTx, viewer: Viewer) => Promise<ThreadResult>,
   ) => Promise<Response>;
 }
 
@@ -173,7 +173,7 @@ export function threadKit(deps: ServerDeps): ThreadKit {
   const db = deps.database.db;
 
   /** Runs `fn` in the active team's transaction as the signed-in viewer. */
-  const asViewer = <T>(c: ThreadContext, fn: (tx: KobeTx, viewer: Viewer) => Promise<T>) => {
+  const asViewer = <T>(c: ThreadContext, fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>) => {
     const teamId = c.get("team").id;
     const userId = c.get("user").id;
     return withTeam(db, teamId, async (tx) =>
@@ -184,7 +184,7 @@ export function threadKit(deps: ServerDeps): ThreadKit {
   /** Runs a change; a thread row held past the lock timeout answers 409 `thread_busy`. */
   const change = async (
     c: ThreadContext,
-    fn: (tx: KobeTx, viewer: Viewer) => Promise<ThreadResult>,
+    fn: (tx: KaijuTx, viewer: Viewer) => Promise<ThreadResult>,
   ) => {
     try {
       const result = await asViewer(c, fn);

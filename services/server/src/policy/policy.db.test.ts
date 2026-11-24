@@ -1,15 +1,15 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { withTeam } from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import {
   builtinToolDescriptor,
   DEFAULT_REMEMBER_LIMITS,
   policyDecisionSchema,
   type PolicyDecision,
   type PolicyEngine,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { createPolicyEngine } from "./engine.js";
@@ -31,7 +31,7 @@ import {
 } from "../testing/policy-fixtures.js";
 import { fakeIsolation } from "../testing/isolation.js";
 
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 let database: TestDatabase;
@@ -533,7 +533,7 @@ describe("D29 order end to end (rules from Postgres)", () => {
       finance,
       "mcp__jira__create_issue",
       { tool_glob: "mcp__jira__create_issue", scope: "day", exact: true },
-      { project: "KOBE", summary: "Fix" },
+      { project: "KAIJU", summary: "Fix" },
     );
     const flags = await adminQuery<{ id: string; exact_keys: boolean }>(
       `SELECT id, exact_keys FROM tool_rules WHERE id = ANY($1)`,

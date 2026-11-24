@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
-import { canonicalJson, mcpServerSegment } from "@kobe/protocol";
+import { canonicalJson, mcpServerSegment } from "@kaiju/protocol";
 import {
   UI_RESOURCE_URI_PATTERN,
   pinnedToolSchema,
   type PinnedTool,
   type PinnedToolUi,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { z } from "zod";
 import { schemaWithinLimits } from "./schema-limits.js";
 

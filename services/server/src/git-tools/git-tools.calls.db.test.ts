@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { GIT_SITE_ALLOWED_HOSTS_KEY, GIT_SITE_ENABLED_KEY, withTeam } from "@kobe/db";
-import { gitApprovalSchema } from "@kobe/protocol";
+import { GIT_SITE_ALLOWED_HOSTS_KEY, GIT_SITE_ENABLED_KEY, withTeam } from "@kaiju/db";
+import { gitApprovalSchema } from "@kaiju/protocol";
 import { gitApprovalCard } from "./card.js";
 import { GIT_TOOL_WRITES_PER_HOUR } from "./execute.js";
 import { gitRunServer } from "./run.js";
@@ -162,7 +162,7 @@ describe("writes ask by default and need a signed approval of exactly that input
     const out = await call(s, "git_create_branch", {
       connection: id,
       repository: "docs",
-      name: "kobe/one",
+      name: "kaiju/one",
       from: "main",
     });
     expect(out.isError, out.text).toBeUndefined();
@@ -191,23 +191,23 @@ describe("writes ask by default and need a signed approval of exactly that input
     const w = await world();
     const id = await connect(w, "github");
     await w.admin.browser.request("PATCH", `/v1/team/git/connections/${id}`, {
-      repo_name_prefix: "kobe-",
+      repo_name_prefix: "kaiju-",
     });
     const s = await h.sandboxFor(w.team, w.contributor);
     const wrong = await approved(s, "git_create_repository", { connection: id, name: "plain" });
     expect(wrong.out.isError).toBe(true);
-    expect(wrong.out.text).toContain("kobe-");
+    expect(wrong.out.text).toContain("kaiju-");
     const internal = await approved(s, "git_create_repository", {
       connection: id,
-      name: "kobe-int",
+      name: "kaiju-int",
       visibility: "internal",
     });
     expect(internal.out.text).toContain("visibility_not_allowed");
-    const ok = await approved(s, "git_create_repository", { connection: id, name: "kobe-new" });
+    const ok = await approved(s, "git_create_repository", { connection: id, name: "kaiju-new" });
     expect(ok.out.isError, ok.out.text).toBeUndefined();
     expect(JSON.parse(ok.out.text)).toMatchObject({ kind: "repository", visibility: "private" });
     expect(github.createdRepositories).toEqual([
-      expect.objectContaining({ name: "kobe-new", private: true }),
+      expect.objectContaining({ name: "kaiju-new", private: true }),
     ]);
     const { rows } = await h.fx.admin.query<{ origin: string; created_by: string }>(
       `SELECT origin, created_by FROM git_repositories WHERE team_id = $1`,
@@ -372,7 +372,7 @@ describe("the approval card (G9)", () => {
     const card = await withTeam(h.fx.db, w.team, (tx) =>
       gitApprovalCard(
         tx,
-        { teamId: w.team, userId: w.contributor.id, threadId, publicUrl: "https://kobe.test" },
+        { teamId: w.team, userId: w.contributor.id, threadId, publicUrl: "https://kaiju.test" },
         h.pi("git_open_pull_request"),
         {
           connection: id,
@@ -392,7 +392,7 @@ describe("the approval card (G9)", () => {
       connection_name: "acme on Forgejo",
       repository: "docs",
       title: "<b>Hi</b>",
-      body: `Body\n\n---\nOpened by Ana Lee via Kaiju, from conversation https://kobe.test/?thread=${threadId}`,
+      body: `Body\n\n---\nOpened by Ana Lee via Kaiju, from conversation https://kaiju.test/?thread=${threadId}`,
       head: "f",
       base: "main",
       draft: false,
@@ -400,7 +400,7 @@ describe("the approval card (G9)", () => {
     const repo = await withTeam(h.fx.db, w.team, (tx) =>
       gitApprovalCard(
         tx,
-        { teamId: w.team, userId: w.contributor.id, threadId, publicUrl: "https://kobe.test" },
+        { teamId: w.team, userId: w.contributor.id, threadId, publicUrl: "https://kaiju.test" },
         h.pi("git_create_repository"),
         { connection: id, name: "new" },
       ),
@@ -412,7 +412,7 @@ describe("the approval card (G9)", () => {
       await withTeam(h.fx.db, other.team, (tx) =>
         gitApprovalCard(
           tx,
-          { teamId: other.team, userId: other.admin.id, threadId, publicUrl: "https://kobe.test" },
+          { teamId: other.team, userId: other.admin.id, threadId, publicUrl: "https://kaiju.test" },
           h.pi("git_create_repository"),
           { connection: id, name: "new" },
         ),

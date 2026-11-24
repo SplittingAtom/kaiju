@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLocalGateway, type LocalGateway } from "@kobe/model-gateway/testing";
+import { startLocalGateway, type LocalGateway } from "@kaiju/model-gateway/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { PiRpc } from "./testing/real-pi-rpc.js";
 import {

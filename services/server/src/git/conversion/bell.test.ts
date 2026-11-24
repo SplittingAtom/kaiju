@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { NOTIFICATION_KINDS as DB_NOTIFICATION_KINDS } from "@kobe/db";
-import { GIT_CONVERSION_FAILURES, NOTIFICATION_KINDS } from "@kobe/protocol";
+import { NOTIFICATION_KINDS as DB_NOTIFICATION_KINDS } from "@kaiju/db";
+import { GIT_CONVERSION_FAILURES, NOTIFICATION_KINDS } from "@kaiju/protocol";
 import { failureCodeOf } from "./bell.js";
 import { FAILURE_MESSAGES } from "./refusals.js";
 

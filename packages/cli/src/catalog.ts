@@ -1,4 +1,4 @@
-import { quoteIdent } from "@kobe/db";
+import { quoteIdent } from "@kaiju/db";
 import type pg from "pg";
 import type { MigrationRecord, UserTrigger } from "./restore-sql.js";
 

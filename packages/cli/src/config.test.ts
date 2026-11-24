@@ -4,7 +4,7 @@ import { keyFileWarning, parseCommand, readBackupKey, tlsWarning } from "./confi
 
 const S3 = {
   KOBE_S3_ENDPOINT: "https://s3.example.com",
-  KOBE_S3_BUCKET: "kobe",
+  KOBE_S3_BUCKET: "kaiju",
   KOBE_S3_ACCESS_KEY_ID: "AKIA",
   KOBE_S3_SECRET_ACCESS_KEY: "very-secret-value",
 };
@@ -24,7 +24,7 @@ describe("parseCommand", () => {
       command: "backup",
       out: "/b/1",
       databaseUrl: BACKUP_URL,
-      s3: { bucket: "kobe", endpoint: "https://s3.example.com", region: "us-east-1", prefix: "" },
+      s3: { bucket: "kaiju", endpoint: "https://s3.example.com", region: "us-east-1", prefix: "" },
     });
   });
 
@@ -92,7 +92,7 @@ describe("parseCommand", () => {
   it("refuses a password in the query string", () => {
     expect(() =>
       parseCommand(["restore", "--from", "/b"], {
-        KOBE_DB_MIGRATE_URL: "postgres://u@db/kobe?password=pw",
+        KOBE_DB_MIGRATE_URL: "postgres://u@db/kaiju?password=pw",
         ...KEY_ENV,
       }),
     ).toThrow(/not in \?password=/);
@@ -164,12 +164,12 @@ describe("tlsWarning", () => {
   it("is quiet for local connections and TLS-required remote ones", () => {
     expect(tlsWarning("postgres://u:p@localhost:5432/kobe")).toBeNull();
     expect(tlsWarning("postgres://u:p@127.0.0.1/kobe")).toBeNull();
-    expect(tlsWarning("postgres://u:p@db.example/kobe?sslmode=verify-full")).toBeNull();
+    expect(tlsWarning("postgres://u:p@db.example/kaiju?sslmode=verify-full")).toBeNull();
   });
 
   it("warns for a remote host without required TLS", () => {
     expect(tlsWarning("postgres://u:p@db.example/kobe")).toMatch(/db.example.*sslmode=require/);
-    expect(tlsWarning("postgres://u:p@db.example/kobe?sslmode=prefer")).toMatch(/WARNING/);
+    expect(tlsWarning("postgres://u:p@db.example/kaiju?sslmode=prefer")).toMatch(/WARNING/);
   });
 });
 

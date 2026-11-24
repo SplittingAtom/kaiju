@@ -7,10 +7,10 @@ import {
   teamConnectors,
   type ConnectorCredentialSource,
   type ConnectorGrantKind,
-  type KobeTx,
-} from "@kobe/db";
-import { matchGlob } from "@kobe/protocol";
-import { type RunMcpContext } from "@kobe/protocol/sandbox-wire";
+  type KaijuTx,
+} from "@kaiju/db";
+import { matchGlob } from "@kaiju/protocol";
+import { type RunMcpContext } from "@kaiju/protocol/sandbox-wire";
 import { usableSiteKeyIds } from "../connectors/site-key.js";
 import { exposedTools, type TeamConnector } from "../mcp/catalog.js";
 import { allowListOffers } from "../policy/agent-allow.js";
@@ -43,7 +43,7 @@ export interface RunConnectorRow extends TeamConnector {
 
 /** Active connectors the team enabled, in the shape the MCP proxy core uses. */
 export async function loadTeamConnectorRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
 ): Promise<RunConnectorRow[]> {
   const rows = await tx
@@ -74,7 +74,7 @@ export async function loadTeamConnectorRows(
 
 /** The user's grants in this team (no secret columns are selected). */
 export async function loadUserGrantFacts(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<GrantFact[]> {
@@ -90,7 +90,7 @@ export async function loadUserGrantFacts(
 
 /** The `site` connectors of `rows` whose site key is usable now (the proxy's own check). */
 export function loadUsableSiteKeys(
-  tx: KobeTx,
+  tx: KaijuTx,
   rows: readonly RunConnectorRow[],
 ): Promise<Set<string>> {
   return usableSiteKeyIds(

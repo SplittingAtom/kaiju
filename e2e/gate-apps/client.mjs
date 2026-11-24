@@ -117,7 +117,7 @@ async function appsResults() {
     out("result", `${kind}:${r.view}:${r.reason ?? "-"}:${r.queued === true ? "queued" : "in"}`);
   }
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await withTeam(database.db, config.user.teamId, (tx) =>
       tx.execute(sql`

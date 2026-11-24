@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { SYSTEM_ACTOR, type AuditEvent } from "@kobe/db";
+import { SYSTEM_ACTOR, type AuditEvent } from "@kaiju/db";
 import type { ConnectionReason, GitTraffic } from "../connection-audit.js";
 import { reply } from "../upgrade-reply.js";
 import type { UpgradeAttempt, UpgradeContext } from "../upgrade-types.js";

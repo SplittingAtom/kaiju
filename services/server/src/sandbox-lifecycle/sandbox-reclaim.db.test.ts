@@ -3,7 +3,7 @@ import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { runWithAuditContext } from "../audit/context.js";
 import { createSandboxLifecycle, type LifecycleProvider, type SandboxLifecycle } from "./index.js";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { recordFlushProof, type ReclaimSettings } from "./reclaim.js";
 import { lockWorkspace, reserveUpload, saveState } from "../workspace-sync/store.js";
 import type { DestroyResult, HibernateOutcome, WakeResult } from "../sandbox/provider.js";

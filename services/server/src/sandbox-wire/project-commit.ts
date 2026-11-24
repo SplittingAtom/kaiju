@@ -1,12 +1,12 @@
-import { type ServerToSandboxFrame, type ProjectCommitFrame } from "@kobe/protocol/sandbox-wire";
+import { type ServerToSandboxFrame, type ProjectCommitFrame } from "@kaiju/protocol/sandbox-wire";
 import {
   APPROVAL_TTL_MS,
   CAPABILITY_PROJECTS,
   CAPABILITY_REPO_COMMITS,
   type PolicyDecision,
   type ProjectCommitOutcome,
-} from "@kobe/protocol";
-import { sql, withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, withTeam } from "@kaiju/db";
 import type { Logger } from "pino";
 import { approvalHolds, noPromptCode, recordDeniedWrite } from "../approvals/server-write.js";
 import type { ApprovalVerifier } from "../approvals/verify.js";

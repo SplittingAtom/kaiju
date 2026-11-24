@@ -2,7 +2,7 @@
  * The proposals queue of a roster (KOBE-570, spec agents-roster §6.4): a proposal is a row in
  * status `proposed`; the queue holds those the viewer may decide (the roster's admins).
  */
-import type { AgentRosterRow } from "@kobe/protocol";
+import type { AgentRosterRow } from "@kaiju/protocol";
 
 const waiting = (row: AgentRosterRow) => row.status === "proposed" && row.actions.decide;
 

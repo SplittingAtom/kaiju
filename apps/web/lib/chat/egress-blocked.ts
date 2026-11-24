@@ -8,13 +8,13 @@
  */
 import {
   threadEgressBlockedResponseSchema,
-  type KobeEvent,
+  type KaijuEvent,
   type ThreadEgressBlockedResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { MAX_ITEMS } from "./live";
 import { readWire } from "./wire-read";
 
-export type BlockedNotice = KobeEvent<"egress.blocked">;
+export type BlockedNotice = KaijuEvent<"egress.blocked">;
 
 /** One read, validated as sent (wire casing). Never throws: null on failure. */
 export function readThreadEgressBlocked(

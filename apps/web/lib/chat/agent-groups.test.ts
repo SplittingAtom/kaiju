@@ -8,13 +8,13 @@ const agent = (id: string, scope: RunnableAgent["scope"], group?: RunnableAgent[
 describe("agent picker groups (AR15, KOBE-571)", () => {
   it("orders Personal, Team, Site and drops empty groups, keeping the server's order inside", () => {
     const groups = groupAgents([
-      agent("kobe", "gallery", "site"),
+      agent("kaiju", "gallery", "site"),
       agent("lent-b", "personal", "team"),
       agent("owned", "team", "team"),
     ]);
     expect(groups.map((g) => [g.label, g.agents.map((a) => a.id)])).toEqual([
       ["Team", ["lent-b", "owned"]],
-      ["Site", ["kobe"]],
+      ["Site", ["kaiju"]],
     ]);
   });
 

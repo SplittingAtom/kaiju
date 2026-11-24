@@ -54,7 +54,7 @@ async function chmodTree(dir: string): Promise<void> {
 }
 
 async function volume(): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), "kobe-co-"));
+  const root = await mkdtemp(path.join(tmpdir(), "kaiju-co-"));
   roots.push(root);
   return root;
 }

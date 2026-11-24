@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { sql, type KobeTx } from "@kobe/db";
-import { idSchema, uuidSchema as wireUuidSchema } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { idSchema, uuidSchema as wireUuidSchema } from "@kaiju/protocol";
 
 /**
  * Where a thread's agent version changed (D19, U8, KOBE-420): above the prompt of the first run
@@ -69,7 +69,7 @@ const version = (v: unknown): number | null =>
 
 /** The thread's agent-version markers, oldest first: its newest message runs (`runs_thread_idx`). */
 export async function agentMarkers(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<AgentMarker[]> {

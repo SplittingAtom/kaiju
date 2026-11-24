@@ -176,7 +176,7 @@ export class PiRpc {
     // Paired uids: scratch under /dev/shm like the helper tests (every uid can reach it), the
     // runtime dir apart from the workspace and home the two uids share.
     const root = await mkdtemp(
-      path.join(pair === undefined ? tmpdir() : "/dev/shm", "kobe-pi-rpc-"),
+      path.join(pair === undefined ? tmpdir() : "/dev/shm", "kaiju-pi-rpc-"),
     );
     const dir = pair === undefined ? root : path.join(root, "rt");
     const workspace = path.join(root, "workspace");

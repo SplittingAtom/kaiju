@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import { redactForwardingError } from "./redact.js";
 import type { ForwardDestination } from "./types.js";
 
@@ -41,7 +41,7 @@ function parseState(value: string | undefined): ForwardState | null {
 }
 
 export async function readState(
-  db: KobeDb,
+  db: KaijuDb,
   name: ForwardDestination,
 ): Promise<ForwardState | null> {
   const { rows } = await db.execute<{ value: string }>(
@@ -51,7 +51,7 @@ export async function readState(
 }
 
 export async function writeState(
-  db: KobeDb,
+  db: KaijuDb,
   name: ForwardDestination,
   state: ForwardState,
 ): Promise<void> {
@@ -60,7 +60,7 @@ export async function writeState(
     ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = now()`);
 }
 
-export async function auditHeadSeq(db: KobeDb): Promise<number> {
+export async function auditHeadSeq(db: KaijuDb): Promise<number> {
   const { rows } = await db.execute<{ head: string | null }>(
     sql`SELECT max(seq)::text AS head FROM public.audit_log`,
   );
@@ -88,7 +88,7 @@ export interface ForwardingHealth {
 
 /** What the admin health view shows: per configured destination, cursor, lag and last failure. */
 export async function readForwardingHealth(
-  db: KobeDb,
+  db: KaijuDb,
   configured: readonly ForwardDestination[],
   /** Configured credentials (`forwardingSecrets`), redacted like on the write path. */
   secrets: readonly string[] = [],

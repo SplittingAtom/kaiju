@@ -4,8 +4,8 @@ import { useAuiState } from "@assistant-ui/react";
 import { useMemo, useState } from "react";
 import type { AppResultView } from "../../lib/apps/app-results";
 import { approvalKey, runToolKey } from "../../lib/chat/markers";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
-import { useKobeExtras } from "../chat/kobe-runtime";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
+import { useKaijuExtras } from "../chat/kaiju-runtime";
 import { useThreadApps, type ThreadApps } from "./thread-apps";
 
 /** Where this message's tool calls look their app results up (KOBE-438, KOBE-445). */
@@ -15,8 +15,8 @@ export interface AppWhere {
 }
 
 export function useAppWhere(): AppWhere {
-  const meta = useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
-  const runId = useKobeExtras()?.state.live?.runId;
+  const meta = useAuiState((s) => s.message.metadata.custom as KaijuMessageMeta | undefined);
+  const runId = useKaijuExtras()?.state.live?.runId;
   const assistant = meta?.kind === "assistant" ? meta : undefined;
   return { prompt: assistant?.promptEntryId, liveRunId: assistant?.live ? runId : undefined };
 }
@@ -68,7 +68,7 @@ const SEP = "\u0000";
 export function useAppAnswer(): ReadonlySet<string> | null {
   const apps = useThreadApps();
   const where = useAppWhere();
-  const tools = useKobeExtras()?.state.live?.tools;
+  const tools = useKaijuExtras()?.state.live?.tools;
   const ids = useAuiState((s) =>
     s.message.content
       .flatMap((part) =>

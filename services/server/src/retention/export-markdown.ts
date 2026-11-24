@@ -1,4 +1,4 @@
-import { APP_CARD_CUSTOM_TYPE } from "@kobe/protocol";
+import { APP_CARD_CUSTOM_TYPE } from "@kaiju/protocol";
 /**
  * Markdown transcript of a thread for the user's export (spec D18). Entries are Pi 1.0 session
  * entries (D15) as stored, i.e. agent output: every field is checked, and anything unexpected is

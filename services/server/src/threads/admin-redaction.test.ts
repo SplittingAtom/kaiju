@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import {
-  KOBE_ADMIN_RESULT_HIDDEN,
+  KAIJU_ADMIN_RESULT_HIDDEN,
   adminResultGate,
   redactEntry,
   redactEntryPayload,
   redactEvent,
 } from "./admin-redaction.js";
 
-const member = adminResultGate({ segments: ["kobe"], teamRole: "member", siteRole: null });
-const teamAdmin = adminResultGate({ segments: ["kobe"], teamRole: "team_admin", siteRole: null });
+const member = adminResultGate({ segments: ["kaiju"], teamRole: "member", siteRole: null });
+const teamAdmin = adminResultGate({ segments: ["kaiju"], teamRole: "team_admin", siteRole: null });
 
 const result = (toolName: string, text = "secret rows") => ({
   type: "message",
@@ -45,12 +45,12 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
 
   it("follows the built-in's fallback name", () => {
     const gate = adminResultGate({
-      segments: ["kobe_builtin"],
+      segments: ["kaiju_builtin"],
       teamRole: "member",
       siteRole: null,
     });
-    expect(gate.hides("mcp__kobe_builtin__team_members_list")).toBe(true);
-    // A registered connector that took the name `kobe` is not the built-in.
+    expect(gate.hides("mcp__kaiju_builtin__team_members_list")).toBe(true);
+    // A registered connector that took the name `kaiju` is not the built-in.
     expect(gate.hides("mcp__kobe__team_members_list")).toBe(false);
   });
 
@@ -62,7 +62,7 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
         role: "toolResult",
         toolCallId: "tc1",
         toolName: "mcp__kobe__team_members_list",
-        content: [{ type: "text", text: KOBE_ADMIN_RESULT_HIDDEN }],
+        content: [{ type: "text", text: KAIJU_ADMIN_RESULT_HIDDEN }],
         isError: false,
       },
     });
@@ -103,13 +103,13 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
         blob_ref: "teams/x/blob",
         truncated: true,
       },
-    } as KobeEvent;
+    } as KaijuEvent;
     const out = redactEvent(event, member);
     expect(out.payload).toEqual({
       tool_call_id: "tc1",
       tool: "mcp__kobe__team_members_list",
       is_error: false,
-      preview: KOBE_ADMIN_RESULT_HIDDEN,
+      preview: KAIJU_ADMIN_RESULT_HIDDEN,
       truncated: false,
     });
     expect(redactEvent(event, teamAdmin)).toBe(event);
@@ -128,12 +128,12 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
         entry_type: "message",
         payload: result("mcp__kobe__site_users_list"),
       },
-    } as unknown as KobeEvent;
+    } as unknown as KaijuEvent;
     const out = redactEvent(event, teamAdmin);
     expect(JSON.stringify(out)).not.toContain("secret rows");
-    expect(JSON.stringify(out)).toContain(KOBE_ADMIN_RESULT_HIDDEN);
+    expect(JSON.stringify(out)).toContain(KAIJU_ADMIN_RESULT_HIDDEN);
     const siteAdmin = adminResultGate({
-      segments: ["kobe"],
+      segments: ["kaiju"],
       teamRole: "member",
       siteRole: "admin",
     });
@@ -142,6 +142,6 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
       ...event,
       payload: { ...event.payload, payload: result("mcp__kobe__docs_index") },
     };
-    expect(redactEvent(docs as KobeEvent, member)).toBe(docs);
+    expect(redactEvent(docs as KaijuEvent, member)).toBe(docs);
   });
 });

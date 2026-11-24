@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runTraceId } from "@kobe/protocol";
+import { runTraceId } from "@kaiju/protocol";
 import { scoreOf } from "./scores.js";
 
 const ROW = {

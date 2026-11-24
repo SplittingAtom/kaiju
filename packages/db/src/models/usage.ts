@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { KobeDb } from "../client.js";
+import type { KaijuDb } from "../client.js";
 import {
   USAGE_MODEL_MAX_CHARS,
   type UsageKind,
@@ -61,7 +61,7 @@ const GATEWAY_MODEL_SQL = sql.raw(
  * budget never under-counts). A model without both an input and an output price has no cost.
  */
 export async function recordModelUsage(
-  db: KobeDb,
+  db: KaijuDb,
   records: readonly ModelUsageRecord[],
 ): Promise<number> {
   const byTeam = new Map<string, ModelUsageRecord[]>();

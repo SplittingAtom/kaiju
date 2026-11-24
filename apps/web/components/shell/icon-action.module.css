@@ -45,8 +45,8 @@
   line-height: 1.125rem;
   text-align: center;
   font-weight: 600;
-  color: var(--kobe-status-accent-fg);
-  background: var(--kobe-status-accent);
-  border-radius: var(--kobe-radius-pill);
+  color: var(--kaiju-status-accent-fg);
+  background: var(--kaiju-status-accent);
+  border-radius: var(--kaiju-radius-pill);
   box-shadow: 0 0 0 2px var(--admin-bg);
 }

@@ -74,7 +74,7 @@ test("the tree at phone width: a list by junction with the chips and a working r
   await page.setViewportSize(PHONE);
   try {
     const panel = await openTree(page);
-    await expect(panel.locator('[data-kobe-tree-panel="list"]')).toBeVisible();
+    await expect(panel.locator('[data-kaiju-tree-panel="list"]')).toBeVisible();
     // One junction (under the first answer), headed by it, with both branches as rows.
     const section = panel.getByRole("region", { name: /^Branches after: / });
     await expect(section).toHaveCount(1);
@@ -220,7 +220,7 @@ test("Make it current and carry a summary: the marker on the entered branch and 
   // The side branch is now the leaf's, with the summary of the branch left as its last entry.
   await expect(branchBar(page)).toHaveCount(0);
   await expect(lastPrompt(page)).toContainText(token);
-  const marker = page.locator('[data-kobe-marker="branch_summary"]');
+  const marker = page.locator('[data-kaiju-marker="branch_summary"]');
   await expect(marker).toContainText("Summary of another branch", { timeout: 30_000 });
   await expectLeafAfterReload(page, token);
   await expect(marker).toContainText("Summary of another branch");

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PROJECT_INSTRUCTIONS_MAX_BYTES } from "@kobe/protocol";
+import { PROJECT_INSTRUCTIONS_MAX_BYTES } from "@kaiju/protocol";
 import { RunFixture } from "../testing/run-fixture.js";
 import type { Person } from "../testing/event-stream-fixture.js";
 

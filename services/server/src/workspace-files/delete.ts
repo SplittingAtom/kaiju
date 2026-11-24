@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import type { WorkspaceSync } from "../workspace-sync/service.js";
@@ -9,7 +9,7 @@ import type { WorkspaceSync } from "../workspace-sync/service.js";
  * them. The caller holds the legal-hold and workspace locks and has checked both.
  */
 export async function deleteWorkspaceFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   sync: Pick<WorkspaceSync, "deleteServerFile">,
   owner: WorkspaceOwner,
   files: readonly { readonly path: string; readonly size: number }[],

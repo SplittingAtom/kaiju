@@ -1,12 +1,12 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { ArtifactPutFrame, ArtifactResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { ArtifactPutFrame, ArtifactResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { ArtifactBroker, MAX_PENDING_PUTS_PER_THREAD } from "./broker.js";
 
 const THREAD = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e";
 const RUN = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
 const ARTIFACT = "7d8e9f0a-1b2c-4d3e-8f4a-5b6c7d8e9f0a";
-const request = (id = "kt_1", extra: Partial<KobeToolsRequest> = {}): KobeToolsRequest =>
+const request = (id = "kt_1", extra: Partial<KaijuToolsRequest> = {}): KaijuToolsRequest =>
   ({
     id,
     op: "artifact.put",
@@ -14,13 +14,13 @@ const request = (id = "kt_1", extra: Partial<KobeToolsRequest> = {}): KobeToolsR
     tool: "create_artifact",
     input: { kind: "markdown", title: "t", content: "# hi" },
     ...extra,
-  }) as KobeToolsRequest;
+  }) as KaijuToolsRequest;
 
 function setup(sends = true) {
   const frames: ArtifactPutFrame[] = [];
   const broker = new ArtifactBroker({ send: (f) => (frames.push(f), sends) });
-  const replies: KobeToolsResponse[] = [];
-  return { broker, frames, replies, reply: (r: KobeToolsResponse) => replies.push(r) };
+  const replies: KaijuToolsResponse[] = [];
+  return { broker, frames, replies, reply: (r: KaijuToolsResponse) => replies.push(r) };
 }
 const ok = (request_id: string): ArtifactResultFrame => ({
   v: 1,

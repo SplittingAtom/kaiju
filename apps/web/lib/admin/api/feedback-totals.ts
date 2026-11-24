@@ -1,6 +1,6 @@
 /**
  * An agent's answer-feedback totals (KOBE-275, `GET /v1/agents/{id}/feedback?window=7|30|90`),
- * camelized from `@kobe/protocol` feedback.ts. Counts only: no member, comment, conversation or
+ * camelized from `@kaiju/protocol` feedback.ts. Counts only: no member, comment, conversation or
  * run is in the answer. Every number stands on `minRaters` other raters; a total below it is
  * `enough: false`, and a breakdown with any cell below it is null ("not enough to break down").
  */
@@ -10,7 +10,7 @@ import {
   FEEDBACK_WINDOWS_DAYS,
   type FeedbackReason,
   type FeedbackWindowDays,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../api/client";
 import { toCamel } from "../../api/casing";
 

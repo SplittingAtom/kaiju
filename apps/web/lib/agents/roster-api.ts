@@ -14,7 +14,7 @@ import type {
   ForkAgentRequest,
   TeamDefaultAgent,
   UpdateAgentRosterEntryRequest,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
 import type { AgentSaved } from "../admin/api/agents";
 

@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * The last line Kaiju adds to every pull request, issue and comment it posts (spec workspace-git
@@ -35,7 +35,7 @@ export function postedBody(body: string, footer: string): string {
 }
 
 /** The member's display name; never their email (it would land on the host). */
-export async function memberName(tx: Pick<KobeTx, "execute">, userId: string): Promise<string> {
+export async function memberName(tx: Pick<KaijuTx, "execute">, userId: string): Promise<string> {
   const res = await tx.execute<{ name: string | null }>(
     sql`SELECT name FROM public.users WHERE id = ${userId}`,
   );

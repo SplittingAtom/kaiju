@@ -2,14 +2,14 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  KOBE_EVENT_TYPES,
+  KAIJU_EVENT_TYPES,
   MEMORY_CANDIDATE_SCOPES,
   MEMORY_EXTRACTOR_RESPONSE_SCHEMA,
   MEMORY_PASS_EVENT_TYPES,
   RESERVED_MEMORY_AUDIT_ACTIONS,
   SEMANTIC_MEMORY_KINDS,
   SERVER_CALL_RESPONSE_FORMATS,
-  kobeEventSchema,
+  kaijuEventSchema,
   memoryExtractorOutputSchema,
   parseEventPayload,
   parseMemoryExtractorOutput,
@@ -83,14 +83,14 @@ describe("extractor output schema (KOBE-390 ac-1)", () => {
 
 describe("pass events (KOBE-390)", () => {
   it("are Kaiju event types after the epilogue's", () => {
-    expect(KOBE_EVENT_TYPES.slice(-3)).toEqual([...MEMORY_PASS_EVENT_TYPES]);
+    expect(KAIJU_EVENT_TYPES.slice(-3)).toEqual([...MEMORY_PASS_EVENT_TYPES]);
   });
 
   it.each(["pass-progress-event", "pass-completed-event", "pass-failed-event"])(
     "golden %s parses as an event envelope",
     (name) => {
       const value = fixture(name);
-      const parsed = kobeEventSchema.safeParse(value);
+      const parsed = kaijuEventSchema.safeParse(value);
       expect(parsed.error?.issues ?? []).toEqual([]);
       expect(parsed.data).toEqual(value);
     },

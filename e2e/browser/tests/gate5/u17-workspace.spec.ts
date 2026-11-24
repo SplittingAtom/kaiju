@@ -31,7 +31,7 @@ async function openArtifact(chat: Chat, title: string) {
       content: `<!doctype html><html><body><h1>${title}</h1></body></html>`,
     }),
   );
-  await chat.threadId(); // create_artifact never asks (PROMPT_EXEMPT_KOBE_TOOLS)
+  await chat.threadId(); // create_artifact never asks (PROMPT_EXEMPT_KAIJU_TOOLS)
   await chat.waitForIdle();
 }
 
@@ -165,7 +165,7 @@ test("U17: rail state (width, tab, section) and artifact width persist across tw
       timeout: SHELL_TIMEOUT_MS,
     });
     await expect.poll(() => widthOf(r2.rail)).toBeLessThanOrEqual(48 + SLACK_PX);
-    await expect(second.locator("#kobe-rail-files")).toBeHidden();
+    await expect(second.locator("#kaiju-rail-files")).toBeHidden();
 
     // The artifact width applies once a column opens there: the same thread's artifact, reopened
     // from the thread's artifact list (the open set itself is per browser, CE6).

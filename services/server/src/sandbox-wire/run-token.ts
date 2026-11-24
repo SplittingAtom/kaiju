@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { recordRunToken, type KobeTx } from "@kobe/db";
-import type { RunTokenGrant } from "@kobe/protocol";
-import { deriveTraceSpanKey } from "@kobe/protocol/node";
+import { recordRunToken, type KaijuTx } from "@kaiju/db";
+import type { RunTokenGrant } from "@kaiju/protocol";
+import { deriveTraceSpanKey } from "@kaiju/protocol/node";
 import {
   loadSigningKey,
   signRunToken,
   signingKeyEnvName,
   type SessionSigningKey,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 
 /**
  * The run token key (KOBE-118, Ed25519 since KOBE-521): the `kobe.model-gateway` session-token
@@ -66,7 +66,7 @@ export interface MintRunTokenInput {
  * one that leases the run), so a token never exists without its record. The token text is only
  * returned, never stored.
  */
-export async function mintRunToken(tx: KobeTx, input: MintRunTokenInput): Promise<RunTokenGrant> {
+export async function mintRunToken(tx: KaijuTx, input: MintRunTokenInput): Promise<RunTokenGrant> {
   const iat = Math.floor((input.now ?? new Date()).getTime() / 1000);
   const exp = iat + input.ttlSeconds;
   const jti = randomUUID();

@@ -22,7 +22,7 @@
  * - No directory entries, extra fields, comments, data descriptors, encryption or zip64; every
  *   size must fit 32 bits (skills are far below).
  *
- * Pure and dependency-free (no hashing here: `@kobe/protocol/node` hashes these bytes).
+ * Pure and dependency-free (no hashing here: `@kaiju/protocol/node` hashes these bytes).
  */
 import { assertPackagePaths } from "./layout.js";
 

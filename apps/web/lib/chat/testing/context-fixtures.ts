@@ -1,4 +1,4 @@
-import type { ContextSection, ThreadContext } from "@kobe/protocol";
+import type { ContextSection, ThreadContext } from "@kaiju/protocol";
 
 /** A context viewer section (KOBE-471), wire casing. */
 export const section = (

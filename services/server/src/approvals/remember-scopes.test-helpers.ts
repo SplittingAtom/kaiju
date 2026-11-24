@@ -2,8 +2,8 @@
 // (split from remember-scopes.db.test.ts, KOBE-725).
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, expect } from "vitest";
-import { DEFAULT_REMEMBER_LIMITS, type RememberLimits } from "@kobe/protocol";
-import { createDb, type KobeDatabase } from "@kobe/db";
+import { DEFAULT_REMEMBER_LIMITS, type RememberLimits } from "@kaiju/protocol";
+import { createDb, type KaijuDatabase } from "@kaiju/db";
 import { approvalKeyring } from "./index.js";
 import { createPolicyEngine } from "../policy/engine.js";
 import { createToolRegistry } from "../policy/registry.js";
@@ -24,7 +24,7 @@ export const fx = new EventStreamFixture();
 export const auth = new FakeSandboxAuth();
 export const listeners: Awaited<ReturnType<typeof sandboxListener>>[] = [];
 export const sandboxes: FakeSandbox[] = [];
-export const extraDbs: KobeDatabase[] = [];
+export const extraDbs: KaijuDatabase[] = [];
 export const KEY = approvalKeyring("approval-key-for-tests-".padEnd(48, "k"));
 export const registry = createToolRegistry();
 export let siteAdmin: Person;

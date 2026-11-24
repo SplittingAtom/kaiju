@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, gte, inArray, lt, lte, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import { auditLog, type AuditActorKind } from "../schema/audit.js";
 import { users } from "../schema/auth.js";
 import {
@@ -106,7 +106,7 @@ function conditions(query: AuditQuery): SQL[] {
 const ACTIVE_TEAM = sql`NULLIF(current_setting('kobe.team_id', true), '')::uuid`;
 
 async function select(
-  executor: KobeDb | KobeTx,
+  executor: KaijuDb | KaijuTx,
   query: AuditQuery,
   where: SQL[],
 ): Promise<{ rows: AuditEntry[]; nextCursor: number | null }> {
@@ -158,7 +158,7 @@ async function select(
  * Reads the site-wide audit log (site Owner/Admin, spec D6). Validate untrusted input with
  * `auditQuerySchema` first. Keyset pagination over `seq`: stable under concurrent appends.
  */
-export async function listAuditEvents(db: KobeDb, query: AuditQuery): Promise<AuditPage> {
+export async function listAuditEvents(db: KaijuDb, query: AuditQuery): Promise<AuditPage> {
   const { rows, nextCursor } = await select(db, query, conditions(query));
   return { events: rows, nextCursor };
 }
@@ -177,7 +177,7 @@ export interface TeamAuditPage {
  * setting team RLS uses, so outside withTeam it returns nothing and a `teamId` in the query is
  * ignored. Client IPs, user agents and hash-chain fields stay in the site view.
  */
-export async function listTeamAuditEvents(tx: KobeTx, query: AuditQuery): Promise<TeamAuditPage> {
+export async function listTeamAuditEvents(tx: KaijuTx, query: AuditQuery): Promise<TeamAuditPage> {
   const { teamId: _ignored, ...rest } = query;
   const { rows, nextCursor } = await select(tx, rest, [
     sql`${auditLog.teamId} = ${ACTIVE_TEAM}`,

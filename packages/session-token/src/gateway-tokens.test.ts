@@ -8,7 +8,7 @@ import {
   SERVER_CALL_TOKEN_SKEW_SECONDS,
   type RunTokenClaims,
   type ServerCallClaims,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   loadVerifyKeys,
@@ -107,7 +107,7 @@ describe("run tokens (Ed25519, KOBE-521)", () => {
   });
 
   it("refuses HMAC-era krt1 tokens, whatever key minted them", () => {
-    const old = hmacEraToken("krt1", "kobe/run-token/v1", RUN_CLAIMS);
+    const old = hmacEraToken("krt1", "kaiju/run-token/v1", RUN_CLAIMS);
     expect(verifyRunToken(PAIR.verify, old, NOW).ok).toBe(false);
   });
 
@@ -160,7 +160,7 @@ describe("server-call tokens (Ed25519, KOBE-521)", () => {
     expect(
       verifyServerCallToken(PAIR.verify, "x".repeat(SERVER_CALL_TOKEN_MAX_CHARS + 1), NOW),
     ).toEqual({ ok: false, reason: "malformed" });
-    const old = hmacEraToken("ksc1", "kobe/server-call-token/v1", SC_CLAIMS);
+    const old = hmacEraToken("ksc1", "kaiju/server-call-token/v1", SC_CLAIMS);
     expect(verifyServerCallToken(PAIR.verify, old, NOW).ok).toBe(false);
     expect(() =>
       signServerCallToken(PAIR.signing, { ...SC_CLAIMS, max_output_tokens: 10_000 }),

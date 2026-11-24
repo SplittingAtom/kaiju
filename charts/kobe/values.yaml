@@ -229,7 +229,7 @@ smtp:
   # starttls: STARTTLS required (587); tls: implicit TLS (465); none: unencrypted, for an in-cluster
   # dev relay only, and never with credentials. Certificates are always verified.
   security: starttls
-  # Sender (required): "Kaiju <kobe@example.com>" or an address.
+  # Sender (required): "Kaiju <kaiju@example.com>" or an address.
   from: ""
   # Secret with keys "username" and "password" for SMTP AUTH. Empty: no authentication.
   existingSecret: ""

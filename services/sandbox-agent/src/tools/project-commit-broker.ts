@@ -1,5 +1,5 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { ProjectCommitFrame, ProjectCommitResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { ProjectCommitFrame, ProjectCommitResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { PushPathError } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
@@ -32,7 +32,7 @@ export interface ProjectCommitBrokerDeps {
   readonly canCommit: (runId: string) => boolean;
 }
 
-type CommitRequest = Extract<KobeToolsRequest, { op: "project.commit" }>;
+type CommitRequest = Extract<KaijuToolsRequest, { op: "project.commit" }>;
 
 export class ProjectCommitBroker {
   readonly #deps: ProjectCommitBrokerDeps;
@@ -54,7 +54,7 @@ export class ProjectCommitBroker {
     threadId: string,
     runId: string | undefined,
     request: CommitRequest,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));

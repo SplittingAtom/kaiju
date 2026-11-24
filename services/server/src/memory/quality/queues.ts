@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { notAllowed } from "../items/errors.js";
 import { curates, type MemoryWho } from "../items/who.js";
 
@@ -45,7 +45,7 @@ const cutoff = sql`now() - make_interval(days => ${QUEUE_WINDOW_DAYS})`;
  * decisions in `decided` states by a person (`decided_by` set) with `decided_at` in the window.
  */
 async function queue(
-  tx: KobeDb | KobeTx,
+  tx: KaijuDb | KaijuTx,
   name: QueueName,
   from: ReturnType<typeof sql>,
   pending: ReturnType<typeof sql>,
@@ -68,7 +68,7 @@ async function queue(
  * project-note suggestions (KOBE-652). Workspace curators only.
  */
 export async function workspaceQueueHealth(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
 ): Promise<QueueHealthResponse> {
   if (!curates(who, "team") || who.teamId === null)
@@ -100,7 +100,7 @@ export async function workspaceQueueHealth(
  * (`awaiting_site`), timed from the last confirmation. Site admins and Site memory stewards only.
  * Numbers only: no statement, Workspace or person.
  */
-export async function siteQueueHealth(db: KobeDb, who: MemoryWho): Promise<QueueHealthResponse> {
+export async function siteQueueHealth(db: KaijuDb, who: MemoryWho): Promise<QueueHealthResponse> {
   if (!curates(who, "site"))
     throw notAllowed("Only Site admins and Site memory stewards see the Site's queue.");
   const since = sql`coalesce(team_confirmed_at, created_at)`;

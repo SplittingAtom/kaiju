@@ -1,4 +1,4 @@
-import type { WorkspaceChange, WorkspaceEntry } from "@kobe/protocol/sandbox-wire";
+import type { WorkspaceChange, WorkspaceEntry } from "@kaiju/protocol/sandbox-wire";
 import { SyncHttpError } from "../client.js";
 import { isLockedPath, type Checkouts, type LocalFile } from "../fs.js";
 import type { MoveReplay } from "../moves.js";

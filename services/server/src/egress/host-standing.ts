@@ -3,12 +3,12 @@ import {
   loadEgressCeiling,
   loadTeamEgress,
   normalizeHost,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 
 /**
  * Whether each host a skill asks for is reachable from a team's sandboxes, decided exactly as the
- * egress proxy decides (`decideEgress` and the same loaders, @kobe/db): wildcard patterns
+ * egress proxy decides (`decideEgress` and the same loaders, @kaiju/db): wildcard patterns
  * included (`*.pythonhosted.org` covers `files.pythonhosted.org`). For the catalog's egress check
  * (KOBE-336, D28) and the review console's capabilities (KOBE-334). `teamId` null: the Site
  * ceiling only.
@@ -22,7 +22,7 @@ export interface HostStanding {
 }
 
 export async function hostStandings(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string | null,
   hosts: readonly string[],
 ): Promise<HostStanding[]> {

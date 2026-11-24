@@ -1,4 +1,4 @@
-import { recordSpan, runParentContext } from "@kobe/telemetry";
+import { recordSpan, runParentContext } from "@kaiju/telemetry";
 import { RunLatency } from "./run-latency.js";
 
 export type { RunLatency };

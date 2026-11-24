@@ -1,9 +1,9 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   PROJECT_WORKSPACE_DIR,
   WORKSPACE_CHANGE_ACTOR_NAME_MAX as ACTOR_NAME_MAX,
   type WorkspaceFileChange,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 
 /**
@@ -33,7 +33,7 @@ type ChangeRow = {
 const PROJECTS = `${PROJECT_WORKSPACE_DIR}/`;
 
 export async function readFileChanges(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   paths: readonly string[],
   afterRev: number,

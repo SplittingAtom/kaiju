@@ -2,7 +2,7 @@
 // (split from answer-feedback.db.test.ts, KOBE-725).
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, expect } from "vitest";
-import type { ScoreSink, TraceScore } from "@kobe/telemetry";
+import type { ScoreSink, TraceScore } from "@kaiju/telemetry";
 import type { GalleryDefinition } from "../gallery/definitions.js";
 import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 import type { Person } from "../testing/event-stream-fixture.js";

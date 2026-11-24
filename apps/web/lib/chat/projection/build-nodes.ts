@@ -179,10 +179,10 @@ export function entryParts(
   history: HistoryContext,
 ): MessagePart[] {
   if (p.kind === "offloaded") {
-    return [{ type: "data-kobe-offloaded", data: { entryId: entry.entryId } }];
+    return [{ type: "data-kaiju-offloaded", data: { entryId: entry.entryId } }];
   }
   if (p.kind === "appCard") {
-    return [{ type: "data-kobe-app-card", data: { entryId: entry.entryId, tool: p.tool } }];
+    return [{ type: "data-kaiju-app-card", data: { entryId: entry.entryId, tool: p.tool } }];
   }
   if (p.kind !== "assistant") return [];
   const parts: MessagePart[] = [];
@@ -198,7 +198,7 @@ export function entryParts(
       parts.push(toolCallPart(piece.toolCallId, piece.toolName, piece.args, result, time));
     }
   }
-  if (p.problem) parts.push({ type: "data-kobe-problem", data: p.problem });
+  if (p.problem) parts.push({ type: "data-kaiju-problem", data: p.problem });
   return parts;
 }
 

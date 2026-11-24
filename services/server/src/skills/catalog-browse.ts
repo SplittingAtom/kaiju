@@ -1,6 +1,6 @@
 import { unzipSync } from "fflate";
-import { catalogSkillEvalScorecardSchema } from "@kobe/protocol";
-import { sql, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
+import { catalogSkillEvalScorecardSchema } from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx, type TeamRole } from "@kaiju/db";
 import { siteRoleAllows, teamRoleAllows, type SiteRole } from "../authz/permissions.js";
 import { skillStanding } from "./retirement-state.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -85,7 +85,7 @@ type UsageOf = ((skillId: string) => CardUsage) & {
 };
 
 async function usageFor(
-  db: KobeDb,
+  db: KaijuDb,
   who: { readonly teamId: string; readonly userId: string },
 ): Promise<UsageOf> {
   const snapshot = await usageSnapshot(db);
@@ -130,7 +130,7 @@ export const CATALOG_LIMIT = 500;
 
 /** The rows of the cards, filtered (inside the team's transaction). */
 async function cardRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { readonly teamId: string; readonly userId: string },
   query: CatalogQuery,
   skillId?: string,
@@ -231,7 +231,7 @@ export interface CatalogPage {
 }
 
 export async function browseCatalog(
-  db: KobeDb,
+  db: KaijuDb,
   who: { readonly teamId: string; readonly userId: string },
   query: CatalogQuery,
 ): Promise<CatalogPage> {
@@ -298,7 +298,7 @@ export interface CatalogDetail extends CatalogCard {
 
 const PUBLISHED = ["approved", "deprecated", "withdrawn", "revoked"];
 
-async function versionsOf(db: KobeDb, skillId: string): Promise<CatalogVersion[]> {
+async function versionsOf(db: KaijuDb, skillId: string): Promise<CatalogVersion[]> {
   const res = await db.execute<{
     id: string;
     semver: string;
@@ -333,7 +333,7 @@ export function skillMdBody(text: string): string {
 }
 
 async function versionFiles(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore | null,
   versionId: string,
 ): Promise<{ skillMd: string | null; files: { path: string; size: number }[] }> {
@@ -389,7 +389,7 @@ const filesCache = new Map<
 const FILES_CACHE_MAX = 100;
 
 /** This team's agents (current version, not archived) that name the skill. */
-async function agentsUsing(tx: KobeTx, teamId: string, name: string) {
+async function agentsUsing(tx: KaijuTx, teamId: string, name: string) {
   const res = await tx.execute<{ id: string; name: string }>(sql`
     SELECT a.id, COALESCE(a.frontmatter ->> 'name', a.slug) AS name
       FROM team_agents a
@@ -403,7 +403,7 @@ async function agentsUsing(tx: KobeTx, teamId: string, name: string) {
 }
 
 export async function catalogDetail(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore | null,
   who: {
     readonly teamId: string;

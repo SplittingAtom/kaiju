@@ -7,7 +7,7 @@ import type {
   RegistrySettingsUpdate,
   RegistryTeamCreate,
   SkillMirrorStatus,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../../api/client";
 
 export type { RegistrySettings, RegistrySettingsUpdate };
@@ -31,7 +31,7 @@ export function createRegistryTeam(
   return apiRequest("/v1/site/skills/registry/team", { method: "POST", json: input });
 }
 
-export type { SkillMirrorStatus } from "@kobe/protocol";
+export type { SkillMirrorStatus } from "@kaiju/protocol";
 
 const MIRROR_PATH = "/v1/site/skills/registry/mirror";
 

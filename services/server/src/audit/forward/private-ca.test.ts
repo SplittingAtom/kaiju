@@ -130,7 +130,7 @@ const received: string[] = [];
 
 beforeAll(async () => {
   if (!enabled) return;
-  dir = mkdtempSync(join(tmpdir(), "kobe-private-ca-"));
+  dir = mkdtempSync(join(tmpdir(), "kaiju-private-ca-"));
   pki = makePki(dir);
   script = childScript(dir);
   server = tls.createServer({ key: pki.key, cert: pki.cert }, (socket) => {

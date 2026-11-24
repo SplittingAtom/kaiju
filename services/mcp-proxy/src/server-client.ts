@@ -1,4 +1,4 @@
-import { injectTraceHeaders } from "@kobe/telemetry";
+import { injectTraceHeaders } from "@kaiju/telemetry";
 import { z } from "zod";
 import type { GrantAnswer, GrantFetchOptions } from "./credentials.js";
 
@@ -70,7 +70,7 @@ export type CallDecision = z.infer<typeof decisionSchema>;
  * The built-in Kaiju connector's call answer (KOBE-619): the server decided and executed the call
  * in one request; the proxy only relays it. `result` is an MCP `tools/call` result.
  */
-const kobeCallSchema = z.discriminatedUnion("outcome", [
+const kaijuCallSchema = z.discriminatedUnion("outcome", [
   z.object({
     outcome: z.literal("result"),
     result: z.object({
@@ -84,7 +84,7 @@ const kobeCallSchema = z.discriminatedUnion("outcome", [
     message: z.string().max(2000),
   }),
 ]);
-export type KobeCallAnswer = z.infer<typeof kobeCallSchema>;
+export type KaijuCallAnswer = z.infer<typeof kaijuCallSchema>;
 
 export interface CallQuery {
   readonly connectorId: string;
@@ -118,13 +118,13 @@ export interface PolicyServer {
    * A built-in connector's tools for the sandbox's person: the Kaiju connector (KOBE-619), or the
    * git connector (`builtin: "git"`, KOBE-762).
    */
-  kobeList(token: string, builtin?: BuiltinServer): Promise<ServerAnswer<ToolsResponse>>;
+  kaijuList(token: string, builtin?: BuiltinServer): Promise<ServerAnswer<ToolsResponse>>;
   /** A built-in connector's tool call, decided and executed by the server (KOBE-619, KOBE-762). */
-  kobeCall(
+  kaijuCall(
     token: string,
     query: Omit<CallQuery, "connectorId">,
     builtin?: BuiltinServer,
-  ): Promise<ServerAnswer<KobeCallAnswer>>;
+  ): Promise<ServerAnswer<KaijuCallAnswer>>;
   decide(token: string, query: CallQuery): Promise<ServerAnswer<CallDecision>>;
   /**
    * The sandbox's own user's API key or OAuth access token for a connector; never cached.
@@ -292,10 +292,10 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
   return {
     fetchGrant,
     reportResult,
-    kobeList: (token, builtin = "kobe") =>
+    kaijuList: (token, builtin = "kobe") =>
       post(`/${builtin}/list`, token, undefined, toolsResponseSchema),
-    kobeCall: (token, query, builtin = "kobe") =>
-      post(`/${builtin}/calls`, token, callBody(query), kobeCallSchema),
+    kaijuCall: (token, query, builtin = "kobe") =>
+      post(`/${builtin}/calls`, token, callBody(query), kaijuCallSchema),
     listTools: (token, connectorId) =>
       post(
         `/connectors/${encodeURIComponent(connectorId)}/tools`,

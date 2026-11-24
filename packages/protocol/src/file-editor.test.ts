@@ -5,8 +5,8 @@ import {
   VIEWING_CONTENT_MAX_BYTES,
   fileEditProposalsResponseSchema,
   fileEditProposedPayloadSchema,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
+  kaijuToolsRequestSchema,
+  kaijuToolsResponseSchema,
   proposeFileEditInputSchema,
   runViewingContextSchema,
   submitMessageBodySchema,
@@ -64,7 +64,7 @@ describe("propose_file_edit contract (KOBE-462)", () => {
 
   it("travels on fd 4 and the wire, and answers awaiting_user", () => {
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         id: "1",
         op: "file.edit_propose",
         tool_call_id: "call_1",
@@ -79,7 +79,7 @@ describe("propose_file_edit contract (KOBE-462)", () => {
       path: "notes.md",
       base_sha256: SHA,
     };
-    expect(kobeToolsResponseSchema.safeParse({ id: "1", ...ok }).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse({ id: "1", ...ok }).success).toBe(true);
     const frame = {
       v: 1,
       type: "file.edit_propose",

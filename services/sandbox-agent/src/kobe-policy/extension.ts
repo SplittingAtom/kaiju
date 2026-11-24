@@ -23,7 +23,7 @@ export interface ExtensionApiLike {
   ): unknown;
 }
 
-export interface KobePolicyDeps {
+export interface KaijuPolicyDeps {
   /** `process.env`: the fd variable is read once and deleted, so tools Pi spawns never see it. */
   readonly env: Record<string, string | undefined>;
   readonly argv: readonly string[];
@@ -46,9 +46,9 @@ export interface PolicyConnection {
  * a failure yields a checker that blocks every call with the reason (a Pi extension that throws at
  * load is skipped by Pi and the tools would run unchecked — the agent's `channel.ready` wait is the
  * other half of that guarantee). `channel.ready` is not sent here: only once the handler is
- * registered ({@link registerKobePolicy}).
+ * registered ({@link registerKaijuPolicy}).
  */
-export async function connectPolicy(deps: KobePolicyDeps): Promise<PolicyConnection> {
+export async function connectPolicy(deps: KaijuPolicyDeps): Promise<PolicyConnection> {
   const raw = deps.env[POLICY_FD_ENV];
   Reflect.deleteProperty(deps.env, POLICY_FD_ENV);
   if (raw === undefined || !/^[0-9]{1,4}$/.test(raw) || Number(raw) < 3) {
@@ -81,7 +81,7 @@ export async function connectPolicy(deps: KobePolicyDeps): Promise<PolicyConnect
  * failed, Pi would skip the extension and the agent must not see `channel.ready`. Pi awaits an async
  * factory before startup continues (Pi 1.0.0 docs).
  */
-export async function registerKobePolicy(
+export async function registerKaijuPolicy(
   pi: ExtensionApiLike,
   connection: Promise<PolicyConnection>,
 ): Promise<void> {
@@ -90,7 +90,7 @@ export async function registerKobePolicy(
   announce();
 }
 
-function unavailable(deps: KobePolicyDeps, reason: string): PolicyConnection {
+function unavailable(deps: KaijuPolicyDeps, reason: string): PolicyConnection {
   deps.warn?.(`kobe-policy: ${reason}; every tool call will be blocked`);
   return { checker: { check: async () => ({ allow: false, reason }) }, announce: () => undefined };
 }

@@ -28,9 +28,9 @@ interface Learning {
 }
 
 async function download(b: TestBrowser, team: string) {
-  const res = await h.app.request(`http://kobe.test/v1/threads/export?team=${team}`, {
+  const res = await h.app.request(`http://kaiju.test/v1/threads/export?team=${team}`, {
     headers: {
-      origin: "http://kobe.test",
+      origin: "http://kaiju.test",
       "x-forwarded-for": b.ip,
       cookie: [...b.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
     },

@@ -20,7 +20,7 @@ import { isBrowsing } from "../../lib/chat/head";
 import { MentionChips, MentionPicker } from "./mention-picker";
 import { useComposerMentionDrop } from "./composer-mention-drop";
 import { useComposerDictation, useSteer } from "./composer-steer";
-import { useChatSession, type KobeThreadExtras } from "./kobe-runtime";
+import { useChatSession, type KaijuThreadExtras } from "./kaiju-runtime";
 import { ariaKeyShortcuts } from "../../lib/shell/commands";
 import { refusedPiCommand } from "../../lib/shell/pi-commands";
 import { shortcutOf } from "../../lib/shell/shortcuts";
@@ -65,7 +65,7 @@ export function Composer({
   extras,
   footer,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   /** The end of the row under the box (the context gauge, KOBE-418); shown under a banner too. */
   readonly footer?: ReactNode;
 }) {
@@ -170,7 +170,7 @@ export function Composer({
       >
         <div
           ref={setPanel}
-          data-kobe-composer-panel
+          data-kaiju-composer-panel
           data-running={running || undefined}
           data-dragging={dragging || undefined}
           data-mention-drop={rowDrop.rowDrop ?? undefined}
@@ -197,16 +197,16 @@ export function Composer({
             pending={appInsert.pending}
             onConfirm={appInsert.confirm}
           />
-          <label htmlFor="kobe-composer" className="sr-only">
+          <label htmlFor="kaiju-composer" className="sr-only">
             Message
           </label>
           <ComposerPrimitive.Input
             ref={input}
-            id="kobe-composer"
+            id="kaiju-composer"
             placeholder={
               running ? "Type to queue a message, or steer the agent" : "Message the agent"
             }
-            aria-describedby="kobe-composer-hint"
+            aria-describedby="kaiju-composer-hint"
             aria-keyshortcuts={ariaKeyShortcuts(shortcutOf("focus-composer"))}
             onKeyDown={onKeyDown}
             submitMode="enter"

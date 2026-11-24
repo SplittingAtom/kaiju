@@ -1,7 +1,7 @@
 import { readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { scanTeams, sql, withTeam } from "@kobe/db";
+import { scanTeams, sql, withTeam } from "@kaiju/db";
 import { fireAndLog } from "../../async-util.js";
 import type { ReconcileLock } from "../../sandbox/reconcile-lock.js";
 import {

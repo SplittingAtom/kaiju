@@ -1,6 +1,6 @@
 "use client";
 
-import type { ThreadLineageResponse } from "@kobe/protocol";
+import type { ThreadLineageResponse } from "@kaiju/protocol";
 import { LINEAGE_REREAD_MS } from "./lineage";
 import { useFocusReread } from "./use-focus-reread";
 

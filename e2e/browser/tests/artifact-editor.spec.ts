@@ -37,7 +37,7 @@ test("artifact editor: text artifact read-only in Rendered/Raw, Edit as file ope
       content: "# Artifact plan\n\nShip it.\n",
     }),
   );
-  await chat.threadId(); // create_artifact never asks (PROMPT_EXEMPT_KOBE_TOOLS)
+  await chat.threadId(); // create_artifact never asks (PROMPT_EXEMPT_KAIJU_TOOLS)
   await chat.waitForIdle();
   const copies = [`artifacts/${stem}.md`, `artifacts/${stem}-2.md`];
   try {

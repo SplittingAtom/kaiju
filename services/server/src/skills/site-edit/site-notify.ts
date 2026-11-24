@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Published } from "./site-publish.js";
 
 /**
@@ -9,7 +9,7 @@ import type { Published } from "./site-publish.js";
  * record). Returns how many were told.
  */
 export async function notifyMaintainers(
-  db: KobeDb,
+  db: KaijuDb,
   published: Published,
   adminId: string,
 ): Promise<number> {

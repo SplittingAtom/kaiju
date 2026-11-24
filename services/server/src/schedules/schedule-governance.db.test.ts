@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { cancelScheduledRuns } from "../runs/cancel-scheduled.js";
@@ -16,7 +16,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * user's schedules and cancel their in-flight scheduled runs; team admins pause and resume with
  * an audit trail; the agent inventory lists schedules, and a suspended agent does not fire.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 const ANY = { "if-match": "*" };
 const GRACE_MS = 60 * 60_000;

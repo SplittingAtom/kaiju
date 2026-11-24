@@ -1,4 +1,4 @@
-import { generateSessionKeyPair } from "@kobe/session-token";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
 import { applyDrift } from "../connectors/drift.js";

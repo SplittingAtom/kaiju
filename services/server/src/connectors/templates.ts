@@ -8,8 +8,8 @@ import {
   type ProposedUiResource,
   type UiResourceFailure,
   type UiResourceMeta,
-} from "@kobe/db";
-import { canonicalJson } from "@kobe/protocol";
+} from "@kaiju/db";
+import { canonicalJson } from "@kaiju/protocol";
 import { z } from "zod";
 
 /**

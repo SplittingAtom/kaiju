@@ -4,7 +4,7 @@
  * lost) and the agent's proposals under review. Immutable snapshots, so `useSyncExternalStore`
  * readers re-render only on a change.
  */
-import type { FileEditProposedPayload } from "@kobe/protocol";
+import type { FileEditProposedPayload } from "@kaiju/protocol";
 import type { TextViewMode } from "./preview";
 
 type Listener = () => void;

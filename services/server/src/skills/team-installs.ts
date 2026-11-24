@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { addInTeam } from "./default-sync-team.js";
 import { skillInstallAnswers } from "./skill-install-answers.js";
@@ -59,7 +59,7 @@ export interface RemovedDefault {
  * Team admins' to change. Team admins may change every install.
  */
 async function builderMay(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   access: SkillInstallRow["access"],
   state: string,
@@ -72,7 +72,7 @@ async function builderMay(
 }
 
 /** One of the team's own unarchived skills has this name (SK27's name-clash rule). */
-async function hasOwnSkillNamed(tx: KobeTx, teamId: string, name: string): Promise<boolean> {
+async function hasOwnSkillNamed(tx: KaijuTx, teamId: string, name: string): Promise<boolean> {
   const { rows } = await tx.execute(sql`
     SELECT 1 FROM team_skills WHERE team_id = ${teamId} AND slug = ${name} AND archived_at IS NULL`);
   return rows.length > 0;
@@ -81,7 +81,7 @@ async function hasOwnSkillNamed(tx: KobeTx, teamId: string, name: string): Promi
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v));
 
 export async function listTeamSkillInstalls(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
 ): Promise<{ installs: SkillInstallRow[]; removedDefaults: RemovedDefault[] }> {
   return withTeam(db, teamId, async (tx) => {
@@ -164,7 +164,7 @@ export type UninstallResult =
  * reinstalls it (SK7). Audited; the reason is stored, not audited.
  */
 export async function uninstallCatalogSkill(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly teamId: string;
     readonly skillId: string;
@@ -212,7 +212,7 @@ export type ReinstallResult =
  * Default would (On by default, Track within major, origin `default_tag`). Audited.
  */
 export async function reinstallDefault(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly skillId: string; readonly userId: string },
 ): Promise<ReinstallResult> {
   const { teamId, skillId } = input;
@@ -259,7 +259,7 @@ export interface SkillInstallChange {
  * a Builder path must apply the checks of `installCatalogSkill` (`builderMay`).
  */
 export async function changeTeamSkillInstall(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   skillId: string,
   change: SkillInstallChange,
@@ -303,7 +303,7 @@ export type SkillInstallResult =
  * touched and origin `team`, so a Default major move never overrides it (SK6). Audited.
  */
 export async function installCatalogSkill(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly teamId: string;
     readonly skillId: string;

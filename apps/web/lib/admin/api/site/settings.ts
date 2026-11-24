@@ -6,11 +6,11 @@ export interface SiteSettings {
   /** Hours audit events keep the client IP and user agent (KOBE-17): 1-8760, default 12. */
   readonly auditPiiRetentionHours?: number;
   /**
-   * The Kaiju MCP site switch (KOBE-623, spec kobe-admin-mcp §6, KA5): `off` (no Kaiju connector),
+   * The Kaiju MCP site switch (KOBE-623, spec kaiju-admin-mcp §6, KA5): `off` (no Kaiju connector),
    * `docs` (docs tools only; the default) or `admin` (docs plus the admin tools each team turns
    * on). Absent from servers that predate it.
    */
-  readonly kobeMcpMode?: KobeMcpMode;
+  readonly kobeMcpMode?: KaijuMcpMode;
   /** Per-person Kaiju admin reads per minute (KOBE-814): 1-10000, default 60. Absent on older servers. */
   readonly kobeReadsPerMinute?: number;
   /** Per-person Kaiju admin writes per hour (KOBE-814): 1-10000, default 30. Absent on older servers. */
@@ -22,16 +22,16 @@ export interface SiteSettings {
 }
 
 /** Bounds and defaults of the Kaiju admin limits (the server validates them again). */
-export const KOBE_LIMITS = {
+export const KAIJU_LIMITS = {
   min: 1,
   max: 10_000,
   readsDefault: 60,
   writesDefault: 30,
 } as const;
 
-export type KobeMcpMode = "off" | "docs" | "admin";
+export type KaijuMcpMode = "off" | "docs" | "admin";
 
-export const KOBE_MCP_MODE_LABELS: Readonly<Record<KobeMcpMode, string>> = {
+export const KAIJU_MCP_MODE_LABELS: Readonly<Record<KaijuMcpMode, string>> = {
   off: "Off",
   docs: "Docs only",
   admin: "Docs and admin tools",

@@ -7,7 +7,7 @@ import { useDictation, type Dictation } from "../../lib/chat/dictation";
 import { textAfterSend } from "../../lib/chat/after-send";
 import { isBusy } from "../../lib/chat/thread-state";
 import { useDraftFiles } from "./attachment-chips";
-import { useChatSession, type KobeThreadExtras } from "./kobe-runtime";
+import { useChatSession, type KaijuThreadExtras } from "./kaiju-runtime";
 
 const DictationContext = createContext<Dictation | null>(null);
 
@@ -76,7 +76,7 @@ export interface Steer {
  * One helper for Ctrl/Cmd+Shift+Enter in the composer and the panel's Steer now button. A steer
  * carries text only, so with files attached the message has to be queued instead.
  */
-export function useSteer(extras: KobeThreadExtras): Steer {
+export function useSteer(extras: KaijuThreadExtras): Steer {
   const aui = useAui();
   const text = useAuiState((s) => s.composer.text);
   const remoteId = useAuiState((s) => s.threadListItem.remoteId);

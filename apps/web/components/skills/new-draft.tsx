@@ -1,6 +1,6 @@
 "use client";
 
-import { SKILL_NAME_PATTERN as SKILL_NAME } from "@kobe/protocol";
+import { SKILL_NAME_PATTERN as SKILL_NAME } from "@kaiju/protocol";
 import { useState } from "react";
 import type { ApiResult } from "../../lib/api/client";
 import {

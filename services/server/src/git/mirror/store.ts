@@ -1,10 +1,10 @@
-import { SYSTEM_ACTOR, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   GIT_MIRROR_FAILURES,
   type GitMirrorFailure,
   type GitRepoHostState,
   type GitRepoReadOnlyReason,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import {
   GIT_REPO_MAX_CONTENT_BYTES,
@@ -99,7 +99,7 @@ const toRow = (r: RawRow): MirrorRow => ({
  * before the claim; `busy` when another run holds it.
  */
 export async function claimRefresh(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   repositoryId: string,
   owner: string,
@@ -135,7 +135,7 @@ export async function claimRefresh(
 
 /** Runs `work` on the repository row only while `lease` still holds it. */
 export async function underLease<T>(
-  tx: KobeTx,
+  tx: KaijuTx,
   lease: MirrorLease,
   work: () => Promise<T>,
 ): Promise<T> {
@@ -151,7 +151,7 @@ const RELEASE = sql.raw(`mirror_lease_owner = NULL, mirror_lease_until = NULL`);
 
 /** A refresh that failed: the code, failures in a row, the earliest next try. */
 export async function recordFailure(
-  db: KobeDb,
+  db: KaijuDb,
   lease: MirrorLease,
   row: Pick<MirrorRow, "mirrorFailures">,
   code: GitMirrorFailure,
@@ -170,7 +170,7 @@ export async function recordFailure(
 
 /** The host's view of the repository changed (name, branch, state); audited when the state did. */
 export async function recordHostFacts(
-  tx: KobeTx,
+  tx: KaijuTx,
   row: MirrorRow,
   facts: {
     readonly fullName: string;
@@ -204,7 +204,7 @@ export async function recordHostFacts(
 
 /** A refresh that succeeded: failures cleared, the lease released. */
 export async function recordSuccess(
-  tx: KobeTx,
+  tx: KaijuTx,
   lease: MirrorLease,
   mirror: {
     readonly headSha: string;
@@ -242,7 +242,7 @@ export async function recordSuccess(
  * for good or its connection was removed (failures cleared; the slow re-check finds it again), or
  * the Repo was unlinked meanwhile.
  */
-export async function releaseLease(tx: KobeTx, lease: MirrorLease): Promise<void> {
+export async function releaseLease(tx: KaijuTx, lease: MirrorLease): Promise<void> {
   await tx.execute(sql`
     UPDATE git_repositories
        SET mirror_failures = 0, mirror_error = NULL, mirror_next_at = NULL, ${RELEASE}
@@ -250,7 +250,7 @@ export async function releaseLease(tx: KobeTx, lease: MirrorLease): Promise<void
 }
 
 /** Relink and detach end any refresh in flight: its later writes are refused (review L5). */
-export async function revokeLease(tx: KobeTx, teamId: string, repositoryId: string): Promise<void> {
+export async function revokeLease(tx: KaijuTx, teamId: string, repositoryId: string): Promise<void> {
   await tx.execute(sql`
     UPDATE git_repositories SET ${RELEASE}
      WHERE team_id = ${teamId} AND id = ${repositoryId}`);
@@ -261,7 +261,7 @@ export async function revokeLease(tx: KobeTx, teamId: string, repositoryId: stri
  * The mirror job takes it on its next pass. Returns whether a Repo matched.
  */
 export async function requestMirrorRefresh(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   match:
     { readonly repositoryId: string } | { readonly baseUrl: string; readonly hostRepoId: string },
@@ -283,7 +283,7 @@ export async function requestMirrorRefresh(
 
 /** A push through the egress proxy was allowed to a Repo: refresh it once the push landed. */
 export async function requestPushRefresh(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   baseUrl: string,
   hostRepoId: string,
@@ -309,7 +309,7 @@ export function readOnlyReason(
  * (KOBE-767): null for an ordinary project or a Repo whose repository is there.
  */
 export async function repoReadOnly(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
 ): Promise<GitRepoReadOnlyReason | null> {

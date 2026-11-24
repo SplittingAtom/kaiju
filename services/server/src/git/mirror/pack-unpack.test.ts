@@ -17,7 +17,7 @@ let work: string;
 let n = 0;
 
 beforeAll(async () => {
-  work = await mkdtemp(path.join(tmpdir(), "kobe-unpack-test-"));
+  work = await mkdtemp(path.join(tmpdir(), "kaiju-unpack-test-"));
 });
 afterAll(async () => {
   await rm(work, { recursive: true, force: true });

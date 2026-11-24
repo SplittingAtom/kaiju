@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { SITE_GRANTS } from "@kobe/protocol";
+import { SITE_GRANTS } from "@kaiju/protocol";
 import { giveGrant, listGrants, takeGrant } from "../skills/registry/grants.js";
-import { and, asc, eq, lockSsoRequired, siteRoles, ne, users } from "@kobe/db";
+import { and, asc, eq, lockSsoRequired, siteRoles, ne, users } from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import { recordAudit } from "../audit/record.js";
 import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "../sso/owner-invariant.js";

@@ -11,7 +11,7 @@ import { lastAnswerPoint, regenerateBlocker } from "../../lib/chat/thread-menu";
 import type { ThreadState } from "../../lib/chat/thread-state";
 import { projectThread } from "../../lib/chat/tree";
 import type { MenuBindings, MenuChoice } from "../../lib/shell/menu";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { useThreadTeamModels, type TeamModelsLoad } from "./use-team-models";
 import { useOrganizeMenu } from "./use-organize-menu";
 import { useSaveToFolderMenu } from "./save-to-folder-menu";

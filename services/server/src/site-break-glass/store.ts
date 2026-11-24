@@ -9,9 +9,9 @@ import {
   siteBreakGlassGrants,
   sql,
   users,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { enqueueSiteNotifications, type SiteQueuedCounts } from "./outbox.js";
 import type { RequestSiteGrantBody } from "./schemas.js";
@@ -22,7 +22,7 @@ import type { RequestSiteGrantBody } from "./schemas.js";
  * Same shape as the Workspace grants in `../break-glass/store.ts`: every change runs in one
  * transaction with the grant row locked and its audit event (Site log) as the last write; the
  * `site_break_glass_grants_guard` trigger re-checks the rules in Postgres. Reading is not here: see
- * `readPortableWithSiteBreakGlass()` in @kobe/db, which audits each read in the Site log and in
+ * `readPortableWithSiteBreakGlass()` in @kaiju/db, which audits each read in the Site log and in
  * every Workspace of the person.
  */
 
@@ -66,7 +66,7 @@ export function siteEffectiveStatus(grant: SiteGrantRow, now = new Date()): Site
 const subjectOf = (g: SiteGrantRow) => (g.legalHold ? {} : { subjectUserId: g.subjectUserId });
 
 async function lockGrant(
-  tx: KobeTx,
+  tx: KaijuTx,
   id: string,
   lockTimeout = LOCK_TIMEOUT,
 ): Promise<SiteGrantRow | undefined> {
@@ -90,7 +90,7 @@ function subjectError(
 }
 
 /** Whether `adminId` may approve alone: no other active site admin besides the subject. */
-async function mayApproveAlone(tx: KobeTx, adminId: string, subjectId: string): Promise<boolean> {
+async function mayApproveAlone(tx: KaijuTx, adminId: string, subjectId: string): Promise<boolean> {
   const { rows } = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM site_roles r JOIN users u ON u.id = r.user_id
     WHERE u.deactivated_at IS NULL AND r.user_id <> ${adminId} AND r.user_id <> ${subjectId}`);
@@ -98,7 +98,7 @@ async function mayApproveAlone(tx: KobeTx, adminId: string, subjectId: string): 
 }
 
 export async function requestSiteGrant(
-  db: KobeDb,
+  db: KaijuDb,
   adminId: string,
   body: RequestSiteGrantBody,
 ): Promise<SiteGrantResult> {
@@ -152,7 +152,7 @@ export async function requestSiteGrant(
 }
 
 export async function approveSiteGrant(
-  db: KobeDb,
+  db: KaijuDb,
   approverId: string,
   grantId: string,
 ): Promise<SiteGrantResult> {
@@ -192,7 +192,7 @@ export async function approveSiteGrant(
 }
 
 export async function denySiteGrant(
-  db: KobeDb,
+  db: KaijuDb,
   by: string,
   grantId: string,
 ): Promise<SiteGrantResult> {
@@ -220,7 +220,7 @@ export async function denySiteGrant(
 
 /** Withdraws a pending request or revokes an active grant; outranks reads (see the Workspace grant). */
 export async function revokeSiteGrant(
-  db: KobeDb,
+  db: KaijuDb,
   by: string,
   grantId: string,
 ): Promise<SiteGrantResult> {
@@ -233,7 +233,7 @@ export async function revokeSiteGrant(
   }
 }
 
-async function revokeOnce(db: KobeDb, by: string, grantId: string): Promise<SiteGrantResult> {
+async function revokeOnce(db: KaijuDb, by: string, grantId: string): Promise<SiteGrantResult> {
   return db.transaction(async (tx): Promise<SiteGrantResult> => {
     const current = await lockGrant(tx, grantId, REVOKE_LOCK_TIMEOUT);
     if (!current) return { ok: false, error: "grant_not_found" };
@@ -257,7 +257,7 @@ async function revokeOnce(db: KobeDb, by: string, grantId: string): Promise<Site
   });
 }
 
-async function expireOne(db: KobeDb): Promise<SiteGrantRow | null> {
+async function expireOne(db: KaijuDb): Promise<SiteGrantRow | null> {
   return db.transaction(async (tx) => {
     const [due] = await tx
       .select({ id: siteBreakGlassGrants.id, status: siteBreakGlassGrants.status })
@@ -296,7 +296,7 @@ async function expireOne(db: KobeDb): Promise<SiteGrantRow | null> {
 }
 
 /** Records ended Site grants and lapsed requests (access never waits for this). */
-export async function expireDueSiteGrants(db: KobeDb): Promise<SiteGrantRow[]> {
+export async function expireDueSiteGrants(db: KaijuDb): Promise<SiteGrantRow[]> {
   const expired: SiteGrantRow[] = [];
   for (let i = 0; i < SWEEP_BATCH; i++) {
     const row = await expireOne(db);
@@ -317,7 +317,7 @@ export interface SiteGrantDetail {
 }
 
 async function withDetails(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   rows: readonly SiteGrantRow[],
 ): Promise<SiteGrantDetail[]> {
   if (rows.length === 0) return [];
@@ -355,7 +355,7 @@ const hiddenFrom = (viewerId: string) =>
 
 /** Grants with their people, newest first. A legal hold is invisible to its subject. */
 export async function listSiteGrants(
-  db: KobeDb,
+  db: KaijuDb,
   viewerId: string,
   limit = 200,
 ): Promise<SiteGrantDetail[]> {
@@ -370,7 +370,7 @@ export async function listSiteGrants(
 
 /** One grant; with `viewerId`, a legal hold about the viewer is not found. */
 export async function getSiteGrant(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   id: string,
   viewerId?: string,
 ): Promise<SiteGrantDetail | undefined> {

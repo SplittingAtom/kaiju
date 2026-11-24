@@ -21,7 +21,7 @@ import { teams } from "./teams.js";
 // What teams and members run from the Site Skills Catalog (KOBE-311, spec SK6–SK8, SK25). Team
 // tables: team_id NOT NULL, ENABLE + FORCE RLS with the canonical policy (custom migration). They
 // reference the site-wide catalog (no cascade from it: catalog rows are never deleted) and their
-// own team. The closed sets mirror `@kobe/protocol` skill-catalog.ts.
+// own team. The closed sets mirror `@kaiju/protocol` skill-catalog.ts.
 
 export const skillPinMode = pgEnum("skill_pin_mode", ["pinned", "within_major", "latest"]);
 export type SkillPinModeValue = (typeof skillPinMode.enumValues)[number];
@@ -48,7 +48,7 @@ export const teamSkillInstalls = pgTable(
     // Users are deactivated, never deleted (NO ACTION); a Default install names who tagged it,
     // or no one when Kaiju's own Default sync made it (`by_kobe`, KOBE-317).
     installedBy: uuid().references(() => users.id),
-    byKobe: boolean().notNull().default(false),
+    byKaiju: boolean().notNull().default(false),
     /**
      * When the team last changed the install's pin mode, access or origin (KOBE-314): set, the
      * install is "touched" and a Site admin's move of Default installs to a new major skips it;
@@ -67,7 +67,7 @@ export const teamSkillInstalls = pgTable(
       foreignColumns: [registryVersions.id, registryVersions.skillId],
     }),
     index("team_skill_installs_skill_idx").on(t.skillId),
-    check("team_skill_installs_by_kobe", sql`${t.byKobe} = (${t.installedBy} IS NULL)`),
+    check("team_skill_installs_by_kobe", sql`${t.byKaiju} = (${t.installedBy} IS NULL)`),
   ],
 );
 

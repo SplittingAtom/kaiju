@@ -11,9 +11,9 @@ import {
   teamEvalSettings,
   withTeam,
   ACTIVE_EVAL_STATUSES,
-  type KobeDb,
+  type KaijuDb,
   type OrbitEvalStatus,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { recordGalleryScore } from "./gallery-scores.js";
 import type { Verdict } from "./judge.js";
@@ -105,7 +105,7 @@ const COLUMNS = {
 
 const ACTIVE = [...ACTIVE_EVAL_STATUSES];
 
-export function readEvalSettings(db: KobeDb, teamId: string): Promise<EvalSettings> {
+export function readEvalSettings(db: KaijuDb, teamId: string): Promise<EvalSettings> {
   return withTeam(db, teamId, async (tx) => {
     const [row] = await tx
       .select({
@@ -120,7 +120,7 @@ export function readEvalSettings(db: KobeDb, teamId: string): Promise<EvalSettin
 
 /** Changes the gate switch and/or threshold; a real change is audited. Returns the settings in force. */
 export function setEvalSettings(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   change: {
@@ -179,7 +179,7 @@ export interface NewEval {
 
 /** A new `pending` eval; `eval_in_progress` when the agent has an unfinished one. */
 export function createEval(
-  db: KobeDb,
+  db: KaijuDb,
   input: NewEval,
 ): Promise<{ ok: true; value: EvalRecord } | { ok: false; error: "eval_in_progress" }> {
   return withTeam(db, input.teamId, async (tx) => {
@@ -207,7 +207,7 @@ export function createEval(
 
 /** pending -> running (the Job exists); false when the eval is no longer pending. */
 export function markRunning(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
   jobName: string,
@@ -227,7 +227,7 @@ export function markRunning(
  * finished, so the first finisher wins and a sweeper cannot overwrite a real result.
  */
 export function finishEval(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
   verdict: Verdict,
@@ -271,7 +271,7 @@ export function finishEval(
 
 /** Records the version a passed eval published, or why nothing was published. */
 export function recordPublication(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
   outcome: { readonly version: number } | { readonly note: string },
@@ -284,7 +284,7 @@ export function recordPublication(
   });
 }
 
-export async function getEval(db: KobeDb, teamId: string, id: string): Promise<EvalRecord | null> {
+export async function getEval(db: KaijuDb, teamId: string, id: string): Promise<EvalRecord | null> {
   return withTeam(db, teamId, async (tx) => {
     const [row] = await tx.select(COLUMNS).from(orbitEvals).where(eq(orbitEvals.id, id));
     return row ?? null;
@@ -293,7 +293,7 @@ export async function getEval(db: KobeDb, teamId: string, id: string): Promise<E
 
 /** An agent's evals, newest first. */
 export function listAgentEvals(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   agentId: string,
   limit: number,
@@ -317,7 +317,7 @@ export interface VersionScore {
 
 /** The score each published version of the agent earned in this team, by version number. */
 export function versionScores(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   agentId: string,
 ): Promise<ReadonlyMap<number, VersionScore>> {
@@ -343,7 +343,7 @@ export function versionScores(
 }
 
 /** Unfinished evals created before `before`: their driver died or the Job never reported. */
-export function staleEvals(db: KobeDb, teamId: string, before: Date): Promise<EvalRecord[]> {
+export function staleEvals(db: KaijuDb, teamId: string, before: Date): Promise<EvalRecord[]> {
   return withTeam(db, teamId, (tx) =>
     tx
       .select(COLUMNS)

@@ -9,7 +9,7 @@ type Frame = Record<string, unknown>;
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-executor-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-executor-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });

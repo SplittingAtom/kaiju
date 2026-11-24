@@ -1,9 +1,9 @@
-import { threadEgressBlockedResponseSchema } from "@kobe/protocol";
+import { threadEgressBlockedResponseSchema } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call, expectContract } from "./contract";
 
-async function blocked(fake: FakeKobe) {
+async function blocked(fake: FakeKaiju) {
   const threadId = fake.addThread("T");
   const sent = await call(fake, "POST", `/v1/threads/${threadId}/messages`, { content: "Fetch" });
   const runId = (sent.body as { run_id: string }).run_id;
@@ -19,7 +19,7 @@ async function blocked(fake: FakeKobe) {
 
 describe("fake egress area: answers parse with the protocol (KOBE-717)", () => {
   it("lists a thread's blocked domains", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const threadId = await blocked(fake);
     await expectContract(
       fake,
@@ -30,7 +30,7 @@ describe("fake egress area: answers parse with the protocol (KOBE-717)", () => {
   });
 
   it("fails on a deliberate drift", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const threadId = await blocked(fake);
     const { body } = await call(fake, "GET", `/v1/threads/${threadId}/egress-blocked`);
     const rows = (body as { blocked: Record<string, unknown>[] }).blocked;

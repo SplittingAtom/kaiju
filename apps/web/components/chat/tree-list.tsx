@@ -10,7 +10,7 @@ import {
   nodeText,
   nodeTime,
 } from "../../lib/chat/tree-panel";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { NodeMenu, useTreeActions } from "./tree-actions";
 import type { TreeData } from "./tree-context";
 import styles from "./conversation-tree.module.css";
@@ -28,7 +28,7 @@ export function TreeList({
   tree,
   onClose,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly data: TreeData;
   readonly tree: TreeProjection;
   readonly onClose: () => void;
@@ -49,7 +49,7 @@ export function TreeList({
                 const time = nodeTime(node.at);
                 const name = nodeName(node, time);
                 return (
-                  <li key={node.id} className={styles.listRow} data-kobe-tree-branch={node.id}>
+                  <li key={node.id} className={styles.listRow} data-kaiju-tree-branch={node.id}>
                     <button
                       type="button"
                       className={styles.listOpen}

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { BRANDING_ASSET_KINDS, type BrandingAssetKind, type SiteBranding } from "@kobe/protocol";
-import { eq, siteBrandingAssets, type KobeDb, type KobeTx } from "@kobe/db";
+import { BRANDING_ASSET_KINDS, type BrandingAssetKind, type SiteBranding } from "@kaiju/protocol";
+import { eq, siteBrandingAssets, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { readBrandingSettings, type BrandingSettings } from "./settings.js";
 import { themedFaviconSvg, themedLogoSvg, type ThemedSvg } from "./svg-themed.js";
 
@@ -131,7 +131,7 @@ export function publicBranding(
   };
 }
 
-async function loadSnapshot(db: KobeDb): Promise<BrandingSnapshot> {
+async function loadSnapshot(db: KaijuDb): Promise<BrandingSnapshot> {
   const [settings, rows] = await Promise.all([
     readBrandingSettings(db),
     db
@@ -165,7 +165,7 @@ async function loadSnapshot(db: KobeDb): Promise<BrandingSnapshot> {
 export class BrandingCache {
   private inflight: Promise<BrandingSnapshot> | undefined;
 
-  constructor(private readonly db: KobeDb) {}
+  constructor(private readonly db: KaijuDb) {}
 
   get(): Promise<BrandingSnapshot> {
     if (this.inflight) return this.inflight;
@@ -184,10 +184,10 @@ export class BrandingCache {
   }
 }
 
-const caches = new WeakMap<KobeDb, BrandingCache>();
+const caches = new WeakMap<KaijuDb, BrandingCache>();
 
 /** The replica's loader for this database (shared by the public and the admin routes). */
-export function brandingCache(db: KobeDb): BrandingCache {
+export function brandingCache(db: KaijuDb): BrandingCache {
   let cache = caches.get(db);
   if (!cache) {
     cache = new BrandingCache(db);
@@ -207,7 +207,7 @@ export interface NewAsset {
 }
 
 /** Inserts or replaces the file of `asset.kind`. */
-export async function storeAsset(tx: KobeTx, asset: NewAsset): Promise<void> {
+export async function storeAsset(tx: KaijuTx, asset: NewAsset): Promise<void> {
   const values = {
     bytes: asset.bytes,
     contentType: asset.contentType,
@@ -225,7 +225,7 @@ export async function storeAsset(tx: KobeTx, asset: NewAsset): Promise<void> {
 }
 
 /** Removes the file of `kind`; false when there was none. */
-export async function deleteAsset(tx: KobeTx, kind: BrandingAssetKind): Promise<boolean> {
+export async function deleteAsset(tx: KaijuTx, kind: BrandingAssetKind): Promise<boolean> {
   const removed = await tx
     .delete(siteBrandingAssets)
     .where(eq(siteBrandingAssets.kind, kind))

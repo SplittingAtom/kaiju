@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { must } from "../testing/event-stream-fixture.js";
 import { threadRunsSchema } from "../openapi/runs.js";
-import type { ActorContext } from "@kobe/protocol";
+import type { ActorContext } from "@kaiju/protocol";
 import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
 
 /**

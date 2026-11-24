@@ -3,17 +3,17 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming } from "./testing";
 
 /** KOBE-200 (CE6, CE7): the artifact column's tabs, auto-open, resize and per-thread memory. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -158,7 +158,7 @@ describe("resize (ac-2)", () => {
       name: "Resize the artifact column and the conversation",
     });
     const grid = must(region("artifact").parentElement);
-    return { handle, width: () => grid.style.getPropertyValue("--kobe-artifact-width") };
+    return { handle, width: () => grid.style.getPropertyValue("--kaiju-artifact-width") };
   }
 
   it("defaults to half the space, and the keyboard holds the 360 and 400 px floors", async () => {
@@ -314,7 +314,7 @@ describe("review round 1", () => {
     await waitFor(() => expect(tabNames()).toEqual(["Notes*"]));
     await user.click(screen.getByRole("button", { name: "Close Notes" }));
     expect(screen.queryByRole("tablist")).toBeNull();
-    expect(document.activeElement?.id).toBe("kobe-chat-main");
+    expect(document.activeElement?.id).toBe("kaiju-chat-main");
   });
 
   it("names tabs from the run or the artifact when the thread's list can't be read", async () => {
@@ -385,7 +385,7 @@ describe("review round 1", () => {
     fireEvent.pointerDown(handle, { clientX: 780, button: 0, pointerId: 1 });
     fireEvent.pointerMove(handle, { clientX: 781, pointerId: 1 }); // under the drag threshold
     fireEvent.pointerUp(handle, { clientX: 781, pointerId: 1 });
-    expect(grid.style.getPropertyValue("--kobe-artifact-width")).toBe("");
+    expect(grid.style.getPropertyValue("--kaiju-artifact-width")).toBe("");
 
     // The rail collapses: 232 px more right of it, seen without a window resize.
     column.mockReturnValue(box(48, 616));

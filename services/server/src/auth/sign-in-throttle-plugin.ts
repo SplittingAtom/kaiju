@@ -6,7 +6,7 @@ import {
   getSessionFromCtx,
   isAPIError,
 } from "better-auth/api";
-import { eq, users, type KobeDb } from "@kobe/db";
+import { eq, users, type KaijuDb } from "@kaiju/db";
 import { recordAuditAfter } from "../audit/record.js";
 import type { BackgroundTasks } from "../background.js";
 import type { ClientIpWatch } from "./client-ip-watch.js";
@@ -97,7 +97,7 @@ function codeOf(returned: unknown): string {
  * Better Auth can't resolve (its own limiter then shares one bucket per path).
  */
 export function signInThrottlePlugin(o: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly secret: string;
   readonly throttle: SignInThrottle;
   readonly background: BackgroundTasks;
@@ -220,7 +220,7 @@ async function twoFactorUser(ctx: AuthCtx): Promise<{ id: string; email: string 
   return user ? { id: user.id, email: user.email } : null;
 }
 
-async function userIdByEmail(db: KobeDb, email: string | undefined): Promise<string | null> {
+async function userIdByEmail(db: KaijuDb, email: string | undefined): Promise<string | null> {
   if (!email) return null;
   const [row] = await db
     .select({ id: users.id })

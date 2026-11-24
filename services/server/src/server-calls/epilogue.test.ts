@@ -1,6 +1,6 @@
 import pino from "pino";
 import { describe, expect, it } from "vitest";
-import { SERVER_CALL_LIMITS } from "@kobe/protocol";
+import { SERVER_CALL_LIMITS } from "@kaiju/protocol";
 import { AppendError } from "../event-stream/append.js";
 import { runEpilogue, type EpilogueDeps } from "./epilogue.js";
 

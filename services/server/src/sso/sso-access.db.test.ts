@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { AuditActor } from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import type { AuditActor } from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { loadSsoSettings } from "./settings.js";
@@ -21,7 +21,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * KOBE-627 (spec sso-oidc-scim §7, SSO2/SSO6/SSO10): the access-mapping engine and its rules, the
  * mapping routes, and the Team console's managed rows (refused edits, Take over).
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 type Person = "owner" | "siteAdmin" | "alice" | "bob" | "carol" | "dave" | "erin" | "fred";
@@ -154,12 +154,12 @@ beforeAll(async () => {
   }
   provider = await insertProvider("entra");
   other = await insertProvider("other");
-  await map(provider, "kobe.fin.member", teams.finance, "member");
-  await map(provider, "kobe.fin.builder", teams.finance, "contributor");
-  await map(provider, "kobe.fin.admin", teams.finance, "team_admin");
-  await map(provider, "kobe.mkt.member", teams.marketing, "member");
-  await map(provider, "kobe.ops.admin", teams.ops, "team_admin");
-  await map(other, "kobe.fin.member", teams.finance, "member");
+  await map(provider, "kaiju.fin.member", teams.finance, "member");
+  await map(provider, "kaiju.fin.builder", teams.finance, "contributor");
+  await map(provider, "kaiju.fin.admin", teams.finance, "team_admin");
+  await map(provider, "kaiju.mkt.member", teams.marketing, "member");
+  await map(provider, "kaiju.ops.admin", teams.ops, "team_admin");
+  await map(other, "kaiju.fin.member", teams.finance, "member");
   await switchTo("alice", teams.finance);
 });
 
@@ -201,7 +201,7 @@ describe("mapping routes (site.users.manage)", () => {
     const one = await as.siteAdmin.get(`/v1/site/sso/mappings?providerId=${other}`);
     expect(one.json.mappings).toEqual([
       expect.objectContaining({
-        claimValue: "kobe.fin.member",
+        claimValue: "kaiju.fin.member",
         teamSlug: "finance",
         role: "member",
       }),
@@ -212,7 +212,7 @@ describe("mapping routes (site.users.manage)", () => {
   it("refuses a mapping that targets a site role (SSO6, ac-5)", async () => {
     for (const role of ["admin", "owner", "Owner", "site_admin"]) {
       const res = await as.owner.post(`/v1/site/sso/providers/${provider}/mappings`, {
-        claimValue: "kobe.site.admin",
+        claimValue: "kaiju.site.admin",
         teamId: teams.finance,
         role,
       });
@@ -221,7 +221,7 @@ describe("mapping routes (site.users.manage)", () => {
     expect(
       (
         await as.owner.post(`/v1/site/sso/providers/${provider}/mappings`, {
-          claimValue: "kobe.x",
+          claimValue: "kaiju.x",
           teamId: teams.finance,
           role: "boss",
         })
@@ -246,7 +246,7 @@ describe("mapping routes (site.users.manage)", () => {
       ).toBe(400);
     }
     const dup = await as.siteAdmin.post(path, {
-      claimValue: "kobe.fin.member",
+      claimValue: "kaiju.fin.member",
       teamId: teams.finance,
       role: "team_admin",
     });
@@ -266,11 +266,11 @@ describe("mapping routes (site.users.manage)", () => {
     ).toBe("provider_not_found");
 
     const seq = await lastSeq();
-    const id = await map(provider, "kobe.temp", teams.marketing, "contributor");
+    const id = await map(provider, "kaiju.temp", teams.marketing, "contributor");
     expect((await as.siteAdmin.delete(`${path}/${id}`)).status).toBe(204);
     expect((await as.siteAdmin.delete(`${path}/${id}`)).status).toBe(404);
     // Another provider's id never deletes this provider's mapping.
-    const mine = await map(provider, "kobe.temp2", teams.marketing, "member");
+    const mine = await map(provider, "kaiju.temp2", teams.marketing, "member");
     expect(
       (await as.siteAdmin.delete(`/v1/site/sso/providers/${other}/mappings/${mine}`)).status,
     ).toBe(404);
@@ -287,7 +287,7 @@ describe("mapping routes (site.users.manage)", () => {
       actor_id: ids.siteAdmin,
       target: { providerId: provider, mappingId: id, teamId: teams.marketing, role: "contributor" },
     });
-    expect(JSON.stringify(events)).not.toContain("kobe.temp");
+    expect(JSON.stringify(events)).not.toContain("kaiju.temp");
   });
 });
 
@@ -305,9 +305,9 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
   it("rule 1-2: adds managed rows with the highest matched role per team, audited via idp", async () => {
     const seq = await lastSeq();
     const result = await apply("bob", [
-      "kobe.fin.member",
-      "kobe.fin.builder",
-      "kobe.mkt.member",
+      "kaiju.fin.member",
+      "kaiju.fin.builder",
+      "kaiju.mkt.member",
       "unmapped.value",
     ]);
     expect(sortChanges(result)).toEqual(
@@ -332,17 +332,17 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
     }
     // Applying the same values again changes nothing.
     expect(
-      (await apply("bob", ["kobe.fin.builder", "kobe.fin.member", "kobe.mkt.member"])).changes,
+      (await apply("bob", ["kaiju.fin.builder", "kaiju.fin.member", "kaiju.mkt.member"])).changes,
     ).toEqual([]);
   });
 
   it("rule 2: updates a managed row's role when the mappings change it, keeping it managed", async () => {
     const seq = await lastSeq();
-    const up = await apply("bob", ["kobe.fin.admin", "kobe.mkt.member"]);
+    const up = await apply("bob", ["kaiju.fin.admin", "kaiju.mkt.member"]);
     expect(up.changes).toEqual([
       { kind: "role_changed", teamId: teams.finance, from: "contributor", to: "team_admin" },
     ]);
-    const down = await apply("bob", ["kobe.fin.member", "kobe.mkt.member"]);
+    const down = await apply("bob", ["kaiju.fin.member", "kaiju.mkt.member"]);
     expect(down.changes).toEqual([
       { kind: "role_changed", teamId: teams.finance, from: "team_admin", to: "member" },
     ]);
@@ -360,7 +360,7 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
   it("rule 3: never changes or removes a manual row; records manual_row when it differs", async () => {
     // Alice is Finance's manual team admin (she created it): a member mapping can't demote her.
     const seq = await lastSeq();
-    const result = await apply("alice", ["kobe.fin.member"]);
+    const result = await apply("alice", ["kaiju.fin.member"]);
     expect(result.changes).toEqual([]);
     expect(result.conflicts).toEqual([{ teamId: teams.finance, reason: "manual_row" }]);
     expect(await row(teams.finance, "alice")).toEqual({ role: "team_admin", added_via: null });
@@ -382,7 +382,7 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
       (await as.alice.post("/v1/team/invites", { email: email("dave"), role: "member" })).status,
     ).toBe(202);
     expect((await as.dave.post(`/v1/me/invites/${teams.marketing}/accept`)).status).toBe(200);
-    const more = await apply("dave", ["kobe.mkt.member", "kobe.fin.admin"]);
+    const more = await apply("dave", ["kaiju.mkt.member", "kaiju.fin.admin"]);
     expect(more.changes).toEqual([{ kind: "added", teamId: teams.finance, role: "team_admin" }]);
     expect(await row(teams.marketing, "dave")).toEqual({ role: "member", added_via: null });
     const none = await apply("dave", []);
@@ -392,12 +392,12 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
   });
 
   it("leaves rows another provider manages alone", async () => {
-    await apply("erin", ["kobe.fin.member"], other);
+    await apply("erin", ["kaiju.fin.member"], other);
     expect(await row(teams.finance, "erin")).toEqual({ role: "member", added_via: `idp:${other}` });
     const result = await apply("erin", []);
     expect(result.changes).toEqual([]);
     expect(await row(teams.finance, "erin")).toEqual({ role: "member", added_via: `idp:${other}` });
-    const higher = await apply("erin", ["kobe.fin.builder"]);
+    const higher = await apply("erin", ["kaiju.fin.builder"]);
     expect(higher.conflicts).toEqual([{ teamId: teams.finance, reason: "manual_row" }]);
     expect((await apply("erin", [], other)).changes).toEqual([
       { kind: "removed", teamId: teams.finance, role: "member" },
@@ -415,7 +415,7 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
     const result = await applyIdpAccessAndFollowUp(deps, {
       providerId: provider,
       userId: ids.bob,
-      values: ["kobe.fin.member"],
+      values: ["kaiju.fin.member"],
       actor: SYSTEM,
     });
     expect(result.changes).toEqual([{ kind: "removed", teamId: teams.marketing, role: "member" }]);
@@ -437,7 +437,7 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
 
   it("rule 4: keeps the last active team admin's managed row, records last_team_admin, retries", async () => {
     // Carol becomes Ops's team admin through the mapping; Fred (manual) then leaves.
-    expect((await apply("carol", ["kobe.ops.admin"])).changes).toEqual([
+    expect((await apply("carol", ["kaiju.ops.admin"])).changes).toEqual([
       { kind: "added", teamId: teams.ops, role: "team_admin" },
     ]);
     await switchTo("fred", teams.ops);
@@ -453,8 +453,8 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
       added_via: `idp:${provider}`,
     });
     // A downgrade is held the same way.
-    const opsMember = await map(provider, "kobe.ops.member", teams.ops, "member");
-    expect((await apply("carol", ["kobe.ops.member"])).conflicts).toEqual([
+    const opsMember = await map(provider, "kaiju.ops.member", teams.ops, "member");
+    expect((await apply("carol", ["kaiju.ops.member"])).conflicts).toEqual([
       { teamId: teams.ops, reason: "last_team_admin" },
     ]);
     expect(await row(teams.ops, "carol")).toMatchObject({ role: "team_admin" });
@@ -463,7 +463,7 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
     ).toEqual(["last_team_admin", "last_team_admin"]);
 
     // Once someone else is team admin, the next apply finishes the removal.
-    await apply("dave", ["kobe.ops.admin"]);
+    await apply("dave", ["kaiju.ops.admin"]);
     const retried = await apply("carol", []);
     expect(retried.changes).toEqual([{ kind: "removed", teamId: teams.ops, role: "team_admin" }]);
     expect(retried.conflicts).toEqual([]);
@@ -475,12 +475,12 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
   });
 
   it("rule 5: no matched value removes every managed row; manual memberships stay", async () => {
-    expect((await apply("carol", ["kobe.fin.member", "kobe.mkt.member"])).changes).toHaveLength(2);
+    expect((await apply("carol", ["kaiju.fin.member", "kaiju.mkt.member"])).changes).toHaveLength(2);
     const none = await apply("carol", ["nothing.mapped"]);
     expect(none.changes.map((c) => c.kind)).toEqual(["removed", "removed"]);
     expect(none.memberships).toEqual([]);
     // Dave keeps his manual Marketing membership (and his managed Ops admin row is gone too).
-    await apply("erin", ["kobe.ops.admin"]);
+    await apply("erin", ["kaiju.ops.admin"]);
     const dave = await apply("dave", []);
     expect(dave.memberships).toEqual([{ teamId: teams.marketing, role: "member" }]);
   });
@@ -488,7 +488,7 @@ describe("applyIdpAccess rules (§7, ac-1, ac-6)", () => {
 
 describe("managed rows in the Team console (SSO10, ac-3, ac-4)", () => {
   beforeAll(async () => {
-    await apply("fred", ["kobe.fin.builder"]);
+    await apply("fred", ["kaiju.fin.builder"]);
   });
 
   it("shows the managing provider on the roster and the team's mappings read-only", async () => {
@@ -507,10 +507,10 @@ describe("managed rows in the Team console (SSO10, ac-3, ac-4)", () => {
     const mappings = await as.alice.get("/v1/team/sso-mappings");
     expect(mappings.status).toBe(200);
     expect(mappings.json.mappings.map((m: { claimValue: string }) => m.claimValue).sort()).toEqual([
-      "kobe.fin.admin",
-      "kobe.fin.builder",
-      "kobe.fin.member",
-      "kobe.fin.member",
+      "kaiju.fin.admin",
+      "kaiju.fin.builder",
+      "kaiju.fin.member",
+      "kaiju.fin.member",
     ]);
     await switchTo("fred", teams.finance);
     expect((await as.fred.get("/v1/team/sso-mappings")).status).toBe(403);
@@ -539,7 +539,7 @@ describe("managed rows in the Team console (SSO10, ac-3, ac-4)", () => {
       (await as.alice.post("/v1/team/invites", { email: email("erin"), role: "contributor" }))
         .status,
     ).toBe(202);
-    await apply("erin", ["kobe.ops.admin", "kobe.mkt.member"]);
+    await apply("erin", ["kaiju.ops.admin", "kaiju.mkt.member"]);
     expect((await as.erin.post(`/v1/me/invites/${teams.marketing}/accept`)).status).toBe(200);
     expect(await row(teams.marketing, "erin")).toEqual({
       role: "member",
@@ -577,7 +577,7 @@ describe("managed rows in the Team console (SSO10, ac-3, ac-4)", () => {
     ]);
     // The mapping no longer removes or changes it; a differing desire is only a conflict.
     expect((await apply("fred", [])).changes).toEqual([]);
-    expect((await apply("fred", ["kobe.fin.admin"])).conflicts).toEqual([
+    expect((await apply("fred", ["kaiju.fin.admin"])).conflicts).toEqual([
       { teamId: teams.finance, reason: "manual_row" },
     ]);
     expect(await row(teams.finance, "fred")).toEqual({ role: "contributor", added_via: null });

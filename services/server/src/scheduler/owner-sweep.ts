@@ -1,4 +1,4 @@
-import { and, eq, inArray, or, schedules, sql, threads, withTeam, type KobeDb } from "@kobe/db";
+import { and, eq, inArray, or, schedules, sql, threads, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { ScheduledCancelReason } from "../runs/cancel-scheduled.js";
 import type { ServerRunOrchestrator } from "../runs/orchestrator.js";
@@ -18,7 +18,7 @@ import { pauseOwnerSchedulesInTx, type ScheduleStopCause } from "../schedules/of
  * as the system. Idempotent: what is done no longer matches, so a later tick finds nothing.
  */
 export interface OwnerSweepDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly runs: Pick<ServerRunOrchestrator, "cancelScheduledRuns">;
   readonly log: Pick<Logger, "error" | "warn">;
 }
@@ -40,7 +40,7 @@ const STEPS: Record<"deactivated" | "removed", [ScheduleStopCause, ScheduledCanc
  * index's, literally), their threads' owners by primary key, then which of those owners are
  * deactivated or gone from the team. A single join let the planner hash the team's threads.
  */
-async function inactiveOwners(db: KobeDb, teamId: string): Promise<InactiveOwner[]> {
+async function inactiveOwners(db: KaijuDb, teamId: string): Promise<InactiveOwner[]> {
   return withTeam(db, teamId, async (tx) => {
     const scheduleOwners = await tx
       .selectDistinct({ userId: schedules.userId })

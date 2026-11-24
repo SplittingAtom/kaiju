@@ -5,7 +5,7 @@ import type { ServerDeps } from "../../deps.js";
 import { logger } from "../../logger.js";
 import { DRAFT_LIMITS, pathFromUrl } from "../../skills/drafts/files.js";
 import { changelogSchema, semverSchema } from "../../skills/semver.js";
-import { type KobeDeps } from "../../skills/site-edit/kobe-detach.js";
+import { type KaijuDeps } from "../../skills/site-edit/kaiju-detach.js";
 import { type SiteDraftFailure, type SiteDraftRecord } from "../../skills/site-edit/site-drafts.js";
 import { type PublishFailure } from "../../skills/site-edit/site-publish.js";
 import { param } from "../../http/request.js";
@@ -54,7 +54,7 @@ export function catalogEditKit(deps: ServerDeps) {
   const blobsOr = (_c: Ctx) => deps.blobs ?? null;
   const unavailable = (c: Ctx) =>
     error(c, 503, "skills_unavailable", "Skill storage is not configured.");
-  const kobeDeps = (): KobeDeps | null =>
+  const kaijuDeps = (): KaijuDeps | null =>
     deps.blobs ? { db, blobs: deps.blobs, log: logger } : null;
 
   const failure = (c: Ctx, f: SiteDraftFailure | PublishFailure) => {
@@ -127,5 +127,5 @@ export function catalogEditKit(deps: ServerDeps) {
     return id.success ? id.data : null;
   };
 
-  return { deps, db, blobsOr, unavailable, kobeDeps, failure, skillId };
+  return { deps, db, blobsOr, unavailable, kaijuDeps, failure, skillId };
 }

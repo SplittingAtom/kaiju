@@ -2,12 +2,12 @@
 
 /**
  * Streaming arrival fade (CE11, KOBE-207). Words that arrive after the text mounted are each a
- * `<span data-kobe-word>`, keyed by their offset in the source, so a word keeps its element across
+ * `<span data-kaiju-word>`, keyed by their offset in the source, so a word keeps its element across
  * re-renders and re-parses and only new words mount; the CSS animation in `app/chat-global.css`
  * runs on mount, so just those fade. Text already there at mount (history, a thread opened or
  * reconnected mid-run) stays plain. No state beyond that mount-time length, no effects or timers:
  * the text renders exactly as often as it did before. The spans stay after the part finishes, so
- * the DOM (and any selection in it) is stable; `data-kobe-arrive` only switches the fade on.
+ * the DOM (and any selection in it) is stable; `data-kaiju-arrive` only switches the fade on.
  */
 import { createContext, useContext, useState, type ReactNode } from "react";
 
@@ -53,7 +53,7 @@ function Words({
     <>
       {text.slice(0, fresh[0]?.offset)}
       {fresh.map((w) => (
-        <span key={start + w.offset} data-kobe-word="">
+        <span key={start + w.offset} data-kaiju-word="">
           {w.text}
         </span>
       ))}
@@ -69,7 +69,7 @@ export function ArrivingWords({ text }: { readonly text: string }) {
 /** Markdown's mount-time source length, for the word groups below it. */
 export const SettledContext = createContext(Number.POSITIVE_INFINITY);
 
-/** A text run the rehype step marked (`data-kobe-words` = its source offset), as words. */
+/** A text run the rehype step marked (`data-kaiju-words` = its source offset), as words. */
 export function MarkdownWords({ text, start }: { readonly text: string; readonly start: number }) {
   return <Words text={text} start={start} settled={useContext(SettledContext)} />;
 }
@@ -101,7 +101,7 @@ function wordRun(text: HastNode): HastNode {
   return {
     type: "element",
     tagName: "span",
-    properties: { dataKobeWords: start },
+    properties: { dataKaijuWords: start },
     children: [text],
   } as HastNode;
 }

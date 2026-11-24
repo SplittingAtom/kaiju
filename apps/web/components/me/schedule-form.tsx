@@ -1,6 +1,6 @@
 "use client";
 
-import { SCHEDULE_PROMPT_MAX, SCHEDULE_WEEKDAYS, type ScheduleRecurrence } from "@kobe/protocol";
+import { SCHEDULE_PROMPT_MAX, SCHEDULE_WEEKDAYS, type ScheduleRecurrence } from "@kaiju/protocol";
 import { useState, type FormEvent } from "react";
 import type { ApiError } from "../../lib/api/client";
 import type { Schedule, ScheduleAgent, ScheduleDraft } from "../../lib/schedules/api";

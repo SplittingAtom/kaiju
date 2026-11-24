@@ -1,4 +1,4 @@
-import type { ThemeSettings } from "@kobe/protocol";
+import type { ThemeSettings } from "@kaiju/protocol";
 import { BRANDING_CSS_ALLOWED, brandingCss } from "./branding-css";
 import {
   FONT_STACK_VALUES,
@@ -15,7 +15,7 @@ import {
  * brandingCss only overrides what a theme changes, so each root first gets a scoped copy of
  * theme.css's defaults (the default preset's values, the status colours the preview shows, the
  * logo's light/dark switch) and the aliases that read the brand tokens: a custom property that
- * reads another one is resolved where it is declared, so `--admin-accent: var(--kobe-brand-link)`
+ * reads another one is resolved where it is declared, so `--admin-accent: var(--kaiju-brand-link)`
  * on :root would ignore the preview's own link colour. The dark root is `data-theme="dark"`, so
  * brandingCss's chosen-dark block applies to it and its OS-dark block never touches the light one.
  * Ordering and specificity: `#root` (defaults, then the theme's light block) under
@@ -25,36 +25,36 @@ import {
 export const PREVIEW_IDS = { light: "preview-light", dark: "preview-dark" } as const;
 
 /**
- * Elements with `data-kobe-swatch="light|dark"` (the logo's light and dark backgrounds on the
+ * Elements with `data-kaiju-swatch="light|dark"` (the logo's light and dark backgrounds on the
  * page) get that scheme's default values too, without the theme: plain light and dark.
  */
-export const SWATCH_ATTRIBUTE = "data-kobe-swatch";
+export const SWATCH_ATTRIBUTE = "data-kaiju-swatch";
 
 /** Fixed (never themed) tokens the preview reads, as theme.css sets them (preview-css.test.ts). */
 const FIXED = {
   light: {
-    "--kobe-status-running": "#166534",
-    "--kobe-status-running-bg": "#dcfce7",
-    "--kobe-status-attention": "#a14b05",
-    "--kobe-status-attention-bg": "#fef3c7",
-    "--kobe-status-failed": "#b91c1c",
-    "--kobe-status-failed-bg": "#fee2e2",
+    "--kaiju-status-running": "#166534",
+    "--kaiju-status-running-bg": "#dcfce7",
+    "--kaiju-status-attention": "#a14b05",
+    "--kaiju-status-attention-bg": "#fef3c7",
+    "--kaiju-status-failed": "#b91c1c",
+    "--kaiju-status-failed-bg": "#fee2e2",
     "--admin-danger": "#a4161a",
     "--admin-danger-bg": "#fdecec",
-    "--kobe-when-light": "block",
-    "--kobe-when-dark": "none",
+    "--kaiju-when-light": "block",
+    "--kaiju-when-dark": "none",
   },
   dark: {
-    "--kobe-status-running": "#4ade80",
-    "--kobe-status-running-bg": "#052e16",
-    "--kobe-status-attention": "#fbbf24",
-    "--kobe-status-attention-bg": "#422006",
-    "--kobe-status-failed": "#f87171",
-    "--kobe-status-failed-bg": "#450a0a",
+    "--kaiju-status-running": "#4ade80",
+    "--kaiju-status-running-bg": "#052e16",
+    "--kaiju-status-attention": "#fbbf24",
+    "--kaiju-status-attention-bg": "#422006",
+    "--kaiju-status-failed": "#f87171",
+    "--kaiju-status-failed-bg": "#450a0a",
     "--admin-danger": "#ff8a8a",
     "--admin-danger-bg": "#3a1c1e",
-    "--kobe-when-light": "none",
-    "--kobe-when-dark": "block",
+    "--kaiju-when-light": "none",
+    "--kaiju-when-dark": "block",
   },
 } as const;
 
@@ -64,9 +64,9 @@ export const PREVIEW_FIXED_TOKENS = Object.keys(
 
 /** theme.css's aliases of the brand tokens, declared again on each root (see above). */
 const ALIASES = [
-  ["--admin-accent", "var(--kobe-brand-link)"],
-  ["--kobe-status-accent", "var(--kobe-brand-primary)"],
-  ["--kobe-status-accent-fg", "var(--kobe-brand-primary-fg)"],
+  ["--admin-accent", "var(--kaiju-brand-link)"],
+  ["--kaiju-status-accent", "var(--kaiju-brand-primary)"],
+  ["--kaiju-status-accent-fg", "var(--kaiju-brand-primary-fg)"],
 ] as const;
 
 type Decls = readonly (readonly [string, string])[];
@@ -82,8 +82,8 @@ const schemeDecls = (scheme: "light" | "dark"): Decls => [
 
 const shared: Decls = [
   ...RADIUS_TOKENS.map((t) => [t, RADIUS_SCALES.soft[t]] as const),
-  ["--kobe-font-sans", FONT_STACK_VALUES.system],
-  ["--kobe-font-mono", SYSTEM_MONO_STACK],
+  ["--kaiju-font-sans", FONT_STACK_VALUES.system],
+  ["--kaiju-font-mono", SYSTEM_MONO_STACK],
   ...ALIASES,
 ];
 

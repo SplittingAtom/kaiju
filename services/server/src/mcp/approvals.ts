@@ -1,6 +1,6 @@
-import { canonicalJson, type JsonObject } from "@kobe/protocol";
-import { sql, withTeam, type KobeDb } from "@kobe/db";
-import type { VerifyFailure } from "@kobe/protocol/node";
+import { canonicalJson, type JsonObject } from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
+import type { VerifyFailure } from "@kaiju/protocol/node";
 import type { ApprovalVerifier } from "../approvals/verify.js";
 
 /**
@@ -55,7 +55,7 @@ export const DENY_UNVERIFIED_APPROVALS: McpApprovalVerifier = {
 
 /** The tool call id of the run's usable approval for exactly this tool and input, if any. */
 async function findApprovedToolCallId(
-  db: KobeDb,
+  db: KaijuDb,
   call: McpApprovalCall,
 ): Promise<string | undefined> {
   const input = canonicalJson(call.input);
@@ -73,7 +73,7 @@ async function findApprovedToolCallId(
 
 /** The MCP proxy's verifier over KOBE-37's `ApprovalVerifier` (audits consumed/rejected itself). */
 export function approvalVerifierForMcp(
-  db: KobeDb,
+  db: KaijuDb,
   verifier: ApprovalVerifier,
 ): McpApprovalVerifier {
   return {

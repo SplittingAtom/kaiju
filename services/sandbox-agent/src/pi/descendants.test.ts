@@ -6,7 +6,7 @@ import { descendantPids } from "./descendants.js";
 
 describe("descendantPids", () => {
   it("walks the ppid tree from /proc stat files (comm may contain ') ')", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-proc-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-proc-"));
     const stat = async (pid: number, ppid: number, comm = "x") => {
       await mkdir(path.join(dir, String(pid)));
       await writeFile(path.join(dir, String(pid), "stat"), `${pid} (${comm}) S ${ppid} 1 1 0`);

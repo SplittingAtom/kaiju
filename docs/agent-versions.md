@@ -24,7 +24,7 @@ manual, audited-by-hand operation. **There is no app path, and the retention and
 still an open question (see `docs/ledger/KOBE-46.md`).**
 
 Run it as a **superuser**, because RLS is forced on team tables, including for their owner. Do it
-in **one transaction**, after a backup (`kobe backup`). Replace `:agent` with the agent's id.
+in **one transaction**, after a backup (`kaiju backup`). Replace `:agent` with the agent's id.
 
 1. **Decide what happens to pinned threads.** Either delete them (for user erasure, they belong
    to the same user), or keep them and clear their pin. A cleared pin runs on the site default

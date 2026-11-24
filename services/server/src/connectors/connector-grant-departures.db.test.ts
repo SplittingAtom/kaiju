@@ -4,7 +4,7 @@ import { runWithAuditContext } from "../audit/context.js";
 import { sweepDepartedGrants } from "./grant-departures.js";
 import { removeMemberInTx } from "../teams/members.js";
 import { deactivateUser } from "../users/deactivation.js";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 

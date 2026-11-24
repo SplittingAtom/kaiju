@@ -17,7 +17,7 @@ export const MOCK = {
 } as const;
 
 /** The app role the spec maps to the team (only the mock's people carry it). */
-export const MOCK_ROLE = "kobe.e2e.member";
+export const MOCK_ROLE = "kaiju.e2e.member";
 /** Addresses of the people the spec makes; never a real domain. */
 export const MOCK_DOMAIN = "sso-e2e.test";
 

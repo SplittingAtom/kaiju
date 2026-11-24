@@ -51,7 +51,7 @@ describe("commits to a Repo (KOBE-767)", () => {
     expect(
       projectCommitOutcomeSchema.safeParse({
         status: "pull_request",
-        branch: "kobe/x",
+        branch: "kaiju/x",
         number: 3,
         url: "",
         opened: false,

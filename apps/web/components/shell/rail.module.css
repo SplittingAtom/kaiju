@@ -22,14 +22,14 @@
 .rail[data-drawer] {
   position: absolute;
   z-index: 40;
-  inset-block: var(--kobe-shell-gutter, 16px);
-  inset-inline-start: var(--kobe-shell-gutter, 16px);
+  inset-block: var(--kaiju-shell-gutter, 16px);
+  inset-inline-start: var(--kaiju-shell-gutter, 16px);
   box-sizing: border-box;
   width: min(280px, 85vw);
   height: auto;
   border: 1px solid var(--border);
-  border-radius: var(--kobe-radius-lg);
-  box-shadow: 0 0 0 100vmax var(--kobe-scrim);
+  border-radius: var(--kaiju-radius-lg);
+  box-shadow: 0 0 0 100vmax var(--kaiju-scrim);
   outline: none;
 }
 
@@ -239,7 +239,7 @@
   font-weight: 600;
   background: var(--admin-bg);
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
   cursor: default;
 }
 
@@ -255,8 +255,8 @@ button.teamIcon {
   color: var(--admin-fg);
   background: var(--admin-bg);
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-lg);
-  box-shadow: var(--kobe-shadow-drawer);
+  border-radius: var(--kaiju-radius-lg);
+  box-shadow: var(--kaiju-shadow-drawer);
 }
 
 .teamPopover ul {
@@ -273,7 +273,7 @@ button.teamIcon {
   text-align: start;
   background: none;
   border: 0;
-  border-radius: var(--kobe-radius-sm);
+  border-radius: var(--kaiju-radius-sm);
   font: inherit;
   cursor: pointer;
 }
@@ -416,7 +416,7 @@ button.teamIcon {
   text-align: start;
   background: none;
   border: 0;
-  border-radius: var(--kobe-radius-sm);
+  border-radius: var(--kaiju-radius-sm);
   cursor: pointer;
 }
 
@@ -427,7 +427,7 @@ button.teamIcon {
 /* A thread row dragged over a project header (CE19): dropping moves it there. */
 .groupToggle[data-drop-target="true"] {
   color: var(--admin-fg);
-  outline: 2px dashed var(--kobe-brand-focus);
+  outline: 2px dashed var(--kaiju-brand-focus);
   outline-offset: -2px;
 }
 
@@ -459,7 +459,7 @@ button.teamIcon {
   font-size: 0.8rem;
   background: none;
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
   cursor: pointer;
 }
 
@@ -481,7 +481,7 @@ button.teamIcon {
   text-align: center;
   background: color-mix(in srgb, var(--admin-panel) 88%, transparent);
   border: 2px dashed var(--admin-accent);
-  border-radius: var(--kobe-radius-lg);
+  border-radius: var(--kaiju-radius-lg);
   pointer-events: none;
 }
 
@@ -513,8 +513,8 @@ button.teamIcon {
   color: var(--admin-fg);
   background: var(--admin-bg);
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-lg);
-  box-shadow: var(--kobe-shadow-pop);
+  border-radius: var(--kaiju-radius-lg);
+  box-shadow: var(--kaiju-shadow-pop);
   font-size: 0.85rem;
 }
 
@@ -618,13 +618,13 @@ button.teamIcon {
   min-width: 0;
   padding: 0.25rem 0.375rem;
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
   background: var(--background);
   color: inherit;
   font-size: 0.85rem;
 }
 
-.pickers [data-kobe-app-frame] {
+.pickers [data-kaiju-app-frame] {
   margin: 0 0.5rem 0.5rem;
 }
 
@@ -641,7 +641,7 @@ button.teamIcon {
 .pickerRetry {
   padding: 0.125rem 0.5rem;
   border: 1px solid var(--admin-border);
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
   background: none;
   color: inherit;
   font-size: 0.8rem;

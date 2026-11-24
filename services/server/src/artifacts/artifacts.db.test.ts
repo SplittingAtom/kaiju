@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_ARTIFACTS, type PolicyEngine } from "@kobe/protocol";
+import { CAPABILITY_ARTIFACTS, type PolicyEngine } from "@kaiju/protocol";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -19,7 +19,7 @@ import { deleteReleasedBlobs, purgeThreads } from "../retention/index.js";
 const fx = new EventStreamFixture();
 const auth = new FakeSandboxAuth();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const blobs = { objects, prefix: PREFIX };
 const sandboxes: FakeSandbox[] = [];
 let listener: Awaited<ReturnType<typeof sandboxListener>>;

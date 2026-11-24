@@ -5,7 +5,7 @@ import { DropdownMenu } from "radix-ui";
 import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { listChatSkills } from "../../lib/chat/composer-plus-api";
 import { chatPortalContainer } from "../ui/chat-portal";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { PLUS_CONTENT, PLUS_ITEM } from "./plus-menu-styles";
 
 /** From this many skills on, the submenu offers a filter. */
@@ -81,13 +81,13 @@ export function SkillsSubmenu({
   };
   return (
     <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kobe-plus="skills">
+      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kaiju-plus="skills">
         <WandSparklesIcon aria-hidden className="size-4 shrink-0" />
         Skills
       </DropdownMenu.SubTrigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
         <DropdownMenu.SubContent
-          data-kobe-portal
+          data-kaiju-portal
           aria-label="Skills"
           sideOffset={4}
           className={`${PLUS_CONTENT} max-h-80 overflow-y-auto`}
@@ -123,7 +123,7 @@ export function SkillsSubmenu({
             <DropdownMenu.Item
               key={name}
               className={PLUS_ITEM}
-              data-kobe-skill={name}
+              data-kaiju-skill={name}
               onSelect={() => session.skillPicks.set(draft, name)}
             >
               <WandSparklesIcon aria-hidden className="size-4 shrink-0" />
@@ -147,7 +147,7 @@ export function SkillPickChip({ draft }: { readonly draft: string }) {
   return (
     <div className="px-2">
       <span
-        data-kobe-skill-chip={picked}
+        data-kaiju-skill-chip={picked}
         className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs"
       >
         <WandSparklesIcon aria-hidden className="size-3" />

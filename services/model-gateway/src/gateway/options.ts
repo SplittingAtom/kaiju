@@ -1,6 +1,6 @@
-import type { SessionTokenClaims, ThinkingLevel } from "@kobe/protocol";
-import type { SessionVerifyKeys } from "@kobe/session-token";
-import type { RunTokenSubject } from "@kobe/db";
+import type { SessionTokenClaims, ThinkingLevel } from "@kaiju/protocol";
+import type { SessionVerifyKeys } from "@kaiju/session-token";
+import type { RunTokenSubject } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { ByteBudget, CallLimiter, RequestRate } from "../limits.js";
 import type { PrincipalCache } from "../principals.js";

@@ -1,4 +1,4 @@
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import type { ServerDeps } from "../deps.js";
 import { notifyWorkspaceAccess } from "../event-stream/access.js";
 import { logger } from "../logger.js";

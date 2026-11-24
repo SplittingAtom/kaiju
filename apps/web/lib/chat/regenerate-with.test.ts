@@ -1,17 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { must } from "../testing/must";
 import { createChatApi } from "./api";
-import { FakeKobe } from "./testing/fake-kobe";
+import { FakeKaiju } from "./testing/fake-kaiju";
 import { ThreadController } from "./thread-controller";
 import { canRegenerateWith, initialThreadState, type ThreadState } from "./thread-state";
 import type { ThreadSummary } from "./types";
 
 /** KOBE-217: `ThreadController.regenerateWith` and when it may run (`canRegenerateWith`). */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let controllers: ThreadController[];
 
 beforeEach(() => {
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi", enabled: true, is_default: true },
     { alias: "glm", label: "GLM", enabled: true, is_default: false },

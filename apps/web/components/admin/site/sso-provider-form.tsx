@@ -31,7 +31,7 @@ export function SsoProviderForm({
 }: {
   /** Absent: a new provider. */
   readonly provider?: SsoProvider;
-  /** `https://<kobe>/api/auth/sso/callback/`, to show the redirect URI as the slug is typed. */
+  /** `https://<kaiju>/api/auth/sso/callback/`, to show the redirect URI as the slug is typed. */
   readonly callbackBase: string;
   readonly mutation: Mutation;
   readonly onSaved: () => void;

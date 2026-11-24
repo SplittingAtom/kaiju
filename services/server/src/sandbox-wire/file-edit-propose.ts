@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   CAPABILITY_FILE_EDITS,
   EVENT_PAYLOAD_MAX_BYTES,
@@ -8,8 +8,8 @@ import {
   PROJECT_FILES_MAX,
   workspaceToolPath,
   type FileEditProposedPayload,
-} from "@kobe/protocol";
-import { type FileEditProposeFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { type FileEditProposeFrame, type ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { loadAccess } from "../projects/access.js";
@@ -29,7 +29,7 @@ import type { SandboxTarget } from "./types.js";
  * the synced copy's current version, and answered `awaiting_user`.
  */
 export interface FileEditProposeConnection {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly target: SandboxTarget;
   readonly runMaxEvents: number;
   readonly log: Pick<Logger, "error" | "warn">;
@@ -131,7 +131,7 @@ export function fileEditProposeSpec(
  *   limits. Other projects and thread uploads stay read-only.
  */
 export async function proposeFileEdit(
-  db: KobeDb,
+  db: KaijuDb,
   target: SandboxTarget,
   frame: FileEditProposeFrame,
   runMaxEvents: number,
@@ -187,7 +187,7 @@ const OTHER_PROJECT = refused(
 
 /** My files: the synced copy, or a new file where nothing (no file, no folder) is. */
 async function workspaceBase(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   path: string,
 ): Promise<Base | ProposeOutcome> {
@@ -202,7 +202,7 @@ async function workspaceBase(
 
 /** The conversation's project, the owner's role now, and the head (PE1-PE3). */
 async function projectBase(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   frame: FileEditProposeFrame,
   path: string,

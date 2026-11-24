@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { and, eq, sql, threads, withTeam, type KobeDb } from "@kobe/db";
+import { and, eq, sql, threads, withTeam, type KaijuDb } from "@kaiju/db";
 import { createKubeClient, type KubeClient } from "../sandbox/kube.js";
 import {
   runColdStartTrials,
@@ -32,13 +32,13 @@ const HIBERNATED_TIMEOUT_MS = 120_000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function dbNow(db: KobeDb): Promise<number> {
+async function dbNow(db: KaijuDb): Promise<number> {
   const res = await db.execute<{ now: Date }>(sql`SELECT clock_timestamp() AS now`);
   return new Date(res.rows[0]?.now ?? Date.now()).getTime();
 }
 
 /** When the sandbox's current wire connection was registered (DB clock), if open. */
-async function connectedAt(db: KobeDb, target: SandboxTarget): Promise<number | undefined> {
+async function connectedAt(db: KaijuDb, target: SandboxTarget): Promise<number | undefined> {
   const res = await withTeam(db, target.teamId, (tx) =>
     tx.execute<{ connected_at: Date }>(sql`
       SELECT connected_at FROM sandbox_connections
@@ -48,7 +48,7 @@ async function connectedAt(db: KobeDb, target: SandboxTarget): Promise<number | 
   return at ? new Date(at).getTime() : undefined;
 }
 
-async function createHarnessThread(db: KobeDb, target: SandboxTarget): Promise<string> {
+async function createHarnessThread(db: KaijuDb, target: SandboxTarget): Promise<string> {
   return withTeam(db, target.teamId, async (tx) => {
     const [row] = await tx
       .insert(threads)
@@ -59,14 +59,14 @@ async function createHarnessThread(db: KobeDb, target: SandboxTarget): Promise<s
   });
 }
 
-async function deleteHarnessThread(db: KobeDb, target: SandboxTarget, id: string): Promise<void> {
+async function deleteHarnessThread(db: KaijuDb, target: SandboxTarget, id: string): Promise<void> {
   await withTeam(db, target.teamId, (tx) =>
     tx.delete(threads).where(and(eq(threads.teamId, target.teamId), eq(threads.id, id))),
   );
 }
 
 interface Wiring {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly router: SandboxRouter;
   readonly target: SandboxTarget;
   readonly namespace: string;

@@ -10,9 +10,9 @@ import {
   teamEgress,
   withTeam,
   type InjectedHeader,
-  type KobeDb,
+  type KaijuDb,
   type SecretBox,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -25,7 +25,7 @@ import { recordAudit } from "../audit/record.js";
 export type HeaderResult = "set" | "cleared" | "not_enabled" | "none";
 
 export async function setTeamDomainHeaders(
-  db: KobeDb,
+  db: KaijuDb,
   box: SecretBox,
   input: {
     readonly teamId: string;
@@ -58,7 +58,7 @@ export async function setTeamDomainHeaders(
 }
 
 export async function clearTeamDomainHeaders(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly domain: string; readonly userId: string },
 ): Promise<HeaderResult> {
   const { teamId, domain } = input;
@@ -91,7 +91,7 @@ export async function clearTeamDomainHeaders(
  * again in place, never logged; once every row uses the current secret the previous one can be
  * dropped. Returns how many domains were re-sealed.
  */
-export async function resealTeamHeaders(db: KobeDb, box: SecretBox): Promise<number> {
+export async function resealTeamHeaders(db: KaijuDb, box: SecretBox): Promise<number> {
   let resealed = 0;
   for (const { id: teamId } of await db.select({ id: teams.id }).from(teams)) {
     resealed += await withTeam(db, teamId, async (tx) => {

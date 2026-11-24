@@ -1,9 +1,9 @@
-import type { ScheduleRecurrence } from "@kobe/protocol";
+import type { ScheduleRecurrence } from "@kaiju/protocol";
 
 /**
  * Recurrence engine (KOBE-173, spec D32): the cron a recurrence means and its next occurrence in
  * the schedule's IANA zone, built on `Intl` (no dependency). Input is contract-valid (strict
- * 5-field numeric cron, see `parseCron` in @kobe/protocol); this module reads all five fields.
+ * 5-field numeric cron, see `parseCron` in @kaiju/protocol); this module reads all five fields.
  *
  * DST rules (the documented contract):
  * - Spring-forward gap: a local time that does not exist that day fires at the first valid

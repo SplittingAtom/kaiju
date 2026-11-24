@@ -22,9 +22,9 @@ const ALLOWED: Readonly<Record<string, string>> = {
 const SOURCE = /\.(?:ts|tsx|mts|cts|js|mjs|cjs|sql|sh|bash|py)$/;
 const TEST_CODE = /(?:\.test\.[a-z]+$|(?:^|\/)(?:testing|test-support|__tests__)\/)/;
 /** The name, or a built-up form of it. */
-const MENTION = [/run_usage_retention/i, /["'`]kobe\.["'`]\s*(?:\+|\|\|)/i, /kobe\.\$\{/i];
+const MENTION = [/run_usage_retention/i, /["'`]kaiju\.["'`]\s*(?:\+|\|\|)/i, /kaiju\.\$\{/i];
 /** The one accepted way to set it. */
-const LOCAL_SET = /set_config\('kobe\.run_usage_retention', 'on', true\)/g;
+const LOCAL_SET = /set_config\('kaiju\.run_usage_retention', 'on', true\)/g;
 
 function withoutComments(file: string, source: string): string {
   if (file.endsWith(".sql")) return source.replace(/--[^\n]*/g, "");
@@ -47,7 +47,7 @@ describe("kobe.run_usage_retention setters (KOBE-741)", () => {
     expect(mentions("x.ts", "sql`SELECT set_config('kobe.run_usage_retention', 'on', true)`")).toBe(
       true,
     );
-    expect(mentions("x.ts", `const n = "kobe." + "run_usage_retention";`)).toBe(true);
+    expect(mentions("x.ts", `const n = "kaiju." + "run_usage_retention";`)).toBe(true);
     expect(mentions("x.sql", "SET LOCAL kobe.run_usage_retention = on;")).toBe(true);
     expect(mentions("x.ts", "// kobe.run_usage_retention")).toBe(false);
     expect(mentions("x.sql", "-- kobe.run_usage_retention")).toBe(false);

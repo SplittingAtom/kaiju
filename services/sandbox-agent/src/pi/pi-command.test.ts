@@ -6,7 +6,7 @@ import { piCommand } from "./pi-command.js";
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-pi-command-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-pi-command-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });

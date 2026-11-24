@@ -1,5 +1,5 @@
 /**
- * The team's thread folders for `FakeKobe` (KOBE-536): `/v1/thread-folders` as the server rules
+ * The team's thread folders for `FakeKaiju` (KOBE-536): `/v1/thread-folders` as the server rules
  * it (KOBE-534, TF1/TF4): unique names among siblings ignoring case, three levels, no cycles,
  * subfolders deleted with their parent and their threads back in `Current`. Wire casing.
  */

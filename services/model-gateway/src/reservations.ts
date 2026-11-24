@@ -1,4 +1,4 @@
-import type { BudgetLine } from "@kobe/db";
+import type { BudgetLine } from "@kaiju/db";
 
 /**
  * In-flight budget reservations (KOBE-42 review, shared across replicas by KOBE-120): what an

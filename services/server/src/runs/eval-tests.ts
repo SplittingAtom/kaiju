@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
+import { sql, type KaijuTx } from "@kaiju/db";
+import type { SkillBundleRef } from "@kaiju/protocol/sandbox-wire";
 import { isBlocked } from "../skills/blocklist.js";
 import type { RunAgentResolver } from "./seams.js";
 
@@ -52,7 +52,7 @@ interface EvalExecution {
 
 /** The running execution an eval thread belongs to, of that owner, or null. */
 async function evalExecutionOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   ownerUserId: string,

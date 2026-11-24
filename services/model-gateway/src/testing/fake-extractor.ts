@@ -10,7 +10,7 @@
  * (`<<<entry <nonce> id=<id> speaker=<speaker>>>>`). The reply's candidates, in transcript order,
  * at most {@link MAX_CANDIDATES}, each statement once:
  *
- * - `kobe-learn {JSON}` (one line, in any entry): one candidate from the JSON's fields:
+ * - `kaiju-learn {JSON}` (one line, in any entry): one candidate from the JSON's fields:
  *   `statement` (required); `kind` (fact); `scope` (`user` | `team`, default user); `portable`,
  *   `project_specific` (false); `source` (stated); `confidence` (0.9); `rationale`; `quote` (a
  *   verbatim span of the cited entry, default the statement); `target` (a substring of an
@@ -26,7 +26,7 @@
 
 const ENTRY_HEADER = /^<<<entry ([A-Za-z0-9]+) id=(\S+) speaker=([a-z]+)>>>$/;
 const MEMORIES_OPEN = /^<<<memories ([A-Za-z0-9]+)>>>$/;
-const DIRECTIVE = /kobe-learn (\{[^\n]*\})/g;
+const DIRECTIVE = /kaiju-learn (\{[^\n]*\})/g;
 const PREFERENCE = /\bI prefer ([^.!?\n]{3,200})[.!?]/g;
 const RECORD = /\bFor the record: ([^\n]{3,300}?[.!?])(?=\s|$|['"])/g;
 /** The protocol's cap per reply is 20; the server keeps at most 10 of them. */

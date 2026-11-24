@@ -9,9 +9,9 @@ import {
   sql,
   ssoProviders,
   teamEgress,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 
 type SQL = ReturnType<typeof sql>;
@@ -134,14 +134,14 @@ export function sealedFamilies(keys: {
   return families;
 }
 
-async function kids(tx: KobeDb | KobeTx, query: SQL, into: Map<string, number>): Promise<void> {
+async function kids(tx: KaijuDb | KaijuTx, query: SQL, into: Map<string, number>): Promise<void> {
   const res = await tx.execute<{ kid: string; n: number }>(query);
   for (const row of res.rows) into.set(row.kid, (into.get(row.kid) ?? 0) + Number(row.n));
 }
 
 /** Reads each family's key ids (site tables once, team tables per team) and logs what is lost. */
 export async function checkSealedKeys(
-  db: KobeDb,
+  db: KaijuDb,
   families: readonly SealedFamily[],
   logger: Logger,
 ): Promise<SealedFinding[]> {

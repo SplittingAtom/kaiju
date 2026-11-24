@@ -1,4 +1,4 @@
-import { APP_CONTEXT_PREAMBLE } from "@kobe/protocol";
+import { APP_CONTEXT_PREAMBLE } from "@kaiju/protocol";
 import { describe, expect, it, vi } from "vitest";
 import {
   AppContextStore,

@@ -13,7 +13,7 @@ afterEach(async () => {
 
 describe("ModelFile (agent side)", () => {
   it("writes a file the extension parses, private to the user, with no temp file left", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-model-file-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-model-file-"));
     const file = new ModelFile(path.join(dir, "model.json"), {
       gatewayUrl: "http://model-gateway.kobe.internal:80",
       model: { gatewayModel: "openai/gpt-fake", api: "openai-completions" },
@@ -34,7 +34,7 @@ describe("ModelFile (agent side)", () => {
   });
 
   it("updates run id, token and model in order, and skips no-op updates", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-model-file-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-model-file-"));
     const file = new ModelFile(path.join(dir, "model.json"), {
       gatewayUrl: "http://gw",
       model: null,
@@ -60,7 +60,7 @@ describe("ModelFile (agent side)", () => {
   });
 
   it("writes the model's limits and rewrites when only they change (KOBE-259)", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-model-file-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-model-file-"));
     const model = { gatewayModel: "ollama/glm-5.3", api: "openai-completions" } as const;
     const file = new ModelFile(path.join(dir, "model.json"), {
       gatewayUrl: "http://gw",
@@ -89,7 +89,7 @@ describe("ModelFile (agent side)", () => {
   });
 
   it("never follows a symlink at the file path, leaves no temp file, and verifies its own writes", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-model-file-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-model-file-"));
     const victim = path.join(dir, "victim");
     await writeFile(victim, "untouched");
     await symlink(victim, path.join(dir, "model.json"));
@@ -116,7 +116,7 @@ describe("ModelFile (agent side)", () => {
   });
 
   it("rewrites after a failed write even for an identical update (nothing stays stale)", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-model-file-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-model-file-"));
     const file = new ModelFile(path.join(dir, "missing", "model.json"), {
       gatewayUrl: "http://gw",
       model: null,

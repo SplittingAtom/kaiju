@@ -3,8 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { GIT_MIRROR_LOG_MAX } from "@kobe/db";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
+import { GIT_MIRROR_LOG_MAX } from "@kaiju/db";
 import { gitWireClient } from "../../git-hosts/git-wire.js";
 import type { GitHostNet } from "../../git-hosts/http.js";
 import { gitHostTarget } from "../../git-hosts/target.js";
@@ -27,7 +27,7 @@ let n = 0;
 beforeAll(async () => {
   server = await startGitServer({ credentials: CREDS });
   origin = `http://git.fake.test:${new URL(server.origin).port}`;
-  work = await mkdtemp(path.join(tmpdir(), "kobe-mirror-test-"));
+  work = await mkdtemp(path.join(tmpdir(), "kaiju-mirror-test-"));
 });
 
 afterAll(async () => {

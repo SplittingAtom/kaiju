@@ -4,7 +4,7 @@ import {
   type SkillEvalExecution,
   type SkillEvalRunModel,
   type SkillEvalScoredStatus,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 // One execution's record from its attempts (KOBE-325; contract KOBE-324 `skillEvalExecutionSchema`):
 // the final attempt reports status, checks, uses, turns, denials and its own cost and duration;

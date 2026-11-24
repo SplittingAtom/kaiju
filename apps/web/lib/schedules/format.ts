@@ -1,5 +1,5 @@
 /** Words and defaults for schedules: presets, the user's time zone, and local-time display. */
-import type { SCHEDULE_WEEKDAYS, ScheduleRecurrence } from "@kobe/protocol";
+import type { SCHEDULE_WEEKDAYS, ScheduleRecurrence } from "@kaiju/protocol";
 
 export type PresetKind = ScheduleRecurrence["kind"];
 

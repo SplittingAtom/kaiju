@@ -6,8 +6,8 @@ import type {
   FeedbackReason,
   MyEvalCase,
   ShareEvalCaseBody,
-} from "@kobe/protocol";
-import { agentEvalCases, and, answerFeedback, desc, eq, runs, sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { agentEvalCases, and, answerFeedback, desc, eq, runs, sql, type KaijuTx } from "@kaiju/db";
 import { findThread, type Viewer } from "../threads/repository.js";
 import { buildCopy, type BuiltCopy, type ExchangeSource } from "./copy.js";
 import { caseCutoff, liveCase } from "./visibility.js";
@@ -46,7 +46,7 @@ interface Shareable {
 
 /** The viewer's thumbs down on their own conversation's ended answer `runId`, or why not. */
 async function shareable(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
 ): Promise<ShareResult<Shareable>> {
@@ -124,7 +124,7 @@ async function shareable(
 }
 
 async function copyFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
   options: EvalCaseOptions,
@@ -138,7 +138,7 @@ async function copyFor(
 
 /** What sharing `runId`'s answer with `options` would store: the preview, with its digest. */
 export async function previewCase(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
   options: EvalCaseOptions,
@@ -198,7 +198,7 @@ function toMyCase(row: MyRow): MyEvalCase {
  * preview's digest (else `preview_stale`), so only what the member saw is stored.
  */
 export async function shareCase(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
   body: ShareEvalCaseBody,
@@ -240,7 +240,7 @@ export async function shareCase(
  * the way to withdraw one after clearing the rating (review S6). A case past the window that only a
  * hold keeps is not listed (as if purged).
  */
-export async function myCases(tx: KobeTx, viewer: Viewer): Promise<MyEvalCase[]> {
+export async function myCases(tx: KaijuTx, viewer: Viewer): Promise<MyEvalCase[]> {
   const rows = await tx
     .select(myColumns)
     .from(agentEvalCases)
@@ -260,7 +260,7 @@ export async function myCases(tx: KobeTx, viewer: Viewer): Promise<MyEvalCase[]>
  * Withdraws the viewer's case: their own row only, whatever its status. Under a legal hold the
  * database keeps a copy aside (`*_agent_eval_cases_rls.sql`) and this answers the same.
  */
-export async function withdrawCase(tx: KobeTx, viewer: Viewer, caseId: string): Promise<void> {
+export async function withdrawCase(tx: KaijuTx, viewer: Viewer, caseId: string): Promise<void> {
   await tx
     .delete(agentEvalCases)
     .where(

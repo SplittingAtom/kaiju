@@ -45,7 +45,7 @@ function useInlineLogo(url: string | undefined, known: string | undefined): stri
  * The site's brand (theming plan §4.3, docs/theming.md §2): the bar's wordmark and the console
  * and My area brand links. With no logo it is the name alone, as text, exactly as before
  * branding existed. With a logo: the logo (24 px tall, ≤ 160 px wide, scaled to fit; the dark
- * logo, when there is one, in the dark theme through the --kobe-when-* tokens) and the name, which
+ * logo, when there is one, in the dark theme through the --kaiju-when-* tokens) and the name, which
  * stays the accessible name even when the admin hides it visually ("Show the name" off). The logo
  * is above the fold, so it decodes with the page (no `decoding="async"`). With "Logo takes the
  * theme colour" on and an SVG logo (KOBE-562), the server's inline-safe variant is inlined instead

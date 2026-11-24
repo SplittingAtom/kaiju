@@ -7,13 +7,13 @@
  * agent, so it is shown as plain text with invisible characters escaped, never as markup.
  */
 import { useContext, useState } from "react";
-import { undoMemoryAction, type KobeEventPayload } from "@kobe/protocol";
+import { undoMemoryAction, type KaijuEventPayload } from "@kaiju/protocol";
 import { describeMemoryError } from "../../lib/memory/api";
 import { visible } from "../../lib/security/visible";
-import { ChatSessionContext } from "./kobe-runtime";
+import { ChatSessionContext } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
-type Updated = KobeEventPayload<"memory.updated">;
+type Updated = KaijuEventPayload<"memory.updated">;
 type Phase = "idle" | "busy" | "undone";
 
 export function MemoryNotice({ payload }: { readonly payload: Updated }) {

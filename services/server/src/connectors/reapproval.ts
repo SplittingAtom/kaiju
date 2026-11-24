@@ -6,9 +6,9 @@ import {
   isNull,
   parseToolsSnapshot,
   sql,
-  type KobeDb,
+  type KaijuDb,
   type PinnedTool,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { approveTools, approvedHash } from "./drift.js";
 
@@ -94,7 +94,7 @@ export function reviewOf(tool: PinnedTool): ToolReview {
 }
 
 export async function reviewConnectorTools(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
 ): Promise<ToolReview[] | undefined> {
   const [row] = await db
@@ -110,7 +110,7 @@ export type ApprovalOutcome =
   | { readonly ok: false; readonly error: "not_pending" | "stale"; readonly tool: string };
 
 export async function approveConnectorTools(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   input: ApproveInput,
   /** The new `pinned_by` (`nextPinnedBy`, KOBE-431); undefined keeps it. */

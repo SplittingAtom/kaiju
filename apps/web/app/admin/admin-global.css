@@ -3,12 +3,12 @@
    preflight: every page is on the console primitives (components/ui/console, KOBE-296), which
    carry their own resets, and plain content keeps the browser defaults the pages were
    baselined with (a preflight would restyle every page at once). Every rule here is scoped to
-   the console root (`data-kobe-console`, the console and My-area shells), so nothing reaches the
+   the console root (`data-kaiju-console`, the console and My-area shells), so nothing reaches the
    chat (app/console-css-guard.test.ts). */
 @import "../tailwind.css";
 
 /* The shell paints edge to edge. */
-body:has([data-kobe-console]) {
+body:has([data-kaiju-console]) {
   margin: 0;
 }
 
@@ -17,29 +17,29 @@ body:has([data-kobe-console]) {
      without its own ring. Primitives carry their own ring and colours (components/ui/console),
      so nothing depends on these for them; app/console-css-guard.test.ts pins them. In the base
      layer, so any utility overrides them. */
-  [data-kobe-console] a {
+  [data-kaiju-console] a {
     color: var(--admin-accent);
   }
 
-  [data-kobe-console] :focus-visible {
-    outline: 3px solid var(--kobe-brand-focus);
+  [data-kaiju-console] :focus-visible {
+    outline: 3px solid var(--kaiju-brand-focus);
     outline-offset: 2px;
   }
 
   /* The header's theme toggle shows a tooltip, which the chat's preflight slice sizes in the chat;
      on these pages it mounts in the console root (components/ui/chat-portal.ts). */
-  [data-kobe-console] [data-slot="tooltip-content"],
-  [data-kobe-console] [data-slot="tooltip-content"] * {
+  [data-kaiju-console] [data-slot="tooltip-content"],
+  [data-kaiju-console] [data-slot="tooltip-content"] * {
     box-sizing: border-box;
   }
 }
 
-/* A panel's glow (KOBE-550, after the Catalyst query tool): a card-like surface with `kobe-panel`
+/* A panel's glow (KOBE-550, after the Catalyst query tool): a card-like surface with `kaiju-panel`
    eases its border toward the brand and a halo outside it when the pointer rests on it, through
    the tokens in app/theme.css (every theme glows in its own colour). Unlayered and scoped to the
    root: it outranks the modules' resting border and shadow, and stays where this root is. Only on
    devices with a hover pointer; no easing for people who asked for less motion. */
-[data-kobe-console] .kobe-panel {
+[data-kaiju-console] .kaiju-panel {
   transition:
     border-color 300ms ease,
     box-shadow 300ms ease;
@@ -48,14 +48,14 @@ body:has([data-kobe-console]) {
 /* One halo at a time: a panel holding the hovered panel (the shell's columns, the console's page
    around its cards, KOBE-554) keeps its resting border and shadow. */
 @media (hover: hover) {
-  [data-kobe-console] .kobe-panel:hover:not(:has(.kobe-panel:hover)) {
-    border-color: var(--kobe-panel-border-hover);
-    box-shadow: var(--kobe-glow-panel);
+  [data-kaiju-console] .kaiju-panel:hover:not(:has(.kaiju-panel:hover)) {
+    border-color: var(--kaiju-panel-border-hover);
+    box-shadow: var(--kaiju-glow-panel);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-kobe-console] .kobe-panel {
+  [data-kaiju-console] .kaiju-panel {
     transition: none;
   }
 }
@@ -64,7 +64,7 @@ body:has([data-kobe-console]) {
    panel (the shell's columns and the console's sidebar and page among them, KOBE-554) shows its
    hover with the highlight colour instead. */
 @media (forced-colors: active) {
-  [data-kobe-console] .kobe-panel:hover:not(:has(.kobe-panel:hover)) {
+  [data-kaiju-console] .kaiju-panel:hover:not(:has(.kaiju-panel:hover)) {
     border-color: Highlight;
   }
 }

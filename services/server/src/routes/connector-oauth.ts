@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
-import { kobeOrigin } from "../connectors/oauth/client.js";
+import { kaijuOrigin } from "../connectors/oauth/client.js";
 import { finishFlow, startFlow, type OauthFlowDeps } from "../connectors/oauth/flow.js";
 import { DEFAULT_TIMEOUT_MS } from "../connectors/oauth/http.js";
 import type { ServerDeps } from "../deps.js";
@@ -24,7 +24,7 @@ function flowDeps(deps: ServerDeps): OauthFlowDeps | undefined {
     db: deps.database.db,
     envelope: deps.envelope,
     io: { policy: deps.connectorUrlPolicy, timeoutMs: DEFAULT_TIMEOUT_MS },
-    kobe: kobeOrigin(deps.publicUrl),
+    kaiju: kaijuOrigin(deps.publicUrl),
     now: () => new Date(),
   };
 }

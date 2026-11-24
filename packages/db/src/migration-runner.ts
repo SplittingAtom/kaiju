@@ -11,7 +11,7 @@ import type pg from "pg";
  * Bookkeeping is drizzle's, byte for byte: `drizzle.__drizzle_migrations (id, hash, created_at)`,
  * the hash is drizzle's `readMigrationFiles` SHA-256 of the file, `created_at` the journal's
  * `when`, and a migration is pending when its `when` is newer than the newest recorded one. So
- * drizzle-kit, `db:rebase`, `kobe-db-wait` and installs migrated by earlier releases keep working.
+ * drizzle-kit, `db:rebase`, `kaiju-db-wait` and installs migrated by earlier releases keep working.
  */
 
 /** Leading comment line that makes a migration run outside a transaction. */

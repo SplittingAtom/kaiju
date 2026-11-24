@@ -7,8 +7,8 @@ import {
   notifyEgressChanged,
   sql,
   type EgressPreset,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { MAX_CEILING_DOMAINS } from "./schemas.js";
 
@@ -50,7 +50,7 @@ const toEntry = (r: Row): CeilingEntry => ({
   updated_at: r.updatedAt.toISOString(),
 });
 
-export async function listCeiling(db: KobeDb): Promise<CeilingEntry[]> {
+export async function listCeiling(db: KaijuDb): Promise<CeilingEntry[]> {
   const rows = await db
     .select()
     .from(egressDomains)
@@ -71,7 +71,7 @@ export type AddResult =
  * is put back in rather than duplicated.
  */
 export async function addCeilingDomain(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly domain: string; readonly note?: string | null | undefined },
   userId: string,
 ): Promise<AddResult> {
@@ -118,7 +118,7 @@ export async function addCeilingDomain(
  * undefined when it isn't listed. Each change is audited; one NOTIFY covers both.
  */
 export async function setCeilingFlags(
-  db: KobeDb,
+  db: KaijuDb,
   domain: string,
   flags: {
     readonly inCeiling?: boolean | undefined;
@@ -161,7 +161,7 @@ export async function setCeilingFlags(
 
 /** Puts every domain of a preset into or out of the ceiling (one audit event per change). */
 export async function setPresetMembership(
-  db: KobeDb,
+  db: KaijuDb,
   preset: EgressPreset,
   inCeiling: boolean,
 ): Promise<CeilingEntry[]> {
@@ -190,7 +190,7 @@ export type DeleteResult = "deleted" | "not_found" | "preset";
  * Deletes a custom domain; every team's enablement of it goes with it (FK cascade). Presets are
  * only taken out of the ceiling, never deleted.
  */
-export async function deleteCeilingDomain(db: KobeDb, domain: string): Promise<DeleteResult> {
+export async function deleteCeilingDomain(db: KaijuDb, domain: string): Promise<DeleteResult> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .select()

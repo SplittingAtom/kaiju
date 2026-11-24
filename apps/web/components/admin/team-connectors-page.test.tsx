@@ -333,9 +333,9 @@ describe("Team connectors (KOBE-105)", () => {
 });
 
 describe("the built-in Kaiju connector (KOBE-623)", () => {
-  const kobe = (over: Record<string, unknown> = {}) => ({
+  const kaiju = (over: Record<string, unknown> = {}) => ({
     connector_id: "6b6f6265-0000-4000-8000-000000000001",
-    name: "kobe",
+    name: "kaiju",
     mode: "admin",
     level: "docs",
     docs_tools: ["mcp__kobe__docs_index"],
@@ -347,10 +347,10 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
     const calls = stubApi({
       [`GET ${BASE}`]: [200, { connectors: [] }],
       [`GET ${BASE}/kobe`]: [
-        [200, { kobe: kobe() }],
-        [200, { kobe: kobe({ level: "read_write" }) }],
+        [200, { kaiju: kaiju() }],
+        [200, { kaiju: kaiju({ level: "read_write" }) }],
       ],
-      [`PUT ${BASE}/kobe`]: [200, { kobe: kobe({ level: "read_write" }) }],
+      [`PUT ${BASE}/kobe`]: [200, { kaiju: kaiju({ level: "read_write" }) }],
     });
     renderTeam(<TeamConnectorsPage />, { permissions: ["team.read", "team.connectors.manage"] });
     const k = within(await screen.findByRole("article", { name: "Kaiju" }));
@@ -377,7 +377,7 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
   it("is read-only without team.connectors.manage and says when the site limits it", async () => {
     stubApi({
       [`GET ${BASE}`]: [200, { connectors: [] }],
-      [`GET ${BASE}/kobe`]: [200, { kobe: kobe({ mode: "docs", level: "read" }) }],
+      [`GET ${BASE}/kobe`]: [200, { kaiju: kaiju({ mode: "docs", level: "read" }) }],
     });
     renderTeam(<TeamConnectorsPage />, { role: "member", permissions: ["team.read"] });
     const k = within(await screen.findByRole("article", { name: "Kaiju" }));
@@ -389,7 +389,7 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
   it("is not shown while the site switch is off", async () => {
     stubApi({
       [`GET ${BASE}`]: [200, { connectors: [connector()] }],
-      [`GET ${BASE}/kobe`]: [200, { kobe: kobe({ mode: "off" }) }],
+      [`GET ${BASE}/kobe`]: [200, { kaiju: kaiju({ mode: "off" }) }],
     });
     renderTeam(<TeamConnectorsPage />);
     await screen.findByRole("article", { name: "jira" });

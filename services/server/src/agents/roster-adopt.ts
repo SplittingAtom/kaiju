@@ -1,5 +1,5 @@
-import { and, eq, siteAgentVersions, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import { validateAgentDefinition } from "@kobe/agent-file";
+import { and, eq, siteAgentVersions, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import { validateAgentDefinition } from "@kaiju/agent-file";
 import { recordAudit } from "../audit/record.js";
 import type { RosterTarget } from "./access.js";
 import { siteEntry, teamEntry, type RosterEntryRecord } from "./roster.js";
@@ -42,8 +42,8 @@ export interface AdoptInput {
 /** Thrown inside the transaction when the copy can't be published: rolls the adopt back. */
 class AdoptPublishError extends Error {}
 
-export async function adoptEntry(db: KobeDb, input: AdoptInput): Promise<AdoptResult> {
-  const run = (tx: KobeTx) => adoptIn(tx, input);
+export async function adoptEntry(db: KaijuDb, input: AdoptInput): Promise<AdoptResult> {
+  const run = (tx: KaijuTx) => adoptIn(tx, input);
   if (input.target === "team" && input.teamId === null) {
     throw new Error("adopt: a team roster adopt needs a team");
   }
@@ -57,7 +57,7 @@ export async function adoptEntry(db: KobeDb, input: AdoptInput): Promise<AdoptRe
   }
 }
 
-async function adoptIn(tx: KobeTx, input: AdoptInput): Promise<AdoptResult> {
+async function adoptIn(tx: KaijuTx, input: AdoptInput): Promise<AdoptResult> {
   const { target, agentId, teamId } = input;
   await lockRoster(tx, target, teamId);
   const agent = await lockPersonalAgent(tx, agentId);

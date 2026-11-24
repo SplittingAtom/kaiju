@@ -2,7 +2,7 @@ import type { BetterAuthPlugin } from "better-auth";
 import { APIError, createAuthEndpoint } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { acceptInvite, findInviteByToken } from "../invitations/site-invites.js";
 
 export const PASSWORD_MIN = 12;
@@ -34,7 +34,7 @@ export function invitationPlugin({
   db,
   publicOrigin,
 }: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Acceptance signs the browser in, so it must come from the site's own pages. */
   readonly publicOrigin: string;
 }) {

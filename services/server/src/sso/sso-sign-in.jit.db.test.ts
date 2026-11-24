@@ -42,7 +42,7 @@ describe("sign-in page data", () => {
     expect(p.get("code_challenge")).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(p.get("state")).toMatch(/^[A-Za-z0-9_-]{20,}$/);
     expect(p.get("nonce")).toMatch(/^[A-Za-z0-9_-]{20,}$/);
-    expect(p.get("redirect_uri")).toBe("http://kobe.test/api/auth/sso/callback/corp");
+    expect(p.get("redirect_uri")).toBe("http://kaiju.test/api/auth/sso/callback/corp");
     expect(p.get("scope")).toBe("openid profile email");
     expect(p.get("prompt")).toBe("select_account");
     // KOBE-775: a sign-in older than 10 minutes is refused, so the IdP is asked for a fresh one
@@ -69,7 +69,7 @@ describe("JIT and linked sign-in", () => {
   it("creates a user for a mapped identity, signs them in and records the SSO context", async () => {
     const user = entraUser();
     const { location, browser } = await signInVia(entra, "corp", user, "/chat?x=1");
-    expect(location).toBe("http://kobe.test/chat?x=1");
+    expect(location).toBe("http://kaiju.test/chat?x=1");
     const me = await browser.get("/v1/me");
     expect(me.status, me.text).toBe(200);
     expect(me.json.user.email).toBe(String(user.preferred_username));
@@ -123,7 +123,7 @@ describe("JIT and linked sign-in", () => {
       ...user,
       preferred_username: "new@contoso.com",
     });
-    expect(again.location).toBe("http://kobe.test/");
+    expect(again.location).toBe("http://kaiju.test/");
     expect(await userCount()).toBe(before);
     expect((await again.browser.get("/v1/me")).json.user.email).toBe(user.preferred_username);
   });

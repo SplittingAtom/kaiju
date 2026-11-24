@@ -1,6 +1,6 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import { AddressPolicy, type AddressChecker } from "@kobe/address-policy";
+import { AddressPolicy, type AddressChecker } from "@kaiju/address-policy";
 
 /**
  * Where a registered connector may point (spec D27, D28; KOBE-100). The registry checks what the

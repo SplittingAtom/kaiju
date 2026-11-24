@@ -117,7 +117,7 @@ function RunTabList({
           aria-selected={tab === id}
           aria-controls={ids[id].panel}
           tabIndex={tab === id ? 0 : -1}
-          data-kobe-run-tab={id}
+          data-kaiju-run-tab={id}
           className={cn(
             "text-muted-foreground hover:text-foreground focus-visible:ring-ring -mb-px inline-flex items-center gap-1 border-b-2 border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap focus-visible:ring-2 focus-visible:outline-none",
             "aria-selected:border-primary aria-selected:text-foreground",
@@ -127,7 +127,7 @@ function RunTabList({
           {RUN_TAB_LABELS[id]}
           {badges[id] !== null && (
             <>
-              <span aria-hidden className="bg-primary size-1.5 rounded-full" data-kobe-badge="" />
+              <span aria-hidden className="bg-primary size-1.5 rounded-full" data-kaiju-badge="" />
               <span className="sr-only">{`, ${badges[id]}`}</span>
             </>
           )}
@@ -264,7 +264,7 @@ export function useRunPane({
     "aria-labelledby": ids[t].tab,
     hidden: tab !== t,
     tabIndex: 0,
-    "data-kobe-run-panel": t,
+    "data-kaiju-run-panel": t,
     className: "min-w-0 focus-visible:outline-none",
   });
 
@@ -351,7 +351,7 @@ export function RunClock({
   return (
     <span
       className="text-muted-foreground text-xs tabular-nums"
-      data-kobe-run-clock={last.finished?.status ?? "running"}
+      data-kaiju-run-clock={last.finished?.status ?? "running"}
       aria-live="off"
     >
       {text}

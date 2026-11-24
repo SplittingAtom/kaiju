@@ -47,14 +47,14 @@ import {
   type SkillUpdateMarker,
   type ThreadMarkers,
 } from "../../lib/chat/markers";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
 import { cn } from "../../lib/utils";
 import { comparable } from "../../lib/chat/compare";
 import { useTreeData } from "./tree-context";
 import { TreeLink } from "./tree-entry-points";
 import { IconAction } from "../shell/icon-action";
 import { Disclosure, useDisclosure } from "./detail";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 import { Markdown } from "./markdown";
 
 /**
@@ -116,7 +116,7 @@ function useOnSet(value: string | null, read: () => void) {
  * file was read (it may have been a skill's SKILL.md, KOBE-297: the server decides).
  */
 function useTriggers() {
-  const state = useKobeExtras()?.state;
+  const state = useKaijuExtras()?.state;
   const live = state?.live;
   return {
     ended: live?.terminal ? live.runId : null,
@@ -138,7 +138,7 @@ function useTriggers() {
 
 /** The thread's markers: read on open and on each trigger, retried once when a read fails. */
 function useThreadMarkers(): ThreadMarkers | null {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const controller = extras?.controller;
   const threadId = extras?.state.threadId ?? null;
   const [read, setRead] = useState<{ threadId: string; markers: ThreadMarkers } | null>(null);
@@ -188,7 +188,7 @@ function samePlacement<T>(
 
 export function ThreadMarkersProvider({ children }: { readonly children: ReactNode }) {
   const markers = useThreadMarkers();
-  const projection = useKobeExtras()?.projection;
+  const projection = useKaijuExtras()?.projection;
   const approvals = useMemo(
     () =>
       markers === null
@@ -254,7 +254,7 @@ function MarkerRow({
   return (
     <div
       role="note"
-      data-kobe-marker={kind}
+      data-kaiju-marker={kind}
       className={cn(
         "text-muted-foreground flex min-w-0 items-center gap-2 px-2 py-0.5 text-xs",
         tone === "warn" && "text-status-attention",
@@ -272,7 +272,7 @@ function CompactionMarker({ marker }: { readonly marker: EntryMarker & { kind: "
   const { open, setOpen } = useDisclosure();
   const { folded, summary } = marker;
   return (
-    <div data-kobe-marker="compaction" role="note" className="text-muted-foreground text-xs">
+    <div data-kaiju-marker="compaction" role="note" className="text-muted-foreground text-xs">
       <Disclosure
         open={open}
         onOpenChange={setOpen}
@@ -294,7 +294,7 @@ function CompactionMarker({ marker }: { readonly marker: EntryMarker & { kind: "
         {summary === "" ? (
           <p className="m-0">The summary is too large to show here.</p>
         ) : (
-          <div className="text-foreground" data-kobe-summary>
+          <div className="text-foreground" data-kaiju-summary>
             <Markdown text={summary} />
           </div>
         )}
@@ -311,7 +311,7 @@ function BranchSummaryMarker({
 }) {
   const { open, setOpen } = useDisclosure();
   return (
-    <div data-kobe-marker="branch_summary" role="note" className="text-muted-foreground text-xs">
+    <div data-kaiju-marker="branch_summary" role="note" className="text-muted-foreground text-xs">
       <Disclosure
         open={open}
         onOpenChange={setOpen}
@@ -328,7 +328,7 @@ function BranchSummaryMarker({
         {marker.summary === "" ? (
           <p className="m-0">The summary is too large to show here.</p>
         ) : (
-          <div className="text-foreground" data-kobe-summary>
+          <div className="text-foreground" data-kaiju-summary>
             <Markdown text={marker.summary} />
           </div>
         )}
@@ -349,7 +349,7 @@ export function EntryMarkerRow({ marker }: { readonly marker: EntryMarker }) {
   );
 }
 
-/** An entry marker inside a turn (a `data-kobe-marker` part). */
+/** An entry marker inside a turn (a `data-kaiju-marker` part). */
 export function MarkerPart({ data }: DataMessagePartProps) {
   const marker = data as EntryMarker | undefined;
   return marker?.kind === "model" ||
@@ -461,7 +461,7 @@ export function withApprovalMarker(Card: (props: ToolCallMessagePartProps) => Re
 /** A tool call's approval row (allowed, denied, timed out), if it had one. */
 export function ApprovalMarkerRow({ toolCallId }: { readonly toolCallId: string }) {
   const prompt = useAuiState((s) => {
-    const meta = s.message.metadata.custom as KobeMessageMeta | undefined;
+    const meta = s.message.metadata.custom as KaijuMessageMeta | undefined;
     return meta?.kind === "assistant" ? meta.promptEntryId : undefined;
   });
   const approval = useContext(MarkersContext).approvals.get(approvalKey(prompt, toolCallId));
@@ -511,7 +511,7 @@ export function BranchPicker({ className }: { readonly className?: string }) {
 function CompareButton() {
   const id = useAuiState((s) => s.message.id);
   const tree = useTreeData();
-  const projection = useKobeExtras()?.projection;
+  const projection = useKaijuExtras()?.projection;
   if (tree === null || projection === undefined || !comparable(projection, id)) return null;
   return <IconAction command="compare-versions" size="sm" onClick={() => tree.compare(id)} />;
 }
@@ -539,7 +539,7 @@ export function MessageMarkers({
   readonly place: "before" | "after";
   readonly className?: string;
 }) {
-  const meta = useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
+  const meta = useAuiState((s) => s.message.metadata.custom as KaijuMessageMeta | undefined);
   const id = useAuiState((s) => s.message.id);
   const data = useContext(MarkersContext);
   const runs = data.runsAt.get(id);

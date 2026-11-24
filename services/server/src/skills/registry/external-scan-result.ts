@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { z } from "zod";
 
 /**
@@ -112,7 +112,7 @@ export const queuedScan = (now: Date): ExternalScan => ({
 });
 
 /** Is the Site's external scanner on (inside the submission's transaction)? */
-export async function externalScannerOn(tx: KobeDb | KobeTx): Promise<boolean> {
+export async function externalScannerOn(tx: KaijuDb | KaijuTx): Promise<boolean> {
   const r = await tx.execute<{ on: boolean | null }>(sql`
     SELECT (scanner ->> 'external')::boolean AS on FROM site_skill_settings WHERE id = 1`);
   return r.rows[0]?.on === true;

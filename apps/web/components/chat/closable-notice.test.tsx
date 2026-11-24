@@ -53,9 +53,9 @@ describe("ClosableNotice (KOBE-468)", () => {
 
   it("moves focus to the composer when closed", async () => {
     render(
-      <div data-kobe-thread-root>
+      <div data-kaiju-thread-root>
         {notice("run-1:3")}
-        <div data-kobe-composer>
+        <div data-kaiju-composer>
           <textarea aria-label="Message" />
         </div>
       </div>,

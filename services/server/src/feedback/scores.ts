@@ -1,6 +1,6 @@
-import { runTraceId } from "@kobe/protocol";
-import type { ScoreSink, TraceScore } from "@kobe/telemetry";
-import { and, answerFeedback, eq, withTeam, type KobeDb } from "@kobe/db";
+import { runTraceId } from "@kaiju/protocol";
+import type { ScoreSink, TraceScore } from "@kaiju/telemetry";
+import { and, answerFeedback, eq, withTeam, type KaijuDb } from "@kaiju/db";
 import { logger } from "../logger.js";
 
 /** Name of the score a rating becomes on its run's trace. */
@@ -9,7 +9,7 @@ export const FEEDBACK_SCORE_NAME = "answer_feedback";
 export const FEEDBACK_SCORE_MAX_PENDING = 1000;
 
 export interface FeedbackScoreOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly sink: ScoreSink;
   /** `telemetry.captureContent`: only then does a score carry the comment. */
   readonly captureContent: boolean;

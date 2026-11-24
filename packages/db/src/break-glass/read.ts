@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { audit, type AuditRequestContext } from "../audit/write.js";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import { breakGlassGrants, type BreakGlassStatus } from "../schema/break-glass.js";
 import { threadEntries, threads } from "../schema/threads.js";
 import {
@@ -203,7 +203,7 @@ function inScope(grant: BreakGlassGrantView): SQL {
 }
 
 /** Step 1: the active grant for this admin, row-locked against concurrent revocation. */
-async function lockActiveGrant(tx: KobeTx, access: BreakGlassAccess): Promise<BreakGlassGrantView> {
+async function lockActiveGrant(tx: KaijuTx, access: BreakGlassAccess): Promise<BreakGlassGrantView> {
   const result = await tx.execute<{
     id: string;
     team_id: string;
@@ -244,7 +244,7 @@ async function lockActiveGrant(tx: KobeTx, access: BreakGlassAccess): Promise<Br
 }
 
 async function readThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: BreakGlassGrantView,
   read: Extract<BreakGlassRead, { kind: "threads" }>,
 ): Promise<BreakGlassReadResult> {
@@ -271,7 +271,7 @@ async function readThreads(
 }
 
 async function findThreadInScope(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: BreakGlassGrantView,
   threadId: string,
 ): Promise<BreakGlassThread> {
@@ -284,7 +284,7 @@ async function findThreadInScope(
 }
 
 async function readEntries(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: BreakGlassGrantView,
   read: Extract<BreakGlassRead, { kind: "entries" }>,
 ): Promise<BreakGlassReadResult> {
@@ -328,7 +328,7 @@ async function readEntries(
  * its scope, and `AuditBusyError` when the audit row can't be written (nothing is returned then).
  */
 export async function readWithBreakGlass(
-  db: KobeDb,
+  db: KaijuDb,
   access: BreakGlassAccess,
   read: BreakGlassRead,
 ): Promise<BreakGlassReadResult> {

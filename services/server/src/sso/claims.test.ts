@@ -164,7 +164,7 @@ describe("checkIdTokenClaims", () => {
     it("Entra: ignores an unverified email claim and takes the UPN instead", () => {
       // A tenant user sets their own mail attribute to someone else's address.
       const r = check(
-        entraClaims({ email: "victim@kobe-customer.com", upn: "eve@contoso.com" }),
+        entraClaims({ email: "victim@kaiju-customer.com", upn: "eve@contoso.com" }),
         CORP,
       );
       expect(r.ok && r.identity).toMatchObject({ email: "eve@contoso.com", emailVerified: true });

@@ -4,15 +4,15 @@ import {
   isUnderLegalHold,
   lockLegalHolds,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   PROJECT_FILE_MAX_BYTES,
   PROJECT_FILES_MAX,
   promotedFolderMessage,
   type PromoteFolderRequest,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import { deleteWorkspaceFiles } from "../workspace-files/delete.js";
@@ -49,7 +49,7 @@ import { projectBlobKey, writeCommit, type TreeFile } from "./tree.js";
  */
 
 export interface PromoteDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly sync: WorkspaceSync | undefined;
   readonly mounts: Pick<ProjectMounts, "reconcileUser">;
@@ -109,7 +109,7 @@ class PathTooLong extends Error {
  * once mounted under it); the write step checks again under the slug the project really gets.
  */
 async function plan(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: Pick<PromoteDeps, "limits"> & { readonly prefix: string },
   owner: WorkspaceOwner,
   folder: string,

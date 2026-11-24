@@ -1,5 +1,5 @@
-import { type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
-import { CAPABILITY_MEMORY, CAPABILITY_SEMANTIC_MEMORY } from "@kobe/protocol";
+import { type SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
+import { CAPABILITY_MEMORY, CAPABILITY_SEMANTIC_MEMORY } from "@kaiju/protocol";
 import {
   putMemory,
   readMemory,

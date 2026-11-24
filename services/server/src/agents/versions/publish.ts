@@ -1,4 +1,4 @@
-import { agentSkills, validateAgentDefinition, type AgentDefinition } from "@kobe/agent-file";
+import { agentSkills, validateAgentDefinition, type AgentDefinition } from "@kaiju/agent-file";
 import {
   and,
   eq,
@@ -7,10 +7,10 @@ import {
   teamAgents,
   teamAgentVersions,
   type AuditActor,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import { canonicalJson, type AgentMemorySetting } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { canonicalJson, type AgentMemorySetting } from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { readPublishFloor } from "../floor.js";
 import { freezeLocalSkills } from "../skill-freeze.js";
@@ -90,7 +90,7 @@ export const contentKey = (
  * unreadable one never does).
  */
 async function sameAsCurrent(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   agent: AgentRecord,
   definition: AgentDefinition,
@@ -119,7 +119,7 @@ async function sameAsCurrent(
  * up a changed floor is not identical) and agents at the version cap.
  */
 export async function insertVersion(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   agent: AgentRecord,
   input: NewVersion,
@@ -216,7 +216,7 @@ export interface PublishDraftInput {
   readonly expectedRevision: number | undefined;
   readonly limits?: VersionLimits;
   /** Runs in the same transaction after a successful publish (KOBE-494: the Customized mark). */
-  readonly afterWrite?: (tx: KobeTx) => Promise<void>;
+  readonly afterWrite?: (tx: KaijuTx) => Promise<void>;
   /**
    * The new version's memory setting instead of the current version's (KOBE-646): adopt copies
    * the adopted version's into the copy's v1.
@@ -230,7 +230,7 @@ export interface PublishDraftInput {
  * seen. The draft is validated again, so a draft stored under an older schema can't be frozen.
  */
 export async function publishAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   input: PublishDraftInput,
@@ -243,7 +243,7 @@ export async function publishAgent(
  * publishes it as v1 atomically). `tx` must be the location's transaction.
  */
 export async function publishDraftIn(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   id: string,
   input: PublishDraftInput,
@@ -289,7 +289,7 @@ export async function publishDraftIn(
  * the draft changed since. Same locking, limits and audit as `publishAgent`.
  */
 export async function publishEvaluated(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   input: {
@@ -335,7 +335,7 @@ export async function publishEvaluated(
  * hold the fix in progress). Threads keep their pins; new threads get the new version.
  */
 export async function rollbackAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   input: {
@@ -344,7 +344,7 @@ export async function rollbackAgent(
     readonly limits?: VersionLimits;
     readonly expectedManifest?: ToolManifest;
     /** Runs in the same transaction after a successful rollback (KOBE-494). */
-    readonly afterWrite?: (tx: KobeTx) => Promise<void>;
+    readonly afterWrite?: (tx: KaijuTx) => Promise<void>;
   },
 ): Promise<Result<Published, PublishError>> {
   return inLocation(db, location, async (tx) => {

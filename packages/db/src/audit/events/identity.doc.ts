@@ -3,7 +3,7 @@ import type { IDENTITY_EVENTS } from "./identity.js";
 
 /**
  * The docs/audit-log.md rows of the identity area's events (KOBE-815), in name order; the table is
- * generated from these (`pnpm --filter @kobe/db audit:doc`). Add an event's row here in name order.
+ * generated from these (`pnpm --filter @kaiju/db audit:doc`). Add an event's row here in name order.
  */
 export const IDENTITY_EVENT_DOCS = {
   "auth.attempts.summarized": {
@@ -176,7 +176,7 @@ export const IDENTITY_EVENT_DOCS = {
   "identity.sso.required.disabled": {
     fields:
       "`reason` (`admin`, `last_provider`, `owner_unlinked`, `break_glass`), `providerId`, `slug`, `byUserId`, `operator`",
-    when: '"Require single sign-on" turned off: by the Owner, by the last enabled provider being disabled or deleted (`byUserId`: the admin who did it in the console; system actor when the chart did it), by the chart leaving the Owner without an identity at an enabled provider (`owner_unlinked`, system actor), or by `kobe sso allow-local-sign-in` (system actor, `operator`)',
+    when: '"Require single sign-on" turned off: by the Owner, by the last enabled provider being disabled or deleted (`byUserId`: the admin who did it in the console; system actor when the chart did it), by the chart leaving the Owner without an identity at an enabled provider (`owner_unlinked`, system actor), or by `kaiju sso allow-local-sign-in` (system actor, `operator`)',
   },
   "identity.sso.required.enabled": {
     fields: "`sessionsEnded`",

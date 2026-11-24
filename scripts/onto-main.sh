@@ -8,7 +8,7 @@
 #
 # On a conflict it cannot resolve it stops: resolve the listed files, `git commit`, then run it
 # again with the same base. Needs a clean working tree. Generated files it handles:
-#   docs/audit-log.md                 event table regenerated (pnpm --filter @kobe/db audit:doc)
+#   docs/audit-log.md                 event table regenerated (pnpm --filter @kaiju/db audit:doc)
 #   services/server/src/routes/__snapshots__/route-inventory.*.txt
 #                                     regenerated with vitest -u, only when they conflicted
 #   services/server/openapi.json      no longer tracked: a branch's old copy is dropped
@@ -31,11 +31,11 @@ merging() { git rev-parse -q --verify MERGE_HEAD >/dev/null; }
 build_db() {
   local log
   log="$(mktemp)"
-  if ! "$PNPM" --filter @kobe/db build >"$log" 2>&1; then
+  if ! "$PNPM" --filter @kaiju/db build >"$log" 2>&1; then
     cat "$log" >&2
     rm -f "$log"
     merging && old_table_hint
-    die "the @kobe/db build failed (an audit event without its row in events/<area>.doc.ts?)"
+    die "the @kaiju/db build failed (an audit event without its row in events/<area>.doc.ts?)"
   fi
   rm -f "$log"
 }
@@ -89,7 +89,7 @@ resolve_generated() {
   for file in "${files[@]}"; do
     if [[ "$file" == "$AUDIT_DOC" ]]; then
       build_db
-      "$PNPM" --silent --filter @kobe/db audit:doc
+      "$PNPM" --silent --filter @kaiju/db audit:doc
       if grep -qE '^(<<<<<<<|=======$|>>>>>>>)' "$AUDIT_DOC"; then
         say "$AUDIT_DOC has conflicts outside the generated table."
         old_table_hint
@@ -109,8 +109,8 @@ resolve_generated() {
 }
 
 regenerate_inventory() {
-  "$PNPM" exec turbo run build --filter='@kobe/server^...' --output-logs=errors-only
-  "$PNPM" --filter @kobe/server exec vitest run src/routes/route-inventory.test.ts -u >/dev/null
+  "$PNPM" exec turbo run build --filter='@kaiju/server^...' --output-logs=errors-only
+  "$PNPM" --filter @kaiju/server exec vitest run src/routes/route-inventory.test.ts -u >/dev/null
   git add -- "$INVENTORY_DIR"route-inventory.*.txt
 }
 
@@ -126,7 +126,7 @@ if [[ ! -f "$STASH" ]]; then
   # Regenerates the branch's migrations on the base (stash, merge, regenerate); a branch without
   # migrations is left as it is and merged below. The base goes positionally, which db:rebase
   # took before KOBE-815 too, so a branch that still has the old script works.
-  "$PNPM" --filter @kobe/db db:rebase "$BASE"
+  "$PNPM" --filter @kaiju/db db:rebase "$BASE"
   if ! merging && ! git merge-base --is-ancestor "$BASE" HEAD; then
     git merge -q --no-edit "$BASE" || true
     merging || git merge-base --is-ancestor "$BASE" HEAD || die "merging $BASE failed (see above)"
@@ -140,7 +140,7 @@ else
 fi
 if [[ -f "$STASH" ]]; then
   install_if_lock_changed
-  "$PNPM" --filter @kobe/db db:rebase --apply
+  "$PNPM" --filter @kaiju/db db:rebase --apply
 fi
 install_if_lock_changed
 
@@ -155,7 +155,7 @@ if [[ -f "$INVENTORY_PENDING" ]]; then
   say "regenerated the route-inventory snapshots (they conflicted)"
 fi
 build_db
-"$PNPM" --silent --filter @kobe/db audit:doc
+"$PNPM" --silent --filter @kaiju/db audit:doc
 if [[ -n "$(git status --porcelain -- "$AUDIT_DOC")" ]]; then
   git add -- "$AUDIT_DOC"
   git commit -q -m "chore: regenerate $AUDIT_DOC on $BASE"
@@ -166,7 +166,7 @@ say "done: $(git rev-list --count "$START..HEAD") new commit(s) on top of ${STAR
 say "still for you:"
 say "  - pnpm typecheck: union-merged barrels (.gitattributes) only show stale lines there"
 [[ -n "$(git log --oneline --grep='^chore: regenerate migrations on' "$START..HEAD")" ]] &&
-  say "  - migrations regenerated: pnpm --filter @kobe/db db:check and test:db; reset any dev database that ran the old ones"
+  say "  - migrations regenerated: pnpm --filter @kaiju/db db:check and test:db; reset any dev database that ran the old ones"
 [[ $regenerated_inventory -eq 1 ]] &&
   say "  - route-inventory snapshots regenerated: read their diff (git show HEAD -- $INVENTORY_DIR)"
 say "  - run the tests your change touches, then push"

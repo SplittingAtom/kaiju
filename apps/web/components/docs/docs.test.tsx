@@ -2,7 +2,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { Markdown } from "../chat/markdown";
 import { openApp } from "../chat/testing";
 import { IconActionProvider } from "../shell/icon-action";
@@ -32,7 +32,7 @@ const GROUPS: DocsNavGroup[] = [
 
 describe("the Docs icon", () => {
   it("sits in the bar's first row and opens /docs, the Docs panel over the workspace", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     vi.stubGlobal("fetch", fake.fetch);
     openApp(fake);
     const row = (await screen.findByRole("banner")).querySelector<HTMLElement>(

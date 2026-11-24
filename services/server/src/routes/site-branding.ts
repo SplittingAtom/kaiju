@@ -16,8 +16,8 @@ import {
   checkFloor,
   themeSettingsSchema,
   type BrandingAssetKind,
-} from "@kobe/protocol";
-import { inArray, siteBrandingAssets, siteSettings, sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { inArray, siteBrandingAssets, siteSettings, sql, type KaijuTx } from "@kaiju/db";
 import { auditRequestContext } from "../audit/context.js";
 import { recordAudit } from "../audit/record.js";
 import type { AuthVariables } from "../auth/session.js";
@@ -159,7 +159,7 @@ const noFields = z.strictObject({});
 
 type Setting = "app_name" | "show_name" | "theme" | "logo_theme_color" | BrandingAssetKind;
 
-async function audited(tx: KobeTx, setting: Setting, value: string): Promise<void> {
+async function audited(tx: KaijuTx, setting: Setting, value: string): Promise<void> {
   await recordAudit(tx, { action: "site.branding.updated", target: { setting, value } });
 }
 

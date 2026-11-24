@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
-import { fixtureWorkspacePath, skillEvalSuiteSchema } from "@kobe/protocol";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
+import { fixtureWorkspacePath, skillEvalSuiteSchema } from "@kaiju/protocol";
 import { Hono } from "hono";
 import type { Logger } from "pino";
 import type { BlobStore } from "../../retention/blobs.js";
@@ -13,7 +13,7 @@ import { readFixtures } from "./storage.js";
  * starting; the path must be one of that case's fixtures. Everything else is the same 404.
  */
 export function skillEvalFixtureRoutes(deps: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly authenticate: SandboxAuthenticator;
   readonly log: Pick<Logger, "error" | "warn">;

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { COMPACT_THREAD_ERROR_MESSAGES } from "@kobe/protocol";
+import { COMPACT_THREAD_ERROR_MESSAGES } from "@kaiju/protocol";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { announcement, composer, openApp, streaming, threadGroup } from "./testing";
@@ -14,13 +14,13 @@ import { announcement, composer, openApp, streaming, threadGroup } from "./testi
  * focus reaches the server; the summary then shows in the conversation's "context compacted"
  * marker; a refusal shows the server's message.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 /** The gauge and the button appear after the thread, its usage and the team's models were read. */
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push({
     alias: "kimi",
     label: "Kimi K2.7 Code",
@@ -84,7 +84,7 @@ describe("Compact now (KOBE-213)", { timeout: 30_000 }, () => {
     await user.click(await screen.findByRole("button", { name: "Compact this thread" }, WAIT));
     const dialog = await screen.findByRole("dialog", { name: "Compact this thread" }, WAIT);
     // Inside the chat root, where the theme tokens live (dark mode).
-    expect(dialog.closest("[data-kobe-chat]")).not.toBeNull();
+    expect(dialog.closest("[data-kaiju-chat]")).not.toBeNull();
     await user.type(
       within(dialog).getByRole("textbox", { name: /What should the summary keep/ }),
       "keep the final numbers",
@@ -94,7 +94,7 @@ describe("Compact now (KOBE-213)", { timeout: 30_000 }, () => {
     expect(compactRequests(t).map((r) => r.body)).toEqual([{ focus: "keep the final numbers" }]);
     // The compaction entry is read back: the marker carries Pi's summary.
     const marker = await waitFor(
-      () => must(document.querySelector<HTMLElement>('[data-kobe-marker="compaction"]')),
+      () => must(document.querySelector<HTMLElement>('[data-kaiju-marker="compaction"]')),
       WAIT,
     );
     await user.click(within(marker).getByText(/compacted/i));
@@ -119,7 +119,7 @@ describe("Compact now (KOBE-213)", { timeout: 30_000 }, () => {
       await waitFor(() => expect(header.getAttribute("data-bar-layout")).toBe("single"), WAIT);
       const gauge = await screen.findByRole("meter", { name: "Context used" }, WAIT);
       expect(header.contains(gauge)).toBe(false);
-      expect(gauge.closest("[data-kobe-composer]")).not.toBeNull();
+      expect(gauge.closest("[data-kaiju-composer]")).not.toBeNull();
       await user.click(await screen.findByRole("button", { name: "Compact this thread" }, WAIT));
       expect(await screen.findByRole("dialog", { name: "Compact this thread" }, WAIT)).toBeTruthy();
     } finally {
@@ -396,7 +396,7 @@ describe("the gauge after Compact now, once a run streamed in this tab (KOBE-293
       const dialog = await screen.findByRole("dialog", { name: "Compact this thread" }, WAIT);
       await user.click(within(dialog).getByRole("button", { name: "Compact now" }));
       await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull(), WAIT);
-      await waitFor(() => must(document.querySelector('[data-kobe-marker="compaction"]')), WAIT);
+      await waitFor(() => must(document.querySelector('[data-kaiju-marker="compaction"]')), WAIT);
       await waitFor(() => expect(announcement()).toBe("The conversation was compacted."), WAIT);
       await waitFor(
         () => expect(fake.requests.filter(usageReads(t)).length).toBeGreaterThan(0),

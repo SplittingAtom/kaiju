@@ -5,9 +5,9 @@ import {
   galleryAgentScores,
   siteAgents,
   sql,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { EvalRecord } from "./store.js";
 
 /**
@@ -36,7 +36,7 @@ export function galleryVersionOf(record: Pick<EvalRecord, "definition">): number
  * Copies a finished gallery eval's verdict (passed or blocked) to the site-level score. Runs in
  * `finishEval`'s transaction: if it fails, the verdict rolls back and the sweeper retries.
  */
-export async function recordGalleryScore(db: KobeDb | KobeTx, record: EvalRecord): Promise<void> {
+export async function recordGalleryScore(db: KaijuDb | KaijuTx, record: EvalRecord): Promise<void> {
   const version = galleryVersionOf(record);
   if (
     version === null ||
@@ -61,7 +61,7 @@ export async function recordGalleryScore(db: KobeDb | KobeTx, record: EvalRecord
 }
 
 /** The newest score of each gallery agent's CURRENT version (one query; agents without one are absent). */
-export async function currentGalleryScores(db: KobeDb): Promise<GalleryScore[]> {
+export async function currentGalleryScores(db: KaijuDb): Promise<GalleryScore[]> {
   const rows = await db
     .selectDistinctOn([galleryAgentScores.agentId], {
       agentId: galleryAgentScores.agentId,

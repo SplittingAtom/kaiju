@@ -7,13 +7,13 @@ import {
   withTeam,
   type GitConnectionRecord,
   type GitRepoVisibility,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import type {
   GitConversionAbandoned,
   GitConversionStartBody,
   GitConversionView,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { assertRepositoryName } from "../../git-hosts/adapter.js";
 import { loadAccess, teamRoleFor } from "../../projects/access.js";
@@ -93,7 +93,7 @@ export function defaultRepositoryName(prefix: string, slug: string): string {
   return `${prefix}${slug}`;
 }
 
-async function underHold(tx: KobeTx, teamId: string): Promise<boolean> {
+async function underHold(tx: KaijuTx, teamId: string): Promise<boolean> {
   const res = await tx.execute<{ held: boolean }>(
     sql`SELECT public.memory_legal_hold_covers(${teamId}, NULL) AS held`,
   );
@@ -108,7 +108,7 @@ const REJECTED_LISTED = 20;
  * size), across every tree the conversion carries, with the first commit that has it.
  */
 async function rejectedFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   history: boolean,
@@ -140,7 +140,7 @@ async function rejectedFiles(
 
 /** New content per git commit (bytes no earlier commit had), oldest first. */
 async function contentPerCommit(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   history: boolean,
@@ -164,7 +164,7 @@ async function contentPerCommit(
 
 /** The checks against the stored project and connection (no host call); undefined when fine. */
 async function check(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: {
     readonly teamId: string;
     readonly projectId: string;

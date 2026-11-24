@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { NOTEBOOK_COMPLETE_MATCHES_MAX, notebookCompletionResultSchema } from "@kobe/protocol";
+import { NOTEBOOK_COMPLETE_MATCHES_MAX, notebookCompletionResultSchema } from "@kaiju/protocol";
 import { beforeAll, describe, expect, it } from "vitest";
 
 /**

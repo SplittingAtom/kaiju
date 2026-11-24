@@ -53,7 +53,7 @@ async function expectOneLine(toolbar: Locator): Promise<void> {
 
 /** Send (or Queue) lies wholly inside the composer panel: not clipped. */
 async function expectSendInside(page: Page): Promise<void> {
-  const panel = await page.locator("[data-kobe-composer-panel]").boundingBox();
+  const panel = await page.locator("[data-kaiju-composer-panel]").boundingBox();
   const send = await page
     .locator('[data-composer-toolbar] [data-command="send"]')
     .or(page.locator("[data-composer-toolbar]").getByRole("button", { name: "Queue" }))
@@ -89,7 +89,7 @@ test("one bar row; the composer holds the selectors and the gauge (ac-1, ac-2, a
   ).toBeVisible();
   await expectOneLine(toolbar);
   await expectSendInside(page);
-  await shoot(page, "composer-new", page.locator("[data-kobe-composer]"));
+  await shoot(page, "composer-new", page.locator("[data-kaiju-composer]"));
 
   await chat.ask(PROMPT);
   // The gauge: under the composer, at the end of its row, once a model call counted the context.
@@ -110,7 +110,7 @@ test("one bar row; the composer holds the selectors and the gauge (ac-1, ac-2, a
   await expect(below.getByRole("combobox", { name: "Model for this conversation" })).toBeVisible();
   const selectors = await below.boundingBox();
   if (selectors && gauge) expect(selectors.x).toBeLessThan(gauge.x);
-  await shoot(page, "composer-started", page.locator("[data-kobe-composer]"));
+  await shoot(page, "composer-started", page.locator("[data-kaiju-composer]"));
 });
 
 test("an answer's action bar: Show details beside Fork, Compact now beside thumbs down (ac-3, ac-4)", async ({
@@ -129,7 +129,7 @@ test("an answer's action bar: Show details beside Fork, Compact now beside thumb
   await details.click();
   await expect(chat.compactNow).toBeVisible();
   await expect(chat.compactNow).toHaveAttribute("aria-disabled", "false");
-  const bar = answer.locator("[data-kobe-answer-actions]");
+  const bar = answer.locator("[data-kaiju-answer-actions]");
   await shoot(page, "answer-actions", bar);
 });
 
@@ -149,11 +149,11 @@ test("a phone: the selectors fold into one menu on one toolbar line (ac-2)", asy
   await expectOneLine(toolbar);
   await expectSendInside(page);
   await noPageScrollX(page);
-  await shoot(page, "composer-phone", page.locator("[data-kobe-composer]"));
+  await shoot(page, "composer-phone", page.locator("[data-kaiju-composer]"));
   await menu.click();
   await expect(panel).toBeVisible();
   await expect(panel.getByRole("combobox", { name: "Model for this conversation" })).toBeVisible();
-  await shoot(page, "composer-phone-menu", page.locator("[data-kobe-composer]"));
+  await shoot(page, "composer-phone-menu", page.locator("[data-kaiju-composer]"));
   await panel.getByRole("combobox", { name: "Model for this conversation" }).focus();
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
@@ -170,7 +170,7 @@ test("a phone: the selectors fold into one menu on one toolbar line (ac-2)", asy
   ).toBeVisible();
   await expectOneLine(toolbar);
   await noPageScrollX(page);
-  await shoot(page, "composer-phone-started", page.locator("[data-kobe-composer]"));
+  await shoot(page, "composer-phone-started", page.locator("[data-kaiju-composer]"));
   await shoot(page, "answer-actions-phone", chat.answers.last());
 });
 
@@ -182,8 +182,8 @@ test("the conversation column is up to 80rem wide and centred, without page scro
   await chat.ask(PROMPT);
   for (const width of [1440, 1920]) {
     await page.setViewportSize({ width, height: 1000 });
-    const composer = await page.locator("[data-kobe-composer-column]").boundingBox();
-    const main = await page.locator("#kobe-chat-main").boundingBox();
+    const composer = await page.locator("[data-kaiju-composer-column]").boundingBox();
+    const main = await page.locator("#kaiju-chat-main").boundingBox();
     expect(composer).not.toBeNull();
     expect(main).not.toBeNull();
     if (composer && main) {

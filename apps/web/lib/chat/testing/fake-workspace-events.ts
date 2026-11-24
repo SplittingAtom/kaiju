@@ -1,10 +1,10 @@
 /**
- * FakeKobe's `GET /v1/workspace/events` and `POST /v1/workspace/sync` (KOBE-599), as the server
+ * FakeKaiju's `GET /v1/workspace/events` and `POST /v1/workspace/sync` (KOBE-599), as the server
  * behaves: each connect sends `workspace.state` with the current versions; `bump` moves one and
  * sends `workspace.changed` to every open stream. `syncs` counts Refreshes; `syncStatus` is what
  * the next ones answer, and `beforeSync` runs first (a test's sandbox push).
  */
-import type { WorkspaceEvent, WorkspaceSyncStatus } from "@kobe/protocol";
+import type { WorkspaceEvent, WorkspaceSyncStatus } from "@kaiju/protocol";
 import type { EventSourceLike } from "../stream";
 
 export class FakeWorkspaceEvents {

@@ -6,11 +6,11 @@ import {
   eq,
   isNull,
   sql,
-  type KobeDb,
+  type KaijuDb,
   type UiResourceFailure,
   type UiResourceMeta,
   type UiResourcePlacement,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { templatePlacements } from "./template-placement.js";
 import { loadTemplates } from "./template-store.js";
@@ -175,7 +175,7 @@ const live = (connectorId: string) =>
   and(eq(connectors.id, connectorId), isNull(connectors.deletedAt));
 
 export async function reviewConnectorTemplates(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
 ): Promise<TemplateReview[] | undefined> {
   const [row] = await db.select({ id: connectors.id }).from(connectors).where(live(connectorId));
@@ -188,7 +188,7 @@ export async function reviewConnectorTemplates(
 }
 
 async function storedTemplate(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   uri: string,
 ): Promise<StoredTemplate | undefined> {
@@ -199,7 +199,7 @@ async function storedTemplate(
 
 /** The admin preview's bytes (review M2): served only by the site-admin frame route. */
 export async function connectorTemplateFrame(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   uri: string,
   which: "live" | "approved",
@@ -209,7 +209,7 @@ export async function connectorTemplateFrame(
 }
 
 export async function connectorTemplateSource(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   uri: string,
 ): Promise<TemplateSource | undefined> {
@@ -223,7 +223,7 @@ export type TemplateApprovalOutcome =
   | Extract<TemplateApproval, { ok: false }>;
 
 export async function approveConnectorTemplates(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   input: ApproveTemplatesInput,
   adminId: string,

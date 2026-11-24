@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { THREAD_DRAG_TYPE } from "../../lib/chat/organize";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
@@ -14,13 +14,13 @@ import { chooseNode, composer, openApp, openRowMenu, openThreads } from "../chat
  * rows), the conversation's commands and drag onto a tree node; Remove from folder; the polite
  * announcement; the tree read again on focus; search hits with their folder path.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -31,7 +31,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const status = (panel: HTMLElement) => panel.querySelector("[data-kobe-rail-status]")?.textContent;
+const status = (panel: HTMLElement) => panel.querySelector("[data-kaiju-rail-status]")?.textContent;
 const node = (panel: HTMLElement, name: string) => within(panel).getByRole("treeitem", { name });
 
 /** Opens a row's Save to folder… submenu by keyboard, once the folders are read. */
@@ -168,7 +168,7 @@ describe("Save to folder (ac-3)", () => {
     Object.assign(must(fake.threads.get(s)), { read_only: true, visibility: "team" });
     const panel = await open();
     await within(panel).findByRole("button", { name: "Budget" }, WAIT);
-    const row = must(panel.querySelector(`[data-kobe-thread="${t}"]`));
+    const row = must(panel.querySelector(`[data-kaiju-thread="${t}"]`));
     let data = dragData();
     fireEvent.dragStart(row, { dataTransfer: data });
     const target = node(panel, "Budgets");
@@ -181,7 +181,7 @@ describe("Save to folder (ac-3)", () => {
     await waitFor(() => expect(fake.threads.get(t)?.folder_id).toBe(f));
     await waitFor(() => expect(status(panel)).toBe("Saved “Budget” to Budgets."));
     // A shared row drags (for folders) but a project header refuses it.
-    const sharedRow = must(panel.querySelector(`[data-kobe-thread="${s}"]`));
+    const sharedRow = must(panel.querySelector(`[data-kaiju-thread="${s}"]`));
     expect(sharedRow.getAttribute("draggable")).toBe("true");
     data = dragData();
     fireEvent.dragStart(sharedRow, { dataTransfer: data });
@@ -192,7 +192,7 @@ describe("Save to folder (ac-3)", () => {
     expect(header.dataset.dropTarget).toBeUndefined();
     // Dropping a filed row on Current takes it out of its folder.
     await chooseNode("Budgets");
-    const filed = await waitFor(() => must(panel.querySelector(`[data-kobe-thread="${t}"]`)), WAIT);
+    const filed = await waitFor(() => must(panel.querySelector(`[data-kaiju-thread="${t}"]`)), WAIT);
     data = dragData();
     fireEvent.dragStart(filed, { dataTransfer: data });
     fireEvent.dragOver(node(panel, "Current"), { dataTransfer: data });

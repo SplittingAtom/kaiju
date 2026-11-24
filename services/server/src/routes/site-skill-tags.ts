@@ -3,7 +3,7 @@ import {
   moveDefaultMajorSchema,
   putSkillTagsSchema,
   updateTopicTagSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import type { AuthVariables } from "../auth/session.js";

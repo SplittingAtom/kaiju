@@ -1,4 +1,4 @@
-import { deriveAccent, PRESET_IDS, type ThemeSettings } from "@kobe/protocol";
+import { deriveAccent, PRESET_IDS, type ThemeSettings } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { BRANDING_CSS_ALLOWED, brandingCss } from "./branding-css";
 import { PRESET_SCHEME_TOKENS, PRESETS } from "./presets";
@@ -31,7 +31,7 @@ function blocks(css: string, scope = ":root") {
 }
 
 const ALLOWED_NAME =
-  /^--(?:kobe-brand-[\w-]+|kobe-radius-[\w-]+|kobe-font-sans|kobe-font-mono|ring|kobe-composer-focus)$/;
+  /^--(?:kaiju-brand-[\w-]+|kaiju-radius-[\w-]+|kaiju-font-sans|kaiju-font-mono|ring|kaiju-composer-focus)$/;
 const PRESET_NAMES = new Set<string>(PRESET_SCHEME_TOKENS);
 
 describe("brandingCss", () => {
@@ -72,11 +72,11 @@ describe("brandingCss", () => {
   it("scopes every block to the preview root", () => {
     const css = brandingCss({ preset: "forest" }, "#preview-light");
     const { light, chosenDark, osDark } = blocks(css, "#preview-light");
-    expect(new Map(light).get("--kobe-brand-primary")).toBe(
-      PRESETS.forest.light["--kobe-brand-primary"],
+    expect(new Map(light).get("--kaiju-brand-primary")).toBe(
+      PRESETS.forest.light["--kaiju-brand-primary"],
     );
-    expect(new Map(chosenDark).get("--kobe-brand-primary")).toBe(
-      PRESETS.forest.dark["--kobe-brand-primary"],
+    expect(new Map(chosenDark).get("--kaiju-brand-primary")).toBe(
+      PRESETS.forest.dark["--kaiju-brand-primary"],
     );
     expect(osDark).toEqual(chosenDark);
     expect(css).not.toContain(":root");
@@ -96,27 +96,27 @@ describe("brandingCss", () => {
       expect(l.get(token), token).toBe(PRESETS.ember.light[token]);
       expect(d.get(token), token).toBe(PRESETS.ember.dark[token]);
     }
-    expect(l.get("--kobe-radius-md")).toBe("0");
-    expect(l.get("--kobe-font-sans")).toMatch(/^Inter, /);
-    expect(l.has("--kobe-font-mono")).toBe(false);
-    expect(d.has("--kobe-radius-md")).toBe(false);
+    expect(l.get("--kaiju-radius-md")).toBe("0");
+    expect(l.get("--kaiju-font-sans")).toMatch(/^Inter, /);
+    expect(l.has("--kaiju-font-mono")).toBe(false);
+    expect(d.has("--kaiju-radius-md")).toBe(false);
   });
 
   /** KOBE-555 (ac-2): Catalyst's stacks start with the shipped faces (app/faces.ts). */
   it("the catalyst preset sets the Outfit and JetBrains Mono stacks", () => {
     const { light, chosenDark } = blocks(brandingCss({ preset: "catalyst" }));
     const l = new Map(light);
-    expect(l.get("--kobe-font-sans")).toMatch(/^var\(--kobe-face-outfit, Outfit\), Inter, /);
-    expect(l.get("--kobe-font-mono")).toMatch(
-      /^var\(--kobe-face-jetbrains-mono, "JetBrains Mono"\), ui-monospace, /,
+    expect(l.get("--kaiju-font-sans")).toMatch(/^var\(--kaiju-face-outfit, Outfit\), Inter, /);
+    expect(l.get("--kaiju-font-mono")).toMatch(
+      /^var\(--kaiju-face-jetbrains-mono, "JetBrains Mono"\), ui-monospace, /,
     );
-    expect(new Map(chosenDark).has("--kobe-font-mono")).toBe(false);
+    expect(new Map(chosenDark).has("--kaiju-font-mono")).toBe(false);
   });
 
   it("a custom theme may pick the catalyst typeface", () => {
     const l = new Map(blocks(brandingCss({ ...CUSTOM, font: "catalyst" })).light);
-    expect(l.get("--kobe-font-sans")).toMatch(/^var\(--kobe-face-outfit/);
-    expect(l.get("--kobe-font-mono")).toMatch(/^var\(--kobe-face-jetbrains-mono/);
+    expect(l.get("--kaiju-font-sans")).toMatch(/^var\(--kaiju-face-outfit/);
+    expect(l.get("--kaiju-font-mono")).toMatch(/^var\(--kaiju-face-jetbrains-mono/);
   });
 
   it("a custom accent emits the derived values over the default neutrals", () => {
@@ -128,21 +128,21 @@ describe("brandingCss", () => {
       [l, "light"],
       [d, "dark"],
     ] as const) {
-      expect(m.get("--kobe-brand-primary")).toBe(derived.primary[k]);
-      expect(m.get("--kobe-brand-primary-hover")).toBe(derived.primaryHover[k]);
-      expect(m.get("--kobe-brand-primary-fg")).toBe(derived.primaryFg[k]);
-      expect(m.get("--ring")).toBe("var(--kobe-brand-focus)");
-      expect(m.get("--kobe-composer-focus")).toBe("var(--kobe-brand-focus)");
+      expect(m.get("--kaiju-brand-primary")).toBe(derived.primary[k]);
+      expect(m.get("--kaiju-brand-primary-hover")).toBe(derived.primaryHover[k]);
+      expect(m.get("--kaiju-brand-primary-fg")).toBe(derived.primaryFg[k]);
+      expect(m.get("--ring")).toBe("var(--kaiju-brand-focus)");
+      expect(m.get("--kaiju-composer-focus")).toBe("var(--kaiju-brand-focus)");
       expect(m.has("--background")).toBe(false);
-      expect(m.has("--kobe-console-bg")).toBe(false);
+      expect(m.has("--kaiju-console-bg")).toBe(false);
     }
-    expect(l.get("--kobe-brand-link")).toBe(derived.link.light);
-    expect(d.get("--kobe-brand-link")).toBe(derived.link.dark);
-    expect(l.get("--kobe-brand-focus")).toBe(derived.focus.light);
-    expect(d.get("--kobe-brand-focus")).toBe(derived.focus.dark);
-    expect(l.get("--kobe-radius-lg")).toBe("1rem");
-    expect(l.get("--kobe-font-sans")).toMatch(/^Charter, /);
-    expect(l.has("--kobe-font-mono")).toBe(false);
+    expect(l.get("--kaiju-brand-link")).toBe(derived.link.light);
+    expect(d.get("--kaiju-brand-link")).toBe(derived.link.dark);
+    expect(l.get("--kaiju-brand-focus")).toBe(derived.focus.light);
+    expect(d.get("--kaiju-brand-focus")).toBe(derived.focus.dark);
+    expect(l.get("--kaiju-radius-lg")).toBe("1rem");
+    expect(l.get("--kaiju-font-sans")).toMatch(/^Charter, /);
+    expect(l.has("--kaiju-font-mono")).toBe(false);
   });
 
   it("emits nothing for a value that slipped past validation", () => {

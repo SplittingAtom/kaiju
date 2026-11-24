@@ -1,5 +1,5 @@
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import { egressDomains, teamEgress, teamMembers, users } from "../schema/index.js";
 import { withTeam } from "../with-team.js";
 
@@ -24,19 +24,19 @@ export const EGRESS_BLOCKED_CHANNEL = "kobe_egress_blocked";
 export const EGRESS_BLOCKED_EVENT_KIND = "egress.blocked";
 
 /** Queues the change hint in `tx` (delivered on commit). `teamId` null: the ceiling changed. */
-export async function notifyEgressChanged(tx: KobeTx, teamId: string | null): Promise<void> {
+export async function notifyEgressChanged(tx: KaijuTx, teamId: string | null): Promise<void> {
   await tx.execute(sql`SELECT pg_notify(${EGRESS_CHANGES_CHANNEL}, ${teamId ?? CEILING_CHANGED})`);
 }
 
 /** Queues a user hint in `tx`: the egress proxies re-check that user's membership and tunnels. */
-export async function notifyEgressUserChanged(tx: KobeTx, userId: string): Promise<void> {
+export async function notifyEgressUserChanged(tx: KaijuTx, userId: string): Promise<void> {
   await tx.execute(
     sql`SELECT pg_notify(${EGRESS_CHANGES_CHANNEL}, ${`${EGRESS_USER_HINT_PREFIX}${userId}`})`,
   );
 }
 
 /** The site ceiling: patterns teams may enable (rows with `in_ceiling`). */
-export async function loadEgressCeiling(db: KobeDb | KobeTx): Promise<string[]> {
+export async function loadEgressCeiling(db: KaijuDb | KaijuTx): Promise<string[]> {
   const rows = await db
     .select({ domain: egressDomains.domain })
     .from(egressDomains)
@@ -45,7 +45,7 @@ export async function loadEgressCeiling(db: KobeDb | KobeTx): Promise<string[]> 
 }
 
 /** Patterns the team enabled (read under its RLS), whether or not they are still in the ceiling. */
-export async function loadTeamEgress(db: KobeDb, teamId: string): Promise<string[]> {
+export async function loadTeamEgress(db: KaijuDb, teamId: string): Promise<string[]> {
   const rows = await withTeam(db, teamId, (tx) =>
     tx.select({ domain: teamEgress.domain }).from(teamEgress).where(eq(teamEgress.teamId, teamId)),
   );
@@ -56,7 +56,7 @@ export async function loadTeamEgress(db: KobeDb, teamId: string): Promise<string
  * {@link loadTeamEgress} inside a transaction that already runs as `teamId` (`withTeam`), e.g. the
  * semantic memory link check (KOBE-379), which reads it in the save's own transaction.
  */
-export async function loadTeamEgressIn(tx: KobeTx, teamId: string): Promise<string[]> {
+export async function loadTeamEgressIn(tx: KaijuTx, teamId: string): Promise<string[]> {
   const rows = await tx
     .select({ domain: teamEgress.domain })
     .from(teamEgress)
@@ -72,7 +72,7 @@ export interface SealedTeamHeaders {
 
 /** The team's enabled patterns that have injected headers (KOBE-39), sealed. */
 export async function loadTeamEgressHeaders(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
 ): Promise<SealedTeamHeaders[]> {
   const rows = await withTeam(db, teamId, (tx) =>
@@ -89,7 +89,7 @@ export async function loadTeamEgressHeaders(
  * check of a sandbox's (team_id, user_id) beyond its token (D7: deactivation stops everything).
  */
 export async function isActiveTeamMember(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<boolean> {

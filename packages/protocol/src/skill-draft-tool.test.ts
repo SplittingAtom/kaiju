@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_TOOLS, kobeToolsRequestSchema, kobeToolsResponseSchema } from "./index.js";
+import { BUILTIN_TOOLS, kaijuToolsRequestSchema, kaijuToolsResponseSchema } from "./index.js";
 import { sandboxToServerFrameSchema, serverToSandboxFrameSchema } from "./sandbox-wire/index.js";
 import {
   CAPABILITY_SKILL_DRAFTS,
@@ -92,7 +92,7 @@ describe("save_skill_draft contract (KOBE-442)", () => {
 
   it("is a kobe-tools op with its own answer", () => {
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         id: "1",
         op: "skill.draft_save",
         tool_call_id: "call_1",
@@ -101,7 +101,7 @@ describe("save_skill_draft contract (KOBE-442)", () => {
       }).success,
     ).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({
+      kaijuToolsResponseSchema.safeParse({
         id: "1",
         ok: true,
         op: "skill_draft_save",

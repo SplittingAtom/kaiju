@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { semanticMemoryErrorSchema, semanticMemoryItemDetailSchema } from "@kobe/protocol";
+import { semanticMemoryErrorSchema, semanticMemoryItemDetailSchema } from "@kaiju/protocol";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 

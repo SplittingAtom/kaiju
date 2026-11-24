@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { REMEMBER_SCOPE_LABELS } from "@kobe/protocol";
+import { REMEMBER_SCOPE_LABELS } from "@kaiju/protocol";
 import type { ApiResult } from "../../lib/api/client";
 import type { MemberRule } from "../../lib/admin/api/remember";
 import { visible } from "../../lib/security/visible";

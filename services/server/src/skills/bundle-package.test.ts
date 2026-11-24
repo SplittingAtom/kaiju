@@ -1,6 +1,6 @@
 import { strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { describe, expect, it } from "vitest";
-import { packageHash, runtimeHash } from "@kobe/protocol/node";
+import { packageHash, runtimeHash } from "@kaiju/protocol/node";
 import { validateZipBundle } from "./bundle.js";
 import { sha256Hex } from "./storage.js";
 

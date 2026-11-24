@@ -11,9 +11,9 @@ import {
   users,
   withTeam,
   type AuditActor,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
@@ -34,7 +34,7 @@ export interface RemovedGrant {
 
 /** Deletes the member's grants in the caller's team transaction; audit them with {@link auditRemovedGrants}. */
 export async function deleteMemberGrantsInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<RemovedGrant[]> {
@@ -59,7 +59,7 @@ export async function deleteMemberGrantsInTx(
  * hold the audit chain lock until commit). `actor` defaults to the request's signed-in user.
  */
 export async function auditRemovedGrants(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   grants: readonly RemovedGrant[],
@@ -77,7 +77,7 @@ export async function auditRemovedGrants(
 }
 
 /** `deactivated` for a Site admin's deactivation, `deprovisioned` for an identity provider's (SCIM). */
-async function deactivationReason(db: KobeDb, userId: string): Promise<GrantRemovalReason> {
+async function deactivationReason(db: KaijuDb, userId: string): Promise<GrantRemovalReason> {
   const [row] = await db
     .select({ via: users.deactivatedVia })
     .from(users)
@@ -91,7 +91,7 @@ async function deactivationReason(db: KobeDb, userId: string): Promise<GrantRemo
  * reported incomplete, and the offboarding sweep finishes the job).
  */
 async function deleteUserGrantsEverywhere(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   reason: GrantRemovalReason,
 ): Promise<number> {
@@ -119,7 +119,7 @@ async function deleteUserGrantsEverywhere(
 }
 
 /** Deactivation (a lifecycle hook, after the deactivation committed). */
-export async function deleteDeactivatedUserGrants(db: KobeDb, userId: string): Promise<number> {
+export async function deleteDeactivatedUserGrants(db: KaijuDb, userId: string): Promise<number> {
   return deleteUserGrantsEverywhere(db, userId, await deactivationReason(db, userId));
 }
 
@@ -128,7 +128,7 @@ export async function deleteDeactivatedUserGrants(db: KobeDb, userId: string): P
  * any they still have were left by a deactivation hook that failed before the sweep came round;
  * they must not work again. Reason `reactivated`.
  */
-export async function deleteReactivatedUserGrants(db: KobeDb, userId: string): Promise<number> {
+export async function deleteReactivatedUserGrants(db: KaijuDb, userId: string): Promise<number> {
   return deleteUserGrantsEverywhere(db, userId, "reactivated");
 }
 
@@ -149,7 +149,7 @@ export interface GrantSweepOptions {
  * failing team is logged and skipped.
  */
 export async function sweepDepartedGrants(
-  db: KobeDb,
+  db: KaijuDb,
   options: GrantSweepOptions = {},
 ): Promise<number> {
   const limit = options.limit ?? GRANT_SWEEP_LIMIT;
@@ -172,7 +172,7 @@ const DEPARTED = (alias: string, user: string) =>
   NOT EXISTS (SELECT 1 FROM team_members m WHERE m.team_id = ${alias}.team_id AND m.user_id = ${alias}.user_id)
   OR ${user}.deactivated_at IS NOT NULL)`);
 
-async function sweepTeamInTx(tx: KobeTx, teamId: string, limit: number): Promise<number> {
+async function sweepTeamInTx(tx: KaijuTx, teamId: string, limit: number): Promise<number> {
   const removed = await tx.execute<{
     user_id: string;
     connector_id: string;

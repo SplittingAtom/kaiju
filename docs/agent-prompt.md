@@ -54,7 +54,7 @@ user-facing docs: decide how the change belongs in docs/guide/ (served at /docs 
 update the pages in the same change, or note in the ledger why none is needed;
 notes in docs/ledger/KOBE-<N>.md (template; stay under ~150 lines, link
 evidence instead of pasting logs). An audit event's docs/audit-log.md row goes in its area's
-packages/db/src/audit/events/<area>.doc.ts, then `pnpm --filter @kobe/db audit:doc`; never edit
+packages/db/src/audit/events/<area>.doc.ts, then `pnpm --filter @kaiju/db audit:doc`; never edit
 the table or commit services/server/openapi.json. To bring the branch onto main (or onto
 <base>), run `scripts/onto-main.sh [<base>]` and act on what it prints. Before pushing run
 `pnpm verify` (it formats, so commit after it). Open a PR, then wait for CI with exactly one background `gh pr checks <n> --watch`; never
@@ -80,9 +80,9 @@ agents can then work on a migration ticket's feature half while the next migrati
 | Docs, CI config, chart values only                                          | Coordinator reads the diff               |
 
 `services/server/openapi.json` is not committed (KOBE-815), so a change to a request or response
-schema (zod in a route module or `@kobe/protocol`) shows only as a source change. When a diff
+schema (zod in a route module or `@kaiju/protocol`) shows only as a source change. When a diff
 touches routes, `services/server/src/openapi/` or `packages/protocol`, the reviewer runs
-`pnpm --filter @kobe/server openapi:diff [base-ref]` (default `origin/main`; builds both sides,
+`pnpm --filter @kaiju/server openapi:diff [base-ref]` (default `origin/main`; builds both sides,
 about two minutes) and reads the API diff.
 
 One review pass per PR with a combined checklist (it includes: is docs/guide/ updated, or is the

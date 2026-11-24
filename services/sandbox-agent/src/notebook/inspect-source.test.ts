@@ -6,7 +6,7 @@ import {
   NOTEBOOK_VARIABLES_MAX,
   notebookOtherNameSchema,
   notebookVariableSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 
 /**

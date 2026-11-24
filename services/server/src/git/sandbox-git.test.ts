@@ -1,5 +1,5 @@
-import type { GitConnectionRecord } from "@kobe/db";
-import { runGitContextSchema } from "@kobe/protocol/sandbox-wire";
+import type { GitConnectionRecord } from "@kaiju/db";
+import { runGitContextSchema } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import {
   buildRunGitContext,
@@ -26,7 +26,7 @@ const connection = (over: Partial<GitConnectionRecord>): GitConnectionRecord =>
 const input = (over: Partial<RunGitInput> = {}): RunGitInput => ({
   user: { id: USER, name: "Ada Lovelace", email: "ada@acme.test" },
   mode: "member",
-  siteHost: "kobe.acme.test",
+  siteHost: "kaiju.acme.test",
   connections: [connection({})],
   ...over,
 });
@@ -44,7 +44,7 @@ describe("run.start.git (KOBE-764)", () => {
 
   it("switches to the no-reply form under the Site's host when the Workspace says so (GQ10)", () => {
     const git = buildRunGitContext(input({ mode: "noreply" }));
-    const noReply = `${gitNoReplyShortId(USER)}+ada-lovelace@users.noreply.kobe.acme.test`;
+    const noReply = `${gitNoReplyShortId(USER)}+ada-lovelace@users.noreply.kaiju.acme.test`;
     expect(git.author).toEqual({ name: "Ada Lovelace", email: noReply });
     expect(git.committer).toEqual({ name: "Ada Lovelace via Kaiju", email: noReply });
     expect(JSON.stringify(git)).not.toContain("ada@acme.test");
@@ -78,7 +78,7 @@ describe("run.start.git (KOBE-764)", () => {
 
   it("falls back to the no-reply form for an address git would misread", () => {
     const git = buildRunGitContext(input({ user: { id: USER, name: "A", email: "a <b>@c.test" } }));
-    expect(git.author.email).toBe(gitNoReplyEmail({ id: USER, name: "A" }, "kobe.acme.test"));
+    expect(git.author.email).toBe(gitNoReplyEmail({ id: USER, name: "A" }, "kaiju.acme.test"));
   });
 
   it("cleans names git would misread and keeps room for the suffix", () => {

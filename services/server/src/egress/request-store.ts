@@ -26,10 +26,10 @@ import {
   type EgressRequestEvent,
   type EgressRequestScope,
   type EgressRequestStatus,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import type { EgressBlockedReason } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import type { EgressBlockedReason } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import { MAX_CEILING_DOMAINS } from "./schemas.js";
 
@@ -85,12 +85,12 @@ type Row = typeof egressRequests.$inferSelect;
  * serialises on (team, pattern), so a decision, a direct enablement and a new request never
  * interleave. Order: user lock, then pattern lock (decisions take only the pattern lock).
  */
-async function lockKey(tx: KobeTx, key: string): Promise<void> {
+async function lockKey(tx: KaijuTx, key: string): Promise<void> {
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
 }
-const lockUser = (tx: KobeTx, teamId: string, userId: string) =>
+const lockUser = (tx: KaijuTx, teamId: string, userId: string) =>
   lockKey(tx, `kobe.egress-request.user:${teamId}:${userId}`);
-export const lockPattern = (tx: KobeTx, teamId: string, pattern: string) =>
+export const lockPattern = (tx: KaijuTx, teamId: string, pattern: string) =>
   lockKey(tx, `kobe.egress-request.pattern:${teamId}:${pattern}`);
 
 function view(row: Row, name: string): EgressRequestView {
@@ -110,7 +110,7 @@ function view(row: Row, name: string): EgressRequestView {
 }
 
 /** Active team admins of the team (RLS: `tx` must be in the team's context). */
-async function activeTeamAdmins(tx: KobeTx, teamId: string): Promise<string[]> {
+async function activeTeamAdmins(tx: KaijuTx, teamId: string): Promise<string[]> {
   const rows = await tx
     .select({ id: users.id })
     .from(teamMembers)
@@ -126,7 +126,7 @@ async function activeTeamAdmins(tx: KobeTx, teamId: string): Promise<string[]> {
 }
 
 /** Active site admins and the Owner (site-scope requests, KOBE-602). */
-async function activeSiteAdmins(tx: KobeTx): Promise<string[]> {
+async function activeSiteAdmins(tx: KaijuTx): Promise<string[]> {
   const rows = await tx
     .select({ id: users.id })
     .from(siteRoles)
@@ -136,7 +136,7 @@ async function activeSiteAdmins(tx: KobeTx): Promise<string[]> {
 }
 
 async function queue(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   items: readonly { requestId: string; recipientId: string }[],
   event: EgressRequestEvent,
@@ -150,7 +150,7 @@ async function queue(
   return items.length;
 }
 
-async function userName(tx: KobeTx, userId: string): Promise<string> {
+async function userName(tx: KaijuTx, userId: string): Promise<string> {
   const [row] = await tx.select({ name: users.name }).from(users).where(eq(users.id, userId));
   return row?.name ?? "";
 }
@@ -168,7 +168,7 @@ interface Target {
  * An internal address: site scope always (only site admins mark a pattern internal).
  */
 async function requestTarget(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   host: string,
   internal: boolean,
@@ -195,7 +195,7 @@ async function requestTarget(
 }
 
 export async function createEgressRequest(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly teamId: string;
     readonly userId: string;
@@ -367,7 +367,7 @@ interface CeilingOutcome {
  * the cap holds. Audited and NOTIFYd like the console's own changes.
  */
 async function upsertCeiling(
-  tx: KobeTx,
+  tx: KaijuTx,
   pattern: string,
   internal: boolean,
   adminId: string,
@@ -420,7 +420,7 @@ async function upsertCeiling(
  * pattern now allows (an internal one only when the pattern is internal); denying settles every
  * pending request for the request's pattern. Each requester is notified.
  */
-export async function decideEgressRequest(db: KobeDb, input: DecideInput): Promise<DecideResult> {
+export async function decideEgressRequest(db: KaijuDb, input: DecideInput): Promise<DecideResult> {
   const { teamId, adminId, role } = input;
   const approve = input.decision === "approve";
   if (role === "team_admin" && input.internal === true) return { kind: "internal_not_allowed" };
@@ -518,7 +518,7 @@ export async function decideEgressRequest(db: KobeDb, input: DecideInput): Promi
  * with the pattern locks held.
  */
 async function settleCovered(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   requestId: string,
   pattern: string,
@@ -548,7 +548,7 @@ const LIST_LIMIT = 100;
 
 /** The team's requests, newest first (team console). `pending` only by default. */
 export async function listTeamEgressRequests(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   options: { readonly status?: EgressRequestStatus | "all" } = {},
 ): Promise<EgressRequestView[]> {
@@ -578,7 +578,7 @@ export interface SiteEgressRequestView extends EgressRequestView {
  * Each team's rows are read under its own RLS. `pending` only by default.
  */
 export async function listSiteEgressRequests(
-  db: KobeDb,
+  db: KaijuDb,
   options: { readonly status?: EgressRequestStatus | "all" } = {},
 ): Promise<SiteEgressRequestView[]> {
   const status = options.status ?? "pending";
@@ -607,7 +607,7 @@ export async function listSiteEgressRequests(
 
 /** The caller's own requests in the team, newest first, optionally for one host (chat notice). */
 export async function listMyEgressRequests(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   options: { readonly domain?: string; readonly sinceDays?: number } = {},
@@ -639,7 +639,7 @@ export async function listMyEgressRequests(
  * requesters' emails (not the deciding admin's own). Returns the settled rows.
  */
 export async function settlePending(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   pattern: string,
   status: "approved" | "denied",
@@ -649,7 +649,7 @@ export async function settlePending(
 }
 
 async function settleWhere(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   which: SQL | undefined,
   status: "approved" | "denied",

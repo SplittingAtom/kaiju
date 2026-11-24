@@ -1,4 +1,4 @@
-import type { NotebookOutput } from "@kobe/protocol";
+import type { NotebookOutput } from "@kaiju/protocol";
 
 /**
  * Reading and writing nbformat 4 notebooks (docs/specs/notebooks.md NB1, NB11). The server never

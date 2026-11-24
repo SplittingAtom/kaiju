@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useId, useRef, useState } from "react";
-import type { KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEventPayload } from "@kaiju/protocol";
 import type { ApiError } from "../../lib/api/client";
 import type { ChatApi } from "../../lib/chat/api";
 import type { EgressRequest, EgressViewer } from "../../lib/chat/types";
 import { patternChoices } from "../../lib/egress-patterns";
 import { CloseNoticeButton, useClosedNotice } from "./closable-notice";
-import { ChatSessionContext, useKobeExtras } from "./kobe-runtime";
+import { ChatSessionContext, useKaijuExtras } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
 /** How often a pending request's status is re-read while the notice is on screen. */
@@ -78,7 +78,7 @@ export function EgressNotice({
 }
 
 interface NoticeProps {
-  readonly payload: KobeEventPayload<"egress.blocked">;
+  readonly payload: KaijuEventPayload<"egress.blocked">;
   /**
    * When the block happened (the event's server `ts`, KOBE-609). A decision older than it is not
    * this block's answer: the card offers Request access again. Unknown: the latest request counts.
@@ -327,12 +327,12 @@ export function ConnectedEgressNotice({
   blockedAt,
   closeId,
 }: {
-  readonly payload: KobeEventPayload<"egress.blocked">;
+  readonly payload: KaijuEventPayload<"egress.blocked">;
   readonly blockedAt?: string | undefined;
   readonly closeId?: string | undefined;
 }) {
   const session = useContext(ChatSessionContext);
-  const threadId = useKobeExtras()?.state.threadId ?? undefined;
+  const threadId = useKaijuExtras()?.state.threadId ?? undefined;
   return (
     <EgressNotice
       payload={payload}

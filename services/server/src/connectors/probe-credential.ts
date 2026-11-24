@@ -8,8 +8,8 @@ import {
   sql,
   users,
   type Envelope,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { recordAuditAfter } from "../audit/record.js";
 import { adminProbeGrant, type RefreshSupport } from "./grants.js";
 import type { ProbeCredentialKind } from "./probe.js";
@@ -61,7 +61,7 @@ export function probeSecret(choice: ProbeCredential): ProbeSecret | undefined {
 const NONE: ProbeCredential = { source: "none" };
 
 /** Active (not deactivated) and holding a site role, so trusted with site-wide pins. */
-async function isActiveSiteAdmin(db: KobeDb, userId: string): Promise<boolean> {
+async function isActiveSiteAdmin(db: KaijuDb, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: users.id })
     .from(users)
@@ -71,7 +71,7 @@ async function isActiveSiteAdmin(db: KobeDb, userId: string): Promise<boolean> {
 }
 
 export async function chooseProbeCredential(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope | undefined,
   connectorId: string,
   /** The admin acting now, or `"pinned_by"` for the admin who last pinned or approved it. */
@@ -106,7 +106,7 @@ export async function chooseProbeCredential(
 
 /** The admin's own key or token, while they are an active site admin; never anyone else's. */
 async function usableAdminGrant(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   connectorId: string,
   adminId: string | null,
@@ -125,7 +125,7 @@ async function usableAdminGrant(
  * admin's key still checks.
  */
 export async function nextPinnedBy(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope | undefined,
   connectorId: string,
   adminId: string,
@@ -163,7 +163,7 @@ const auditTarget = (
 
 /** The refresh's last recorded choice, to audit only a change. */
 async function lastRefreshChoice(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
 ): Promise<Record<string, unknown> | undefined> {
   const rows = await db.execute<{ target: Record<string, unknown> }>(sql`
@@ -179,7 +179,7 @@ async function lastRefreshChoice(
  * refresh (system actor) only when its choice differs from the last one recorded.
  */
 export async function auditProbeCredential(
-  db: KobeDb,
+  db: KaijuDb,
   connector: { readonly id: string; readonly name: string },
   purpose: ProbePurpose,
   choice: ProbeCredential,
@@ -207,7 +207,7 @@ export async function auditProbeCredential(
  * Re-probe): chosen with that admin as the fallback, and audited as theirs.
  */
 export function adminPinCredential(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope | undefined,
   adminId: string,
   refresh?: RefreshSupport,

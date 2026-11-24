@@ -8,15 +8,15 @@ import {
   projects,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   PROJECT_FILES_MAX,
   PROJECT_FILE_MAX_BYTES,
   workspacePathSchema,
   type ProjectFile,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -56,7 +56,7 @@ export type FileOutcome =
   | { readonly ok: false; readonly error: ProjectFileFailure };
 
 export interface ProjectFileDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   /** Site defaults: largest single file and the team storage quota default. */
   readonly maxFileBytes: number;
@@ -96,7 +96,7 @@ export const toProjectFile = (row: Row): ProjectFile => ({
  * marked `path_too_long`: it reaches no workspace until someone deletes it and adds it again.
  */
 export async function listProjectFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   project: { readonly teamId: string; readonly id: string; readonly slug: string },
 ): Promise<ProjectFile[]> {
   const rows = await tx
@@ -182,7 +182,7 @@ class Refused extends Error {
  * after the write the team storage quota. Throws {@link Refused} (the caller rolls back).
  */
 export async function insertProjectFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: Pick<ProjectFileDeps, "teamQuotaDefaultBytes" | "teamMaxObjectsDefault">,
   target: FileTarget,
   file: {
@@ -392,7 +392,7 @@ export async function uploadProjectFile(
  * or undefined when there is no such file.
  */
 export async function removeProjectFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   actorId: string,
   teamId: string,
   projectId: string,

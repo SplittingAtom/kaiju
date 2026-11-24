@@ -21,7 +21,7 @@ const answer = (text: string, input: number) => ({
 });
 
 async function sessionFile(entries: object[]): Promise<string> {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-replay-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-replay-"));
   const file = path.join(dir, "s.jsonl");
   const header = { type: "session", version: 3, id: "t" };
   await writeFile(file, [header, ...entries].map((e) => JSON.stringify(e)).join("\n") + "\n{torn");

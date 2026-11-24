@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
-import { serverCallPurposeSchema, type ServerCallPurpose } from "@kobe/protocol";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
+import { serverCallPurposeSchema, type ServerCallPurpose } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../background.js";
 import { appendRunEvents } from "../event-stream/append.js";
@@ -39,7 +39,7 @@ export const NO_SERVER_CALLS: ServerCalls = {
 };
 
 export interface ServerCallsOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly client: ServerCallClient;
   readonly agents: RunAgentResolver;
   readonly background: BackgroundTasks;
@@ -48,7 +48,7 @@ export interface ServerCallsOptions {
 
 /** The epilogue the run's `run.completed` announced (one indexed read of the run's tail). */
 async function announcedEpilogue(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   runId: string,
 ): Promise<readonly ServerCallPurpose[]> {

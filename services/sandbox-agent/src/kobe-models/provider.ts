@@ -14,13 +14,13 @@ import {
   classifyFailure,
   isTransient,
   isUnauthorized,
-  kobeErrorMessage,
+  kaijuErrorMessage,
   runErrorCode,
   type Failure,
 } from "./errors.js";
 import {
-  KOBE_MODEL_ERROR_PREFIX,
-  KOBE_PROVIDER_ID,
+  KAIJU_MODEL_ERROR_PREFIX,
+  KAIJU_PROVIDER_ID,
   RUN_TOKEN_HEADER,
   gatewayBaseUrl,
   type ModelFileModel,
@@ -60,7 +60,7 @@ export interface PiAiLike {
   createAssistantMessageEventStream(): AssistantMessageEventStream;
 }
 
-export interface KobeProviderDeps {
+export interface KaijuProviderDeps {
   readonly pi: PiAiLike;
   /** The model file as read when this provider was built (its gateway URL and model). */
   readonly initial: ModelFileState;
@@ -100,13 +100,13 @@ function defaultSleep(ms: number, signal: AbortSignal | undefined): Promise<void
 }
 
 /** Pi's catalog entry for a run's model. */
-export function kobeModel(gatewayUrl: string, model: ModelFileModel): Model {
+export function kaijuModel(gatewayUrl: string, model: ModelFileModel): Model {
   const { api, gateway_model } = model;
   return {
     id: gateway_model,
     name: gateway_model,
     api,
-    provider: KOBE_PROVIDER_ID,
+    provider: KAIJU_PROVIDER_ID,
     baseUrl: gatewayBaseUrl(gatewayUrl, api),
     // Thinking is opted into per run (`thinking_level`); OpenAI-compatible endpoints (vLLM,
     // Ollama, chat completions) reject reasoning parameters they do not know, so only the
@@ -157,13 +157,13 @@ function errorResult(
   return { ...message, stopReason, errorMessage };
 }
 
-export function createKobeProvider(deps: KobeProviderDeps): Provider {
+export function createKaijuProvider(deps: KaijuProviderDeps): Provider {
   const sleep = deps.sleep ?? defaultSleep;
   const now = deps.now ?? Date.now;
   const runTokenOf = (state: ModelFileState): string | undefined =>
     state.run_id === null ? undefined : deps.runToken?.(state.run_id);
   const base = deps.pi.createProvider({
-    id: KOBE_PROVIDER_ID,
+    id: KAIJU_PROVIDER_ID,
     name: "Kaiju model gateway",
     baseUrl: deps.initial.gateway_url,
     auth: {
@@ -183,7 +183,7 @@ export function createKobeProvider(deps: KobeProviderDeps): Provider {
       },
     },
     models:
-      deps.initial.model === null ? [] : [kobeModel(deps.initial.gateway_url, deps.initial.model)],
+      deps.initial.model === null ? [] : [kaijuModel(deps.initial.gateway_url, deps.initial.model)],
     api: deps.apis,
   });
 
@@ -214,7 +214,7 @@ export function createKobeProvider(deps: KobeProviderDeps): Provider {
       pump(run, model, context, options, out)
         .catch((error: unknown) => {
           deps.warn?.(`kobe-models: model request failed: ${(error as Error).message}`);
-          fail(out, model, kobeErrorMessage("model_error", NO_FAILURE, 1));
+          fail(out, model, kaijuErrorMessage("model_error", NO_FAILURE, 1));
         })
         .then(async () => {
           if (deps.onCallEnded === undefined) return;
@@ -242,7 +242,7 @@ export function createKobeProvider(deps: KobeProviderDeps): Provider {
         state = await deps.readState();
       } catch (error) {
         deps.warn?.(`kobe-models: ${(error as Error).message}`);
-        fail(out, model, kobeErrorMessage("model_error", NO_FAILURE, attempt));
+        fail(out, model, kaijuErrorMessage("model_error", NO_FAILURE, attempt));
         return;
       }
       let response: ProviderResponse | undefined;
@@ -282,13 +282,13 @@ export function createKobeProvider(deps: KobeProviderDeps): Provider {
       }
       if (forwarded > 0) {
         // Something was streamed: never retried (the model may have acted); a fixed error.
-        fail(out, errored, `${KOBE_MODEL_ERROR_PREFIX}model_error: the stream ended with an error`);
+        fail(out, errored, `${KAIJU_MODEL_ERROR_PREFIX}model_error: the stream ended with an error`);
         return;
       }
       const failure = classifyFailure(errored.errorMessage, response);
       const next = retryDelay(failure, attempt, startedAt, reauthed);
       if (next === undefined) {
-        fail(out, errored, kobeErrorMessage(runErrorCode(failure), failure, attempt));
+        fail(out, errored, kaijuErrorMessage(runErrorCode(failure), failure, attempt));
         return;
       }
       if (next.reauth) reauthed = true;

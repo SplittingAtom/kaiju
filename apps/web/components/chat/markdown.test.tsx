@@ -100,10 +100,10 @@ describe("Markdown (agent text)", () => {
 
   it("keeps safe links (new tab, no referrer, nofollow) and shows unsafe ones as text", () => {
     const root = html(
-      "[docs](https://kobe.example/docs) [mail](mailto:a@b.example) [bad](javascript:x)",
+      "[docs](https://kaiju.example/docs) [mail](mailto:a@b.example) [bad](javascript:x)",
     );
     expect([...root.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual([
-      "https://kobe.example/docs",
+      "https://kaiju.example/docs",
       "mailto:a@b.example",
     ]);
     expect(screen.getByText("bad").tagName).toBe("SPAN");

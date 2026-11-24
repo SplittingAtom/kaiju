@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { SESSION_TOKEN_AUDIENCES, uuidSchema, type SessionTokenAudience } from "@kobe/protocol";
+import { SESSION_TOKEN_AUDIENCES, uuidSchema, type SessionTokenAudience } from "@kaiju/protocol";
 import { z } from "zod";
 import { DEFAULT_BACKOFF, backoffDelay, type BackoffPolicy } from "../wire/backoff.js";
 import type { WireLogger } from "../wire/client.js";

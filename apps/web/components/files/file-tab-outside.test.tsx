@@ -5,7 +5,7 @@ import { EditorView } from "@codemirror/view";
 import { getChunks } from "@codemirror/merge";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { sha256Hex } from "../../lib/files/editor";
 import { must } from "../../lib/testing/must";
 import { composer, openApp } from "../chat/testing";
@@ -17,7 +17,7 @@ import { AGENT_CHANGED_BANNER, UPDATED_NOTE } from "./outside-change-notice";
  * Take theirs (ac-2). Saving after the change offers the same choices (ac-3). Checks come from a
  * live write, the run's end and window focus, bounded (ac-4).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 const sha = (s: string) => sha256Hex(enc(s));
 const PATH = "docs/notes.md";
@@ -33,7 +33,7 @@ function answerConfirm(answer: boolean) {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {

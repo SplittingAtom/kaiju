@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import {
   publishedVersions,
@@ -68,14 +68,14 @@ export type AddResult =
 const iso = (v: unknown) => new Date(v as string | Date).toISOString();
 
 /** One writer of a member's choices in a team at a time (the enablement toggles take it too). */
-async function lockMember(tx: KobeTx, teamId: string, userId: string): Promise<void> {
+async function lockMember(tx: KaijuTx, teamId: string, userId: string): Promise<void> {
   const key = `kobe.skills.enablement:${teamId}:${userId}`;
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
 }
 
 /** Why the team keeps this skill from member adds, if it does. */
 async function teamGate(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
   name: string,
@@ -115,7 +115,7 @@ function addable(
 
 /** Adds a catalog skill for the member, or changes their add's version or pin mode. Audited. */
 export function addForMe(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly teamId: string;
     readonly userId: string;
@@ -176,7 +176,7 @@ export function addForMe(
 
 /** Removes the member's own add (their on/off choice for an install is not an add). Audited. */
 export function removeMyAdd(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly userId: string; readonly skillId: string },
 ): Promise<boolean> {
   const { teamId, userId, skillId } = input;
@@ -210,7 +210,7 @@ type AddRow = {
 };
 
 /** The adds in the team (one member's with `userId`), with the version each runs now. */
-async function addsIn(tx: KobeTx, teamId: string, userId?: string): Promise<TeamMemberAdd[]> {
+async function addsIn(tx: KaijuTx, teamId: string, userId?: string): Promise<TeamMemberAdd[]> {
   const { rows } = await tx.execute<AddRow>(sql`
     SELECT e.user_id, u.name AS member_name, e.catalog_skill_id AS skill_id, s.name,
       e.version_id, v.semver, e.pin_mode::text AS pin_mode, e.updated_at
@@ -249,7 +249,7 @@ async function addsIn(tx: KobeTx, teamId: string, userId?: string): Promise<Team
 }
 
 /** The member's own adds in the team. */
-export function listMyAdds(db: KobeDb, teamId: string, userId: string): Promise<MemberAdd[]> {
+export function listMyAdds(db: KaijuDb, teamId: string, userId: string): Promise<MemberAdd[]> {
   return withTeam(db, teamId, async (tx) =>
     (await addsIn(tx, teamId, userId)).map(
       ({ userId: _u, memberName: _m, ...add }): MemberAdd => add,
@@ -258,6 +258,6 @@ export function listMyAdds(db: KobeDb, teamId: string, userId: string): Promise<
 }
 
 /** Every member's adds in the team: the Team console's list (SK25). */
-export function listTeamMemberAdds(db: KobeDb, teamId: string): Promise<TeamMemberAdd[]> {
+export function listTeamMemberAdds(db: KaijuDb, teamId: string): Promise<TeamMemberAdd[]> {
   return withTeam(db, teamId, (tx) => addsIn(tx, teamId));
 }

@@ -1,5 +1,5 @@
-import { type PiGetEntriesData } from "@kobe/protocol/sandbox-wire";
-import { sql, withTeam, type KobeTx } from "@kobe/db";
+import { type PiGetEntriesData } from "@kaiju/protocol/sandbox-wire";
+import { sql, withTeam, type KaijuTx } from "@kaiju/db";
 
 import { appendRunEventsInTx, withAppendTx } from "../../event-stream/append.js";
 import { failureInfo } from "../../runs/failure-codes.js";
@@ -208,7 +208,7 @@ function endTx<T>(
   runId: string,
   threadId: string,
   runKind: RuntimeTamperReport["runKind"],
-  work: (tx: KobeTx) => Promise<T>,
+  work: (tx: KaijuTx) => Promise<T>,
 ): Promise<T> {
   const { db } = env.ctx;
   const { teamId } = env.host.target;

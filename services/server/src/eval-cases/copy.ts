@@ -1,4 +1,4 @@
-import { splitAppContext, splitSkillRequest } from "@kobe/protocol";
+import { splitAppContext, splitSkillRequest } from "@kaiju/protocol";
 import { createHash } from "node:crypto";
 import {
   EVAL_CASE_EARLIER_MAX_CHARS,
@@ -10,8 +10,8 @@ import {
   type EvalCaseOptions,
   type EvalCasePreview,
   type FeedbackReason,
-} from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { cutText } from "../threads/entry-output.js";
 import { messageText } from "../threads/messages.js";
 
@@ -88,7 +88,7 @@ function messageOf(payload: unknown): Record<string, unknown> | undefined {
 }
 
 /** The run's own entries: everything below its prompt entry, up to (not into) the next prompt. */
-async function answerEntries(tx: KobeTx, src: ExchangeSource): Promise<EntryRow[]> {
+async function answerEntries(tx: KaijuTx, src: ExchangeSource): Promise<EntryRow[]> {
   const res = await tx.execute<EntryRow>(sql`
     WITH RECURSIVE d (entry_id, depth) AS (
       SELECT e.entry_id, 0 FROM thread_entries e
@@ -113,7 +113,7 @@ async function answerEntries(tx: KobeTx, src: ExchangeSource): Promise<EntryRow[
  * run of this thread sent (`runs.user_entry_id`): a fork copies another thread's entries but not
  * its runs, so an inherited prompt is never `own` (KOBE-276 review B1).
  */
-async function branchEntries(tx: KobeTx, src: ExchangeSource): Promise<BranchRow[]> {
+async function branchEntries(tx: KaijuTx, src: ExchangeSource): Promise<BranchRow[]> {
   const res = await tx.execute<BranchRow & { depth: number }>(sql`
     WITH RECURSIVE b (entry_id, parent_id, depth) AS (
       SELECT e.entry_id, e.parent_id, 0 FROM thread_entries e
@@ -233,7 +233,7 @@ type FileRow = {
   readonly size_bytes: string | number;
 };
 
-async function runAttachments(tx: KobeTx, src: ExchangeSource): Promise<FileRow[]> {
+async function runAttachments(tx: KaijuTx, src: ExchangeSource): Promise<FileRow[]> {
   const res = await tx.execute<FileRow>(sql`
     SELECT f.id, f.name, f.mime_type, f.size_bytes FROM files f
      WHERE f.team_id = ${src.teamId} AND f.thread_id = ${src.threadId} AND f.run_id = ${src.runId}
@@ -254,7 +254,7 @@ export type BuiltCopy =
 
 /** Builds the copy for `options` (the same input always gives the same content and digest). */
 export async function buildCopy(
-  tx: KobeTx,
+  tx: KaijuTx,
   src: ExchangeSource,
   options: EvalCaseOptions,
 ): Promise<BuiltCopy> {

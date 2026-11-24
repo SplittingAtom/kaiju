@@ -6,8 +6,8 @@ import {
   MEMORY_INDEX_MAX_LINES,
   type MemoryScope,
   type MemoryWriteMode,
-} from "@kobe/protocol";
-import { and, asc, desc, eq, isNull, memoryDocVersions, memoryDocs, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { and, asc, desc, eq, isNull, memoryDocVersions, memoryDocs, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../retention/blobs.js";
 import { TX_OBJECT_CALL_TIMEOUT_MS } from "../workspace-sync/object-store.js";
 import { memoryBlobKey } from "./keys.js";
@@ -109,7 +109,7 @@ const targetWhere = (teamId: string, target: MemoryTarget, path: string) =>
       );
 
 async function lockByTarget(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   target: MemoryTarget,
   path: string,
@@ -124,7 +124,7 @@ async function lockByTarget(
 
 /** The doc by id (soft-deleted included), unlocked. Access is checked by the caller. */
 export async function findDoc(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
   lock = false,
@@ -169,7 +169,7 @@ export async function readVersionContent(
   return Buffer.concat(chunks).toString("utf8");
 }
 
-async function versionRow(tx: KobeTx, teamId: string, docId: string, version: number) {
+async function versionRow(tx: KaijuTx, teamId: string, docId: string, version: number) {
   const [row] = await tx
     .select()
     .from(memoryDocVersions)
@@ -185,7 +185,7 @@ async function versionRow(tx: KobeTx, teamId: string, docId: string, version: nu
 
 /** Locks the doc for the target, creating it (version 1 pending) when there is none. */
 async function lockOrCreate(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   target: MemoryTarget,
   path: string,
@@ -215,7 +215,7 @@ async function lockOrCreate(
 
 /** Writes a new version (`replace` by default, or `append` to the current content). */
 export async function writeMemory(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore,
   teamId: string,
   target: MemoryTarget,
@@ -299,7 +299,7 @@ export type RestoreResult =
  * history stays immutable and the two versions never share an object). A deleted doc is revived.
  */
 export async function restoreMemory(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore,
   teamId: string,
   docId: string,
@@ -342,7 +342,7 @@ export const RESTORE_MARK = "restore:";
 
 /** Soft delete: the history stays and Undo (restore) can bring the file back. */
 export async function deleteMemory(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   docId: string,
 ): Promise<{ readonly version: number } | null> {
@@ -370,7 +370,7 @@ const ownerWhere = (target: MemoryTarget) =>
 
 /** Live docs of one scope owner, newest first; `MEMORY.md` is just another path. */
 export async function listMemory(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   target: MemoryTarget,
 ): Promise<ListedDoc[]> {
@@ -402,7 +402,7 @@ export async function listMemory(
  * it is gone, deleted or not the target's. A search re-resolves a doc whose listed object vanished.
  */
 export async function currentObject(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   target: MemoryTarget,
   docId: string,
@@ -440,7 +440,7 @@ export interface DocVersion {
 }
 
 export async function listVersions(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   docId: string,
 ): Promise<DocVersion[]> {
@@ -461,7 +461,7 @@ export async function listVersions(
 
 /** Current content of a doc, or null when the object is missing. */
 export async function readCurrent(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore,
   teamId: string,
   doc: DocRow,

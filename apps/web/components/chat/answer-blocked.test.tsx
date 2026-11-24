@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { announcement, composer, openApp, streaming } from "./testing";
 
@@ -11,12 +11,12 @@ import { announcement, composer, openApp, streaming } from "./testing";
  * streams and after a reload (read back from `GET /v1/threads/{id}/egress-blocked`), once each,
  * and a closed card stays closed (KOBE-468).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 

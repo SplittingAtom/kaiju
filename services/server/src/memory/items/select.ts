@@ -7,7 +7,7 @@ import {
   SEMANTIC_MEMORY_RUN_MAX_ITEMS,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * Semantic memory selection for one run (KOBE-382; spec SM23, SM24, Chris Q6), without the

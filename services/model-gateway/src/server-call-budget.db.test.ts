@@ -25,18 +25,18 @@ import {
   users,
   virtualKeyContext,
   withTeam,
-  type KobeDatabase,
-} from "@kobe/db";
+  type KaijuDatabase,
+} from "@kaiju/db";
 import {
   SERVER_CALL_AUDIENCE,
   SERVER_CALL_TOKEN_HEADER,
   type ServerCallTokenPurpose,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   signServerCallToken,
   verifySessionToken,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
@@ -63,7 +63,7 @@ const user = randomUUID();
 const VK = `sk-bf-${randomUUID()}`;
 const MODEL = "ollama/llama-sc";
 const logger = pino({ level: "silent" });
-let app: KobeDatabase;
+let app: KaijuDatabase;
 let bifrost: Server;
 let shim: Server;
 let sink: DbUsageSink;

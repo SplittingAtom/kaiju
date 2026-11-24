@@ -21,7 +21,7 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import Link from "next/link";
-import { rehypeHeadingIds } from "@kobe/guide/headings";
+import { rehypeHeadingIds } from "@kaiju/guide/headings";
 import { cn } from "../../lib/utils";
 import { IconAction } from "../shell/icon-action";
 import { MarkdownWords, rehypeArrivingWords, SettledProvider } from "./arriving-words";
@@ -107,7 +107,7 @@ const LINK =
 const COMPONENTS: Components = {
   /** A text run marked by `rehypeArrivingWords`: its words, no element of its own. */
   span: ({ node, children }) => {
-    const start = node?.properties?.dataKobeWords;
+    const start = node?.properties?.dataKaijuWords;
     if (typeof start !== "number") return <span>{children}</span>;
     return <MarkdownWords text={textOf(node as HastNode)} start={start} />;
   },
@@ -247,7 +247,7 @@ function guideUrlTransform(url: string): string {
 /**
  * `words`: agent text as it streams (KOBE-207). Words that arrive after mount are spans
  * (`arriving-words.tsx`); `arriving` (the part is being written) marks the root
- * `data-kobe-arrive="running"`, which is what switches their fade on in the CSS.
+ * `data-kaiju-arrive="running"`, which is what switches their fade on in the CSS.
  */
 export function Markdown({
   text,
@@ -263,8 +263,8 @@ export function Markdown({
   const guide = variant === "guide";
   return (
     <div
-      data-kobe-words={words ? "" : undefined}
-      data-kobe-arrive={words && arriving ? "running" : undefined}
+      data-kaiju-words={words ? "" : undefined}
+      data-kaiju-arrive={words && arriving ? "running" : undefined}
       className="[&_:not(pre)>code]:bg-muted [&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] [&>:first-child]:mt-0 [&>:last-child]:mb-0"
     >
       <SettledProvider text={text}>

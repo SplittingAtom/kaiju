@@ -6,14 +6,14 @@ import {
   gitConversions,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   GIT_CONVERSION_FAILURES,
   type GitConversionFailure,
   type GitConversionView,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { notifyConversionEndInTx } from "./bell.js";
 import {
@@ -80,7 +80,7 @@ export function conversionView(row: ConversionRow): GitConversionView {
 }
 
 export async function readConversion(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
 ): Promise<ConversionRow | undefined> {
@@ -93,7 +93,7 @@ export async function readConversion(
 
 /** The project's latest attempt (any status). */
 export async function latestConversion(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
 ): Promise<ConversionRow | undefined> {
@@ -108,7 +108,7 @@ export async function latestConversion(
 
 /** The project's running or failed attempt (at most one), locked. */
 export async function activeConversion(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
 ): Promise<ConversionRow | undefined> {
@@ -141,7 +141,7 @@ export type Claim =
  * go on to the next (review M3). A person's retry resets the counters.
  */
 export async function claimConversion(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
   owner: string,
@@ -231,7 +231,7 @@ const held = (lease: Lease) =>
   );
 
 /** Renews the lease; throws {@link LeaseLost} when it is no longer ours. */
-export async function renewLease(db: KobeDb, lease: Lease): Promise<void> {
+export async function renewLease(db: KaijuDb, lease: Lease): Promise<void> {
   const rows = await withTeam(db, lease.teamId, (tx) =>
     tx
       .update(gitConversions)
@@ -248,7 +248,7 @@ type Changes = Partial<typeof gitConversions.$inferInsert>;
 
 /** Writes `changes` while the lease is ours (in `tx`); throws {@link LeaseLost} otherwise. */
 export async function updateHeld(
-  tx: KobeTx,
+  tx: KaijuTx,
   lease: Lease,
   changes: Changes,
 ): Promise<ConversionRow> {
@@ -270,6 +270,6 @@ export async function updateHeld(
 }
 
 /** {@link updateHeld} in its own transaction. */
-export function writeHeld(db: KobeDb, lease: Lease, changes: Changes): Promise<ConversionRow> {
+export function writeHeld(db: KaijuDb, lease: Lease, changes: Changes): Promise<ConversionRow> {
   return withTeam(db, lease.teamId, (tx) => updateHeld(tx, lease, changes));
 }

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { GIT_CONVERSION_STATUS_VALUES, GIT_CONVERSION_STEP_VALUES } from "@kobe/db";
+import { GIT_CONVERSION_STATUS_VALUES, GIT_CONVERSION_STEP_VALUES } from "@kaiju/db";
 import {
   GIT_CONVERSION_FAILURES,
   GIT_CONVERSION_REFUSALS,
   GIT_CONVERSION_STATUSES,
   GIT_CONVERSION_STEPS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { GitHostError } from "../../git-hosts/adapter.js";
 import { assertRepositoryEndpoint } from "../../git-hosts/git-wire.js";
 import { conversionMessage } from "./notify.js";
@@ -61,7 +61,7 @@ describe("files the host would reject (G16)", () => {
     (path) => expect(hostRejectsPath(path)).toBe(false),
   );
   it("proposes the connection's prefix and the project's slug", () => {
-    expect(defaultRepositoryName("kobe-", "docs")).toBe("kobe-docs");
+    expect(defaultRepositoryName("kaiju-", "docs")).toBe("kaiju-docs");
     expect(defaultRepositoryName("", "docs")).toBe("docs");
   });
 });
@@ -74,19 +74,19 @@ describe("authorship (G13, GQ10)", () => {
     left: false,
   };
   it("an active member: their Kaiju email, or the no-reply form when the Workspace says so", () => {
-    expect(conversionIdentity(ada, ada.id, "member", "kobe.test")).toEqual({
+    expect(conversionIdentity(ada, ada.id, "member", "kaiju.test")).toEqual({
       author: { name: "Ada", email: "ada@x.test" },
       committer: { name: "Ada via Kaiju", email: "ada@x.test" },
     });
-    const noreply = conversionIdentity(ada, ada.id, "noreply", "kobe.test");
+    const noreply = conversionIdentity(ada, ada.id, "noreply", "kaiju.test");
     expect(noreply.author.email).toMatch(/^[0-9a-f]{10}\+ada@users\.noreply\.kobe\.test$/);
   });
   it("a member who left keeps the name, never the mailbox; an unknown one is a former member", () => {
-    const left = conversionIdentity({ ...ada, left: true }, ada.id, "member", "kobe.test");
+    const left = conversionIdentity({ ...ada, left: true }, ada.id, "member", "kaiju.test");
     expect(left.author.name).toBe("Ada");
     expect(left.author.email).not.toContain("ada@x.test");
     expect(left.committer.name).toBe("Ada via Kaiju");
-    const gone = conversionIdentity(undefined, ada.id, "member", "kobe.test");
+    const gone = conversionIdentity(undefined, ada.id, "member", "kaiju.test");
     expect(gone.author.name).toBe(FORMER_MEMBER);
     expect(gone.author.email).toMatch(/@users\.noreply\.kobe\.test$/);
   });
@@ -178,7 +178,7 @@ describe("the requester's email", () => {
       appName: "Kaiju",
       projectName: "Docs",
       row: { ...base, status: "completed" },
-      appUrl: "https://kobe.test/",
+      appUrl: "https://kaiju.test/",
     });
     expect(done.subject).toBe("Docs is now a Repo (Kaiju)");
     expect(done.text).toContain("acme/docs on git.example.test");
@@ -187,7 +187,7 @@ describe("the requester's email", () => {
       appName: "Kaiju",
       projectName: "Docs",
       row: { ...base, status: "failed", lastError: "content_missing", lastErrorDetail: "a.txt" },
-      appUrl: "https://kobe.test/",
+      appUrl: "https://kaiju.test/",
     });
     expect(failed.subject).toBe("Converting Docs to a Repo failed (Kaiju)");
     expect(failed.text).toContain(FAILURE_MESSAGES.content_missing);
@@ -201,7 +201,7 @@ describe("stale work directories", () => {
     const { tmpdir } = await import("node:os");
     const path = await import("node:path");
     const { removeStaleWorkDirs } = await import("./job.js");
-    const root = await mkdtemp(path.join(tmpdir(), "kobe-stale-test-"));
+    const root = await mkdtemp(path.join(tmpdir(), "kaiju-stale-test-"));
     try {
       await mkdir(path.join(root, "run-old"));
       await mkdir(path.join(root, "run-new"));

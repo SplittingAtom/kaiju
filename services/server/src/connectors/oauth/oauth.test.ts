@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { loadEnvelope } from "@kobe/db";
-import { authorizationUrl, clientMetadataDocument, kobeOrigin, obtainClient } from "./client.js";
+import { loadEnvelope } from "@kaiju/db";
+import { authorizationUrl, clientMetadataDocument, kaijuOrigin, obtainClient } from "./client.js";
 import { sameUrl, wellKnown, type AuthServerInfo } from "./discovery.js";
 import type { OauthIo } from "./http.js";
 import { challengeOf, newVerifier } from "./pkce.js";
@@ -41,21 +41,21 @@ describe("PKCE", () => {
 
 describe("client identity", () => {
   it("uses the metadata document URL as client_id over https when the server supports CIMD", async () => {
-    const kobe = kobeOrigin("https://kobe.example.com/");
-    expect(await obtainClient(io, info, kobe)).toEqual({
-      clientId: "https://kobe.example.com/v1/oauth/client-metadata.json",
+    const kaiju = kaijuOrigin("https://kaiju.example.com/");
+    expect(await obtainClient(io, info, kaiju)).toEqual({
+      clientId: "https://kaiju.example.com/v1/oauth/client-metadata.json",
       clientSecret: undefined,
     });
-    expect(clientMetadataDocument(kobe)).toMatchObject({
-      client_id: kobe.clientMetadataUrl,
-      redirect_uris: ["https://kobe.example.com/v1/connector-grants/oauth/callback"],
+    expect(clientMetadataDocument(kaiju)).toMatchObject({
+      client_id: kaiju.clientMetadataUrl,
+      redirect_uris: ["https://kaiju.example.com/v1/connector-grants/oauth/callback"],
     });
   });
   it("needs registration when CIMD cannot be used", async () => {
     await expect(
-      obtainClient(io, { ...info, cimd: false }, kobeOrigin("https://kobe.example.com")),
+      obtainClient(io, { ...info, cimd: false }, kaijuOrigin("https://kaiju.example.com")),
     ).rejects.toMatchObject({ code: "oauth_unsupported" });
-    await expect(obtainClient(io, info, kobeOrigin("http://kobe.test"))).rejects.toMatchObject({
+    await expect(obtainClient(io, info, kaijuOrigin("http://kaiju.test"))).rejects.toMatchObject({
       code: "oauth_unsupported",
     });
   });
@@ -119,7 +119,7 @@ describe("flow state", () => {
 describe("authorization endpoint", () => {
   const base = {
     client: { clientId: "c", clientSecret: undefined },
-    redirectUri: "https://kobe.example.com/cb",
+    redirectUri: "https://kaiju.example.com/cb",
     state: "s",
     verifier: newVerifier(),
   };

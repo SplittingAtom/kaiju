@@ -3,16 +3,16 @@ import {
   workspaceFileEntrySchema,
   workspaceListResponseSchema,
   workspaceSearchResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call, expectContract } from "./contract";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 
 describe("fake workspace area: answers parse with the protocol (KOBE-717)", () => {
   it("lists, searches, saves and names a file's threads", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     fake.workspaceFiles.set("report.md", bytes("# Report"));
     fake.workspaceFiles.set("data/sales.csv", bytes("a,b"));
     fake.workspaceDirs.add("data");
@@ -40,7 +40,7 @@ describe("fake workspace area: answers parse with the protocol (KOBE-717)", () =
   });
 
   it("fails on a deliberate drift", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     fake.workspaceFiles.set("a.md", bytes("a"));
     const { body } = await call(fake, "GET", "/v1/workspace/files?path=");
     const listing = body as { entries: Record<string, unknown>[] };

@@ -11,6 +11,6 @@ export function showTabInAddress(tab: string): void {
     url.searchParams.set("tab", tab);
     window.history.replaceState(window.history.state, "", url);
   } catch (err) {
-    console.warn("[kobe] the open tab could not be put in the address", err);
+    console.warn("[kaiju] the open tab could not be put in the address", err);
   }
 }

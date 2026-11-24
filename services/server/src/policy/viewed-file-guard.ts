@@ -7,7 +7,7 @@ import {
   type PolicyInput,
   type PolicyReason,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { checkAgentTools } from "./gates.js";
 import { SANDBOX_CWD, canonicalPath } from "./tool-inputs.js";
 

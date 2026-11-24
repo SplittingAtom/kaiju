@@ -1,13 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
 import type pg from "pg";
-import { canonicalJson, mcpServerSegment, type JsonObject } from "@kobe/protocol";
-import { signApproval, type ApprovalKey } from "@kobe/protocol/node";
+import { canonicalJson, mcpServerSegment, type JsonObject } from "@kaiju/protocol";
+import { signApproval, type ApprovalKey } from "@kaiju/protocol/node";
 import {
   generateSessionKeyPair,
   signSessionToken,
   type SessionSigningKey,
-} from "@kobe/session-token";
-import type { PinnedTool } from "@kobe/db";
+} from "@kaiju/session-token";
+import type { PinnedTool } from "@kaiju/db";
 
 // MCP connector fixtures (tests only): an in-DB registry entry with a pinned snapshot, team
 // enablement, run leases and mcp-proxy session tokens — the minimal model KOBE-59/60 will manage.

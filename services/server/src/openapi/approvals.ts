@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { approvalResolutionBodySchema, approveAllBodySchema } from "@kobe/protocol";
+import { approvalResolutionBodySchema, approveAllBodySchema } from "@kaiju/protocol";
 import { rememberOptionsViewSchema } from "../approvals/remember-options.js";
 import { approvalListSchema, approvalViewSchema } from "../approvals/view.js";
 

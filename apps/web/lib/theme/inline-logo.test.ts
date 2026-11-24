@@ -4,9 +4,9 @@ import { inlineSafeMarkup, sizedLogoMarkup } from "./inline-logo";
 /** KOBE-562: the web inserts only the server's inline-safe variant, and checks it again. */
 const NS = 'xmlns="http://www.w3.org/2000/svg"';
 const SAFE =
-  `<svg ${NS} viewBox="0 0 10 10" fill="currentColor"><defs><clipPath id="kobe-logo-c">` +
-  '<rect width="5" height="5"/></clipPath></defs><g clip-path="url(#kobe-logo-c)">' +
-  '<use href="#kobe-logo-p"/><text>A &amp; B</text></g></svg>';
+  `<svg ${NS} viewBox="0 0 10 10" fill="currentColor"><defs><clipPath id="kaiju-logo-c">` +
+  '<rect width="5" height="5"/></clipPath></defs><g clip-path="url(#kaiju-logo-c)">' +
+  '<use href="#kaiju-logo-p"/><text>A &amp; B</text></g></svg>';
 
 describe("inlineSafeMarkup", () => {
   it("accepts the server's variant", () => {

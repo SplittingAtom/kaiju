@@ -9,7 +9,7 @@ import {
   threadContextMemoriesSchema,
   type ThreadContextMemories,
   type ThreadContextMemoryItem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { readWire } from "./wire-read";
 
 /** One read, validated as sent. Never throws: null on failure (a reader gets 403 → null). */

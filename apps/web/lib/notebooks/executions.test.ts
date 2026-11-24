@@ -1,4 +1,4 @@
-import type { KobeEvent, KobeEventPayload, KobeEventType } from "@kobe/protocol";
+import type { KaijuEvent, KaijuEventPayload, KaijuEventType } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import {
   NotebookExecStore,
@@ -17,9 +17,9 @@ const E2 = "00000000-0000-4000-8000-000000000302";
 const TH = "th1";
 
 let seq = 0;
-function ev<T extends KobeEventType>(type: T, payload: KobeEventPayload<T>, run = RUN): KobeEvent {
+function ev<T extends KaijuEventType>(type: T, payload: KaijuEventPayload<T>, run = RUN): KaijuEvent {
   seq += 1;
-  return { run_id: run, seq, ts: "2026-10-21T10:00:00Z", type, payload } as KobeEvent;
+  return { run_id: run, seq, ts: "2026-10-21T10:00:00Z", type, payload } as KaijuEvent;
 }
 const out = (exec: string, index: number, text: string) =>
   ev("notebook.output", {

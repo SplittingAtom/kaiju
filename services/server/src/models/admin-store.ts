@@ -9,10 +9,10 @@ import {
   modelProviders,
   providerKeyContext,
   sql,
-  type KobeDb,
+  type KaijuDb,
   type ModelProviderKind,
   type SecretBox,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import {
   MAX_CATALOG_ENTRIES,
@@ -126,12 +126,12 @@ export const catalogView = (r: CatalogRow, kind: ModelProviderKind): CatalogView
   updated_at: r.updatedAt.toISOString(),
 });
 
-export async function listProviders(db: KobeDb): Promise<ProviderView[]> {
+export async function listProviders(db: KaijuDb): Promise<ProviderView[]> {
   const rows = await db.select().from(modelProviders).orderBy(asc(modelProviders.id));
   return rows.map(providerView);
 }
 
-export async function listCatalog(db: KobeDb): Promise<CatalogView[]> {
+export async function listCatalog(db: KaijuDb): Promise<CatalogView[]> {
   const rows = await db
     .select({ entry: modelCatalog, kind: modelProviders.kind })
     .from(modelCatalog)
@@ -140,7 +140,7 @@ export async function listCatalog(db: KobeDb): Promise<CatalogView[]> {
   return rows.map((r) => catalogView(r.entry, r.kind));
 }
 
-export async function gatewayStatus(db: KobeDb): Promise<GatewayStatusView> {
+export async function gatewayStatus(db: KaijuDb): Promise<GatewayStatusView> {
   const [s] = await db.select().from(modelGatewayState);
   return {
     desired_version: s?.desiredVersion ?? 0,
@@ -187,7 +187,7 @@ export type AddProviderResult =
   | { readonly ok: false; readonly error: "exists" | "too_many" | EndpointProblem };
 
 export async function addProvider(
-  db: KobeDb,
+  db: KaijuDb,
   box: SecretBox,
   input: AddProviderInput,
   userId: string,
@@ -246,7 +246,7 @@ export type UpdateProviderResult =
     };
 
 export async function updateProvider(
-  db: KobeDb,
+  db: KaijuDb,
   box: SecretBox,
   id: string,
   input: UpdateProviderInput,
@@ -313,7 +313,7 @@ export async function updateProvider(
 
 export type DeleteProviderResult = "deleted" | "not_found" | "in_use";
 
-export async function deleteProvider(db: KobeDb, id: string): Promise<DeleteProviderResult> {
+export async function deleteProvider(db: KaijuDb, id: string): Promise<DeleteProviderResult> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .select()
@@ -378,7 +378,7 @@ export function partialPrices(p: Prices): boolean {
 }
 
 export async function addCatalogEntry(
-  db: KobeDb,
+  db: KaijuDb,
   input: AddCatalogInput,
   userId: string,
   tokenDefaults: ModelTokenDefaults,
@@ -485,7 +485,7 @@ function catalogMatches(row: CatalogRow, expected: CatalogExpected): boolean {
 }
 
 export async function updateCatalogEntry(
-  db: KobeDb,
+  db: KaijuDb,
   alias: string,
   input: UpdateCatalogInput,
   tokenDefaults: ModelTokenDefaults,
@@ -581,7 +581,7 @@ export async function updateCatalogEntry(
  * Removes an alias from the catalog; every team's enablement of it goes with it (FK cascade across
  * teams; `team_models` is behind RLS, so the event does not count them).
  */
-export async function deleteCatalogEntry(db: KobeDb, alias: string): Promise<boolean> {
+export async function deleteCatalogEntry(db: KaijuDb, alias: string): Promise<boolean> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .select()

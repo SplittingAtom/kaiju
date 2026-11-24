@@ -3,7 +3,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { openApp } from "../chat/testing";
@@ -16,7 +16,7 @@ import { BRIDGE_ATTACHED_ATTR } from "./app-frame";
  * thread's 3 live frames; closing the tab returns the frame to the card; under 820 px nothing
  * opens by itself. An app's `ui/request-display-mode` never moves a frame (ac-7).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -27,7 +27,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   resizeWindow(DESKTOP_WIDTH);
   vi.stubGlobal(
@@ -73,7 +73,7 @@ const tabNames = () =>
         .queryAllByRole("tab")
         .map((t) => `${t.textContent}${t.getAttribute("aria-selected") === "true" ? "*" : ""}`)
     : [];
-const cards = () => [...document.querySelectorAll<HTMLElement>("[data-kobe-app-card-entry]")];
+const cards = () => [...document.querySelectorAll<HTMLElement>("[data-kaiju-app-card-entry]")];
 const inColumn = (f: Element) => f.closest("[role=tabpanel]") !== null;
 
 describe("app placement in the conversation (KOBE-531 ac-5)", () => {

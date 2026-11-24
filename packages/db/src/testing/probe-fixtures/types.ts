@@ -1,4 +1,4 @@
-import type { KobeTx } from "../../client.js";
+import type { KaijuTx } from "../../client.js";
 
 /** Inserts one row into a team table for `teamId` (inside a withTeam transaction). */
-export type ProbeFixture = (tx: KobeTx, teamId: string) => Promise<void>;
+export type ProbeFixture = (tx: KaijuTx, teamId: string) => Promise<void>;

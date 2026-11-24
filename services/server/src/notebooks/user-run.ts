@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   NOTEBOOK_CODE_MAX_BYTES,
   NOTEBOOK_TIMEOUT_DEFAULT_S,
@@ -10,7 +10,7 @@ import {
   type NotebookKernelResponse,
   type NotebookRunBody,
   type NotebookRunResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { lockOwnedThread } from "../runs/access.js";
@@ -69,16 +69,16 @@ export const NOTEBOOK_ERROR_STATUS: Readonly<Record<NotebookError["code"], numbe
 
 /** What the orchestrator lends a notebook run. */
 export interface NotebookRunHost {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly router: SandboxRouter;
   readonly files: NotebookFiles | undefined;
   readonly log: Logger;
   /** Refuse while the isolation runtime is missing (D4). */
   readonly isolationMissing: () => boolean;
   /** A team transaction as `actor` with the thread lock timeout (busy → `thread_busy`). */
-  threadTx<T>(actor: ActorContext, fn: (tx: KobeTx, viewer: Viewer) => Promise<T>): Promise<T>;
+  threadTx<T>(actor: ActorContext, fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>): Promise<T>;
   /** Account active and still a member (no budget: a notebook run calls no model). */
-  assertMayRun(tx: KobeTx, actor: ActorContext): Promise<void>;
+  assertMayRun(tx: KaijuTx, actor: ActorContext): Promise<void>;
   /** The run ended: advance the thread's queue. */
   ended(teamId: string, runId: string, threadId: string): Promise<void>;
   /** Background work the orchestrator waits for on shutdown (and tests on `idle`). */

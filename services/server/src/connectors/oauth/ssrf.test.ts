@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import { discoverAuthServer } from "./discovery.js";
 import { oauthRequest, type OauthIo } from "./http.js";
 import { FakeOauthServer } from "../../testing/fake-oauth-server.js";

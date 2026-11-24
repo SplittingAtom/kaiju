@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { deriveKey } from "@kobe/db";
+import { deriveKey } from "@kaiju/db";
 
 /**
  * Tag fingerprints for the held-item audit (KOBE-647, review P2-L3): an HMAC-SHA-256 of the

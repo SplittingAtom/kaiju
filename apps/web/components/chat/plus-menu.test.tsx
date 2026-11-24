@@ -3,7 +3,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { agentChoices, chatRequests, composer, openApp } from "./testing";
 
@@ -12,7 +12,7 @@ import { agentChoices, chatRequests, composer, openApp } from "./testing";
  * one with its reason and fix), Memory (Learn from this chat, KOBE-395: plus-learn.test.tsx), Skills (a removable chip sent with the
  * message) and Apps (an app card, as from the rail).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 const KEYED = "11111111-1111-4111-8111-111111111111";
 const BARE = "22222222-2222-4222-8222-222222222222";
@@ -30,7 +30,7 @@ const APP = {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.chatConnectors.push(
     { connector_id: KEYED, name: "catalyst", problem: null },
     {
@@ -119,19 +119,19 @@ describe("Connectors (ac-2, ac-3, ac-6)", { timeout: 30_000 }, () => {
   it("lists the built-in Kaiju connector as always on, with the member's admin tools (KOBE-623)", async () => {
     fake.chatConnectors.unshift({
       connector_id: "6b6f6265-0000-4000-8000-000000000001",
-      name: "kobe",
+      name: "kaiju",
       problem: null,
       builtin: { kind: "kobe", admin: "read_write" },
     });
     const t = answered();
     openApp(fake, t);
     const { user, sub } = await openSub("Connectors");
-    const kobe = await within(sub).findByRole("menuitem", { name: /kobe/ }, WAIT);
-    expect(kobe.getAttribute("aria-disabled")).toBe("true");
-    expect(kobe.textContent).toContain("Docs always on.");
-    expect(kobe.textContent).toContain("read and change");
-    expect(within(sub).queryByRole("menuitemcheckbox", { name: /kobe/ })).toBeNull();
-    await user.click(kobe);
+    const kaiju = await within(sub).findByRole("menuitem", { name: /kaiju/ }, WAIT);
+    expect(kaiju.getAttribute("aria-disabled")).toBe("true");
+    expect(kaiju.textContent).toContain("Docs always on.");
+    expect(kaiju.textContent).toContain("read and change");
+    expect(within(sub).queryByRole("menuitemcheckbox", { name: /kaiju/ })).toBeNull();
+    await user.click(kaiju);
     expect(chatRequests(fake, "PUT").filter((r) => r.path.includes("/connectors/"))).toEqual([]);
   });
 
@@ -219,7 +219,7 @@ describe("a message sent with a skill (review MEDIUM-2)", { timeout: 30_000 }, (
     await user.click(must(screen.getAllByRole("button", { name: "Edit" })[0]));
     const editor = await screen.findByLabelText("Edit your message");
     expect((editor as HTMLTextAreaElement).value).toBe("Q3 report");
-    expect(document.querySelector('[data-kobe-edit-skill="pdf-report"]')).not.toBeNull();
+    expect(document.querySelector('[data-kaiju-edit-skill="pdf-report"]')).not.toBeNull();
     await user.type(editor, " for Berlin");
     await user.click(within(must(editor.closest("form"))).getByRole("button", { name: "Send" }));
     await waitFor(() =>
@@ -256,7 +256,7 @@ describe("Skills (ac-4)", { timeout: 30_000 }, () => {
     const { user, sub } = await openSub("Skills");
     await user.click(await within(sub).findByRole("menuitem", { name: "pdf-report" }, WAIT));
     const chip = await waitFor(() =>
-      must(document.querySelector<HTMLElement>('[data-kobe-skill-chip="pdf-report"]')),
+      must(document.querySelector<HTMLElement>('[data-kaiju-skill-chip="pdf-report"]')),
     );
     expect(chip.textContent).toContain("Skill: pdf-report");
     await user.type(await composer(), "Q3 report{Enter}");
@@ -265,7 +265,7 @@ describe("Skills (ac-4)", { timeout: 30_000 }, () => {
       content: "Q3 report",
       skill: "pdf-report",
     });
-    await waitFor(() => expect(document.querySelector("[data-kobe-skill-chip]")).toBeNull());
+    await waitFor(() => expect(document.querySelector("[data-kaiju-skill-chip]")).toBeNull());
   });
 
   it("× removes the chip: nothing is asked of the run", async () => {
@@ -273,7 +273,7 @@ describe("Skills (ac-4)", { timeout: 30_000 }, () => {
     const { user, sub } = await openSub("Skills");
     await user.click(await within(sub).findByRole("menuitem", { name: "pretty-html" }, WAIT));
     await user.click(await screen.findByRole("button", { name: "Remove the skill pretty-html" }));
-    expect(document.querySelector("[data-kobe-skill-chip]")).toBeNull();
+    expect(document.querySelector("[data-kaiju-skill-chip]")).toBeNull();
   });
 
   it("a sent message shows its skill as a chip in the history", async () => {
@@ -286,7 +286,7 @@ describe("Skills (ac-4)", { timeout: 30_000 }, () => {
     fake.addEntry(t, u, { role: "assistant", content: [{ type: "text", text: "done" }] });
     openApp(fake, t);
     const sent = await waitFor(
-      () => must(document.querySelector<HTMLElement>('[data-kobe-sent-skill="pdf-report"]')),
+      () => must(document.querySelector<HTMLElement>('[data-kaiju-sent-skill="pdf-report"]')),
       WAIT,
     );
     expect(sent.textContent).toBe("Skill: pdf-report");
@@ -328,7 +328,7 @@ describe("Apps (ac-7)", { timeout: 30_000 }, () => {
   it("from a new conversation the launch carries the agent and connectors chosen there (KOBE-458)", async () => {
     fake.teamApps = [APP];
     fake.runnableAgents.push({
-      id: "a-kobe",
+      id: "a-kaiju",
       scope: "gallery",
       galleryKey: "kobe",
       default: true,

@@ -6,9 +6,9 @@ import {
   siteSettings,
   teamRetention,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import {
   DEFAULT_PERIOD,
@@ -32,7 +32,7 @@ import {
  * the job never depends on a write happening on time.
  */
 
-type Executor = KobeDb | KobeTx;
+type Executor = KaijuDb | KaijuTx;
 
 /** `<period>@<ISO>` → pending part of a layer; anything malformed means no pending change. */
 function parsePending(value: string | undefined): Pick<Layer, "pending" | "pendingAt"> {
@@ -60,7 +60,7 @@ export async function readMaximumLayer(db: Executor, forUpdate = false): Promise
 }
 
 /** The team's layer; call inside the team's `withTeam` transaction. */
-export async function readTeamLayer(tx: KobeTx, teamId: string, forUpdate = false): Promise<Layer> {
+export async function readTeamLayer(tx: KaijuTx, teamId: string, forUpdate = false): Promise<Layer> {
   const query = tx
     .select({
       period: teamRetention.period,
@@ -79,7 +79,7 @@ export async function readTeamLayer(tx: KobeTx, teamId: string, forUpdate = fals
 }
 
 export function readRetention(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   now = new Date(),
 ): Promise<RetentionView> {
@@ -89,7 +89,7 @@ export function readRetention(
 }
 
 async function writeTeamLayer(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   layer: Layer,
@@ -123,7 +123,7 @@ export type SetTeamPeriodResult =
  * (`retention.policy.changed`, with `effectiveAt` when scheduled).
  */
 export function setTeamPeriod(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   period: RetentionPeriod,
@@ -157,7 +157,7 @@ export function setTeamPeriod(
 
 /** Cancels the team's pending shortening (team admins); false when there is none. */
 export function cancelTeamPending(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   now = new Date(),
@@ -201,14 +201,14 @@ export async function readMaximum(db: Executor, now = new Date()): Promise<Maxim
 }
 
 /** Upserts a site setting (the app role can't delete them: "" means none). */
-async function store(tx: KobeTx, key: string, value: string): Promise<void> {
+async function store(tx: KaijuTx, key: string, value: string): Promise<void> {
   await tx
     .insert(siteSettings)
     .values({ key, value })
     .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } });
 }
 
-async function writeMaximumLayer(tx: KobeTx, layer: Layer): Promise<void> {
+async function writeMaximumLayer(tx: KaijuTx, layer: Layer): Promise<void> {
   await store(tx, RETENTION_MAXIMUM_KEY, layer.applied);
   await store(
     tx,
@@ -225,7 +225,7 @@ async function writeMaximumLayer(tx: KobeTx, layer: Layer): Promise<void> {
  * (`retention.maximum.changed`, with `effectiveAt` when scheduled).
  */
 export function setMaximum(
-  db: KobeDb,
+  db: KaijuDb,
   maximum: RetentionPeriod,
   now = new Date(),
 ): Promise<{ view: MaximumView; scheduled: boolean }> {
@@ -248,7 +248,7 @@ export function setMaximum(
 }
 
 /** Cancels a pending lowering of the maximum; null when there is none. */
-export function cancelMaximumPending(db: KobeDb, now = new Date()): Promise<MaximumView | null> {
+export function cancelMaximumPending(db: KaijuDb, now = new Date()): Promise<MaximumView | null> {
   return db.transaction(async (tx) => {
     const layer = settle(await readMaximumLayer(tx, true), now);
     if (layer.pending === null) return null;

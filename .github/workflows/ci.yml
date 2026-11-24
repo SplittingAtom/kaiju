@@ -98,7 +98,7 @@ jobs:
       # catalog/detail.test.ts); an artifact-service hiccup must not fail the required check.
       - name: OpenAPI document (artifact)
         continue-on-error: true
-        run: pnpm --filter @kobe/server openapi
+        run: pnpm --filter @kaiju/server openapi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         continue-on-error: true
         with:
@@ -151,12 +151,12 @@ jobs:
       - uses: ./.github/actions/setup-kobe
         with:
           turbo-cache: restore
-      # kobe backup/restore tests run the real pg_dump, pg_restore and psql (PGDG's 17 client).
+      # kaiju backup/restore tests run the real pg_dump, pg_restore and psql (PGDG's 17 client).
       - uses: ./.github/actions/pg17-client
       - name: Migrations match the Drizzle schema
-        run: pnpm --filter @kobe/db exec drizzle-kit check && pnpm db:check
+        run: pnpm --filter @kaiju/db exec drizzle-kit check && pnpm db:check
       - name: RLS catalog check and cross-team probe suite (every package but the server)
-        run: pnpm test:db --filter='!@kobe/server'
+        run: pnpm test:db --filter='!@kaiju/server'
       # KOBE-69: an existing install runs only migrations newer than its last one, so also migrate a
       # database to the base branch's migrations (PR base, or the merge queue's base), then to this
       # branch's with the chart's runner, and run the catalog check and probe suite against it.
@@ -169,7 +169,7 @@ jobs:
           KOBE_TEST_BASE_MIGRATIONS="$(scripts/upgrade-base-migrations.sh)"
           export KOBE_TEST_BASE_MIGRATIONS
           echo "upgrading from base migrations in $KOBE_TEST_BASE_MIGRATIONS"
-          pnpm --filter @kobe/db exec vitest run -c vitest.db.config.ts src/catalog.db.test.ts src/probe.db.test.ts
+          pnpm --filter @kaiju/db exec vitest run -c vitest.db.config.ts src/catalog.db.test.ts src/probe.db.test.ts
 
   # The server's Postgres-backed suites (KOBE-300), split by file across shards, each on its own
   # Postgres. Every file opens its own throwaway database, so files also run in parallel within a
@@ -201,7 +201,7 @@ jobs:
       - name: Server test:db, shard ${{ matrix.shard }} of 2
         env:
           SHARD: ${{ matrix.shard }}
-        run: pnpm test:db --filter=@kobe/server -- --shard="${SHARD}/2"
+        run: pnpm test:db --filter=@kaiju/server -- --shard="${SHARD}/2"
 
   # The required check (branch protection and the merge-queue ruleset name `db`): passes only when
   # db-core and every db-server shard passed (KOBE-300 split the old single db job).

@@ -1,12 +1,12 @@
 import { KeyObject } from "node:crypto";
-import { SERVER_CALL_AUDIENCE, type RunTokenClaims, type ServerCallClaims } from "@kobe/protocol";
+import { SERVER_CALL_AUDIENCE, type RunTokenClaims, type ServerCallClaims } from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   signRunToken,
   signServerCallToken,
   verifyRunToken,
   verifyServerCallToken,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "./config.js";
 import { hmacEraToken } from "./testing/hmac-era.js";

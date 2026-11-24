@@ -1,10 +1,10 @@
-import { readSsoRequiredIn, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { readSsoRequiredIn, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 
 /*
  * The "Require single sign-on" Owner invariant (KOBE-774), on its own so the routes that enforce it
  * (ownership transfer, deactivation, unlinking) need not import `required.ts`, which reads sessions
  * (turn-on ends local sessions and checks the caller's): catalog routes must not depend on the
- * session (kobe-mcp/session-contract.test.ts). Nothing here touches a session.
+ * session (kaiju-mcp/session-contract.test.ts). Nothing here touches a session.
  */
 
 /**
@@ -25,7 +25,7 @@ export class OwnerWouldLoseSignInError extends Error {
  * Owners who could not sign in through single sign-on: deactivated, or without an identity at an
  * enabled provider (third review: a deactivated Owner fails the invariant too).
  */
-export async function unlinkedOwners(tx: KobeDb | KobeTx): Promise<number> {
+export async function unlinkedOwners(tx: KaijuDb | KaijuTx): Promise<number> {
   const res = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM site_roles r JOIN users u ON u.id = r.user_id
      WHERE r.role = 'owner'
@@ -36,7 +36,7 @@ export async function unlinkedOwners(tx: KobeDb | KobeTx): Promise<number> {
 }
 
 /** Under the lock, after the change: throws {@link OwnerWouldLoseSignInError} if it broke the rule. */
-export async function assertOwnerKeepsSignIn(tx: KobeTx): Promise<void> {
+export async function assertOwnerKeepsSignIn(tx: KaijuTx): Promise<void> {
   if (!(await readSsoRequiredIn(tx))) return;
   if ((await unlinkedOwners(tx)) > 0) throw new OwnerWouldLoseSignInError();
 }

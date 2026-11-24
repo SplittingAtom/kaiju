@@ -216,7 +216,7 @@ describe("GitHub adapter specifics (KOBE-758)", () => {
       expect(probe).toMatchObject({
         provider: "github",
         hostVersion: "3.19.2",
-        actor: { kind: "app", login: "kobe-test-app[bot]" },
+        actor: { kind: "app", login: "kaiju-test-app[bot]" },
         capabilities: { create: "yes", read: "yes", write: "yes", admin: "yes" },
         excess: ["members:write", "organization_administration:write", "secrets:read"],
         credentialExpiresAt: null,

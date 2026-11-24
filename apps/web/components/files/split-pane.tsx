@@ -13,7 +13,7 @@ import { ChevronDownIcon, ChevronUpIcon, XIcon } from "lucide-react";
 import { useCallback, useId, useState, type CSSProperties, type ReactNode } from "react";
 import { useSplitter, type SplitterRange } from "../shell/use-splitter";
 
-export const SPLIT_VAR = "--kobe-editor-split";
+export const SPLIT_VAR = "--kaiju-editor-split";
 export const SPLIT_KEY = "kobe.fileEditor.split";
 export const SPLIT_DEFAULT = 50;
 export const SPLIT_BOUNDS = { min: 15, max: 85 } as const;
@@ -40,13 +40,13 @@ function writeSplit(value: number | null): void {
 }
 
 function container(handle: HTMLElement | null): HTMLElement | null {
-  return handle?.closest<HTMLElement>("[data-kobe-split]") ?? null;
+  return handle?.closest<HTMLElement>("[data-kaiju-split]") ?? null;
 }
 
 function measureWith(fallback: number) {
   return (handle: HTMLElement | null): SplitterRange | null => {
     const box = container(handle);
-    const top = box?.querySelector<HTMLElement>(":scope > [data-kobe-split-top]");
+    const top = box?.querySelector<HTMLElement>(":scope > [data-kaiju-split-top]");
     const height = box?.getBoundingClientRect().height ?? 0;
     if (!box || !top || height <= 0) return { value: fallback, ...SPLIT_BOUNDS };
     const value = Math.round((top.getBoundingClientRect().height / height) * 100);
@@ -118,18 +118,18 @@ export function SplitPane({
   const Toggle = collapsed ? ChevronUpIcon : ChevronDownIcon;
   return (
     <div
-      data-kobe-split=""
+      data-kaiju-split=""
       data-collapsed={collapsed || undefined}
       data-alone={alone || undefined}
       style={style}
       className="flex min-h-0 min-w-0 flex-1 flex-col"
     >
       <div
-        data-kobe-split-top=""
+        data-kaiju-split-top=""
         className={
           collapsed || alone
             ? "flex min-h-0 min-w-0 flex-1 flex-col"
-            : "flex min-h-0 min-w-0 shrink-0 basis-(--kobe-editor-split) flex-col"
+            : "flex min-h-0 min-w-0 shrink-0 basis-(--kaiju-editor-split) flex-col"
         }
       >
         {top}

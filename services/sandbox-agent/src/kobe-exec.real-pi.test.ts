@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import type { EgressWiring } from "./egress/egress-wiring.js";
 import { THREAD, startHarness, until, runStart, type Harness } from "./testing/harness.js";
@@ -144,7 +144,7 @@ describe.skipIf(!PI_AVAILABLE || !EXECUTOR_BUILT)("kobe-exec in real Pi, through
       expect(end.text, name).not.toContain(`${name}=`);
     }
     // What the model is told it can inspect (Pi's guideline) still arrives.
-    expect(end.text).toContain("PI_PROVIDER=kobe-faux");
+    expect(end.text).toContain("PI_PROVIDER=kaiju-faux");
     expect(end.text).toContain("PI_MODEL=scripted");
   }, 90_000);
 
@@ -216,7 +216,7 @@ describe.skipIf(!PI_AVAILABLE || !EXECUTOR_BUILT)("kobe-exec in real Pi, through
   }, 120_000);
 
   it("fails closed when there is no executor to start: no tool runs in Pi instead", async () => {
-    const t = await start("/nonexistent/kobe-no-such-executor.js");
+    const t = await start("/nonexistent/kaiju-no-such-executor.js");
     allowAll(t);
     await run(t, [bash("b1", "echo ran > ran.txt")]);
     const end = await toolEnd(t, "b1");

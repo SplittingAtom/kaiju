@@ -7,8 +7,8 @@ import {
   type ApprovalMode,
   type SubmitMessageCommand,
   type SubmitMessageResult,
-} from "@kobe/protocol";
-import { RUN_INPUT_MAX_CHARS, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { RUN_INPUT_MAX_CHARS, type KaijuTx } from "@kaiju/db";
 import {
   resolveAppContexts,
   withAppContext,
@@ -349,7 +349,7 @@ async function submitInTx(
  */
 async function budgetBlocksSchedule(
   core: RunCore,
-  tx: KobeTx,
+  tx: KaijuTx,
   actor: ActorContext,
   scheduled: boolean,
 ): Promise<boolean> {

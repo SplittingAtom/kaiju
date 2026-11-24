@@ -10,7 +10,7 @@ import { CHAT_PORTALLED as PORTALLED } from "../ui/chat-portal";
  */
 export function inertOutsideWhileOpen(el: HTMLElement): () => void {
   let undo = inertOutside(el);
-  const root = el.closest("[data-kobe-chat]") ?? el.ownerDocument.body;
+  const root = el.closest("[data-kaiju-chat]") ?? el.ownerDocument.body;
   const observer = new MutationObserver(() => {
     undo();
     undo = inertOutside(el);
@@ -30,7 +30,7 @@ export function inertOutsideWhileOpen(el: HTMLElement): () => void {
  * tech), as a modal dialog does; returns the undo. Only attributes this call set are removed.
  */
 export function inertOutside(el: HTMLElement): () => void {
-  const root = el.closest("[data-kobe-chat]") ?? el.ownerDocument.body;
+  const root = el.closest("[data-kaiju-chat]") ?? el.ownerDocument.body;
   const changed: HTMLElement[] = [];
   for (let node: HTMLElement = el; node !== root && node.parentElement;) {
     const parent: HTMLElement = node.parentElement;

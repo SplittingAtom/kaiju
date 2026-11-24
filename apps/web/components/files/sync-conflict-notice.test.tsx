@@ -2,7 +2,7 @@
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { sha256Hex } from "../../lib/files/editor";
 import { composer, openApp } from "../chat/testing";
@@ -13,7 +13,7 @@ import { composer, openApp } from "../chat/testing";
  * the copy (asks first) and Dismiss; it is read when the thread opens and again after a run ends.
  * A shared reader (404) sees no notice.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 const COPY = "notes.conflict-20261023T120000Z.md";
 
@@ -21,7 +21,7 @@ beforeEach(async () => {
   memberSha = await sha256Hex(new TextEncoder().encode(MEMBER));
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {

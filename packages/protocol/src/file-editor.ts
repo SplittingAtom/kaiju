@@ -163,7 +163,7 @@ export const fileEditCallShape = {
   input: proposeFileEditInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4); member of `kobeToolsRequestSchema`. */
+/** kobe-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
 export const fileEditToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("file.edit_propose"),

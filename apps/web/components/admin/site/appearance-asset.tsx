@@ -5,7 +5,7 @@ import {
   BRANDING_ASSET_MAX_BYTES,
   type BrandingAssetKind,
   type SiteBranding,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { useEffect, useId, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import {
   DARK_LOGO_URL,
@@ -117,11 +117,11 @@ function Current({ kind, url }: { readonly kind: BrandingAssetKind; readonly url
   return (
     <div className="flex flex-wrap gap-2">
       {kind === "logo" && (
-        <div data-kobe-swatch="light" className={swatch}>
+        <div data-kaiju-swatch="light" className={swatch}>
           {img("Logo on a light background")}
         </div>
       )}
-      <div data-kobe-swatch="dark" className={swatch}>
+      <div data-kaiju-swatch="dark" className={swatch}>
         {img(`${LABEL[kind]} on a dark background`)}
       </div>
     </div>
@@ -204,7 +204,7 @@ export function AssetField({
       )}
       <Current kind={kind} url={current} />
       <div
-        data-kobe-drop={kind}
+        data-kaiju-drop={kind}
         {...(dragging ? { "data-dragging": "" } : {})}
         onDragOver={(e) => {
           if (needsLogo || !hasFiles(e)) return;

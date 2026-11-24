@@ -45,7 +45,7 @@ function placeOf(e: KeyboardEvent): PressPlace {
   const active = document.activeElement;
   return {
     editing: isTextField(target),
-    composer: target?.id === "kobe-composer",
+    composer: target?.id === "kaiju-composer",
     dialog: document.querySelector(OPEN_DIALOG) !== null,
     // 229: the key an IME reports while it composes (Safari ends composition before keyup).
     composing: e.isComposing || e.keyCode === 229,
@@ -110,7 +110,7 @@ export function ShortcutKeys() {
   return (
     <p
       role="status"
-      data-kobe-shortcut-status=""
+      data-kaiju-shortcut-status=""
       className={
         notice === null
           ? "sr-only"

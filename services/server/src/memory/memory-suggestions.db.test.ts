@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { semanticMemoryErrorSchema } from "@kobe/protocol";
+import { semanticMemoryErrorSchema } from "@kaiju/protocol";
 import { approvalKeyring } from "../approvals/keys.js";
 import { statementHash } from "./learn/validate.js";
 import { sweepMemoryReminders } from "../notifications/memory.js";
@@ -32,7 +32,7 @@ const codeOf = (r: { status: number; json: unknown }) => {
 
 beforeAll(async () => {
   h = await openHarness({
-    blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
+    blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     approvalKeys: approvalKeyring("suggestions-test-key-".padEnd(48, "k")),
   });
   for (const who of Object.keys(ids) as (keyof typeof ids)[])

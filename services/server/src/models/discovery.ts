@@ -3,9 +3,9 @@ import {
   eq,
   gatewayProviderName,
   modelProviders,
-  type KobeDb,
+  type KaijuDb,
   type ModelProviderKind,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { hitRateLimit, type RateLimitRule } from "../rate-limit.js";
 import {
@@ -159,7 +159,7 @@ async function readView(
 }
 
 async function providerRow(
-  db: KobeDb,
+  db: KaijuDb,
   providerId: string,
 ): Promise<{ id: string; kind: ModelProviderKind } | undefined> {
   const [row] = await db
@@ -171,7 +171,7 @@ async function providerRow(
 
 /** The models the gateway knows for a configured provider (Bifrost's cache; no provider call). */
 export async function listProviderModels(
-  db: KobeDb,
+  db: KaijuDb,
   discovery: ModelDiscovery,
   providerId: string,
 ): Promise<DiscoveryResult> {
@@ -186,7 +186,7 @@ export async function listProviderModels(
  * provider across replicas.
  */
 export async function refreshProviderModels(
-  db: KobeDb,
+  db: KaijuDb,
   discovery: ModelDiscovery,
   providerId: string,
   rate: RateLimitRule = REFRESH_RATE,

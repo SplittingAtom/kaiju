@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
@@ -14,7 +14,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * keep, publish or roll back an agent in Dangerous mode; a non-admin's fork drops it; turning it on
  * or off is audited; summaries and the runnable list carry the flag for the badges.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 const ANY = { "if-match": "*" };
 

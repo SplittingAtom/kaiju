@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TeamRole } from "@kobe/db";
+import type { TeamRole } from "@kaiju/db";
 import {
   MEMORY_STEWARD_SITE_PERMISSIONS,
   MEMORY_STEWARD_TEAM_PERMISSIONS,

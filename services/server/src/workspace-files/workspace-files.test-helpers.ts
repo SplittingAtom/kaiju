@@ -2,7 +2,7 @@
 // (split from workspace-files.db.test.ts, KOBE-725).
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -75,7 +75,7 @@ export async function seed(
 }
 
 export function multipart(fields: Record<string, string>, file?: { name: string; data: string }) {
-  const boundary = `----kobe${randomBytes(6).toString("hex")}`;
+  const boundary = `----kaiju${randomBytes(6).toString("hex")}`;
   let body = "";
   for (const [k, v] of Object.entries(fields)) {
     body += `--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`;

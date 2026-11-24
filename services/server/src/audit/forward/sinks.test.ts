@@ -96,7 +96,7 @@ describe("syslog (RFC 5424)", () => {
   });
 
   it("delivers over TLS, verifying the collector's certificate", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "kobe-syslog-"));
+    const dir = mkdtempSync(join(tmpdir(), "kaiju-syslog-"));
     closers.push(() => rmSync(dir, { recursive: true, force: true }));
     try {
       execFileSync(

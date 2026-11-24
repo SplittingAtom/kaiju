@@ -12,7 +12,7 @@
  */
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
-import { UPLOAD_FILE_NAME_MAX } from "@kobe/protocol";
+import { UPLOAD_FILE_NAME_MAX } from "@kaiju/protocol";
 import {
   addableProjects,
   firstFreeName,
@@ -29,7 +29,7 @@ import {
 } from "../../lib/projects/api";
 import { joinPath } from "../../lib/files/tree";
 import { useResource } from "../admin/use-resource";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import { IconAction } from "../shell/icon-action";
 
 const BUTTON = "rounded-md border px-2 py-0.5 text-xs";

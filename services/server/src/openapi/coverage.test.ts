@@ -30,7 +30,7 @@ function standIn(name: string): unknown {
     get(_target, key) {
       if (key === "then") return undefined; // not a thenable
       if (key === Symbol.toPrimitive) return () => name;
-      if (key === "publicUrl") return "https://kobe.test";
+      if (key === "publicUrl") return "https://kaiju.test";
       return standIn(`${name}.${String(key)}`);
     },
     apply: () => standIn(`${name}()`),
@@ -73,7 +73,7 @@ const internal = operations(
   createInternalApp({
     internalKey: "k".repeat(64),
     mcp: standIn("mcp"),
-    kobe: standIn("kobe"),
+    kaiju: standIn("kaiju"),
     appResults: standIn("appResults"),
     auth: standIn("auth"),
   } as never),

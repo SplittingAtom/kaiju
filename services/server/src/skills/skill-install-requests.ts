@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
@@ -47,7 +47,7 @@ export interface SkillInstallRequest {
 }
 
 async function skillStanding(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
 ): Promise<{ name: string; installed: string | null; blocked: boolean } | null> {
@@ -68,7 +68,7 @@ async function skillStanding(
 }
 
 export function requestForTeam(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly userId: string; readonly skillId: string },
 ): Promise<RequestResult> {
   const { teamId, userId, skillId } = input;
@@ -106,7 +106,7 @@ export function requestForTeam(
  * active members (review L2). Older rows are purged here (live state, not history).
  */
 export function listSkillInstallRequests(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
 ): Promise<SkillInstallRequest[]> {
   return withTeam(db, teamId, async (tx) => {
@@ -147,7 +147,7 @@ export function listSkillInstallRequests(
 
 /** Dismisses the open requests for a skill (they leave the list until someone asks again). */
 export function dismissSkillInstallRequests(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly skillId: string },
 ): Promise<boolean> {
   const { teamId, skillId } = input;
@@ -170,7 +170,7 @@ export function dismissSkillInstallRequests(
 }
 
 export interface RequestNotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }

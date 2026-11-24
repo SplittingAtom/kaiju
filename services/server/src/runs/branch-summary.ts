@@ -4,8 +4,8 @@ import {
   type ActorContext,
   type BranchSummaryErrorCode,
   type BranchSummaryResponse,
-} from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { effectiveModelLimits } from "../models/token-limits.js";
@@ -132,7 +132,7 @@ export async function summarizeBranch(
  * The owner's thread, locked (`lockOwnedThread`: 404, reader `read_only`, Trash); builder test,
  * Workbench and eval threads refused `test_thread` (CT19).
  */
-async function lockForSummary(tx: KobeTx, viewer: Viewer, threadId: string): Promise<ThreadRow> {
+async function lockForSummary(tx: KaijuTx, viewer: Viewer, threadId: string): Promise<ThreadRow> {
   const thread = await lockOwnedThread(tx, viewer, threadId, "thread_not_found");
   const test = await tx.execute<{ is_test: boolean }>(sql`
     SELECT is_test FROM threads WHERE team_id = ${viewer.teamId} AND id = ${threadId}`);
@@ -148,7 +148,7 @@ async function lockForSummary(tx: KobeTx, viewer: Viewer, threadId: string): Pro
  * ancestor Pi has (as `withoutAppCards` does for `run.start`). Null: no such entry.
  */
 async function checkTarget(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   thread: ThreadRow,
   toEntryId: string,
@@ -179,7 +179,7 @@ async function checkTarget(
 
 async function startInTx(
   host: BranchSummaryHost,
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   actor: ActorContext,
   threadId: string,

@@ -4,9 +4,9 @@ import {
   SAVE_SKILL_DRAFT_TOOL,
   SKILL_NAME_PATTERN,
   saveSkillDraftInputSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ToolsOutcome } from "./client.js";
-import { registerKobeTools, skillDraftsEnabled } from "./extension.js";
+import { registerKaijuTools, skillDraftsEnabled } from "./extension.js";
 import * as P from "./protocol.js";
 import { parseSkillDraftReply, saveSkillDraftTool } from "./skill-draft-tool.js";
 import type { ToolsTransport } from "./tools.js";
@@ -103,7 +103,7 @@ describe("save_skill_draft (KOBE-442)", () => {
   it("is registered only when the agent enabled skill drafts", () => {
     const names = (options: { skillDrafts?: boolean }) => {
       const seen: string[] = [];
-      registerKobeTools(
+      registerKaijuTools(
         { registerTool: (tool) => seen.push(tool.name) },
         transport(SAVED).t,
         options,

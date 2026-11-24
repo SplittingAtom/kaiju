@@ -250,7 +250,7 @@ describe("local proof (§6)", () => {
   it("links after a passkey sign-in as the same user", async () => {
     const email = address("passkey");
     const userId = await h.createUser(email);
-    const authenticator = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
+    const authenticator = new SoftwareAuthenticator("kaiju.test", "http://kaiju.test");
     const local = await h.signIn(email);
     const options = await local.get("/api/auth/passkey/generate-register-options");
     const registered = await local.post("/api/auth/passkey/verify-registration", {
@@ -574,7 +574,7 @@ describe("unlink (§6, §9)", () => {
     // A passkey-only account (no password, no link) keeps its last passkey.
     const email = address("pk-only");
     const pkUser = await h.createUser(email);
-    const authenticator = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
+    const authenticator = new SoftwareAuthenticator("kaiju.test", "http://kaiju.test");
     const local = await h.signIn(email);
     const options = await local.get("/api/auth/passkey/generate-register-options");
     await local.post("/api/auth/passkey/verify-registration", {
@@ -604,7 +604,7 @@ describe("unlink (§6, §9)", () => {
 
 describe("the setup Owner keeps local sign-in (SSO10)", () => {
   it("links by its own local proof, keeps password and passkey, and no SSO session removes them", async () => {
-    const authenticator = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
+    const authenticator = new SoftwareAuthenticator("kaiju.test", "http://kaiju.test");
     const local = await h.signIn("owner@contoso.com");
     const options = await local.get("/api/auth/passkey/generate-register-options");
     const registered = await local.post("/api/auth/passkey/verify-registration", {

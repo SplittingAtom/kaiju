@@ -1,4 +1,4 @@
-import { gatewayProviderName } from "@kobe/db";
+import { gatewayProviderName } from "@kaiju/db";
 import type { LocalEmbeddingConfig } from "./config.js";
 import type { ProviderInput } from "./desired.js";
 

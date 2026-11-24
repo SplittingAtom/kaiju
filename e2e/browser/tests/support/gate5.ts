@@ -6,14 +6,14 @@ import { pinTeam } from "./team.js";
  * Helpers for the Gate 5 story checks (KOBE-227, `tests/gate5/`) and the specs they reuse. CI's
  * k3d install answers with the scripted fake model (`KOBE_FAKE_MODEL=1`,
  * services/model-gateway/src/testing/fake-llm.ts): it echoes prompts, runs `bash: <command>` and
- * `tool: <name> <json>`, streams `kobe-long-answer=<n>` slowly and reports `kobe-prompt-tokens=<n>`.
+ * `tool: <name> <json>`, streams `kaiju-long-answer=<n>` slowly and reports `kaiju-prompt-tokens=<n>`.
  * Against a real model the same checks send plain instructions.
  */
 export const FAKE_MODEL = process.env["KOBE_FAKE_MODEL"] === "1";
 
 /** A run that streams for a while (about 25 s with the fake): long enough to scroll, queue, stop. */
 export function longAnswer(real: string): string {
-  return FAKE_MODEL ? "kobe-long-answer=400 a long answer" : real;
+  return FAKE_MODEL ? "kaiju-long-answer=400 a long answer" : real;
 }
 
 /** A turn whose first step runs `command` with the bash tool. */
@@ -33,7 +33,7 @@ export function toolTurn(tool: string, args: Record<string, unknown>): string {
 /**
  * A turn whose write asks for an approval in ask-on-write: share_file (a Kaiju write) of a file in
  * the member's workspace, made first with a {@link bashTurn}. create_artifact never asks (the
- * server's PROMPT_EXEMPT_KOBE_TOOLS, a decision of 2026-10-06).
+ * server's PROMPT_EXEMPT_KAIJU_TOOLS, a decision of 2026-10-06).
  */
 export function shareTurn(path: string, description: string): string {
   return toolTurn("share_file", { path, description });

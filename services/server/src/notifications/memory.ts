@@ -1,5 +1,5 @@
-import type { NotificationKind } from "@kobe/protocol";
-import { sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import type { NotificationKind } from "@kaiju/protocol";
+import { sql, teams, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 import { logger } from "../logger.js";
 import type { ReconcileLock } from "../sandbox/reconcile-lock.js";
@@ -129,7 +129,7 @@ const fieldsOf = (n: MemoryNotice) => ({
  * kind (transaction advisory lock), so concurrent notices roll up exactly.
  */
 export async function notifyMemory(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   recipients: readonly string[],
   notice: MemoryNotice,
@@ -148,7 +148,7 @@ export interface MemoryNoticeFor {
  * in different orders cannot deadlock.
  */
 export async function notifyMemoryAll(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   items: readonly MemoryNoticeFor[],
 ): Promise<MemoryNotifyResult[]> {
@@ -184,7 +184,7 @@ const siteCurator = (userId: string) => sql`(
   EXISTS (SELECT 1 FROM site_roles WHERE user_id = ${userId})
   OR EXISTS (SELECT 1 FROM site_grants WHERE user_id = ${userId} AND "grant" = 'memory_steward'))`;
 
-async function assertActor(tx: KobeTx, teamId: string, n: MemoryNotice): Promise<void> {
+async function assertActor(tx: KaijuTx, teamId: string, n: MemoryNotice): Promise<void> {
   const actor = "actorUserId" in n ? n.actorUserId : undefined;
   if (actor === undefined) return;
   const member = sql`EXISTS (SELECT 1 FROM team_members WHERE team_id = ${teamId} AND user_id = ${actor})`;
@@ -198,7 +198,7 @@ async function assertActor(tx: KobeTx, teamId: string, n: MemoryNotice): Promise
 }
 
 async function assertThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   n: MemoryNotice,
@@ -217,7 +217,7 @@ async function assertThread(
  * checked at send, not only at registration.
  */
 async function mayDecide(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   r: {
     readonly user_id: string;
@@ -276,7 +276,7 @@ const siteProposalBarred = (id: string, userId: string) => sql`
                                 AND a.target ->> 'proposalId' = p.id::text)))`;
 
 /** A Site-wide legal hold freezes Site proposals' reminders too (KOBE-653, KOBE-647). */
-export async function siteProposalsFrozen(tx: KobeTx | KobeDb): Promise<boolean> {
+export async function siteProposalsFrozen(tx: KaijuTx | KaijuDb): Promise<boolean> {
   const { rows } = await tx.execute<{ held: boolean }>(
     sql`SELECT public.site_legal_hold_active() AS held`,
   );
@@ -286,7 +286,7 @@ export async function siteProposalsFrozen(tx: KobeTx | KobeDb): Promise<boolean>
 const isSiteProposalKind = (k: MemoryPendingKind | null) =>
   k !== null && k.startsWith("memory.site_proposal.");
 
-async function isActiveMember(tx: KobeTx, teamId: string, userId: string): Promise<boolean> {
+async function isActiveMember(tx: KaijuTx, teamId: string, userId: string): Promise<boolean> {
   const { rows } = await tx.execute(sql`
     SELECT 1 FROM team_members tm JOIN users u ON u.id = tm.user_id AND u.deactivated_at IS NULL
      WHERE tm.team_id = ${teamId} AND tm.user_id = ${userId}`);
@@ -294,7 +294,7 @@ async function isActiveMember(tx: KobeTx, teamId: string, userId: string): Promi
 }
 
 async function notifyOne(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   n: MemoryNotice,
@@ -356,7 +356,7 @@ export interface MemoryReminderInput {
  * recipient already has a row for changes nothing (so a sent reminder is never sent again).
  */
 export async function registerMemoryReminder(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   input: MemoryReminderInput,
 ): Promise<void> {
@@ -372,7 +372,7 @@ export async function registerMemoryReminder(
 
 /** The object was decided or withdrawn: drops its reminders (sent or not). */
 export async function settleMemoryReminders(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   objectId: string,
 ): Promise<number> {
@@ -381,7 +381,7 @@ export async function settleMemoryReminders(
   return res.rowCount ?? 0;
 }
 
-async function sweepTeam(db: KobeDb, teamId: string): Promise<number> {
+async function sweepTeam(db: KaijuDb, teamId: string): Promise<number> {
   return withTeam(db, teamId, async (tx) => {
     const { rows } = await tx.execute<{
       id: string;
@@ -439,7 +439,7 @@ async function sweepTeam(db: KobeDb, teamId: string): Promise<number> {
  * KOBE-653; one reminder per step, KOBE-666). A team whose pass fails is logged and skipped
  * (its reminders stay owed); the others still run.
  */
-export async function sweepMemoryReminders(db: KobeDb): Promise<number> {
+export async function sweepMemoryReminders(db: KaijuDb): Promise<number> {
   try {
     await relaySiteProposals(db);
   } catch (err) {
@@ -466,7 +466,7 @@ export class MemoryReminderJob {
 
   constructor(
     private readonly o: {
-      readonly db: KobeDb;
+      readonly db: KaijuDb;
       readonly lock: ReconcileLock;
       readonly logger: Logger;
       readonly everyMs?: number;

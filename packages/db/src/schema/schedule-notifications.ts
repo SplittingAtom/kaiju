@@ -61,7 +61,7 @@ export const NOTIFICATION_KINDS = [
   "team.site_admin.member_taken_over",
   /**
    * Semantic memory (v1.3, KOBE-645): every phase's kinds at once, so later phases need no CHECK
-   * change. Same names and order as `MEMORY_NOTIFICATION_KINDS` in @kobe/protocol (a server test
+   * change. Same names and order as `MEMORY_NOTIFICATION_KINDS` in @kaiju/protocol (a server test
    * compares them). Columns: `memory_scope` (near_full), `memory_object_id` (the proposal,
    * suggestion or Site proposal; a reminder's pending object), `related_kind` (what a digest
    * rolls up or a reminder is about), `item_count`, `project_id` (suggestions).
@@ -90,7 +90,7 @@ export const NOTIFICATION_KINDS = [
    * Workspace git (KOBE-819): a Convert to repo attempt finished or failed (to its requester;
    * `git_conversion_id`, `git_attempt`, and `git_failure` when failed), and a connection's token
    * nearing expiry (to each Workspace admin; `git_connection_id`, `git_expires_at`). Same names
-   * and order as in @kobe/protocol (a server test compares the lists).
+   * and order as in @kaiju/protocol (a server test compares the lists).
    */
   "git.conversion.completed",
   "git.conversion.failed",

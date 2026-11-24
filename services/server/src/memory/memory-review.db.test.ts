@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { semanticMemoryErrorSchema } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { semanticMemoryErrorSchema } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { noticeCandidatesReady } from "./review/notify.js";
 import { statementHash } from "./learn/validate.js";
 import type { TestBrowser } from "../testing/browser.js";

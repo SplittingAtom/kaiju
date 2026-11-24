@@ -6,7 +6,7 @@ import type { Duplex } from "node:stream";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { RunGitContext } from "@kobe/protocol/sandbox-wire";
+import type { RunGitContext } from "@kaiju/protocol/sandbox-wire";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { egressEnv, EgressTokenFile, type EgressWiring } from "../egress/egress-wiring.js";
 import { GIT_CONFIG_FILE_NAME, GitConfigFile, gitConfigText, gitEnv } from "./git-config.js";
@@ -161,7 +161,7 @@ describe.skipIf(backend === undefined)(
           auth: req.headers.authorization,
         });
         if (req.headers["proxy-authorization"] !== PROXY_AUTH) {
-          res.writeHead(407, { "proxy-authenticate": 'Basic realm="kobe"' }).end();
+          res.writeHead(407, { "proxy-authenticate": 'Basic realm="kaiju"' }).end();
           return;
         }
         const url = new URL(target);
@@ -304,7 +304,7 @@ describe.skipIf(backend === undefined)(
         const before = seen.length;
         const out = await tool(`git clone -q ${url} ssh-out`);
         expect(out.status, url).not.toBe(0);
-        expect(out.stderr).toContain("kobe: SSH is not available in the sandbox");
+        expect(out.stderr).toContain("kaiju: SSH is not available in the sandbox");
         expect(seen.length).toBe(before);
       }
     });

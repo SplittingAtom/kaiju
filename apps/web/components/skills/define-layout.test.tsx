@@ -77,7 +77,7 @@ describe("the editor rail's handle", () => {
     expect(handle().getAttribute("aria-valuenow")).toBe(String(DEFAULT_WIDTH));
     expect(handle().getAttribute("aria-valuemin")).toBe(String(EDITOR_MIN_PX));
     expect(handle().getAttribute("aria-valuemax")).toBe(String(SPACE - TREE_MIN_PX - HANDLE_PX));
-    expect(handle().getAttribute("aria-controls")).toBe("kobe-workbench-editor");
+    expect(handle().getAttribute("aria-controls")).toBe("kaiju-workbench-editor");
   });
 
   it("keys: Left widens the rail, Right narrows it, Home/End hit the floors; each is saved", async () => {

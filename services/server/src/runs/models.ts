@@ -3,8 +3,8 @@ import {
   strictestThinkingPolicy,
   type ThinkingLevel,
   type ThinkingPolicy,
-} from "@kobe/protocol";
-import { type PiModelApi, type PiThreadConfig } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { type PiModelApi, type PiThreadConfig } from "@kaiju/protocol/sandbox-wire";
 import { catalogThinking } from "../models/thinking.js";
 import type { CatalogTokenLimits } from "../models/token-limits.js";
 import {
@@ -14,9 +14,9 @@ import {
   modelCatalog,
   modelProviders,
   teamModels,
-  type KobeTx,
+  type KaijuTx,
   type ModelProviderKind,
-} from "@kobe/db";
+} from "@kaiju/db";
 
 /**
  * The model of a run (spec D30; KOBE-41), resolved on the server because the sandbox has no user
@@ -62,7 +62,7 @@ export interface RunModelThinking {
 }
 
 /** The team's enabled models (RLS: inside `withTeam`). */
-async function enabledModels(tx: KobeTx, teamId: string): Promise<EnabledModel[]> {
+async function enabledModels(tx: KaijuTx, teamId: string): Promise<EnabledModel[]> {
   const rows = await tx
     .select({
       alias: teamModels.alias,
@@ -113,7 +113,7 @@ export type RunModelResolution =
   | { readonly ok: false; readonly code: "agent_model_not_enabled"; readonly alias: string };
 
 export async function resolveRunModel(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   requestedAlias: string | undefined,
 ): Promise<RunModelResolution> {
@@ -151,7 +151,7 @@ export async function resolveRunModel(
  * it and Pi records it (`model_change.modelId` under the `kobe` provider); undefined if unknown.
  */
 export async function gatewayModelOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   alias: string | undefined,
 ): Promise<string | undefined> {
   if (alias === undefined) return undefined;
@@ -169,7 +169,7 @@ export async function gatewayModelOf(
     : `${gatewayProviderName(row.providerId, row.kind)}/${row.model}`;
 }
 
-export async function modelAcceptsImages(tx: KobeTx, alias: string | undefined): Promise<boolean> {
+export async function modelAcceptsImages(tx: KaijuTx, alias: string | undefined): Promise<boolean> {
   if (alias === undefined) return false;
   const [row] = await tx
     .select({ modalities: modelCatalog.inputModalities })

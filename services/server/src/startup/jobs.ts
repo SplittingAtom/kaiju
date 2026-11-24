@@ -4,7 +4,7 @@ import {
   SecretBox,
   VIRTUAL_KEY_PURPOSE,
   deriveKey,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { logger as rootLogger } from "../logger.js";
 import { AUDIT_FORWARD_LOCK, AuditForwarder } from "../audit/forward/forwarder.js";
@@ -32,7 +32,7 @@ import { endSsoSessionsWhenOff, seedHelmProviders } from "../sso/providers.js";
 import { notifySsoRequiredOff } from "../sso/required-notify.js";
 import { EgressRequestSweeper, sweepEgressRequestNotifications } from "../egress/request-notify.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
-import { seedGitBuiltinConnector, seedKobeBuiltinConnector } from "@kobe/db";
+import { seedGitBuiltinConnector, seedKaijuBuiltinConnector } from "@kaiju/db";
 import { seedBrandingDefaults } from "../branding/defaults.js";
 import type { BifrostAdmin } from "../models/bifrost-admin.js";
 import type { ModelsConfig } from "../models/config.js";
@@ -44,7 +44,7 @@ import { RetentionJob } from "../retention/job.js";
 import { createPgReconcileLock } from "../sandbox/reconcile-lock.js";
 import { defaultSyncOnce, startDefaultSync } from "../skills/default-sync.js";
 import { recomputeOnce, startSkillHashRecompute } from "../skills/hash-checks.js";
-import { startKobeSeed } from "../skills/kobe-seed.js";
+import { startKaijuSeed } from "../skills/kaiju-seed.js";
 import { rescanOnce, startSkillRescan } from "../skills/rescan.js";
 import { ensureUsageSnapshot, startUsageSnapshots } from "../skills/usage-snapshot.js";
 import type { TableSweepSettings } from "../retention/table-sweeps.js";
@@ -56,7 +56,7 @@ const LEARN_SWEEP_MS = 60_000;
  * The server process's own start-up work (KOBE-422): what a server replica writes to Postgres
  * when it starts, with nobody signed in. `index.ts` starts these; `startup-seeds.db.test.ts` runs
  * one pass of each on a fresh database to prove that everything they write there is a startup
- * seed `kobe restore` replaces (`@kobe/db` STARTUP_SEEDED_ROWS). Jobs that need the sandbox
+ * seed `kaiju restore` replaces (`@kaiju/db` STARTUP_SEEDED_ROWS). Jobs that need the sandbox
  * provider (team reconcile, hibernation, the pod reconciler, workspace collection, Orbit evals)
  * are in `startup/process-jobs.ts`: they act on teams' sandboxes, which a fresh site has none of.
  * {@link seedAtStart} runs before the jobs start; `processJobs` lists {@link serverJobs} among
@@ -110,7 +110,7 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
     logger.error({ err }, "gallery agents could not be seeded"),
   );
   // The built-in Kaiju MCP connector row (KOBE-618/619): one row however many replicas start.
-  await seedKobeBuiltinConnector(deps.database.db)
+  await seedKaijuBuiltinConnector(deps.database.db)
     .then((seeded) => {
       if (seeded.outcome === "seeded" && seeded.fallback) {
         logger.warn(
@@ -206,9 +206,9 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
     logger.warn("no object storage (s3.*): Kaiju's catalog skills are not published");
     return { stop: () => undefined };
   }
-  const kobe = startKobeSeed({ db: deps.database.db, blobs: deps.blobs, log: logger });
-  await kobe.first;
-  return { stop: () => kobe.stop() };
+  const kaiju = startKaijuSeed({ db: deps.database.db, blobs: deps.blobs, log: logger });
+  await kaiju.first;
+  return { stop: () => kaiju.stop() };
 }
 
 const lockFor = (o: ServerJobsOptions, name: string, what: string) =>

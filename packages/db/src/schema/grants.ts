@@ -2,7 +2,7 @@ import { pgEnum, pgTable, primaryKey, timestamp, uuid } from "drizzle-orm/pg-cor
 import { users } from "./auth.js";
 
 /**
- * Grants beside the role ladder (KOBE-311, spec SK22); mirrors `SITE_GRANTS` (@kobe/protocol).
+ * Grants beside the role ladder (KOBE-311, spec SK22); mirrors `SITE_GRANTS` (@kaiju/protocol).
  * `memory_steward` (KOBE-380, SM19): a Site memory steward, who curates Site memory but never sets
  * Policy; it may accept or dismiss Site proposals.
  */

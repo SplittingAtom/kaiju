@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { Writable } from "node:stream";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createDb, type KobeDatabase } from "@kobe/db";
+import { createDb, type KaijuDatabase } from "@kaiju/db";
 import { approvalKeyring } from "./index.js";
 import { createPolicyEngine } from "../policy/engine.js";
 import { createToolRegistry } from "../policy/registry.js";
@@ -21,7 +21,7 @@ const fx = new EventStreamFixture();
 const auth = new FakeSandboxAuth();
 const listeners: Awaited<ReturnType<typeof sandboxListener>>[] = [];
 const sandboxes: FakeSandbox[] = [];
-const extraDbs: KobeDatabase[] = [];
+const extraDbs: KaijuDatabase[] = [];
 const KEY = approvalKeyring("approval-key-for-tests-".padEnd(48, "k"));
 const logLines: Record<string, unknown>[] = [];
 const log = pino(
@@ -39,8 +39,8 @@ const registry = createToolRegistry({ resolve: () => Promise.resolve(undefined) 
 
 /** Deadlocks forced by the test triggers: the next `n` matching inserts raise 40P01. */
 async function forceDeadlocks(table: "approvals" | "audit", n: number): Promise<void> {
-  await fx.admin.query(`UPDATE kobe266_force SET n = $2 WHERE tbl = $1`, [table, n]);
-  await fx.admin.query(`SELECT setval('kobe266_attempts_${table}', 1, false)`);
+  await fx.admin.query(`UPDATE kaiju266_force SET n = $2 WHERE tbl = $1`, [table, n]);
+  await fx.admin.query(`SELECT setval('kaiju266_attempts_${table}', 1, false)`);
 }
 
 beforeAll(async () => {
@@ -71,33 +71,33 @@ beforeAll(async () => {
   // Test-only fault injection (superuser, this throwaway database only). Only tool call ids
   // starting with "force-" are affected.
   await fx.admin.query(`
-    CREATE TABLE kobe266_force (tbl text PRIMARY KEY, n int NOT NULL);
-    INSERT INTO kobe266_force VALUES ('approvals', 0), ('audit', 0);
-    CREATE SEQUENCE kobe266_attempts_approvals;
-    CREATE SEQUENCE kobe266_attempts_audit;
-    CREATE FUNCTION kobe266_maybe_deadlock(tbl text) RETURNS void LANGUAGE plpgsql
+    CREATE TABLE kaiju266_force (tbl text PRIMARY KEY, n int NOT NULL);
+    INSERT INTO kaiju266_force VALUES ('approvals', 0), ('audit', 0);
+    CREATE SEQUENCE kaiju266_attempts_approvals;
+    CREATE SEQUENCE kaiju266_attempts_audit;
+    CREATE FUNCTION kaiju266_maybe_deadlock(tbl text) RETURNS void LANGUAGE plpgsql
       SECURITY DEFINER SET search_path = pg_catalog, public AS $$
     BEGIN
-      IF nextval('kobe266_attempts_' || tbl) <= (SELECT n FROM kobe266_force WHERE kobe266_force.tbl = $1) THEN
+      IF nextval('kaiju266_attempts_' || tbl) <= (SELECT n FROM kaiju266_force WHERE kaiju266_force.tbl = $1) THEN
         RAISE EXCEPTION 'forced deadlock (test)' USING ERRCODE = '40P01';
       END IF;
     END $$;
-    CREATE FUNCTION kobe266_approvals() RETURNS trigger LANGUAGE plpgsql AS $$
+    CREATE FUNCTION kaiju266_approvals() RETURNS trigger LANGUAGE plpgsql AS $$
     BEGIN
-      IF NEW.tool_call_id LIKE 'force-%' THEN PERFORM kobe266_maybe_deadlock('approvals'); END IF;
+      IF NEW.tool_call_id LIKE 'force-%' THEN PERFORM kaiju266_maybe_deadlock('approvals'); END IF;
       RETURN NEW;
     END $$;
-    CREATE FUNCTION kobe266_audit() RETURNS trigger LANGUAGE plpgsql AS $$
+    CREATE FUNCTION kaiju266_audit() RETURNS trigger LANGUAGE plpgsql AS $$
     BEGIN
       IF NEW.action = 'approval.rejected' AND NEW.target ->> 'toolCallId' LIKE 'force-%' THEN
-        PERFORM kobe266_maybe_deadlock('audit');
+        PERFORM kaiju266_maybe_deadlock('audit');
       END IF;
       RETURN NEW;
     END $$;
-    CREATE TRIGGER kobe266_deadlock BEFORE INSERT ON approvals
-      FOR EACH ROW EXECUTE FUNCTION kobe266_approvals();
-    CREATE TRIGGER aaa_kobe266_deadlock BEFORE INSERT ON audit_log
-      FOR EACH ROW EXECUTE FUNCTION kobe266_audit();`);
+    CREATE TRIGGER kaiju266_deadlock BEFORE INSERT ON approvals
+      FOR EACH ROW EXECUTE FUNCTION kaiju266_approvals();
+    CREATE TRIGGER aaa_kaiju266_deadlock BEFORE INSERT ON audit_log
+      FOR EACH ROW EXECUTE FUNCTION kaiju266_audit();`);
 });
 
 afterAll(async () => {

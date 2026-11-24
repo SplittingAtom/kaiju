@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { llmsFullTxt as pkgFull, llmsTxt as pkgIndex, pageMarkdown as pkgPage } from "@kobe/guide";
+import { llmsFullTxt as pkgFull, llmsTxt as pkgIndex, pageMarkdown as pkgPage } from "@kaiju/guide";
 import { GET as getFull } from "../../app/llms-full.txt/route";
 import { GET as getIndex } from "../../app/llms.txt/route";
 import { GET as getPage } from "../../app/guide-md/[...slug]/route";
@@ -7,7 +7,7 @@ import { PAGES } from "./guide";
 import { etagOf, textResponse } from "./llms";
 
 /**
- * KOBE-616 (ac-4) HTTP side; KOBE-620 (KA-3 ac-1): the routes answer exactly the `@kobe/guide`
+ * KOBE-616 (ac-4) HTTP side; KOBE-620 (KA-3 ac-1): the routes answer exactly the `@kaiju/guide`
  * texts (byte-equal) for the deployment's origin and app name, the same ones the server's docs
  * tools return. The texts' own format is tested in packages/guide.
  */

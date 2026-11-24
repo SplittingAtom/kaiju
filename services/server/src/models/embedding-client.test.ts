@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SERVER_CALL_TOKEN_HEADER } from "@kobe/protocol";
-import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+import { SERVER_CALL_TOKEN_HEADER } from "@kaiju/protocol";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kaiju/session-token";
 import { createEmbeddingClient, vectorsOf } from "./embedding-client.js";
 import { ServerCallError } from "./gateway-client.js";
 

@@ -75,7 +75,7 @@ async function openNotebook(page: Page, dir: string): Promise<Locator> {
   const folder = tree.getByRole("treeitem", { name: dir, exact: true });
   if ((await folder.getAttribute("aria-expanded")) !== "true") await folder.click();
   await tree.getByRole("treeitem", { name: "check.ipynb", exact: true }).click();
-  const notebook = page.locator("[data-kobe-notebook]");
+  const notebook = page.locator("[data-kaiju-notebook]");
   await expect(notebook.getByRole("heading", { name: "KOBE-465 check" })).toBeVisible();
   return notebook;
 }
@@ -86,7 +86,7 @@ const cell = (notebook: Locator, n: number) =>
 /** Runs cell `n` and waits for the kernel to finish it. */
 async function run(notebook: Locator, n: number): Promise<void> {
   await notebook.getByRole("button", { name: `Run cell ${n}`, exact: true }).click();
-  await expect(cell(notebook, n).locator("[data-kobe-exec-count]")).toHaveText(/^\[\d+\]$/u, {
+  await expect(cell(notebook, n).locator("[data-kaiju-exec-count]")).toHaveText(/^\[\d+\]$/u, {
     timeout: RUN_TIMEOUT_MS,
   });
 }
@@ -109,10 +109,10 @@ test("notebook: start, cells run with state, image and table outputs, interrupt,
     // Start (KOBE-477): the kernel comes up with nothing run (the first cell is then [1]), shown
     // step by step, and Restart takes Start's place.
     const start = notebook.getByRole("button", { name: "Start", exact: true });
-    const kernelState = notebook.locator("[data-kobe-kernel]");
+    const kernelState = notebook.locator("[data-kaiju-kernel]");
     await start.click();
     await expect(kernelState).toHaveText(/Waking sandbox…|Starting kernel…|Kernel idle/u);
-    await expect(notebook.locator('[data-kobe-kernel="idle"]')).toHaveText("Kernel idle", {
+    await expect(notebook.locator('[data-kaiju-kernel="idle"]')).toHaveText("Kernel idle", {
       timeout: RUN_TIMEOUT_MS,
     });
     await expect(start).toHaveCount(0);
@@ -120,19 +120,19 @@ test("notebook: start, cells run with state, image and table outputs, interrupt,
 
     // x = 1, then a new cell typed below it: x + 1 is 2 (Shift+Enter runs it).
     await run(notebook, 2);
-    await expect(cell(notebook, 2).locator("[data-kobe-exec-count]")).toHaveText("[1]");
+    await expect(cell(notebook, 2).locator("[data-kaiju-exec-count]")).toHaveText("[1]");
     await notebook.getByRole("button", { name: "Add a code cell below cell 2" }).click();
     const added = notebook.getByLabel("Code of cell 3");
     await added.click();
     await page.keyboard.type("x + 1");
     await page.keyboard.press("Shift+Enter");
-    await expect(cell(notebook, 3).locator('[data-kobe-output="text"]')).toHaveText("2", {
+    await expect(cell(notebook, 3).locator('[data-kaiju-output="text"]')).toHaveText("2", {
       timeout: RUN_TIMEOUT_MS,
     });
 
     // A matplotlib figure is an image from a data: URL; a DataFrame is a table of text.
     await run(notebook, 4);
-    const image = cell(notebook, 4).locator('img[data-kobe-output="image"]');
+    const image = cell(notebook, 4).locator('img[data-kaiju-output="image"]');
     await expect(image).toHaveAttribute("src", /^data:image\/png;base64,/u);
     await run(notebook, 5);
     const table = cell(notebook, 5).getByRole("table");
@@ -141,7 +141,7 @@ test("notebook: start, cells run with state, image and table outputs, interrupt,
 
     // A sleeping cell is interrupted; the kernel then restarts.
     await notebook.getByRole("button", { name: "Run cell 6", exact: true }).click();
-    await expect(notebook.locator('[data-kobe-kernel="busy"]')).toBeVisible({
+    await expect(notebook.locator('[data-kaiju-kernel="busy"]')).toBeVisible({
       timeout: RUN_TIMEOUT_MS,
     });
     await page.waitForTimeout(2_000); // the cell is sleeping in the kernel
@@ -153,7 +153,7 @@ test("notebook: start, cells run with state, image and table outputs, interrupt,
     ).toBeVisible({
       timeout: RUN_TIMEOUT_MS,
     });
-    await expect(notebook.locator('[data-kobe-kernel="idle"]')).toBeVisible();
+    await expect(notebook.locator('[data-kaiju-kernel="idle"]')).toBeVisible();
     page.once("dialog", (dialog) => void dialog.accept());
     await notebook.getByRole("button", { name: "Restart", exact: true }).click();
     await expect(notebook.getByText(/Kernel restarted|No kernel is running/u)).toBeVisible();
@@ -168,11 +168,11 @@ test("notebook: start, cells run with state, image and table outputs, interrupt,
     expect(await styleViolations(page)).toEqual([]);
     await page.reload();
     notebook = await openNotebook(page, dir);
-    await expect(cell(notebook, 3).locator('[data-kobe-output="text"]')).toHaveText("2");
-    await expect(cell(notebook, 4).locator('img[data-kobe-output="image"]')).toBeVisible();
+    await expect(cell(notebook, 3).locator('[data-kaiju-output="text"]')).toHaveText("2");
+    await expect(cell(notebook, 4).locator('img[data-kaiju-output="image"]')).toBeVisible();
     await expect(cell(notebook, 5).getByRole("table")).toBeVisible();
     await watchStyleViolations(page);
-    await expect(notebook.locator("[data-kobe-code-editor]").first()).toBeVisible();
+    await expect(notebook.locator("[data-kaiju-code-editor]").first()).toBeVisible();
     expect(await styleViolations(page)).toEqual([]);
   } finally {
     expect((await workspace(page, "delete", dir)).status).toBe(204);
@@ -214,38 +214,38 @@ test("python file: run pane tabs, log, variables, save-and-run, run selection, s
     const folder = tree.getByRole("treeitem", { name: dir, exact: true });
     if ((await folder.getAttribute("aria-expanded")) !== "true") await folder.click();
     await tree.getByRole("treeitem", { name: "job.py", exact: true }).click();
-    const editor = page.locator('[data-kobe-file-editor$="job.py"]');
+    const editor = page.locator('[data-kaiju-file-editor$="job.py"]');
     const toolbar = editor.getByRole("toolbar", { name: "job.py view" });
     const pane = editor.getByRole("region", { name: "Run output" });
     const tab = (name: RegExp) => pane.getByRole("tab", { name });
-    const panel = (id: string) => pane.locator(`[data-kobe-run-panel="${id}"]`);
+    const panel = (id: string) => pane.locator(`[data-kaiju-run-panel="${id}"]`);
 
     // Run: the Run Output tab shows what it printed; the toolbar says how long it took.
     await toolbar.getByRole("button", { name: "Run", exact: true }).click();
     await expect(panel("output").getByText("hello from kobe")).toBeVisible({
       timeout: RUN_TIMEOUT_MS,
     });
-    await expect(toolbar.locator('[data-kobe-run-clock="ok"]')).toHaveText(/^Done in /u);
+    await expect(toolbar.locator('[data-kaiju-run-clock="ok"]')).toHaveText(/^Done in /u);
 
     // The tabs move with the keyboard; the Log lists the run with its duration.
     await tab(/^Run Output/u).focus();
     await page.keyboard.press("ArrowRight");
     await expect(tab(/^Log/u)).toBeFocused();
     await expect(tab(/^Log/u)).toHaveAttribute("aria-selected", "true");
-    const entry = panel("log").locator("[data-kobe-log-entry]").first();
+    const entry = panel("log").locator("[data-kaiju-log-entry]").first();
     await expect(entry).toContainText(/You · Done · [\d.]+ (ms|s)/u);
 
     // Variables: live values, summaries, a hidden token until Show.
     await page.keyboard.press("End");
     await expect(tab(/^Variables/u)).toHaveAttribute("aria-selected", "true");
     const variables = panel("variables");
-    await expect(variables.locator('[data-kobe-variable="x"]')).toContainText("42", {
+    await expect(variables.locator('[data-kaiju-variable="x"]')).toContainText("42", {
       timeout: RUN_TIMEOUT_MS,
     });
-    await expect(variables.locator('[data-kobe-variable="df"]')).toContainText(
+    await expect(variables.locator('[data-kaiju-variable="df"]')).toContainText(
       "3 rows × 2 columns",
     );
-    const token = variables.locator('[data-kobe-variable="API_TOKEN"]');
+    const token = variables.locator('[data-kaiju-variable="API_TOKEN"]');
     await expect(token).not.toContainText("not-a-real-token");
     await token.getByRole("button", { name: "Show the value of API_TOKEN" }).click();
     await expect(token).toContainText("not-a-real-token");
@@ -262,7 +262,7 @@ test("python file: run pane tabs, log, variables, save-and-run, run selection, s
     await expect(panel("log").getByText("NameError on line 6")).toBeVisible();
     await expect(editor.getByText("Run saves your changes first")).toHaveCount(0);
     await panel("log").getByRole("button", { name: "Go to line 6" }).first().click();
-    await expect(editor.locator("[data-kobe-editor-status]")).toContainText("Ln 6, Col 1");
+    await expect(editor.locator("[data-kaiju-editor-status]")).toContainText("Ln 6, Col 1");
 
     // Run selection: only line 2 runs (x is set again, nothing printed).
     await page.keyboard.press("Home");
@@ -271,11 +271,11 @@ test("python file: run pane tabs, log, variables, save-and-run, run selection, s
     await page.keyboard.press("Shift+End");
     await page.keyboard.press("Shift+Enter");
     await tab(/^Run Output/u).click();
-    await expect(toolbar.locator('[data-kobe-run-clock="ok"]')).toBeVisible({
+    await expect(toolbar.locator('[data-kaiju-run-clock="ok"]')).toBeVisible({
       timeout: RUN_TIMEOUT_MS,
     });
     await tab(/^Log/u).click();
-    await expect(panel("log").locator("[data-kobe-log-entry]").first()).toContainText("lines 2–2");
+    await expect(panel("log").locator("[data-kaiju-log-entry]").first()).toContainText("lines 2–2");
 
     // A sleeping run: Stop and a live clock, then it ends stopped.
     await page.getByLabel("Edit job.py").click();
@@ -286,13 +286,13 @@ test("python file: run pane tabs, log, variables, save-and-run, run selection, s
     await toolbar.getByRole("button", { name: "Run", exact: true }).click();
     const stop = toolbar.getByRole("button", { name: "Stop", exact: true });
     await expect(stop).toBeVisible({ timeout: RUN_TIMEOUT_MS });
-    await expect(toolbar.locator('[data-kobe-run-clock="running"]')).toHaveText(
+    await expect(toolbar.locator('[data-kaiju-run-clock="running"]')).toHaveText(
       /^Running \d+:\d\d$/u,
     );
     await page.waitForTimeout(2_000); // the code is sleeping in the kernel
     await stop.click();
     await expect(
-      toolbar.locator('[data-kobe-run-clock="interrupted"], [data-kobe-run-clock="error"]'),
+      toolbar.locator('[data-kaiju-run-clock="interrupted"], [data-kaiju-run-clock="error"]'),
     ).toBeVisible({
       timeout: RUN_TIMEOUT_MS,
     });

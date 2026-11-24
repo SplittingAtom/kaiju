@@ -84,7 +84,7 @@ test("Files tree: open, keys, icons, light and dark, rename, drag to move, Move 
     await expect(workspaceRow.getByRole("button", { name: "Refresh files" })).toBeVisible();
     // Upload sits in My files' top row (the root drop target) and names the focused row's folder
     // (script.py's, the test folder), not always the root.
-    const top = files.locator('[data-kobe-drop-folder=""]');
+    const top = files.locator('[data-kaiju-drop-folder=""]');
     await expect(top.getByLabel(`Upload a file to ${dir}`, { exact: true })).toBeAttached();
     await expect(files.getByRole("button", { name: "Refresh files" })).toHaveCount(1);
 

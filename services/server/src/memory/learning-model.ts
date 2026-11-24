@@ -1,4 +1,4 @@
-import { eq, modelCatalog, type KobeTx } from "@kobe/db";
+import { eq, modelCatalog, type KaijuTx } from "@kaiju/db";
 import { isModelEnabled } from "../models/team-store.js";
 import { readMemorySiteSettings } from "./site-settings.js";
 import { readSwitches, type MemorySwitches } from "./switches.js";
@@ -81,7 +81,7 @@ export async function pickLearningModel(
   return { ok: true, alias, source };
 }
 
-async function modelState(tx: KobeTx, teamId: string, alias: string): Promise<ModelState> {
+async function modelState(tx: KaijuTx, teamId: string, alias: string): Promise<ModelState> {
   if (await isModelEnabled(tx, teamId, alias)) return "enabled";
   const [m] = await tx
     .select({ alias: modelCatalog.alias })
@@ -95,7 +95,7 @@ async function modelState(tx: KobeTx, teamId: string, alias: string): Promise<Mo
  * the switches when already read (review L6).
  */
 export async function learningModelFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   switches?: MemorySwitches,
 ): Promise<LearningModel> {
@@ -111,7 +111,7 @@ export async function learningModelFor(
 
 /** Whether Learn from this chat can run in this Workspace now, and with which model. */
 export async function learnAvailability(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   switches?: MemorySwitches,
 ): Promise<LearningModel> {

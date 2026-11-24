@@ -1,4 +1,4 @@
-import type { RunSemanticMemory } from "@kobe/protocol";
+import type { RunSemanticMemory } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import {
   COMPACTION_SUMMARY_PREFIX,
@@ -288,14 +288,14 @@ describe("context sections (KOBE-470)", () => {
       tools: [{ name: "read" }],
       messages: [
         { role: "compactionSummary", summary: "S" },
-        { role: "custom", customType: "kobe.app", content: "card" },
+        { role: "custom", customType: "kaiju.app", content: "card" },
       ],
     });
     expect(kinds(sectionsOf(messages))).toEqual([
       "system_prompt:Pi's prompt",
       "tool_definitions:read",
       "compaction_summary:Compaction summary",
-      "other:kobe.app",
+      "other:kaiju.app",
     ]);
     expect(sectionsOf(messages)[2]?.text).toBe(
       `${COMPACTION_SUMMARY_PREFIX}S${COMPACTION_SUMMARY_SUFFIX}`,

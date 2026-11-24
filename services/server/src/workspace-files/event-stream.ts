@@ -1,4 +1,4 @@
-import { formatWorkspaceEvent, type WorkspaceEvent } from "@kobe/protocol";
+import { formatWorkspaceEvent, type WorkspaceEvent } from "@kaiju/protocol";
 import type { RunEventHub } from "../event-stream/hub.js";
 import type { StreamTimings } from "../event-stream/stream.js";
 import { versionsDiffer } from "./events.js";

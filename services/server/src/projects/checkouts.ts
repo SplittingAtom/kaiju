@@ -1,10 +1,10 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   PROJECT_WORKSPACE_DIR,
   type ProjectCheckout,
   type ProjectDiffEntry,
   type UpdateCheckoutResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import type { ServerWriteArea, StoredEntry } from "../workspace-sync/store.js";
 import { currentEntry, listLive, lockWorkspace } from "../workspace-sync/store.js";
@@ -36,7 +36,7 @@ import {
 export interface WorkspaceWriter {
   readonly prefix: string;
   putServerFile(
-    tx: KobeTx,
+    tx: KaijuTx,
     owner: WorkspaceOwner,
     file: {
       path: string;
@@ -47,7 +47,7 @@ export interface WorkspaceWriter {
     },
     area: ServerWriteArea,
   ): Promise<StoredEntry>;
-  deleteServerFile(tx: KobeTx, owner: WorkspaceOwner, path: string): Promise<unknown>;
+  deleteServerFile(tx: KaijuTx, owner: WorkspaceOwner, path: string): Promise<unknown>;
 }
 
 const AREA = `${PROJECT_WORKSPACE_DIR}/`;
@@ -63,7 +63,7 @@ export interface WorkingFile extends Version {
 
 /** The member's live rows under the project folder, by path relative to it. */
 export async function workingCopy(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   slug: string,
 ): Promise<Map<string, WorkingFile>> {
@@ -152,7 +152,7 @@ const SELECT_CHECKOUTS = sql`
     LEFT JOIN project_commits b ON b.team_id = c.team_id AND b.id = c.base_commit_id`;
 
 async function readCheckout(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   userId: string,
@@ -163,7 +163,7 @@ async function readCheckout(
 }
 
 export async function findCheckout(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   userId: string,
@@ -173,7 +173,7 @@ export async function findCheckout(
 }
 
 /** `GET /v1/me/checkouts`: the caller's checkouts in the active workspace. */
-export async function myCheckouts(tx: KobeTx, owner: WorkspaceOwner): Promise<ProjectCheckout[]> {
+export async function myCheckouts(tx: KaijuTx, owner: WorkspaceOwner): Promise<ProjectCheckout[]> {
   const res = await tx.execute<RawCheckout>(sql`${SELECT_CHECKOUTS}
      WHERE c.team_id = ${owner.teamId} AND c.user_id = ${owner.userId} ORDER BY p.slug`);
   return res.rows.map(toProtocol);
@@ -184,7 +184,7 @@ export async function myCheckouts(tx: KobeTx, owner: WorkspaceOwner): Promise<Pr
  * files it changes against its base (KOBE-780: what deleting the project would discard).
  */
 export async function projectCheckouts(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
 ): Promise<(ProjectCheckout & { user_id: string; changed_files: number })[]> {
@@ -207,7 +207,7 @@ function areaOfKey(prefix: string, owner: WorkspaceOwner, key: string): ServerWr
 }
 
 async function putHead(
-  tx: KobeTx,
+  tx: KaijuTx,
   writer: WorkspaceWriter,
   owner: WorkspaceOwner,
   path: string,
@@ -232,7 +232,7 @@ async function putHead(
  * anything else). Under the workspace lock, which the caller took.
  */
 async function writeTreeInto(
-  tx: KobeTx,
+  tx: KaijuTx,
   writer: WorkspaceWriter,
   owner: WorkspaceOwner,
   slug: string,
@@ -262,7 +262,7 @@ export type CheckoutOutcome =
  * keeps its rows (they already are the head). Audited `project.checked_out`.
  */
 export async function checkout(
-  tx: KobeTx,
+  tx: KaijuTx,
   writer: WorkspaceWriter,
   owner: WorkspaceOwner,
   project: ProjectRow,
@@ -295,7 +295,7 @@ export async function checkout(
 
 /** The working copy's changes against the checkout's base (the web's "Changes"). */
 export async function workingChanges(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   slug: string,
   baseCommitId: string | null,
@@ -306,7 +306,7 @@ export async function workingChanges(
 
 /** `GET /v1/projects/:id/checkout`: the caller's checkout and its diff, or undefined. */
 export async function checkoutWithDiff(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   projectId: string,
 ): Promise<(ProjectCheckout & { diff: ProjectDiffEntry[] }) | undefined> {
@@ -323,7 +323,7 @@ export async function checkoutWithDiff(
  * `project.checkout_discarded {reason: discarded}`. False when there was no checkout.
  */
 export async function discard(
-  tx: KobeTx,
+  tx: KaijuTx,
   mounts: ProjectMounts,
   owner: WorkspaceOwner,
   projectId: string,
@@ -359,7 +359,7 @@ export function conflictCopyPath(path: string, at: Date, n: number): string {
 }
 
 async function freeConflictPath(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   path: string,
   at: Date,
@@ -384,7 +384,7 @@ const sameVersion = (a: Version | undefined, b: Version | undefined): boolean =>
  * to the head.
  */
 export async function update(
-  tx: KobeTx,
+  tx: KaijuTx,
   writer: WorkspaceWriter,
   owner: WorkspaceOwner,
   project: ProjectRow,

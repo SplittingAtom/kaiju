@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { THREAD_COMPACT_SUMMARY_MAX_BYTES } from "@kobe/protocol";
+import { THREAD_COMPACT_SUMMARY_MAX_BYTES } from "@kaiju/protocol";
 import { compactSuccess, piCompactFailure, selectsModel } from "./compact.js";
 
 const GW = "http://model-gateway.kobe.internal:80";
@@ -24,7 +24,7 @@ describe("selectsModel (KOBE-213)", () => {
     ["no model", { model: null }],
     ["another provider", selected({ provider: "openai" })],
     ["another id", selected({ id: "openai/gpt-other" })],
-    ["a kobe model served elsewhere (planted, KOBE-169)", selected({ baseUrl: "http://evil/v1" })],
+    ["a kaiju model served elsewhere (planted, KOBE-169)", selected({ baseUrl: "http://evil/v1" })],
   ])("refuses %s", (_what, state) => {
     expect(selectsModel(state, MODEL, GW)).toBe(false);
   });

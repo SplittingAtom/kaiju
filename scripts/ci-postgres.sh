@@ -10,7 +10,7 @@ set -euo pipefail
 password="${1:?usage: ci-postgres.sh <password> [--pgvector]}"
 pgvector="${2:-}"
 images=(mirror.gcr.io/library/postgres:17 public.ecr.aws/docker/library/postgres:17)
-name=kobe-ci-postgres
+name=kaiju-ci-postgres
 
 image=""
 for attempt in 1 2 3; do

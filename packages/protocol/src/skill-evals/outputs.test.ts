@@ -65,7 +65,7 @@ describe("what an outputs glob matches (KOBE-324 B1, S-R1, S-R2)", () => {
         file("out/.cache/x.jsonl"),
       ]),
     );
-    for (const glob of ["*", "*.jsonl", "?kobe/*", "s*/x", "*/SKILL.md"])
+    for (const glob of ["*", "*.jsonl", "?kaiju/*", "s*/x", "*/SKILL.md"])
       expect(checkEvalOutputs([glob], [], all), glob).toMatchObject({
         passed: false,
         reason: "not_produced",

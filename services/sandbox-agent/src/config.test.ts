@@ -6,9 +6,9 @@ const base = { KOBE_SANDBOX_ID: SANDBOX };
 
 describe("sandbox-agent loadConfig", () => {
   it("requires a wss:// server URL and appends the contract path", () => {
-    const config = loadConfig({ ...base, KOBE_SERVER_URL: "wss://kobe-server.kobe-system.svc" });
-    expect(config.serverUrl).toBe("wss://kobe-server.kobe-system.svc");
-    expect(config.connectUrl).toBe("wss://kobe-server.kobe-system.svc/v1/sandbox/connect");
+    const config = loadConfig({ ...base, KOBE_SERVER_URL: "wss://kobe-server.kaiju-system.svc" });
+    expect(config.serverUrl).toBe("wss://kobe-server.kaiju-system.svc");
+    expect(config.connectUrl).toBe("wss://kobe-server.kaiju-system.svc/v1/sandbox/connect");
   });
 
   it("replaces any path on the server URL with the contract path", () => {
@@ -24,7 +24,7 @@ describe("sandbox-agent loadConfig", () => {
   });
 
   it("takes the kobe-tools extension (KOBE-128) from KOBE_TOOLS_EXTENSION, absolute, unset = none", () => {
-    const env = { ...base, KOBE_SERVER_URL: "wss://kobe" };
+    const env = { ...base, KOBE_SERVER_URL: "wss://kaiju" };
     expect(loadConfig(env).toolsExtension).toBeUndefined();
     expect(
       loadConfig({ ...env, KOBE_TOOLS_EXTENSION: "/opt/kobe/pi-extensions/kobe-tools/index.js" })
@@ -34,7 +34,7 @@ describe("sandbox-agent loadConfig", () => {
   });
 
   it("takes the kobe-exec extension (KOBE-167) from KOBE_EXEC_EXTENSION, absolute, unset = none", () => {
-    const env = { ...base, KOBE_SERVER_URL: "wss://kobe" };
+    const env = { ...base, KOBE_SERVER_URL: "wss://kaiju" };
     expect(loadConfig(env).execExtension).toBeUndefined();
     expect(
       loadConfig({ ...env, KOBE_EXEC_EXTENSION: "/opt/kobe/pi-extensions/kobe-exec/index.js" })
@@ -44,9 +44,9 @@ describe("sandbox-agent loadConfig", () => {
   });
 
   it("switches the tool executor with KOBE_TOOL_EXECUTOR: on unless told otherwise, off in Kaiju's pods unless asked", () => {
-    const env = { ...base, KOBE_SERVER_URL: "wss://kobe" };
+    const env = { ...base, KOBE_SERVER_URL: "wss://kaiju" };
     expect(loadConfig(env).toolExecutor).toBe(true);
-    const pod = { KOBE_SERVER_URL: "wss://kobe", KOBE_BOOTSTRAP_TOKEN_FILE: "/run/t" };
+    const pod = { KOBE_SERVER_URL: "wss://kaiju", KOBE_BOOTSTRAP_TOKEN_FILE: "/run/t" };
     expect(loadConfig(pod).toolExecutor).toBe(false);
     expect(loadConfig({ ...pod, KOBE_TOOL_EXECUTOR: "true" }).toolExecutor).toBe(true);
     for (const on of ["true", "1"]) {
@@ -60,7 +60,7 @@ describe("sandbox-agent loadConfig", () => {
   });
 
   it("takes the skills directory (KOBE-82) from KOBE_SKILLS_DIR, absolute, unset = unsupported", () => {
-    const env = { ...base, KOBE_SERVER_URL: "wss://kobe" };
+    const env = { ...base, KOBE_SERVER_URL: "wss://kaiju" };
     expect(loadConfig(env).skillsDir).toBeUndefined();
     expect(loadConfig({ ...env, KOBE_SKILLS_DIR: "/run/kobe-skills" }).skillsDir).toBe(
       "/run/kobe-skills",
@@ -70,7 +70,7 @@ describe("sandbox-agent loadConfig", () => {
 
   it("rejects a missing or non-WebSocket server URL", () => {
     expect(() => loadConfig({})).toThrow(/KOBE_SERVER_URL must be a ws/);
-    expect(() => loadConfig({ ...base, KOBE_SERVER_URL: "https://kobe" })).toThrow(
+    expect(() => loadConfig({ ...base, KOBE_SERVER_URL: "https://kaiju" })).toThrow(
       /KOBE_SERVER_URL/,
     );
   });
@@ -88,19 +88,19 @@ describe("sandbox-agent loadConfig", () => {
     });
     expect(config.bootstrapTokenFile).toBe("/var/run/secrets/kobe/bootstrap-token");
     expect(() =>
-      loadConfig({ KOBE_SERVER_URL: "ws://kobe", KOBE_BOOTSTRAP_TOKEN_FILE: "relative/path" }),
+      loadConfig({ KOBE_SERVER_URL: "ws://kaiju", KOBE_BOOTSTRAP_TOKEN_FILE: "relative/path" }),
     ).toThrow(/KOBE_BOOTSTRAP_TOKEN_FILE/);
   });
 
   it("requires a lowercase uuid sandbox id", () => {
-    expect(() => loadConfig({ KOBE_SERVER_URL: "wss://kobe" })).toThrow(/KOBE_SANDBOX_ID/);
+    expect(() => loadConfig({ KOBE_SERVER_URL: "wss://kaiju" })).toThrow(/KOBE_SANDBOX_ID/);
     expect(() =>
-      loadConfig({ KOBE_SERVER_URL: "wss://kobe", KOBE_SANDBOX_ID: SANDBOX.toUpperCase() }),
+      loadConfig({ KOBE_SERVER_URL: "wss://kaiju", KOBE_SANDBOX_ID: SANDBOX.toUpperCase() }),
     ).toThrow(/KOBE_SANDBOX_ID/);
   });
 
   it("defaults to the image layout", () => {
-    const config = loadConfig({ ...base, KOBE_SERVER_URL: "wss://kobe" });
+    const config = loadConfig({ ...base, KOBE_SERVER_URL: "wss://kaiju" });
     expect(config).toMatchObject({
       tokenFile: "/var/run/kobe/sandbox-wire/token",
       workspaceDir: "/workspace",
@@ -127,7 +127,7 @@ describe("sandbox-agent loadConfig", () => {
 
   it("rejects relative directories", () => {
     expect(() =>
-      loadConfig({ ...base, KOBE_SERVER_URL: "wss://kobe", KOBE_SESSION_DIR: "sessions" }),
+      loadConfig({ ...base, KOBE_SERVER_URL: "wss://kaiju", KOBE_SESSION_DIR: "sessions" }),
     ).toThrow(/KOBE_SESSION_DIR/);
   });
 

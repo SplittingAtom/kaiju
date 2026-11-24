@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { principalActive } from "../../runs/store.js";
 import { uuidSchema } from "../../threads/schemas.js";

@@ -6,9 +6,9 @@ import {
   CAPABILITY_THREAD_BRANCH_SUMMARY,
   branchSummaryError,
   type BranchSummaryErrorCode,
-} from "@kobe/protocol";
-import { generateSessionKeyPair } from "@kobe/session-token";
-import { recordModelUsage, type ModelUsageRecord } from "@kobe/db";
+} from "@kaiju/protocol";
+import { generateSessionKeyPair } from "@kaiju/session-token";
+import { recordModelUsage, type ModelUsageRecord } from "@kaiju/db";
 import { must } from "../testing/event-stream-fixture.js";
 import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 import type { TestResponse } from "../testing/browser.js";

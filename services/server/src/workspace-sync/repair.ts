@@ -1,4 +1,4 @@
-import { sql, teams, withTeam, type KobeDb } from "@kobe/db";
+import { sql, teams, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { workspaceBlobKey, workspacePrefix, type WorkspaceOwner } from "./keys.js";
 import { markBlobLost } from "./lost.js";
@@ -70,7 +70,7 @@ async function confirmedMissing(objects: ObjectStore, key: string): Promise<bool
 }
 
 async function repairWorkspace(
-  db: KobeDb,
+  db: KaijuDb,
   objects: ObjectStore,
   owner: WorkspaceOwner,
   options: RepairOptions,
@@ -107,7 +107,7 @@ async function repairWorkspace(
   return { checked: contents.size, missing: missing.length, marked };
 }
 
-async function ownersOf(db: KobeDb, options: RepairOptions): Promise<WorkspaceOwner[]> {
+async function ownersOf(db: KaijuDb, options: RepairOptions): Promise<WorkspaceOwner[]> {
   const teamIds = options.teamId
     ? [options.teamId]
     : (await db.select({ id: teams.id }).from(teams)).map((t) => t.id);
@@ -126,7 +126,7 @@ async function ownersOf(db: KobeDb, options: RepairOptions): Promise<WorkspaceOw
 
 /** The sweep over the chosen workspaces; one workspace's failure is logged and skipped. */
 export async function repairWorkspaces(
-  db: KobeDb,
+  db: KaijuDb,
   objects: ObjectStore,
   options: RepairOptions,
   log: Pick<Logger, "error" | "info">,

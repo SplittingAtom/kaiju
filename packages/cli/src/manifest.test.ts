@@ -99,7 +99,7 @@ describe("manifest", () => {
   });
 
   it("verifies file checksums and sizes", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "kobe-manifest-"));
+    const dir = await mkdtemp(join(tmpdir(), "kaiju-manifest-"));
     await writeFile(join(dir, DATABASE_FILE), "hello");
     const ref = {
       path: DATABASE_FILE,
@@ -117,7 +117,7 @@ describe("signed manifest", () => {
   const master = randomBytes(32);
 
   async function signedDir(): Promise<string> {
-    const dir = await mkdtemp(join(tmpdir(), "kobe-signed-"));
+    const dir = await mkdtemp(join(tmpdir(), "kaiju-signed-"));
     const salt = newSalt();
     await writeSignedManifest(
       dir,

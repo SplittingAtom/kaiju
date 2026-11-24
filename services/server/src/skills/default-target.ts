@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 
 /**
  * Shared pieces of the Default tag (KOBE-314, SK6–SK8): the locks that keep tag changes, new
@@ -15,13 +15,13 @@ import { sql, type KobeDb, type KobeTx } from "@kobe/db";
  */
 const DEFAULT_SET_LOCK = "kobe.skills.default-set";
 
-export async function lockDefaultSet(tx: KobeTx, mode: "shared" | "exclusive"): Promise<void> {
+export async function lockDefaultSet(tx: KaijuTx, mode: "shared" | "exclusive"): Promise<void> {
   await (mode === "shared"
     ? tx.execute(sql`SELECT pg_advisory_xact_lock_shared(hashtextextended(${DEFAULT_SET_LOCK}, 0))`)
     : tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${DEFAULT_SET_LOCK}, 0))`));
 }
 
-export async function lockSkillInstall(tx: KobeTx, teamId: string, skillId: string): Promise<void> {
+export async function lockSkillInstall(tx: KaijuTx, teamId: string, skillId: string): Promise<void> {
   const key = `kobe.skills.install:${teamId}:${skillId}`;
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
 }
@@ -32,7 +32,7 @@ export async function lockSkillInstall(tx: KobeTx, teamId: string, skillId: stri
  * name-clash rule holds against concurrent writers. Taken after the Default-set and install locks
  * (uploads take only this one), so the order never inverts. The key is the upload's own lock.
  */
-export async function lockTeamSkillNames(tx: KobeTx, teamId: string): Promise<void> {
+export async function lockTeamSkillNames(tx: KaijuTx, teamId: string): Promise<void> {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.skills.team:${teamId}`}, 0))`,
   );
@@ -52,7 +52,7 @@ export interface TargetVersion {
  * deprecated, withdrawn or revoked) and not suspended by a rescan. Semver rises with `seq`.
  */
 export async function newestApproved(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   skillId: string,
   major?: number,
 ): Promise<TargetVersion | null> {
@@ -67,7 +67,7 @@ export async function newestApproved(
 }
 
 /** The Default system tag's id (seeded by migration 0133). */
-export async function defaultTagId(db: KobeDb | KobeTx): Promise<string> {
+export async function defaultTagId(db: KaijuDb | KaijuTx): Promise<string> {
   const { rows } = await db.execute<{ id: string }>(
     sql`SELECT id FROM registry_tags WHERE kind = 'system' AND name = 'default'`,
   );
@@ -76,7 +76,7 @@ export async function defaultTagId(db: KobeDb | KobeTx): Promise<string> {
   return id;
 }
 
-export async function isDefaultSkill(db: KobeDb | KobeTx, skillId: string): Promise<boolean> {
+export async function isDefaultSkill(db: KaijuDb | KaijuTx, skillId: string): Promise<boolean> {
   const { rows } = await db.execute(sql`
     SELECT 1 FROM registry_skill_tags st JOIN registry_tags t ON t.id = st.tag_id
     WHERE st.skill_id = ${skillId} AND t.kind = 'system' AND t.name = 'default'`);
@@ -100,7 +100,7 @@ export interface DefaultTarget {
  * follow and who set it. Skills tagged Default without a sync job (none in practice) are left out.
  */
 export async function defaultTargets(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   skillId?: string,
 ): Promise<DefaultTarget[]> {
   const only = skillId === undefined ? sql`` : sql`AND s.id = ${skillId}`;
@@ -127,7 +127,7 @@ export async function defaultTargets(
 
 /** The version a Default install of `target` gets now: the newest approved in its major. */
 export async function defaultVersion(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   target: DefaultTarget,
 ): Promise<TargetVersion | null> {
   return newestApproved(db, target.skillId, target.major);

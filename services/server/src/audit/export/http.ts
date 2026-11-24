@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { z } from "zod";
 import { recordAuditAfter } from "../record.js";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { EXPORT_CONTENT_TYPE, type ExportFormat, type ExportScope } from "./format.js";
 import { exportStream, type ExportPage } from "./stream.js";
 
@@ -43,7 +43,7 @@ export function parseExportQuery(c: Context, { allowTeamFilter = true } = {}): P
 }
 
 export interface ExportResponseOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly query: ExportQuery;
   readonly scope: ExportScope;
   readonly actorId: string;
@@ -76,7 +76,7 @@ export function exportResponse(c: Context, o: ExportResponseOptions): Response {
       }),
   });
   c.header("content-type", EXPORT_CONTENT_TYPE[format]);
-  c.header("content-disposition", `attachment; filename="kobe-audit-${stamp}.${format}"`);
+  c.header("content-disposition", `attachment; filename="kaiju-audit-${stamp}.${format}"`);
   c.header("cache-control", "no-store");
   c.header("x-content-type-options", "nosniff");
   return c.body(body);

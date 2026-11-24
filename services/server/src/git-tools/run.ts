@@ -1,7 +1,7 @@
-import type { AgentFrontmatter } from "@kobe/agent-file";
-import type { KobeTx } from "@kobe/db";
-import { matchGlob } from "@kobe/protocol";
-import type { RunMcpServer } from "@kobe/protocol/sandbox-wire";
+import type { AgentFrontmatter } from "@kaiju/agent-file";
+import type { KaijuTx } from "@kaiju/db";
+import { matchGlob } from "@kaiju/protocol";
+import type { RunMcpServer } from "@kaiju/protocol/sandbox-wire";
 import { allowListOffers } from "../policy/agent-allow.js";
 import { gitToolsForRun } from "./listing.js";
 import { gitPinnedTool, loadGitBuiltin } from "./pinned.js";
@@ -14,7 +14,7 @@ import { gitPinnedTool, loadGitBuiltin } from "./pinned.js";
  * MCP proxy's re-check decides every call again.
  */
 export async function gitRunServer(
-  tx: KobeTx,
+  tx: KaijuTx,
   run: {
     readonly teamId: string;
     readonly userId: string;

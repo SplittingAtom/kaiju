@@ -1,8 +1,8 @@
 import { chmod, mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { SkillDraftSaveResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { SkillDraftSaveResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { SkillDraftBroker } from "./skill-draft-broker.js";
@@ -12,7 +12,7 @@ const RUN = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
 const DRAFT = "8e9f0a1b-2c3d-4e4f-9a5b-6c7d8e9f0a1b";
 const SHA = "a".repeat(64);
 
-type SaveRequest = Extract<KobeToolsRequest, { op: "skill.draft_save" }>;
+type SaveRequest = Extract<KaijuToolsRequest, { op: "skill.draft_save" }>;
 const request = (folder: string, id = "kt_1"): SaveRequest => ({
   id,
   op: "skill.draft_save",
@@ -36,7 +36,7 @@ const saved = (request_id: string): SkillDraftSaveResultFrame => ({
 let base: string;
 let root: string;
 beforeEach(async () => {
-  base = await realpath(await mkdtemp(path.join(tmpdir(), "kobe-skilldraft-")));
+  base = await realpath(await mkdtemp(path.join(tmpdir(), "kaiju-skilldraft-")));
   root = path.join(base, "workspace");
   const skill = path.join(root, "skills", "close-helper");
   await mkdir(path.join(skill, "references"), { recursive: true });
@@ -56,7 +56,7 @@ afterEach(() => rm(base, { recursive: true, force: true }));
 function setup(options: { sends?: boolean; push?: (rel: string) => Promise<PushedFile> } = {}) {
   const frames: Record<string, unknown>[] = [];
   const order: string[] = [];
-  const replies: KobeToolsResponse[] = [];
+  const replies: KaijuToolsResponse[] = [];
   const broker = new SkillDraftBroker({
     root,
     send: (frame) => {
@@ -76,7 +76,7 @@ function setup(options: { sends?: boolean; push?: (rel: string) => Promise<Pushe
     frames,
     order,
     replies,
-    reply: (r: KobeToolsResponse) => replies.push(r),
+    reply: (r: KaijuToolsResponse) => replies.push(r),
     // Every save ends in a frame or a reply; wait for one (real file I/O is slow under load),
     // then a little longer so a late frame would still show.
     settle: async () => {
@@ -89,7 +89,7 @@ function setup(options: { sends?: boolean; push?: (rel: string) => Promise<Pushe
   };
 }
 
-const codeOf = (r: KobeToolsResponse | undefined) =>
+const codeOf = (r: KaijuToolsResponse | undefined) =>
   r && !r.ok ? (r as { error: { code: string } }).error.code : undefined;
 
 describe("SkillDraftBroker (KOBE-442)", () => {

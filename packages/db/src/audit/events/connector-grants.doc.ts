@@ -3,7 +3,7 @@ import type { CONNECTOR_GRANTS_EVENTS } from "./connector-grants.js";
 
 /**
  * The docs/audit-log.md rows of the connector-grants area's events (KOBE-815), in name order; the table is
- * generated from these (`pnpm --filter @kobe/db audit:doc`). Add an event's row here in name order.
+ * generated from these (`pnpm --filter @kaiju/db audit:doc`). Add an event's row here in name order.
  */
 export const CONNECTOR_GRANTS_EVENT_DOCS = {
   "mcp.grant.added": {

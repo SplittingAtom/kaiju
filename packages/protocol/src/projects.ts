@@ -141,7 +141,7 @@ export function canAddToProject(
 
 /**
  * What a project is (workspace-git G15): an ordinary project, or a Repo (converted to a repository
- * on a git host, which is then the record; KOBE-765). Repeats `@kobe/db`'s `PROJECT_KIND_VALUES`.
+ * on a git host, which is then the record; KOBE-765). Repeats `@kaiju/db`'s `PROJECT_KIND_VALUES`.
  */
 export const PROJECT_KINDS = ["project", "repo"] as const;
 export type ProjectKind = (typeof PROJECT_KINDS)[number];

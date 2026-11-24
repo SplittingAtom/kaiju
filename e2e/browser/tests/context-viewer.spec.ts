@@ -25,9 +25,9 @@ test("context viewer: open from the gauge, sections and gauge, legend scrolls, E
   await expect(dialog).toBeVisible();
   // The rest of the workspace is inert behind it.
   const chatInert = () =>
-    page.evaluate(() => document.getElementById("kobe-chat-main")?.closest("[inert]") != null);
+    page.evaluate(() => document.getElementById("kaiju-chat-main")?.closest("[inert]") != null);
   expect(await chatInert()).toBe(true);
-  await expect(page.locator("[data-kobe-panel='context-viewer']")).toBeVisible();
+  await expect(page.locator("[data-kaiju-panel='context-viewer']")).toBeVisible();
 
   // Read live from the sandbox (it may wake first): labelled sections render as text.
   const text = dialog.getByRole("region", { name: "Context text" });

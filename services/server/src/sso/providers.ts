@@ -12,11 +12,11 @@ import {
   ssoIdentities,
   ssoProviders,
   SYSTEM_ACTOR,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   lockSsoRequired,
   pgCodeOf,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { endSsoSessions } from "./sso-sessions.js";
 import {
@@ -143,7 +143,7 @@ function viewOf(r: Selected, publicUrl: string, settings: SsoSettings): Provider
 }
 
 export interface ProviderStore {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly publicUrl: string;
   readonly settings: SsoSettings;
   /** Unset: console providers cannot be created (their secret could not be sealed). */
@@ -158,7 +158,7 @@ export async function listProviders(s: ProviderStore): Promise<ProviderView[]> {
 export async function getProvider(
   s: ProviderStore,
   id: string,
-  db: KobeDb | KobeTx = s.db,
+  db: KaijuDb | KaijuTx = s.db,
 ): Promise<ProviderView | undefined> {
   const [row] = await db.select(COLUMNS).from(ssoProviders).where(eq(ssoProviders.id, id));
   return row ? viewOf(row as Selected, s.publicUrl, s.settings) : undefined;
@@ -213,14 +213,14 @@ export async function createProvider(
 }
 
 /** Deletes every session signed in through the provider (§9: disabled, deleted, rule moved). */
-const endProviderSessions = (tx: KobeTx, providerId: string): Promise<number> =>
+const endProviderSessions = (tx: KaijuTx, providerId: string): Promise<number> =>
   endSsoSessions(tx, { providerId });
 
 /**
  * With the kill switch off (`auth.sso.enabled: false`), deletes every session signed in through
  * any provider (review finding 6); run at start-up. Local sessions stay. Returns how many ended.
  */
-export async function endSsoSessionsWhenOff(db: KobeDb, settings: SsoSettings): Promise<number> {
+export async function endSsoSessionsWhenOff(db: KaijuDb, settings: SsoSettings): Promise<number> {
   if (settings.enabled) return 0;
   const ids = db.select({ id: sessionSsoContexts.sessionId }).from(sessionSsoContexts);
   const gone = await db
@@ -259,7 +259,7 @@ async function keepingOwner<T>(
  */
 const IDENTITY_KEYS = ["issuer", "tenantId", "subjectClaim"] as const;
 
-async function hasIdentities(tx: KobeTx, providerId: string): Promise<boolean> {
+async function hasIdentities(tx: KaijuTx, providerId: string): Promise<boolean> {
   const [row] = await tx
     .select({ id: ssoIdentities.providerId })
     .from(ssoIdentities)
@@ -277,7 +277,7 @@ export type UpdateOutcome =
   | { readonly ok: false; readonly failure: ChangeFailure };
 
 /** The stored row of a provider, locked for a change. */
-async function lockRow(tx: KobeTx, id: string): Promise<Row | undefined> {
+async function lockRow(tx: KaijuTx, id: string): Promise<Row | undefined> {
   const [row] = await tx.select().from(ssoProviders).where(eq(ssoProviders.id, id)).for("update");
   return row;
 }
@@ -471,7 +471,7 @@ export interface HelmSeedResult {
  * writes nothing.
  */
 export async function seedHelmProviders(
-  db: KobeDb,
+  db: KaijuDb,
   settings: SsoSettings,
 ): Promise<HelmSeedResult> {
   return db.transaction(async (tx) => {

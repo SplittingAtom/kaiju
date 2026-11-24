@@ -1,4 +1,4 @@
-import { sql } from "@kobe/db";
+import { sql } from "@kaiju/db";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import type { AuthVariables } from "../auth/session.js";

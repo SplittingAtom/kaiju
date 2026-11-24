@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { announcement, chatRequests, composer, openApp, streamed, streaming } from "./testing";
 
@@ -12,11 +12,11 @@ import { announcement, chatRequests, composer, openApp, streamed, streaming } fr
  */
 const WAITING = "Sent, waiting for the agent";
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -178,12 +178,12 @@ describe("a prompt over 64 KiB reconciles with its stored entry (ac-2)", () => {
     fake.agent.complete(runId);
     expect(await screen.findByText("OK")).toBeTruthy();
     await waitFor(() => expect(screen.getByRole("button", { name: "Send" })).toBeTruthy());
-    const live = must(document.querySelector('[data-kobe-scroll="messages"]')).textContent;
+    const live = must(document.querySelector('[data-kaiju-scroll="messages"]')).textContent;
 
     first.unmount();
     openApp(fake, t);
     expect(await screen.findByText("OK")).toBeTruthy();
-    expect(must(document.querySelector('[data-kobe-scroll="messages"]')).textContent).toBe(live);
+    expect(must(document.querySelector('[data-kaiju-scroll="messages"]')).textContent).toBe(live);
   });
 });
 

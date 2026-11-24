@@ -12,7 +12,7 @@ import {
 } from "./lane.js";
 
 function workspace(name: string): string {
-  const root = join(mkdtempSync(join(tmpdir(), "kobe-lane-")), name);
+  const root = join(mkdtempSync(join(tmpdir(), "kaiju-lane-")), name);
   mkdirSync(join(root, "services", "server"), { recursive: true });
   writeFileSync(join(root, "pnpm-workspace.yaml"), "packages: []\n");
   return root;
@@ -58,7 +58,7 @@ describe("resolveTestLane", () => {
   });
 
   it("uses no lane outside a workspace", () => {
-    expect(resolveTestLane({}, mkdtempSync(join(tmpdir(), "kobe-nolane-")))).toBeUndefined();
+    expect(resolveTestLane({}, mkdtempSync(join(tmpdir(), "kaiju-nolane-")))).toBeUndefined();
   });
 });
 

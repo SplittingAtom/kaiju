@@ -8,11 +8,11 @@ import {
   parseProposedUiResource,
   sql,
   uiResourceMetaSchema,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type UiResourceFailure,
-} from "@kobe/db";
-import { canonicalJson } from "@kobe/protocol";
+} from "@kaiju/db";
+import { canonicalJson } from "@kaiju/protocol";
 import type { LiveTemplate, StoredTemplate } from "./templates.js";
 
 /**
@@ -20,7 +20,7 @@ import type { LiveTemplate, StoredTemplate } from "./templates.js";
  * drift are written under the connector's row lock by the callers (pinning.ts, refresh.ts).
  */
 
-type Db = KobeDb | KobeTx;
+type Db = KaijuDb | KaijuTx;
 
 const columns = {
   uri: connectorUiResources.uri,
@@ -85,7 +85,7 @@ const values = (connectorId: string, t: StoredTemplate) => ({
 
 /** A first pin: the connector's templates become exactly these, approved by `pinnedBy`. */
 export async function replacePinnedTemplates(
-  tx: KobeTx,
+  tx: KaijuTx,
   connectorId: string,
   templates: readonly LiveTemplate[],
   pinnedBy: string | undefined,
@@ -101,7 +101,7 @@ export async function replacePinnedTemplates(
 }
 
 /** Removes every template of a connector (its URL changed: a different server). */
-export async function dropTemplates(tx: KobeTx, connectorId: string): Promise<void> {
+export async function dropTemplates(tx: KaijuTx, connectorId: string): Promise<void> {
   await tx.delete(connectorUiResources).where(eq(connectorUiResources.connectorId, connectorId));
 }
 
@@ -110,7 +110,7 @@ export async function dropTemplates(tx: KobeTx, connectorId: string): Promise<vo
  * Returns whether anything changed in the table.
  */
 export async function writeTemplateDrift(
-  tx: KobeTx,
+  tx: KaijuTx,
   connectorId: string,
   before: readonly StoredTemplate[],
   after: readonly StoredTemplate[],

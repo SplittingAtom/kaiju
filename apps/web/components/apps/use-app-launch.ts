@@ -3,7 +3,7 @@
 import { useAui, useAuiState } from "@assistant-ui/react";
 import { useCallback, useContext, useState } from "react";
 import { launchAppCard, type RailApp } from "../../lib/apps/app-cards";
-import { ChatSessionContext, useKobeExtras } from "../chat/kobe-runtime";
+import { ChatSessionContext, useKaijuExtras } from "../chat/kaiju-runtime";
 
 /**
  * Launches an app into the conversation on screen exactly as the rail's Apps section does
@@ -23,7 +23,7 @@ export function useAppLaunch(): {
   const aui = useAui();
   const session = useContext(ChatSessionContext);
   const remoteId = useAuiState((s) => s.threadListItem.remoteId);
-  const summary = useKobeExtras()?.state.summary;
+  const summary = useKaijuExtras()?.state.summary;
   const own = summary?.readOnly !== true && (summary?.deletedAt ?? null) === null;
   const target = remoteId !== undefined && own ? remoteId : null;
   const [busy, setBusy] = useState<string | null>(null);

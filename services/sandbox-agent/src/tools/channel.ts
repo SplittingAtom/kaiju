@@ -1,11 +1,11 @@
 import type { Duplex } from "node:stream";
 import {
   idSchema,
-  kobeToolsRequestSchema,
+  kaijuToolsRequestSchema,
   parseJsonStrict,
-  type KobeToolsRequest,
-  type KobeToolsResponse,
-} from "@kobe/protocol";
+  type KaijuToolsRequest,
+  type KaijuToolsResponse,
+} from "@kaiju/protocol";
 import { LineSplitter, encodeJsonl } from "../jsonl.js";
 
 /**
@@ -28,15 +28,15 @@ export const TOOLS_CHANNEL_MAX_WRITE_BUFFER = 1024 * 1024;
 
 export interface ToolsChannelHandlers {
   readonly onRequest: (
-    request: KobeToolsRequest,
-    reply: (response: KobeToolsResponse) => void,
+    request: KaijuToolsRequest,
+    reply: (response: KaijuToolsResponse) => void,
   ) => void;
   /** The channel is unusable: everything pending for it fails. */
   readonly onClosed: (reason: string) => void;
   readonly onDiagnostic?: (message: string) => void;
 }
 
-export function toolsError(id: string, code: string, message: string): KobeToolsResponse {
+export function toolsError(id: string, code: string, message: string): KaijuToolsResponse {
   return { id, ok: false, error: { code, message } };
 }
 
@@ -64,7 +64,7 @@ export class ToolsChannel {
     return this.#closed;
   }
 
-  reply(response: KobeToolsResponse): void {
+  reply(response: KaijuToolsResponse): void {
     if (this.#closed || this.#stream.destroyed || !this.#stream.writable) return;
     if (this.#stream.writableLength > TOOLS_CHANNEL_MAX_WRITE_BUFFER) {
       this.close("kobe-tools channel reader is not reading");
@@ -87,7 +87,7 @@ export class ToolsChannel {
       this.close("malformed kobe-tools request");
       return;
     }
-    const parsed = kobeToolsRequestSchema.safeParse(strict.value);
+    const parsed = kaijuToolsRequestSchema.safeParse(strict.value);
     if (parsed.success) {
       this.#handlers.onRequest(parsed.data, (response) => this.reply(response));
       return;

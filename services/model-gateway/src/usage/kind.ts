@@ -1,4 +1,4 @@
-import { USAGE_KINDS, type UsageKind } from "@kobe/db";
+import { USAGE_KINDS, type UsageKind } from "@kaiju/db";
 
 /**
  * Whether `run_usage.kind` can record this purpose. A server-call purpose the protocol has but

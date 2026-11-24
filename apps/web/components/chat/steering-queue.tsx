@@ -1,6 +1,6 @@
 "use client";
 
-import { splitItemReferences } from "@kobe/protocol";
+import { splitItemReferences } from "@kaiju/protocol";
 import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { moveItem, queuedMessages, queuingText } from "../../lib/chat/steering";
 import type { ThreadController } from "../../lib/chat/thread-controller";

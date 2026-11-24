@@ -1,8 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
-import { InMemorySpanExporter, SpanStatusCode, initTelemetry } from "@kobe/telemetry";
-import { WORKSPACE_SYNC_PATH } from "@kobe/protocol/sandbox-wire";
+import { withTeam } from "@kaiju/db";
+import { InMemorySpanExporter, SpanStatusCode, initTelemetry } from "@kaiju/telemetry";
+import { WORKSPACE_SYNC_PATH } from "@kaiju/protocol/sandbox-wire";
 import { createApp } from "../app.js";
 import { createSandboxApp } from "../routes/sandbox.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
@@ -86,7 +86,7 @@ function traceOf(route: string) {
 }
 
 function multipart(name: string, data: string) {
-  const boundary = `----kobe${randomBytes(6).toString("hex")}`;
+  const boundary = `----kaiju${randomBytes(6).toString("hex")}`;
   const body = Buffer.from(
     `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\n` +
       `Content-Type: application/octet-stream\r\n\r\n${data}\r\n--${boundary}--\r\n`,

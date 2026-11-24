@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { EXAMPLE_IDS } from "@kobe/protocol/testing";
+import { EXAMPLE_IDS } from "@kaiju/protocol/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { FAKE_PI, FAKE_POLICY_EXTENSION } from "../testing/harness.js";
 import { ThreadManager } from "./manager.js";
@@ -27,7 +27,7 @@ afterEach(async () => {
 
 describe("ThreadManager beforeRun seam (KOBE-27)", () => {
   it("gives up a run whose workspace preparation does not finish in time", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-mgr-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-mgr-"));
     manager = new ThreadManager({
       bin: FAKE_PI,
       runtimeDir: path.join(dir, "pi-runtime"),

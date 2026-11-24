@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { sql, withTeam } from "@kobe/db";
+import { sql, withTeam } from "@kaiju/db";
 import {
   CAPABILITY_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY,
@@ -8,7 +8,7 @@ import {
   runMemoryContextSchema,
   threadContextMemoriesSchema,
   type RunMemoryContext,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { buildPolicyOnly, buildRunSemantic } from "./items/run-memory.js";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
@@ -35,7 +35,7 @@ const item: Record<string, string> = {};
 
 beforeAll(async () => {
   await fx.setup([{}], () => ({
-    blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
+    blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     agents: { publishRate: { windowMs: 60_000, max: 10_000 } },
     sandboxWire: {
       sweep: false,

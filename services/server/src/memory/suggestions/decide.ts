@@ -3,8 +3,8 @@ import {
   MEMORY_INDEX_FILE,
   semanticMemoryStatementSchema,
   type SemanticMemoryIssue,
-} from "@kobe/protocol";
-import { MEMORY_SUGGESTION_REASON_MAX, sql, withTeam, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { MEMORY_SUGGESTION_REASON_MAX, sql, withTeam, type KaijuTx } from "@kaiju/db";
 import type { ApprovalKeyring } from "../../approvals/keys.js";
 import { recordAudit } from "../../audit/record.js";
 import { notifyMemory, settleMemoryReminders } from "../../notifications/memory.js";
@@ -78,7 +78,7 @@ async function onOpen<T>(
   db: NotesDeps["db"],
   who: MemoryWho,
   id: string,
-  fn: (tx: KobeTx, row: SuggestionRow, teamId: string) => Promise<T>,
+  fn: (tx: KaijuTx, row: SuggestionRow, teamId: string) => Promise<T>,
 ): Promise<T> {
   const teamId = workspaceOf(who);
   const result = await withTeam(db, teamId, async (tx) => {
@@ -123,7 +123,7 @@ const changeOf = (
 });
 
 async function plan(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore,
   teamId: string,
   who: MemoryWho,
@@ -192,7 +192,7 @@ const changed = (current?: number) =>
   );
 
 async function close(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   row: SuggestionRow,
   who: MemoryWho,
@@ -208,7 +208,7 @@ async function close(
 
 /** Tells the suggester (last in the transaction: the digest lock lives until commit). */
 function tellSuggester(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   row: SuggestionRow,
   who: MemoryWho,

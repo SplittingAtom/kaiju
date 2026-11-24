@@ -35,7 +35,7 @@ async function runLibraryPrune(): Promise<void> {
   // That key's window is over (as if its request came two minutes ago), and an old library row
   // sits beside it.
   await h.admin.query(
-    `UPDATE rate_limits SET last_request = last_request - $1::bigint WHERE key NOT LIKE 'kobe:%'`,
+    `UPDATE rate_limits SET last_request = last_request - $1::bigint WHERE key NOT LIKE 'kaiju:%'`,
     [TWO_MINUTES],
   );
   await h.admin.query(`INSERT INTO rate_limits (key, count, last_request) VALUES ($1, 1, $2)`, [

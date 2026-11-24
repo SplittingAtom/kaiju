@@ -1,4 +1,4 @@
-import type { BreakGlassNotificationEvent, BreakGlassRecipientRole } from "@kobe/db";
+import type { BreakGlassNotificationEvent, BreakGlassRecipientRole } from "@kaiju/db";
 import type { ServerDeps } from "../deps.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { MailMessage } from "../mail/mailer.js";

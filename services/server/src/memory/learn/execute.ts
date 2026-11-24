@@ -6,10 +6,10 @@ import {
   type MemoryExtractorOutput,
   type MemoryPassFailureCode,
   type MemoryPassStage,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { setTimeout as sleep } from "node:timers/promises";
-import { isLockTimeout, sql, withTeam, type KobeDb } from "@kobe/db";
-import { SpanKind, withSpan, type Span } from "@kobe/telemetry";
+import { isLockTimeout, sql, withTeam, type KaijuDb } from "@kaiju/db";
+import { SpanKind, withSpan, type Span } from "@kaiju/telemetry";
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../../event-stream/append.js";
 import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
@@ -42,7 +42,7 @@ import { selectCandidates } from "./validate.js";
  */
 
 export interface PassContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly client: ServerCallClient;
   readonly log: Pick<Logger, "info" | "warn">;
   /** The call's timeout (default the purpose's `timeout_ms`). */

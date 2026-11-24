@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { accounts, and, eq, sql, verifications, type KobeDb, type KobeTx } from "@kobe/db";
+import { accounts, and, eq, sql, verifications, type KaijuDb, type KaijuTx } from "@kaiju/db";
 
 /**
  * While a reset link mailed less than this long ago is still valid, further requests send nothing
@@ -13,7 +13,7 @@ export const RESET_RESEND_AFTER_MS = 5 * 60_000;
  * through SCIM or SSO have none (SSO9): a reset link would create one and bypass the identity
  * provider, so none is ever mailed to them (KOBE-631, spec sso-oidc-scim §6).
  */
-export async function hasLocalPassword(db: KobeDb | KobeTx, userId: string): Promise<boolean> {
+export async function hasLocalPassword(db: KaijuDb | KaijuTx, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: accounts.id })
     .from(accounts)
@@ -33,7 +33,7 @@ export function storedResetIdentifier(token: string): string {
 }
 
 /** Whether a reset link mailed (or being mailed) within RESET_RESEND_AFTER_MS is still valid. */
-async function recentResetLinkPending(tx: KobeTx, userId: string, now: number): Promise<boolean> {
+async function recentResetLinkPending(tx: KaijuTx, userId: string, now: number): Promise<boolean> {
   const prefix = sentKey(userId);
   const result = await tx.execute(sql`
     SELECT 1 FROM kobe_rate_limits r
@@ -51,7 +51,7 @@ async function recentResetLinkPending(tx: KobeTx, userId: string, now: number): 
  * check. Call releaseResetLinkClaim when the email isn't delivered: only a delivered email counts.
  */
 export async function claimResetLinkSend(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   token: string,
   now = Date.now(),
@@ -75,7 +75,7 @@ export async function claimResetLinkSend(
 
 /** Drops the claim of an email that wasn't delivered, so the next request is mailed at once. */
 export async function releaseResetLinkClaim(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   token: string,
 ): Promise<void> {
@@ -88,7 +88,7 @@ export async function releaseResetLinkClaim(
  * Invalidates every outstanding reset link (and other pending verifications) of a user, as
  * deactivation does: after a reset or a password change, an older mailed link must not work.
  */
-export async function revokeResetLinks(db: KobeDb, userId: string): Promise<void> {
+export async function revokeResetLinks(db: KaijuDb, userId: string): Promise<void> {
   await db.delete(verifications).where(eq(verifications.value, userId));
   await db.execute(sql`DELETE FROM kobe_rate_limits WHERE key LIKE ${`${sentKey(userId)}%`}`);
 }

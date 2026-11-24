@@ -3,7 +3,7 @@ import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EditorView } from "@codemirror/view";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { openApp } from "./testing";
 
@@ -12,7 +12,7 @@ import { openApp } from "./testing";
  * ac-1), and the thread's owner can Edit as file: the server copies the version into artifacts/
  * and the file opens editable in its own tab (ac-2). Shared readers get no button.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -23,7 +23,7 @@ beforeEach(() => {
     settings.disableIframePageLoading = true;
     settings.handleDisabledFileLoadingAsSuccess = true;
   }
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -33,7 +33,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function threadWith(artifact: Parameters<FakeKobe["addArtifact"]>[1]) {
+function threadWith(artifact: Parameters<FakeKaiju["addArtifact"]>[1]) {
   const t = fake.addThread("Reports");
   const u = fake.addEntry(t, null, { role: "user", content: "make it" });
   fake.addEntry(t, u, { role: "assistant", content: [{ type: "text", text: "done" }] });

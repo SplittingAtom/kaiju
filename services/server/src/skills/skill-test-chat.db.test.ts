@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RULE_SET } from "@kobe/skill-scanner";
+import { RULE_SET } from "@kaiju/skill-scanner";
 import { seedGalleryAgents } from "../gallery/seed.js";
 import { skillSandboxRoutes } from "./sandbox-routes.js";
 import { draftBundlePrefix } from "./drafts/test-bundle.js";
@@ -18,7 +18,7 @@ import type { AuthResult, SandboxAuthenticator } from "../workspace-sync/auth.js
  * draft's bundle served only to the run that listed it, and removed with the draft.
  */
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 const f = new RunFixture();
 const ANY = { "if-match": "*" };
 type World = Awaited<ReturnType<RunFixture["world"]>>;
@@ -423,7 +423,7 @@ describe("the draft bundle in the sandbox and in storage", () => {
     ws.reply(start, "ok");
     await f.until(w.team, run, "completed");
     ws.kill();
-    const folder = draftBundlePrefix("kobe/", w.team, d.id);
+    const folder = draftBundlePrefix("kaiju/", w.team, d.id);
     const stored = () => [...objects.objects.keys()].filter((k) => k.startsWith(folder));
     expect(stored()).toHaveLength(1);
     const key = must(stored()[0], "key");
@@ -440,10 +440,10 @@ describe("the draft bundle in the sandbox and in storage", () => {
     expect(stored()).toEqual([]);
 
     // A bundle whose draft is gone some other way (retention, offboarding) is swept per team.
-    const orphan = `kobe/skills/drafts/${w.team}/${randomUUID()}/${"a".repeat(64)}`;
+    const orphan = `kaiju/skills/drafts/${w.team}/${randomUUID()}/${"a".repeat(64)}`;
     objects.objects.set(orphan, Buffer.from("x"));
     const live = await draftOf(w.owner, "live-draft");
-    const liveKey = `${draftBundlePrefix("kobe/", w.team, live.id)}${"b".repeat(64)}`;
+    const liveKey = `${draftBundlePrefix("kaiju/", w.team, live.id)}${"b".repeat(64)}`;
     objects.objects.set(liveKey, Buffer.from("y"));
     expect(await sweepOrphanDraftBundles(f.fx.db, blobs, w.team)).toEqual({ drafts: 1 });
     expect(objects.objects.has(orphan)).toBe(false);
@@ -481,7 +481,7 @@ async function placeHold(teamId: string, userId: string) {
 
 const bundlesOf = (teamId: string, draftId: string) =>
   [...objects.objects.keys()].filter((k) =>
-    k.startsWith(draftBundlePrefix("kobe/", teamId, draftId)),
+    k.startsWith(draftBundlePrefix("kaiju/", teamId, draftId)),
   );
 
 async function asBuilder(w: World): Promise<Person> {

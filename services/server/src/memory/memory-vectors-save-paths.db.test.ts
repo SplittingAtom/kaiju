@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { SERVER_CALL_TOKEN_HEADER } from "@kobe/protocol";
-import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+import { SERVER_CALL_TOKEN_HEADER } from "@kaiju/protocol";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kaiju/session-token";
 import {
   EventStreamFixture,
   must,
@@ -46,7 +46,7 @@ let team: string;
 beforeAll(async () => {
   await fx.setup([{}], () => ({
     models: { providerKeySecrets: ["p".repeat(40)] },
-    blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
+    blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
     embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));

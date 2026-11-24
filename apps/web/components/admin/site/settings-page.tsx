@@ -3,11 +3,11 @@
 import { useState, type FormEvent } from "react";
 import {
   AUDIT_PII_RETENTION_HOURS,
-  KOBE_LIMITS,
-  KOBE_MCP_MODE_LABELS,
+  KAIJU_LIMITS,
+  KAIJU_MCP_MODE_LABELS,
   getSiteSettings,
   putSiteSettings,
-  type KobeMcpMode,
+  type KaijuMcpMode,
   type SiteSettings,
 } from "../../../lib/admin/api/site/settings";
 import { canTurnOffRequiredTwoFactor } from "../../../lib/admin/rules";
@@ -43,11 +43,11 @@ export function SettingsPage() {
             <SettingsForm settings={settings} onSaved={reload} />
             <AuditPrivacyForm settings={settings} onSaved={reload} />
             {settings.kobeMcpMode !== undefined && (
-              <KobeMcpForm mode={settings.kobeMcpMode} onSaved={reload} />
+              <KaijuMcpForm mode={settings.kobeMcpMode} onSaved={reload} />
             )}
             {settings.kobeReadsPerMinute !== undefined &&
               settings.kobeWritesPerHour !== undefined && (
-                <KobeLimitsForm
+                <KaijuLimitsForm
                   reads={settings.kobeReadsPerMinute}
                   writes={settings.kobeWritesPerHour}
                   onSaved={reload}
@@ -172,7 +172,7 @@ function AuditPrivacyForm({
   );
 }
 
-const KOBE_MCP_HINTS: Readonly<Record<KobeMcpMode, string>> = {
+const KAIJU_MCP_HINTS: Readonly<Record<KaijuMcpMode, string>> = {
   off: "No Kaiju connector: agents get neither the docs tools nor admin tools. Agents' git tools are not affected: they follow Git connections.",
   docs: "Agents can read the Kaiju user guide. No admin tools in any team.",
   admin:
@@ -180,25 +180,25 @@ const KOBE_MCP_HINTS: Readonly<Record<KobeMcpMode, string>> = {
 };
 
 /**
- * The Kaiju MCP switch (`kobeMcpMode`, KOBE-623, spec kobe-admin-mcp §6, KA5): off, docs only (the
+ * The Kaiju MCP switch (`kobeMcpMode`, KOBE-623, spec kaiju-admin-mcp §6, KA5): off, docs only (the
  * default) or docs and admin tools. A team still chooses its own level in Team console ›
  * Connectors; this caps it for the whole site. Audited by the server.
  */
-function KobeMcpForm({
+function KaijuMcpForm({
   mode,
   onSaved,
 }: {
-  readonly mode: KobeMcpMode;
+  readonly mode: KaijuMcpMode;
   readonly onSaved: () => void;
 }) {
   const mutation = useMutation();
-  const [choice, setChoice] = useState<KobeMcpMode>(mode);
+  const [choice, setChoice] = useState<KaijuMcpMode>(mode);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const done = await mutation.run(
       () => putSiteSettings({ kobeMcpMode: choice }),
-      (saved) => `Kaiju connector: ${KOBE_MCP_MODE_LABELS[saved.kobeMcpMode ?? choice]}.`,
+      (saved) => `Kaiju connector: ${KAIJU_MCP_MODE_LABELS[saved.kobeMcpMode ?? choice]}.`,
     );
     if (done) onSaved();
   }
@@ -210,12 +210,12 @@ function KobeMcpForm({
         stacked
         className="my-4"
       >
-        {(Object.keys(KOBE_MCP_MODE_LABELS) as KobeMcpMode[]).map((m) => (
+        {(Object.keys(KAIJU_MCP_MODE_LABELS) as KaijuMcpMode[]).map((m) => (
           <Radio
             key={m}
-            name="kobe-mcp-mode"
-            label={KOBE_MCP_MODE_LABELS[m]}
-            hint={KOBE_MCP_HINTS[m]}
+            name="kaiju-mcp-mode"
+            label={KAIJU_MCP_MODE_LABELS[m]}
+            hint={KAIJU_MCP_HINTS[m]}
             checked={choice === m}
             disabled={mutation.pending}
             onChange={() => setChoice(m)}
@@ -234,7 +234,7 @@ function KobeMcpForm({
  * The per-person Kaiju admin limits (KOBE-814): admin reads per minute and writes per hour. Each
  * applies to every person on their next call; no restart. Audited by the server.
  */
-function KobeLimitsForm({
+function KaijuLimitsForm({
   reads,
   writes,
   onSaved,
@@ -261,13 +261,13 @@ function KobeLimitsForm({
     if (done) onSaved();
   }
 
-  const bounds = { min: KOBE_LIMITS.min, max: KOBE_LIMITS.max, step: 1 } as const;
+  const bounds = { min: KAIJU_LIMITS.min, max: KAIJU_LIMITS.max, step: 1 } as const;
   return (
     <form onSubmit={onSubmit} aria-label="Kaiju admin limits">
       <ChoiceGroup legend="Kaiju admin limits (per person)" stacked className="my-4">
         <Field
           label="Admin reads per person per minute"
-          hint={`How many Kaiju admin reads one person's agents may make a minute. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.readsDefault}.`}
+          hint={`How many Kaiju admin reads one person's agents may make a minute. ${KAIJU_LIMITS.min} to ${KAIJU_LIMITS.max}; the default is ${KAIJU_LIMITS.readsDefault}.`}
         >
           <TextInput
             type="number"
@@ -280,7 +280,7 @@ function KobeLimitsForm({
         </Field>
         <Field
           label="Admin writes per person per hour"
-          hint={`How many Kaiju admin changes one person's agents may make an hour. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.writesDefault}.`}
+          hint={`How many Kaiju admin changes one person's agents may make an hour. ${KAIJU_LIMITS.min} to ${KAIJU_LIMITS.max}; the default is ${KAIJU_LIMITS.writesDefault}.`}
         >
           <TextInput
             type="number"

@@ -1,6 +1,6 @@
-import { appCardEntrySchema, launchAppCardResponseSchema } from "@kobe/protocol";
+import { appCardEntrySchema, launchAppCardResponseSchema } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call, expectContract } from "./contract";
 
 const APP = {
@@ -14,7 +14,7 @@ const APP = {
 
 describe("fake apps area: answers parse with the protocol (KOBE-717)", () => {
   it("launches an app card into a thread, waiting during a run, and stores its entry", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     fake.teamApps = [APP];
     const threadId = fake.addThread("T");
     await expectContract(
@@ -44,7 +44,7 @@ describe("fake apps area: answers parse with the protocol (KOBE-717)", () => {
   });
 
   it("fails on a deliberate drift", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     fake.teamApps = [APP];
     const threadId = fake.addThread("T");
     const { body } = await call(fake, "POST", `/v1/threads/${threadId}/app-cards`, {

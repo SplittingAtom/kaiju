@@ -1,4 +1,4 @@
-import { formatWorkspaceChange, type WorkspaceFileChange } from "@kobe/protocol";
+import { formatWorkspaceChange, type WorkspaceFileChange } from "@kaiju/protocol";
 import type { RunEventHub } from "../event-stream/hub.js";
 import type { StreamTimings } from "../event-stream/stream.js";
 import { snapshotOf } from "./changes.js";

@@ -1,4 +1,4 @@
-import type { AuditEntry } from "@kobe/db";
+import type { AuditEntry } from "@kaiju/db";
 
 export const FORWARD_DESTINATIONS = ["syslog", "otlp"] as const;
 export type ForwardDestination = (typeof FORWARD_DESTINATIONS)[number];

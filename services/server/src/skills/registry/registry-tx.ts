@@ -1,4 +1,4 @@
-import { withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { registryTeamFor } from "./settings.js";
 
 /**
@@ -7,8 +7,8 @@ import { registryTeamFor } from "./settings.js";
  * tables themselves are site-wide.
  */
 export async function inRegistryTx<T>(
-  db: KobeDb,
-  fn: (tx: KobeTx, registryTeamId: string | null) => Promise<T>,
+  db: KaijuDb,
+  fn: (tx: KaijuTx, registryTeamId: string | null) => Promise<T>,
 ): Promise<T> {
   const teamId = await registryTeamFor(db);
   return teamId

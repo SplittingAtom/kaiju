@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { teamMembers, withTeam } from "@kobe/db";
+import { teamMembers, withTeam } from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { createTeamWithAdmin } from "../teams/members.js";
 import type { TestBrowser } from "../testing/browser.js";

@@ -1,11 +1,11 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { FileEditProposeResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { FileEditProposeResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { FileEditBroker, MAX_PENDING_PROPOSALS_PER_THREAD } from "./file-edit-broker.js";
 
 const THREAD = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e";
 const RUN = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
-type Req = Extract<KobeToolsRequest, { op: "file.edit_propose" }>;
+type Req = Extract<KaijuToolsRequest, { op: "file.edit_propose" }>;
 const input = { path: "notes.md", content: "new\n", summary: "Tidy" };
 const request = (id = "kt_1"): Req => ({
   id,
@@ -17,14 +17,14 @@ const request = (id = "kt_1"): Req => ({
 
 function setup(sendOk = true) {
   const sent: Record<string, unknown>[] = [];
-  const replies: KobeToolsResponse[] = [];
+  const replies: KaijuToolsResponse[] = [];
   const broker = new FileEditBroker({
     send: (frame) => {
       sent.push(frame as unknown as Record<string, unknown>);
       return sendOk;
     },
   });
-  return { broker, sent, replies, reply: (r: KobeToolsResponse) => replies.push(r) };
+  return { broker, sent, replies, reply: (r: KaijuToolsResponse) => replies.push(r) };
 }
 
 describe("FileEditBroker (KOBE-462)", () => {

@@ -1,6 +1,6 @@
 import { addCosts, costForDisplay, costToUnits } from "./usage-cost.js";
-import { thinkingLevelSchema, type ThinkingLevel } from "@kobe/protocol";
-import { scanTeams, sql, withTeam, type KobeDb, type KobeTx, type UsageKind } from "@kobe/db";
+import { thinkingLevelSchema, type ThinkingLevel } from "@kaiju/protocol";
+import { scanTeams, sql, withTeam, type KaijuDb, type KaijuTx, type UsageKind } from "@kaiju/db";
 
 /**
  * Usage dashboards and run details (KOBE-43, spec D30): aggregates of the `run_usage` ledger
@@ -177,7 +177,7 @@ const iso = (v: unknown) =>
 
 /** Every aggregate of one team for the range (inside its withTeam transaction). */
 async function teamReport(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   range: UsageRange,
   limit: number | null = BREAKDOWN_LIMIT,
@@ -237,7 +237,7 @@ const rangeView = (r: UsageRange) => ({
 });
 
 export async function teamUsage(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   range: UsageRange,
 ): Promise<TeamUsageReport> {
@@ -270,7 +270,7 @@ function mergeBy<T extends UsageTotals>(
  * The site's usage: every team's report (one RLS transaction visiting each team), summed.
  * Per-agent rows are summed by agent id; a user in several teams is one row.
  */
-export async function siteUsage(db: KobeDb, range: UsageRange): Promise<SiteUsageReport> {
+export async function siteUsage(db: KaijuDb, range: UsageRange): Promise<SiteUsageReport> {
   const teams = await scanTeams(db, "siteUsage", async (tx, team) => ({
     team,
     report: await teamReport(tx, team.id, range, null),
@@ -330,7 +330,7 @@ export interface RunUsage extends Omit<UsageTotals, "reasoning_tokens"> {
 
 type UsageOf = { readonly runId: string } | { readonly threadId: string };
 
-async function runsUsageIn(tx: KobeTx, teamId: string, of: UsageOf): Promise<RunUsage[]> {
+async function runsUsageIn(tx: KaijuTx, teamId: string, of: UsageOf): Promise<RunUsage[]> {
   const filter =
     "runId" in of ? sql`u.run_id = ${of.runId}::uuid` : sql`u.thread_id = ${of.threadId}::uuid`;
   const res = await tx.execute<Row>(sql`
@@ -360,7 +360,7 @@ async function runsUsageIn(tx: KobeTx, teamId: string, of: UsageOf): Promise<Run
  * follow-up and eval judge calls after it are in the
  * dashboards and budgets, not under the answer (KOBE-219).
  */
-export async function runsUsage(db: KobeDb, teamId: string, of: UsageOf): Promise<RunUsage[]> {
+export async function runsUsage(db: KaijuDb, teamId: string, of: UsageOf): Promise<RunUsage[]> {
   return withTeam(db, teamId, (tx) => runsUsageIn(tx, teamId, of));
 }
 
@@ -391,7 +391,7 @@ export interface LatestCall {
  * only a short excerpt.
  */
 async function latestCallIn(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<LatestCall | null> {
@@ -423,7 +423,7 @@ export interface ThreadUsage {
 
 /** A thread's per-run usage and its newest call, read in one team transaction. */
 export async function threadUsage(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   threadId: string,
 ): Promise<ThreadUsage> {

@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { sql } from "@kobe/db";
-import { MEMORY_PASS_MAX_MS } from "@kobe/protocol";
+import { sql } from "@kaiju/db";
+import { MEMORY_PASS_MAX_MS } from "@kaiju/protocol";
 import { AppendError, appendRunEvents } from "../event-stream/append.js";
 import { LEARN_PASSES_PER_DAY } from "./learn/passes.js";
 import { type LearningPasses } from "./learn/run.js";

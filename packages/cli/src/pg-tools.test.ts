@@ -13,9 +13,9 @@ import {
 describe("libpqConnection", () => {
   it("moves the password out of the URL (never on a command line)", () => {
     const c = libpqConnection(
-      "postgres://kobe_owner:p%40ss%3Aword@db.example:5432/kobe?sslmode=require",
+      "postgres://kobe_owner:p%40ss%3Aword@db.example:5432/kaiju?sslmode=require",
     );
-    expect(c.dbname).toBe("postgres://kobe_owner@db.example:5432/kobe?sslmode=require");
+    expect(c.dbname).toBe("postgres://kobe_owner@db.example:5432/kaiju?sslmode=require");
     expect(c.dbname).not.toContain("p%40ss");
     expect(c.env).toEqual({ PGPASSWORD: "p@ss:word" });
   });
@@ -100,7 +100,7 @@ describe("safeToolErrors", () => {
 describe("safePsqlErrors", () => {
   it("shows Kaiju's own checks, and only the SQLSTATE for other errors", () => {
     const stderr = [
-      "psql:<stdin>:12: ERROR:  P0001: kobe restore: widgets has 3 rows, the backup has 4; nothing was restored",
+      "psql:<stdin>:12: ERROR:  P0001: kaiju restore: widgets has 3 rows, the backup has 4; nothing was restored",
       'psql:<stdin>:40: ERROR:  23505: duplicate key value violates unique constraint "users_email_unique"',
       "DETAIL:  Key (email)=(ann@example.com) already exists.",
       "CONTEXT:  COPY users, line 1",
@@ -108,7 +108,7 @@ describe("safePsqlErrors", () => {
       'psql: error: connection to server at "db" (10.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "kobe_owner"',
     ].join("\n");
     const out = safePsqlErrors(stderr);
-    expect(out).toContain("kobe restore: widgets has 3 rows, the backup has 4");
+    expect(out).toContain("kaiju restore: widgets has 3 rows, the backup has 4");
     expect(out).toContain("ERROR 23505");
     expect(out).toContain("password authentication failed");
     expect(out).not.toContain("ann@example.com");

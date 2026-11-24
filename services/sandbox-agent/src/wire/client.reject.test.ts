@@ -1,5 +1,5 @@
 import type { AddressInfo } from "node:net";
-import { SANDBOX_CLOSE_CODES, SANDBOX_WS_SUBPROTOCOL } from "@kobe/protocol/sandbox-wire";
+import { SANDBOX_CLOSE_CODES, SANDBOX_WS_SUBPROTOCOL } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 import { SessionClient } from "../session/exchange.js";

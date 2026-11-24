@@ -4,7 +4,7 @@ import {
   SEMANTIC_MEMORY_NEAR_FULL_RATIO,
   SEMANTIC_MEMORY_POLICY_MAX_BYTES,
   SEMANTIC_MEMORY_POLICY_MAX_ITEMS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { useMemo } from "react";
 import {
   createMemoryItemsApi,

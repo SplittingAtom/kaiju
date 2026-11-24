@@ -174,7 +174,7 @@ export function FolderTree({
         const key = nodeKey(row.node);
         const selected = sameNode(row.node, chosen);
         const menu = bindings(row);
-        const countId = `kobe-node-${i}-n`;
+        const countId = `kaiju-node-${i}-n`;
         return (
           <li
             key={key}
@@ -189,7 +189,7 @@ export function FolderTree({
             aria-label={row.label}
             aria-describedby={countId}
             tabIndex={i === current ? 0 : -1}
-            data-kobe-node={key}
+            data-kaiju-node={key}
             {...(dropKey === key ? { "data-drop-target": "" } : {})}
             className={cn(
               "group/row relative flex h-7 cursor-pointer items-center gap-1 rounded-sm pe-0.5 text-sm outline-none select-none",
@@ -219,7 +219,7 @@ export function FolderTree({
                 type="button"
                 tabIndex={-1}
                 aria-hidden
-                data-kobe-node-chevron=""
+                data-kaiju-node-chevron=""
                 className="flex size-3.5 shrink-0 items-center justify-center rounded-sm border-0 bg-transparent p-0"
                 onClick={() => setOpen(row.node, !row.expanded)}
               >

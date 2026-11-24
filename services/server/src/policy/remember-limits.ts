@@ -4,7 +4,7 @@ import {
   type RememberLimits,
   type RememberScope,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { isLiteralGlob } from "./patterns.js";
 import { exactPinsAllArguments } from "./remember-scope.js";
 import type { PolicyRule } from "./rules.js";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { verifyApproval } from "@kobe/protocol/node";
+import { verifyApproval } from "@kaiju/protocol/node";
 import { approvalKeyring } from "../../approvals/keys.js";
 import {
   SUGGESTION_TOOL,

@@ -11,7 +11,7 @@ import { GIT_CONNECTION_PROVIDERS, GIT_CONNECTION_REPO_VISIBILITIES } from "./gi
  * the attempt until it is `completed` or `failed`. No shape here carries a credential.
  */
 
-/** The status values repeat `@kobe/db`'s `GIT_CONVERSION_STATUS_VALUES` (a server test keeps them equal). */
+/** The status values repeat `@kaiju/db`'s `GIT_CONVERSION_STATUS_VALUES` (a server test keeps them equal). */
 export const GIT_CONVERSION_STATUSES = ["running", "failed", "completed", "abandoned"] as const;
 export const GIT_CONVERSION_STEPS = ["create", "push", "finish", "done"] as const;
 

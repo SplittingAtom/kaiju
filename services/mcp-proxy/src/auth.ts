@@ -1,9 +1,9 @@
-import type { SessionTokenClaims } from "@kobe/protocol";
+import type { SessionTokenClaims } from "@kaiju/protocol";
 import {
   SESSION_TOKEN_TTL_SECONDS,
   verifySessionToken,
   type SessionVerifyKeys,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 
 /**
  * Sandbox authentication at the proxy (D27): `Authorization: Bearer <kobe.mcp-proxy session token>`,

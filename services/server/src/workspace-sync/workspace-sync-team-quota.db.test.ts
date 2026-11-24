@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { WORKSPACE_SYNC_PATH, type WorkspaceChange } from "@kobe/protocol/sandbox-wire";
+import { WORKSPACE_SYNC_PATH, type WorkspaceChange } from "@kaiju/protocol/sandbox-wire";
 import { createSandboxApp } from "../routes/sandbox.js";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandboxAuth } from "../testing/fake-sandbox.js";

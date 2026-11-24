@@ -7,7 +7,7 @@
  * a click on the picker sends (a text block, then one resource_link), which the bridge's
  * `appMessageOf` then turns into the composer's chip as for the click.
  */
-import { ITEM_KIND_META_KEY } from "@kobe/protocol";
+import { ITEM_KIND_META_KEY } from "@kaiju/protocol";
 
 export const LAKEHOUSE_DRAG_TYPE = "application/x-catalyst-lakehouse+json";
 export const IDENTIFIER_MAX = 511;

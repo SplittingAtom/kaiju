@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import {
   connectPolicy,
-  registerKobePolicy,
+  registerKaijuPolicy,
   type ExtensionApiLike,
   type PolicyConnection,
 } from "./extension.js";
@@ -20,7 +20,7 @@ import { hiddenToolsFrom, applyHiddenTools } from "./hidden-tools.js";
  */
 let connection: Promise<PolicyConnection> | undefined;
 
-export default async function kobePolicy(pi: ExtensionApiLike): Promise<void> {
+export default async function kaijuPolicy(pi: ExtensionApiLike): Promise<void> {
   connection ??= connectPolicy({
     env: process.env,
     argv: process.argv.slice(2),
@@ -29,7 +29,7 @@ export default async function kobePolicy(pi: ExtensionApiLike): Promise<void> {
     // stderr only: stdout is Pi's RPC stream.
     warn: (message) => process.stderr.write(`${message}\n`),
   });
-  await registerKobePolicy(pi, connection);
+  await registerKaijuPolicy(pi, connection);
   // KOBE-776: built-ins the run's agent may not use are not offered (the server refuses them).
   applyHiddenTools(pi, hiddenToolsFrom(process.env));
 }

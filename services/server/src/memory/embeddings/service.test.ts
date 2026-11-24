@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { BackgroundTasks } from "../../background.js";
 import type { EmbeddingClient } from "../../models/embedding-client.js";
 import { ServerCallError } from "../../models/gateway-client.js";
@@ -20,7 +20,7 @@ const input = {
 
 function service(embed: EmbeddingClient["embed"], deadline = 30) {
   const s = new MemoryEmbeddings({
-    db: undefined as unknown as KobeDb,
+    db: undefined as unknown as KaijuDb,
     client: { embed },
     background: new BackgroundTasks(),
     log: silent,
@@ -116,7 +116,7 @@ describe("recall query embedding (KOBE-664)", () => {
       expect(await refused.recallVector(input)).toBeUndefined();
     }
     const slow = new MemoryEmbeddings({
-      db: undefined as unknown as KobeDb,
+      db: undefined as unknown as KaijuDb,
       client: {
         embed: (i) =>
           new Promise((resolve, reject) => {
@@ -214,7 +214,7 @@ describe("vector leg deadline (KOBE-409 L5)", () => {
       reads += 1;
       return [];
     };
-    const db = undefined as unknown as KobeDb;
+    const db = undefined as unknown as KaijuDb;
     const late = new Promise<{ model: string; vector: number[] }>((resolve) =>
       setTimeout(() => resolve({ model: "m/x", vector: [1] }), 40),
     );

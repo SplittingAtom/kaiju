@@ -5,13 +5,13 @@ import {
   migrationsBefore,
   testServerUrl,
   type TestDatabase,
-} from "@kobe/db/testing";
+} from "@kaiju/db/testing";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listRestrictedProjects } from "./restricted-projects.js";
 
 /**
- * `kobe projects restricted` (KOBE-587, RV2): the dry-run before the migration that drops
+ * `kaiju projects restricted` (KOBE-587, RV2): the dry-run before the migration that drops
  * restricted visibility. It runs against a database that has not run it yet (lists every
  * restricted project of every team with its explicit members), changes nothing, and says so once
  * the migration has run.

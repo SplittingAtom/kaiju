@@ -1,5 +1,5 @@
-import { rememberScopeSchema, type PolicyDecision, type PolicyReason } from "@kobe/protocol";
-import { sql, type KobeDb } from "@kobe/db";
+import { rememberScopeSchema, type PolicyDecision, type PolicyReason } from "@kaiju/protocol";
+import { sql, type KaijuDb } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { liveUserRule } from "./live-rule.js";
@@ -35,7 +35,7 @@ export interface RuleApplication {
  * call, so a revocation takes effect even for a decision already in flight. Throws on a failed
  * write: the caller denies then too (no audit row, no call).
  */
-export async function recordRuleApplied(db: KobeDb, a: RuleApplication): Promise<boolean> {
+export async function recordRuleApplied(db: KaijuDb, a: RuleApplication): Promise<boolean> {
   return withAppendTx(db, a.teamId, async (tx) => {
     const res = await tx.execute<{ remember_scope: string }>(sql`
       UPDATE tool_rules SET last_used_at = now()

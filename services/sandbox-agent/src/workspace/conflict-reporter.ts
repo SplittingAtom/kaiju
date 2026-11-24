@@ -1,4 +1,4 @@
-import type { WorkspaceConflictFrame } from "@kobe/protocol/sandbox-wire";
+import type { WorkspaceConflictFrame } from "@kaiju/protocol/sandbox-wire";
 import type { ConflictReport } from "./sync.js";
 
 /**

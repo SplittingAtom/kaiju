@@ -1,5 +1,5 @@
-import { scanTeams, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import type { SemanticMemoryKind } from "@kobe/protocol";
+import { scanTeams, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import type { SemanticMemoryKind } from "@kaiju/protocol";
 import { notAllowed } from "../items/errors.js";
 import { locate, type Location } from "../items/location.js";
 import { curates, type MemoryWho } from "../items/who.js";
@@ -59,7 +59,7 @@ type UseRow = {
 };
 
 /** Active items of the scope with their current statement (newest change first, capped). */
-async function activeItems(tx: KobeDb | KobeTx, loc: Location): Promise<ItemRow[]> {
+async function activeItems(tx: KaijuDb | KaijuTx, loc: Location): Promise<ItemRow[]> {
   const { rows } = await tx.execute<ItemRow>(sql`
     SELECT i.id, v.statement, i.kind, i.pinned, ${loc.policy} AS policy, i.created_at
       FROM ${loc.items} i JOIN ${loc.versions} v ON ${loc.versionOf} AND v.version = i.current_version
@@ -125,7 +125,7 @@ function assertReads(who: MemoryWho, scope: QualityScope): void {
  * team tables behind RLS): numbers only cross, never a thread, run or rating.
  */
 export async function listItemSignals(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: QualityScope,
   filter: QualityFilter,

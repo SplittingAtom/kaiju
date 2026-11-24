@@ -1,4 +1,4 @@
-import { type NotebookOutputFrame } from "@kobe/protocol/sandbox-wire";
+import { type NotebookOutputFrame } from "@kaiju/protocol/sandbox-wire";
 import type { LeaseViolation, WireMetrics } from "../context.js";
 import type { CommandDelivery } from "../delivery.js";
 import type { NotebookIntake } from "../notebook-intake.js";

@@ -5,7 +5,7 @@ import {
   semanticMemoryRenderedBytes,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   TOOL_ONLY_AVAILABLE,
   applyPlacement,

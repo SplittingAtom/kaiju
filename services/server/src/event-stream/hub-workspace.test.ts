@@ -5,7 +5,7 @@ import { decodeWorkspaceAccessHint, encodeWorkspaceAccessHint } from "./notify.j
 const USER = "0b6f0d4e-5a3c-4d8e-9a43-5f7b0f2d1c11";
 const RUN = "1c7f0d4e-5a3c-4d8e-9a43-5f7b0f2d1c12";
 /** Nothing listens there: the hub stays down and polls (no database needed). */
-const NOWHERE = "postgres://kobe:x@127.0.0.1:1/none";
+const NOWHERE = "postgres://kaiju:x@127.0.0.1:1/none";
 
 let hub: RunEventHub | undefined;
 afterEach(async () => {

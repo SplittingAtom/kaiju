@@ -4,9 +4,9 @@ import {
   loadMemberBudgetState,
   teams,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../../background.js";
 import type { ServerCallClient } from "../../models/gateway-client.js";
@@ -93,7 +93,7 @@ export interface LearningPasses {
 }
 
 export interface LearningPassesOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Undefined when the server has no model gateway: Learn is unavailable. */
   readonly client: ServerCallClient | undefined;
   readonly background: BackgroundTasks;
@@ -103,7 +103,7 @@ export interface LearningPassesOptions {
   /** Test seam: how the completion waits for the thread lock and retries (KOBE-770 review). */
   readonly completion?: CompletionTuning;
   /** Test seam: runs in the start's transaction just before the pass row is claimed. */
-  readonly beforeClaim?: (tx: KobeTx) => Promise<void>;
+  readonly beforeClaim?: (tx: KaijuTx) => Promise<void>;
 }
 
 export const SWITCH_REASONS: ReadonlySet<LearnUnavailableReason> = new Set([
@@ -138,11 +138,11 @@ type Prepared =
   | { readonly ok: false; readonly result: LearnStartResult };
 
 async function prepare(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
   options: LearningInputOptions,
-  beforeClaim?: (tx: KobeTx) => Promise<void>,
+  beforeClaim?: (tx: KaijuTx) => Promise<void>,
 ): Promise<Prepared> {
   const { teamId, userId } = viewer;
   const no = (r: LearnStartRefusal): Prepared => ({ ok: false, result: refuse(r) });

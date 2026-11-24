@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { projectPermissions } from "@kobe/protocol";
+import { projectPermissions } from "@kaiju/protocol";
 import { worded, type ProjectInput } from "../../lib/projects/api";
 import { useTeamAccess } from "../admin/console-context";
 import { MutationStatus } from "../admin/error-notice";

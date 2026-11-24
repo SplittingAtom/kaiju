@@ -7,16 +7,16 @@ import {
   sql,
   threadEntries,
   threads,
-  type KobeTx,
+  type KaijuTx,
   type RunStatus,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { ThreadSummary, UpdateThreadBody } from "./schemas.js";
 import { recordAudit } from "../audit/record.js";
 import { resolveSwitchPin, type AgentPin, type DraftPin } from "../agents/versions.js";
 import { visibilityOf } from "./share.js";
 import { applyShareScope, recordShareScope, shareScopeRefusal } from "./share-scope.js";
 import { notifyThreadAccess } from "../event-stream/access.js";
-import type { ThinkingLevel, ThreadVisibility } from "@kobe/protocol";
+import type { ThinkingLevel, ThreadVisibility } from "@kaiju/protocol";
 import { isSkippedSummaryEntry } from "../policy/skipped-summary.js";
 import { isModelEnabled } from "../models/team-store.js";
 import {
@@ -41,7 +41,7 @@ import {
  */
 
 export async function createThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: {
     teamId: string;
     ownerUserId: string;
@@ -100,7 +100,7 @@ export async function createThread(
 
 /** Locks the thread for a change by its owner, or says why the viewer can't change it. */
 export async function lockForChange(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
 ): Promise<{ ok: true; thread: SummaryRow } | { ok: false; error: ThreadError }> {
@@ -119,7 +119,7 @@ export async function lockForChange(
  * owner-only. A reader never reaches a thread in Trash (not readable: 404).
  */
 export async function lockForFiling(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
 ): Promise<{ ok: true; thread: SummaryRow } | { ok: false; error: ThreadError }> {
@@ -135,7 +135,7 @@ export async function lockForFiling(
  * share (false; a team share stays).
  */
 export async function updateThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   body: UpdateThreadBody & { readonly visibility?: ThreadVisibility },
@@ -213,7 +213,7 @@ export const PENDING_RUN_STATUSES: readonly RunStatus[] = ["queued", ...ACTIVE_R
  * queued (CT3, Q7): the leaf never moves under a queued prompt.
  */
 export async function setLeaf(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   entryId: string,
@@ -253,7 +253,7 @@ export async function setLeaf(
  * must still be available to the owner (not suspended or archived).
  */
 export async function switchAgentVersion(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   version: number | undefined,
@@ -301,7 +301,7 @@ export async function switchAgentVersion(
  * Moves the thread to Trash (D18 soft delete). Refused while it has an active or queued run: Stop
  * and clear queued messages first, so nothing runs on a thread its owner deleted. Idempotent.
  */
-export async function trashThread(tx: KobeTx, viewer: Viewer, id: string): Promise<ThreadResult> {
+export async function trashThread(tx: KaijuTx, viewer: Viewer, id: string): Promise<ThreadResult> {
   const locked = await lockForChange(tx, viewer, id);
   if (!locked.ok) return locked;
   if (locked.thread.deletedAt)
@@ -327,7 +327,7 @@ export async function trashThread(tx: KobeTx, viewer: Viewer, id: string): Promi
 }
 
 /** Restores a thread from Trash within the 30-day window; past it the thread awaits purge. */
-export async function restoreThread(tx: KobeTx, viewer: Viewer, id: string): Promise<ThreadResult> {
+export async function restoreThread(tx: KaijuTx, viewer: Viewer, id: string): Promise<ThreadResult> {
   const locked = await lockForChange(tx, viewer, id);
   if (!locked.ok) return locked;
   if (!locked.thread.deletedAt) return { ok: false, error: "not_in_trash" };
@@ -360,7 +360,7 @@ export async function restoreThread(tx: KobeTx, viewer: Viewer, id: string): Pro
  * (stop them first). Not audited: they are throwaway, and nothing is shared. Returns the count.
  */
 export async function clearTestThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   options: { agentId?: string | undefined },
 ): Promise<number> {

@@ -1,5 +1,5 @@
-import { and, eq, isNull, siteAgents, type AgentScope, type KobeTx } from "@kobe/db";
-import { KOBE_GALLERY_KEY } from "../gallery/definitions.js";
+import { and, eq, isNull, siteAgents, type AgentScope, type KaijuTx } from "@kobe/db";
+import { KAIJU_GALLERY_KEY } from "../gallery/definitions.js";
 import { readTeamDefaultAgent } from "./team-default.js";
 import { resolveAgentPin, type AgentPin } from "./versions.js";
 
@@ -15,7 +15,7 @@ import { resolveAgentPin, type AgentPin } from "./versions.js";
 export const isDefaultNewThreadAgent = (agent: {
   readonly scope: AgentScope;
   readonly galleryKey?: string | null | undefined;
-}): boolean => agent.scope === "gallery" && agent.galleryKey === KOBE_GALLERY_KEY;
+}): boolean => agent.scope === "gallery" && agent.galleryKey === KAIJU_GALLERY_KEY;
 
 /**
  * The team's default agent for new threads, chosen by a team admin from its roster (agents-roster
@@ -23,13 +23,13 @@ export const isDefaultNewThreadAgent = (agent: {
  * Whatever it names still goes through `resolveAgentPin`, so a team default that is not runnable
  * for the member falls back to the site default.
  */
-export async function teamDefaultAgentId(tx: KobeTx, teamId: string): Promise<string | null> {
+export async function teamDefaultAgentId(tx: KaijuTx, teamId: string): Promise<string | null> {
   return readTeamDefaultAgent(tx, teamId);
 }
 
 /** The pin of the agent a new conversation starts with for this member, or null (no agent). */
 export async function defaultNewThreadPin(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { readonly teamId: string; readonly userId: string },
 ): Promise<AgentPin | null> {
   const teamDefault = await teamDefaultAgentId(tx, viewer.teamId);
@@ -43,7 +43,7 @@ export async function defaultNewThreadPin(
     .where(
       and(
         eq(siteAgents.scope, "gallery"),
-        eq(siteAgents.galleryKey, KOBE_GALLERY_KEY),
+        eq(siteAgents.galleryKey, KAIJU_GALLERY_KEY),
         isNull(siteAgents.archivedAt),
       ),
     );

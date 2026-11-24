@@ -1,4 +1,4 @@
-import type { KobeEvent, KobeEventPayload, KobeEventType } from "@kobe/protocol";
+import type { KaijuEvent, KaijuEventPayload, KaijuEventType } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { MAX_ITEMS, applyRunEvents, newLiveRun, type LiveRun } from "./live";
 
@@ -6,16 +6,16 @@ const RUN = "00000000-0000-4000-8000-000000000101";
 const THREAD = "00000000-0000-4000-8000-000000000201";
 
 let seq = 0;
-function ev<T extends KobeEventType>(
+function ev<T extends KaijuEventType>(
   type: T,
-  payload: KobeEventPayload<T>,
+  payload: KaijuEventPayload<T>,
   at?: number,
-): KobeEvent {
+): KaijuEvent {
   seq = at ?? seq + 1;
-  return { run_id: RUN, seq, ts: "2026-10-02T10:00:00Z", type, payload } as KobeEvent;
+  return { run_id: RUN, seq, ts: "2026-10-02T10:00:00Z", type, payload } as KaijuEvent;
 }
 
-function apply(run: LiveRun, events: KobeEvent[]) {
+function apply(run: LiveRun, events: KaijuEvent[]) {
   return applyRunEvents(run, events);
 }
 
@@ -179,7 +179,7 @@ describe("applyRunEvents", () => {
 
   it("dedupes blocked domains, artifacts and files, and keeps at most 50 of each", () => {
     seq = 0;
-    const events: KobeEvent[] = [];
+    const events: KaijuEvent[] = [];
     for (let i = 0; i < 3; i++) {
       events.push(
         ev("egress.blocked", { domain: "pypi.org", tool_call_id: "tc1", request_access: true }),

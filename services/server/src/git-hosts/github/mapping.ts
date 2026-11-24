@@ -1,4 +1,4 @@
-import type { GitCapabilities, GitCapability } from "@kobe/db";
+import type { GitCapabilities, GitCapability } from "@kaiju/db";
 import {
   cloneUrlFor,
   GitHostError,

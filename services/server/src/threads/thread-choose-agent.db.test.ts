@@ -16,13 +16,13 @@ import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
  * that agent's connectors. Refused for anything but the owner's own idle, plain conversation.
  */
 const f = new RunFixture();
-let kobe = "";
+let kaiju = "";
 
 beforeAll(async () => {
   await f.setup();
   const [seeded] = await seedGalleryAgents(f.fx.db);
-  kobe = seeded?.agentId ?? "";
-  expect(kobe).not.toBe("");
+  kaiju = seeded?.agentId ?? "";
+  expect(kaiju).not.toBe("");
 });
 afterAll(() => f.teardown());
 
@@ -55,16 +55,16 @@ describe("an agentless thread takes an agent (KOBE-458 ac-3)", () => {
     await expect.poll(() => f.status(w.team, first)).toBe("completed");
     expect(await runConnectors(f, first)).toEqual([]);
 
-    const chosen = await choose(w.owner, threadId, kobe);
+    const chosen = await choose(w.owner, threadId, kaiju);
     expect(chosen.status, JSON.stringify(chosen.json)).toBe(200);
-    expect(chosen.json).toMatchObject({ agent_id: kobe });
+    expect(chosen.json).toMatchObject({ agent_id: kaiju });
     const { rows } = await f.fx.admin.query<{ target: Record<string, unknown> }>(
       `SELECT target FROM audit_log WHERE team_id = $1 AND action = 'thread.agent_chosen'`,
       [w.team],
     );
     const pinned = await threadAgent(f, threadId);
     expect(rows.map((r) => r.target)).toEqual([
-      { threadId, agentId: kobe, scope: "gallery", version: pinned?.agent_version },
+      { threadId, agentId: kaiju, scope: "gallery", version: pinned?.agent_version },
     ]);
 
     const next = await f.message(w.owner, threadId, "and now?");
@@ -108,20 +108,20 @@ describe("choosing an agent is refused (KOBE-458 review LOW-1..3)", () => {
     const mate = w.others[0];
     if (!mate) throw new Error("no team mate");
     const threadId = await f.thread(w.owner);
-    expect(await refusal(mate, threadId, kobe)).toEqual([404, "thread_not_found"]);
+    expect(await refusal(mate, threadId, kaiju)).toEqual([404, "thread_not_found"]);
     const shared = await w.owner.browser.post(`/v1/threads/${threadId}/share`, {
       visibility: "team",
     });
     expect(shared.status, JSON.stringify(shared.json)).toBe(200);
-    expect(await refusal(mate, threadId, kobe)).toEqual([403, "read_only"]);
+    expect(await refusal(mate, threadId, kaiju)).toEqual([403, "read_only"]);
     expect(await threadAgent(f, threadId)).toMatchObject({ agent_id: null });
   });
 
   it("once the thread has an agent, and for a malformed body", async () => {
     const w = await world();
     const threadId = await f.thread(w.owner);
-    expect((await choose(w.owner, threadId, kobe)).status).toBe(200);
-    expect(await refusal(w.owner, threadId, kobe)).toEqual([409, "agent_already_chosen"]);
+    expect((await choose(w.owner, threadId, kaiju)).status).toBe(200);
+    expect(await refusal(w.owner, threadId, kaiju)).toEqual([409, "agent_already_chosen"]);
     const bad = await w.owner.browser.post(`/v1/threads/${threadId}/agent`, { agent_id: "x" });
     expect(bad.status).toBe(400);
   });
@@ -132,7 +132,7 @@ describe("choosing an agent is refused (KOBE-458 review LOW-1..3)", () => {
     // No sandbox: the run waits as queued (or starts waking one); either way it is pending.
     const runId = await f.message(w.owner, threadId, "hello");
     expect(["queued", "running", "waking"]).toContain(await f.status(w.team, runId));
-    expect(await refusal(w.owner, threadId, kobe)).toEqual([409, "thread_busy"]);
+    expect(await refusal(w.owner, threadId, kaiju)).toEqual([409, "thread_busy"]);
   });
 
   it("for a thread in Trash, an archived thread, and builder, Workbench, eval or scheduled threads", async () => {
@@ -162,14 +162,14 @@ describe("choosing an agent is refused (KOBE-458 review LOW-1..3)", () => {
     );
     const scheduled = await thread("schedule_id = $2", [schedule]);
 
-    expect(await refusal(w.owner, trashed, kobe)).toEqual([409, "thread_in_trash"]);
-    expect(await refusal(w.owner, archived, kobe)).toEqual([409, "thread_archived"]);
+    expect(await refusal(w.owner, trashed, kaiju)).toEqual([409, "thread_in_trash"]);
+    expect(await refusal(w.owner, archived, kaiju)).toEqual([409, "thread_archived"]);
     for (const id of [builder, workbench]) {
-      expect(await refusal(w.owner, id, kobe)).toEqual([409, "test_thread"]);
+      expect(await refusal(w.owner, id, kaiju)).toEqual([409, "test_thread"]);
     }
     // An eval thread is refused before the route runs (the thread routes keep members out).
-    expect((await refusal(w.owner, evalThread, kobe))[1]).toBe("skill_eval_thread");
-    expect(await refusal(w.owner, scheduled, kobe)).toEqual([409, "scheduled_thread"]);
+    expect((await refusal(w.owner, evalThread, kaiju))[1]).toBe("skill_eval_thread");
+    expect(await refusal(w.owner, scheduled, kaiju)).toEqual([409, "scheduled_thread"]);
     for (const id of [trashed, archived, builder, workbench, evalThread, scheduled]) {
       expect(await threadAgent(f, id)).toMatchObject({ agent_id: null });
     }

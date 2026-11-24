@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { evaluateMemoryWrite } from "../../checks.js";
 import { openOp, type Op } from "../../items/context.js";
 import { notFound } from "../../items/errors.js";
@@ -33,7 +33,7 @@ import { siteView, workspaceView } from "./views.js";
 const ws = (teamId: string) => ({ side: "workspace", teamId }) as const;
 const SITE = { side: "site" } as const;
 
-export function listWorkspaceSiteProposals(db: KobeDb, who: MemoryWho, q: SiteProposalListQuery) {
+export function listWorkspaceSiteProposals(db: KaijuDb, who: MemoryWho, q: SiteProposalListQuery) {
   const teamId = workspaceOf(who);
   // A member's list is their own; curators see the Workspace's.
   const proposerId = curatesWorkspace(who) ? undefined : who.userId;
@@ -50,7 +50,7 @@ export function listWorkspaceSiteProposals(db: KobeDb, who: MemoryWho, q: SitePr
   });
 }
 
-export function getWorkspaceSiteProposal(db: KobeDb, who: MemoryWho, id: string) {
+export function getWorkspaceSiteProposal(db: KaijuDb, who: MemoryWho, id: string) {
   const teamId = workspaceOf(who);
   return withTeam(db, teamId, async (tx) => {
     const p = await readSiteProposal(tx, ws(teamId), id);
@@ -59,7 +59,7 @@ export function getWorkspaceSiteProposal(db: KobeDb, who: MemoryWho, id: string)
   });
 }
 
-export async function listSiteQueue(db: KobeDb, who: MemoryWho, q: SiteProposalListQuery) {
+export async function listSiteQueue(db: KaijuDb, who: MemoryWho, q: SiteProposalListQuery) {
   assertSiteCurator(who);
   const filter = { fromTeamId: q.from_team_id };
   return db.transaction(async (tx) => {
@@ -91,7 +91,7 @@ async function related(op: Op, refs: readonly { id: string }[]) {
 }
 
 /** What the shared checks find for the proposal against Site memory and Policy now. */
-async function checksFor(tx: KobeTx, who: MemoryWho, p: SiteProposalRow) {
+async function checksFor(tx: KaijuTx, who: MemoryWho, p: SiteProposalRow) {
   const op = await openOp(tx, who, "site");
   const found = await evaluateMemoryWrite(op, {
     scope: "site",
@@ -107,7 +107,7 @@ async function checksFor(tx: KobeTx, who: MemoryWho, p: SiteProposalRow) {
   };
 }
 
-export function getSiteProposal(db: KobeDb, who: MemoryWho, id: string) {
+export function getSiteProposal(db: KaijuDb, who: MemoryWho, id: string) {
   if (!decidesForSite(who)) throw siteProposalNotFound();
   return db.transaction(async (tx) => {
     const p = await readSiteProposal(tx, SITE, id);
@@ -119,7 +119,7 @@ export function getSiteProposal(db: KobeDb, who: MemoryWho, id: string) {
  * Where a Site memory came from (ac-2): Site curators see each version a proposal wrote with its
  * source Workspace; everyone else sees only that the Site set it.
  */
-export async function siteItemProvenance(db: KobeDb, who: MemoryWho, itemId: string) {
+export async function siteItemProvenance(db: KaijuDb, who: MemoryWho, itemId: string) {
   return db.transaction(async (tx) => {
     const { rows: exists } = await tx.execute(sql`
       SELECT 1 FROM site_memory_items WHERE id = ${itemId}`);

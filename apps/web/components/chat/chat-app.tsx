@@ -27,7 +27,7 @@ import { InlineLink } from "../shell/text-links";
 import { UtilityBar } from "../shell/utility-bar";
 import { WorkspacePanel } from "../shell/workspace-panel";
 import { ChatWorkspace } from "./chat-workspace";
-import { ChatSessionContext } from "./kobe-runtime";
+import { ChatSessionContext } from "./kaiju-runtime";
 import { useViewportHeight } from "./use-viewport-height";
 import styles from "./chat.module.css";
 
@@ -162,9 +162,9 @@ export function ChatApp({
         <IconActionProvider>
           <ShellBandProvider>
             <ShellSlotsProvider>
-              <div ref={setAppEl} className={styles.app} data-kobe-chat>
+              <div ref={setAppEl} className={styles.app} data-kaiju-chat>
                 {/* eslint-disable-next-line no-restricted-syntax -- a skip link is text by design (WCAG 2.4.1) */}
-                <a className={styles.skipLink} href="#kobe-chat-main">
+                <a className={styles.skipLink} href="#kaiju-chat-main">
                   Skip to the conversation
                 </a>
                 <UtilityBar

@@ -3,13 +3,13 @@ import {
   THINKING_CONTROLS as DB_CONTROLS,
   THINKING_CONTROLS_WITHOUT_OFF as DB_WITHOUT_OFF,
   THINKING_LEVELS as DB_LEVELS,
-} from "@kobe/db";
+} from "@kaiju/db";
 import {
   THINKING_CONTROLS,
   THINKING_CONTROLS_BY_KIND,
   THINKING_CONTROLS_WITHOUT_OFF,
   THINKING_LEVELS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import {
   chatThinking,

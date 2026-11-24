@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { agentSlugSchema } from "@kobe/agent-file";
-import { agentStatus } from "@kobe/db";
-import { AGENT_FORK_NAME_MAX, agentMemorySettingSchema } from "@kobe/protocol";
+import { agentSlugSchema } from "@kaiju/agent-file";
+import { agentStatus } from "@kaiju/db";
+import { AGENT_FORK_NAME_MAX, agentMemorySettingSchema } from "@kaiju/protocol";
 
 export const agentIdSchema = z.uuid();
 

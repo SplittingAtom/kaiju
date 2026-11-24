@@ -21,7 +21,7 @@ describe("template preview bridge (KOBE-434 ac-2)", () => {
     send({ jsonrpc: "2.0", id: 4, method: "ui/open-link", params: { url: "https://evil" } });
     await Promise.resolve();
     const replies = (frame.postMessage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
-    expect(replies[0]).toMatchObject({ id: 1, result: { hostInfo: { name: "kobe-preview" } } });
+    expect(replies[0]).toMatchObject({ id: 1, result: { hostInfo: { name: "kaiju-preview" } } });
     for (const reply of replies.slice(1)) expect(reply).toMatchObject({ error: { code: -32601 } });
     expect(fetchSpy).not.toHaveBeenCalled();
     detach();

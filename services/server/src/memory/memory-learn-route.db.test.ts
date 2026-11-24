@@ -7,8 +7,8 @@ import {
   learnStateSchema,
   listNotificationsResponseSchema,
   type LearnState,
-} from "@kobe/protocol";
-import { generateSessionKeyPair } from "@kobe/session-token";
+} from "@kaiju/protocol";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import { appendRunEvents } from "../event-stream/append.js";
 import { LEARN_PASSES_PER_DAY } from "./learn/passes.js";
 import { passErrorMessage } from "./learn/state.js";

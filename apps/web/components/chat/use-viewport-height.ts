@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 
-const HEIGHT = "--kobe-viewport-height";
-const OFFSET = "--kobe-viewport-offset";
+const HEIGHT = "--kaiju-viewport-height";
+const OFFSET = "--kaiju-viewport-offset";
 
 /**
  * Keeps the chat on what the member can see (KOBE-205, CE9), so the composer sits above the
  * on-screen keyboard where the browser ignores `interactive-widget` (Safari on iOS): sets
- * `--kobe-viewport-height` and `--kobe-viewport-offset` on `el` from visualViewport (iOS pans the
+ * `--kaiju-viewport-height` and `--kaiju-viewport-offset` on `el` from visualViewport (iOS pans the
  * visual viewport down by `offsetTop` when the keyboard opens). While pinch-zoomed both are
  * dropped, so zooming never squeezes the layout; without visualViewport, CSS uses 100dvh.
  */

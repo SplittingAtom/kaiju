@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sql } from "@kobe/db";
+import { sql } from "@kaiju/db";
 import { EgressBlockedRelay } from "../egress/blocked-relay.js";
 import { SkillEvalHub } from "../skills/evals/events.js";
 import { openHarness, type Harness } from "../testing/harness.js";
@@ -50,16 +50,16 @@ describe("shared LISTEN connection (KOBE-704)", () => {
       await waitFor(async () => {
         const res = await h.admin.query<{ n: number }>(
           `SELECT count(*)::int AS n FROM pg_stat_activity
-            WHERE datname = current_database() AND application_name = 'kobe-server-listen'`,
+            WHERE datname = current_database() AND application_name = 'kaiju-server-listen'`,
         );
         return res.rows[0]?.n === 1;
       });
       const listed = await h.admin.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM pg_stat_activity
-          WHERE datname = current_database() AND application_name LIKE 'kobe-%'
-            AND application_name NOT IN ('kobe-server', 'kobe-server-listen', 'kobe-event-stream')`,
+          WHERE datname = current_database() AND application_name LIKE 'kaiju-%'
+            AND application_name NOT IN ('kobe-server', 'kaiju-server-listen', 'kaiju-event-stream')`,
       );
-      // No other dedicated LISTEN session (the pre-KOBE-704 kobe-event-hub, kobe-sandbox-bus).
+      // No other dedicated LISTEN session (the pre-KOBE-704 kaiju-event-hub, kobe-sandbox-bus).
       expect(listed.rows[0]?.n).toBe(0);
     } finally {
       unsubscribe();
@@ -77,7 +77,7 @@ describe("shared LISTEN connection (KOBE-704)", () => {
     const names = rows.map((r) => r.name);
     expect(names).toContain("kobe-server");
     for (const name of names) {
-      expect(["kobe-server", "kobe-server-listen", "kobe-event-stream"]).toContain(name);
+      expect(["kobe-server", "kaiju-server-listen", "kaiju-event-stream"]).toContain(name);
     }
   });
 });

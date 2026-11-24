@@ -1,7 +1,7 @@
 /**
  * Workspace git (KOBE-757, spec docs/specs/workspace-git.md §3, §4, §8): the shared vocabulary of
  * git connections and repositories. The provider adapters (GIT-2, GIT-3), the connection routes
- * (GIT-4) and the egress proxy (GIT-7) import these from `@kobe/db`; the tables are in
+ * (GIT-4) and the egress proxy (GIT-7) import these from `@kaiju/db`; the tables are in
  * `schema/git.ts`, the sealed credential in `git/credential.ts`, the Site ceiling in
  * `git/site-settings.ts`.
  */
@@ -94,7 +94,7 @@ export const GIT_REPOSITORY_NAME_MAX = 100;
 export const GIT_ORGANIZATION_PATTERN = "^[A-Za-z0-9][A-Za-z0-9._-]*$";
 /** A repository name on any of the hosts (no slash; `.git` is never part of it). */
 export const GIT_REPOSITORY_NAME_PATTERN = "^[A-Za-z0-9._-]+$";
-/** An optional prefix for new repository names (G1 defaults), e.g. `kobe-`. */
+/** An optional prefix for new repository names (G1 defaults), e.g. `kaiju-`. */
 export const GIT_REPO_NAME_PREFIX_PATTERN = "^[A-Za-z0-9._-]*$";
 /** A default branch name: a conservative subset of git's ref rules. */
 export const GIT_BRANCH_NAME_PATTERN = "^[A-Za-z0-9][A-Za-z0-9._/-]*$";

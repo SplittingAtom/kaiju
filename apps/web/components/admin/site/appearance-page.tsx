@@ -1,6 +1,6 @@
 "use client";
 
-import type { FloorFailure, FloorReport, SiteBranding, ThemeSettings } from "@kobe/protocol";
+import type { FloorFailure, FloorReport, SiteBranding, ThemeSettings } from "@kaiju/protocol";
 import { useMemo, useState, type FormEvent } from "react";
 import {
   getBranding,

@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { cp, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { BLOB_REF_COLUMNS } from "@kobe/db";
-import { createTestDatabase, type TestDatabase } from "@kobe/db/testing";
+import { BLOB_REF_COLUMNS } from "@kaiju/db";
+import { createTestDatabase, type TestDatabase } from "@kaiju/db/testing";
 import pg from "pg";
 import { decryptFile, deriveKeys } from "../crypto.js";
 import {
@@ -24,7 +24,7 @@ export const EXCLUDED_MARKERS = {
   jwks: "JWKS-PRIVATE-KEY-7d8e9f",
   rateLimit: "RATE-LIMIT-KEY-9e8d7c",
   /** Kaiju's own counters (KOBE-809), left out like Better Auth's. */
-  kobeRateLimit: "KOBE-RATE-LIMIT-KEY-3b2a1f",
+  kaijuRateLimit: "KAIJU-RATE-LIMIT-KEY-3b2a1f",
   /** `session_sso_contexts.acr` (KOBE-625): per-session SSO state, left out with `sessions`. */
   ssoContext: "SSO-SESSION-CONTEXT-5c6d7e",
 } as const;
@@ -67,7 +67,7 @@ export const OBJECTS: StoredObject[] = [
 
 export function memoryLister(objects: readonly StoredObject[]): ObjectLister {
   return {
-    location: { endpoint: "memory://test", bucket: "kobe", prefix: "" },
+    location: { endpoint: "memory://test", bucket: "kaiju", prefix: "" },
     async *list() {
       yield* objects;
     },
@@ -137,11 +137,11 @@ export async function seed(db: TestDatabase): Promise<void> {
      INSERT INTO jwks (public_key, private_key) VALUES ('pub', '${JWKS_PRIVATE}');
      INSERT INTO rate_limits (key, count, last_request) VALUES ('${EXCLUDED_MARKERS.rateLimit}', 3, 1);
      INSERT INTO kobe_rate_limits (key, count, window_start, expires_at)
-       VALUES ('${EXCLUDED_MARKERS.kobeRateLimit}', 3, 1, 2);
+       VALUES ('${EXCLUDED_MARKERS.kaijuRateLimit}', 3, 1, 2);
      INSERT INTO sso_providers (id, slug, display_name, kind, issuer, client_id, client_secret_sealed,
          client_secret_key_id, tenant_id, subject_claim, access_claim)
        VALUES ('${SSO_PROVIDER}', 'contoso', 'Contoso', 'entra',
-         'https://login.microsoftonline.com/6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b/v2.0', 'kobe-app',
+         'https://login.microsoftonline.com/6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b/v2.0', 'kaiju-app',
          '${SSO_BACKED_UP.sealed}', 'k1', '6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b', 'oid', 'roles');
      INSERT INTO sso_identities (provider_id, subject, user_id, linked_via)
        VALUES ('${SSO_PROVIDER}', '${SSO_BACKED_UP.subject}', $3, 'jit');
@@ -187,7 +187,7 @@ export async function seed(db: TestDatabase): Promise<void> {
 
 /**
  * What the server's start writes into a site before anyone signs up (KOBE-422, the rows
- * `@kobe/db` STARTUP_SEEDED_ROWS covers): the gallery agent `kobe` and its published version,
+ * `@kaiju/db` STARTUP_SEEDED_ROWS covers): the gallery agent `kaiju` and its published version,
  * the seed's two audit events, the retention pass's, PII sweep's and SIEM forwarder's
  * bookkeeping, and the catalog usage job's snapshot of the last closed window (KOBE-339; the
  * same window on every site started that day, so a restore that kept it would collide).
@@ -203,8 +203,8 @@ export async function serverStarted(url: string, agentId = randomUUID()): Promis
        VALUES ('${agentId}', 1, '{"name":"Kobe"}', 'You are Kobe.', '{}', 1);
      UPDATE site_agents SET current_version = 1 WHERE id = '${agentId}';
      INSERT INTO audit_log (actor_kind, action, target) VALUES
-       ('system', 'agent.created', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kobe', 'source', 'seed')),
-       ('system', 'agent.published', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kobe', 'version', 1));
+       ('system', 'agent.created', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kaiju', 'source', 'seed')),
+       ('system', 'agent.published', jsonb_build_object('agentId', '${agentId}', 'scope', 'gallery', 'slug', 'kaiju', 'version', 1));
      INSERT INTO site_settings (key, value) VALUES
        ('retention.pass_started_at', '2026-10-18T03:00:00.000Z'),
        ('retention.last_pass_at', '2026-10-18T03:00:00.000Z'), ('retention.cursor', ''),
@@ -257,7 +257,7 @@ export async function allBackupBytes(dir: string): Promise<Buffer> {
 /** The pg_restore SQL script inside a backup (decrypted with `key`). */
 export async function dumpScript(dir: string, key: Buffer, pgBinDir?: string): Promise<string> {
   const { manifest, keys } = await readSignedManifest(dir, key);
-  const work = await mkdtemp(join(tmpdir(), "kobe-dump-"));
+  const work = await mkdtemp(join(tmpdir(), "kaiju-dump-"));
   try {
     const ref = manifest.files.database;
     await decryptFile(keys.enc, ref.path, join(dir, ref.path), ref, join(work, "d"));
@@ -288,7 +288,7 @@ export async function copyWithManifest(
  * never reaches a client tool.
  */
 export async function trapBinDir(): Promise<{ dir: string; ran: () => Promise<boolean> }> {
-  const dir = await mkdtemp(join(tmpdir(), "kobe-trap-"));
+  const dir = await mkdtemp(join(tmpdir(), "kaiju-trap-"));
   const marker = join(dir, "ran");
   for (const tool of ["pg_dump", "pg_restore", "psql"]) {
     await writeFile(join(dir, tool), `#!/bin/sh\necho "$0" >> "${marker}"\nexit 1\n`, {

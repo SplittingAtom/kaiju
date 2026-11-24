@@ -1,5 +1,5 @@
-import { APPROVAL_MODES, type ApprovalMode } from "@kobe/protocol";
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { APPROVAL_MODES, type ApprovalMode } from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { strictestApprovalMode } from "../policy/approval-floor.js";
 import { dangerousToolsFor } from "../policy/dangerous-mode.js";
 import type { RunPolicyContextSource } from "../sandbox-wire/types.js";
@@ -59,7 +59,7 @@ export type ActiveRuns =
   | { readonly ok: false; readonly reason: "too_many_runs" };
 
 export async function loadActiveRuns(
-  db: KobeDb,
+  db: KaijuDb,
   runContext: RunPolicyContextSource,
   principal: McpPrincipal,
 ): Promise<ActiveRuns> {

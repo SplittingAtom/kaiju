@@ -1,4 +1,4 @@
-import type { KobeDb, KobeTx } from "@kobe/db";
+import type { KaijuDb, KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { SandboxAuthenticator } from "./auth.js";
 import { collectAll, collectWorkspace, type CollectOptions, type CollectResult } from "./gc.js";
@@ -22,7 +22,7 @@ import {
 } from "./store.js";
 
 export interface WorkspaceSyncOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly objects: ObjectStore;
   /** Object key prefix (KOBE_S3_PREFIX), "" or ending in "/". */
   readonly prefix: string;
@@ -74,13 +74,13 @@ export interface WorkspaceSync {
    * and row cap. In the caller's team transaction.
    */
   putServerFile(
-    tx: KobeTx,
+    tx: KaijuTx,
     owner: WorkspaceOwner,
     file: ServerFile,
     area: ServerWriteArea,
   ): Promise<StoredEntry>;
   deleteServerFile(
-    tx: KobeTx,
+    tx: KaijuTx,
     owner: WorkspaceOwner,
     path: string,
   ): Promise<StoredEntry | undefined>;

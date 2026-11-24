@@ -1,4 +1,4 @@
-import type { ScanResult } from "@kobe/skill-scanner";
+import type { ScanResult } from "@kaiju/skill-scanner";
 import type { ValidBundle } from "./bundle.js";
 import { scanCanonicalZip } from "./review.js";
 import { SCAN_RETRY_AFTER_SECONDS, ScanBusyError } from "./scan-pool.js";

@@ -8,12 +8,12 @@ import {
   myEvalCasesSchema,
   reviewEvalCaseBodySchema,
   shareEvalCaseBodySchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * OpenAPI for shared eval cases (KOBE-276, `eval-cases/routes.ts`): the member's preview, share,
  * list and withdraw, and the agent owner's list, read and review. The schemas are
- * `@kobe/protocol` eval-cases.ts.
+ * `@kaiju/protocol` eval-cases.ts.
  */
 
 type JsonSchema = Record<string, unknown>;

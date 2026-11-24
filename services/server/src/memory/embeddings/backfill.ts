@@ -1,5 +1,5 @@
-import { modelGatewayState, scanTeams, sql, withTeam, type KobeDb } from "@kobe/db";
-import { MEMORY_EMBED_MAX_INPUTS } from "@kobe/protocol";
+import { modelGatewayState, scanTeams, sql, withTeam, type KaijuDb } from "@kaiju/db";
+import { MEMORY_EMBED_MAX_INPUTS } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../../background.js";
 import type { ReconcileLock } from "../../sandbox/reconcile-lock.js";
@@ -45,7 +45,7 @@ export type BuildStart =
   | { readonly ok: false; readonly code: "running" | "unavailable"; readonly message: string };
 
 export interface BuildOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly embeddings: MemoryEmbeddings;
   readonly background: BackgroundTasks;
   readonly log: Pick<Logger, "info" | "warn">;
@@ -67,7 +67,7 @@ const ALREADY_RUNNING: BuildStart = {
 };
 
 /** Polls until the gateway sync caught up with the desired configuration, or `waitMs` passed. */
-async function waitForGatewaySync(db: KobeDb, waitMs: number): Promise<void> {
+async function waitForGatewaySync(db: KaijuDb, waitMs: number): Promise<void> {
   const until = Date.now() + waitMs;
   while (Date.now() < until) {
     const [s] = await db.select().from(modelGatewayState);
@@ -80,7 +80,7 @@ async function waitForGatewaySync(db: KobeDb, waitMs: number): Promise<void> {
  * Whether another session (another replica's job) holds the build lock: the console shows that
  * build as running even when this replica has none. Reads `pg_locks` (no lock taken).
  */
-export async function buildRunningElsewhere(db: KobeDb): Promise<boolean> {
+export async function buildRunningElsewhere(db: KaijuDb): Promise<boolean> {
   const res = await db.execute<{ held: boolean }>(sql`
     WITH k AS (SELECT hashtextextended(${MEMORY_VECTOR_BUILD_LOCK}, 0) AS key)
     SELECT EXISTS (

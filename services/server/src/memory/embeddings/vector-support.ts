@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 
 /**
  * Whether this database can hold memory vectors (KOBE-409): the pgvector extension (enabled in the
@@ -19,7 +19,7 @@ export const VERSION_TABLES = [
   "site_memory_item_versions",
 ] as const;
 
-export async function readVectorSupport(db: KobeDb | KobeTx): Promise<VectorSupport> {
+export async function readVectorSupport(db: KaijuDb | KaijuTx): Promise<VectorSupport> {
   const res = await db.execute<{ enabled: boolean; available: boolean; columns: number | string }>(
     sql`SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') AS enabled,
                EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector') AS available,

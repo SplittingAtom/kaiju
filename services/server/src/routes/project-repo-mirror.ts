@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { gitRepoRelinkBodySchema } from "@kobe/protocol";
+import { gitRepoRelinkBodySchema } from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { mirrorDeps } from "../git/mirror/deps.js";

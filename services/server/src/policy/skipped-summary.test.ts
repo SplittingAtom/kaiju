@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SkippedAction } from "@kobe/protocol";
+import type { SkippedAction } from "@kaiju/protocol";
 import { SKIPPED_ENTRY_TYPE, skippedSummary } from "./skipped-summary.js";
 
 const action = (n: number, over: Partial<SkippedAction> = {}): SkippedAction => ({

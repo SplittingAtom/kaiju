@@ -7,8 +7,8 @@ import {
   type ThreadContextResult as Result,
   type ContextSource,
   type ThreadContextResult,
-} from "@kobe/protocol";
-import { THREAD_CONTEXT_PLAINTEXT_MAX_BYTES } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { THREAD_CONTEXT_PLAINTEXT_MAX_BYTES } from "@kaiju/protocol/sandbox-wire";
 import type { RawSection } from "./system-prompt.js";
 
 /**

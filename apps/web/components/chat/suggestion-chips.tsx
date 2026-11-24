@@ -4,7 +4,7 @@ import { ThreadPrimitive } from "@assistant-ui/react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isThreadRunning } from "../../lib/chat/thread-state";
 import type { RunnableAgent } from "../../lib/chat/types";
-import { useChatSession, type KobeThreadExtras } from "./kobe-runtime";
+import { useChatSession, type KaijuThreadExtras } from "./kaiju-runtime";
 
 const CHIP =
   "border-foreground/15 hover:bg-foreground/[0.04] focus-visible:ring-ring/50 max-w-full truncate rounded-full border bg-transparent px-3 py-1 text-start text-sm transition-colors outline-none focus-visible:ring-2 disabled:opacity-50 motion-reduce:transition-none";
@@ -32,7 +32,7 @@ function useRunnableAgents(): readonly RunnableAgent[] {
  * The starters of the conversation's agent (D19, KOBE-222): the draft's pick before the thread
  * exists, else the agent the thread pins. Empty without an agent or when it has none.
  */
-export function useAgentStarters(extras: KobeThreadExtras): readonly string[] {
+export function useAgentStarters(extras: KaijuThreadExtras): readonly string[] {
   const session = useChatSession();
   const draft = useSyncExternalStore(
     session.subscribeDraftAgent,
@@ -73,7 +73,7 @@ export function AgentStarters({ starters }: { readonly starters: readonly string
  * composer until the next send; a chip sends its text (a draft in the composer stays). Never for
  * a reader of a shared thread: they cannot send here.
  */
-export function FollowupChips({ extras }: { readonly extras: KobeThreadExtras }) {
+export function FollowupChips({ extras }: { readonly extras: KaijuThreadExtras }) {
   const { state } = extras;
   const followups = state.followups;
   if (
@@ -90,7 +90,7 @@ export function FollowupChips({ extras }: { readonly extras: KobeThreadExtras })
     <div
       role="group"
       aria-label="Suggested follow-ups"
-      data-kobe-followups
+      data-kaiju-followups
       className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both flex flex-wrap gap-2 duration-200"
     >
       {followups.suggestions.map((text) => (

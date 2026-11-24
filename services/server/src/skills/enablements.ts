@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -36,7 +36,7 @@ const effective = (access: Access, mine: boolean | null) =>
   access === "required" || (access === "default_on" ? mine !== false : mine === true);
 
 export function listSkillChoices(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<SkillChoices> {
@@ -108,7 +108,7 @@ export type EnablementResult =
 
 /** The skill's name and access for a toggle, or null when it isn't this member's to see. */
 async function target(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: { teamId: string; userId: string; kind: EnablementKind; skillId: string },
 ): Promise<{ name: string; access: Access | null } | null> {
   const { teamId, userId, skillId } = input;
@@ -139,7 +139,7 @@ const COLUMN = {
 
 /** Turns one skill on or off for the member in the team; audits a real change. */
 export function setEnablement(
-  db: KobeDb,
+  db: KaijuDb,
   input: {
     readonly teamId: string;
     readonly userId: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GIT_CAPABILITIES_UNKNOWN, type GitConnectionRecord } from "@kobe/db";
+import { GIT_CAPABILITIES_UNKNOWN, type GitConnectionRecord } from "@kaiju/db";
 import { toolError, hostError } from "./errors.js";
 import { GitHostError } from "../git-hosts/adapter.js";
 import { footerLine, markdownName, postedBody } from "./posted.js";
@@ -26,9 +26,9 @@ const connection = {
 
 describe("posted text (G13)", () => {
   it("ends with a line naming the member and the conversation", () => {
-    const footer = footerLine("opened", "Ana Lee", "https://kobe.example/", "ABC-1");
+    const footer = footerLine("opened", "Ana Lee", "https://kaiju.example/", "ABC-1");
     expect(footer).toBe(
-      "Opened by Ana Lee via Kaiju, from conversation https://kobe.example/?thread=abc-1",
+      "Opened by Ana Lee via Kaiju, from conversation https://kaiju.example/?thread=abc-1",
     );
     expect(postedBody("Fixes it.\n\n", footer)).toBe(`Fixes it.\n\n---\n${footer}`);
     expect(postedBody("", footer)).toBe(footer);

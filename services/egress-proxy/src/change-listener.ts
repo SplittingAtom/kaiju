@@ -2,7 +2,7 @@ import {
   CEILING_CHANGED,
   EGRESS_CHANGES_CHANNEL,
   EGRESS_USER_HINT_PREFIX as USER_PREFIX,
-} from "@kobe/db";
+} from "@kaiju/db";
 import pg from "pg";
 import type { Logger } from "pino";
 import type { AllowlistCache } from "./allowlist.js";
@@ -71,7 +71,7 @@ export class ChangeListener {
     const { cache, logger } = this.options;
     const client = new pg.Client({
       connectionString: this.options.connectionString,
-      application_name: "kobe-egress-proxy-listen",
+      application_name: "kaiju-egress-proxy-listen",
       connectionTimeoutMillis: 10_000,
     });
     client.on("error", (err) => {

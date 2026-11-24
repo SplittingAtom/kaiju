@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chatRequests, composer, openApp } from "./testing";
 
@@ -11,13 +11,13 @@ import { chatRequests, composer, openApp } from "./testing";
  * Pi's words Kaiju names differently (/name offers /rename), and the ones Kaiju doesn't offer: a
  * disabled row with the reason, and nothing is sent.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },
     {
@@ -170,7 +170,7 @@ describe("/session (Pi's /session)", { timeout: 30_000 }, () => {
 describe("/export (Pi's /export)", { timeout: 30_000 }, () => {
   function catchSaves(): string[] {
     const saved: string[] = [];
-    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:kobe/1");
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:kaiju/1");
     vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
       this: HTMLAnchorElement,
@@ -189,7 +189,7 @@ describe("/export (Pi's /export)", { timeout: 30_000 }, () => {
     await menu();
     await user.keyboard("{Enter}");
     await waitFor(() =>
-      expect(saved).toEqual([`blob:kobe/1 2026-10-20-export-${t.slice(0, 8)}.md`]),
+      expect(saved).toEqual([`blob:kaiju/1 2026-10-20-export-${t.slice(0, 8)}.md`]),
     );
     const req = fake.requests.find((r) => r.path.includes("/export"));
     expect(req).toMatchObject({

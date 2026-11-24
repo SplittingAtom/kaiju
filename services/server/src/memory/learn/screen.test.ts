@@ -1,4 +1,4 @@
-import type { MemoryExtractorCandidate } from "@kobe/protocol";
+import type { MemoryExtractorCandidate } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import type { ExtractorPromptInput } from "./prompt/input.js";
 import { EXTRACTOR_MAX_EXISTING_ITEMS } from "./prompt/build.js";

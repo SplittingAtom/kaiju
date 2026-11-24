@@ -91,7 +91,7 @@ async function dropProject(page: Page, id: string): Promise<void> {
   await pageApi(page, "DELETE", `/v1/projects/${id}`);
 }
 
-const header = (page: Page) => page.locator("#kobe-thread-title");
+const header = (page: Page) => page.locator("#kaiju-thread-title");
 
 /** The Projects tree of the Files panel, refreshed. */
 async function projectsTree(page: Page) {
@@ -227,7 +227,7 @@ test("owner: draft in a project, switch, remove, add back, send; title, Files li
         summary: message,
       }),
     );
-    const card = page.locator(`[data-kobe-file-edit*="${a.slug}/${NOTES}"]`).first();
+    const card = page.locator(`[data-kaiju-file-edit*="${a.slug}/${NOTES}"]`).first();
     await expect(card).toContainText(message, { timeout: RUN_TIMEOUT_MS });
     await chat.waitForIdle();
     const open = await proposals(page, threadId);
@@ -367,7 +367,7 @@ test("member2, a reader by default, sees every project and the proposal to chang
     );
     await otherChat.waitForIdle();
     const answer = otherChat.answers.last();
-    const called = answer.locator("[data-kobe-tool-badge]", { hasText: /^propose_file_edit$/ });
+    const called = answer.locator("[data-kaiju-tool-badge]", { hasText: /^propose_file_edit$/ });
     if ((await called.count()) > 0) {
       // The tool's answer reaches the agent (and, in the tool call's details, the member).
       expect
@@ -379,7 +379,7 @@ test("member2, a reader by default, sees every project and the proposal to chang
       await expect(answer).toContainText(/read-only|can't|cannot|not change/i);
     }
     expect(await proposals(other, threadId)).toEqual([]);
-    await expect(other.locator(`[data-kobe-file-edit*="${a.slug}/${NOTES}"]`)).toHaveCount(0);
+    await expect(other.locator(`[data-kaiju-file-edit*="${a.slug}/${NOTES}"]`)).toHaveCount(0);
     expect(await commitMessages(other, a.id)).not.toContain(`Reader edit ${stem}`);
 
     // A reader cannot commit through the API either (PE6): the owner's proposal route needs editor.

@@ -1,8 +1,8 @@
 /**
  * What kobe-sandbox-agent and the kobe-models Pi extension share (KOBE-41): the model file the
  * agent maintains for each Pi process and the environment variable naming it. Kept here (not in
- * `@kobe/protocol`) because the extension ships on its own and imports only node builtins and its
- * own files; `protocol.test.ts` pins the copies of `@kobe/protocol` constants.
+ * `@kaiju/protocol`) because the extension ships on its own and imports only node builtins and its
+ * own files; `protocol.test.ts` pins the copies of `@kaiju/protocol` constants.
  *
  * The file (`KOBE_MODEL_FILE`, 0600, in the Pi process's private runtime directory) holds the
  * sandbox's current `kobe.model-gateway` session token — the one credential a sandbox is designed
@@ -14,16 +14,16 @@
 export const MODEL_FILE_ENV = "KOBE_MODEL_FILE";
 export const MODEL_FILE_VERSION = 1;
 /** The Pi provider id; models are selected as `kobe/<gateway model>`. */
-export const KOBE_PROVIDER_ID = "kobe";
+export const KAIJU_PROVIDER_ID = "kobe";
 
-/** Copies of `@kobe/protocol` values (pinned by protocol.test.ts). */
+/** Copies of `@kaiju/protocol` values (pinned by protocol.test.ts). */
 export const PI_MODEL_APIS = [
   "openai-completions",
   "anthropic-messages",
   "google-generative-ai",
 ] as const;
 export type PiModelApi = (typeof PI_MODEL_APIS)[number];
-export const KOBE_MODEL_ERROR_PREFIX = "kobe.model_error:";
+export const KAIJU_MODEL_ERROR_PREFIX = "kobe.model_error:";
 /** Bound of a model's context window and output limit (`MODEL_LIMITS_MAX_TOKENS`, KOBE-259). */
 export const MODEL_LIMITS_MAX_TOKENS = 10_000_000;
 export const MODEL_RUN_ERROR_CODES = [

@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import type { AuthVariables } from "../auth/session.js";
 import type { ServerDeps } from "../deps.js";
-import { DELEGATED_SESSION_PREFIX } from "../kobe-mcp/delegation.js";
+import { DELEGATED_SESSION_PREFIX } from "../kaiju-mcp/delegation.js";
 import { linkByLocalProof, listLinks, unlinkIdentity } from "../sso/linking.js";
 import { readPendingLink, takePendingLink } from "../sso/pending-link.js";
-import { eq, ssoProviders } from "@kobe/db";
+import { eq, ssoProviders } from "@kaiju/db";
 import { idSchema } from "../teams/schemas.js";
 import { invalidRequest, notFound, param } from "../http/request.js";
 

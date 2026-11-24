@@ -59,7 +59,7 @@ export const skillDefaultSyncs = pgTable(
     status: text().$type<DefaultSyncStatus>().notNull().default("queued"),
     /** Null exactly when Kaiju queued it (`by_kobe`, KOBE-317: the built-in seed). */
     requestedBy: uuid().references(() => users.id),
-    byKobe: boolean().notNull().default(false),
+    byKaiju: boolean().notNull().default(false),
     createdAt: ts().notNull().defaultNow(),
     startedAt: ts(),
     finishedAt: ts(),
@@ -117,7 +117,7 @@ export const skillDefaultSyncs = pgTable(
         AND ${t.moved} >= 0 AND ${t.blocked} >= 0 AND ${t.nameConflicts} >= 0
         AND ${t.attempts} >= 0`,
     ),
-    check("skill_default_syncs_by_kobe", sql`${t.byKobe} = (${t.requestedBy} IS NULL)`),
+    check("skill_default_syncs_by_kobe", sql`${t.byKaiju} = (${t.requestedBy} IS NULL)`),
     check(
       "skill_default_syncs_last_error",
       sql`${t.lastError} IS NULL OR ${t.lastError} ~ '^[a-z0-9_]{1,64}$'`,

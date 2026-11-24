@@ -3,10 +3,10 @@
  * Responses arrive camelized; request bodies use the route's snake_case. Every call sends
  * `X-Kobe-Team`: notifications belong to the active team.
  */
-import type { NotificationKind, SchedulePausedBy } from "@kobe/protocol";
+import type { NotificationKind, SchedulePausedBy } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
 
-export interface KobeNotification {
+export interface KaijuNotification {
   readonly notificationId: string;
   readonly kind: NotificationKind;
   /** Null for `skill.member_add.blocked`, which names a catalog skill instead (KOBE-338). */
@@ -25,7 +25,7 @@ export interface KobeNotification {
   /** `team.site_admin.*`: the member and their team role (KOBE-638 review M1). */
   readonly subjectName?: string | undefined;
   readonly teamRole?: "team_admin" | "contributor" | "member" | undefined;
-  /** Memory kinds (KOBE-645): see `memoryNotificationFields` in @kobe/protocol. */
+  /** Memory kinds (KOBE-645): see `memoryNotificationFields` in @kaiju/protocol. */
   readonly memoryScope?: "team" | "site" | undefined;
   readonly memoryObjectId?: string | undefined;
   readonly relatedKind?: NotificationKind | undefined;
@@ -47,7 +47,7 @@ export interface KobeNotification {
 }
 
 export interface NotificationPage {
-  readonly notifications: readonly KobeNotification[];
+  readonly notifications: readonly KaijuNotification[];
   /** All the caller's unread notifications in the team, not just this page. */
   readonly unreadCount: number;
   readonly nextCursor: string | null;

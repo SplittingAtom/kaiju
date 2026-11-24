@@ -9,7 +9,7 @@ import type { BandwidthLimiter, ConnectionLimits } from "./limits.js";
 import type { ResolveHost } from "./resolver.js";
 import type { PreAuthGate } from "./preauth-gate.js";
 import type { TunnelRegistry } from "./tunnel-registry.js";
-import type { InjectedHeader } from "@kobe/db";
+import type { InjectedHeader } from "@kaiju/db";
 import type { GitTransportDeps } from "./git/types.js";
 
 /**

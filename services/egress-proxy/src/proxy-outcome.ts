@@ -1,4 +1,4 @@
-import { SpanKind, idAttributes, recordSpan } from "@kobe/telemetry";
+import { SpanKind, idAttributes, recordSpan } from "@kaiju/telemetry";
 import type { Socket } from "node:net";
 import type { SandboxIdentity } from "./auth.js";
 import type { ConnectionReason, ConnectionRecord, GitTraffic } from "./connection-audit.js";

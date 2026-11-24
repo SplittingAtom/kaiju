@@ -1,4 +1,4 @@
-import { CAPABILITY_GIT, type RepoStatusFrame } from "@kobe/protocol/sandbox-wire";
+import { CAPABILITY_GIT, type RepoStatusFrame } from "@kaiju/protocol/sandbox-wire";
 import { recordRepoStatus } from "../../git/working-copy.js";
 import type { ConnectionPort } from "./port.js";
 

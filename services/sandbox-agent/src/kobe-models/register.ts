@@ -1,11 +1,11 @@
 import type { Model, Provider } from "@earendil-works/pi-ai";
 import {
-  KOBE_PROVIDER_ID,
+  KAIJU_PROVIDER_ID,
   RUN_TOKEN_UI_TITLE,
   type ModelFileModel,
   type ModelFileState,
 } from "./protocol.js";
-import { createKobeProvider, kobeModel, type KobeProviderDeps, type PiAiLike } from "./provider.js";
+import { createKaijuProvider, kaijuModel, type KaijuProviderDeps, type PiAiLike } from "./provider.js";
 import { takeModelFilePath } from "./state-file.js";
 import { withTimeout } from "./timeout.js";
 import { ContextRecorder, takeContextFilePath } from "./context-capture.js";
@@ -71,7 +71,7 @@ function branchIsOn(ctx: InputContextLike, gatewayModel: string): boolean {
   const recorded = branchModel(ctx.sessionManager?.getBranch() ?? []);
   return (
     recorded === undefined ||
-    (recorded.provider === KOBE_PROVIDER_ID && recorded.modelId === gatewayModel)
+    (recorded.provider === KAIJU_PROVIDER_ID && recorded.modelId === gatewayModel)
   );
 }
 
@@ -100,11 +100,11 @@ export interface ExtensionApiLike {
   setModel(model: Model): Promise<boolean>;
 }
 
-export interface KobeModelsDeps {
+export interface KaijuModelsDeps {
   readonly env: Record<string, string | undefined>;
   readonly readState: (file: string) => Promise<ModelFileState>;
   readonly pi: PiAiLike;
-  readonly apis: KobeProviderDeps["apis"];
+  readonly apis: KaijuProviderDeps["apis"];
   readonly warn: (message: string) => void;
 }
 
@@ -119,9 +119,9 @@ let modelFile: string | undefined;
 /** The context viewer's capture (KOBE-470); one recorder per Pi process, like the model file. */
 let contextRecorder: ContextRecorder | null | undefined;
 
-export async function registerKobeModels(
+export async function registerKaijuModels(
   api: ExtensionApiLike,
-  deps: KobeModelsDeps,
+  deps: KaijuModelsDeps,
 ): Promise<void> {
   const file = (modelFile ??= takeModelFilePath(deps.env));
   if (file === undefined) {
@@ -136,7 +136,7 @@ export async function registerKobeModels(
   }
   const recorder = contextRecorder;
   const build = (initial: ModelFileState) =>
-    createKobeProvider({
+    createKaijuProvider({
       pi: deps.pi,
       initial,
       readState: () => deps.readState(file),
@@ -205,7 +205,7 @@ export async function registerKobeModels(
     await refreshRunToken(state, ctx);
     const wanted = state.model;
     if (wanted === null) return;
-    const selected = ctx.model?.provider === KOBE_PROVIDER_ID ? ctx.model.id : undefined;
+    const selected = ctx.model?.provider === KAIJU_PROVIDER_ID ? ctx.model.id : undefined;
     // Limits changed (KOBE-259: an admin edited the catalog) re-select the same model.
     const sameLimits = registered.model !== null && sameModelLimits(registered.model, wanted);
     // KOBE-279: a Pi started on a branch point knows only the run's model (the model file), so it
@@ -219,7 +219,7 @@ export async function registerKobeModels(
       api.registerProvider(build(state));
       registered = state;
     }
-    if (!(await api.setModel(kobeModel(state.gateway_url, wanted)))) {
+    if (!(await api.setModel(kaijuModel(state.gateway_url, wanted)))) {
       deps.warn(`kobe-models: Pi did not accept model ${wanted.gateway_model}`);
     }
   });

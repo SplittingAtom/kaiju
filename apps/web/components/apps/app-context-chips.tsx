@@ -3,7 +3,7 @@
 import { BlocksIcon, XIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { chipSummary } from "../../lib/apps/app-context";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 
 /**
  * The composer's MCP Apps context chips (KOBE-439, spec §8, ac-2): "Context from <app>: <one
@@ -26,7 +26,7 @@ export function AppContextChips({ draft }: { readonly draft: string }) {
       {[...chips.values()].map((chip) => (
         <li
           key={chip.appId}
-          data-kobe-app-context={chip.appId}
+          data-kaiju-app-context={chip.appId}
           className="rounded-md border px-2 py-1 text-xs"
         >
           <details>

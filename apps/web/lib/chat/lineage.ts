@@ -9,7 +9,7 @@ import {
   threadLineageResponseSchema,
   type LineageRelative,
   type ThreadLineageResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { readWire } from "./wire-read";
 import { UNTITLED_THREAD } from "./fork";
 

@@ -43,7 +43,7 @@ function ThreadItem({ archived }: { readonly archived: boolean }) {
 
   return (
     <li
-      data-kobe-thread={remoteId}
+      data-kaiju-thread={remoteId}
       draggable={movable || undefined}
       onDragStart={
         movable
@@ -57,7 +57,7 @@ function ThreadItem({ archived }: { readonly archived: boolean }) {
     >
       <ThreadListItemPrimitive.Root
         className={`group/row ${styles.threadItem}${inPanel ? ` ${styles.panelRow}` : ""}`}
-        data-kobe-activity={activity}
+        data-kaiju-activity={activity}
       >
         <ThreadActivityDot activity={activity} id={activityId} unread={unread} />
         <RailThreadCard>

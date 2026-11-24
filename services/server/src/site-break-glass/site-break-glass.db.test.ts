@@ -1,6 +1,6 @@
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { sweepBreakGlass } from "../break-glass/sweeper.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
@@ -12,7 +12,7 @@ import { fakeIsolation } from "../testing/isolation.js";
 // end: request, two-person approval, notifications per the break-glass rule, reads refused without
 // an active grant and allowed (read-only) with one, every read audited in the Site log and in each
 // of the person's Workspaces, revocation and expiry.
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 const PEOPLE = ["owner", "investigator", "alice", "bob", "dave", "erin"] as const;
@@ -180,7 +180,7 @@ afterEach(async () => {
        ended_at = now() WHERE status IN ('pending', 'approved')`,
   );
   await admin.query(`SET session_replication_role = origin`);
-  await admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kobe:site-break-glass-%'`);
+  await admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kaiju:site-break-glass-%'`);
 });
 
 afterAll(async () => {

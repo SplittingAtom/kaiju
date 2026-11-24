@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import {
   PREFIX,
   audits,

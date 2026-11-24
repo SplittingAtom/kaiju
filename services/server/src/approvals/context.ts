@@ -1,5 +1,5 @@
-import type { ToolRegistry } from "@kobe/protocol";
-import type { KobeDb } from "@kobe/db";
+import type { ToolRegistry } from "@kaiju/protocol";
+import type { KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { SandboxRouter } from "../sandbox-wire/types.js";
 import type { ApprovalKeyring } from "./keys.js";
@@ -16,7 +16,7 @@ export interface ApprovalRunHooks {
 }
 
 export interface ApprovalContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Absent: approvals can't be signed, so every approval request is denied (fail closed). */
   readonly keys: ApprovalKeyring | undefined;
   /** Pending TTL (D29: 1 h). */

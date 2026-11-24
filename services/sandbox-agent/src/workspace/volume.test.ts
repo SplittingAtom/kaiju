@@ -7,7 +7,7 @@ import { OffVolumeError, openOnVolume, shareOnVolume } from "./volume.js";
 
 let root: string;
 beforeEach(async () => {
-  root = await mkdtemp(path.join(tmpdir(), "kobe-volume-"));
+  root = await mkdtemp(path.join(tmpdir(), "kaiju-volume-"));
 });
 afterEach(async () => {
   await rm(root, { recursive: true, force: true });
@@ -36,7 +36,7 @@ describe("workspace volume guard (KOBE-71)", () => {
   it.runIf(otherVolume !== undefined)(
     "refuses a file a replaced parent leads off the volume (another Pi's dir, the token)",
     async () => {
-      const elsewhere = await mkdtemp(path.join(otherVolume as string, "kobe-volume-"));
+      const elsewhere = await mkdtemp(path.join(otherVolume as string, "kaiju-volume-"));
       try {
         await writeFile(path.join(elsewhere, "model.json"), "secret");
         // The race this guards against, made permanent: the parent is a link off the volume.

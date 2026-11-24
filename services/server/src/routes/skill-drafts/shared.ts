@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { z } from "zod";
-import { LICENSE_PATTERN } from "@kobe/protocol";
-import type { KobeDb } from "@kobe/db";
+import { LICENSE_PATTERN } from "@kaiju/protocol";
+import type { KaijuDb } from "@kaiju/db";
 import type { TeamVariables } from "../../authz/middleware.js";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import type { ServerDeps } from "../../deps.js";
@@ -108,7 +108,7 @@ export const NO_DRAFTS = "Your team role doesn't allow drafts.";
 /** What every draft route group shares: one skill store per router and the reply helpers. */
 export interface DraftKit {
   readonly deps: ServerDeps;
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly skillStore: () => SkillStore | null;
   readonly ctxOf: (c: Ctx) => DraftContext;
   readonly failure: (c: Ctx, f: DraftFailure) => Response | Promise<Response>;

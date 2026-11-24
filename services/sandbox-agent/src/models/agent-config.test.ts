@@ -8,7 +8,7 @@ let dir: string | undefined;
 afterEach(async () => {
   if (dir) await rm(dir, { recursive: true, force: true });
 });
-const fresh = async () => (dir = await mkdtemp(path.join(tmpdir(), "kobe-agentcfg-")));
+const fresh = async () => (dir = await mkdtemp(path.join(tmpdir(), "kaiju-agentcfg-")));
 
 describe("guarded Pi config (KOBE-169)", () => {
   it("writes read-only files and reports nothing for them", async () => {
@@ -27,6 +27,6 @@ describe("guarded Pi config (KOBE-169)", () => {
     expect(await tamperedConfig(agent)).toEqual(["agent/models.json", "agent/settings.json"]);
     await symlink(path.join(agent, "models.json"), path.join(agent, "settings.json"));
     expect(await tamperedConfig(agent)).toEqual(["agent/models.json", "agent/settings.json"]);
-    expect(await readFile(path.join(agent, "models.json"), "utf8")).toContain("kobe");
+    expect(await readFile(path.join(agent, "models.json"), "utf8")).toContain("kaiju");
   });
 });

@@ -1,7 +1,7 @@
 import type { GitHostNet } from "./git-hosts/http.js";
-import type { SessionSigningKey } from "@kobe/session-token";
-import type { Envelope } from "@kobe/db";
-import type { ScoreSink } from "@kobe/telemetry";
+import type { SessionSigningKey } from "@kaiju/session-token";
+import type { Envelope } from "@kaiju/db";
+import type { ScoreSink } from "@kaiju/telemetry";
 import type { AppCaller } from "./apps/app-caller.js";
 import type { ApprovalKeyring, ApprovalServiceOptions } from "./approvals/index.js";
 import type { ForwardDestination } from "./audit/forward/types.js";
@@ -28,7 +28,7 @@ import type { UploadSettings } from "./uploads/settings.js";
 /** What `createServerDeps` is built from (deps.ts; split out by KOBE-709 to keep it short). */
 export interface ServerDepsOptions {
   readonly databaseUrl: string;
-  /** App-role connection timeouts (KOBE-732); the @kobe/db defaults when absent. */
+  /** App-role connection timeouts (KOBE-732); the @kaiju/db defaults when absent. */
   readonly dbTimeouts?: DbTimeouts;
   /**
    * The query pool (KOBE-736): its size (default 10) and `application_name` (default
@@ -48,7 +48,7 @@ export interface ServerDepsOptions {
   readonly trustedProxies: readonly string[];
   /**
    * The process's one LISTEN connection (KOBE-704): its `application_name` (default
-   * `kobe-server-listen`) and tuning (tests shorten the timers).
+   * `kaiju-server-listen`) and tuning (tests shorten the timers).
    */
   readonly listen?: Partial<ListenTuning> & { readonly applicationName?: string };
   /** Kaiju Event Stream tuning (tests shorten the timers). */
@@ -168,7 +168,7 @@ export interface ServerDepsOptions {
   };
   /**
    * Answer ratings as trace scores (KOBE-275): the tracing backend's score sink (Langfuse only,
-   * `@kobe/telemetry` createLangfuseScoreSink) and whether scores may carry the comment
+   * `@kaiju/telemetry` createLangfuseScoreSink) and whether scores may carry the comment
    * (`telemetry.captureContent`). Unset: ratings are not exported.
    */
   readonly feedbackScores?: { readonly sink: ScoreSink; readonly captureContent: boolean };

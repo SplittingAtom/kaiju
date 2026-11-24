@@ -6,7 +6,7 @@ import { comparable, NO_COMPARE } from "../../lib/chat/compare";
 import { messageMeta } from "../../lib/chat/tree";
 import type { MenuBindings } from "../../lib/shell/menu";
 import { useBindCommands } from "../shell/command-bindings";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { focusComposerSoon } from "./tree-actions";
 import { useTreeData } from "./tree-context";
 
@@ -27,7 +27,7 @@ interface Shown {
  * tree, Previous / Next version, Compare versions and Continue from here on the focused message (the last one
  * focused or hovered in the conversation; else the newest that applies on screen).
  */
-export function TreeCommands({ extras }: { readonly extras: KobeThreadExtras }) {
+export function TreeCommands({ extras }: { readonly extras: KaijuThreadExtras }) {
   const aui = useAui();
   const data = useTreeData();
   const messages = useAuiState((s) => s.thread.messages) as readonly Shown[];

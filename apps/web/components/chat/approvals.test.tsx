@@ -2,8 +2,8 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { KobeEventPayload } from "@kobe/protocol";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import type { KaijuEventPayload } from "@kaiju/protocol";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { ApprovalCard } from "./approval-card";
 import { composer, openApp, streaming } from "./testing";
@@ -12,11 +12,11 @@ import { composer, openApp, streaming } from "./testing";
  * The approval card (KOBE-37, U6) in the chat over the fake server: what it shows, Allow with
  * "always allow", Deny, expiry and errors. The server decides and signs; the card only asks.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -28,7 +28,7 @@ afterEach(() => {
 const APPROVAL = "00000000-0000-4000-8000-000900000001";
 const TOOL = "mcp__jira__create_issue";
 
-function asked(overrides: Partial<KobeEventPayload<"approval.requested">> = {}) {
+function asked(overrides: Partial<KaijuEventPayload<"approval.requested">> = {}) {
   return {
     approval_id: APPROVAL,
     tool_call_id: "tc1",
@@ -48,7 +48,7 @@ function asked(overrides: Partial<KobeEventPayload<"approval.requested">> = {}) 
 }
 
 /** A thread with a run whose Jira call waits for approval. */
-async function waitingRun(overrides: Partial<KobeEventPayload<"approval.requested">> = {}) {
+async function waitingRun(overrides: Partial<KaijuEventPayload<"approval.requested">> = {}) {
   const t = fake.addThread("Ops");
   openApp(fake, t);
   const user = userEvent.setup();

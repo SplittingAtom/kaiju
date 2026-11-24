@@ -32,9 +32,9 @@ interface App {
 }
 
 const appsPanel = (page: Page) => page.getByRole("tabpanel", { name: "Apps", exact: true });
-const panel = (page: Page) => page.locator("[data-kobe-composer-panel]");
-const hint = (page: Page) => page.locator("#kobe-composer-hint");
-const ghost = (page: Page) => page.locator("[data-kobe-frame-drag-ghost]");
+const panel = (page: Page) => page.locator("[data-kaiju-composer-panel]");
+const hint = (page: Page) => page.locator("#kaiju-composer-hint");
+const ghost = (page: Page) => page.locator("[data-kaiju-frame-drag-ghost]");
 const chipRow = (page: Page) =>
   page.getByRole("list", { name: "Items sent with your next message" });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import type { KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEventPayload } from "@kaiju/protocol";
 import type { ApiError } from "../../lib/api/client";
 import type { ChatApi } from "../../lib/chat/api";
 import { visible } from "../../lib/security/visible";
@@ -11,8 +11,8 @@ import { RememberControls, askedForUnattendedRun, type RememberChoice } from "./
 import { useApprovalInput, useRememberOptions } from "./use-approval-card";
 import styles from "./chat.module.css";
 
-type Requested = KobeEventPayload<"approval.requested">;
-type Resolved = KobeEventPayload<"approval.resolved">;
+type Requested = KaijuEventPayload<"approval.requested">;
+type Resolved = KaijuEventPayload<"approval.resolved">;
 
 const EXPIRED_TEXT: Record<Exclude<Resolved["cause"], "user">, string> = {
   ttl: "The approval request expired after 1 hour without an answer. The tool did not run.",
@@ -44,15 +44,15 @@ function scrollBehavior(): ScrollBehavior {
   return reduce ? "auto" : "smooth";
 }
 
-/** The message list follows the latest message (KOBE-288's `data-kobe-follow`, use-follow.ts). */
+/** The message list follows the latest message (KOBE-288's `data-kaiju-follow`, use-follow.ts). */
 function followsLatest(el: Element): boolean {
-  return el.closest("[data-kobe-follow]")?.getAttribute("data-kobe-follow") === "pinned";
+  return el.closest("[data-kaiju-follow]")?.getAttribute("data-kaiju-follow") === "pinned";
 }
 
 /** Brings the first approval still waiting into view (the steering panel's Show button). */
 export function scrollToPendingApproval(root: ParentNode = document): void {
   root
-    .querySelector<HTMLElement>('[data-kobe-approval="pending"]')
+    .querySelector<HTMLElement>('[data-kaiju-approval="pending"]')
     ?.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
 }
 
@@ -176,11 +176,11 @@ export function ApprovalCard({
   return (
     <section
       ref={card}
-      className={`${styles.approval} kobe-panel`}
+      className={`${styles.approval} kaiju-panel`}
       role="group"
       aria-labelledby={`${ids}-title`}
       aria-describedby={`${ids}-why`}
-      data-kobe-approval={expired || sent ? "answered" : "pending"}
+      data-kaiju-approval={expired || sent ? "answered" : "pending"}
     >
       <ApprovalTitle ids={ids} requested={requested} toolShown={toolShown} />
       {admin !== undefined && <AdminChange admin={admin} input={input} />}

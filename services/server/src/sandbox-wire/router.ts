@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeDb, type SandboxCommandKind } from "@kobe/db";
-import { formatTraceparent, runTraceId } from "@kobe/protocol";
+import { sql, withTeam, type KaijuDb, type SandboxCommandKind } from "@kaiju/db";
+import { formatTraceparent, runTraceId } from "@kaiju/protocol";
 import {
   idAttributes,
   runParentContext,
@@ -8,7 +8,7 @@ import {
   trace,
   withSpan,
   type Span,
-} from "@kobe/telemetry";
+} from "@kaiju/telemetry";
 import type { Logger } from "pino";
 import type { SandboxBus } from "./bus.js";
 import {
@@ -44,7 +44,7 @@ interface Waiter {
  * the safety net for lost hints. A command never waits past its deadline.
  */
 export class CommandRouter implements SandboxRouter {
-  readonly #db: KobeDb;
+  readonly #db: KaijuDb;
   readonly #bus: SandboxBus;
   readonly #tuning: WireTuning;
   readonly #replicaId: string;
@@ -57,7 +57,7 @@ export class CommandRouter implements SandboxRouter {
   #closed = false;
 
   constructor(options: {
-    db: KobeDb;
+    db: KaijuDb;
     bus: SandboxBus;
     tuning: WireTuning;
     replicaId: string;

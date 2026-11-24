@@ -3,7 +3,7 @@
 import { useCallback, useContext, useEffect, useState, useSyncExternalStore } from "react";
 import type { DraftProjectIssue } from "../../lib/chat/session";
 import { createProjectsApi, type Project } from "../../lib/projects/api";
-import { ChatSessionContext, useChatSession } from "./kobe-runtime";
+import { ChatSessionContext, useChatSession } from "./kaiju-runtime";
 
 /** The draft's project id and the refusal of its last send (NC5), re-read when either changes. */
 export function useDraftProjectState(): {

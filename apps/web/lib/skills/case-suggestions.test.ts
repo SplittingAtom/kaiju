@@ -1,4 +1,4 @@
-import { parseSkillEvalSuite } from "@kobe/protocol/skill-evals";
+import { parseSkillEvalSuite } from "@kaiju/protocol/skill-evals";
 import { describe, expect, it } from "vitest";
 import { appendCases, caseIdsOf, suggestTriggerCases } from "./case-suggestions";
 

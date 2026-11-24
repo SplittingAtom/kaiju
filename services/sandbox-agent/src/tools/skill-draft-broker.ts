@@ -5,14 +5,14 @@ import {
   SKILL_DRAFT_TOOL_MAX_FILES,
   SKILL_DRAFT_TOOL_PATH_MAX,
   workspacePathIssue,
-  type KobeToolsRequest,
-  type KobeToolsResponse,
+  type KaijuToolsRequest,
+  type KaijuToolsResponse,
   type SkillDraftSaveFile,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   type SkillDraftSaveFrame,
   type SkillDraftSaveResultFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { TEMP_PREFIX, lstatIfExists } from "../workspace/fs.js";
 import { DEFAULT_SKIP_DIRS, PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
@@ -40,7 +40,7 @@ export interface SkillDraftBrokerDeps {
   readonly pushPath: (rel: string) => Promise<PushedFile>;
 }
 
-type SaveRequest = Extract<KobeToolsRequest, { op: "skill.draft_save" }>;
+type SaveRequest = Extract<KaijuToolsRequest, { op: "skill.draft_save" }>;
 
 class FolderError extends Error {
   constructor(
@@ -133,7 +133,7 @@ export class SkillDraftBroker {
     threadId: string,
     runId: string | undefined,
     request: SaveRequest,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));

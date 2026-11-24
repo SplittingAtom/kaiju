@@ -1,4 +1,4 @@
-import { MAX_JSON_NESTING, type JsonValue } from "@kobe/protocol";
+import { MAX_JSON_NESTING, type JsonValue } from "@kaiju/protocol";
 
 /**
  * Make a value parsed from Pi output acceptable to the server's strict frame decoder
@@ -7,7 +7,7 @@ import { MAX_JSON_NESTING, type JsonValue } from "@kobe/protocol";
  * would reject must never get an outbound seq: the server would answer every re-send with `resend`.
  */
 const REPLACEMENT = "\uFFFD";
-export const TOO_DEEP_MARKER = "[kobe: nested too deeply]";
+export const TOO_DEEP_MARKER = "[kaiju: nested too deeply]";
 
 /** Frame envelope levels above the bridged value (frame → event / input). */
 const ENVELOPE_DEPTH = 2;

@@ -238,7 +238,7 @@ describe("pointer drags from an app frame (KOBE-553 ac-1)", () => {
     expect(t.events).toEqual([]);
   });
 
-  it("drops other kobe/ notifications", () => {
+  it("drops other kaiju/ notifications", () => {
     const t = setup();
     t.send(note("kobe/notifications/drag-drop", { item: ITEM, x: 1, y: 1 }));
     t.send(note("kobe/notifications/drag-startx", { item: ITEM, x: 1, y: 1 }));

@@ -21,11 +21,11 @@ import { teams } from "./teams.js";
 // rating key (ON DELETE SET NULL (feedback_id), which drizzle can't express), the immutability and
 // the legal-hold triggers are SQL-only (custom migration `*_agent_eval_cases_rls.sql`).
 
-/** `@kobe/protocol` EVAL_CASE_STATUSES. */
+/** `@kaiju/protocol` EVAL_CASE_STATUSES. */
 export const AGENT_EVAL_CASE_STATUSES = ["open", "accepted", "dismissed"] as const;
 export type AgentEvalCaseStatus = (typeof AGENT_EVAL_CASE_STATUSES)[number];
 
-/** `@kobe/protocol` EVAL_CASE_EXPECTED_MAX_CHARS. */
+/** `@kaiju/protocol` EVAL_CASE_EXPECTED_MAX_CHARS. */
 export const AGENT_EVAL_CASE_EXPECTED_MAX_CHARS = 2_000;
 /** Ceiling on a stored copy (its jsonb text), well above what the server's limits produce. */
 export const AGENT_EVAL_CASE_CONTENT_MAX_BYTES = 128 * 1024;
@@ -39,7 +39,7 @@ const textList = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}
  * ON DELETE SET NULL (feedback_id)): one case per rating; a cleared rating leaves the case.
  *
  * `agent_*` name the agent and version that answered (from the rating's snapshot; no key, like
- * answer_feedback's). `content` is the copy (`@kobe/protocol` EvalCaseContent), immutable with the
+ * answer_feedback's). `content` is the copy (`@kaiju/protocol` EvalCaseContent), immutable with the
  * identity columns; only the review (`status`, `expected_behaviour`, `reviewed_at`) changes.
  * Accepted cases need an expected behaviour; they run in the agent's pre-publish eval (KOBE-93).
  */

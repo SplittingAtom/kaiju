@@ -1,5 +1,5 @@
-import { GIT_CONVERSION_FAILURES } from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+import { GIT_CONVERSION_FAILURES } from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { logger } from "../../logger.js";
 import type { ConversionRow } from "./store.js";
 
@@ -15,7 +15,7 @@ import type { ConversionRow } from "./store.js";
  * notification, logged, never the end (as `notifyScheduledRunEndInTx`). Ids and the failure code
  * only; the list answer adds the names and the member-safe words, never the stored detail.
  */
-export async function notifyConversionEndInTx(tx: KobeTx, row: ConversionRow): Promise<void> {
+export async function notifyConversionEndInTx(tx: KaijuTx, row: ConversionRow): Promise<void> {
   if (row.status !== "completed" && row.status !== "failed") return;
   try {
     await tx.transaction((sp) => record(sp, row));
@@ -37,7 +37,7 @@ export function failureCodeOf(row: Pick<ConversionRow, "lastError">): string {
     : "internal_error";
 }
 
-async function record(tx: KobeTx, row: ConversionRow): Promise<void> {
+async function record(tx: KaijuTx, row: ConversionRow): Promise<void> {
   const failed = row.status === "failed";
   await tx.execute(sql`
     INSERT INTO notifications (team_id, user_id, kind, git_conversion_id, git_attempt, git_failure)

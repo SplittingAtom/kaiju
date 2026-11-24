@@ -5,7 +5,7 @@ import {
   MAX_ACTIVE_SCHEDULES_PER_USER,
   type ScheduleError,
   type ScheduleErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { readJson } from "../http/request.js";
 
 /** An answer chosen inside a transaction and sent after it commits (or rolls back). */

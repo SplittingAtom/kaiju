@@ -1,5 +1,5 @@
 {
-  "name": "@kobe/session-token",
+  "name": "@kaiju/session-token",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -21,6 +21,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kobe/protocol": "workspace:*"
+    "@kaiju/protocol": "workspace:*"
   }
 }

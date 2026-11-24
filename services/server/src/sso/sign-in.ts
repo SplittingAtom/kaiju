@@ -7,9 +7,9 @@ import {
   ssoAccessMappings,
   ssoIdentities,
   users,
-  type KobeDb,
+  type KaijuDb,
   pgErrorOf,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import type { AfterChangeDeps } from "../teams/after-change.js";
@@ -77,7 +77,7 @@ const refuseLinkable = (
     : { linkIntent: { subject: identity.subject, email: identity.email } }),
 });
 
-async function linkedUser(db: KobeDb, providerId: string, subject: string) {
+async function linkedUser(db: KaijuDb, providerId: string, subject: string) {
   const [row] = await db
     .select({ userId: ssoIdentities.userId, deactivatedAt: users.deactivatedAt })
     .from(ssoIdentities)
@@ -92,7 +92,7 @@ async function linkedUser(db: KobeDb, providerId: string, subject: string) {
  * token too but writes no groups, and reading an empty membership list from it would take away
  * every team the provider's mappings gave.
  */
-async function scimGroupsProvisioned(db: KobeDb, providerId: string): Promise<boolean> {
+async function scimGroupsProvisioned(db: KaijuDb, providerId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: scimGroups.id })
     .from(scimGroups)
@@ -102,7 +102,7 @@ async function scimGroupsProvisioned(db: KobeDb, providerId: string): Promise<bo
 }
 
 /** The person's SCIM group object ids at this provider (the values a groups claim would carry). */
-async function scimGroupValues(db: KobeDb, providerId: string, userId: string): Promise<string[]> {
+async function scimGroupValues(db: KaijuDb, providerId: string, userId: string): Promise<string[]> {
   const rows = await db
     .select({ value: scimGroups.externalId })
     .from(scimGroupMembers)
@@ -111,14 +111,14 @@ async function scimGroupValues(db: KobeDb, providerId: string, userId: string): 
   return rows.map((r) => r.value);
 }
 
-async function touchIdentity(db: KobeDb, providerId: string, subject: string): Promise<void> {
+async function touchIdentity(db: KaijuDb, providerId: string, subject: string): Promise<void> {
   await db
     .update(ssoIdentities)
     .set({ lastSignInAt: new Date() })
     .where(and(eq(ssoIdentities.providerId, providerId), eq(ssoIdentities.subject, subject)));
 }
 
-async function hasSiteRole(db: KobeDb, userId: string): Promise<boolean> {
+async function hasSiteRole(db: KaijuDb, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ role: siteRoles.role })
     .from(siteRoles)
@@ -155,7 +155,7 @@ type NewUser =
   | { readonly kind: "conflict"; readonly emailTaken: boolean };
 
 async function createJitUser(
-  db: KobeDb,
+  db: KaijuDb,
   p: SsoProvider,
   identity: VerifiedIdentity & { readonly email: string },
 ): Promise<NewUser> {

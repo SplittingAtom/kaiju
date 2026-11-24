@@ -9,16 +9,16 @@ import {
   toolRules,
   withTeam,
   type AuditActor,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   argPatternSchema,
   globSchema,
   rememberScopeSchema,
   type ArgPattern,
   type RememberScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import type { PolicyRuleSource, PolicySettingsSource } from "./engine.js";
 import { allowGlobScoped, isLiteralGlob } from "./patterns.js";
@@ -118,7 +118,7 @@ const notExpired = (
  * Call it (i.e. `PolicyEngine.decide`) outside any `withTeam` transaction: nested withTeam is
  * refused, which the engine turns into a fail-closed deny.
  */
-export function createDbRuleSource(db: KobeDb): PolicyRuleSource {
+export function createDbRuleSource(db: KaijuDb): PolicyRuleSource {
   return {
     async load(teamId, userId, now) {
       const [site, scoped] = await Promise.all([
@@ -150,7 +150,7 @@ export function createDbRuleSource(db: KobeDb): PolicyRuleSource {
 const booleanSetting = z.enum(["true", "false"]).transform((v) => v === "true");
 
 /** The site's policy switches; an unreadable stored value takes the stricter setting. */
-export async function readPromptSandboxWrites(db: KobeDb): Promise<PolicySettings> {
+export async function readPromptSandboxWrites(db: KaijuDb): Promise<PolicySettings> {
   const [row] = await db
     .select({ value: siteSettings.value })
     .from(siteSettings)
@@ -161,7 +161,7 @@ export async function readPromptSandboxWrites(db: KobeDb): Promise<PolicySetting
 }
 
 /** Policy switches from `site_settings`, cached for `ttlMs` (default 5 s) across decisions. */
-export function createDbSettingsSource(db: KobeDb, ttlMs = 5_000): PolicySettingsSource {
+export function createDbSettingsSource(db: KaijuDb, ttlMs = 5_000): PolicySettingsSource {
   let cached: { at: number; value: Promise<PolicySettings> } | undefined;
   return {
     get() {
@@ -179,7 +179,7 @@ export function createDbSettingsSource(db: KobeDb, ttlMs = 5_000): PolicySetting
   };
 }
 
-export async function writePromptSandboxWrites(db: KobeDb, value: boolean): Promise<void> {
+export async function writePromptSandboxWrites(db: KaijuDb, value: boolean): Promise<void> {
   const text = String(value);
   await db.transaction(async (tx) => {
     await tx
@@ -201,7 +201,7 @@ export async function writePromptSandboxWrites(db: KobeDb, value: boolean): Prom
  * actor defaults to the request's signed-in user.
  */
 export function auditRule(
-  tx: KobeTx,
+  tx: KaijuTx,
   action: "policy.rule.created" | "policy.rule.updated" | "policy.rule.deleted",
   rule: StoredRule,
   teamId: string | null,
@@ -290,7 +290,7 @@ function entryCount(argPattern: ArgPattern | null): number {
 }
 
 /** Serializes rule writes per scope so caps hold under concurrency. */
-async function lockScope(tx: KobeTx, key: string): Promise<void> {
+async function lockScope(tx: KaijuTx, key: string): Promise<void> {
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${key}))`);
 }
 
@@ -307,7 +307,7 @@ function scopeKey(ref: ScopeRef): string {
 
 /** Rules and arg-pattern entries in a scope, optionally leaving one rule out (updates). */
 async function scopeUsage(
-  tx: KobeTx,
+  tx: KaijuTx,
   ref: ScopeRef,
   excludeId?: string,
 ): Promise<{ rules: number; entries: number }> {
@@ -329,7 +329,7 @@ async function scopeUsage(
 
 /** Takes the scope lock and checks that adding `argPattern` (as a new or replacing rule) fits. */
 export async function fitsScope(
-  tx: KobeTx,
+  tx: KaijuTx,
   ref: ScopeRef,
   argPattern: ArgPattern | null,
   limits: ScopeLimits,
@@ -344,7 +344,7 @@ export async function fitsScope(
 
 const TOO_MANY = { ok: false, error: "too_many_rules" } as const;
 
-export async function listSiteRules(db: KobeDb): Promise<StoredRule[]> {
+export async function listSiteRules(db: KaijuDb): Promise<StoredRule[]> {
   const rows = await db
     .select()
     .from(siteToolRules)
@@ -353,7 +353,7 @@ export async function listSiteRules(db: KobeDb): Promise<StoredRule[]> {
 }
 
 export async function createSiteRule(
-  db: KobeDb,
+  db: KaijuDb,
   body: RuleFields & { effect: "deny" | "ask" },
   createdBy: string,
   limits: ScopeLimits,
@@ -371,7 +371,7 @@ export async function createSiteRule(
 }
 
 export async function updateSiteRule(
-  db: KobeDb,
+  db: KaijuDb,
   id: string,
   body: RuleFields & { effect: "deny" | "ask" },
   limits: ScopeLimits,
@@ -391,7 +391,7 @@ export async function updateSiteRule(
 
 const NOT_FOUND = { ok: false, error: "not_found" } as const;
 
-export async function deleteSiteRule(db: KobeDb, id: string): Promise<boolean> {
+export async function deleteSiteRule(db: KaijuDb, id: string): Promise<boolean> {
   return db.transaction(async (tx) => {
     const [row] = await tx.delete(siteToolRules).where(eq(siteToolRules.id, id)).returning();
     if (!row) return false;
@@ -400,7 +400,7 @@ export async function deleteSiteRule(db: KobeDb, id: string): Promise<boolean> {
   });
 }
 
-export async function listTeamRules(db: KobeDb, teamId: string): Promise<StoredRule[]> {
+export async function listTeamRules(db: KaijuDb, teamId: string): Promise<StoredRule[]> {
   const rows = await withTeam(db, teamId, (tx) =>
     tx
       .select()
@@ -412,7 +412,7 @@ export async function listTeamRules(db: KobeDb, teamId: string): Promise<StoredR
 }
 
 export async function createTeamRule(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   body: RuleFields & { effect: RuleEffect },
   createdBy: string,
@@ -433,7 +433,7 @@ export async function createTeamRule(
 }
 
 export async function updateTeamRule(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
   body: RuleFields & { effect: RuleEffect },
@@ -453,7 +453,7 @@ export async function updateTeamRule(
   });
 }
 
-export async function deleteTeamRule(db: KobeDb, teamId: string, id: string): Promise<boolean> {
+export async function deleteTeamRule(db: KaijuDb, teamId: string, id: string): Promise<boolean> {
   return withTeam(db, teamId, async (tx) => {
     const [row] = await tx
       .delete(toolRules)

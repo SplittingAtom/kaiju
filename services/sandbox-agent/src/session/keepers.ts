@@ -1,4 +1,4 @@
-import type { SessionTokenAudience } from "@kobe/protocol";
+import type { SessionTokenAudience } from "@kaiju/protocol";
 import { ModelTokenKeeper } from "../models/token-keeper.js";
 import type { SessionClient } from "./exchange.js";
 

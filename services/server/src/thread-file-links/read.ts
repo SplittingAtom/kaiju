@@ -1,11 +1,11 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   FILE_THREADS_MAX_THREADS,
   THREAD_FILE_LINKS_MAX_FILES,
   type FileThreadsEntry,
   type ThreadFileLink,
   type ThreadFileLinks,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { readableBy, type Viewer } from "../threads/repository.js";
 import { projectMountPath, projectTreePath } from "./paths.js";
 
@@ -35,7 +35,7 @@ type LinkRow = {
  * `write` if any use wrote it, the latest use, deleted when every row of it is.
  */
 export async function linksOfThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadIds: readonly string[],
 ): Promise<ThreadFileLinks[]> {
@@ -99,7 +99,7 @@ type Target =
 
 /** The workspace-tree paths as link targets: own files, or readable projects' files by slug. */
 async function targetsOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   paths: readonly string[],
 ): Promise<Map<string, Target>> {
@@ -146,7 +146,7 @@ type ThreadRow = {
  * cannot see (another member's project they cannot read, an unknown project) has none.
  */
 export async function threadsOfPaths(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   paths: readonly string[],
 ): Promise<FileThreadsEntry[]> {

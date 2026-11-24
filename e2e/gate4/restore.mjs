@@ -76,7 +76,7 @@ async function firstToken() {
 /** An API-key connector enabled for the team (as e2e/gate2's fixture), then the member's own key. */
 async function connector() {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const t = config.user.teamId;
   try {
     await database.pool.query(
@@ -101,7 +101,7 @@ async function connector() {
 
 /** Opens the member's sealed grant with this install's envelope key, then with a wrong key. */
 async function grantOpen() {
-  const kdb = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const kdb = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const { randomBytes } = await import("node:crypto");
   const u = config.user;
   const database = await db();
@@ -189,7 +189,7 @@ async function integrity() {
  * keys), per team, and whether the object store holds it: `blob <table.column>=<keys>:<missing>`.
  */
 async function blobRefs() {
-  const kdb = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const kdb = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const { loadS3Settings, createS3ObjectStore } = await import("/app/dist/workspace-sync/index.js");
   const settings = loadS3Settings(process.env);
   if (!settings) {

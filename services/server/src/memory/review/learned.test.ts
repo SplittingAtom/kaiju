@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MEMORY_INDEX_MAX_LINES } from "@kobe/protocol";
+import { MEMORY_INDEX_MAX_LINES } from "@kaiju/protocol";
 import { appendLearned, fitsIndex, indexHasRoom, learnedLine } from "./learned.js";
 
 describe("Add to project notes: the ## Learned section (KOBE-398)", () => {

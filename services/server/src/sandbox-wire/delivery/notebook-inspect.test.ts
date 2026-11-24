@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { CAPABILITY_NOTEBOOK_INSPECT, CAPABILITY_NOTEBOOKS } from "@kobe/protocol";
-import type { ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
+import { CAPABILITY_NOTEBOOK_INSPECT, CAPABILITY_NOTEBOOKS } from "@kaiju/protocol";
+import type { ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import type { CommandRow } from "../commands.js";
 import type { DeliveryEnv } from "./env.js";

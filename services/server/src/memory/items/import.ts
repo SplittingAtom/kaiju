@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import {
   SEMANTIC_MEMORY_IMPORT_ROW_STATUSES,
   SEMANTIC_MEMORY_PINS_MAX,
@@ -12,7 +12,7 @@ import {
   type SemanticMemoryIssue,
   type SemanticMemoryOverrides,
   type SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ServerAuditEvent } from "../../audit/record.js";
 import { readPolicyAndLexemesMany } from "../checks/policy.js";
 import { findSecret } from "../checks/secrets.js";
@@ -265,7 +265,7 @@ function assertImportEnabled(op: Op): void {
 
 /** Preview: every row classified; nothing is stored. */
 export function previewImport(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   req: SemanticMemoryImportPreviewRequest,
 ): Promise<SemanticMemoryImportPreviewResponse> {
@@ -304,7 +304,7 @@ function outcomeOf(
 
 /** Commit: the accepted rows, checked again, saved all or nothing. */
 export function commitImport(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   req: SemanticMemoryImportCommitRequest,
 ): Promise<SemanticMemoryImportCommitResponse> {

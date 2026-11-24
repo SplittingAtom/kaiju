@@ -9,7 +9,7 @@ import { longAnswer } from "./support/gate5.js";
  */
 /** The Team console's Members section (its h1). */
 const MEMBERS = "Members and roles";
-const panels = (page: import("@playwright/test").Page) => page.locator("[data-kobe-panel]");
+const panels = (page: import("@playwright/test").Page) => page.locator("[data-kaiju-panel]");
 
 test("a console opened mid-run returns to the same conversation state (ac-1, ac-4)", async ({
   chat,
@@ -31,7 +31,7 @@ test("a console opened mid-run returns to the same conversation state (ac-1, ac-
   const view = page.viewportSize();
   expect(box && view && box.width / view.width).toBeGreaterThan(0.85);
   expect(box && view && box.width / view.width).toBeLessThan(0.95);
-  await expect(page.locator("[data-kobe-panel-backdrop]")).toBeVisible();
+  await expect(page.locator("[data-kaiju-panel-backdrop]")).toBeVisible();
   // Its own navigation moves the address; the run goes on underneath.
   await panel
     .getByRole("navigation", { name: "Team console sections" })

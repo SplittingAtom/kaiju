@@ -28,7 +28,7 @@ import {
  * YAML limits: the size first (before parsing), then flow nesting on the lexer's tokens (an
  * iterative scan, so no stack overflow in any engine), then the parsed tree: no alias, no explicit
  * tag (`!foo`, `!!timestamp`: the core schema's plain types only), at most
- * {@link EVAL_YAML_MAX_DEPTH} levels. Exported from `@kobe/protocol/skill-evals`, not the root
+ * {@link EVAL_YAML_MAX_DEPTH} levels. Exported from `@kaiju/protocol/skill-evals`, not the root
  * entry, so services that never read a suite don't load the YAML parser.
  */
 
@@ -138,7 +138,7 @@ function valueAt(value: unknown, path: readonly Segment[]): unknown {
 function codeOf(issue: z.core.$ZodIssue, raw: unknown): SkillEvalIssueCode {
   switch (issue.code) {
     case "custom": {
-      const code = (issue.params as { kobe?: SkillEvalIssueCode } | undefined)?.kobe;
+      const code = (issue.params as { kaiju?: SkillEvalIssueCode } | undefined)?.kobe;
       return code ?? "invalid_value";
     }
     case "invalid_type":

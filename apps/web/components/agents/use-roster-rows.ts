@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentRosterRow, AgentRosterTab } from "@kobe/protocol";
+import type { AgentRosterRow, AgentRosterTab } from "@kaiju/protocol";
 import { useState } from "react";
 import { listRoster } from "../../lib/agents/roster-api";
 import { useMutation, useResource } from "../admin/use-resource";

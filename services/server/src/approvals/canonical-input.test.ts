@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalJson } from "@kobe/protocol";
+import { canonicalJson } from "@kaiju/protocol";
 import { CanonicalInputError, parseCanonicalInput } from "./canonical-input.js";
 
 describe("parseCanonicalInput", () => {

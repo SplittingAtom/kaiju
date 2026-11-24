@@ -4,23 +4,23 @@
 @import "../tailwind.css";
 
 @layer base {
-  [data-kobe-docs],
-  [data-kobe-docs] *,
-  [data-kobe-docs] ::before,
-  [data-kobe-docs] ::after {
+  [data-kaiju-docs],
+  [data-kaiju-docs] *,
+  [data-kaiju-docs] ::before,
+  [data-kaiju-docs] ::after {
     box-sizing: border-box;
   }
 
-  [data-kobe-docs] {
-    font-family: var(--kobe-font-sans);
+  [data-kaiju-docs] {
+    font-family: var(--kaiju-font-sans);
   }
 
-  [data-kobe-docs] a {
-    color: var(--kobe-brand-link);
+  [data-kaiju-docs] a {
+    color: var(--kaiju-brand-link);
   }
 
-  [data-kobe-docs] :focus-visible {
-    outline: 3px solid var(--kobe-brand-focus);
+  [data-kaiju-docs] :focus-visible {
+    outline: 3px solid var(--kaiju-brand-focus);
     outline-offset: 2px;
   }
 }

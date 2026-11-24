@@ -1,6 +1,6 @@
 "use client";
 
-import type { ThinkingLevel } from "@kobe/protocol";
+import type { ThinkingLevel } from "@kaiju/protocol";
 import { useId, useState, useSyncExternalStore } from "react";
 import { modelName, type TeamModels } from "../../lib/admin/api/team/models";
 import {
@@ -13,7 +13,7 @@ import type { ThreadController } from "../../lib/chat/thread-controller";
 import { isBusy, type ThreadState } from "../../lib/chat/thread-state";
 import type { MenuBinding } from "../../lib/shell/menu";
 import { useBindCommands } from "../shell/command-bindings";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import {
   THINKING_LABELS,
   ThinkingPicker,

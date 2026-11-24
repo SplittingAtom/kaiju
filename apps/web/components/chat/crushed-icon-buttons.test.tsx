@@ -12,7 +12,7 @@ afterEach(() => cleanup());
 const chat = (children: ReactNode) =>
   render(
     <IconActionProvider>
-      <div data-kobe-chat>{children}</div>
+      <div data-kaiju-chat>{children}</div>
     </IconActionProvider>,
   );
 

@@ -6,7 +6,7 @@
  * notes; with none yet the notes are empty (no labels, no rule badges, no error box). `source`
  * must be stable (the chat session).
  */
-import type { ThreadBranchesResponse } from "@kobe/protocol";
+import type { ThreadBranchesResponse } from "@kaiju/protocol";
 import { BRANCHES_REREAD_MS, EMPTY_BRANCHES } from "./branches";
 import { useFocusReread } from "./use-focus-reread";
 

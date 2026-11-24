@@ -79,7 +79,7 @@ export function ProjectTitleMenu({
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal container={chatPortalContainer()}>
           <DropdownMenu.Content
-            data-kobe-portal
+            data-kaiju-portal
             align="start"
             sideOffset={4}
             aria-label={`Project ${projectName}`}
@@ -102,7 +102,7 @@ export function ProjectTitleMenu({
               </DropdownMenu.SubTrigger>
               {blocker === null && (
                 <DropdownMenu.Portal container={chatPortalContainer()}>
-                  <DropdownMenu.SubContent data-kobe-portal sideOffset={4} className={CONTENT}>
+                  <DropdownMenu.SubContent data-kaiju-portal sideOffset={4} className={CONTENT}>
                     {targets.length === 0 && (
                       <DropdownMenu.Item disabled className={ITEM}>
                         No other projects

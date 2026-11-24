@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { AUDIT_EVENTS, AUDIT_VIA_AGENT_KEY } from "@kobe/db";
+import { AUDIT_EVENTS, AUDIT_VIA_AGENT_KEY } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { FORBIDDEN_FIELDS } from "../testing/site-wall-probe.js";
 import {

@@ -6,7 +6,7 @@ import { ORIGIN_TOKEN, SECTIONS, type GuidePage, type GuideSection } from "./loa
  * with `- [Title](<origin>/docs/<slug>.md): summary`), `/llms-full.txt` is every page in one file,
  * and `/docs/<slug>.md` is one page. No team or user data: the guide only.
  *
- * Shared by the web routes and the server's docs tools (KOBE-620, `@kobe/guide`), so both answer
+ * Shared by the web routes and the server's docs tools (KOBE-620, `@kaiju/guide`), so both answer
  * the same bytes for the same origin and app name.
  */
 

@@ -1,6 +1,6 @@
 import { createHmac, sign as edSign } from "node:crypto";
-import { SESSION_TOKEN_AUDIENCES, sessionTokenClaimsSchema } from "@kobe/protocol";
-import { generateSessionKeyPair, loadVerifyKeys } from "@kobe/session-token";
+import { SESSION_TOKEN_AUDIENCES, sessionTokenClaimsSchema } from "@kaiju/protocol";
+import { generateSessionKeyPair, loadVerifyKeys } from "@kaiju/session-token";
 import { describe, expect, it } from "vitest";
 import { KEYS, KEY_PAIRS, VERIFY_KEYS } from "../testing/sandbox-fixtures.js";
 import {

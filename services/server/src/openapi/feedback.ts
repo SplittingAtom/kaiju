@@ -4,12 +4,12 @@ import {
   answerFeedbackSchema,
   putFeedbackBodySchema,
   threadFeedbackSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * OpenAPI for answer feedback (KOBE-275, `routes/feedback.ts`): rating an answer (a run) and the
  * caller's ratings in a thread, and the agent owners' totals (`agents/feedback-routes.ts`). The
- * schemas are `@kobe/protocol` feedback.ts.
+ * schemas are `@kaiju/protocol` feedback.ts.
  */
 
 type JsonSchema = Record<string, unknown>;

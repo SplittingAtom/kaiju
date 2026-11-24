@@ -1,0 +1,77 @@
+import type { KaijuTool } from "../catalog.js";
+import { KAIJU_SITE_TOOLS } from "./site/index.js";
+import { teamAgentsList, teamAgentsResume, teamAgentsSuspend } from "./team-agents.js";
+import { teamBudgetsGet, teamBudgetsSetMember, teamBudgetsSetTeam } from "./team-budgets.js";
+import {
+  teamConnectorsDisable,
+  teamConnectorsList,
+  teamConnectorsSetExposure,
+} from "./team-connectors.js";
+import {
+  teamEgressDisable,
+  teamEgressEnable,
+  teamEgressList,
+  teamEgressRequestsDecide,
+  teamEgressRequestsList,
+} from "./team-egress.js";
+import { teamGitConnectionsList } from "./team-git.js";
+import { teamInvitesCreate, teamInvitesList, teamInvitesRevoke } from "./team-invites.js";
+import { teamMembersList, teamMembersRemove, teamMembersSetRole } from "./team-members.js";
+import { teamMemoryItemGet, teamMemoryItemsList } from "./memory-items.js";
+import { teamMemoryGet, teamMemorySet } from "./team-memory.js";
+import { teamModelsList, teamModelsSet } from "./team-models.js";
+import { teamAuditList, teamUsageGet } from "./team-reports.js";
+import { teamSchedulesList, teamSchedulesPause, teamSchedulesResume } from "./team-schedules.js";
+import {
+  teamSkillReviewsDecide,
+  teamSkillReviewsList,
+  teamSkillInstallsList,
+} from "./team-skills.js";
+
+/**
+ * Every Kaiju MCP admin tool: the Team console list of spec §5 (KOBE-621, KA-4) on the KOBE-619
+ * framework; KA-5 adds the Site console list. The contract test (`kaiju-mcp-team.db.test.ts`) runs each
+ * one as a person without the tool's permission and as one holding it.
+ */
+export const KAIJU_ADMIN_TOOLS: readonly KaijuTool[] = [
+  teamMembersList,
+  teamMembersSetRole,
+  teamMembersRemove,
+  teamInvitesList,
+  teamInvitesCreate,
+  teamInvitesRevoke,
+  teamConnectorsList,
+  teamConnectorsSetExposure,
+  teamConnectorsDisable,
+  teamSkillInstallsList,
+  teamSkillReviewsList,
+  teamSkillReviewsDecide,
+  teamModelsList,
+  teamModelsSet,
+  teamBudgetsGet,
+  teamBudgetsSetTeam,
+  teamBudgetsSetMember,
+  teamMemoryGet,
+  teamMemorySet,
+  teamMemoryItemsList,
+  teamMemoryItemGet,
+  teamEgressList,
+  teamEgressEnable,
+  teamEgressDisable,
+  teamEgressRequestsList,
+  teamEgressRequestsDecide,
+  teamGitConnectionsList,
+  teamAgentsList,
+  teamAgentsSuspend,
+  teamAgentsResume,
+  teamSchedulesList,
+  teamSchedulesPause,
+  teamSchedulesResume,
+  teamUsageGet,
+  teamAuditList,
+  ...KAIJU_SITE_TOOLS,
+];
+
+export function kaijuToolByName(name: string): KaijuTool | undefined {
+  return KAIJU_ADMIN_TOOLS.find((t) => t.name === name);
+}

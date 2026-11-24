@@ -1,5 +1,5 @@
 import { type Context } from "hono";
-import { agentWarnings, isDangerousMode, type AgentDefinition } from "@kobe/agent-file";
+import { agentWarnings, isDangerousMode, type AgentDefinition } from "@kaiju/agent-file";
 import { agentAccess, type AgentActor, type AgentScope } from "../../agents/access.js";
 import { agentDetail, agentSummary, notFound } from "../../agents/http.js";
 import { agentIdSchema } from "../../agents/schemas.js";

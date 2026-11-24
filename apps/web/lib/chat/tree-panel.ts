@@ -5,8 +5,8 @@
  * drawing (`components/chat/conversation-tree.tsx`) reads the nodes of `projectTree` and the rows
  * of `tree-layout.ts`.
  */
-import { BRANCH_LABEL_MAX_CHARS, branchLabelSchema } from "@kobe/protocol";
-import { messageMeta, type KobeMessageMeta, type Projection } from "./tree";
+import { BRANCH_LABEL_MAX_CHARS, branchLabelSchema } from "@kaiju/protocol";
+import { messageMeta, type KaijuMessageMeta, type Projection } from "./tree";
 import type { TreeBadges } from "./tree-badges";
 import { TOOLS_ONLY_EXCERPT, type TreeNode, type TreeProjection } from "./tree-nodes";
 
@@ -342,7 +342,7 @@ const GHOST_PREFIX = "empty:";
 export function nodeEntries(
   projection: Pick<Projection, "items" | "lastEntryOfNode">,
   nodeId: string,
-): { readonly first?: string; readonly last?: string; readonly meta?: KobeMessageMeta } {
+): { readonly first?: string; readonly last?: string; readonly meta?: KaijuMessageMeta } {
   if (nodeId.startsWith(GHOST_PREFIX)) {
     const marker = nodeId.slice(GHOST_PREFIX.length);
     return { first: marker, last: marker };

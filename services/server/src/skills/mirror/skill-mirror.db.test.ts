@@ -2,9 +2,9 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { skillPackageHashes } from "@kobe/protocol/node";
+import { skillPackageHashes } from "@kaiju/protocol/node";
 import { validateZipBundle } from "../bundle.js";
-import { ensureObject } from "../kobe-seed.js";
+import { ensureObject } from "../kaiju-seed.js";
 import { mirrorHttpClient } from "./http-client.js";
 import { SkillMirror } from "./runner.js";
 import { sha256Hex } from "../storage.js";
@@ -23,7 +23,7 @@ import { MemoryObjects } from "../../testing/memory-objects.js";
  */
 const CREDS = { username: "x-access-token", token: "mirror-secret-token-42" };
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 let h: Harness;
 let git: GitServer;
 let cert: { key: string; cert: string };
@@ -199,7 +199,7 @@ describe("the catalog's git mirror (KOBE-343)", () => {
       ).rows[0];
       const files = filesAtTag("catalog", `${name}/v${semver}`, name);
       expect(files.has("evals/cases.yaml")).toBe(true);
-      expect(skillPackageHashes(files, { kobeProvenance: true })).toEqual({
+      expect(skillPackageHashes(files, { kaijuProvenance: true })).toEqual({
         runtimeHash: row?.runtime_hash,
         packageHash: row?.package_hash,
       });

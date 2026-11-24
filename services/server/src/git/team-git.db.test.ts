@@ -1,6 +1,6 @@
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import {
   GIT_SITE_ALLOWED_HOSTS_KEY,
   GIT_SITE_ENABLED_KEY,
@@ -8,8 +8,8 @@ import {
   openGitCredential,
   verifyAuditChain,
   type Envelope,
-} from "@kobe/db";
-import { gitConnectionAdminViewSchema, gitConnectionMemberViewSchema } from "@kobe/protocol";
+} from "@kaiju/db";
+import { gitConnectionAdminViewSchema, gitConnectionMemberViewSchema } from "@kaiju/protocol";
 import { rawRequest } from "../connectors/oauth/http.js";
 import { notifyGitTokenExpiry } from "./expiry-notify.js";
 import { runGitHealthPass, GitHostBackoff } from "./health-job.js";
@@ -100,7 +100,7 @@ const healthDeps = () => ({
   envelope,
   net: fx.replica(0).deps.gitHostNet,
   mailer: fx.replica(0).deps.mailer,
-  publicUrl: "http://kobe.test",
+  publicUrl: "http://kaiju.test",
   logger,
   recheckMs: 0,
 });
@@ -523,13 +523,13 @@ describe("change, replace, check, disconnect (G1, G8, G20)", () => {
     const id = (await create(w, forgejoBody())).json.connection.id as string;
     const res = await call(w.admin, "PATCH", `${BASE}/${id}`, {
       access_level: "read_write",
-      repo_name_prefix: "kobe-",
+      repo_name_prefix: "kaiju-",
       push_limit_bytes: 1024,
     });
     expect(res.status, res.text).toBe(200);
     expect(res.json.connection).toMatchObject({
       access_level: "read_write",
-      repo_defaults: { name_prefix: "kobe-" },
+      repo_defaults: { name_prefix: "kaiju-" },
       push_limit_bytes: 1024,
     });
     const unknownAgent = await call(w.admin, "PATCH", `${BASE}/${id}`, {
@@ -784,7 +784,7 @@ describe("token-expiry bell notifications (KOBE-819)", () => {
         send: (m: unknown) => Promise.resolve(void sent.push(m)),
         close: () => undefined,
       },
-      publicUrl: "http://kobe.test",
+      publicUrl: "http://kaiju.test",
       logger,
     };
     expect(await notifyGitTokenExpiry(quiet)).toBe(0);

@@ -12,7 +12,7 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
-    "@kobe/db#test": {
+    "@kaiju/db#test": {
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false

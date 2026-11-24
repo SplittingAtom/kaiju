@@ -4,9 +4,9 @@ import {
   SYSTEM_ACTOR,
   withTeam,
   type AuditActor,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { endUnreachableThreadRules } from "../policy/user-rules.js";
 import { loadAccess } from "./access.js";
@@ -22,7 +22,7 @@ import type { ProjectMounts } from "./mounts.js";
  * request's signed-in user when absent (a team admin removing the member).
  */
 export async function endProjectStandingInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   actor?: AuditActor,
@@ -54,7 +54,7 @@ export async function endProjectStandingInTx(
  * it) and the sandbox relocks the folder at its next pull. Returns how many ended.
  */
 export async function endCheckoutsWithoutEditInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   actor?: AuditActor,
@@ -85,7 +85,7 @@ export async function endCheckoutsWithoutEditInTx(
  * does it (system actor). Every team is tried; failures are thrown together, like `endUserShares`.
  */
 export async function endUserProjects(
-  db: KobeDb,
+  db: KaijuDb,
   mounts: ProjectMounts,
   userId: string,
 ): Promise<void> {

@@ -81,9 +81,9 @@ describe("Site backup and restore (KOBE-291)", () => {
     renderSite(<BackupPage />);
     expect((await screen.findByRole("alert")).textContent).toMatch(/Only site admins/);
     const backup = screen.getByLabelText("Take a backup").textContent ?? "";
-    expect(backup).toMatch(/kobe backup --out/);
+    expect(backup).toMatch(/kaiju backup --out/);
     const restore = screen.getByLabelText("Restore a backup").textContent ?? "";
-    expect(restore).toMatch(/kobe restore --from/);
+    expect(restore).toMatch(/kaiju restore --from/);
     // The restore compares the bucket with the backup's object listing, so it needs S3 too.
     for (const name of [
       "KOBE_BACKUP_KEY_FILE",

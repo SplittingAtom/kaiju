@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { withTeam, type KobeDb } from "@kobe/db";
-import type { WorkspaceSyncStatus } from "@kobe/protocol";
+import { withTeam, type KaijuDb } from "@kaiju/db";
+import type { WorkspaceSyncStatus } from "@kaiju/protocol";
 import type { BusHint, SandboxBus } from "./bus.js";
 import { liveConnection } from "./commands.js";
 
@@ -73,7 +73,7 @@ export class SyncNowRequests {
 }
 
 /** {@link SyncNowRequests} over Postgres: the live connection row and the sandbox bus. */
-export function syncNowRequests(db: KobeDb, bus: SandboxBus, staleMs: number): SyncNowRequests {
+export function syncNowRequests(db: KaijuDb, bus: SandboxBus, staleMs: number): SyncNowRequests {
   return new SyncNowRequests(
     async (target) => {
       const live = await withTeam(db, target.teamId, (tx) => liveConnection(tx, target, staleMs));

@@ -1,5 +1,5 @@
-import { withTeam, type KobeDb } from "@kobe/db";
-import { SERVER_CALL_LIMITS, type SemanticMemoryScope } from "@kobe/protocol";
+import { withTeam, type KaijuDb } from "@kaiju/db";
+import { SERVER_CALL_LIMITS, type SemanticMemoryScope } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../../background.js";
 import type { EmbeddingClient } from "../../models/embedding-client.js";
@@ -78,7 +78,7 @@ export interface SaveWho {
 }
 
 export interface MemoryEmbeddingsOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Undefined when server calls are not configured: nothing is embedded. */
   readonly client: EmbeddingClient | undefined;
   readonly background: BackgroundTasks;

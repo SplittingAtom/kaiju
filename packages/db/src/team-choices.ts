@@ -1,5 +1,5 @@
 import { eq, sql } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "./client.js";
+import type { KaijuDb, KaijuTx } from "./client.js";
 import { parseUserId, type TeamMembership } from "./memberships.js";
 import { teamMembers, teamModels, userLastTeams } from "./schema/index.js";
 import { scanTeams } from "./team-scan.js";
@@ -13,7 +13,7 @@ export interface TeamChoice extends TeamMembership {
 }
 
 /** The user's teams by name, each read under its own RLS (one scan, like listMemberships). */
-export async function listTeamChoices(db: KobeDb, userId: string): Promise<TeamChoice[]> {
+export async function listTeamChoices(db: KaijuDb, userId: string): Promise<TeamChoice[]> {
   const user = parseUserId("listTeamChoices", userId);
   return scanTeams(db, "listTeamChoices", async (tx, team) => {
     const [row] = await tx
@@ -38,7 +38,7 @@ export async function listTeamChoices(db: KobeDb, userId: string): Promise<TeamC
 }
 
 /** The team the user last made active, if any (membership is the caller's to check). */
-export async function readLastTeam(db: KobeDb, userId: string): Promise<string | null> {
+export async function readLastTeam(db: KaijuDb, userId: string): Promise<string | null> {
   const user = parseUserId("readLastTeam", userId);
   const [row] = await db
     .select({ teamId: userLastTeams.teamId })
@@ -49,7 +49,7 @@ export async function readLastTeam(db: KobeDb, userId: string): Promise<string |
 
 /** Records the team a user just made active, so their next session can start there. */
 export async function rememberLastTeam(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   userId: string,
   teamId: string,
 ): Promise<void> {

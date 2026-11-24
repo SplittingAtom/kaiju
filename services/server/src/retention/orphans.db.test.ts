@@ -12,7 +12,7 @@ import { runRetentionPass } from "./job.js";
 /** KOBE-189: the orphaned object sweep against a real Postgres and an in-memory bucket. */
 let h: Harness;
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const store: BlobStore = { objects, prefix: PREFIX };
 let team = "";
 let user = "";

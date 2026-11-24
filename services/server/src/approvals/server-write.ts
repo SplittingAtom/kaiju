@@ -1,5 +1,5 @@
-import { approvalModeSchema } from "@kobe/protocol";
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { approvalModeSchema } from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 import { AppendError, appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { readApprovalFloor, strictestApprovalMode } from "../policy/approval-floor.js";
@@ -21,7 +21,7 @@ export interface CallRef {
 }
 
 /** Whether an approval row exists for this call already (the policy check may have got it). */
-export async function hasApproval(db: KobeDb, call: CallRef): Promise<boolean> {
+export async function hasApproval(db: KaijuDb, call: CallRef): Promise<boolean> {
   const row = await withTeam(db, call.teamId, (tx) =>
     loadApprovalForCall(tx, call.teamId, call.runId, call.toolCallId),
   );
@@ -43,7 +43,7 @@ export async function approvalHolds(
 export type NoPromptCode = "scheduled_run_no_prompt" | "mode_auto_not_allowlisted";
 
 /** Why this run may not ask a person, if it may not (scheduled run or `auto` approval mode). */
-export async function noPromptCode(db: KobeDb, call: CallRef): Promise<NoPromptCode | undefined> {
+export async function noPromptCode(db: KaijuDb, call: CallRef): Promise<NoPromptCode | undefined> {
   // The effective mode, as the policy check computes it: scheduled runs are `auto`; otherwise the
   // run's mode clamped to the site floor as it is now (the floor may have risen since).
   const { trigger, mode, floor } = await withTeam(db, call.teamId, async (tx) => {
@@ -64,7 +64,7 @@ export async function noPromptCode(db: KobeDb, call: CallRef): Promise<NoPromptC
 }
 
 async function appendDenied(
-  tx: KobeTx,
+  tx: KaijuTx,
   call: CallRef,
   tool: string,
   runMaxEvents: number,
@@ -106,7 +106,7 @@ async function appendDenied(
  * scheduled run, a `run_skipped_actions` row (KOBE-178), which the run report is built from.
  */
 export async function recordDeniedWrite(
-  db: KobeDb,
+  db: KaijuDb,
   log: Pick<Logger, "warn">,
   call: CallRef,
   tool: string,

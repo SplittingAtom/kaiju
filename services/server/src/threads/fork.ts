@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, eq, isForeignKeyViolation, threadEntries, threads, type KobeTx } from "@kobe/db";
+import { and, asc, eq, isForeignKeyViolation, threadEntries, threads, type KaijuTx } from "@kaiju/db";
 import type { RateLimitRule } from "../rate-limit.js";
 import { projectDefaultAgent } from "../projects/run-context.js";
 import { resolveAgentPin } from "../agents/versions.js";
@@ -49,7 +49,7 @@ interface Plan {
 type ThreadSummaryLike = NonNullable<Awaited<ReturnType<typeof findThread>>>["thread"];
 
 /** Runs `fn` in the viewer's team transaction (the route's `asViewer`). */
-export type RunAsViewer = <T>(fn: (tx: KobeTx, viewer: Viewer) => Promise<T>) => Promise<T>;
+export type RunAsViewer = <T>(fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>) => Promise<T>;
 
 /** The fork's own key for an offloaded body: `<prefix>teams/<t>/threads/<new>/entries/<sha256(id)>`. */
 export function forkedBlobKey(prefix: string, teamId: string, threadId: string, entryId: string) {
@@ -180,7 +180,7 @@ async function removeCopies(blobs: BlobStore, copies: ReadonlyMap<string, string
 }
 
 async function planFork(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   options: {
@@ -242,7 +242,7 @@ async function planFork(
  * owns the source), held against deletion until commit; null when it was deleted since the plan.
  */
 async function sourceFolder(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   folderId: string | null,
 ): Promise<string | null> {
@@ -251,7 +251,7 @@ async function sourceFolder(
 }
 
 async function storeFork(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   plan: Plan,
   copies: ReadonlyMap<string, string>,

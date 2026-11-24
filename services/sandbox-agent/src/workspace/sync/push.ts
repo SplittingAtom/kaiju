@@ -2,12 +2,12 @@ import {
   FILE_SHARE_MAX_BYTES,
   WORKSPACE_SERVER_OWNED_PREFIXES,
   isExcludedPath,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   type WorkspaceChange,
   type WorkspaceChangeResult,
   type WorkspaceEntry,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { constants as FS } from "node:fs";
 import { access } from "node:fs/promises";
 import { join } from "node:path";

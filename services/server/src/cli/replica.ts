@@ -1,4 +1,4 @@
-import { createDb, type KobeDatabase } from "@kobe/db";
+import { createDb, type KaijuDatabase } from "@kaiju/db";
 import { createIsolationGate } from "../isolation/gate.js";
 import { listRuntimeClasses } from "../isolation/kubernetes.js";
 import { createSandboxRuntime, type SandboxRuntime } from "../sandbox/runtime.js";
@@ -15,7 +15,7 @@ import {
  * and a router-only sandbox-wire replica (no listener; sandboxes stay connected to the servers).
  */
 export interface CliReplica {
-  readonly database: KobeDatabase;
+  readonly database: KaijuDatabase;
   readonly runtime: SandboxRuntime;
   readonly lifecycle: SandboxLifecycle;
   readonly wire: SandboxWire;
@@ -27,7 +27,7 @@ export function joinAsReplica(
 ): CliReplica | string {
   const databaseUrl = env.KOBE_DATABASE_URL;
   if (!databaseUrl) return "KOBE_DATABASE_URL is not set";
-  const database = createDb(databaseUrl, { max: 4, applicationName: "kobe-cli" });
+  const database = createDb(databaseUrl, { max: 4, applicationName: "kaiju-cli" });
   const isolation = createIsolationGate({
     runtimeClassName: env.KOBE_RUNTIME_CLASS?.trim() || undefined,
     listRuntimeClasses,

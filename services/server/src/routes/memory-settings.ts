@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
-import { bumpModelsConfig, withTeam } from "@kobe/db";
+import { bumpModelsConfig, withTeam } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import {
   requireSitePermission,

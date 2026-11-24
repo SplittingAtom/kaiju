@@ -4,9 +4,9 @@ import {
   SERVER_CALL_TOKEN_HEADER,
   embeddingsResponseSchema,
   serverCallEmbeddingsRequestSchema,
-} from "@kobe/protocol";
-import type { SessionSigningKey } from "@kobe/session-token";
-import { SpanKind, idAttributes, injectTraceHeaders, withSpan } from "@kobe/telemetry";
+} from "@kaiju/protocol";
+import type { SessionSigningKey } from "@kaiju/session-token";
+import { SpanKind, idAttributes, injectTraceHeaders, withSpan } from "@kaiju/telemetry";
 import { ServerCallError, mintToken, parseJson, refusalCode } from "./gateway-client.js";
 import { readCapped } from "../http/read-capped.js";
 

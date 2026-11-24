@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
-import { withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import type { WorkspaceSaveConflict } from "@kobe/protocol";
+import { withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import type { WorkspaceSaveConflict } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import { teamStorageAllows } from "../uploads/quota.js";
 import { workspaceBlobKey, type WorkspaceOwner } from "../workspace-sync/keys.js";
@@ -96,7 +96,7 @@ function baseMismatch(
 
 /** A new file where a folder is, or inside a file (KOBE-591). */
 async function newPathTaken(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   request: SaveRequest,
 ): Promise<boolean> {
@@ -120,7 +120,7 @@ async function newPathTaken(
  * revision becomes a conflict copy on its side, so the member's save is never lost.
  */
 export async function saveWorkspaceFile(
-  db: KobeDb,
+  db: KaijuDb,
   sync: WorkspaceSync,
   owner: WorkspaceOwner,
   request: SaveRequest,
@@ -170,7 +170,7 @@ export async function saveWorkspaceFile(
 }
 
 async function commitSave(
-  db: KobeDb,
+  db: KaijuDb,
   sync: WorkspaceSync,
   owner: WorkspaceOwner,
   request: SaveRequest,
@@ -183,7 +183,7 @@ async function commitSave(
 
 /** The save's manifest/team transaction: workspace lock, base check, quotas, row, audit. */
 async function saveManifest(
-  tx: KobeTx,
+  tx: KaijuTx,
   sync: WorkspaceSync,
   owner: WorkspaceOwner,
   request: SaveRequest,

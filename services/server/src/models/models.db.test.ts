@@ -11,7 +11,7 @@ import {
   teamMembers,
   virtualKeyContext,
   withTeam,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { gatewayTeamName, virtualKeyName } from "./desired.js";
 import { ModelGatewaySync } from "./sync.js";
