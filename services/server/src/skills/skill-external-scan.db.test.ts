@@ -70,7 +70,7 @@ const runner = (settings: SandboxSettings = withScan) =>
     db: h.deps.database.db,
     blobs,
     kube,
-    provider: { ensureTeam: async () => "kobe-team-registry" },
+    provider: { ensureTeam: async () => "kaiju-team-registry" },
     isolation: gateFor(kube),
     settings,
     pollMs: 1,
@@ -179,14 +179,14 @@ describe("a scan per submission (ac-1 to ac-4)", () => {
     const r = await runner().run(id);
     expect(r).toMatchObject({ status: "done", scanner: "cisco-ai-skill-scanner" });
     const job = kube.all("Job").find((j) => j.metadata.name === `skill-scan-${id}`);
-    expect(job?.metadata.namespace).toBe("kobe-team-registry");
+    expect(job?.metadata.namespace).toBe("kaiju-team-registry");
     const pod = (job?.spec as { template: { spec: Record<string, unknown> } }).template.spec;
     expect(pod).toMatchObject({ automountServiceAccountToken: false, dnsPolicy: "None" });
     expect(JSON.stringify(job)).not.toMatch(/secret|"env"/i);
     const cm = kube.all("ConfigMap").find((c) => c.metadata.name === `skill-scan-${id}-0`);
     expect(Object.keys((cm as { binaryData?: object }).binaryData ?? {})).toEqual(["part-000"]);
     expect(cm?.metadata.ownerReferences?.[0]).toMatchObject({ kind: "Job" });
-    const policy = kube.all("NetworkPolicy").find((p) => p.metadata.name === "kobe-skill-scan");
+    const policy = kube.all("NetworkPolicy").find((p) => p.metadata.name === "kaiju-skill-scan");
     expect(policy?.spec).toMatchObject({ ingress: [], egress: [] });
 
     // Findings shown in review, advisory: Pass rose to Caution and each must be acknowledged.

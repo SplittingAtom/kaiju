@@ -40,10 +40,10 @@ type Pod = {
 };
 
 describe("names", () => {
-  it("names the team namespace kobe-team-<slug> and refuses invalid slugs", () => {
-    expect(teamNamespaceName(TEAM)).toBe("kobe-team-finance");
+  it("names the team namespace kaiju-team-<slug> and refuses invalid slugs", () => {
+    expect(teamNamespaceName(TEAM, SETTINGS)).toBe("kaiju-team-finance");
     for (const slug of ["", "-a", "a-", "A", "a_b", "a".repeat(33), "../x"]) {
-      expect(() => teamNamespaceName({ id: TEAM.id, slug })).toThrow(TypeError);
+      expect(() => teamNamespaceName({ id: TEAM.id, slug }, SETTINGS)).toThrow(TypeError);
     }
   });
 
@@ -176,7 +176,7 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
     });
     // The bootstrap token sits under the image's agent-only directory.
     expect(must(spec.containers[0]).volumeMounts).toContainEqual({
-      name: "kobe-bootstrap",
+      name: "kaiju-bootstrap",
       mountPath: "/run/kaiju-agent/bootstrap",
       readOnly: true,
     });
@@ -207,7 +207,7 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
 });
 
 describe("team NetworkPolicy (D11, D28)", () => {
-  const np = networkPolicyManifest("kobe-team-finance", SETTINGS) as unknown as {
+  const np = networkPolicyManifest("kaiju-team-finance", SETTINGS) as unknown as {
     spec: {
       podSelector: object;
       policyTypes: string[];
@@ -249,7 +249,7 @@ describe("team NetworkPolicy (D11, D28)", () => {
   });
 
   it("adds the model gateway only when modelGatewayAccess is on (KOBE-40/41)", () => {
-    const open = networkPolicyManifest("kobe-team-finance", {
+    const open = networkPolicyManifest("kaiju-team-finance", {
       ...SETTINGS,
       modelGatewayAccess: true,
     }) as unknown as typeof np;
@@ -308,15 +308,15 @@ describe("template, warm pool and claim", () => {
   it("sizes the per-namespace warm pool from settings", () => {
     expect(warmPoolManifest("ns", SETTINGS).spec).toEqual({
       replicas: 1,
-      sandboxTemplateRef: { name: "kobe-sandbox" },
+      sandboxTemplateRef: { name: "kaiju-sandbox" },
       updateStrategy: { type: "Recreate" },
     });
   });
 
   it("claims carry identity metadata only, so warm-pool adoption stays possible", () => {
-    const claim = sandboxClaimManifest("kobe-team-finance", TEAM, USER);
+    const claim = sandboxClaimManifest("kaiju-team-finance", TEAM, USER, SETTINGS);
     expect(claim.spec).toEqual({
-      warmPoolRef: { name: "kobe-sandbox" },
+      warmPoolRef: { name: "kaiju-sandbox" },
       additionalPodMetadata: {
         annotations: {
           "kobe.splittingatom.io/team-id": TEAM.id,

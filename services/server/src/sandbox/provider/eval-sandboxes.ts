@@ -4,7 +4,7 @@ import {
   LABEL_SKILL_EVAL,
   LABEL_TEAM_ID,
   LABEL_TEAM_NAMESPACE,
-  TEAM_NAMESPACE_PREFIX,
+  namesOf,
 } from "../constants.js";
 import { evalClaimName, evalThreadOfClaim, type EvalClaimSpec } from "../eval-manifests.js";
 import { isUuid, teamNamespaceName, type TeamRef } from "../manifests.js";
@@ -24,7 +24,8 @@ export function createEvalSandboxOps(
   ctx: ProviderContext,
   { provision }: Pick<ClaimOps, "provision">,
 ): Pick<SandboxProvider, "createEvalSandbox" | "deleteEvalSandbox" | "listEvalSandboxes"> {
-  const { kube, deleteWithRetry } = ctx;
+  const { kube, deleteWithRetry, settings } = ctx;
+  const { prefix } = namesOf(settings);
 
   const createEvalSandbox = async (
     team: TeamRef,
@@ -39,7 +40,7 @@ export function createEvalSandboxOps(
   };
 
   const deleteEvalSandbox = async (team: TeamRef, threadId: string): Promise<boolean> =>
-    deleteWithRetry(CLAIM(teamNamespaceName(team), evalClaimName(threadId)));
+    deleteWithRetry(CLAIM(teamNamespaceName(team, settings), evalClaimName(threadId)));
 
   const listEvalSandboxes = async (): Promise<EvalSandboxInfo[]> => {
     const namespaces = await kube.list(
@@ -51,8 +52,7 @@ export function createEvalSandboxOps(
     const out: EvalSandboxInfo[] = [];
     for (const ns of namespaces) {
       const teamId = ns.metadata.labels?.[LABEL_TEAM_ID];
-      if (!teamId || !isUuid(teamId) || !ns.metadata.name.startsWith(TEAM_NAMESPACE_PREFIX))
-        continue;
+      if (!teamId || !isUuid(teamId) || !ns.metadata.name.startsWith(prefix)) continue;
       const claims = await kube.list(
         CLAIM(ns.metadata.name, "x").apiVersion,
         "SandboxClaim",

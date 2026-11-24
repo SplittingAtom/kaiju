@@ -5,9 +5,9 @@ import {
   LABEL_MANAGED_BY,
   LABEL_SKILL_SCAN,
   LABEL_TEAM_ID,
-  MANAGED_BY,
-  SANDBOX_SERVICE_ACCOUNT,
   SANDBOX_UID,
+  namesOf,
+  type NamingSettings,
 } from "../../sandbox/constants.js";
 import { isUuid, type KubeObject } from "../../sandbox/manifests.js";
 
@@ -43,8 +43,8 @@ export const scanConfigMapName = (versionId: string, part: number): string =>
   `${scanJobName(versionId)}-${String(part)}`;
 const partKey = (part: number) => `part-${String(part).padStart(3, "0")}`;
 
-const labels = (teamId: string, versionId: string): Record<string, string> => ({
-  [LABEL_MANAGED_BY]: MANAGED_BY,
+const labels = (s: NamingSettings, teamId: string, versionId: string): Record<string, string> => ({
+  [LABEL_MANAGED_BY]: namesOf(s).managedBy,
   [LABEL_TEAM_ID]: teamId,
   [LABEL_SKILL_SCAN]: versionId,
 });
@@ -68,6 +68,8 @@ export function scanConfigMapManifest(input: {
   readonly part: number;
   readonly bytes: Uint8Array;
   readonly owner: { readonly name: string; readonly uid: string };
+  /** The configured team namespace prefix: picks the managed-by value (KOBE-751). */
+  readonly sandbox: NamingSettings;
 }): KubeObject {
   return {
     apiVersion: "v1",
@@ -75,7 +77,7 @@ export function scanConfigMapManifest(input: {
     metadata: {
       name: scanConfigMapName(input.versionId, input.part),
       namespace: input.namespace,
-      labels: labels(input.teamId, input.versionId),
+      labels: labels(input.sandbox, input.teamId, input.versionId),
       ownerReferences: [
         { apiVersion: "batch/v1", kind: "Job", name: input.owner.name, uid: input.owner.uid },
       ],
@@ -101,7 +103,7 @@ export function scanPodSpec(input: ScanJobInput): Record<string, unknown> {
   const { sandbox: s, scan } = input;
   return {
     runtimeClassName: input.isolation.runtimeClassName,
-    serviceAccountName: SANDBOX_SERVICE_ACCOUNT,
+    serviceAccountName: namesOf(s).serviceAccount,
     automountServiceAccountToken: false,
     enableServiceLinks: false,
     hostNetwork: false,
@@ -166,7 +168,7 @@ export function scanPodSpec(input: ScanJobInput): Record<string, unknown> {
 
 /** The scan Job: one attempt, a hard deadline, cleaned up by the TTL. */
 export function scanJobManifest(input: ScanJobInput): KubeObject {
-  const meta = labels(input.teamId, input.versionId);
+  const meta = labels(input.sandbox, input.teamId, input.versionId);
   return {
     apiVersion: "batch/v1",
     kind: "Job",
@@ -183,7 +185,9 @@ export function scanJobManifest(input: ScanJobInput): KubeObject {
       activeDeadlineSeconds: input.scan.deadlineSeconds,
       ttlSecondsAfterFinished: SCAN_TTL_SECONDS,
       template: {
-        metadata: { labels: { ...meta, "app.kubernetes.io/name": "kobe-skill-scan" } },
+        metadata: {
+          labels: { ...meta, "app.kubernetes.io/name": namesOf(input.sandbox).skillScanAppName },
+        },
         spec: scanPodSpec(input),
       },
     },

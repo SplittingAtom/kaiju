@@ -12,8 +12,9 @@ import {
 } from "../../../packages/session-token/src/index.js";
 import {
   BOOTSTRAP_TOKEN_AUDIENCE,
+  DEFAULT_TEAM_NAMESPACE_PREFIX as TEAM_NAMESPACE_PREFIX,
   LABEL_TEAM_NAMESPACE,
-  TEAM_NAMESPACE_PREFIX,
+  TEAM_NAMESPACE_PREFIXES,
 } from "../../../services/server/src/sandbox/constants.js";
 import {
   type Manifest,
@@ -166,7 +167,11 @@ describe("session keys Secret", () => {
 
   it("refuses to generate them in an offline render", () => {
     expect(
-      renderError({ "global.allowGeneratedSecretsOffline": "false", "auth.existingSecret": "a" }),
+      renderError({
+        "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
+        "auth.existingSecret": "a",
+      }),
     ).toMatch(/sandbox\.sessionKeysSecret/);
   });
 });
@@ -399,7 +404,10 @@ describe("sandbox admission policies (KOBE-9 binding requirement 3)", () => {
       expect(p?.spec.matchConditions).toEqual([
         {
           name: "team-namespace",
-          expression: `request.namespace.startsWith('${TEAM_NAMESPACE_PREFIX}')`,
+          // KOBE-751: both known prefixes (policies 2-4 only restrict).
+          expression: TEAM_NAMESPACE_PREFIXES.map(
+            (p) => `request.namespace.startsWith('${p}')`,
+          ).join(" || "),
         },
       ]);
       expect(expressions(suffix)).toContain(
@@ -455,7 +463,7 @@ describe("sandbox admission policies (KOBE-9 binding requirement 3)", () => {
     expect(expressions("-server-scope")).toContain("in ['baseline', 'restricted']");
   });
 
-  it("confines the server's namespace and RoleBinding writes to labelled kobe-team-* namespaces", () => {
+  it("confines the server's namespace and RoleBinding writes to labelled team namespaces", () => {
     const p = policy("-server-scope");
     expect(p?.spec.matchConditions).toEqual([
       {

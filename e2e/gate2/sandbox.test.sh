@@ -29,7 +29,7 @@ chmod +x "$T/kubectl"
 
 failed=0
 KUBECTL="$T/kubectl"
-TNS=kobe-team-gate2-a
+TNS=kaiju-team-gate2-a
 T2=22222222-2222-2222-2222-222222222222
 # shellcheck source=../lib/gate-common.sh
 source e2e/lib/gate-common.sh

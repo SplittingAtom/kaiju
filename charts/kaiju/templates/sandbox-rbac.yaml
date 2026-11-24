@@ -3,9 +3,9 @@
 {{- $manager := include "kaiju.sandboxManagerRole" . -}}
 {{- $orchestrator := include "kaiju.clusterName" (dict "root" . "suffix" "sandbox-orchestrator") -}}
 {{- $serverSA := include "kaiju.serverServiceAccount" . -}}
-# Sandbox orchestration RBAC (spec D11: "the server's ServiceAccount manages only kobe-team-*
+# Sandbox orchestration RBAC (spec D11: "the server's ServiceAccount manages only <teamNamespacePrefix>*
 # namespaces"). RBAC cannot scope cluster-wide verbs by name, so the ValidatingAdmissionPolicies in
-# sandbox-admission.yaml confine every namespace and RoleBinding write by the server to kobe-team-*.
+# sandbox-admission.yaml confine every namespace and RoleBinding write by the server to <teamNamespacePrefix>*.
 #
 # Namespaced verbs live in this ClusterRole and are granted per team namespace by a RoleBinding the
 # server creates there (it may bind only this role: `bind` is limited by resourceNames). No Secret
@@ -78,7 +78,7 @@ metadata:
   labels:
     {{- include "kaiju.labels" . | nindent 4 }}
 rules:
-  # Team namespaces (admission-limited to kobe-team-*, labelled, Pod Security "restricted").
+  # Team namespaces (admission-limited to <teamNamespacePrefix>*, labelled, Pod Security "restricted").
   # list: the isolation reconciler finds team namespaces by label. create also serves the
   # admission self-check (a server-side dry run that the policies must refuse).
   - apiGroups: [""]

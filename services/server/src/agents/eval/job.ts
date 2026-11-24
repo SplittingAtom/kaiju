@@ -5,10 +5,10 @@ import {
   LABEL_MANAGED_BY,
   LABEL_ORBIT_EVAL,
   LABEL_TEAM_ID,
-  MANAGED_BY,
   SANDBOX_HOSTS,
-  SANDBOX_SERVICE_ACCOUNT,
   SANDBOX_UID,
+  namesOf,
+  type NamingSettings,
 } from "../../sandbox/constants.js";
 import { isUuid, type KubeObject } from "../../sandbox/manifests.js";
 
@@ -39,8 +39,8 @@ export const evalJobName = (evalId: string): string => {
 };
 export const evalConfigMapName = evalJobName;
 
-const labels = (teamId: string, evalId: string): Record<string, string> => ({
-  [LABEL_MANAGED_BY]: MANAGED_BY,
+const labels = (s: NamingSettings, teamId: string, evalId: string): Record<string, string> => ({
+  [LABEL_MANAGED_BY]: namesOf(s).managedBy,
   [LABEL_TEAM_ID]: teamId,
   [LABEL_ORBIT_EVAL]: evalId,
 });
@@ -54,6 +54,8 @@ export function evalConfigMapManifest(input: {
   readonly teamId: string;
   readonly evalId: string;
   readonly orbitYaml: string;
+  /** The configured team namespace prefix: picks the managed-by value (KOBE-751). */
+  readonly sandbox: NamingSettings;
 }): KubeObject {
   return {
     apiVersion: "v1",
@@ -61,7 +63,7 @@ export function evalConfigMapManifest(input: {
     metadata: {
       name: evalConfigMapName(input.evalId),
       namespace: input.namespace,
-      labels: labels(input.teamId, input.evalId),
+      labels: labels(input.sandbox, input.teamId, input.evalId),
     },
     data: { [EVAL_INPUT_FILE]: input.orbitYaml },
   };
@@ -94,7 +96,7 @@ export function evalPodSpec(input: EvalJobInput): Record<string, unknown> {
   const { sandbox: s, eval: e } = input;
   return {
     runtimeClassName: input.isolation.runtimeClassName,
-    serviceAccountName: SANDBOX_SERVICE_ACCOUNT,
+    serviceAccountName: namesOf(s).serviceAccount,
     automountServiceAccountToken: false,
     enableServiceLinks: false,
     hostNetwork: false,
@@ -172,7 +174,7 @@ export function evalPodSpec(input: EvalJobInput): Record<string, unknown> {
 
 /** The eval Job: one attempt (a retry is a new eval), a hard deadline, cleaned up by the TTL. */
 export function evalJobManifest(input: EvalJobInput): KubeObject {
-  const meta = labels(input.teamId, input.evalId);
+  const meta = labels(input.sandbox, input.teamId, input.evalId);
   return {
     apiVersion: "batch/v1",
     kind: "Job",
@@ -189,7 +191,9 @@ export function evalJobManifest(input: EvalJobInput): KubeObject {
       activeDeadlineSeconds: input.eval.deadlineSeconds,
       ttlSecondsAfterFinished: EVAL_TTL_SECONDS,
       template: {
-        metadata: { labels: { ...meta, "app.kubernetes.io/name": "kobe-orbit-eval" } },
+        metadata: {
+          labels: { ...meta, "app.kubernetes.io/name": namesOf(input.sandbox).orbitEvalAppName },
+        },
         spec: evalPodSpec(input),
       },
     },

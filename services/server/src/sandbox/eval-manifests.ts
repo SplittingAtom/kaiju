@@ -5,20 +5,16 @@ import {
   ANNOTATION_EVAL_THREAD,
   ANNOTATION_TEAM_ID,
   ANNOTATION_USER_ID,
-  EVAL_PRIORITY_CLASS,
-  EVAL_RESOURCE_QUOTA,
-  MEMBER_RESOURCE_QUOTA,
-  EVAL_SANDBOX_TEMPLATE,
-  EVAL_SANDBOX_WARM_POOL,
   LABEL_EVAL_THREAD,
-  LABEL_MANAGED_BY,
   LABEL_SKILL_EVAL,
   LABEL_USER_ID,
-  MANAGED_BY,
+  namesOf,
+  type NamingSettings,
 } from "./constants.js";
 import {
   assertUserId,
   isUuid,
+  managedLabelsOf,
   sandboxPodSpec,
   type EndpointAddresses,
   type KubeObject,
@@ -31,8 +27,6 @@ import { evalQuotaHard, memberQuotaHard } from "./eval-quota.js";
 // namespace NetworkPolicy: server wire, model gateway, MCP proxy and egress proxy only; no Secret;
 // only session tokens), except: `/workspace` is an emptyDir (gone with the pod), workspace sync
 // is off, and the pod has the eval PriorityClass (low, never preempts) that the eval quota counts.
-
-const managedLabels = { [LABEL_MANAGED_BY]: MANAGED_BY };
 
 /** One SandboxClaim per eval thread. */
 export const evalClaimName = (threadId: string): string => {
@@ -51,15 +45,16 @@ export const evalThreadOfClaim = (name: string): string | undefined => {
  * a priorityClassName too) stays within `teamQuota`, whatever the evals do.
  */
 export function memberResourceQuotaManifest(namespace: string, s: SandboxSettings): KubeObject {
+  const names = namesOf(s);
   return {
     apiVersion: "v1",
     kind: "ResourceQuota",
-    metadata: { name: MEMBER_RESOURCE_QUOTA, namespace, labels: managedLabels },
+    metadata: { name: names.memberResourceQuota, namespace, labels: managedLabelsOf(names) },
     spec: {
       hard: memberQuotaHard(s),
       scopeSelector: {
         matchExpressions: [
-          { scopeName: "PriorityClass", operator: "NotIn", values: [EVAL_PRIORITY_CLASS] },
+          { scopeName: "PriorityClass", operator: "NotIn", values: [names.evalPriorityClass] },
         ],
       },
     },
@@ -67,15 +62,16 @@ export function memberResourceQuotaManifest(namespace: string, s: SandboxSetting
 }
 
 export function evalResourceQuotaManifest(namespace: string, s: SandboxSettings): KubeObject {
+  const names = namesOf(s);
   return {
     apiVersion: "v1",
     kind: "ResourceQuota",
-    metadata: { name: EVAL_RESOURCE_QUOTA, namespace, labels: managedLabels },
+    metadata: { name: names.evalResourceQuota, namespace, labels: managedLabelsOf(names) },
     spec: {
       hard: evalQuotaHard(s),
       scopeSelector: {
         matchExpressions: [
-          { scopeName: "PriorityClass", operator: "In", values: [EVAL_PRIORITY_CLASS] },
+          { scopeName: "PriorityClass", operator: "In", values: [names.evalPriorityClass] },
         ],
       },
     },
@@ -100,7 +96,7 @@ export function evalSandboxPodSpec(
   }));
   return {
     ...spec,
-    priorityClassName: EVAL_PRIORITY_CLASS,
+    priorityClassName: namesOf(s).evalPriorityClass,
     containers,
     volumes: [
       { name: "workspace", emptyDir: { sizeLimit: s.skillEval.workspaceSize } },
@@ -115,10 +111,12 @@ export function evalSandboxTemplateManifest(
   s: SandboxSettings,
   addresses: EndpointAddresses,
 ): KubeObject {
+  const names = namesOf(s);
+  const managedLabels = managedLabelsOf(names);
   return {
     apiVersion: "extensions.agents.x-k8s.io/v1beta1",
     kind: "SandboxTemplate",
-    metadata: { name: EVAL_SANDBOX_TEMPLATE, namespace, labels: managedLabels },
+    metadata: { name: names.evalTemplate, namespace, labels: managedLabels },
     spec: {
       networkPolicyManagement: "Unmanaged",
       envVarsInjectionPolicy: "Disallowed",
@@ -128,7 +126,7 @@ export function evalSandboxTemplateManifest(
         metadata: {
           labels: {
             ...managedLabels,
-            "app.kubernetes.io/name": "kobe-sandbox",
+            "app.kubernetes.io/name": names.sandboxAppName,
             [LABEL_SKILL_EVAL]: "true",
           },
         },
@@ -139,14 +137,15 @@ export function evalSandboxTemplateManifest(
 }
 
 /** A claim needs a warm pool (agent-sandbox v1.0.4); this one keeps no idle pods. */
-export function evalWarmPoolManifest(namespace: string): KubeObject {
+export function evalWarmPoolManifest(namespace: string, s: NamingSettings): KubeObject {
+  const names = namesOf(s);
   return {
     apiVersion: "extensions.agents.x-k8s.io/v1beta1",
     kind: "SandboxWarmPool",
-    metadata: { name: EVAL_SANDBOX_WARM_POOL, namespace, labels: managedLabels },
+    metadata: { name: names.evalWarmPool, namespace, labels: managedLabelsOf(names) },
     spec: {
       replicas: 0,
-      sandboxTemplateRef: { name: EVAL_SANDBOX_TEMPLATE },
+      sandboxTemplateRef: { name: names.evalTemplate },
       updateStrategy: { type: "Recreate" },
     },
   };
@@ -161,8 +160,14 @@ export interface EvalClaimSpec {
 }
 
 /** An eval execution's sandbox. Its UID is the sandbox id (session token `sub`). */
-export function evalClaimManifest(namespace: string, team: TeamRef, c: EvalClaimSpec): KubeObject {
+export function evalClaimManifest(
+  namespace: string,
+  team: TeamRef,
+  c: EvalClaimSpec,
+  s: NamingSettings,
+): KubeObject {
   assertUserId(c.userId);
+  const names = namesOf(s);
   if (!isUuid(c.evalRunId)) throw new Error("eval run id must be a UUID");
   const identity = {
     [ANNOTATION_TEAM_ID]: team.id,
@@ -177,7 +182,7 @@ export function evalClaimManifest(namespace: string, team: TeamRef, c: EvalClaim
       name: evalClaimName(c.threadId),
       namespace,
       labels: {
-        ...managedLabels,
+        ...managedLabelsOf(names),
         [LABEL_USER_ID]: c.userId,
         [LABEL_SKILL_EVAL]: "true",
         [LABEL_EVAL_THREAD]: c.threadId,
@@ -185,7 +190,7 @@ export function evalClaimManifest(namespace: string, team: TeamRef, c: EvalClaim
       annotations: identity,
     },
     spec: {
-      warmPoolRef: { name: EVAL_SANDBOX_WARM_POOL },
+      warmPoolRef: { name: names.evalWarmPool },
       lifecycle: { shutdownTime: c.shutdownAt.toISOString(), shutdownPolicy: "Delete" },
       additionalPodMetadata: { annotations: identity },
     },

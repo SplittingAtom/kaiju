@@ -11,7 +11,7 @@ import {
 } from "./provider.js";
 
 /** Hibernate and wake (KOBE-25, spec D14) against the fake cluster + agent-sandbox simulation. */
-const NS = "kobe-team-finance";
+const NS = "kaiju-team-finance";
 
 function setup(
   opts: {

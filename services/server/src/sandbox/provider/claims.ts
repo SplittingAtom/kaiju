@@ -92,8 +92,8 @@ export function createClaimOps(
       try {
         claim = await kube.create(
           evalSpec
-            ? evalClaimManifest(namespace, team, evalSpec)
-            : sandboxClaimManifest(namespace, team, userId),
+            ? evalClaimManifest(namespace, team, evalSpec, settings)
+            : sandboxClaimManifest(namespace, team, userId, settings),
         );
         if (claim.metadata.uid) {
           await emit({
@@ -309,7 +309,7 @@ export function createClaimOps(
     userId: string,
     sandboxId: string,
   ): Promise<HibernateOutcome> => {
-    const namespace = teamNamespaceName(team);
+    const namespace = teamNamespaceName(team, settings);
     for (let attempt = 0; ; attempt++) {
       const claim = await kube.get(CLAIM(namespace, claimName(userId)));
       if (!claim || claim.metadata.uid !== sandboxId || claim.metadata.deletionTimestamp) {

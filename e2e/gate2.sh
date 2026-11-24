@@ -17,7 +17,7 @@
 # Runs after the gate1-prep install in CI (k3d) and against a real cluster's throwaway install:
 #   KAIJU_GATE2_NS=<release namespace> KAIJU_GATE2_RELEASE=<release> e2e/gate2.sh
 # Non-destructive outside what it creates: users gate2-*@gate2.test, team gate2-a (its
-# kobe-team-gate2-a namespace and the sandbox the server creates), namespace kaiju-gate2-infra (a
+# kaiju-team-gate2-a namespace and the sandbox the server creates), namespace kaiju-gate2-infra (a
 # fake MCP server and a TLS upstream), one connector row, break-glass grants (revoked at the end).
 # Temporary changes to the install, undone on exit: a price on the catalog model when it has none,
 # the test upstream in the egress ceiling, and (the one that rolls pods) the egress and MCP proxy
@@ -39,7 +39,7 @@ OWNER_EMAIL="${KAIJU_GATE2_OWNER_EMAIL:-owner@e2e.test}"
 OWNER_PASSWORD="${KAIJU_GATE2_OWNER_PASSWORD:-e2e owner password}"
 INFRA_NS=kaiju-gate2-infra
 TEAM_SLUG=gate2-a
-TNS="kobe-team-$TEAM_SLUG"
+TNS="kaiju-team-$TEAM_SLUG"
 CONNECTOR_ID=7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"

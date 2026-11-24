@@ -158,7 +158,7 @@
   MODEL_CLIENT="model-client-$RANDOM"
   PODS+=("-n $TEAM_NS $MODEL_CLIENT")
   $KUBECTL -n "$TEAM_NS" run "$MODEL_CLIENT" --restart=Never --image="$KAIJU_SANDBOX_IMAGE" --overrides="{\"spec\":{
-    \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kobe-sandbox\",$SEC_POD,
+    \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kaiju-sandbox\",$SEC_POD,
     \"dnsPolicy\":\"None\",\"dnsConfig\":{\"nameservers\":[\"127.0.0.1\"]},
     \"hostAliases\":[{\"ip\":\"${mg_ip:-0.0.0.0}\",\"hostnames\":[\"model-gateway.kaiju.internal\"]}],
     \"containers\":[{\"name\":\"client\",\"image\":\"$KAIJU_SANDBOX_IMAGE\",\"command\":[\"sleep\",\"3600\"],$SEC_CTR,

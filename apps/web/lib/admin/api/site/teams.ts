@@ -30,7 +30,7 @@ export interface RosterMember {
   readonly managedBy?: { readonly providerId: string; readonly providerName: string } | null;
 }
 
-/** Mirrors the server's team slug rule (it names the `kobe-team-<slug>` namespace). */
+/** Mirrors the server's team slug rule (it names the `<prefix><slug>` sandbox namespace). */
 export const TEAM_SLUG_PATTERN = "[a-z0-9]([a-z0-9\\-]{0,30}[a-z0-9])?";
 
 export async function listSiteTeams(): Promise<ApiResult<readonly SiteTeam[]>> {

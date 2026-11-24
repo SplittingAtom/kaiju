@@ -4,6 +4,7 @@ predates the `sandbox` key still renders. Keep in sync with values.yaml.
 */}}
 {{- define "kaiju.sandboxValues" -}}
 {{- $defaults := dict
+  "teamNamespacePrefix" ""
   "resources" (dict "requests" (dict "cpu" "500m" "memory" "1Gi") "limits" (dict "cpu" "2" "memory" "4Gi"))
   "workspace" (dict "size" "10Gi" "storageClass" "" "longhornStrictLocal" (dict "enabled" false))
   "tmpSize" "2Gi"
@@ -38,6 +39,92 @@ sandbox.workspace.storageClass ("" = the cluster default). Setting both is refus
 {{- else -}}
 {{- $s.workspace.storageClass -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+KOBE-751: the team namespace prefix, exactly one per install: sandbox.teamNamespacePrefix when set,
+else detected from the existing team namespaces (labelled kobe.splittingatom.io/team-namespace;
+`lookup` needs a reachable cluster), else "kaiju-team-". An offline render (helm template, Argo CD,
+Flux, client-side --dry-run) cannot detect it, so it must set the value, unless it is a throwaway
+environment (global.allowGeneratedSecretsOffline, like generated secrets). Whenever the cluster is
+reachable, team namespaces under another prefix than the resolved one fail the render, naming the
+value to set; the server refuses to start in the same case (services/server/src/sandbox/
+namespace-prefix.ts), which also covers offline renders. Keep the list in step with the server's
+TEAM_NAMESPACE_PREFIXES (sandbox/constants.ts).
+*/}}
+{{- define "kaiju.teamNamespacePrefix" -}}
+{{- $s := include "kaiju.sandboxValues" . | fromJson -}}
+{{- $online := include "kaiju.online" . | eq "true" -}}
+{{- include "kaiju.resolveTeamNamespacePrefix" (dict
+  "set" (toString ($s.teamNamespacePrefix | default ""))
+  "online" $online
+  "namespaces" (ternary ((lookup "v1" "Namespace" "" "").items | default list) list $online)
+  "allowOffline" (.Values.global.allowGeneratedSecretsOffline | default false)) -}}
+{{- end -}}
+
+{{/*
+The rule itself, without lookups (charts/kaiju/tests/team-namespace-prefix.test.ts renders it with
+made-up namespaces): .set (the value), .online (cluster reachable), .namespaces (Namespace objects
+from the cluster), .allowOffline (global.allowGeneratedSecretsOffline).
+*/}}
+{{/* Both team namespace prefixes Kaiju knows (the server's TEAM_NAMESPACE_PREFIXES), as JSON. */}}
+{{- define "kaiju.teamNamespacePrefixes" -}}
+{{- toJson (list "kaiju-team-" "kobe-team-") -}}
+{{- end -}}
+
+{{- define "kaiju.resolveTeamNamespacePrefix" -}}
+{{- $known := include "kaiju.teamNamespacePrefixes" . | fromJsonArray -}}
+{{- $set := .set -}}
+{{- if and $set (not (has $set $known)) -}}
+{{- fail (printf "sandbox.teamNamespacePrefix must be \"kaiju-team-\" or \"kobe-team-\" (empty: detect it), not %q" $set) -}}
+{{- end -}}
+{{- $teamNamespaces := list -}}
+{{- $found := dict -}}
+{{- range .namespaces -}}
+{{- $labels := .metadata.labels | default dict -}}
+{{- if eq (toString (index $labels "kobe.splittingatom.io/team-namespace" | default "")) "true" -}}
+{{- $name := .metadata.name -}}
+{{- $teamNamespaces = append $teamNamespaces $name -}}
+{{- range $known -}}
+{{- if hasPrefix . $name -}}{{- $_ := set $found . true -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $prefix := $set -}}
+{{- if not $prefix -}}
+{{- if .online -}}
+{{- if gt (len $found) 1 -}}
+{{- fail (printf "Team namespaces exist under both prefixes %s: exactly one may be in force. Set sandbox.teamNamespacePrefix to the prefix of this install's team namespaces." (keys $found | sortAlpha | join " and ")) -}}
+{{- end -}}
+{{- $prefix = default "kaiju-team-" (first (keys $found)) -}}
+{{- else if .allowOffline -}}
+{{- $prefix = "kaiju-team-" -}}
+{{- else -}}
+{{- fail "Cannot detect the team namespace prefix in an offline render. Set sandbox.teamNamespacePrefix: \"kaiju-team-\" for a new install, or the prefix of the existing team namespaces (\"kobe-team-\" for an install created before the rename)." -}}
+{{- end -}}
+{{- end -}}
+{{- $foreign := list -}}
+{{- range $teamNamespaces -}}
+{{- if not (hasPrefix $prefix .) -}}{{- $foreign = append $foreign . -}}{{- end -}}
+{{- end -}}
+{{- if $foreign -}}
+{{- $other := "" -}}
+{{- range $known -}}{{- if and (ne . $prefix) (hasKey $found .) -}}{{- $other = . -}}{{- end -}}{{- end -}}
+{{- $hint := "the prefix of this install's team namespaces (and remove the team-namespace label from namespaces Kaiju did not create)" -}}
+{{- if $other -}}{{- $hint = quote $other -}}{{- end -}}
+{{- fail (printf "Team namespaces exist under another prefix than sandbox.teamNamespacePrefix %q: %s. Set sandbox.teamNamespacePrefix to %s; moving an install to another prefix is not supported." $prefix (sortAlpha $foreign | join ", ") $hint) -}}
+{{- end -}}
+{{- $prefix -}}
+{{- end -}}
+
+{{/*
+The naming generation of the objects in team namespaces and of the chart's copies of them (the
+skill eval PriorityClass): "kaiju", or "kobe" with the prefix kobe-team- (KOBE-751). Same rule as
+the server's `sandboxNames`, so namespace and object names never mix.
+*/}}
+{{- define "kaiju.sandboxGeneration" -}}
+{{- /* `default`: helm lint ignores `fail`, so the prefix may be empty there. */ -}}
+{{- trimSuffix "-team-" (include "kaiju.teamNamespacePrefix" .) | default "kaiju" -}}
 {{- end -}}
 
 {{/* Names shared by RBAC, admission policies and the server's sandbox config. */}}
@@ -116,6 +203,7 @@ pod labels and port for the team NetworkPolicy).
   "imagePullPolicy" .Values.global.imagePullPolicy
   "imagePullSecrets" $pullSecrets
   "releaseNamespace" .Release.Namespace
+  "teamNamespacePrefix" (include "kaiju.teamNamespacePrefix" .)
   "serverServiceAccount" (include "kaiju.serverServiceAccount" .)
   "managerClusterRole" (include "kaiju.sandboxManagerRole" .)
   "endpoints" $endpoints

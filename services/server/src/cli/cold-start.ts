@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import { and, eq, sql, threads, withTeam, type KaijuDb } from "@kaiju/db";
-import { createKubeClient, type KubeClient } from "../sandbox/kube.js";
+import type { KubeClient } from "../sandbox/kube.js";
+import { teamNamespaceName } from "../sandbox/manifests.js";
 import {
   runColdStartTrials,
   type ColdStartReport,
@@ -68,6 +69,8 @@ async function deleteHarnessThread(db: KaijuDb, target: SandboxTarget, id: strin
 
 interface Wiring {
   readonly db: KaijuDb;
+  /** The replica's own client (its field manager follows the configured prefix, KOBE-751). */
+  readonly kube: KubeClient;
   readonly router: SandboxRouter;
   readonly target: SandboxTarget;
   readonly namespace: string;
@@ -123,7 +126,7 @@ const PROBES: Record<string, Probe> = {
 };
 
 function steps(w: Wiring, probeName: string, label: string): ColdStartSteps {
-  const kube = createKubeClient();
+  const { kube } = w;
   const probe = PROBES[probeName] as Probe;
   return {
     async hibernate() {
@@ -232,7 +235,8 @@ async function main(): Promise<number> {
       db: database.db,
       router: wire.router,
       target,
-      namespace: `kobe-team-${team.slug}`,
+      kube: replica.runtime.kube,
+      namespace: teamNamespaceName(team, replica.runtime.settings),
       threadId,
       spacingMs,
       hibernate: () => lifecycle.hibernate(target, { force: true }),

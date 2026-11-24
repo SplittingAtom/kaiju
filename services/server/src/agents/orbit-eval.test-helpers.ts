@@ -152,7 +152,7 @@ export function useOrbitEvalHarness(fileKnobs: OrbitEvalKnobs): void {
         runner = new EvalRunner({
           db: deps.database.db,
           kube,
-          provider: { ensureTeam: async () => "kobe-team-finance" },
+          provider: { ensureTeam: async () => "kaiju-team-finance" },
           isolation: {
             require: () =>
               knobs.gateOpen()

@@ -148,7 +148,7 @@ export class EvalRunner {
 
   /** Collects a Job that finished while no driver watched, or errors the eval (timed out). */
   private async adopt(run: Omit<EvalRun, "orbitYaml">): Promise<void> {
-    const namespace = teamNamespaceName(run.team);
+    const namespace = teamNamespaceName(run.team, this.options.settings);
     const job = await this.options.kube.get(
       ref("Job", evalJobName(run.record.id), namespace, "batch/v1"),
     );
@@ -183,7 +183,9 @@ export class EvalRunner {
       throw new Error("The model gateway Service has no ClusterIP.");
     }
     const common = { namespace, teamId: team.id, evalId: record.id };
-    await options.kube.apply(evalConfigMapManifest({ ...common, orbitYaml: run.orbitYaml }));
+    await options.kube.apply(
+      evalConfigMapManifest({ ...common, orbitYaml: run.orbitYaml, sandbox: options.settings }),
+    );
     // Running before the Job exists: the gateway accepts the eval's token only while it is running.
     if (!(await markRunning(options.db, team.id, record.id, evalJobName(record.id)))) {
       throw new Error("The eval was finished by someone else before its Job started.");
@@ -233,7 +235,7 @@ export class EvalRunner {
 
   private async waitForJob(run: EvalRun): Promise<JobOutcome> {
     const { kube, settings } = this.options;
-    const namespace = teamNamespaceName(run.team);
+    const namespace = teamNamespaceName(run.team, this.options.settings);
     const deadline =
       this.now().getTime() +
       ((settings.orbitEval?.deadlineSeconds ?? 0) + DRIVER_SLACK_SECONDS) * 1000;
@@ -253,7 +255,7 @@ export class EvalRunner {
 
   private async readLog(team: TeamRef, evalId: string): Promise<string> {
     const { kube } = this.options;
-    const namespace = teamNamespaceName(team);
+    const namespace = teamNamespaceName(team, this.options.settings);
     const pods = await kube.list("v1", "Pod", namespace, `${LABEL_ORBIT_EVAL}=${evalId}`);
     const pod = pods[0];
     if (!pod) return "";
@@ -325,7 +327,7 @@ export class EvalRunner {
     const message = (token ? raw.replaceAll(token, "[redacted]") : raw).slice(0, MAX_ERROR);
     logger.error({ err, evalId: run.record.id }, "orbit eval failed");
     try {
-      await this.deleteJob(teamNamespaceName(run.team), run.record.id);
+      await this.deleteJob(teamNamespaceName(run.team, this.options.settings), run.record.id);
     } catch {
       // The Job's TTL collects it; the verdict below matters more.
     }

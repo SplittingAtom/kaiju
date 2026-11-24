@@ -4,7 +4,7 @@ import { SETTINGS, TEAM, USER, gateFor, seedCluster } from "../testing/sandbox-f
 import { createSandboxProvider, workspacePvcName } from "./provider.js";
 
 /** Offboarding (KOBE-28, D12): destroy the sandbox at once, keep its volume until deleted. */
-const NS = "kobe-team-finance";
+const NS = "kaiju-team-finance";
 const PVC = (name: string) => ({
   apiVersion: "v1",
   kind: "PersistentVolumeClaim",

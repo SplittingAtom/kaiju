@@ -31,7 +31,7 @@ describe("reconcileIsolation", () => {
     const result = await provider.reconcileIsolation();
     expect(result.deleted).toEqual([`${NS}/${a.podName}`]);
     expect(kube.all("SandboxClaim").map((c) => c.metadata.namespace)).toEqual([
-      "kobe-team-marketing",
+      "kaiju-team-marketing",
     ]);
   });
 

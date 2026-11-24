@@ -1,10 +1,12 @@
-# RN-7 (KOBE-751): team namespace prefix as configuration (spec §5). Hand work first: the chart
-# sets sandbox.teamNamespacePrefix from a lookup (default `kaiju-team-` on a fresh install), the
-# admission policy (charts/**/sandbox-admission.yaml, the gVisor/Kata guard) and the server use the
-# configured prefix, the server refuses to start when namespaces with another prefix exist, and the
-# in-namespace object names (services/server/src/sandbox/constants.ts and the chart) come with the
-# configuration so existing installs keep theirs. The patterns below exclude charts/** and
-# constants.ts on purpose: they rename only examples, tests and docs.
+# RN-7 (KOBE-751): team namespace prefix as configuration (spec §5). Hand work first (done in the
+# commit before the apply): the chart sets sandbox.teamNamespacePrefix from a lookup (default
+# `kaiju-team-` on a fresh install), the admission policy (charts/**/sandbox-admission.yaml, the
+# gVisor/Kata guard) and the server use the configured prefix, the server refuses to start when
+# namespaces with another prefix exist, and the in-namespace object names come from the prefix's
+# naming generation (`sandboxNames` in services/server/src/sandbox/constants.ts) so existing
+# installs keep theirs. Code no longer spells either generation's names; the patterns below rename
+# the fresh-install names in tests, the e2e suite (a fresh k3d install) and docs. The permanent
+# group for the kept `kobe-team-` generation owns the deliberate uses.
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
@@ -12,5 +14,11 @@
 # dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
 
 == RN-7: Team namespace prefix (configuration: new default `kaiju-team-`, detected on existing installs)
-** !charts/** !services/server/src/sandbox/constants.ts /(?<!x-)\bkobe-team-(?!quota\b|member-quota\b|samples\b)/
-** !charts/** !services/server/src/sandbox/constants.ts /(?<!x-)\bkobe-team\b(?!-)/
+** !charts/k{obe,aiju}/templates/** !services/server/src/sandbox/constants.ts /(?<!x-)\bkobe-team-(?!quota\b|member-quota\b|samples\b)/
+** !charts/k{obe,aiju}/templates/** !services/server/src/sandbox/constants.ts /(?<!x-)\bkobe-team\b(?!-)/
+
+== RN-7: Object names inside team namespaces (ServiceAccount, SandboxTemplate, warm pool, NetworkPolicies, quotas, LimitRange, RoleBinding, bootstrap volume, the managed-by label and server-side-apply field manager): existing installs keep theirs, so they follow the configured prefix (spec §5, §3 changes 7)
+** !charts/k{obe,aiju}/templates/** !services/server/src/sandbox/constants.ts /\bmanaged-by["']?:\s*["']kobe-server["']/
+docs/install.md /(?<=managed-by=)kobe-server\b/
+** !charts/k{obe,aiju}/templates/** !services/server/src/sandbox/constants.ts /(?<![\w.-])(?<!splittingatom\/)kobe-(?:sandbox(?:-isolation|-defaults)?|orbit-eval-isolation|skill-scan|team-(?:member-)?quota|skill-eval(?:-quota)?|bootstrap)(?![\w-]|:[\w$])/
+** /\bkobe-admission-probe\b/

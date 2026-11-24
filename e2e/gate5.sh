@@ -29,7 +29,7 @@ OWNER_EMAIL="${KAIJU_GATE5_OWNER_EMAIL:-owner@e2e.test}"
 OWNER_PASSWORD="${KAIJU_GATE5_OWNER_PASSWORD:-e2e owner password}"
 BROWSER="${KAIJU_GATE5_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
 TEAM_SLUG=gate5-a
-TNS="kobe-team-$TEAM_SLUG"
+TNS="kaiju-team-$TEAM_SLUG"
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
 NONCE="$(date +%s)"

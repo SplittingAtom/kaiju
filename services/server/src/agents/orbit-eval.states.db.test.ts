@@ -151,7 +151,7 @@ describe("sweeper", () => {
         kube.seed({
           apiVersion: "batch/v1",
           kind: "Job",
-          metadata: { name, namespace: "kobe-team-finance" },
+          metadata: { name, namespace: "kaiju-team-finance" },
           status: { conditions: [{ type: "Complete", status: "True" }] },
         });
         kube.seed({
@@ -159,12 +159,12 @@ describe("sweeper", () => {
           kind: "Pod",
           metadata: {
             name: `${name}-p`,
-            namespace: "kobe-team-finance",
+            namespace: "kaiju-team-finance",
             labels: { "kobe.splittingatom.io/orbit-eval": created.value.id },
           },
         });
         kube.podLogs.set(
-          `kobe-team-finance/${name}-p`,
+          `kaiju-team-finance/${name}-p`,
           report({ attack_success_rate: 0.6, attack_successes: 3 }),
         );
       }

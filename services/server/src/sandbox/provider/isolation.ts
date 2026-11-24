@@ -7,7 +7,7 @@ import {
   LABEL_CLAIM_UID,
   LABEL_TEAM_ID,
   LABEL_TEAM_NAMESPACE,
-  TEAM_NAMESPACE_PREFIX,
+  namesOf,
 } from "../constants.js";
 import { evalClaimName } from "../eval-manifests.js";
 import {
@@ -31,7 +31,8 @@ import type { ReconcileResult } from "./types.js";
 export function createIsolationOps(
   ctx: ProviderContext,
 ): Pick<SandboxProvider, "reconcileIsolation" | "isLive"> {
-  const { kube, isolation, runtimeClassName, emit, stillVerified, deleteWithRetry } = ctx;
+  const { kube, isolation, runtimeClassName, emit, stillVerified, deleteWithRetry, settings } = ctx;
+  const { prefix } = namesOf(settings);
 
   /** Definitive loss only: the configured class is gone (404) or its handler does not isolate. */
   const isolationDefinitivelyLost = async (): Promise<string | undefined> => {
@@ -98,7 +99,7 @@ export function createIsolationOps(
     const deleted: string[] = [];
     for (const ns of namespaces) {
       const namespace = ns.metadata.name;
-      if (!namespace.startsWith(TEAM_NAMESPACE_PREFIX)) continue;
+      if (!namespace.startsWith(prefix)) continue;
       for (const pod of await kube.list("v1", "Pod", namespace)) {
         if (pod.metadata.deletionTimestamp) continue;
         const ok =
@@ -129,7 +130,7 @@ export function createIsolationOps(
     if (!isUuid(userId) || !isUuid(sandboxId)) return false;
     if (evalThreadId !== undefined && !isUuid(evalThreadId)) return false;
     const name = evalThreadId ? evalClaimName(evalThreadId) : claimName(userId);
-    const claim = await kube.get(CLAIM(teamNamespaceName(team), name));
+    const claim = await kube.get(CLAIM(teamNamespaceName(team, settings), name));
     if (!claim || claim.metadata.uid !== sandboxId || claim.metadata.deletionTimestamp)
       return false;
     const annotations = claim.metadata.annotations ?? {};

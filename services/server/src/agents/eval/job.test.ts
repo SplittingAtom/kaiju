@@ -26,7 +26,7 @@ async function input(): Promise<EvalJobInput> {
   const kube = createFakeKube();
   seedCluster(kube);
   return {
-    namespace: "kobe-team-finance",
+    namespace: "kaiju-team-finance",
     teamId: TEAM.id,
     evalId: EVAL_ID,
     isolation: await gateFor(kube).require(),
@@ -72,7 +72,7 @@ type Job = {
 describe("Orbit eval Job manifest (KOBE-93)", () => {
   it("runs under the verified gVisor/Kata RuntimeClass, in the team namespace", async () => {
     const job = evalJobManifest(await input()) as unknown as Job;
-    expect(job.metadata.namespace).toBe("kobe-team-finance");
+    expect(job.metadata.namespace).toBe("kaiju-team-finance");
     expect(job.metadata.name).toBe(`orbit-eval-${EVAL_ID}`);
     expect(job.spec.template.spec.runtimeClassName).toBe("gvisor");
   });
@@ -157,6 +157,7 @@ describe("Orbit eval Job manifest (KOBE-93)", () => {
       teamId: TEAM.id,
       evalId: EVAL_ID,
       orbitYaml: "name: x\n",
+      sandbox: SETTINGS,
     });
     expect(map.data).toEqual({ "agent.yaml": "name: x\n" });
     expect(JSON.stringify(map)).not.toContain(TOKEN);
@@ -193,7 +194,7 @@ describe("Orbit eval Job manifest (KOBE-93)", () => {
 });
 
 describe("eval NetworkPolicy", () => {
-  const eval_ = evalNetworkPolicyManifest("kobe-team-finance", SANDBOX) as unknown as {
+  const eval_ = evalNetworkPolicyManifest("kaiju-team-finance", SANDBOX) as unknown as {
     spec: {
       podSelector: unknown;
       policyTypes: string[];
@@ -219,7 +220,7 @@ describe("eval NetworkPolicy", () => {
   });
 
   it("is the only policy that applies to eval pods: the namespace-wide one leaves them out", () => {
-    const general = networkPolicyManifest("kobe-team-finance", SANDBOX) as unknown as {
+    const general = networkPolicyManifest("kaiju-team-finance", SANDBOX) as unknown as {
       spec: { podSelector: unknown };
     };
     expect(general.spec.podSelector).toEqual({

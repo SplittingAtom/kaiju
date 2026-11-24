@@ -9,17 +9,12 @@ import {
   BOOTSTRAP_TOKEN_FILE,
   BOOTSTRAP_TOKEN_SECONDS,
   KAIJU_ENDPOINTS,
-  EVAL_NETWORK_POLICY,
-  SKILL_SCAN_NETWORK_POLICY,
   LABEL_MANAGED_BY,
   LABEL_ORBIT_EVAL,
   LABEL_SKILL_SCAN,
   LABEL_TEAM_ID,
   LABEL_TEAM_NAMESPACE,
   LABEL_USER_ID,
-  LIMIT_RANGE,
-  MANAGED_BY,
-  NETWORK_POLICY,
   PARTNER_IDENTITY_BASE,
   PI_IDENTITIES,
   PI_IDENTITY_BASE,
@@ -31,16 +26,13 @@ import {
   POD_SECURITY_LEVEL,
   SANDBOX_AGENT_GID,
   SANDBOX_CAPABILITIES,
-  RESOURCE_QUOTA,
   SANDBOX_CONTAINER,
   SANDBOX_HOSTS,
-  SANDBOX_SERVICE_ACCOUNT,
-  SANDBOX_TEMPLATE,
   SANDBOX_UID,
-  SANDBOX_WARM_POOL,
-  SERVER_ROLE_BINDING,
-  TEAM_NAMESPACE_PREFIX,
+  namesOf,
   type KaijuEndpoint,
+  type NamingSettings,
+  type SandboxNames,
 } from "./constants.js";
 
 /**
@@ -97,9 +89,10 @@ export function assertUserId(userId: string): void {
   if (!UUID.test(userId)) throw new TypeError("user id must be a lowercase uuid");
 }
 
-export const teamNamespaceName = (team: TeamRef): string => {
+/** The team's namespace under the configured prefix (KOBE-751). */
+export const teamNamespaceName = (team: TeamRef, s: NamingSettings): string => {
   assertTeamRef(team);
-  return `${TEAM_NAMESPACE_PREFIX}${team.slug}`;
+  return `${namesOf(s).prefix}${team.slug}`;
 };
 
 /** One SandboxClaim per (user, team): its name is derived from the user id. */
@@ -108,16 +101,19 @@ export const claimName = (userId: string): string => {
   return `u-${userId}`;
 };
 
-const managedLabels = { [LABEL_MANAGED_BY]: MANAGED_BY };
+/** `app.kubernetes.io/managed-by` of the objects the server creates in team namespaces. */
+export const managedLabelsOf = (names: SandboxNames): Readonly<Record<string, string>> => ({
+  [LABEL_MANAGED_BY]: names.managedBy,
+});
 
-export function namespaceManifest(team: TeamRef): KubeObject {
+export function namespaceManifest(team: TeamRef, s: NamingSettings): KubeObject {
   return {
     apiVersion: "v1",
     kind: "Namespace",
     metadata: {
-      name: teamNamespaceName(team),
+      name: teamNamespaceName(team, s),
       labels: {
-        ...managedLabels,
+        ...managedLabelsOf(namesOf(s)),
         [LABEL_TEAM_NAMESPACE]: "true",
         [LABEL_TEAM_ID]: team.id,
         // Pod Security Admission: sandboxes are non-root, no privilege escalation, no capabilities.
@@ -139,7 +135,11 @@ export function serverRoleBindingManifest(namespace: string, s: SandboxSettings)
   return {
     apiVersion: "rbac.authorization.k8s.io/v1",
     kind: "RoleBinding",
-    metadata: { name: SERVER_ROLE_BINDING, namespace, labels: managedLabels },
+    metadata: {
+      name: namesOf(s).serverRoleBinding,
+      namespace,
+      labels: managedLabelsOf(namesOf(s)),
+    },
     roleRef: {
       apiGroup: "rbac.authorization.k8s.io",
       kind: "ClusterRole",
@@ -164,7 +164,7 @@ export function networkPolicyManifest(namespace: string, s: SandboxSettings): Ku
   return {
     apiVersion: "networking.k8s.io/v1",
     kind: "NetworkPolicy",
-    metadata: { name: NETWORK_POLICY, namespace, labels: managedLabels },
+    metadata: { name: namesOf(s).networkPolicy, namespace, labels: managedLabelsOf(namesOf(s)) },
     spec: {
       // Not eval pods (KOBE-93) or external skill scans (KOBE-341): policies are additive, so
       // they get their own, narrower ones.
@@ -201,7 +201,11 @@ export function evalNetworkPolicyManifest(namespace: string, s: SandboxSettings)
   return {
     apiVersion: "networking.k8s.io/v1",
     kind: "NetworkPolicy",
-    metadata: { name: EVAL_NETWORK_POLICY, namespace, labels: managedLabels },
+    metadata: {
+      name: namesOf(s).evalNetworkPolicy,
+      namespace,
+      labels: managedLabelsOf(namesOf(s)),
+    },
     spec: {
       podSelector: { matchExpressions: [{ key: LABEL_ORBIT_EVAL, operator: "Exists" }] },
       policyTypes: ["Ingress", "Egress"],
@@ -227,11 +231,12 @@ export function evalNetworkPolicyManifest(namespace: string, s: SandboxSettings)
  * External skill scans (KOBE-341): no ingress and no egress at all. The scan reads its package
  * from a ConfigMap and writes its result to its log; it needs nothing on the network.
  */
-export function skillScanNetworkPolicyManifest(namespace: string): KubeObject {
+export function skillScanNetworkPolicyManifest(namespace: string, s: NamingSettings): KubeObject {
+  const names = namesOf(s);
   return {
     apiVersion: "networking.k8s.io/v1",
     kind: "NetworkPolicy",
-    metadata: { name: SKILL_SCAN_NETWORK_POLICY, namespace, labels: managedLabels },
+    metadata: { name: names.skillScanNetworkPolicy, namespace, labels: managedLabelsOf(names) },
     spec: {
       podSelector: { matchExpressions: [{ key: LABEL_SKILL_SCAN, operator: "Exists" }] },
       policyTypes: ["Ingress", "Egress"],
@@ -245,8 +250,8 @@ export function resourceQuotaManifest(namespace: string, s: SandboxSettings): Ku
   return {
     apiVersion: "v1",
     kind: "ResourceQuota",
-    metadata: { name: RESOURCE_QUOTA, namespace, labels: managedLabels },
-    // The members' quota plus the skill-eval share (KOBE-325, `kobe-skill-eval-quota`).
+    metadata: { name: namesOf(s).resourceQuota, namespace, labels: managedLabelsOf(namesOf(s)) },
+    // The members' quota plus the skill-eval share (KOBE-325, `evalResourceQuota`).
     spec: { hard: teamQuotaHard(s) },
   };
 }
@@ -256,7 +261,7 @@ export function limitRangeManifest(namespace: string, s: SandboxSettings): KubeO
   return {
     apiVersion: "v1",
     kind: "LimitRange",
-    metadata: { name: LIMIT_RANGE, namespace, labels: managedLabels },
+    metadata: { name: namesOf(s).limitRange, namespace, labels: managedLabelsOf(namesOf(s)) },
     spec: {
       limits: [
         {
@@ -273,21 +278,26 @@ export function limitRangeManifest(namespace: string, s: SandboxSettings): KubeO
 }
 
 /** Identity for the bootstrap token only: no RBAC binding, no auto-mounted API token. */
-export function sandboxServiceAccountManifest(namespace: string): KubeObject {
+export function sandboxServiceAccountManifest(namespace: string, s: NamingSettings): KubeObject {
+  const names = namesOf(s);
   return {
     apiVersion: "v1",
     kind: "ServiceAccount",
-    metadata: { name: SANDBOX_SERVICE_ACCOUNT, namespace, labels: managedLabels },
+    metadata: { name: names.serviceAccount, namespace, labels: managedLabelsOf(names) },
     automountServiceAccountToken: false,
   };
 }
 
 /** Copy of a registry pull Secret for the kubelet (pods can't mount Secrets: admission policy). */
-export function pullSecretManifest(namespace: string, source: KubeObject): KubeObject {
+export function pullSecretManifest(
+  namespace: string,
+  source: KubeObject,
+  s: NamingSettings,
+): KubeObject {
   return {
     apiVersion: "v1",
     kind: "Secret",
-    metadata: { name: source.metadata.name, namespace, labels: managedLabels },
+    metadata: { name: source.metadata.name, namespace, labels: managedLabelsOf(namesOf(s)) },
     type: source.type,
     data: source.data,
   };
@@ -365,10 +375,11 @@ export function sandboxPodSpec(
   s: SandboxSettings,
   addresses: EndpointAddresses,
 ): Record<string, unknown> {
+  const names = namesOf(s);
   return {
     runtimeClassName: isolation.runtimeClassName,
     terminationGracePeriodSeconds: SANDBOX_TERMINATION_GRACE_SECONDS,
-    serviceAccountName: SANDBOX_SERVICE_ACCOUNT,
+    serviceAccountName: names.serviceAccount,
     automountServiceAccountToken: false,
     enableServiceLinks: false,
     hostNetwork: false,
@@ -425,7 +436,7 @@ export function sandboxPodSpec(
           { name: "pi-runtime", mountPath: PI_RUNTIME_DIR },
           { name: "pi-skills", mountPath: SKILLS_DIR },
           { name: "home", mountPath: "/home/kobe" },
-          { name: "kobe-bootstrap", mountPath: BOOTSTRAP_TOKEN_DIR, readOnly: true },
+          { name: names.bootstrapVolume, mountPath: BOOTSTRAP_TOKEN_DIR, readOnly: true },
         ],
       },
     ],
@@ -438,7 +449,7 @@ export function sandboxPodSpec(
       // KOBE-82: the run's skills, written by the agent only (sticky root, see SKILLS_DIR).
       { name: "pi-skills", emptyDir: { medium: "Memory", sizeLimit: SKILLS_SIZE } },
       {
-        name: "kobe-bootstrap",
+        name: names.bootstrapVolume,
         projected: {
           sources: [
             {
@@ -462,10 +473,12 @@ export function sandboxTemplateManifest(
   s: SandboxSettings,
   addresses: EndpointAddresses,
 ): KubeObject {
+  const names = namesOf(s);
+  const managedLabels = managedLabelsOf(names);
   return {
     apiVersion: "extensions.agents.x-k8s.io/v1beta1",
     kind: "SandboxTemplate",
-    metadata: { name: SANDBOX_TEMPLATE, namespace, labels: managedLabels },
+    metadata: { name: names.template, namespace, labels: managedLabels },
     spec: {
       // The controller's "Managed" default adds a policy allowing internet egress, which would
       // widen our default deny (NetworkPolicies are additive). Kaiju owns the namespace's policy.
@@ -474,7 +487,7 @@ export function sandboxTemplateManifest(
       volumeClaimTemplatesPolicy: "Disallowed",
       service: false,
       podTemplate: {
-        metadata: { labels: { ...managedLabels, "app.kubernetes.io/name": "kobe-sandbox" } },
+        metadata: { labels: { ...managedLabels, "app.kubernetes.io/name": names.sandboxAppName } },
         spec: sandboxPodSpec(isolation, s, addresses),
       },
       volumeClaimTemplates: [
@@ -497,13 +510,14 @@ export function sandboxTemplateManifest(
  * see docs/ledger/KOBE-22.md).
  */
 export function warmPoolManifest(namespace: string, s: SandboxSettings): KubeObject {
+  const names = namesOf(s);
   return {
     apiVersion: "extensions.agents.x-k8s.io/v1beta1",
     kind: "SandboxWarmPool",
-    metadata: { name: SANDBOX_WARM_POOL, namespace, labels: managedLabels },
+    metadata: { name: names.warmPool, namespace, labels: managedLabelsOf(names) },
     spec: {
       replicas: s.warmPool.replicasPerTeam,
-      sandboxTemplateRef: { name: SANDBOX_TEMPLATE },
+      sandboxTemplateRef: { name: names.template },
       // A changed template (new image, RuntimeClass) replaces idle warm sandboxes right away.
       updateStrategy: { type: "Recreate" },
     },
@@ -511,18 +525,24 @@ export function warmPoolManifest(namespace: string, s: SandboxSettings): KubeObj
 }
 
 /** A user's sandbox in a team. Its UID is the sandbox id (session token `sub`). */
-export function sandboxClaimManifest(namespace: string, team: TeamRef, userId: string): KubeObject {
+export function sandboxClaimManifest(
+  namespace: string,
+  team: TeamRef,
+  userId: string,
+  s: NamingSettings,
+): KubeObject {
+  const names = namesOf(s);
   return {
     apiVersion: "extensions.agents.x-k8s.io/v1beta1",
     kind: "SandboxClaim",
     metadata: {
       name: claimName(userId),
       namespace,
-      labels: { ...managedLabels, [LABEL_USER_ID]: userId },
+      labels: { ...managedLabelsOf(names), [LABEL_USER_ID]: userId },
       annotations: { [ANNOTATION_TEAM_ID]: team.id, [ANNOTATION_USER_ID]: userId },
     },
     spec: {
-      warmPoolRef: { name: SANDBOX_WARM_POOL },
+      warmPoolRef: { name: names.warmPool },
       // Identity only (metadata keeps warm-pool adoption possible; env or volumes would not).
       additionalPodMetadata: {
         annotations: { [ANNOTATION_TEAM_ID]: team.id, [ANNOTATION_USER_ID]: userId },

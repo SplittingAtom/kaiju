@@ -130,7 +130,7 @@ fi
 KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
 
 # A user's sandbox (T2 names the user for e2e/gate2/sandbox.sh and scan.sh).
-TNS=kobe-team-gate4-a
+TNS=kaiju-team-gate4-a
 use_sandbox_of() { # key → T2, SBX_WHO (and a fresh "is it down" state for that sandbox)
   T2=$(json_get "$1")
   SBX_WHO=$1

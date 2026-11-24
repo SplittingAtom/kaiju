@@ -124,7 +124,9 @@ export class ExternalScanRunner {
     try {
       const verified = await this.options.isolation.require();
       namespace = await this.options.provider.ensureTeam(team, verified);
-      await this.options.kube.apply(skillScanNetworkPolicyManifest(namespace));
+      await this.options.kube.apply(
+        skillScanNetworkPolicyManifest(namespace, this.options.settings),
+      );
       const parts = packageParts(zip);
       // The Job first, then its parts owned by it (review L5): nothing outlives the Job.
       const job = await this.options.kube.create(
@@ -149,6 +151,7 @@ export class ExternalScanRunner {
             part,
             bytes,
             owner: { name: scanJobName(v.id), uid },
+            sandbox: this.options.settings,
           }),
         );
       const outcome = await this.waitForJob(namespace, v.id, scan.deadlineSeconds);
@@ -209,7 +212,10 @@ export class ExternalScanRunner {
     let finished = 0;
     for (const row of stale.rows) {
       const namespace = site.registryTeam
-        ? teamNamespaceName({ id: site.registryTeam.id, slug: site.registryTeam.slug })
+        ? teamNamespaceName(
+            { id: site.registryTeam.id, slug: site.registryTeam.slug },
+            this.options.settings,
+          )
         : null;
       const job = namespace
         ? await this.options.kube.get(ref("Job", scanJobName(row.id), namespace, "batch/v1"))

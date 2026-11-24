@@ -78,7 +78,7 @@ class Provider implements RebuildProvider, LifecycleProvider {
       resumed: false,
       handle: {
         sandboxId,
-        namespace: "kobe-team-rebuild",
+        namespace: "kaiju-team-rebuild",
         claimName: `u-${userId}`,
         sandboxName: `u-${userId}`,
         state: "running",

@@ -3,8 +3,16 @@
  * e2e suite. A chart render test keeps the chart's copies equal to these.
  */
 
-/** Spec D11: one namespace per team, `kobe-team-<slug>` (slug ≤ 32 chars, so ≤ 42 chars). */
-export const TEAM_NAMESPACE_PREFIX = "kobe-team-";
+/**
+ * Spec D11: one namespace per team, `<prefix><slug>` (slug ≤ 32 chars, so ≤ 43 chars). The prefix
+ * is configuration (KOBE-751, chart value `sandbox.teamNamespacePrefix`): `kaiju-team-` on a fresh
+ * install, `kobe-team-` on an install created before the rename, which keeps its namespaces.
+ * Exactly these two: a free-form prefix would let the admission policy (which confines the
+ * server's cluster-wide namespace writes to the prefix) cover namespaces Kaiju never created.
+ */
+export const TEAM_NAMESPACE_PREFIXES = ["kaiju-team-", "kobe-team-"] as const;
+export type TeamNamespacePrefix = (typeof TEAM_NAMESPACE_PREFIXES)[number];
+export const DEFAULT_TEAM_NAMESPACE_PREFIX: TeamNamespacePrefix = "kaiju-team-";
 
 const DOMAIN = "kobe.splittingatom.io";
 /** On every team namespace; the Bifrost NetworkPolicy admits sandboxes by it. */
@@ -31,38 +39,111 @@ export const LABEL_EVAL_THREAD = `${DOMAIN}/eval-thread-id`;
 export const ANNOTATION_EVAL_THREAD = LABEL_EVAL_THREAD;
 export const ANNOTATION_EVAL_RUN = `${DOMAIN}/eval-run-id`;
 export const LABEL_MANAGED_BY = "app.kubernetes.io/managed-by";
-export const MANAGED_BY = "kobe-server";
 
 /** Pod label the agent-sandbox claim controller sets to the owning claim's UID. */
 export const LABEL_CLAIM_UID = "agents.x-k8s.io/claim-uid";
 
-/** Objects the provider keeps in every team namespace. */
-export const SANDBOX_SERVICE_ACCOUNT = "kobe-sandbox";
-export const SANDBOX_TEMPLATE = "kobe-sandbox";
-export const SANDBOX_WARM_POOL = "kobe-sandbox";
-export const NETWORK_POLICY = "kobe-sandbox-isolation";
-/** Egress policy for eval pods only (the namespace-wide policy leaves them out). */
-export const EVAL_NETWORK_POLICY = "kobe-orbit-eval-isolation";
 /**
- * No traffic for external skill scan pods (KOBE-341; the namespace-wide policy leaves them out).
- * Kept in every team namespace, so a pod with the scan label is never left without a policy.
+ * Names of everything the server keeps in team namespaces, and the names it writes them under
+ * (KOBE-751). One naming generation per prefix, so namespace names and object names can never
+ * mix: `kaiju-team-` gives `kaiju-sandbox`, `kaiju-server`, ...; `kobe-team-` keeps the names an
+ * install created before the rename already has (nothing is recreated on upgrade). The chart
+ * derives the same generation for its own copies (the skill eval PriorityClass, the admission
+ * policy's prefix): `kaiju.sandboxGeneration` in templates/_sandbox.tpl.
  */
-export const SKILL_SCAN_NETWORK_POLICY = "kobe-skill-scan";
-export const RESOURCE_QUOTA = "kobe-team-quota";
-/** Skill eval sandboxes (KOBE-325): their own template and (empty) warm pool per team. */
-export const EVAL_SANDBOX_TEMPLATE = "kobe-skill-eval";
-export const EVAL_SANDBOX_WARM_POOL = "kobe-skill-eval";
-/**
- * Their own quota (scoped to their PriorityClass) inside the team's: the team quota is the
- * members' quota plus this one, so evals never use what members' sandboxes need.
- */
-export const EVAL_RESOURCE_QUOTA = "kobe-skill-eval-quota";
-/** The members' share: every pod but an eval's stays within `teamQuota`. */
-export const MEMBER_RESOURCE_QUOTA = "kobe-team-member-quota";
-/** Low priority that never preempts: under node pressure a member's sandbox wins (chart object). */
-export const EVAL_PRIORITY_CLASS = "kobe-skill-eval";
-export const LIMIT_RANGE = "kobe-sandbox-defaults";
-export const SERVER_ROLE_BINDING = "kobe-server";
+export interface SandboxNames {
+  readonly prefix: TeamNamespacePrefix;
+  /** `app.kubernetes.io/managed-by` on every object the server creates there. */
+  readonly managedBy: string;
+  /** Server-side apply field manager (a new one would conflict with the old one's fields). */
+  readonly fieldManager: string;
+  /** The sandbox pods' identity (bootstrap token only: no RBAC binding, no API token). */
+  readonly serviceAccount: string;
+  /** Template and warm pool of members' sandboxes. */
+  readonly template: string;
+  readonly warmPool: string;
+  /** The namespace-wide default-deny policy. */
+  readonly networkPolicy: string;
+  /** Egress policy for Orbit eval pods only (the namespace-wide policy leaves them out). */
+  readonly evalNetworkPolicy: string;
+  /**
+   * No traffic for external skill scan pods (KOBE-341; the namespace-wide policy leaves them out).
+   * Kept in every team namespace, so a pod with the scan label is never left without a policy.
+   */
+  readonly skillScanNetworkPolicy: string;
+  readonly resourceQuota: string;
+  /** Skill eval sandboxes (KOBE-325): their own template and (empty) warm pool per team. */
+  readonly evalTemplate: string;
+  readonly evalWarmPool: string;
+  /**
+   * Their own quota (scoped to their PriorityClass) inside the team's: the team quota is the
+   * members' quota plus this one, so evals never use what members' sandboxes need.
+   */
+  readonly evalResourceQuota: string;
+  /** The members' share: every pod but an eval's stays within `teamQuota`. */
+  readonly memberResourceQuota: string;
+  /** Low priority that never preempts: under node pressure a member's sandbox wins (chart object). */
+  readonly evalPriorityClass: string;
+  readonly limitRange: string;
+  readonly serverRoleBinding: string;
+  /** The projected bootstrap-token volume of sandbox pods. */
+  readonly bootstrapVolume: string;
+  /** `app.kubernetes.io/name` of sandbox, Orbit eval and skill scan pods. */
+  readonly sandboxAppName: string;
+  readonly orbitEvalAppName: string;
+  readonly skillScanAppName: string;
+}
+
+const TEAM_SUFFIX = "-team-";
+
+function namesOfGeneration(prefix: TeamNamespacePrefix): SandboxNames {
+  const g = prefix.slice(0, -TEAM_SUFFIX.length);
+  return Object.freeze({
+    prefix,
+    managedBy: `${g}-server`,
+    fieldManager: `${g}-server`,
+    serviceAccount: `${g}-sandbox`,
+    template: `${g}-sandbox`,
+    warmPool: `${g}-sandbox`,
+    networkPolicy: `${g}-sandbox-isolation`,
+    evalNetworkPolicy: `${g}-orbit-eval-isolation`,
+    skillScanNetworkPolicy: `${g}-skill-scan`,
+    resourceQuota: `${g}-team-quota`,
+    evalTemplate: `${g}-skill-eval`,
+    evalWarmPool: `${g}-skill-eval`,
+    evalResourceQuota: `${g}-skill-eval-quota`,
+    memberResourceQuota: `${g}-team-member-quota`,
+    evalPriorityClass: `${g}-skill-eval`,
+    limitRange: `${g}-sandbox-defaults`,
+    serverRoleBinding: `${g}-server`,
+    bootstrapVolume: `${g}-bootstrap`,
+    sandboxAppName: `${g}-sandbox`,
+    orbitEvalAppName: `${g}-orbit-eval`,
+    skillScanAppName: `${g}-skill-scan`,
+  });
+}
+
+const NAMES: Readonly<Record<TeamNamespacePrefix, SandboxNames>> = Object.freeze(
+  Object.fromEntries(TEAM_NAMESPACE_PREFIXES.map((p) => [p, namesOfGeneration(p)])) as Record<
+    TeamNamespacePrefix,
+    SandboxNames
+  >,
+);
+
+/** The naming generation of a team namespace prefix. */
+export const sandboxNames = (prefix: TeamNamespacePrefix): SandboxNames => {
+  const names = NAMES[prefix];
+  if (!names) throw new TypeError(`unknown team namespace prefix "${String(prefix)}"`);
+  return names;
+};
+
+/** Anything carrying the configured prefix (the sandbox settings). */
+export interface NamingSettings {
+  readonly teamNamespacePrefix: TeamNamespacePrefix;
+}
+
+export const namesOf = (s: NamingSettings): SandboxNames => sandboxNames(s.teamNamespacePrefix);
+
 export const SANDBOX_CONTAINER = "agent";
 
 /**

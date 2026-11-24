@@ -9,7 +9,7 @@ import type { UnassignedIdentity } from "./provider.js";
 
 const POD: UnassignedIdentity = {
   state: "unassigned",
-  namespace: "kobe-team-a",
+  namespace: "kaiju-team-a",
   podName: "w-1",
   podUid: "7d1e2f3a-4b5c-4d6e-8f70-8192a3b4c5d6",
   teamId: "0b5e8f1c-2d3a-4b5c-8d9e-0f1a2b3c4d5e",

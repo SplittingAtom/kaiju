@@ -411,16 +411,16 @@ jobs:
           kubectl get events -A --sort-by=.lastTimestamp | tail -80 || true
           kubectl -n kaiju-dev logs --all-containers --prefix --tail=50 -l app.kubernetes.io/name=kobe || true
           kubectl get sandboxes,sandboxclaims,sandboxwarmpools,networkpolicies -A || true
-          kubectl -n kobe-team-e2e describe pods | tail -120 || true
-          for t in a b; do kubectl -n kobe-team-gate1-$t describe pods | tail -60 || true; done
-          kubectl -n kobe-team-gate2-a describe pods | tail -60 || true
-          kubectl -n kobe-team-gate3-a describe pods,pvc | tail -80 || true
-          kubectl -n kobe-team-gate4-a describe pods | tail -60 || true
-          kubectl -n kobe-team-gate4-r describe pods,pvc | tail -60 || true
-          kubectl -n kobe-team-gate5-a describe pods | tail -60 || true
-          for t in a b; do kubectl -n kobe-team-gate7-$t describe pods | tail -60 || true; done
+          kubectl -n kaiju-team-e2e describe pods | tail -120 || true
+          for t in a b; do kubectl -n kaiju-team-gate1-$t describe pods | tail -60 || true; done
+          kubectl -n kaiju-team-gate2-a describe pods | tail -60 || true
+          kubectl -n kaiju-team-gate3-a describe pods,pvc | tail -80 || true
+          kubectl -n kaiju-team-gate4-a describe pods | tail -60 || true
+          kubectl -n kaiju-team-gate4-r describe pods,pvc | tail -60 || true
+          kubectl -n kaiju-team-gate5-a describe pods | tail -60 || true
+          for t in a b; do kubectl -n kaiju-team-gate7-$t describe pods | tail -60 || true; done
           # The sandbox agent's own log (Pi starts, refusals) for the gate shards' members.
-          for ns in kobe-team-gate5-a kobe-team-gate7-a kobe-team-gate7-b kobe-team-gate3-a kobe-team-gate4-a; do
+          for ns in kaiju-team-gate5-a kaiju-team-gate7-a kaiju-team-gate7-b kaiju-team-gate3-a kaiju-team-gate4-a; do
             kubectl -n "$ns" logs -l agents.x-k8s.io/claim-uid --all-containers --prefix --tail=-1 2>/dev/null | grep -v '"level":30' | tail -200 || true
           done
           kubectl -n kaiju-dev logs -l app.kubernetes.io/component=server -c server --tail=-1 2>/dev/null \

@@ -7,7 +7,7 @@ import { KUBE_API_TIMEOUT_MS, createKubeClient, statusMessage } from "./kube.js"
 
 describe("statusMessage", () => {
   const denied =
-    "namespaces \"kobe-admission-probe\" is forbidden: ValidatingAdmissionPolicy 'x' denied request: Kaiju may only manage kobe-team-* namespaces, not kobe-admission-probe";
+    "namespaces \"kaiju-admission-probe\" is forbidden: ValidatingAdmissionPolicy 'x' denied request: Kaiju may only manage kaiju-team-* namespaces, not kaiju-admission-probe";
 
   it("reads the message of a Status sent as raw JSON text (client-node v2)", () => {
     expect(
@@ -54,7 +54,7 @@ describe("createKubeClient timeouts (KOBE-732)", () => {
     );
     vi.stubEnv("KUBECONFIG", file);
     try {
-      const kube = createKubeClient(300);
+      const kube = createKubeClient("kaiju-server", 300);
       const started = Date.now();
       await expect(
         kube.get({ apiVersion: "v1", kind: "Pod", name: "p", namespace: "n" }),

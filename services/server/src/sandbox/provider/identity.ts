@@ -6,8 +6,7 @@ import {
   BOOTSTRAP_TOKEN_AUDIENCE,
   LABEL_CLAIM_UID,
   LABEL_TEAM_ID,
-  SANDBOX_SERVICE_ACCOUNT,
-  TEAM_NAMESPACE_PREFIX,
+  namesOf,
 } from "../constants.js";
 import { evalClaimName } from "../eval-manifests.js";
 import { claimName, isUuid, type KubeObject } from "../manifests.js";
@@ -25,14 +24,19 @@ import type { BootstrapIdentity, UnassignedIdentity } from "./types.js";
 
 const POD_NAME_EXTRA = "authentication.kubernetes.io/pod-name";
 const POD_UID_EXTRA = "authentication.kubernetes.io/pod-uid";
-const SANDBOX_USER = new RegExp(
-  `^system:serviceaccount:(${TEAM_NAMESPACE_PREFIX}[a-z0-9]([a-z0-9-]*[a-z0-9])?):${SANDBOX_SERVICE_ACCOUNT}$`,
-);
+/**
+ * The sandbox ServiceAccount of a team namespace under the configured prefix only (KOBE-751): a
+ * token from a namespace under another prefix, or from any other ServiceAccount, is refused.
+ */
+export const sandboxUserPattern = (prefix: string, serviceAccount: string): RegExp =>
+  new RegExp(`^system:serviceaccount:(${prefix}[a-z0-9]([a-z0-9-]*[a-z0-9])?):${serviceAccount}$`);
 
 export function createIdentityOps(
   ctx: ProviderContext,
 ): Pick<SandboxProvider, "identifyBootstrapToken" | "recheckAssignment"> {
-  const { kube, isolation, stillVerified, rejectAndDelete } = ctx;
+  const { kube, isolation, stillVerified, rejectAndDelete, settings } = ctx;
+  const names = namesOf(settings);
+  const SANDBOX_USER = sandboxUserPattern(names.prefix, names.serviceAccount);
 
   const identifyBootstrapToken = async (token: string): Promise<BootstrapIdentity> => {
     if (!/^[A-Za-z0-9_.-]{20,8192}$/.test(token)) throw new SandboxAuthError("malformed token");

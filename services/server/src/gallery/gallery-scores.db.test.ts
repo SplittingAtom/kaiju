@@ -75,7 +75,7 @@ beforeAll(async () => {
     evals: new EvalRunner({
       db: deps.database.db,
       kube,
-      provider: { ensureTeam: async () => "kobe-team-finance" },
+      provider: { ensureTeam: async () => "kaiju-team-finance" },
       isolation,
       settings: sandbox,
       sessionKeys: KEYS,
@@ -170,7 +170,7 @@ describe("gallery scores (site level)", () => {
       (await h.admin.query(`SELECT current_version FROM site_agents WHERE id = $1`, [id])).rows[0],
     ).toEqual(before);
     const [job] = kube.all("Job") as unknown as { metadata: { namespace: string } }[];
-    expect(job?.metadata.namespace).toBe("kobe-team-finance");
+    expect(job?.metadata.namespace).toBe("kaiju-team-finance");
     // The execution record is the host team's eval row, scope gallery.
     const rows = (await h.admin.query(`SELECT agent_scope, team_id, version FROM orbit_evals`))
       .rows;

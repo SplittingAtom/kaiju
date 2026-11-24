@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TEAM_ROLES, type TeamRole } from "@kaiju/db";
 
-/** Mirrors the `teams_slug_format` check: names the namespace `kobe-team-<slug>` (≤ 63 chars). */
+/** Mirrors the `teams_slug_format` check: names the namespace `<prefix><slug>` (≤ 63 chars). */
 export const teamSlugSchema = z
   .string()
   .regex(

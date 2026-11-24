@@ -4,7 +4,7 @@ import type { KubeObject } from "./manifests.js";
 import { inspectVolume, judgeVolume, volumeHome } from "./volume-loss.js";
 
 /** Lost-volume detection (KOBE-739): only hard evidence counts; anything unsure is "present". */
-const NS = "kobe-team-finance";
+const NS = "kaiju-team-finance";
 const NOW = Date.parse("2026-11-21T12:00:00Z");
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
 

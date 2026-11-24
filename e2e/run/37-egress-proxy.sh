@@ -36,7 +36,7 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_pod:-}" ]]; then
   EGRESS_CLIENT="egress-client-$RANDOM"
   PODS+=("-n $TEAM_NS $EGRESS_CLIENT")
   $KUBECTL -n "$TEAM_NS" run "$EGRESS_CLIENT" --restart=Never --image="$KAIJU_SANDBOX_IMAGE" --overrides="{\"spec\":{
-    \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kobe-sandbox\",$SEC_POD,
+    \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kaiju-sandbox\",$SEC_POD,
     \"dnsPolicy\":\"None\",\"dnsConfig\":{\"nameservers\":[\"127.0.0.1\"]},
     \"hostAliases\":[{\"ip\":\"${proxy_ip:-0.0.0.0}\",\"hostnames\":[\"egress-proxy.kaiju.internal\"]}],
     \"containers\":[{\"name\":\"client\",\"image\":\"$KAIJU_SANDBOX_IMAGE\",\"command\":[\"sleep\",\"3600\"],$SEC_CTR,

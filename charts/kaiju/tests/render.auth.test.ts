@@ -76,6 +76,7 @@ describe("auth (KOBE-12)", () => {
       "egressProxy.headerSecret": "my-egress-headers",
       "envelope.keySecret": "my-envelope",
       "global.allowGeneratedSecretsOffline": "false",
+      "sandbox.teamNamespacePrefix": "kaiju-team-",
     });
     expect(find(ms, "Secret", "kaiju-auth")).toBeUndefined();
     expect(env(ms, "kaiju-server")).toContainEqual({
@@ -88,6 +89,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
         "bifrost.keysSecret": "my-model-keys",
@@ -100,6 +102,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "auth.existingSecret": "my-auth",
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
@@ -114,6 +117,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "auth.existingSecret": "my-auth",
         "bifrost.keysSecret": "my-model-keys",
         "mcpProxy.internalKeySecret": "my-mcp-key",
@@ -125,6 +129,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "auth.existingSecret": "my-auth",
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
@@ -137,6 +142,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "auth.existingSecret": "my-auth",
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
@@ -149,6 +155,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "auth.existingSecret": "my-auth",
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
@@ -161,6 +168,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "auth.existingSecret": "my-auth",
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
@@ -173,6 +181,7 @@ describe("auth (KOBE-12)", () => {
     expect(
       renderError({
         "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
         "auth.existingSecret": "my-auth",
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",

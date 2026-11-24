@@ -28,7 +28,7 @@ describe("skill eval sandboxes (KOBE-325)", () => {
       "kobe.splittingatom.io/eval-thread-id": THREAD,
     });
     expect(claim.spec).toMatchObject({
-      warmPoolRef: { name: "kobe-skill-eval" },
+      warmPoolRef: { name: "kaiju-skill-eval" },
       lifecycle: { shutdownTime: "2030-01-01T00:00:00.000Z", shutdownPolicy: "Delete" },
     });
     expect(objectAt(kube, "SandboxClaim", `u-${USER}`, NS)).toBeDefined();
@@ -48,7 +48,7 @@ describe("skill eval sandboxes (KOBE-325)", () => {
     kube.tokens.set(TOKEN, {
       authenticated: true,
       audiences: [BOOTSTRAP_TOKEN_AUDIENCE],
-      username: `system:serviceaccount:${NS}:kobe-sandbox`,
+      username: `system:serviceaccount:${NS}:kaiju-sandbox`,
       extra: {
         "authentication.kubernetes.io/pod-name": [pod.metadata.name],
         "authentication.kubernetes.io/pod-uid": [pod.metadata.uid as string],

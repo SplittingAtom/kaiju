@@ -24,6 +24,7 @@ export const SETTINGS: SandboxSettings = {
   imagePullPolicy: "IfNotPresent",
   imagePullSecrets: [],
   releaseNamespace: "kaiju",
+  teamNamespacePrefix: "kaiju-team-",
   serverServiceAccount: "kaiju-server",
   managerClusterRole: "kaiju-abc-sandbox-manager",
   endpoints: {

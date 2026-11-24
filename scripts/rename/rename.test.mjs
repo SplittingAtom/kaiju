@@ -518,13 +518,13 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "services/server/src/sandbox/constants.ts",
       'export const RESOURCE_QUOTA = "kobe-team-quota";',
       "kobe-team-quota",
-      "RN-7",
+      "unowned",
     ],
     [
       "services/server/src/sandbox/constants.ts",
       'export const NETWORK_POLICY = "kobe-sandbox-isolation";',
       "kobe-sandbox",
-      "RN-7",
+      "unowned",
     ],
     [
       "services/server/src/routes/internal.ts",
@@ -567,17 +567,18 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "permanent",
     ],
     ["e2e/run/40-model-gateway-setup.sh", 'grep -q "kobe-site"', "kobe-site", "permanent"],
+    // RN-7 is done (KOBE-751): the kept generation is configuration, a fixed name is a miss.
     [
       "services/server/src/sandbox/kube.ts",
       'export const FIELD_MANAGER = "kobe-server";',
       "kobe-server",
-      "RN-7",
+      "unowned",
     ],
     [
       "services/server/src/sandbox/constants.ts",
-      'export const MANAGED_BY = "kobe-server";',
-      "kobe-server",
-      "RN-7",
+      'export const TEAM_NAMESPACE_PREFIXES = ["kaiju-team-", "kobe-team-"] as const;',
+      "kobe-team-",
+      "permanent",
     ],
     [
       "packages/db/src/egress/store.ts",
@@ -609,27 +610,46 @@ test("real allowlist: owners of the cases from review round 1", () => {
   }
 });
 
-test("real step files: RN-7 leaves the chart's admission policy and the object names to hand work", () => {
-  const allowlist = loadAllowlist(REPO);
-  const rn7 = loadStep(REPO, "RN-7");
-  const pick = (list, path) => list.entries.filter((e) => e.kind === "content" && selects(e, path));
+test("real allowlist: after RN-7 only the kept prefix generation is allowed (KOBE-751)", () => {
   const cases = [
-    ["charts/kobe/templates/sandbox-admission.yaml", "request.namespace.startsWith('kobe-team-')"],
+    // The admission policy and the server take the prefix from configuration.
     [
-      "services/server/src/sandbox/constants.ts",
-      'export const TEAM_NAMESPACE_PREFIX = "kobe-team-";',
+      "charts/kaiju/templates/sandbox-admission.yaml",
+      "startsWith('kobe-team-')",
+      "kobe-team-",
+      "unowned",
     ],
     [
-      "services/server/src/sandbox/constants.ts",
-      'export const RESOURCE_QUOTA = "kobe-team-quota";',
+      "services/server/src/sandbox/manifests.ts",
+      'name: "kobe-sandbox",',
+      "kobe-sandbox",
+      "unowned",
+    ],
+    ["e2e/x.sh", 'NS="kobe-team-finance"', "kobe-team-", "unowned"],
+    // The chart's list of the two prefixes, and the tests of the kept generation.
+    [
+      "charts/kaiju/templates/_sandbox.tpl",
+      '{{- $known := list "kaiju-team-" "kobe-team-" -}}',
+      "kobe-team-",
+      "permanent",
+    ],
+    [
+      "services/server/src/sandbox/provider-prefix.test.ts",
+      'const OLD_NS = "kobe-team-finance";',
+      "kobe-team-",
+      "permanent",
+    ],
+    // The Bifrost team name is stored in Bifrost, not a namespace.
+    [
+      "services/server/src/models/desired.ts",
+      "(teamId: string) => `kobe-team-${teamId}`;",
+      "kobe-team-",
+      "permanent",
     ],
   ];
-  for (const [path, line] of cases) {
-    assert.equal(swapUnit(line, "RN-7", pick(rn7, path), pick(allowlist, path)).changed, 0, line);
+  for (const [path, line, token, step] of cases) {
+    assert.equal(realOwner(path, line, token), step, `${path}: ${line} ${token}`);
   }
-  const example = "e2e/x.sh";
-  const ns = 'NS="kobe-team-finance"';
-  assert.equal(swapUnit(ns, "RN-7", pick(rn7, example), pick(allowlist, example)).changed, 1);
 });
 
 test("paired-value rule: a value owned by two steps is reported", () => {
