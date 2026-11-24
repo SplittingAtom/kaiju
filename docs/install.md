@@ -1723,6 +1723,37 @@ upgrade again. Rolling a bundled-CloudNativePG release back to its first revisio
 revision's initial migration Job, which resets app-role grants to that build's matrix; the next
 upgrade restores them.
 
+### Environment variable names (`KAIJU_*`)
+
+Every Kaiju setting read from the environment starts with `KAIJU_`. Before the rename the
+variables started with `KOBE_`; the mapping is mechanical: `KOBE_` + rest becomes
+`KAIJU_` + rest (`KOBE_PUBLIC_URL` → `KAIJU_PUBLIC_URL`,
+`KOBE_SESSION_SIGNING_KEY_MCP_PROXY` → `KAIJU_SESSION_SIGNING_KEY_MCP_PROXY`). The chart sets only
+the new names, so a Helm upgrade needs nothing from you.
+
+For one release, every service, the migration Job, the database wait init container, the server's
+command-line tools, the sandbox agent and the `kaiju` CLI also accept the old name of any
+variable whose new name is unset:
+
+- **Only the old name set:** it is used, and the process logs one warning at startup naming each
+  old variable and its new name (`... used for now: KOBE_X → KAIJU_X`). Values are never logged.
+- **Both names set:** the new name wins, the old one is ignored, and the warning says so
+  (`... ignored because the new name is set too and wins: KOBE_X (KAIJU_X is used)`).
+
+Rename what you set yourself before the next release removes the old names: variables added to the
+Deployments by hand or by a post-renderer (`kubectl set env`, Kustomize patches), the environment
+of scripts that run the `kaiju` CLI (`KAIJU_BACKUP_KEY`, `KAIJU_BACKUP_DATABASE_URL`,
+`KAIJU_DB_MIGRATE_URL`, `KAIJU_S3_*`, ...) and your CI or test setup (`KAIJU_TEST_DATABASE_URL`;
+`pnpm verify` stops when only the old `KOBE_TEST_DATABASE_URL` is set). Postgres settings and
+roles (`kobe.team_id`, `kobe_app`), Secret names and keys and every stored value keep their
+names; nothing in the database changes.
+
+During the upgrade, pods of both versions run side by side, each with the names its own chart
+version set. Sandboxes keep the environment of the SandboxTemplate they started from until the
+server's team reconcile (every 300 s) writes the new image and the new names together; a
+sandbox started from a template the old server wrote reads its old names through the fallback.
+Rolling back to the release before the rename restores the old names with the old chart.
+
 ### Upgrade notes
 
 Release notes for operators, one file per release, are in [docs/releases](releases/): start
@@ -1736,6 +1767,9 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Environment variables are `KAIJU_*` (Kaiju rename, KOBE-748).** The chart sets the new
+  names; the old `KOBE_*` names still work for this release, with a startup warning that names
+  them. Rename any you set yourself ([Environment variable names](#environment-variable-names-kaiju_)).
 - **Renamed log and connection names (Kaiju rename, KOBE-747).** The migrate Job and the
   database wait init container log `"service":"kaiju-migrate"` and `"service":"kaiju-db-wait"`
   (before: `kobe-migrate`, `kobe-db-wait`), and every connection's `application_name` in

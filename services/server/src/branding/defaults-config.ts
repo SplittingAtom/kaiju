@@ -41,5 +41,7 @@ export const brandingDefaultsSchema = z
   .transform((env): BrandingDefaults => ({
     ...(env.KAIJU_BRANDING_APP_NAME === undefined ? {} : { appName: env.KAIJU_BRANDING_APP_NAME }),
     ...(env.KAIJU_BRANDING_PRESET === undefined ? {} : { preset: env.KAIJU_BRANDING_PRESET }),
-    ...(env.KAIJU_BRANDING_SHOW_NAME === undefined ? {} : { showName: env.KAIJU_BRANDING_SHOW_NAME }),
+    ...(env.KAIJU_BRANDING_SHOW_NAME === undefined
+      ? {}
+      : { showName: env.KAIJU_BRANDING_SHOW_NAME }),
   }));

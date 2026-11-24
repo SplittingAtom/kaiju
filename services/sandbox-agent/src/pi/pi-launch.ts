@@ -218,7 +218,8 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
     env.KAIJU_TOOLS_FILE_EDITS = "1";
   if (input.toolsExtension !== undefined && input.toolsNotebooks === true)
     env.KAIJU_TOOLS_NOTEBOOKS = "1";
-  if (input.toolsExtension !== undefined && input.toolsMemory === true) env.KAIJU_TOOLS_MEMORY = "1";
+  if (input.toolsExtension !== undefined && input.toolsMemory === true)
+    env.KAIJU_TOOLS_MEMORY = "1";
   // KOBE-776: built-ins Pi is not offered (kobe-policy removes them from its active tools).
   if (config?.hidden_tools !== undefined && config.hidden_tools.length > 0) {
     env.KAIJU_HIDDEN_TOOLS = config.hidden_tools.join(",");

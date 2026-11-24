@@ -18,7 +18,9 @@ describe("the approval key's startup log (KOBE-817)", () => {
   it("logs an error on a server process without the key", () => {
     const log = logger();
     new ApprovalService({ db, log });
-    expect(log.error).toHaveBeenCalledWith(expect.stringContaining("KAIJU_APPROVAL_KEY is not set"));
+    expect(log.error).toHaveBeenCalledWith(
+      expect.stringContaining("KAIJU_APPROVAL_KEY is not set"),
+    );
   });
 
   it("logs nothing in the scheduler process, which serves no approvals", () => {

@@ -1,3 +1,4 @@
+import { legacyEnv, type LegacyEnvWarn } from "@kaiju/protocol/legacy-env";
 import { z } from "zod";
 
 /**
@@ -44,7 +45,15 @@ function parsePublicUrl(env: Readonly<Record<string, string | undefined>>): stri
   return new URL(parsed.data).origin;
 }
 
-export function parseWebConfig(env: Readonly<Record<string, string | undefined>>): WebConfig {
+/** The one startup warning about old KOBE_* names (KOBE-748): names only, never values. */
+const warnLegacyEnv: LegacyEnvWarn = (message) => console.warn(`[kobe-web] ${message}`);
+
+export function parseWebConfig(
+  rawEnv: Readonly<Record<string, string | undefined>>,
+  warn: LegacyEnvWarn = warnLegacyEnv,
+): WebConfig {
+  // KAIJU_* names; the old KOBE_* names stand in for one release (KOBE-748).
+  const env = legacyEnv(rawEnv, warn);
   const publicUrl = parsePublicUrl(env);
   const raw = env.KAIJU_SERVER_URL?.trim() ?? "";
   if (raw === "") {

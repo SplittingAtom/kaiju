@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
+import { adoptLegacyEnv, legacyEnvMessage } from "@kaiju/protocol/legacy-env";
 import { z } from "zod";
 import { parseKeyMaterial } from "./crypto.js";
 
@@ -182,7 +183,9 @@ export function readBackupKey(env: Env, readKeyFile: (path: string) => string): 
   const file = env.KAIJU_BACKUP_KEY_FILE;
   const value = env.KAIJU_BACKUP_KEY;
   if (file && value) {
-    throw new Error("Invalid configuration: set KAIJU_BACKUP_KEY_FILE or KAIJU_BACKUP_KEY, not both");
+    throw new Error(
+      "Invalid configuration: set KAIJU_BACKUP_KEY_FILE or KAIJU_BACKUP_KEY, not both",
+    );
   }
   if (!file && !value) {
     throw new Error(
@@ -215,6 +218,18 @@ function parseFlags(args: readonly string[], options: ParseArgsOptionsConfig) {
   } catch (err) {
     throw usageError((err as Error).message);
   }
+}
+
+/**
+ * First thing in `main` (KOBE-748): the old KOBE_* names move to KAIJU_* in `env` for one release
+ * (the new name wins when both are set), with one warning naming them, never their values.
+ */
+export function adoptEnv(
+  env: Record<string, string | undefined>,
+  log: (line: string) => void,
+): void {
+  const message = legacyEnvMessage(adoptLegacyEnv(env));
+  if (message !== undefined) log(`warning: ${message}`);
 }
 
 export function parseCommand(

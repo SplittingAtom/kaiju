@@ -1,3 +1,5 @@
+import { legacyEnv, type LegacyEnvWarn } from "@kaiju/protocol/legacy-env";
+import { logger } from "./logger.js";
 import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kaiju/session-token";
 import { z } from "zod";
 import { validateCidrs, validateInternalTargets } from "./address-policy.js";
@@ -58,7 +60,10 @@ const configSchema = z.object({
         z.literal(""),
         z
           .string()
-          .min(MIN_KEY_LENGTH, `KAIJU_MCP_ROUTES_KEY must be at least ${MIN_KEY_LENGTH} characters`),
+          .min(
+            MIN_KEY_LENGTH,
+            `KAIJU_MCP_ROUTES_KEY must be at least ${MIN_KEY_LENGTH} characters`,
+          ),
       ]),
     ),
   /** Plain-http connector URLs (development and the e2e suite only; credentials would leak). */
@@ -183,7 +188,15 @@ function internalCidrs(name: string, values: readonly string[]): readonly string
   return values;
 }
 
-export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
+/** The one startup warning about old KOBE_* names (KOBE-748): names only, never values. */
+const warnLegacyEnv: LegacyEnvWarn = (message, fields) => logger.warn(fields, message);
+
+export function loadConfig(
+  rawEnv: Readonly<Record<string, string | undefined>>,
+  warn: LegacyEnvWarn = warnLegacyEnv,
+): Config {
+  // KAIJU_* names; the old KOBE_* names stand in for one release (KOBE-748).
+  const env = legacyEnv(rawEnv, warn);
   const parsed = configSchema.safeParse(env);
   if (!parsed.success) {
     // Messages only (never values), so keys can't leak into logs.

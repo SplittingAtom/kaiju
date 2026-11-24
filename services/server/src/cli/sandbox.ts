@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 import { createIsolationGate } from "../isolation/gate.js";
 import { listRuntimeClasses } from "../isolation/kubernetes.js";
 import { createSandboxRuntime } from "../sandbox/runtime.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Operator tool, run inside a server pod (its ServiceAccount and env):
 //   node dist/cli/sandbox.js ensure --team-id <uuid> --team-slug <slug> --user-id <uuid>
@@ -10,6 +11,7 @@ import { createSandboxRuntime } from "../sandbox/runtime.js";
 const USAGE = "usage: sandbox.js ensure --team-id <uuid> --team-slug <slug> --user-id <uuid>";
 
 async function main(): Promise<number> {
+  adoptCliLegacyEnv();
   const { positionals, values } = parseArgs({
     allowPositionals: true,
     options: {

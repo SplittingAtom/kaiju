@@ -26,9 +26,9 @@ describe("loadTelemetryConfig", () => {
     expect(() => loadTelemetryConfig({ KAIJU_OTEL_ENDPOINT: "nope" }, "server")).toThrow(
       /KAIJU_OTEL_ENDPOINT/,
     );
-    expect(() => loadTelemetryConfig({ KAIJU_OTEL_CAPTURE_CONTENT: "sometimes" }, "server")).toThrow(
-      /KAIJU_OTEL_CAPTURE_CONTENT/,
-    );
+    expect(() =>
+      loadTelemetryConfig({ KAIJU_OTEL_CAPTURE_CONTENT: "sometimes" }, "server"),
+    ).toThrow(/KAIJU_OTEL_CAPTURE_CONTENT/);
     expect(() =>
       loadTelemetryConfig(
         { KAIJU_OTEL_ENDPOINT: "http://c:4318", KAIJU_OTEL_HEADERS: "secretvalue" },

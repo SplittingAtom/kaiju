@@ -10,7 +10,7 @@ personal agents of a deactivated user.
 
 | Setting                                 | Default                             | Where                           |
 | --------------------------------------- | ----------------------------------- | ------------------------------- |
-| Versions per agent                      | 1000                                | `KAIJU_AGENT_MAX_VERSIONS`       |
+| Versions per agent                      | 1000                                | `KAIJU_AGENT_MAX_VERSIONS`      |
 | Publishes and rollbacks per user        | 30 per 10 minutes                   | server (`AGENT_LIMIT_DEFAULTS`) |
 | Live (not archived) agents per location | team 500, personal 100, gallery 100 | server (`AGENT_CAPS`)           |
 

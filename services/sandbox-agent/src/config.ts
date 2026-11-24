@@ -1,3 +1,5 @@
+import { legacyEnv, type LegacyEnvWarn } from "@kaiju/protocol/legacy-env";
+import { logger } from "./logger.js";
 import { uuidSchema } from "@kaiju/protocol";
 import { SANDBOX_WS_PATH } from "@kaiju/protocol/sandbox-wire";
 import { z } from "zod";
@@ -184,7 +186,15 @@ export interface Config {
   readonly workspaceSyncIntervalMs: number;
 }
 
-export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
+/** The one startup warning about old KOBE_* names (KOBE-748): names only, never values. */
+const warnLegacyEnv: LegacyEnvWarn = (message, fields) => logger.warn(fields, message);
+
+export function loadConfig(
+  rawEnv: Readonly<Record<string, string | undefined>>,
+  warn: LegacyEnvWarn = warnLegacyEnv,
+): Config {
+  // KAIJU_* names; the old KOBE_* names stand in for one release (KOBE-748).
+  const env = legacyEnv(rawEnv, warn);
   const parsed = configSchema.safeParse(env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");

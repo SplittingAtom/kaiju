@@ -46,7 +46,9 @@ const envSchema = z.object({
   // The collector's OTLP/HTTP logs endpoint, e.g. https://collector:4318/v1/logs
   KAIJU_AUDIT_OTLP_URL: z.preprocess(
     emptyToUndefined,
-    z.url({ protocol: /^https?$/, error: "KAIJU_AUDIT_OTLP_URL must be an http(s) URL" }).optional(),
+    z
+      .url({ protocol: /^https?$/, error: "KAIJU_AUDIT_OTLP_URL must be an http(s) URL" })
+      .optional(),
   ),
   // "Name=value,Name2=value2" (OTEL_EXPORTER_OTLP_HEADERS style); from a Secret.
   KAIJU_AUDIT_OTLP_HEADERS: z.string().optional(),

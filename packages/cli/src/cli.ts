@@ -2,7 +2,7 @@
 import { statSync } from "node:fs";
 import pg from "pg";
 import { runBackup } from "./backup.js";
-import { keyFileWarning, parseCommand, tlsWarning, type Command } from "./config.js";
+import { adoptEnv, keyFileWarning, parseCommand, tlsWarning, type Command } from "./config.js";
 import { formatRestrictedProjects, listRestrictedProjects } from "./restricted-projects.js";
 import { defaultOperator, runRestore } from "./restore.js";
 import { s3Lister } from "./s3.js";
@@ -98,6 +98,7 @@ async function run(cmd: Command): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  adoptEnv(process.env, log);
   let cmd: Command;
   try {
     cmd = parseCommand(process.argv.slice(2), process.env);

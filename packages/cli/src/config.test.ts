@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { randomBytes } from "node:crypto";
-import { keyFileWarning, parseCommand, readBackupKey, tlsWarning } from "./config.js";
+import { adoptEnv, keyFileWarning, parseCommand, readBackupKey, tlsWarning } from "./config.js";
 
 const S3 = {
   KAIJU_S3_ENDPOINT: "https://s3.example.com",
@@ -200,7 +200,9 @@ describe("parseCommand: projects restricted (KOBE-587)", () => {
       parseCommand(["projects", "list"], { KAIJU_BACKUP_DATABASE_URL: BACKUP_URL }),
     ).toThrow(/projects restricted/);
     expect(() =>
-      parseCommand(["projects", "restricted", "--force"], { KAIJU_BACKUP_DATABASE_URL: BACKUP_URL }),
+      parseCommand(["projects", "restricted", "--force"], {
+        KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
+      }),
     ).toThrow(/force/);
   });
 });
@@ -227,5 +229,53 @@ describe("parseCommand: sso allow-local-sign-in (KOBE-774)", () => {
         KAIJU_DB_MIGRATE_URL: OWNER_URL,
       }),
     ).toThrow(/--operator/);
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  it("runs with only the old names and warns once, naming them without values", () => {
+    const log = vi.fn();
+    const env: Record<string, string | undefined> = {
+      KOBE_BACKUP_DATABASE_URL: BACKUP_URL,
+      KOBE_BACKUP_KEY: KEY.toString("base64"),
+      USER: "op",
+    };
+    adoptEnv(env, log);
+    expect(env).toEqual({
+      KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
+      KAIJU_BACKUP_KEY: KEY.toString("base64"),
+      USER: "op",
+    });
+    expect(parseCommand(["backup", "--out", "/b/1", "--no-objects"], env)).toMatchObject({
+      databaseUrl: BACKUP_URL,
+    });
+    expect(log).toHaveBeenCalledTimes(1);
+    const line = String(log.mock.calls[0]?.[0]);
+    expect(line).toMatch(/^warning: /);
+    expect(line).toContain("KOBE_BACKUP_DATABASE_URL → KAIJU_BACKUP_DATABASE_URL");
+    expect(line).not.toContain(KEY.toString("base64"));
+    expect(line).not.toContain("pw@");
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const log = vi.fn();
+    const env: Record<string, string | undefined> = {
+      KAIJU_BACKUP_DATABASE_URL: BACKUP_URL,
+      KOBE_BACKUP_DATABASE_URL: OWNER_URL,
+      ...KEY_ENV,
+    };
+    adoptEnv(env, log);
+    expect(parseCommand(["backup", "--out", "/b/1", "--no-objects"], env)).toMatchObject({
+      databaseUrl: BACKUP_URL,
+    });
+    expect(String(log.mock.calls[0]?.[0])).toContain(
+      "KOBE_BACKUP_DATABASE_URL (KAIJU_BACKUP_DATABASE_URL is used)",
+    );
+  });
+
+  it("says nothing with the new names only", () => {
+    const log = vi.fn();
+    adoptEnv({ ...KEY_ENV }, log);
+    expect(log).not.toHaveBeenCalled();
   });
 });

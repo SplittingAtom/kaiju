@@ -86,11 +86,13 @@ describe("MCP proxy Deployment", () => {
     expect(env.map((e) => e.name)).not.toContain("KAIJU_APPROVAL_KEY");
     expect(JSON.stringify(env)).not.toContain("approval-hmac");
     const serverEnv = envOf(ms, "kobe-server");
-    expect(serverEnv.find((e) => e.name === "KAIJU_APPROVAL_KEY")?.valueFrom?.secretKeyRef).toEqual({
-      name: "kobe-sandbox-session-keys",
-      key: "approval-hmac",
-      optional: true,
-    });
+    expect(serverEnv.find((e) => e.name === "KAIJU_APPROVAL_KEY")?.valueFrom?.secretKeyRef).toEqual(
+      {
+        name: "kobe-sandbox-session-keys",
+        key: "approval-hmac",
+        optional: true,
+      },
+    );
   });
 
   it("renders env the proxy's config schema accepts (HTTPS on 443, server's internal port)", () => {

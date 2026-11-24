@@ -11,6 +11,10 @@ export async function register(): Promise<void> {
   enableServerTiming();
   const { webConfig } = await import("./lib/config");
   const config = webConfig();
+  // KOBE-748: webConfig() gave the one warning about old KOBE_* names; now move them to KAIJU_*
+  // before any request reads process.env (the proxy's HSTS header reads KAIJU_PUBLIC_URL there).
+  const { adoptLegacyEnv } = await import("@kaiju/protocol/legacy-env");
+  adoptLegacyEnv(process.env);
   if (config.problem !== null) console.warn(`[kobe-web] ${config.problem}`);
   else console.info(`[kobe-web] site branding from ${config.serverUrl}`);
 }

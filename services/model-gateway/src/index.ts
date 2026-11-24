@@ -21,6 +21,7 @@ import {
   type RunSession,
   recordModelUsage,
 } from "@kaiju/db";
+import { adoptLegacyEnv } from "@kaiju/protocol/legacy-env";
 import { deriveTraceSpanKey } from "@kaiju/protocol/node";
 import type { ThinkingLevel } from "@kaiju/protocol";
 import { verifySessionToken } from "@kaiju/session-token";
@@ -43,6 +44,8 @@ const DRAIN_TIMEOUT_MS = 20_000;
 /** At most one resync request per this period (Bifrost restarts affect every key at once). */
 const RESYNC_EVERY_MS = 5_000;
 
+// KOBE-748: old KOBE_* names move to KAIJU_* before anything reads process.env (one release).
+adoptLegacyEnv(process.env);
 const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "model-gateway"));
 const database = createDb(config.databaseUrl, {

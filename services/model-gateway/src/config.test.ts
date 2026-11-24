@@ -7,7 +7,8 @@ import {
   verifyRunToken,
   verifyServerCallToken,
 } from "@kaiju/session-token";
-import { describe, expect, it } from "vitest";
+import { toLegacyEnv } from "@kaiju/protocol/testing";
+import { describe, expect, it, vi } from "vitest";
 import { loadConfig } from "./config.js";
 import { hmacEraToken } from "./testing/hmac-era.js";
 
@@ -152,5 +153,41 @@ describe("KOBE-521 ac-1: the gateway holds no secret that can mint a credential"
     expect(
       verifyServerCallToken(config.sessionVerifyKeys, signServerCallToken(own, scClaims), NOW).ok,
     ).toBe(false);
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  it("starts with only the old names and warns once, naming them without values", () => {
+    const warn = vi.fn();
+    const c = loadConfig(toLegacyEnv(env), warn);
+    expect(c.bifrostUrl).toBe("http://kobe-bifrost:8080");
+    expect(c.databaseUrl).toBe("postgres://app@db/kobe");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[1]).toEqual({
+      renamed: [
+        "KOBE_BIFROST_URL",
+        "KOBE_DATABASE_URL",
+        "KOBE_MODELS_VIRTUAL_KEY_SECRET",
+        "KOBE_SESSION_VERIFY_KEY_MODEL_GATEWAY",
+        "KOBE_TRACE_SPAN_KEY",
+      ],
+      conflicts: [],
+    });
+    const logged = JSON.stringify(warn.mock.calls);
+    expect(logged).not.toContain("t".repeat(40));
+    expect(logged).not.toContain("v".repeat(40));
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const warn = vi.fn();
+    const c = loadConfig({ ...env, KOBE_BIFROST_URL: "http://old-bifrost:8080/" }, warn);
+    expect(c.bifrostUrl).toBe("http://kobe-bifrost:8080");
+    expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_BIFROST_URL"] });
+  });
+
+  it("an old minting key name is refused like the new one", () => {
+    expect(() =>
+      loadConfig({ ...env, KOBE_SESSION_SIGNING_KEY_MODEL_GATEWAY: "x" }, vi.fn()),
+    ).toThrow(/KAIJU_SESSION_SIGNING_KEY_MODEL_GATEWAY must not be set/);
   });
 });

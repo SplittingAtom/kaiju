@@ -1,3 +1,4 @@
+import { adoptLegacyEnv } from "@kaiju/protocol/legacy-env";
 import { constants } from "node:fs";
 import { access, mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
@@ -32,6 +33,9 @@ import { WorkspaceSync } from "./workspace/sync.js";
 const SHUTDOWN_DEADLINE_MS = 10_000;
 
 async function main(): Promise<void> {
+  // KOBE-748: old KOBE_* names (a SandboxTemplate written by an older server) move to KAIJU_*
+  // before anything reads process.env; Pi and its tools inherit the new names.
+  adoptLegacyEnv(process.env);
   hardenProcess(process);
   const loaded = loadConfig(process.env);
   // Fail fast: without kobe-policy no thread could start (KOBE-36), so say why at startup. Pi gets

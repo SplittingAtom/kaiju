@@ -1,3 +1,5 @@
+import { legacyEnv, type LegacyEnvWarn } from "@kaiju/protocol/legacy-env";
+import { logger } from "./logger.js";
 import {
   APP_IDLE_IN_TRANSACTION_TIMEOUT_MS,
   APP_STATEMENT_TIMEOUT_MS,
@@ -60,7 +62,10 @@ const configSchema = z.object({
       z
         .string()
         .max(253)
-        .regex(/^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$/, "KAIJU_RUNTIME_CLASS must be a RuntimeClass name")
+        .regex(
+          /^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$/,
+          "KAIJU_RUNTIME_CLASS must be a RuntimeClass name",
+        )
         .optional(),
     )
     .optional(),
@@ -100,7 +105,9 @@ const configSchema = z.object({
   KAIJU_MCP_PROXY_ROUTES_KEY: z
     .string()
     .transform((v) => (v === "" ? undefined : v))
-    .pipe(z.string().min(32, "KAIJU_MCP_PROXY_ROUTES_KEY must be at least 32 characters").optional())
+    .pipe(
+      z.string().min(32, "KAIJU_MCP_PROXY_ROUTES_KEY must be at least 32 characters").optional(),
+    )
     .optional(),
   // The MCP proxy's internal routes (KOBE-101 probe, KOBE-436 app calls; their own port since
   // KOBE-693), with the routes key. Unset: no pinning.
@@ -376,7 +383,15 @@ function fail(error: z.ZodError): never {
   throw new Error(`Invalid configuration: ${issues}`);
 }
 
-export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
+/** The one startup warning about old KOBE_* names (KOBE-748): names only, never values. */
+const warnLegacyEnv: LegacyEnvWarn = (message, fields) => logger.warn(fields, message);
+
+export function loadConfig(
+  rawEnv: Readonly<Record<string, string | undefined>>,
+  warn: LegacyEnvWarn = warnLegacyEnv,
+): Config {
+  // KAIJU_* names; the old KOBE_* names stand in for one release (KOBE-748).
+  const env = legacyEnv(rawEnv, warn);
   const base = configSchema.safeParse(env);
   if (!base.success) fail(base.error);
   const tokenDefaults = parseModelTokenDefaults(env);
@@ -402,7 +417,8 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     internalPort: base.data.KAIJU_INTERNAL_PORT,
     mcpProxyInternalKey: base.data.KAIJU_MCP_PROXY_INTERNAL_KEY,
     egressProxyInternalKey: base.data.KAIJU_EGRESS_PROXY_INTERNAL_KEY,
-    mcpProxyRoutesKey: base.data.KAIJU_MCP_PROXY_ROUTES_KEY ?? base.data.KAIJU_MCP_PROXY_INTERNAL_KEY,
+    mcpProxyRoutesKey:
+      base.data.KAIJU_MCP_PROXY_ROUTES_KEY ?? base.data.KAIJU_MCP_PROXY_INTERNAL_KEY,
     mcpProxyUrl: base.data.KAIJU_MCP_PROXY_URL,
     modelGatewayUrl:
       base.data.KAIJU_MODEL_GATEWAY_URL === undefined

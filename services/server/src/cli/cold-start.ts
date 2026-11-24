@@ -8,6 +8,7 @@ import {
 } from "../sandbox-lifecycle/cold-start.js";
 import type { SandboxRouter, SandboxTarget } from "../sandbox-wire/types.js";
 import { exitSoon, joinAsReplica } from "./replica.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Cold-start harness (KOBE-25), run inside a server pod (its ServiceAccount and env):
 //   node dist/cli/cold-start.js --team-id <uuid> --user-id <uuid> [--trials 20] [--probe pi]
@@ -173,6 +174,7 @@ function steps(w: Wiring, probeName: string, label: string): ColdStartSteps {
 }
 
 async function main(): Promise<number> {
+  adoptCliLegacyEnv();
   const { values } = parseArgs({
     options: {
       "team-id": { type: "string" },

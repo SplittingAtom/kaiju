@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 import { exitSoon, joinAsReplica } from "./replica.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Operator tool (KOBE-25), run inside a server pod (its ServiceAccount and env):
 //   node dist/cli/lifecycle.js hibernate --team-id <uuid> --user-id <uuid>
@@ -10,6 +11,7 @@ import { exitSoon, joinAsReplica } from "./replica.js";
 const USAGE = "usage: lifecycle.js hibernate|wake --team-id <uuid> --user-id <uuid>";
 
 async function main(): Promise<number> {
+  adoptCliLegacyEnv();
   const { positionals, values } = parseArgs({
     allowPositionals: true,
     options: { "team-id": { type: "string" }, "user-id": { type: "string" } },

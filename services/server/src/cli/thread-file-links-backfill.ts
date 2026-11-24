@@ -2,6 +2,7 @@ import { createDb } from "@kaiju/db";
 import { backfillThreadFileLinks } from "../thread-file-links/backfill.js";
 import { parseBackfillArgs } from "./thread-file-links-backfill-args.js";
 import { exitSoon } from "./replica.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Operator tool (KOBE-610, TFM3), run once inside a server pod after the upgrade (its env):
 //   node dist/cli/thread-file-links-backfill.js [--restart] [--max <threads>] [--pace-ms <ms>]
@@ -11,6 +12,7 @@ import { exitSoon } from "./replica.js";
 // walks everything again (changes nothing already recorded). Prints counts as one JSON line, never
 // paths. Exit 0 when every thread is done, 1 when stopped by `--max`, 2 on a usage error.
 async function main(): Promise<number> {
+  adoptCliLegacyEnv();
   const options = parseBackfillArgs(process.argv.slice(2));
   if (typeof options === "string") {
     console.error(options);

@@ -317,7 +317,10 @@ function sandboxEnv(s: SandboxSettings): { name: string; value: string }[] {
       name: "KAIJU_MODEL_GATEWAY_URL",
       value: url("http", SANDBOX_HOSTS.modelGateway, e.modelGateway.port, 80),
     },
-    { name: "KAIJU_MCP_PROXY_URL", value: url("http", SANDBOX_HOSTS.mcpProxy, e.mcpProxy.port, 80) },
+    {
+      name: "KAIJU_MCP_PROXY_URL",
+      value: url("http", SANDBOX_HOSTS.mcpProxy, e.mcpProxy.port, 80),
+    },
     { name: "KAIJU_EGRESS_PROXY_URL", value: egress },
     { name: "KAIJU_BOOTSTRAP_TOKEN_FILE", value: BOOTSTRAP_TOKEN_FILE },
     // KOBE-71: every Pi process (and the tools it runs) under a uid of its own; the agent refuses

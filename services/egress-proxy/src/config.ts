@@ -1,3 +1,5 @@
+import { legacyEnv, type LegacyEnvWarn } from "@kaiju/protocol/legacy-env";
+import { logger } from "./logger.js";
 import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kaiju/session-token";
 import { z } from "zod";
 import { validateCidrs, validateInternalTargets } from "./address-policy.js";
@@ -119,7 +121,12 @@ const configSchema = z.object({
     100_000_000_000,
     2 * 1024 * 1024 * 1024,
   ),
-  KAIJU_EGRESS_UPGRADE_TIMEOUT_MS: int("KAIJU_EGRESS_UPGRADE_TIMEOUT_MS", 1_000, 86_400_000, 600_000),
+  KAIJU_EGRESS_UPGRADE_TIMEOUT_MS: int(
+    "KAIJU_EGRESS_UPGRADE_TIMEOUT_MS",
+    1_000,
+    86_400_000,
+    600_000,
+  ),
   /**
    * Git smart-HTTP for connected organizations (KOBE-763): the server's internal listener and the
    * key the proxy presents there. Both or neither; unset: git paths get no credential.
@@ -212,7 +219,15 @@ export interface Config {
     | undefined;
 }
 
-export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
+/** The one startup warning about old KOBE_* names (KOBE-748): names only, never values. */
+const warnLegacyEnv: LegacyEnvWarn = (message, fields) => logger.warn(fields, message);
+
+export function loadConfig(
+  rawEnv: Readonly<Record<string, string | undefined>>,
+  warn: LegacyEnvWarn = warnLegacyEnv,
+): Config {
+  // KAIJU_* names; the old KOBE_* names stand in for one release (KOBE-748).
+  const env = legacyEnv(rawEnv, warn);
   const parsed = configSchema.safeParse(env);
   if (!parsed.success) {
     // Messages name the variable; values are never echoed (the session key is a secret).
@@ -247,7 +262,9 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
   const headerSecrets =
     c.KAIJU_EGRESS_HEADER_SECRET === ""
       ? undefined
-      : [c.KAIJU_EGRESS_HEADER_SECRET, c.KAIJU_EGRESS_HEADER_SECRET_PREVIOUS].filter((v) => v !== "");
+      : [c.KAIJU_EGRESS_HEADER_SECRET, c.KAIJU_EGRESS_HEADER_SECRET_PREVIOUS].filter(
+          (v) => v !== "",
+        );
   if ((c.KAIJU_EGRESS_SERVER_URL === "") !== (c.KAIJU_EGRESS_INTERNAL_KEY === "")) {
     throw new Error(
       "Invalid configuration: KAIJU_EGRESS_SERVER_URL and KAIJU_EGRESS_INTERNAL_KEY go together",

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { toLegacyEnv } from "@kaiju/protocol/testing";
+import { describe, expect, it, vi } from "vitest";
 import { loadConfig } from "./config.js";
 
 const SANDBOX = "af1a2b3c-4d5e-4f60-9182-93a4b5c6d7e8";
@@ -158,5 +159,32 @@ describe("sandbox-agent loadConfig", () => {
       );
     }
     expect(() => loadConfig({ ...url, NO_PROXY: "a;rm -rf /" })).toThrow(/NO_PROXY/);
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  // A SandboxTemplate written by an older server sets the old names; this image reads both.
+  it("starts with only the old names and warns once, naming them", () => {
+    const warn = vi.fn();
+    const config = loadConfig(
+      toLegacyEnv({ ...base, KAIJU_SERVER_URL: "wss://kobe-server.kaiju-system.svc" }),
+      warn,
+    );
+    expect(config.connectUrl).toBe("wss://kobe-server.kaiju-system.svc/v1/sandbox/connect");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[1]).toEqual({
+      renamed: ["KOBE_SANDBOX_ID", "KOBE_SERVER_URL"],
+      conflicts: [],
+    });
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const warn = vi.fn();
+    const config = loadConfig(
+      { ...base, KAIJU_SERVER_URL: "wss://new-server", KOBE_SERVER_URL: "wss://old-server" },
+      warn,
+    );
+    expect(config.serverUrl).toBe("wss://new-server");
+    expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_SERVER_URL"] });
   });
 });

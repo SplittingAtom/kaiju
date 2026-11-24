@@ -70,7 +70,10 @@ describe("auth.sso settings (KOBE-626)", () => {
     [{ KAIJU_SSO_ALLOWED_INTERNAL_CIDRS: "nope" }, /ALLOWED_INTERNAL_CIDRS/],
     [{ KAIJU_SSO_ALLOWED_PORTS: "70000" }, /ALLOWED_PORTS/],
     [{ KAIJU_SSO_PROVIDERS: "{" }, /JSON array/],
-    [{ KAIJU_SSO_PROVIDERS: JSON.stringify([{ ...entra, tenantId: "common" }]) }, /tenant-specific/],
+    [
+      { KAIJU_SSO_PROVIDERS: JSON.stringify([{ ...entra, tenantId: "common" }]) },
+      /tenant-specific/,
+    ],
     [
       {
         KAIJU_SSO_PROVIDERS: JSON.stringify([

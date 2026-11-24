@@ -35,16 +35,16 @@ npx playwright install chromium   # once, unless you use the Playwright containe
 KAIJU_BASE_URL=https://kobe.example.org KAIJU_USER=member@example.org KAIJU_PW='…' npx playwright test
 ```
 
-| Variable        | Meaning                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `KAIJU_BASE_URL` | The deployment's URL (required).                                                                                                                       |
-| `KAIJU_USER`     | A member who can sign in with a password, can run conversations and (for the theme spec) can open the team admin console.                              |
-| `KAIJU_PW`       | That member's password. Pass it from a secret store; never write it to a file or a log.                                                                |
-| `KAIJU_USER2`    | A second member of the same team (password sign-in, only that team), for the sharing spec; optional.                                                   |
+| Variable         | Meaning                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `KAIJU_BASE_URL` | The deployment's URL (required).                                                                                                                        |
+| `KAIJU_USER`     | A member who can sign in with a password, can run conversations and (for the theme spec) can open the team admin console.                               |
+| `KAIJU_PW`       | That member's password. Pass it from a secret store; never write it to a file or a log.                                                                 |
+| `KAIJU_USER2`    | A second member of the same team (password sign-in, only that team), for the sharing spec; optional.                                                    |
 | `KAIJU_PW2`      | That member's password; same rules as `KAIJU_PW`.                                                                                                       |
 | `KAIJU_USER3`    | Another Team admin of the same team (password sign-in) who confirms in the Site proposals spec, so `KAIJU_USER` may decide; without it that spec skips. |
 | `KAIJU_PW3`      | That admin's password; same rules as `KAIJU_PW`.                                                                                                        |
-| `KAIJU_WORKERS`  | Specs in parallel (default 1: each one starts a sandbox and spends tokens).                                                                            |
+| `KAIJU_WORKERS`  | Specs in parallel (default 1: each one starts a sandbox and spends tokens).                                                                             |
 
 One spec: `npx playwright test theme` (by file name) or `-g "Compact now"` (by title). The
 **Regenerate with** spec skips itself when the team has only one enabled model.
@@ -261,14 +261,14 @@ mapping, and creates and revokes a SCIM token. `KAIJU_USER` must be the Owner (o
 a team admin of its active team (`KAIJU_TEAM`). Each run leaves two deactivated `sso-e2e-*`
 accounts (Kaiju never deletes users).
 
-| Variable                      | Meaning                                                                                 |
-| ----------------------------- | --------------------------------------------------------------------------------------- |
+| Variable                       | Meaning                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
 | `KAIJU_SSO_MOCK_ISSUER`        | The mock's issuer (`https://mock-idp.kobe-sso-mock.svc.cluster.local/<tenant>/v2.0`).   |
 | `KAIJU_SSO_MOCK_CLIENT_ID`     | Its client ID (only to register the provider).                                          |
 | `KAIJU_SSO_MOCK_CLIENT_SECRET` | Its client secret (only to register the provider); from the `mock-idp-client` Secret.   |
 | `KAIJU_SSO_MOCK_MAP`           | `ip:port` of the cluster's ingress: Chromium reaches the mock's name there.             |
 | `KAIJU_SSO_MOCK_SLUG`, `_NAME` | Optional: slug (default `e2e-mock`) and display name (default `Mock IdP (e2e)`).        |
-| `KAIJU_USER2`, `KAIJU_PW2`      | member2 for the link test (password sign-in, no authenticator app); skipped without it. |
+| `KAIJU_USER2`, `KAIJU_PW2`     | member2 for the link test (password sign-in, no authenticator app); skipped without it. |
 
 `sign-in-sso-only` (KOBE-774) checks the sign-in page with **Require single sign-on** off and on,
 using the same mock and variables: the Owner (`KAIJU_USER`/`KAIJU_PW`, no authenticator app) links

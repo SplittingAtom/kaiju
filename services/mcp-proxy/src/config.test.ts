@@ -1,5 +1,6 @@
 import { generateSessionKeyPair } from "@kaiju/session-token";
-import { describe, expect, it } from "vitest";
+import { toLegacyEnv } from "@kaiju/protocol/testing";
+import { describe, expect, it, vi } from "vitest";
 import { loadConfig } from "./config.js";
 
 const PAIR = generateSessionKeyPair();
@@ -121,5 +122,38 @@ describe("loadConfig", () => {
     } catch (err) {
       expect(String(err)).not.toContain("secret-but-short");
     }
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  it("starts with only the old names and warns once, naming them without values", () => {
+    const warn = vi.fn();
+    const config = loadConfig(toLegacyEnv(ENV), warn);
+    expect(config.serverUrl).toBe("http://kobe-server:8082");
+    expect(config.internalKey).toBe("i".repeat(32));
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[1]).toEqual({
+      renamed: [
+        "KOBE_MCP_INTERNAL_KEY",
+        "KOBE_MCP_SERVER_URL",
+        "KOBE_SESSION_VERIFY_KEY_MCP_PROXY",
+      ],
+      conflicts: [],
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("i".repeat(32));
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const warn = vi.fn();
+    const config = loadConfig({ ...ENV, KOBE_MCP_SERVER_URL: "http://old-server:8082/" }, warn);
+    expect(config.serverUrl).toBe("http://kobe-server:8082");
+    expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_MCP_SERVER_URL"] });
+    expect(warn.mock.calls[0]?.[0]).toContain("KOBE_MCP_SERVER_URL (KAIJU_MCP_SERVER_URL is used)");
+  });
+
+  it("no warning with the new names only", () => {
+    const warn = vi.fn();
+    loadConfig({ ...ENV }, warn);
+    expect(warn).not.toHaveBeenCalled();
   });
 });

@@ -189,6 +189,10 @@ async function enablePgvector(serverUrl: string, dbName: string): Promise<void> 
  */
 export function testServerUrl(): string {
   const url = process.env.KAIJU_TEST_DATABASE_URL;
+  if (!url && process.env.KOBE_TEST_DATABASE_URL) {
+    // KOBE-748: renamed; say so rather than leave the old name to look ignored.
+    throw new Error("KOBE_TEST_DATABASE_URL was renamed: set KAIJU_TEST_DATABASE_URL instead.");
+  }
   if (!url) {
     throw new Error(
       "KAIJU_TEST_DATABASE_URL is required for db tests: a superuser URL to a Postgres 17 server " +

@@ -1,5 +1,6 @@
 import { generateSessionKeyPair } from "@kaiju/session-token";
-import { describe, expect, it } from "vitest";
+import { toLegacyEnv } from "@kaiju/protocol/testing";
+import { describe, expect, it, vi } from "vitest";
 import { loadConfig } from "./config.js";
 
 const PAIR = generateSessionKeyPair();
@@ -118,5 +119,27 @@ describe("loadConfig", () => {
         KAIJU_EGRESS_INTERNAL_KEY: "short",
       }),
     ).toThrow(/KAIJU_EGRESS_INTERNAL_KEY/);
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  it("starts with only the old names and warns once, naming them without values", () => {
+    const warn = vi.fn();
+    const c = loadConfig(toLegacyEnv({ ...base, KAIJU_DB_POOL_MAX: "25" }), warn);
+    expect(c.databaseUrl).toBe("postgres://app@db/kobe");
+    expect(c.dbPoolMax).toBe(25);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[1]).toEqual({
+      renamed: ["KOBE_DATABASE_URL", "KOBE_DB_POOL_MAX", "KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY"],
+      conflicts: [],
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("postgres://");
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const warn = vi.fn();
+    const c = loadConfig({ ...base, KAIJU_DB_POOL_MAX: "25", KOBE_DB_POOL_MAX: "50" }, warn);
+    expect(c.dbPoolMax).toBe(25);
+    expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_DB_POOL_MAX"] });
   });
 });

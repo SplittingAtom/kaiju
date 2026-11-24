@@ -1,3 +1,4 @@
+import { adoptLegacyEnv } from "@kaiju/protocol/legacy-env";
 import { serve } from "@hono/node-server";
 import { initTelemetry, loadTelemetryConfig } from "@kaiju/telemetry";
 import { createApp, createInternalApp } from "./app.js";
@@ -12,6 +13,8 @@ import { createUpstreamClient } from "./upstream.js";
 /** Open streams get this long to finish before being cut; stays under k8s' 30 s grace period. */
 const DRAIN_TIMEOUT_MS = 10_000;
 
+// KOBE-748: old KOBE_* names move to KAIJU_* before anything reads process.env (one release).
+adoptLegacyEnv(process.env);
 const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "mcp-proxy"));
 const upstream = createUpstreamClient({

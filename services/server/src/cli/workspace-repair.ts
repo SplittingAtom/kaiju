@@ -3,6 +3,7 @@ import { logger } from "../logger.js";
 import { createS3ObjectStore, loadS3Settings, repairWorkspaces } from "../workspace-sync/index.js";
 import { exitSoon } from "./replica.js";
 import { parseRepairArgs } from "./workspace-repair-args.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Operator tool (KOBE-475), run inside a server pod (its env: database and object storage):
 //   node dist/cli/workspace-repair.js [--dry-run] [--team-id <uuid> [--user-id <uuid>]]
@@ -15,6 +16,7 @@ import { parseRepairArgs } from "./workspace-repair-args.js";
 // Exit 0 when nothing is missing (or everything missing is now marked), 1 on a dry run that found
 // missing content, 2 on a usage or configuration error.
 async function main(): Promise<number> {
+  adoptCliLegacyEnv();
   const args = parseRepairArgs(process.argv.slice(2));
   if (typeof args === "string") {
     console.error(args);

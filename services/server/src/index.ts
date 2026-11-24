@@ -1,9 +1,12 @@
+import { adoptLegacyEnv } from "@kaiju/protocol/legacy-env";
 import { loadConfig } from "./config.js";
 import { logger } from "./logger.js";
 import { DRAIN_TIMEOUT_MS } from "./startup/process-jobs.js";
 import { startServer } from "./startup/server.js";
 
 // The process entry point: the composition root is `startServer` (startup/server.ts, KOBE-709).
+// KOBE-748: old KOBE_* names move to KAIJU_* before anything reads process.env (one release).
+adoptLegacyEnv(process.env);
 const server = await startServer(loadConfig(process.env));
 
 function shutdown(signal: string): void {

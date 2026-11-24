@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { toLegacyEnv } from "@kaiju/protocol/testing";
+import { describe, expect, it, vi } from "vitest";
 import { loadConfig } from "../config.js";
 
 const REQUIRED = {
@@ -265,7 +266,8 @@ describe("loadConfig", () => {
   it("reads HSTS includeSubDomains, off by default (KOBE-695)", () => {
     expect(loadConfig(REQUIRED).auth?.hstsIncludeSubDomains).toBe(false);
     expect(
-      loadConfig({ ...REQUIRED, KAIJU_HSTS_INCLUDE_SUBDOMAINS: "true" }).auth?.hstsIncludeSubDomains,
+      loadConfig({ ...REQUIRED, KAIJU_HSTS_INCLUDE_SUBDOMAINS: "true" }).auth
+        ?.hstsIncludeSubDomains,
     ).toBe(true);
     expect(() => loadConfig({ ...REQUIRED, KAIJU_HSTS_INCLUDE_SUBDOMAINS: "yes" })).toThrow(
       /KAIJU_HSTS_INCLUDE_SUBDOMAINS must be true or false/,
@@ -354,9 +356,9 @@ describe("loadConfig", () => {
     });
 
     it("accepts a bare From address and rejects malformed ones (no header injection)", () => {
-      expect(loadConfig({ ...REQUIRED, KAIJU_SMTP_FROM: "noreply@example.com" }).smtp?.from).toEqual(
-        { address: "noreply@example.com" },
-      );
+      expect(
+        loadConfig({ ...REQUIRED, KAIJU_SMTP_FROM: "noreply@example.com" }).smtp?.from,
+      ).toEqual({ address: "noreply@example.com" });
       for (const bad of [
         "not an address",
         "Kaiju <a@b.c>\r\nBcc: x@y.z",
@@ -485,5 +487,33 @@ describe("loadConfig", () => {
       });
       expect(config.branding).toBeUndefined();
     });
+  });
+});
+
+describe("old KOBE_* names for one release (KOBE-748)", () => {
+  it("starts with only the old names and warns once, naming them without values", () => {
+    const warn = vi.fn();
+    const config = loadConfig(toLegacyEnv(REQUIRED), warn);
+    expect(config).toEqual(loadConfig(REQUIRED, vi.fn()));
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[1]).toEqual({
+      renamed: Object.keys(toLegacyEnv(REQUIRED)).sort(),
+      conflicts: [],
+    });
+    const logged = JSON.stringify(warn.mock.calls);
+    for (const value of Object.values(REQUIRED)) expect(logged).not.toContain(value);
+  });
+
+  it("the new name wins when both are set, and the warning names the conflict", () => {
+    const warn = vi.fn();
+    const config = loadConfig(
+      { ...REQUIRED, KOBE_PUBLIC_URL: "https://old.example.com", KAIJU_DB_POOL_MAX: "20" },
+      warn,
+    );
+    expect(config.auth?.publicUrl).toBe("https://kaiju.example.com");
+    expect(config.dbPools.max).toBe(20);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_PUBLIC_URL"] });
+    expect(warn.mock.calls[0]?.[0]).toContain("KOBE_PUBLIC_URL (KAIJU_PUBLIC_URL is used)");
   });
 });

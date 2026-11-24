@@ -513,7 +513,21 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "kobe-sandbox-token",
       "RN-5",
     ],
-    ["package.json", 'test -z "$KOBE_TEST_DATABASE_URL"', "KOBE_TEST", "RN-4"],
+    // RN-4 is done: an old variable name is a miss, except in the one-release fallback (KOBE-748).
+    ["services/mcp-proxy/src/config.ts", "env.KOBE_MCP_SERVER_URL", "KOBE_MCP", "unowned"],
+    [
+      "services/mcp-proxy/src/config.ts",
+      "// KAIJU_* names; the old KOBE_* names stand in for one release (KOBE-748).",
+      "KOBE_*",
+      "permanent",
+    ],
+    [
+      "scripts/check-test-db-env.sh",
+      'if [ -z "${KAIJU_TEST_DATABASE_URL:-}" ] && [ -n "${KOBE_TEST_DATABASE_URL:-}" ]; then',
+      "KOBE_TEST",
+      "permanent",
+    ],
+    ["images/sandbox/runas/kobe-runas.c", "#define KOBE_AGENT_UID 1000", "KOBE_AGENT", "RN-6"],
     // Round 2: both sides of a paired value stay together.
     [
       "packages/session-token/src/site.ts",

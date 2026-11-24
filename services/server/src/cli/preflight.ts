@@ -2,12 +2,14 @@ import { writeFileSync } from "node:fs";
 import { listRuntimeClasses } from "../isolation/kubernetes.js";
 import { checkIsolation } from "../isolation/runtime-class.js";
 import { logger } from "../logger.js";
+import { adoptCliLegacyEnv } from "./legacy-env.js";
 
 // Isolation gate, run as the Helm pre-install/pre-upgrade/pre-rollback hook and as an initContainer
 // of the server and scheduler: fails unless KAIJU_RUNTIME_CLASS (the class sandboxes use) exists
 // and has a gVisor or Kata handler.
 const TERMINATION_LOG = "/dev/termination-log";
 
+adoptCliLegacyEnv();
 const runtimeClassName = process.env.KAIJU_RUNTIME_CLASS?.trim();
 const result = runtimeClassName
   ? await checkIsolation(listRuntimeClasses, runtimeClassName)
