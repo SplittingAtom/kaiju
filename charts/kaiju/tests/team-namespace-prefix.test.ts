@@ -24,7 +24,6 @@ import {
   render,
   renderError,
   sandboxConfig,
-  type Manifest,
 } from "./sandbox.test-helpers.js";
 
 // The detection rule without a cluster: a scratch chart with the real _sandbox.tpl and one template
@@ -144,9 +143,6 @@ describe("team namespace prefix detection (helm install/upgrade)", () => {
   });
 });
 
-const admission = (ms: Manifest[]): string =>
-  JSON.stringify(byKind(ms, "ValidatingAdmissionPolicy").map((p) => p.spec));
-
 describe.each(TEAM_NAMESPACE_PREFIXES)("an install with prefix %s", (prefix) => {
   const ms = render({ "sandbox.teamNamespacePrefix": prefix });
   const other = TEAM_NAMESPACE_PREFIXES.find((p) => p !== prefix) as TeamNamespacePrefix;
@@ -160,16 +156,30 @@ describe.each(TEAM_NAMESPACE_PREFIXES)("an install with prefix %s", (prefix) => 
     expect(JSON.parse(scheduler?.value ?? "{}").teamNamespacePrefix).toBe(prefix);
   });
 
-  it("pins every admission policy to this prefix and never to the other", () => {
-    const a = admission(ms);
-    expect(a).toContain(`startsWith('${prefix}')`);
-    expect(a).toContain(`may only manage ${prefix}* namespaces`);
-    expect(a).not.toContain(other);
-    for (const policy of byKind(ms, "ValidatingAdmissionPolicy")) {
-      const team = (policy.spec.matchConditions as { name: string; expression: string }[]).find(
-        (c) => c.name === "team-namespace",
-      );
-      if (team) expect(team.expression).toBe(`request.namespace.startsWith('${prefix}')`);
+  const policy = (suffix: string) =>
+    byKind(ms, "ValidatingAdmissionPolicy").find((p) => p.metadata.name.endsWith(suffix));
+
+  it("pins the server's write scope (policy 1) to this prefix only", () => {
+    const scope = JSON.stringify(policy("-server-scope")?.spec);
+    expect(scope).toContain(`variables.target.startsWith('${prefix}')`);
+    expect(scope).toContain(`may only manage ${prefix}* namespaces`);
+    expect(scope).not.toContain(other);
+  });
+
+  it("holds the restricting policies (2-4) in team namespaces under both prefixes", () => {
+    for (const suffix of ["-sandbox-pods", "-sandbox-specs", "-sandbox-netpol"]) {
+      const conditions = policy(suffix)?.spec.matchConditions as {
+        name: string;
+        expression: string;
+      }[];
+      expect(conditions, suffix).toEqual([
+        {
+          name: "team-namespace",
+          expression: TEAM_NAMESPACE_PREFIXES.map(
+            (p) => `request.namespace.startsWith('${p}')`,
+          ).join(" || "),
+        },
+      ]);
     }
   });
 

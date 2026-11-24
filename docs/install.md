@@ -68,7 +68,9 @@ the value empty and `helm install`/`helm upgrade` detect it from the existing te
 (`helm template`, Argo CD, Flux, a client-side `--dry-run`) cannot detect it: set it explicitly
 there (the render fails otherwise, unless `global.allowGeneratedSecretsOffline` marks a throwaway
 environment, where empty means `kaiju-team-`). Exactly one prefix is in force: the admission
-policies below pin it, the server refuses to start when team namespaces exist under the other one
+policy that confines the server's own writes pins it (the policies that hold sandbox pods, specs
+and NetworkPolicies cover team namespaces under both prefixes, so a wrong value never leaves
+existing ones unguarded), the server refuses to start when team namespaces exist under the other one
 (its log names the value to set: `Set the Helm value sandbox.teamNamespacePrefix to "kobe-team-"`),
 and a render that can reach the cluster fails the same way. Moving an install to the other prefix
 is not supported.
@@ -96,7 +98,8 @@ Every team namespace gets:
 - Pod Security Admission `baseline` (see below for why not `restricted`).
 
 The chart installs **ValidatingAdmissionPolicies** that hold whatever creates the pod (server,
-agent-sandbox controller, an operator): in `kaiju-team-*` namespaces every pod must use
+agent-sandbox controller, an operator): in team namespaces (`kaiju-team-*`, and `kobe-team-*`
+whatever the configured prefix) every pod must use
 `isolation.runtimeClassName` and that RuntimeClass must have a gVisor/Kata handler; pods may not
 mount Secrets, read Secrets into env, mount a Kubernetes API token, use host namespaces or
 `hostPath`; they must meet Pod Security `restricted` (non-root, seccomp `RuntimeDefault`/

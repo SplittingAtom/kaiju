@@ -14,6 +14,7 @@ import {
   BOOTSTRAP_TOKEN_AUDIENCE,
   DEFAULT_TEAM_NAMESPACE_PREFIX as TEAM_NAMESPACE_PREFIX,
   LABEL_TEAM_NAMESPACE,
+  TEAM_NAMESPACE_PREFIXES,
 } from "../../../services/server/src/sandbox/constants.js";
 import {
   type Manifest,
@@ -403,7 +404,10 @@ describe("sandbox admission policies (KOBE-9 binding requirement 3)", () => {
       expect(p?.spec.matchConditions).toEqual([
         {
           name: "team-namespace",
-          expression: `request.namespace.startsWith('${TEAM_NAMESPACE_PREFIX}')`,
+          // KOBE-751: both known prefixes (policies 2-4 only restrict).
+          expression: TEAM_NAMESPACE_PREFIXES.map(
+            (p) => `request.namespace.startsWith('${p}')`,
+          ).join(" || "),
         },
       ]);
       expect(expressions(suffix)).toContain(

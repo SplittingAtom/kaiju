@@ -21,7 +21,7 @@ docs/install.md /(?<=\(before: `)kobe-migrate(?=`)|(?<=`kobe-migrate`, `)kobe-db
 docs/guide/whats-new.md /(?<=The old `)X-Kobe-Team(?=` still works)/
 docs/install.md /(?<=accepts `)X-Kobe-Team(?=` for)|(?<=and `)X-Kobe-Sha256(?=`\.)|(?<=with `kaiju` instead of `)kobe(?=`)/
 docs/install.md /(?<=the old `)kobe-(?=\*` repositories)|(?<=app\.kubernetes\.io\/name: )kobe(?=`)|(?<=database name `)kobe(?=`)|(?<=\(`)\/kobe\/eval-cases(?=`\))|(?<=\(pack `)kobe-default(?=`\))/
-docs/install.md /(?<=[`"])kobe-team-(?=[`"])|(?<=teamNamespacePrefix: )kobe-team-(?=`)|(?<=`)kobe-(?:sandbox(?:-isolation)?|team-quota|skill-eval)(?=`)|(?<=managed-by=)kobe-server(?=`)|(?<=as `)kobe-(?=` in the names)/
+docs/install.md /(?<=[`"])kobe-team-(?=[`"])|(?<=and `)kobe-team-\*(?=`\s*$|` whatever)|(?<=teamNamespacePrefix: )kobe-team-(?=`)|(?<=`)kobe-(?:sandbox(?:-isolation)?|team-quota|skill-eval)(?=`)|(?<=managed-by=)kobe-server(?=`)|(?<=as `)kobe-(?=` in the names)/
 docs/development.md /(?<=is called `)kobe(?=`)|(?<=team namespaces \(`)kobe-team-\*(?=`\))|(?<=KAIJU_CLUSTER=)kobe\b|(?<=namespace `)kobe-dev(?=` to)/
 docs/tracing.md /(?<=renamed )Kobe(?= to Kaiju \(KOBE-749\))|(?<=instead of `)kobe\.(?=`)|(?<=\(each was `)kobe-(?=\*`\))|(?<=reads their `)kobe\.(?=\*` span)/
 

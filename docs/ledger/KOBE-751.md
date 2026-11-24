@@ -62,8 +62,12 @@
 
 - **RBAC** (`sandbox-rbac.yaml`, `rancher.yaml`): no rule names a namespace or a team object; only
   comments changed. Cluster-wide verbs stay confined by policy 1 of `sandbox-admission.yaml`.
-- **Admission policies:** all four pin `startsWith('<prefix>')` for the one configured prefix
-  (test: the other prefix never appears in any policy).
+- **Admission policies (review MEDIUM-1):** policy 1 (the server's namespace and RoleBinding
+  writes) pins the one configured prefix and never names the other (test). Policies 2-4 (pod
+  isolation, Sandbox/SandboxTemplate specs, only the server writes NetworkPolicies) only restrict,
+  so they match namespaces under **both** known prefixes whatever the value (test, both settings):
+  a wrong or offline-rendered value can no longer leave existing team namespaces without them.
+  This tightens; nothing that grants or creates covers the other prefix.
 - **Proxy NetworkPolicies** (egress-proxy, mcp-proxy, model-gateway, `networkpolicies.yaml`): select
   team namespaces by the permanent label, never by name: unchanged on both generations (test).
 - **Server-side:** `teamOfNamespace`, the isolation reconciler and the eval reaper skip namespaces
@@ -74,7 +78,7 @@
 
 ## ac-1: fresh vs upgraded install
 
-- **Chart** (`tests/team-namespace-prefix.test.ts`, 18): resolver cases on made-up namespaces
+- **Chart** (`tests/team-namespace-prefix.test.ts`, 19): resolver cases on made-up namespaces
   (fresh, kept, label-only, both, mismatch, foreign, offline, throwaway), full renders per prefix
   (config, admission, PriorityClass), RBAC/NetworkPolicy unchanged, generations equal `kobe-*`
   names existing installs have.
@@ -84,8 +88,12 @@
   nothing and names the value; admission/server mismatch refused.
 - **e2e** (`run/54-chart-upgrade.sh`): the upgrades there reuse values with an empty prefix, so the
   chart looked it up: asserts the deployed prefix stays `kaiju-team-`, the team namespace and its
-  quota keep their uids, a labelled `kobe-team-*` probe namespace makes a server-side dry-run
-  upgrade fail naming both prefixes, and the server creates nothing in it. The k3d shard
+  quota each keep their uid (two exact comparisons; review MEDIUM-2: the former combined regex
+  passed when only one matched), a labelled `kobe-team-*` probe namespace makes a server-side
+  dry-run upgrade fail naming both prefixes, a team reconcile logged after the probe existed
+  skipped it, and the server wrote nothing into it (fails on any listed object or a failed
+  listing; the probe is deleted with `--wait`). The check functions were run locally against fake
+  input (kept, recreated, missing, leaked, listing failed). The k3d shard
   cannot express a pre-rename install (no old release to upgrade from).
 - **Left for the live gate1 upgrade:** the usual `helm upgrade ... --reset-values` of release
   `kobe` with the value unset (online, so detected): check `KAIJU_SANDBOX_CONFIG` says
@@ -97,15 +105,25 @@
 ## Mixed rollout
 
 Old and new server pods on an upgraded install use identical names and field manager (the kept
-generation is exactly the old fixed names), and the re-rendered admission policies are identical,
-so a rolling upgrade has no mixed window. A fresh install has no old pods.
+generation is exactly the old fixed names). The re-rendered admission policies differ only in
+policies 2-4 also matching `kaiju-team-*` (no such namespaces exist there), so a rolling upgrade
+has no mixed window. A fresh install has no old pods.
 
 ## Open
 
-- A throwaway render (`allowGeneratedSecretsOffline`) against a cluster with `kobe-team-*` gets
-  `kaiju-team-`: the server refuses to start, but until the value is fixed the admission policies
-  guard `kaiju-team-*`, not the old namespaces (defence in depth only; RBAC, the server's own
-  isolation checks and its refusal stand). Documented; production renders cannot get there.
+- **Wrong prefix from a render that cannot look up** (corrected after review MEDIUM-1): any
+  offline render with an explicitly wrong value (Argo CD or Flux with `kaiju-team-` on an old
+  install), or a throwaway render with the flag (Tilt), gets past the chart. Earlier this left the
+  old namespaces outside policies 2-4; now they stay covered. What remains: the server and
+  scheduler refuse to start (correct), policy 1 confines the server to the wrong prefix (it cannot
+  write anywhere real), and Helm replaces PriorityClass `kobe-skill-eval` with `kaiju-skill-eval`
+  (running eval pods keep their priority; new ones wait until the value is fixed).
+- **Label-based denial of service (review LOW-4, accepted):** whoever can label a namespace
+  outside the prefix with `kobe.splittingatom.io/team-namespace=true` stops the server at its next
+  start and fails the next `helm upgrade`. Labelling namespaces needs cluster-wide namespace
+  `patch`, which is cluster-admin level; members, sandboxes (no API token, policy 2) and the sandbox
+  ServiceAccount (no RBAC) cannot, and the server can label only inside its prefix (policy 1).
+  Someone with that right can already stop Kaiju in many ways, so the check stays strict.
 - Dev clusters from before the rename: delete the old release's team namespaces
   (`docs/development.md`).
 

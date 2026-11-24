@@ -67,8 +67,13 @@ The rule itself, without lookups (charts/kaiju/tests/team-namespace-prefix.test.
 made-up namespaces): .set (the value), .online (cluster reachable), .namespaces (Namespace objects
 from the cluster), .allowOffline (global.allowGeneratedSecretsOffline).
 */}}
+{{/* Both team namespace prefixes Kaiju knows (the server's TEAM_NAMESPACE_PREFIXES), as JSON. */}}
+{{- define "kaiju.teamNamespacePrefixes" -}}
+{{- toJson (list "kaiju-team-" "kobe-team-") -}}
+{{- end -}}
+
 {{- define "kaiju.resolveTeamNamespacePrefix" -}}
-{{- $known := list "kaiju-team-" "kobe-team-" -}}
+{{- $known := include "kaiju.teamNamespacePrefixes" . | fromJsonArray -}}
 {{- $set := .set -}}
 {{- if and $set (not (has $set $known)) -}}
 {{- fail (printf "sandbox.teamNamespacePrefix must be \"kaiju-team-\" or \"kobe-team-\" (empty: detect it), not %q" $set) -}}
