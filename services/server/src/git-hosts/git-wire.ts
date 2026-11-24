@@ -73,7 +73,7 @@ export interface GitWireOptions {
 export const GIT_WIRE_TIMEOUT_MS = 120_000;
 export const GIT_WIRE_MAX_RESPONSE_BYTES = 64 * 1024 * 1024;
 const SERVICES = new Set(["git-upload-pack", "git-receive-pack"]);
-const USER_AGENT = "git/isomorphic-git kobe-server";
+const USER_AGENT = "git/isomorphic-git kaiju-server";
 
 function refused(reason: string, message: string): GitHostError {
   return new GitHostError("host_refused", message, { reason });

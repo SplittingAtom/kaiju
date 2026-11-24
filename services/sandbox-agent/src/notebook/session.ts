@@ -2,7 +2,7 @@ import type { Readable, Writable } from "node:stream";
 import { LineSplitter } from "../jsonl.js";
 
 /**
- * One running `kobe-kernel-bridge.py` (images/sandbox/kernel; docs/specs/notebooks.md NB10): the
+ * One running `kaiju-kernel-bridge.py` (images/sandbox/kernel; docs/specs/notebooks.md NB10): the
  * agent's end of its stdio JSON-lines protocol. One execution at a time; the manager queues.
  */
 export interface BridgeProcess {

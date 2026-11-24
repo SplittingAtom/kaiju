@@ -15,7 +15,7 @@ describe("kernel launcher (NB10)", () => {
       {
         PATH: "/usr/bin",
         TZ: "UTC",
-        KAIJU_BOOTSTRAP_TOKEN_FILE: "/run/kobe-agent/token",
+        KAIJU_BOOTSTRAP_TOKEN_FILE: "/run/kaiju-agent/token",
         KAIJU_SANDBOX_TOKEN: "secret",
         HTTPS_PROXY: "http://user:token@proxy",
         NODE_OPTIONS: "--inspect",
@@ -68,9 +68,9 @@ describe("kernel launcher (NB10)", () => {
       egress: {
         runtimeRoot,
         wiring: {
-          proxyUrl: "http://egress-proxy.kobe.internal:80",
-          noProxy: "kobe-server",
-          envScript: "/opt/kobe/egress-env.sh",
+          proxyUrl: "http://egress-proxy.kaiju.internal:80",
+          noProxy: "kaiju-server",
+          envScript: "/opt/kaiju/egress-env.sh",
           tokens: {
             current: () => Promise.resolve(token),
             onChange: (l) => {
@@ -89,9 +89,9 @@ describe("kernel launcher (NB10)", () => {
     await session.execute("e1", "env", (o) => seen.push(o));
     const env = JSON.parse((seen[0] as { text: string }).text) as Record<string, string>;
     expect(env).toMatchObject({
-      KAIJU_EGRESS_PROXY: "http://egress-proxy.kobe.internal:80",
+      KAIJU_EGRESS_PROXY: "http://egress-proxy.kaiju.internal:80",
       KAIJU_THREAD_ID: threadId,
-      NO_PROXY: "kobe-server",
+      NO_PROXY: "kaiju-server",
     });
     expect(JSON.stringify(env)).not.toContain("tok.one");
     const file = env.KAIJU_EGRESS_TOKEN_FILE ?? "";

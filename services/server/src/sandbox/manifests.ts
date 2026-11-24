@@ -390,7 +390,7 @@ export function sandboxPodSpec(
       runAsUser: SANDBOX_UID,
       runAsGroup: SANDBOX_UID,
       fsGroup: SANDBOX_UID,
-      // KOBE-71: `kobe-agent` (may run kobe-runas) and the Pi identities' groups, so the agent
+      // KOBE-71: `kobe-agent` (may run kaiju-runas) and the Pi identities' groups, so the agent
       // can hand each Pi a runtime directory only that Pi's group reads. KOBE-166: and their
       // partner (tool) groups, one per Pi identity (reconcile-only rollout, no migration).
       supplementalGroups: [
@@ -411,7 +411,7 @@ export function sandboxPodSpec(
           limits: { ...s.resources.limits, "ephemeral-storage": s.ephemeralStorage.limit },
         },
         // KOBE-71: SETUID/SETGID and privilege escalation only so the agent can start Pi through
-        // kobe-runas (file capabilities, executable by the agent's group only); Pi and everything
+        // kaiju-runas (file capabilities, executable by the agent's group only); Pi and everything
         // it starts run with no capabilities and no_new_privs. Under gVisor these capabilities
         // exist in the sandbox kernel only, never on the host.
         securityContext: {

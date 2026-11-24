@@ -42,7 +42,7 @@ export interface ReclaimProof {
 }
 
 /**
- * kobe-sandbox-agent's side of workspace sync (KOBE-27, D13: the agent "syncs S3 ↔ /workspace").
+ * kaiju-sandbox-agent's side of workspace sync (KOBE-27, D13: the agent "syncs S3 ↔ /workspace").
  * The server brokers every byte (SyncClient); this class decides what moves:
  *
  * - **restore** (startup: a wake or a rebuild): full manifest vs the volume. Missing files are

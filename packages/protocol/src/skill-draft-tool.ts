@@ -12,9 +12,9 @@ import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
  * makes it the member's **private Workbench draft**, as Save to Workbench (KOBE-322) does, and
  * nothing else: no version save, no review submission, no eval. Push-then-save, like `share_file`
  * (files.ts):
- *  1. `save_skill_draft` runs through kobe-policy `policy.check` like any tool (`primary_arg`
+ *  1. `save_skill_draft` runs through kaiju-policy `policy.check` like any tool (`primary_arg`
  *     `/folder`; a deny rule can refuse it).
- *  2. kobe-tools sends `{op:"skill.draft_save"}` on fd 4.
+ *  2. kaiju-tools sends `{op:"skill.draft_save"}` on fd 4.
  *  3. The agent walks the folder (no symlinks, nothing under `.kobe/` or skipped directories),
  *     pushes each file through workspace sync and keeps each applied entry.
  *  4. It sends `skill.draft_save` with `files` = those entries and waits for the result.
@@ -77,7 +77,7 @@ export const skillDraftSaveErrorSchema = z.strictObject({
   message: z.string().max(2000),
 });
 
-/** Success answer (frame and kobe-tools response, flat). `created`: false = updated in place. */
+/** Success answer (frame and kaiju-tools response, flat). `created`: false = updated in place. */
 export const skillDraftSaveOkFields = {
   ok: z.literal(true),
   op: z.literal("skill_draft_save"),
@@ -99,7 +99,7 @@ export const skillDraftCallShape = {
   input: saveSkillDraftInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
+/** kaiju-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
 export const skillDraftToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("skill.draft_save"),

@@ -70,7 +70,7 @@ export interface HarnessOptions {
    */
   readonly identities?: PiIdentities;
   readonly runtimeDir?: string;
-  /** kobe-tools (KOBE-128): the extension file; absent = no fd 4 and no `artifacts` capability. */
+  /** kaiju-tools (KOBE-128): the extension file; absent = no fd 4 and no `artifacts` capability. */
   readonly toolsExtension?: string;
   /** Skills store (KOBE-82); absent = this sandbox cannot materialize skills. */
   readonly skills?: SkillStore;
@@ -86,8 +86,8 @@ export interface HarnessOptions {
   readonly procRoot?: string;
 }
 
-/** The fake Pi ignores the file; it plays kobe-policy's handshake itself (see fake-pi.mjs). */
-export const FAKE_POLICY_EXTENSION = "/opt/kobe/pi-extensions/kobe-policy/index.js";
+/** The fake Pi ignores the file; it plays kaiju-policy's handshake itself (see fake-pi.mjs). */
+export const FAKE_POLICY_EXTENSION = "/opt/kaiju/pi-extensions/kaiju-policy/index.js";
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
   const server = await FakeServer.start({ token: TOKEN, ...options.server });

@@ -55,7 +55,7 @@ describe("prepareInput", () => {
     ).toBe(false);
   });
 
-  it("canonicalises kobe-tools' string paths, passes other kaiju input as is", () => {
+  it("canonicalises kaiju-tools' string paths, passes other kaiju input as is", () => {
     expect(prepareInput(builtin("share_file"), { path: "out/x.csv" })).toEqual({
       ok: true,
       view: { path: "/workspace/out/x.csv" },

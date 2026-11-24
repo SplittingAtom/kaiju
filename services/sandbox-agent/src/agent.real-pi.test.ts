@@ -21,7 +21,7 @@ import { goodBundle, sha256 } from "./testing/zip.js";
  * Integration with the REAL pinned Pi (`@earendil-works/pi-coding-agent` 1.0.0 from
  * images/sandbox/pi) in RPC mode. No model credentials exist (or may exist) in a sandbox, so these
  * tests use commands that never call a model, plus a prompt that Pi must refuse for lack of a key.
- * Every Pi loads the real kobe-policy (KOBE-36), so each test also proves it loads and reports
+ * Every Pi loads the real kaiju-policy (KOBE-36), so each test also proves it loads and reports
  * ready. See testing/real-pi.ts for how Pi is found.
  */
 const startHarness = (options: { piBin: string }) =>
@@ -188,7 +188,7 @@ describe.skipIf(!PI_AVAILABLE)("real Pi 1.0.0 in RPC mode (no model credentials)
       });
       const [skillDir] = await store.prepare("t1", [ref]);
 
-      // The launch the agent builds, minus kobe-policy (it needs the agent's policy channel).
+      // The launch the agent builds, minus kaiju-policy (it needs the agent's policy channel).
       const commands = async (skillDirs: readonly string[]) => {
         const launch = buildPiLaunch({
           sessionFile: path.join(dir, "s.jsonl"),

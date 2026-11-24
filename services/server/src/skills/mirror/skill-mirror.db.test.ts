@@ -154,7 +154,7 @@ beforeAll(async () => {
     blobs,
     credentials: CREDS,
     egress: null,
-    author: { name: "Kaiju Registry", email: "registry@kobe.invalid" },
+    author: { name: "Kaiju Registry", email: "registry@kaiju.invalid" },
     now: () => clock,
     transport: (remote) =>
       mirrorHttpClient({ remote, credentials: CREDS, proxy: null, ca: cert.cert }),

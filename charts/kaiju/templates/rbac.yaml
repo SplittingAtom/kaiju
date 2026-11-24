@@ -1,0 +1,46 @@
+{{- $fullname := include "kaiju.fullname" . -}}
+{{- $clusterName := include "kaiju.clusterName" (dict "root" . "suffix" "server") -}}
+# Workloads that never call the Kubernetes API share a token-less ServiceAccount.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $fullname }}-workload
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+automountServiceAccountToken: false
+---
+# Used by the server and scheduler: both check isolation in process at startup and every minute
+# (KOBE-9), the scheduler's initContainer lists RuntimeClasses too, and the server orchestrates
+# sandboxes (KOBE-22).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $fullname }}-server
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $clusterName }}
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["node.k8s.io"]
+    resources: ["runtimeclasses"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $clusterName }}
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $clusterName }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $fullname }}-server
+    namespace: {{ .Release.Namespace }}

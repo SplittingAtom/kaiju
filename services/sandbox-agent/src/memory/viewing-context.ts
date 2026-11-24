@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { VIEWING_CONTENT_MAX_BYTES, type RunViewingContext } from "@kaiju/protocol";
-import { neutralizeMemoryMarkers, sanitizeUntrusted } from "../kobe-tools/memory-fence.js";
+import { neutralizeMemoryMarkers, sanitizeUntrusted } from "../kaiju-tools/memory-fence.js";
 
 /**
  * The viewed file in the model's context (KOBE-462, `run.start.viewing`; spec FE6): the workspace

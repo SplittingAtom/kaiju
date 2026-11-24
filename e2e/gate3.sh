@@ -32,8 +32,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
-NS="${KAIJU_GATE3_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATE3_RELEASE:-kobe}"
+NS="${KAIJU_GATE3_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATE3_RELEASE:-kaiju}"
 STEPS=" ${KAIJU_GATE3_STEPS:-versions skills projects memory data} "
 SBX_WAIT="${KAIJU_GATE3_SANDBOX_WAIT:-180}" # seconds m1's sandbox pod may take to be Running and Ready
 MODEL_ALIAS="${KAIJU_GATE3_MODEL:-fast}"
@@ -252,7 +252,7 @@ if [[ "$STEPS" == *" skills "* ]] && sbx_need "ac-2 (skills)"; then
   skill_run "after approval" "$approved" loaded
   T_SKILL=$(field thread "$approved")
   contains "after approval its files are in m1's sandbox (read-only skills store)" '^present$' \
-    "$(in_sbx "test -f /run/kobe-skills/store/sk-$HASH/scripts/fetch.sh && echo present || echo absent")"
+    "$(in_sbx "test -f /run/kaiju-skills/store/sk-$HASH/scripts/fetch.sh && echo present || echo absent")"
   contains "the Owner blocklists the bundle's hash" '^block=201:-$' "$(step blocklist "\"hash\":\"$HASH\"")"
   UNDO+=("step blocklist '\"hash\":\"$HASH\",\"action\":\"remove\"'")
   blocked=$(turn "$U_M1" "$ask_skills" "\"agentId\":\"$SK_AGENT\",\"title\":\"gate3 skill blocked\"")

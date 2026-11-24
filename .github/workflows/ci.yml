@@ -84,7 +84,7 @@ jobs:
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
           version: v3.22.0
-      # The pinned Pi (sandbox image lockfile) for kobe-sandbox-agent's real-Pi integration test.
+      # The pinned Pi (sandbox image lockfile) for kaiju-sandbox-agent's real-Pi integration test.
       - run: npm ci --prefix images/sandbox/pi --omit=dev --ignore-scripts --no-audit --no-fund
       # Every package's own build too, as before the split: some tests and the scripts below run
       # a package's dist/ (mostly replayed from the restored cache).
@@ -106,7 +106,7 @@ jobs:
           path: services/server/openapi.json
           if-no-files-found: error
           retention-days: 14
-      # KOBE-71: Pi identities with the real kobe-runas helper (needs sudo to install it with
+      # KOBE-71: Pi identities with the real kaiju-runas helper (needs sudo to install it with
       # file capabilities and to give the test its supplementary groups).
       - name: Sandbox privilege separation (real helper)
         run: services/sandbox-agent/scripts/test-identities.sh

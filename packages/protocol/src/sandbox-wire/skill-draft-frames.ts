@@ -14,7 +14,7 @@ function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
 }
 
 /**
- * Sandbox -> server: the `save_skill_draft` call kobe-policy let through, sent AFTER the agent
+ * Sandbox -> server: the `save_skill_draft` call kaiju-policy let through, sent AFTER the agent
  * pushed every file of the folder through workspace sync (push-then-save). Answered by
  * `skill.draft_save_result` for the same `request_id`. A small frame.
  */

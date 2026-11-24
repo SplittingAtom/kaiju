@@ -15,7 +15,7 @@ import {
   type ExecRequest,
   type FinalFrame,
   type ReplyFrame,
-} from "../../kobe-exec/protocol.js";
+} from "../../kaiju-exec/protocol.js";
 import { runCommand, type RunningCommand } from "./command.js";
 import {
   OperationError,

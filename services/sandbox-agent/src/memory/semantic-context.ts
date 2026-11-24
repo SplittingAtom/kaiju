@@ -9,7 +9,7 @@ import {
   type RunSemanticMemoryItem,
   type SemanticMemoryPlacement,
 } from "@kaiju/protocol";
-import { capBytes, oneLine, untrustedLinesBlock } from "../kobe-tools/memory-fence.js";
+import { capBytes, oneLine, untrustedLinesBlock } from "../kaiju-tools/memory-fence.js";
 
 /**
  * "What Kaiju knows" (KOBE-383, spec SM23; Chris 2026-11-12 Q6): `run.start.memory.semantic` as the
@@ -20,7 +20,7 @@ import { capBytes, oneLine, untrustedLinesBlock } from "../kobe-tools/memory-fen
  * runs, see context.ts) and labelled with its provenance; statements are sanitised to one line.
  *
  * Placement (KOBE-658, `semantic.placement`): with `system` the picks join the system prompt as
- * above; in the other modes kobe-tools puts them beside the newest user message instead, so the
+ * above; in the other modes kaiju-tools puts them beside the newest user message instead, so the
  * system prompt stays byte-stable while picks change. `stable_plus_delta` adds a third part, the
  * held picks, rendered in the system prompt after the project instructions.
  */

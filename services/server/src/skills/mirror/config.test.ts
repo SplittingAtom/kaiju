@@ -5,7 +5,7 @@ describe("loadSkillMirrorConfig (KOBE-343)", () => {
   it("has no credentials without the token, and defaults the identity", () => {
     expect(loadSkillMirrorConfig({})).toEqual({
       credentials: null,
-      author: { name: "Kaiju Registry", email: "registry@kobe.invalid" },
+      author: { name: "Kaiju Registry", email: "registry@kaiju.invalid" },
     });
   });
 

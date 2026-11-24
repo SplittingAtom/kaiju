@@ -22,9 +22,9 @@ import { notebookRunOkFields, notebookToolsRequestSchema } from "./notebooks.js"
  * Additive: nothing here changes an existing frame, and an agent without
  * {@link CAPABILITY_ARTIFACTS} never registers the tools.
  *
- * Flow: the model calls `create_artifact` / `update_artifact` (Pi tools of the `kobe-tools`
- * extension) -> kobe-policy `policy.check` as for any tool -> once allowed, kobe-tools sends the
- * call to kobe-sandbox-agent on the {@link KAIJU_TOOLS_FD} channel -> the agent sends the
+ * Flow: the model calls `create_artifact` / `update_artifact` (Pi tools of the `kaiju-tools`
+ * extension) -> kaiju-policy `policy.check` as for any tool -> once allowed, kaiju-tools sends the
+ * call to kaiju-sandbox-agent on the {@link KAIJU_TOOLS_FD} channel -> the agent sends the
  * `artifact.put` frame (frames.ts) and waits for `artifact.result` -> the server stores the
  * content, emits `artifact.created` / `artifact.updated` (events.ts) and answers; the tool result
  * is that answer. The server never trusts the input of `artifact.put` on its own: it must equal
@@ -51,7 +51,7 @@ const title = z.string().min(1).max(ARTIFACT_TITLE_MAX);
 
 /**
  * Tool inputs. The serialized input must also fit `policy.check` (1 MiB); JSON escaping can make
- * 512 KiB of content larger than that, so `kobe-tools` refuses a call that would not fit with a
+ * 512 KiB of content larger than that, so `kaiju-tools` refuses a call that would not fit with a
  * tool error before sending anything.
  */
 export const createArtifactInputSchema = z
@@ -104,7 +104,7 @@ export const artifactErrorSchema = z.strictObject({
 });
 export type ArtifactError = z.infer<typeof artifactErrorSchema>;
 
-/** Result fields shared by the `artifact.result` frame and the kobe-tools response. */
+/** Result fields shared by the `artifact.result` frame and the kaiju-tools response. */
 export const artifactOkFields = {
   ok: z.literal(true),
   artifact_id: uuidSchema,
@@ -112,10 +112,10 @@ export const artifactOkFields = {
 } as const;
 export const artifactFailFields = { ok: z.literal(false), error: artifactErrorSchema } as const;
 
-// ----------------------------------------------------------------------------- kobe-tools channel
+// ----------------------------------------------------------------------------- kaiju-tools channel
 
 /**
- * File descriptor of the kobe-tools channel (D13): inherited by the Pi process like the policy
+ * File descriptor of the kaiju-tools channel (D13): inherited by the Pi process like the policy
  * channel, JSON lines with the same framing and fail-closed rules (a closed or silent channel is a
  * tool error, never a retry elsewhere). 30 s timeout per request ({@link KAIJU_TOOLS_TIMEOUT_MS}).
  * Later ops get their own `op`: `file.share` (files.ts, KOBE-147); `remember` is not defined yet.

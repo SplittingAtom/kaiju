@@ -86,7 +86,7 @@ export interface GitDecisionQuery {
 export type GitDecider = (query: GitDecisionQuery) => Promise<GitDecision>;
 
 export interface ServerDeciderOptions {
-  /** The server's internal listener, e.g. `http://kobe-server:8082`. */
+  /** The server's internal listener, e.g. `http://kaiju-server:8082`. */
   readonly serverUrl: string;
   readonly internalKey: string;
   readonly timeoutMs: number;

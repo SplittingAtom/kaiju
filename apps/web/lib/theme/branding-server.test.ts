@@ -34,7 +34,7 @@ function setup(
   const lines: string[] = [];
   const fetchMock = vi.fn(respond);
   const load = createBrandingLoader({
-    serverUrl: "http://kobe-server",
+    serverUrl: "http://kaiju-server",
     fetch: fetchMock as unknown as typeof fetch,
     now: () => t,
     log: (line) => lines.push(line),
@@ -60,7 +60,7 @@ describe("getSiteBranding loader", () => {
     expect(await load()).toEqual(ACME);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] ?? [];
-    expect(url).toBe("http://kobe-server/v1/site/branding");
+    expect(url).toBe("http://kaiju-server/v1/site/branding");
     expect(init?.cache).toBe("no-store");
     expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
@@ -102,7 +102,7 @@ describe("getSiteBranding loader", () => {
     await flush();
     expect(await load()).toEqual(ACME);
     expect(lines).toEqual([
-      "[kobe-web] site branding unavailable (fetch failed); serving the last known branding",
+      "[kaiju-web] site branding unavailable (fetch failed); serving the last known branding",
     ]);
     // Retried 30 s after the failed attempt, not on every render.
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -124,7 +124,7 @@ describe("getSiteBranding loader", () => {
     expect(await load()).toEqual(DEFAULT_BRANDING);
     expect(performance.now() - started).toBeLessThan(1000);
     expect(lines).toEqual([
-      "[kobe-web] site branding unavailable (timed out); serving the Kaiju defaults",
+      "[kaiju-web] site branding unavailable (timed out); serving the Kaiju defaults",
     ]);
   });
 
@@ -246,7 +246,7 @@ describe("the inline logo (KOBE-562)", () => {
       url.endsWith(INLINE) ? svgResponse(MARKUP) : json(THEMED),
     );
     expect(await load()).toEqual({ ...THEMED, logoSvg: MARKUP });
-    expect(fetchMock.mock.calls[1]?.[0]).toBe(`http://kobe-server${INLINE}`);
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(`http://kaiju-server${INLINE}`);
     advance(BRANDING_CACHE_MS);
     await load();
     await flush();

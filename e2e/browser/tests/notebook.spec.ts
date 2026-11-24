@@ -193,7 +193,7 @@ const PY = [
   "x = 41 + 1",
   "API_TOKEN = 'not-a-real-token'",
   "df = pd.DataFrame({'a': [1, 2, 3], 'b': ['p', 'q', 'r']})",
-  "print('hello from kobe')",
+  "print('hello from kaiju')",
   "",
 ].join("\n");
 
@@ -222,7 +222,7 @@ test("python file: run pane tabs, log, variables, save-and-run, run selection, s
 
     // Run: the Run Output tab shows what it printed; the toolbar says how long it took.
     await toolbar.getByRole("button", { name: "Run", exact: true }).click();
-    await expect(panel("output").getByText("hello from kobe")).toBeVisible({
+    await expect(panel("output").getByText("hello from kaiju")).toBeVisible({
       timeout: RUN_TIMEOUT_MS,
     });
     await expect(toolbar.locator('[data-kaiju-run-clock="ok"]')).toHaveText(/^Done in /u);

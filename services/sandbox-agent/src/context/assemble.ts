@@ -5,13 +5,13 @@ import {
   CONTEXT_CAPTURE_MAX_BYTES,
   CONTEXT_CAPTURE_VERSION,
   promptUsage,
-} from "../kobe-models/context-capture.js";
+} from "../kaiju-models/context-capture.js";
 import { finalizeContext } from "./finalize.js";
 import { contextMessages, sectionsOf, type KaijuPromptParts } from "./sections.js";
 import type { ReplayedCall } from "./session-replay.js";
 
 /**
- * The `thread.context` answer (KOBE-470, docs/specs/context-viewer.md CV4): the capture kobe-models
+ * The `thread.context` answer (KOBE-470, docs/specs/context-viewer.md CV4): the capture kaiju-models
  * wrote for this thread's Pi (`model_call`), else the latest call rebuilt from the session
  * (`session`), else nothing (`none`).
  */

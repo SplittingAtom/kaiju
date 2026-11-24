@@ -121,7 +121,7 @@ function Fix({ status }: { readonly status: Extract<IsolationStatus, { state: "m
           </li>
           <li>
             Create the RuntimeClass once per cluster:{" "}
-            <code>kubectl apply -f charts/kobe/runtimeclass-gvisor.yaml</code>
+            <code>kubectl apply -f charts/kaiju/runtimeclass-gvisor.yaml</code>
           </li>
           <li>
             Install the agent-sandbox controller: <code>scripts/install-agent-sandbox.sh</code>

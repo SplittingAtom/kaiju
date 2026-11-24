@@ -159,7 +159,7 @@ describe("run_python input (NB13)", () => {
     });
   });
 
-  it("travels on the kobe-tools channel", () => {
+  it("travels on the kaiju-tools channel", () => {
     expect(
       kaijuToolsRequestSchema.safeParse({
         id: "kt_1",

@@ -44,7 +44,7 @@ function setup(now: () => number = Date.now) {
   });
   const tick = () => new Promise((r) => setImmediate(r));
   const ready = () =>
-    send({ type: "channel.ready", nonce: nonce(), extension: "kobe-policy", version: 1 });
+    send({ type: "channel.ready", nonce: nonce(), extension: "kaiju-policy", version: 1 });
   return { channel, received, checks, cancels, closed, send, check, nonce, tick, ready, fromAgent };
 }
 
@@ -145,17 +145,17 @@ describe("PolicyChannel", () => {
     expect(t.received.at(-1)).toMatchObject({
       request_id: "early",
       decision: "deny",
-      message: "kobe-policy is not ready",
+      message: "kaiju-policy is not ready",
     });
   });
 
-  it("closes and rejects the ready wait when kobe-policy refuses", async () => {
+  it("closes and rejects the ready wait when kaiju-policy refuses", async () => {
     const t = setup();
     await t.tick();
     const ready = t.channel.waitReady(1000);
     t.send({ type: "channel.refused", nonce: t.nonce(), reason: "not the last extension" });
-    await expect(ready).rejects.toThrow("kobe-policy refused to start: not the last extension");
-    expect(t.closed).toEqual(["kobe-policy refused to start: not the last extension"]);
+    await expect(ready).rejects.toThrow("kaiju-policy refused to start: not the last extension");
+    expect(t.closed).toEqual(["kaiju-policy refused to start: not the last extension"]);
   });
 
   it("rejects the ready wait on timeout and on close", async () => {
@@ -177,7 +177,7 @@ describe("PolicyChannel", () => {
     t.send({
       type: "channel.ready",
       nonce: t.nonce(),
-      extension: "kobe-policy",
+      extension: "kaiju-policy",
       version: 1,
       ...patch,
     });
@@ -195,7 +195,7 @@ describe("PolicyChannel", () => {
   it("closes on a channel.ready without the nonce", async () => {
     const t = setup();
     await t.tick();
-    t.send({ type: "channel.ready", nonce: "forged", extension: "kobe-policy", version: 1 });
+    t.send({ type: "channel.ready", nonce: "forged", extension: "kaiju-policy", version: 1 });
     await t.tick();
     expect(t.closed).toEqual(["policy request without the channel nonce"]);
   });

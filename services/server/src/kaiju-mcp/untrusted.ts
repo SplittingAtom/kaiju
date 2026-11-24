@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 /**
  * Saved memory text in Kaiju admin tool results (KOBE-650 review L1). Memory statements were written
  * by people or earlier runs, and land in an agent context that also holds admin write tools, so
- * they reach the model the way the sandbox frames memory (`sandbox-agent/src/kobe-tools/
+ * they reach the model the way the sandbox frames memory (`sandbox-agent/src/kaiju-tools/
  * memory-fence.ts`, KOBE-157; the same markers, so one notice reads the same everywhere):
  * sanitised and fenced between markers carrying a random per-answer nonce, which text saved earlier
  * cannot know and so cannot close. Writes still need the person's signed approval; this keeps the

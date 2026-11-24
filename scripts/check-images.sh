@@ -12,8 +12,8 @@ mcp-proxy:services/Dockerfile
 egress-proxy:services/Dockerfile
 model-gateway:services/Dockerfile"
 TAG="${IMAGE_TAG:-dev}"
-# e.g. IMAGE_PREFIX=ghcr.io/splittingatom/kobe- IMAGE_TAG=0.1.0 to build release-named images.
-PREFIX="${IMAGE_PREFIX:-kobe-}"
+# e.g. IMAGE_PREFIX=ghcr.io/splittingatom/kaiju- IMAGE_TAG=0.1.0 to build release-named images.
+PREFIX="${IMAGE_PREFIX:-kaiju-}"
 failed=0
 build_log="$(mktemp)"
 trap 'rm -f "${build_log}"' EXIT

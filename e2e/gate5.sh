@@ -19,8 +19,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
-NS="${KAIJU_GATE5_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATE5_RELEASE:-kobe}"
+NS="${KAIJU_GATE5_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATE5_RELEASE:-kaiju}"
 STORIES="${KAIJU_GATE5_STORIES:-U17 U18 U19 U20 U21 U22 U23 U24}"
 MODEL_ALIAS="${KAIJU_GATE5_MODEL:-fast}"
 FAKE="${KAIJU_GATE5_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"

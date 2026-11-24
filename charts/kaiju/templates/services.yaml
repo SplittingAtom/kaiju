@@ -1,0 +1,58 @@
+{{- include "kaiju.validateDatabase" . -}}
+{{- $fullname := include "kaiju.fullname" . -}}
+{{- $dbAnnotations := include "kaiju.dbChecksumAnnotations" . -}}
+{{- $common := printf "%s\n%s" (include "kaiju.databaseEnv" .) (include "kaiju.s3Env" .) -}}
+{{- /* The server has no isolation initContainer: it checks in process and keeps serving the
+  admin console without isolation, agents disabled (spec D4, KOBE-9). The scheduler, which has no
+  UI, still refuses to start. Both re-check at runtime. */ -}}
+{{- $runtime := printf "- name: KAIJU_RUNTIME_CLASS\n  value: %s" (.Values.isolation.runtimeClassName | quote) -}}
+{{- $reconcile := printf "- name: KAIJU_TEAM_RECONCILE_SECONDS\n  value: %s" (.Values.server.teamReconcileSeconds | int | toString | quote) -}}
+{{- $rescanIncomplete := printf "- name: KAIJU_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS\n  value: %s" (.Values.server.skillRescanIncompleteSuspendHours | int | toString | quote) -}}
+{{- $refresh := printf "- name: KAIJU_CONNECTOR_REFRESH_SECONDS\n  value: %s" (.Values.server.connectorRefreshSeconds | int | toString | quote) -}}
+{{- $sessionTtl := printf "- name: KAIJU_SESSION_TOKEN_TTL_SECONDS\n  value: %s" (.Values.server.sessionTokenTtlSeconds | int | toString | quote) -}}
+{{- $schedTick := printf "- name: KAIJU_SCHEDULER_TICK_SECONDS\n  value: %s" (.Values.scheduler.tickSeconds | int | toString | quote) -}}
+{{- $schedPool := printf "- name: KAIJU_DB_POOL_MAX\n  value: %s" (.Values.scheduler.database.poolMax | int | toString | quote) -}}
+{{- $schedGrace := printf "- name: KAIJU_SCHEDULER_GRACE_MINUTES\n  value: %s" (.Values.scheduler.catchUpGraceMinutes | int | toString | quote) -}}
+{{- /* KOBE-500 (TH5): the server's in-cluster origin, for the site branding of every render.
+  KOBE-616: the public origin too, for the guide's absolute links in /llms.txt. */ -}}
+{{- $webServerUrl := .Values.web.serverUrl | default (printf "http://%s-server" $fullname) | trimSuffix "/" -}}
+{{- include "kaiju.nodeService" (dict "root" . "component" "web" "image" "web" "values" .Values.web
+      "healthPath" "/api/healthz" "readyPath" "/api/healthz"
+      "env" (printf "- name: KAIJU_SERVER_URL\n  value: %s\n- name: KAIJU_PUBLIC_URL\n  value: %s\n%s" ($webServerUrl | quote) (include "kaiju.publicUrl" . | quote) (include "kaiju.hstsEnv" .))
+      "extraMounts" "- name: next-cache\n  mountPath: /app/apps/web/.next/cache"
+      "extraVolumes" "- name: next-cache\n  emptyDir: {}") }}
+---
+{{ include "kaiju.nodeService" (dict "root" . "component" "server" "image" "server" "values" .Values.server
+      "serviceAccount" (printf "%s-server" $fullname) "automountToken" true "migrations" true
+      "annotations" $dbAnnotations
+      "extraPorts" "- name: sandbox\n  containerPort: 8081\n- name: internal\n  containerPort: 8082"
+      "extraServicePorts" "- name: sandbox\n  port: 8081\n  targetPort: sandbox\n- name: internal\n  port: 8082\n  targetPort: internal"
+      "extraMounts" (include "kaiju.extraCaMounts" .) "extraVolumes" (include "kaiju.extraCaVolumes" .)
+      "env" (printf "- name: KAIJU_PROCESS\n  value: server\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" $runtime $reconcile $rescanIncomplete $refresh $sessionTtl (include "kaiju.uploadEnv" .) (printf "%s\n%s" $common (include "kaiju.serverDbEnv" .)) (include "kaiju.authEnv" .) (include "kaiju.smtpEnv" .) (include "kaiju.sandboxEnv" .) (include "kaiju.serverInternalEnv" .) (include "kaiju.serverModelsEnv" .) (include "kaiju.egressHeaderEnv" .) (include "kaiju.envelopeEnv" .) (include "kaiju.telemetryEnv" .) (include "kaiju.auditForwardingEnv" .) (include "kaiju.retentionEnv" .) (include "kaiju.modelDefaultsEnv" .) (include "kaiju.skillMirrorEnv" .) (include "kaiju.extraCaEnv" .) (include "kaiju.brandingEnv" .))) }}
+---
+{{ include "kaiju.nodeService" (dict "root" . "component" "scheduler" "image" "server" "values" .Values.scheduler
+      "serviceAccount" (printf "%s-server" $fullname) "automountToken" true "preflight" true "migrations" true
+      "annotations" $dbAnnotations
+      "env" (printf "- name: KAIJU_PROCESS\n  value: scheduler\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" $runtime (printf "%s\n%s" $common $schedPool) (include "kaiju.telemetryEnv" .) (include "kaiju.retentionEnv" .) (include "kaiju.sandboxConfigEnv" .) $schedTick $schedGrace (include "kaiju.modelDefaultsEnv" .))) }}
+---
+{{/* MCP proxy (KOBE-58): no database; its own session key and the two internal keys only. The
+  server's routes (probe, app calls) listen on their own port (KOBE-693). */}}
+{{ include "kaiju.nodeService" (dict "root" . "component" "mcp-proxy" "image" "mcp-proxy" "values" .Values.mcpProxy
+      "extraPorts" (printf "- name: internal\n  containerPort: %s" (include "kaiju.mcpProxyInternalPort" .))
+      "extraServicePorts" (printf "- name: internal\n  port: %s\n  targetPort: internal" (include "kaiju.mcpProxyInternalPort" .))
+      "env" (printf "%s\n%s" (include "kaiju.mcpProxyEnv" .) (include "kaiju.telemetryEnv" .))) }}
+---
+{{/* Egress proxy (KOBE-38): reads allowlists and writes connection audit as the app role; holds
+  only its own session key and the header-injection secret (KOBE-39). Waits for migrations like
+  the server. */}}
+{{ include "kaiju.nodeService" (dict "root" . "component" "egress-proxy" "image" "egress-proxy" "values" .Values.egressProxy
+      "migrations" true "annotations" $dbAnnotations
+      "env" (printf "%s\n%s" (include "kaiju.egressProxyEnv" .) (include "kaiju.telemetryEnv" .))) }}
+---
+{{- include "kaiju.checkModelGatewayMemory" . }}
+{{/* Model gateway shim (KOBE-40): sandboxes' only way to a model. Reads principals and virtual keys
+  as the app role; holds only its own session key and the virtual-key secret. */}}
+{{ include "kaiju.nodeService" (dict "root" . "component" "model-gateway" "image" "model-gateway"
+      "values" (include "kaiju.modelGatewayValues" . | fromJson)
+      "migrations" true "annotations" $dbAnnotations "readyPath" "/healthz"
+      "env" (printf "%s\n%s" (include "kaiju.modelGatewayEnv" .) (include "kaiju.telemetryEnv" .))) }}

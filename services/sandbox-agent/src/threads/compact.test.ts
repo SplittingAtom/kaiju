@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { THREAD_COMPACT_SUMMARY_MAX_BYTES } from "@kaiju/protocol";
 import { compactSuccess, piCompactFailure, selectsModel } from "./compact.js";
 
-const GW = "http://model-gateway.kobe.internal:80";
+const GW = "http://model-gateway.kaiju.internal:80";
 const MODEL = { gatewayModel: "openai/gpt-fake", api: "openai-completions" as const };
 const selected = (extra: Record<string, unknown> = {}) => ({
   model: {

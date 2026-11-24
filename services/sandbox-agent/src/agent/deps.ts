@@ -34,7 +34,7 @@ export interface AgentDeps {
   /** SIGTERM: how long a lost run's report waits for its frames to be acked (KOBE-444). */
   readonly lostAckTimeoutMs?: number;
   /**
-   * Root-owned extensions (or `builtin:<name>`) loaded before kobe-policy, which is always last
+   * Root-owned extensions (or `builtin:<name>`) loaded before kaiju-policy, which is always last
    * (KOBE-62 adds `builtin:mcp` here).
    */
   readonly extensions?: readonly string[];
@@ -53,12 +53,12 @@ export interface AgentDeps {
   /** Workspace sync (KOBE-27): restore before runs, push after them and before stopping. */
   readonly workspace?: WorkspaceHooks;
   /**
-   * kobe-tools (KOBE-128): the root-owned extension file, as checked at startup. Present: Pi gets
+   * kaiju-tools (KOBE-128): the root-owned extension file, as checked at startup. Present: Pi gets
    * the fd-4 channel and the agent announces the `artifacts` capability.
    */
   readonly toolsExtension?: string | undefined;
   /**
-   * The tool executor (KOBE-167): the root-owned kobe-exec extension file and where the executor
+   * The tool executor (KOBE-167): the root-owned kaiju-exec extension file and where the executor
    * program lives. Present: every Pi's built-in tools run in an executor under its partner uid.
    */
   readonly exec?: { readonly extension: string; readonly wiring: ExecWiring } | undefined;
@@ -103,7 +103,7 @@ export interface WorkspaceHooks {
    */
   syncNow?(): Promise<boolean>;
   /**
-   * Hear about conflict copies the sync makes (KOBE-492). Present (with kobe-tools, which tells
+   * Hear about conflict copies the sync makes (KOBE-492). Present (with kaiju-tools, which tells
    * the model): the agent announces `sync_conflicts` and reports each one to the server.
    */
   onConflict?(listener: ConflictListener): void;

@@ -7,40 +7,40 @@ const base = { KAIJU_SANDBOX_ID: SANDBOX };
 
 describe("sandbox-agent loadConfig", () => {
   it("requires a wss:// server URL and appends the contract path", () => {
-    const config = loadConfig({ ...base, KAIJU_SERVER_URL: "wss://kobe-server.kaiju-system.svc" });
-    expect(config.serverUrl).toBe("wss://kobe-server.kaiju-system.svc");
-    expect(config.connectUrl).toBe("wss://kobe-server.kaiju-system.svc/v1/sandbox/connect");
+    const config = loadConfig({ ...base, KAIJU_SERVER_URL: "wss://kaiju-server.kaiju-system.svc" });
+    expect(config.serverUrl).toBe("wss://kaiju-server.kaiju-system.svc");
+    expect(config.connectUrl).toBe("wss://kaiju-server.kaiju-system.svc/v1/sandbox/connect");
   });
 
   it("replaces any path on the server URL with the contract path", () => {
     expect(
-      loadConfig({ ...base, KAIJU_SERVER_URL: "wss://kobe-server/sandbox?x=1" }).connectUrl,
-    ).toBe("wss://kobe-server/v1/sandbox/connect");
+      loadConfig({ ...base, KAIJU_SERVER_URL: "wss://kaiju-server/sandbox?x=1" }).connectUrl,
+    ).toBe("wss://kaiju-server/v1/sandbox/connect");
   });
 
   it("allows ws:// only for in-cluster plaintext during development", () => {
-    expect(loadConfig({ ...base, KAIJU_SERVER_URL: "ws://kobe-server:8080" }).connectUrl).toBe(
-      "ws://kobe-server:8080/v1/sandbox/connect",
+    expect(loadConfig({ ...base, KAIJU_SERVER_URL: "ws://kaiju-server:8080" }).connectUrl).toBe(
+      "ws://kaiju-server:8080/v1/sandbox/connect",
     );
   });
 
-  it("takes the kobe-tools extension (KOBE-128) from KAIJU_TOOLS_EXTENSION, absolute, unset = none", () => {
+  it("takes the kaiju-tools extension (KOBE-128) from KAIJU_TOOLS_EXTENSION, absolute, unset = none", () => {
     const env = { ...base, KAIJU_SERVER_URL: "wss://kaiju" };
     expect(loadConfig(env).toolsExtension).toBeUndefined();
     expect(
-      loadConfig({ ...env, KAIJU_TOOLS_EXTENSION: "/opt/kobe/pi-extensions/kobe-tools/index.js" })
+      loadConfig({ ...env, KAIJU_TOOLS_EXTENSION: "/opt/kaiju/pi-extensions/kaiju-tools/index.js" })
         .toolsExtension,
-    ).toBe("/opt/kobe/pi-extensions/kobe-tools/index.js");
+    ).toBe("/opt/kaiju/pi-extensions/kaiju-tools/index.js");
     expect(() => loadConfig({ ...env, KAIJU_TOOLS_EXTENSION: "relative.js" })).toThrow();
   });
 
-  it("takes the kobe-exec extension (KOBE-167) from KAIJU_EXEC_EXTENSION, absolute, unset = none", () => {
+  it("takes the kaiju-exec extension (KOBE-167) from KAIJU_EXEC_EXTENSION, absolute, unset = none", () => {
     const env = { ...base, KAIJU_SERVER_URL: "wss://kaiju" };
     expect(loadConfig(env).execExtension).toBeUndefined();
     expect(
-      loadConfig({ ...env, KAIJU_EXEC_EXTENSION: "/opt/kobe/pi-extensions/kobe-exec/index.js" })
+      loadConfig({ ...env, KAIJU_EXEC_EXTENSION: "/opt/kaiju/pi-extensions/kaiju-exec/index.js" })
         .execExtension,
-    ).toBe("/opt/kobe/pi-extensions/kobe-exec/index.js");
+    ).toBe("/opt/kaiju/pi-extensions/kaiju-exec/index.js");
     expect(() => loadConfig({ ...env, KAIJU_EXEC_EXTENSION: "relative.js" })).toThrow();
   });
 
@@ -63,8 +63,8 @@ describe("sandbox-agent loadConfig", () => {
   it("takes the skills directory (KOBE-82) from KAIJU_SKILLS_DIR, absolute, unset = unsupported", () => {
     const env = { ...base, KAIJU_SERVER_URL: "wss://kaiju" };
     expect(loadConfig(env).skillsDir).toBeUndefined();
-    expect(loadConfig({ ...env, KAIJU_SKILLS_DIR: "/run/kobe-skills" }).skillsDir).toBe(
-      "/run/kobe-skills",
+    expect(loadConfig({ ...env, KAIJU_SKILLS_DIR: "/run/kaiju-skills" }).skillsDir).toBe(
+      "/run/kaiju-skills",
     );
     expect(() => loadConfig({ ...env, KAIJU_SKILLS_DIR: "skills" })).toThrow(/KAIJU_SKILLS_DIR/);
   });
@@ -77,17 +77,17 @@ describe("sandbox-agent loadConfig", () => {
   });
 
   it("rejects credentials in the server URL (the token goes in a header, never a URL)", () => {
-    expect(() => loadConfig({ ...base, KAIJU_SERVER_URL: "wss://u:p@kobe-server" })).toThrow(
+    expect(() => loadConfig({ ...base, KAIJU_SERVER_URL: "wss://u:p@kaiju-server" })).toThrow(
       /KAIJU_SERVER_URL/,
     );
   });
 
   it("in bootstrap mode (Kaiju's pods) takes the sandbox id from the server instead", () => {
     const config = loadConfig({
-      KAIJU_SERVER_URL: "ws://server.kobe.internal:8081",
-      KAIJU_BOOTSTRAP_TOKEN_FILE: "/var/run/secrets/kobe/bootstrap-token",
+      KAIJU_SERVER_URL: "ws://server.kaiju.internal:8081",
+      KAIJU_BOOTSTRAP_TOKEN_FILE: "/var/run/secrets/kaiju/bootstrap-token",
     });
-    expect(config.bootstrapTokenFile).toBe("/var/run/secrets/kobe/bootstrap-token");
+    expect(config.bootstrapTokenFile).toBe("/var/run/secrets/kaiju/bootstrap-token");
     expect(() =>
       loadConfig({ KAIJU_SERVER_URL: "ws://kaiju", KAIJU_BOOTSTRAP_TOKEN_FILE: "relative/path" }),
     ).toThrow(/KAIJU_BOOTSTRAP_TOKEN_FILE/);
@@ -103,7 +103,7 @@ describe("sandbox-agent loadConfig", () => {
   it("defaults to the image layout", () => {
     const config = loadConfig({ ...base, KAIJU_SERVER_URL: "wss://kaiju" });
     expect(config).toMatchObject({
-      tokenFile: "/var/run/kobe/sandbox-wire/token",
+      tokenFile: "/var/run/kaiju/sandbox-wire/token",
       workspaceDir: "/workspace",
       sessionDir: "/workspace/.kobe/sessions",
       piBin: "pi",
@@ -112,14 +112,14 @@ describe("sandbox-agent loadConfig", () => {
   });
 
   it("takes the kernel bridge (KOBE-464) as an absolute path, off by default", () => {
-    const url = { ...base, KAIJU_SERVER_URL: "ws://kobe-server:8080" };
+    const url = { ...base, KAIJU_SERVER_URL: "ws://kaiju-server:8080" };
     expect(loadConfig(url)).toMatchObject({
       kernelPython: "/usr/local/bin/python3",
       maxKernels: 4,
       kernelIdleMs: 30 * 60_000,
     });
     expect(loadConfig(url).kernelBridge).toBeUndefined();
-    const bridge = "/opt/kobe/kernel/kobe-kernel-bridge.py";
+    const bridge = "/opt/kaiju/kernel/kaiju-kernel-bridge.py";
     expect(loadConfig({ ...url, KAIJU_KERNEL_BRIDGE: bridge }).kernelBridge).toBe(bridge);
     expect(() => loadConfig({ ...url, KAIJU_KERNEL_BRIDGE: "bridge.py" })).toThrow(
       /KAIJU_KERNEL_BRIDGE/,
@@ -133,26 +133,26 @@ describe("sandbox-agent loadConfig", () => {
   });
 
   it("takes the Pi identity helper (KOBE-71) as an absolute path, off by default", () => {
-    const url = { ...base, KAIJU_SERVER_URL: "ws://kobe-server:8080" };
+    const url = { ...base, KAIJU_SERVER_URL: "ws://kaiju-server:8080" };
     expect(loadConfig(url).piRunAs).toBeUndefined();
-    expect(loadConfig({ ...url, KAIJU_PI_RUNAS: "/opt/kobe/bin/kobe-runas" }).piRunAs).toBe(
-      "/opt/kobe/bin/kobe-runas",
+    expect(loadConfig({ ...url, KAIJU_PI_RUNAS: "/opt/kaiju/bin/kaiju-runas" }).piRunAs).toBe(
+      "/opt/kaiju/bin/kaiju-runas",
     );
-    expect(() => loadConfig({ ...url, KAIJU_PI_RUNAS: "kobe-runas" })).toThrow(/KAIJU_PI_RUNAS/);
+    expect(() => loadConfig({ ...url, KAIJU_PI_RUNAS: "kaiju-runas" })).toThrow(/KAIJU_PI_RUNAS/);
   });
 
   it("reads the egress proxy for tools (KOBE-39): port always written, no credentials", () => {
-    const url = { ...base, KAIJU_SERVER_URL: "ws://kobe-server:8080" };
+    const url = { ...base, KAIJU_SERVER_URL: "ws://kaiju-server:8080" };
     expect(loadConfig(url).egressProxyUrl).toBeUndefined();
-    expect(loadConfig(url).egressEnvScript).toBe("/opt/kobe/egress-env.sh");
+    expect(loadConfig(url).egressEnvScript).toBe("/opt/kaiju/egress-env.sh");
     expect(
-      loadConfig({ ...url, KAIJU_EGRESS_PROXY_URL: "http://egress-proxy.kobe.internal" })
+      loadConfig({ ...url, KAIJU_EGRESS_PROXY_URL: "http://egress-proxy.kaiju.internal" })
         .egressProxyUrl,
-    ).toBe("http://egress-proxy.kobe.internal:80");
+    ).toBe("http://egress-proxy.kaiju.internal:80");
     expect(
-      loadConfig({ ...url, KAIJU_EGRESS_PROXY_URL: "http://egress-proxy.kobe.internal:8080/" })
+      loadConfig({ ...url, KAIJU_EGRESS_PROXY_URL: "http://egress-proxy.kaiju.internal:8080/" })
         .egressProxyUrl,
-    ).toBe("http://egress-proxy.kobe.internal:8080");
+    ).toBe("http://egress-proxy.kaiju.internal:8080");
     for (const bad of ["http://u:p@egress-proxy:80", "https://egress-proxy", "http://e/x"]) {
       expect(() => loadConfig({ ...url, KAIJU_EGRESS_PROXY_URL: bad }), bad).toThrow(
         /KAIJU_EGRESS_PROXY_URL/,
@@ -167,10 +167,10 @@ describe("old KOBE_* names for one release (KOBE-748)", () => {
   it("starts with only the old names and warns once, naming them", () => {
     const warn = vi.fn();
     const config = loadConfig(
-      toLegacyEnv({ ...base, KAIJU_SERVER_URL: "wss://kobe-server.kaiju-system.svc" }),
+      toLegacyEnv({ ...base, KAIJU_SERVER_URL: "wss://kaiju-server.kaiju-system.svc" }),
       warn,
     );
-    expect(config.connectUrl).toBe("wss://kobe-server.kaiju-system.svc/v1/sandbox/connect");
+    expect(config.connectUrl).toBe("wss://kaiju-server.kaiju-system.svc/v1/sandbox/connect");
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[1]).toEqual({
       renamed: ["KOBE_SANDBOX_ID", "KOBE_SERVER_URL"],

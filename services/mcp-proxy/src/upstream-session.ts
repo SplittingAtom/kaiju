@@ -5,7 +5,7 @@ import { checkUpstreamUrl } from "./upstream-connect.js";
 import type { UpstreamBase, UpstreamOptions, UpstreamResult } from "./upstream-types.js";
 import { isObject, readLimited, readSse, responseFor, UpstreamError } from "./upstream-wire.js";
 
-export const CLIENT_INFO = { name: "kobe-mcp-proxy", version: "1.0.0" } as const;
+export const CLIENT_INFO = { name: "kaiju-mcp-proxy", version: "1.0.0" } as const;
 /** Upstream protocol versions the proxy speaks (newest first). */
 export const UPSTREAM_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
 

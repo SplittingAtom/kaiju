@@ -85,7 +85,7 @@ stays so if the retention period is lengthened later or the member rejoins.
 With the team's Orbit gate on (KOBE-93), every gated publish of the agent freezes its accepted
 cases (at most 20) into the eval and runs them in the same Job, next to the scenario pack, with no
 credential beyond the eval's own gateway token. Case text is in no Kubernetes object: the Job
-fetches it from the model gateway with that token (`GET /kobe/eval-cases`), which reads it from
+fetches it from the model gateway with that token (`GET /kaiju/eval-cases`), which reads it from
 Postgres only while the eval runs, for the member who started it, and only once; it lives in
 the pod's memory
 and a temporary log directory deleted when the run ends. A case withdrawn or dismissed mid-eval

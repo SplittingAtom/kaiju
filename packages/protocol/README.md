@@ -27,7 +27,7 @@ settle it in its contract PR.
 
 Entry points: `@kaiju/protocol` is browser-safe (the web app imports it); `@kaiju/protocol/sandbox-wire`
 holds the sandbox wire (frame schemas, codec, workspace sync, Pi RPC) for the server and
-kobe-sandbox-agent only, and web code may not import it (lint rule, KOBE-720; the workspace path
+kaiju-sandbox-agent only, and web code may not import it (lint rule, KOBE-720; the workspace path
 rules it shares with the browser are in the root, `src/workspace-paths.ts`); `@kaiju/protocol/node`
 uses `node:crypto` and must never be imported by sandbox code (the approval key never enters a
 sandbox); `@kaiju/protocol/testing` is for tests only. The package is `sideEffects: false`, so a
@@ -92,7 +92,7 @@ Gaps reported by KOBE-23/24/30/35/36, fixed in one contract PR:
 - `session.restore`: one `command.result` per part; the agent rewrites `header.cwd`.
 - `kobe.event_dropped` placeholder (`KAIJU_EVENT_DROPPED_TYPE`, `kaijuEventDroppedSchema`).
 - `pi.ui_request` is deduped by `(thread_id, request.id)`.
-- kobe-policy checks and freezes the executed object; it does not replace `event.input`.
+- kaiju-policy checks and freezes the executed object; it does not replace `event.input`.
 - The approval token never enters the sandbox (the agent strips it from `policy.result`).
 - Reason codes `team_allow_rule`, `not_available`, `policy_error`, `run_not_active`,
   `not_a_member`, `sandbox_policy_unavailable` (stage rules in `policy.ts`).

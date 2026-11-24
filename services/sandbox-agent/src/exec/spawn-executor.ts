@@ -3,9 +3,9 @@ import type { PiIdentities, PiIdentity } from "../pi/identities.js";
 import type { ExecutorHandle } from "./relay.js";
 
 /**
- * Starting a thread's tool executor (KOBE-167). Under a Pi identity it runs through `kobe-runas`
+ * Starting a thread's tool executor (KOBE-167). Under a Pi identity it runs through `kaiju-runas`
  * as the identity's partner uid (groups {own gid, workspace group}, umask 002, no capabilities,
- * `no_new_privs`, stdio only: see images/sandbox/runas/kobe-runas.c), after any leftovers of the
+ * `no_new_privs`, stdio only: see images/sandbox/runas/kaiju-runas.c), after any leftovers of the
  * previous executor of the pair are killed; the agent can signal that uid only through the
  * helper. Without identities (development, tests outside the image) it is a plain child of the
  * agent, which is also the uid Pi and its tools have there: nothing is lost or gained.

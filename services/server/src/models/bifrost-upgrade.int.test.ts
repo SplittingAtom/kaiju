@@ -87,7 +87,7 @@ describe.skipIf(!BIN || !PREVIOUS)("Bifrost upgrade on a kept store", () => {
     upstream = fakeOpenAi();
     await new Promise<void>((r) => upstream.listen(0, "127.0.0.1", r));
     up = `http://127.0.0.1:${(upstream.address() as AddressInfo).port}`;
-    dir = mkdtempSync(join(tmpdir(), "kobe-bifrost-upgrade-"));
+    dir = mkdtempSync(join(tmpdir(), "kaiju-bifrost-upgrade-"));
     writeFileSync(
       join(dir, "config.json"),
       JSON.stringify({

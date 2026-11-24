@@ -27,7 +27,7 @@ import { SyncClient } from "./workspace/client.js";
 import { WorkspaceSync } from "./workspace/sync.js";
 
 /**
- * kobe-sandbox-agent entry point: the sandbox's main process (D13). Dials out to the server; opens
+ * kaiju-sandbox-agent entry point: the sandbox's main process (D13). Dials out to the server; opens
  * no listening socket. Exits non-zero on invalid configuration (fail fast).
  */
 const SHUTDOWN_DEADLINE_MS = 10_000;
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   adoptLegacyEnv(process.env);
   hardenProcess(process);
   const loaded = loadConfig(process.env);
-  // Fail fast: without kobe-policy no thread could start (KOBE-36), so say why at startup. Pi gets
+  // Fail fast: without kaiju-policy no thread could start (KOBE-36), so say why at startup. Pi gets
   // the resolved path.
   const checked = {
     ...loaded,
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
     // Set (the image does) means wanted: a file the sandbox user could edit fails startup.
     ...(loaded.toolsExtension === undefined
       ? {}
-      : { toolsExtension: await checkExtensionFile(loaded.toolsExtension, "kobe-tools") }),
+      : { toolsExtension: await checkExtensionFile(loaded.toolsExtension, "kaiju-tools") }),
   };
   const home = process.env.HOME ?? "/home/kobe";
   // KOBE-71: private by default; what Pi identities must reach (workspace files, session files,
@@ -191,7 +191,7 @@ async function main(): Promise<void> {
 
 /**
  * The tool executor (KOBE-167), when switched on (`KAIJU_TOOL_EXECUTOR`, default on) and the image
- * has the kobe-exec extension (`KAIJU_EXEC_EXTENSION`): every Pi's built-in tools then run in an
+ * has the kaiju-exec extension (`KAIJU_EXEC_EXTENSION`): every Pi's built-in tools then run in an
  * executor under its partner uid. Fails closed: asked for under Pi identities without the partner
  * groups (a pod spec from before KOBE-166), the agent does not start rather than quietly run the
  * tools in Pi; the extension is held to the same root-owned check as the others.
@@ -209,7 +209,7 @@ async function toolExecutor(
     // without (skew between the server and the sandbox image).
     if (config.bootstrapTokenFile !== undefined) {
       throw new Error(
-        "KAIJU_TOOL_EXECUTOR is on but this image has no kobe-exec extension (KAIJU_EXEC_EXTENSION): " +
+        "KAIJU_TOOL_EXECUTOR is on but this image has no kaiju-exec extension (KAIJU_EXEC_EXTENSION): " +
           "refusing to run the tools in Pi (set KAIJU_TOOL_EXECUTOR=false to allow it)",
       );
     }
@@ -222,7 +222,7 @@ async function toolExecutor(
         "3000-3063: refusing to run the tools in Pi (set KAIJU_TOOL_EXECUTOR=false to allow it)",
     );
   }
-  const extension = await checkExtensionFile(config.execExtension, "kobe-exec");
+  const extension = await checkExtensionFile(config.execExtension, "kaiju-exec");
   const executorEntry = fileURLToPath(new URL("./exec/executor/main.js", import.meta.url));
   await access(executorEntry, constants.R_OK).catch(() => {
     throw new Error(`tool executor program not found: ${executorEntry}`);
@@ -285,7 +285,7 @@ async function piIdentities(config: Config): Promise<PiIdentities | undefined> {
     return undefined;
   }
   // The helper's start-up probe also proves a tool cannot ptrace or read the memory of its Pi
-  // (it shares Pi's uid; kobe-policy and the policy socket live in Pi): refused otherwise.
+  // (it shares Pi's uid; kaiju-policy and the policy socket live in Pi): refused otherwise.
   const identities = await loadPiIdentities(config.piRunAs, config.maxPiProcesses);
   await mkdir(config.piRuntimeDir, { recursive: true, mode: 0o700 });
   // The workspace guard (workspace/volume.ts) tells files apart by device: what the agent alone
@@ -312,8 +312,8 @@ async function piIdentities(config: Config): Promise<PiIdentities | undefined> {
 
 /**
  * Model gateway wiring (KOBE-41): only with a model gateway URL (the pod spec sets it when the
- * sandbox may reach models) and a session to trade tokens with (Kaiju's pods). The kobe-models
- * file gets the same root-owned check as kobe-policy; the keeper trades the first token now (on
+ * sandbox may reach models) and a session to trade tokens with (Kaiju's pods). The kaiju-models
+ * file gets the same root-owned check as kaiju-policy; the keeper trades the first token now (on
  * the cold-start path, in parallel with the other startup work) and rotates it before expiry.
  */
 async function modelWiring(
@@ -325,7 +325,7 @@ async function modelWiring(
     logger.warn("KAIJU_MODEL_GATEWAY_URL set without a bootstrap token: models stay off");
     return undefined;
   }
-  const extension = await checkExtensionFile(config.modelsExtension, "kobe-models");
+  const extension = await checkExtensionFile(config.modelsExtension, "kaiju-models");
   const keeper = sessionTokenKeeper(session, "kobe.model-gateway", logger);
   await keeper.start();
   return { gatewayUrl: config.modelGatewayUrl, extension, tokens: keeper };

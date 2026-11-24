@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs gVisor on one k3s node and registers it with k3s' containerd (run as root on EVERY node,
-# one node at a time). Then, once per cluster: `kubectl apply -f charts/kobe/runtimeclass-gvisor.yaml`.
+# one node at a time). Then, once per cluster: `kubectl apply -f charts/kaiju/runtimeclass-gvisor.yaml`.
 # Idempotent. Restarting k3s does not stop running pods.
 set -euo pipefail
 

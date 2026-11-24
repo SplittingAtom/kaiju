@@ -14,8 +14,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
-NS="${KAIJU_GATE1_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATE1_RELEASE:-kobe}"
+NS="${KAIJU_GATE1_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATE1_RELEASE:-kaiju}"
 STEPS=" ${KAIJU_GATE1_STEPS:-chat-real chat-stream probe interrupt cold} "
 TRIALS="${KAIJU_GATE1_TRIALS:-20}"
 P95_MAX="${KAIJU_GATE1_P95_MS:-20000}"

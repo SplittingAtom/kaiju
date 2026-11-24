@@ -5,7 +5,7 @@
 #   KAIJU_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate-sso.sh      (CI shard `gate-sso`)
 #
 # The mock (e2e/sso/mock-entra.mjs) runs from the installed server image (its own `jose`, no new
-# image) in namespace kobe-sso-infra, with TLS from a CA made here. CoreDNS answers
+# image) in namespace kaiju-sso-infra, with TLS from a CA made here. CoreDNS answers
 # login.microsoftonline.com with the mock's Service, so Kaiju's real Entra provider code (issuer
 # https://login.microsoftonline.com/<tid>/v2.0, discovery, JWKS, token endpoint) talks to it; the
 # server trusts the CA through the chart's server.extraCaBundle and reaches the private address
@@ -20,12 +20,12 @@ cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KAIJU_GATESSO_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATESSO_RELEASE:-kobe}"
-CHART="${KAIJU_GATESSO_CHART:-charts/kobe}"
+NS="${KAIJU_GATESSO_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATESSO_RELEASE:-kaiju}"
+CHART="${KAIJU_GATESSO_CHART:-charts/kaiju}"
 OWNER_EMAIL="${KAIJU_GATESSO_OWNER_EMAIL:-owner@e2e.test}"
 OWNER_PASSWORD="${KAIJU_GATESSO_OWNER_PASSWORD:-e2e owner password}"
-INFRA_NS=kobe-sso-infra
+INFRA_NS=kaiju-sso-infra
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
 TEAM_SLUG=sso-a
@@ -153,21 +153,21 @@ dns_rule="rewrite stop {
 }"
 if $KUBECTL -n kube-system get configmap coredns-custom >/dev/null 2>&1; then
   $KUBECTL -n kube-system patch configmap coredns-custom --type merge \
-    -p "$(printf '{"data":{"kobe-sso-gate.override":"%s"}}' "${dns_rule//$'\n'/\\n}")" >/dev/null
+    -p "$(printf '{"data":{"kaiju-sso-gate.override":"%s"}}' "${dns_rule//$'\n'/\\n}")" >/dev/null
 else
-  $KUBECTL -n kube-system create configmap coredns-custom --from-literal=kobe-sso-gate.override="$dns_rule" >/dev/null
+  $KUBECTL -n kube-system create configmap coredns-custom --from-literal=kaiju-sso-gate.override="$dns_rule" >/dev/null
 fi
-UNDO+=("$KUBECTL -n kube-system patch configmap coredns-custom --type json -p '[{\"op\":\"remove\",\"path\":\"/data/kobe-sso-gate.override\"}]' && $KUBECTL -n kube-system rollout restart deploy/coredns")
+UNDO+=("$KUBECTL -n kube-system patch configmap coredns-custom --type json -p '[{\"op\":\"remove\",\"path\":\"/data/kaiju-sso-gate.override\"}]' && $KUBECTL -n kube-system rollout restart deploy/coredns")
 $KUBECTL -n kube-system rollout restart deploy/coredns >/dev/null
 $KUBECTL -n kube-system rollout status deploy/coredns --timeout=120s >/dev/null 2>&1 || fail "CoreDNS restarted with the rewrite"
 
 # The release: the CA, the client secret, and the two Entra providers as configuration.
-old_ca=$($KUBECTL -n "$NS" get configmap kobe-sso-gate-ca -o jsonpath='{.data.ca\.crt}' 2>/dev/null || true)
-$KUBECTL -n "$NS" create configmap kobe-sso-gate-ca --from-file=ca.crt="$WORK/ca.crt" \
+old_ca=$($KUBECTL -n "$NS" get configmap kaiju-sso-gate-ca -o jsonpath='{.data.ca\.crt}' 2>/dev/null || true)
+$KUBECTL -n "$NS" create configmap kaiju-sso-gate-ca --from-file=ca.crt="$WORK/ca.crt" \
   --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
-$KUBECTL -n "$NS" create secret generic kobe-sso-gate-client --from-literal=client-secret="$CLIENT_SECRET" \
+$KUBECTL -n "$NS" create secret generic kaiju-sso-gate-client --from-literal=client-secret="$CLIENT_SECRET" \
   --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
-providers=$(printf '[{"slug":"entra-mock","displayName":"Mock Entra","kind":"entra","tenantId":"%s","clientId":"%s","clientSecretSecret":{"name":"kobe-sso-gate-client","key":"client-secret"},"accessClaim":"roles","allowedEmailDomains":["sso.test"]},{"slug":"entra-groups","displayName":"Mock Entra groups","kind":"entra","tenantId":"%s","clientId":"%s","clientSecretSecret":{"name":"kobe-sso-gate-client","key":"client-secret"},"accessClaim":"groups"}]' \
+providers=$(printf '[{"slug":"entra-mock","displayName":"Mock Entra","kind":"entra","tenantId":"%s","clientId":"%s","clientSecretSecret":{"name":"kaiju-sso-gate-client","key":"client-secret"},"accessClaim":"roles","allowedEmailDomains":["sso.test"]},{"slug":"entra-groups","displayName":"Mock Entra groups","kind":"entra","tenantId":"%s","clientId":"%s","clientSecretSecret":{"name":"kaiju-sso-gate-client","key":"client-secret"},"accessClaim":"groups"}]' \
   "$TENANT" "$CLIENT_ID" "$TENANT_G" "$CLIENT_ID")
 saved="$WORK/values.yaml"
 # `--reuse-values` would keep the old chart's defaults; saved values + --reset-values do not.
@@ -175,7 +175,7 @@ $HELM get values "$RELEASE" -n "$NS" -o yaml >"$saved"
 if out=$($HELM upgrade "$RELEASE" "$CHART" -n "$NS" -f "$saved" --reset-values --wait --timeout 8m \
     --set auth.sso.enabled=true --set-json "auth.sso.allowedInternalCidrs=[\"$MOCK_IP/32\"]" \
     --set-json "auth.sso.providers=$providers" \
-    --set server.extraCaBundle.configMapName=kobe-sso-gate-ca --set server.extraCaBundle.key=ca.crt 2>&1); then
+    --set server.extraCaBundle.configMapName=kaiju-sso-gate-ca --set server.extraCaBundle.key=ca.crt 2>&1); then
   ok "the chart declares both providers, the mock's address and its CA (saved values kept)"
 else
   fail "the chart upgrade: $(printf '%s' "$out" | tail -3)"

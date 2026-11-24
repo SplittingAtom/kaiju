@@ -23,7 +23,7 @@ import { SANDBOX_SMALL_FRAME_MAX_BYTES, SANDBOX_WIRE_VERSION } from "./connectio
  * it. `trace` is decoded loosely (unknown keys are dropped), so a new trace-context field never
  * fails a run on an older agent; tracing must never fail a run.
  *
- * What the sandbox sends (normative for kobe-sandbox-agent)
+ * What the sandbox sends (normative for kaiju-sandbox-agent)
  * - Span names are closed ({@link SANDBOX_SPAN_NAMES}), each with its own strict attribute set
  *   ({@link SANDBOX_SPAN_ATTRIBUTES}, the allow-list): run, turn, tool call (call id and outcome;
  *   the tool's name comes from the server's own decision record), compaction and workspace sync.
@@ -158,7 +158,7 @@ export const SANDBOX_SPAN_ATTRIBUTES = {
   "sandbox.tool": z.strictObject({
     /** The server keeps it only when it decided this call for the run, and adds the tool's name. */
     "kaiju.tool.call_id": idSchema,
-    /** `blocked`: kobe-policy blocked the call (deny or approval refused). */
+    /** `blocked`: kaiju-policy blocked the call (deny or approval refused). */
     "kaiju.tool.outcome": z.enum(["ok", "error", "blocked", "aborted"]),
     "kaiju.tool.input": content.optional(),
     "kaiju.tool.output": content.optional(),

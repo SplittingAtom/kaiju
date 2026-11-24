@@ -5,7 +5,7 @@ import { MAX_CANONICAL_DEPTH } from "./canonical-json.js";
  *
  * - **U+0000** in any string or key is rejected: `jsonb` cannot store it. Where: the server's
  *   sandbox-wire decoder (`decodeSandboxFrame`, every inbound frame), every tool-input schema, and
- *   every HTTP body schema. kobe-sandbox-agent replaces U+0000 in Pi output (tool results, messages)
+ *   every HTTP body schema. kaiju-sandbox-agent replaces U+0000 in Pi output (tool results, messages)
  *   with U+FFFD before framing, so legitimate runs never hit the rejection; tool *inputs* are never
  *   rewritten (that would change the signed bytes) — a call with U+0000 in its input is denied.
  * - **`__proto__` keys** are rejected everywhere: `JSON.parse` makes them own properties, but any

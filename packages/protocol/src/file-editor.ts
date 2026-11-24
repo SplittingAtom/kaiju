@@ -140,7 +140,7 @@ export const fileEditProposeErrorSchema = z.strictObject({
   message: z.string().max(2000),
 });
 
-/** Success answer (frame and kobe-tools response, flat): nothing was written. */
+/** Success answer (frame and kaiju-tools response, flat): nothing was written. */
 export const fileEditProposeOkFields = {
   ok: z.literal(true),
   op: z.literal("file_edit_propose"),
@@ -163,7 +163,7 @@ export const fileEditCallShape = {
   input: proposeFileEditInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
+/** kaiju-tools request (fd 4); member of `kaijuToolsRequestSchema`. */
 export const fileEditToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("file.edit_propose"),

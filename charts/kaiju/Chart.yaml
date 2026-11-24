@@ -1,0 +1,10 @@
+apiVersion: v2
+name: kaiju
+description: Kaiju — self-hosted conversational agent platform (umbrella chart)
+type: application
+version: 0.2.0
+appVersion: "0.1.0"
+home: https://github.com/SplittingAtom/kobe
+sources:
+  - https://github.com/SplittingAtom/kobe
+kubeVersion: ">=1.30.0-0"

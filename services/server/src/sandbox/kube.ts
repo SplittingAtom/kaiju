@@ -37,7 +37,7 @@ export interface DeleteOptions {
 }
 
 export interface KubeClient {
-  /** Server-side apply (field manager `kobe-server`, force): create or converge. */
+  /** Server-side apply (field manager `kaiju-server`, force): create or converge. */
   apply(object: KubeObject): Promise<KubeObject>;
   /** Plain create; throws KubeApiError with status 409 when the object exists. */
   create(object: KubeObject, options?: { readonly dryRun?: boolean }): Promise<KubeObject>;

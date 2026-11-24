@@ -1,8 +1,8 @@
 import path from "node:path";
 import { KAIJU_TOOLS_FD } from "@kaiju/protocol";
 import { type PiThreadConfig, type RunMcpContext } from "@kaiju/protocol/sandbox-wire";
-import { EXEC_FD, EXEC_FD_ENV } from "../kobe-exec/protocol.js";
-import { KAIJU_PROVIDER_ID } from "../kobe-models/protocol.js";
+import { EXEC_FD, EXEC_FD_ENV } from "../kaiju-exec/protocol.js";
+import { KAIJU_PROVIDER_ID } from "../kaiju-models/protocol.js";
 import type { RunModel } from "../models/types.js";
 
 /**
@@ -21,7 +21,7 @@ import type { RunModel } from "../models/types.js";
  * created fresh for each Pi process right before it starts and removed when it exits
  * (threads/thread.ts; Pi 1.0.0 writes `auth.json` and a lock there on every credential read, so it
  * cannot be read-only). `--no-extensions` stops extension discovery and built-ins (explicit `-e`
- * paths still load: that is how kobe-policy, KOBE-36, and kobe-models, KOBE-41, are added, from
+ * paths still load: that is how kaiju-policy, KOBE-36, and kaiju-models, KOBE-41, are added, from
  * root-owned paths); `--no-approve` ignores project-local
  * `.pi/` files; `--no-context-files` stops `AGENTS.md`/`CLAUDE.md` discovery (Kaiju's instructions
  * come from agent files, D19; a model-written AGENTS.md would otherwise be a persistent prompt
@@ -32,9 +32,9 @@ import type { RunModel } from "../models/types.js";
  * under `$HOME` or `/workspace`.
  */
 export const POLICY_CHANNEL_FD = 3;
-/** The kobe-tools channel (KOBE-128, artifacts.ts): fd 4, only when the extension is loaded. */
+/** The kaiju-tools channel (KOBE-128, artifacts.ts): fd 4, only when the extension is loaded. */
 export const TOOLS_CHANNEL_FD = KAIJU_TOOLS_FD;
-/** The kobe-exec channel (KOBE-167, kobe-exec/protocol.ts): fd 5, only when the extension is loaded. */
+/** The kaiju-exec channel (KOBE-167, kaiju-exec/protocol.ts): fd 5, only when the extension is loaded. */
 export const EXEC_CHANNEL_FD = EXEC_FD;
 
 export const PI_LOCKDOWN_ARGS = [
@@ -53,9 +53,9 @@ export interface PiLaunch {
   readonly env: Readonly<Record<string, string>>;
   /** Identity of the launch: a running process with a different key is restarted when idle. */
   readonly key: string;
-  /** Pi gets the kobe-tools channel as its fd 4 (the process is spawned with a fifth pipe). */
+  /** Pi gets the kaiju-tools channel as its fd 4 (the process is spawned with a fifth pipe). */
   readonly toolsChannel: boolean;
-  /** Pi gets the kobe-exec channel as its fd 5 (the process is spawned with a sixth pipe). */
+  /** Pi gets the kaiju-exec channel as its fd 5 (the process is spawned with a sixth pipe). */
   readonly execChannel: boolean;
   /**
    * The agent's system prompt (KOBE-123), when the run has a non-empty one. Never an argument: the
@@ -80,7 +80,7 @@ export interface PiLaunchInput {
   readonly sessionFile: string;
   readonly home: string;
   /**
-   * kobe-models (KOBE-41): a root-owned, read-only file, loaded right before kobe-policy when the
+   * kaiju-models (KOBE-41): a root-owned, read-only file, loaded right before kaiju-policy when the
    * sandbox has model gateway access. The model travels in the per-process model file and is not
    * part of the launch key, so a model change between runs never restarts Pi.
    */
@@ -94,14 +94,14 @@ export interface PiLaunchInput {
    */
   readonly model?: RunModel | null | undefined;
   /**
-   * kobe-tools (KOBE-128): a root-owned, read-only file that registers Kaiju's own tools, loaded
-   * right before kobe-policy (which therefore checks its calls) and given the channel on fd 4.
+   * kaiju-tools (KOBE-128): a root-owned, read-only file that registers Kaiju's own tools, loaded
+   * right before kaiju-policy (which therefore checks its calls) and given the channel on fd 4.
    * Absent: no fd 4, no tools (the agent then does not announce the `artifacts` capability).
    */
   readonly toolsExtension?: string | undefined;
   /**
-   * kobe-exec (KOBE-167): a root-owned, read-only file that replaces Pi's seven built-in tools with
-   * ones that run in the thread's executor (its partner uid), loaded right before kobe-policy and
+   * kaiju-exec (KOBE-167): a root-owned, read-only file that replaces Pi's seven built-in tools with
+   * ones that run in the thread's executor (its partner uid), loaded right before kaiju-policy and
    * given the channel on fd 5. Absent: Pi runs its tools itself, as before.
    */
   readonly execExtension?: string | undefined;
@@ -125,7 +125,7 @@ export interface PiLaunchInput {
    * `propose_file_edit`. Meaningful only with {@link toolsExtension}.
    */
   readonly toolsFileEdits?: boolean | undefined;
-  /** The agent announced `notebooks` (KOBE-464): kobe-tools registers `run_python`. */
+  /** The agent announced `notebooks` (KOBE-464): kaiju-tools registers `run_python`. */
   readonly toolsNotebooks?: boolean | undefined;
   /**
    * The agent announced the `memory` capability (KOBE-157): the extension then registers `remember`
@@ -133,13 +133,13 @@ export interface PiLaunchInput {
    */
   readonly toolsMemory?: boolean | undefined;
   /**
-   * The kobe-policy extension (KOBE-36): a root-owned, read-only file. Always loaded, always the
+   * The kaiju-policy extension (KOBE-36): a root-owned, read-only file. Always loaded, always the
    * **last** `-e`: Pi runs `tool_call` handlers in extension load order (verified Pi 1.0.0), so the
    * last one sees the final, possibly mutated input, and nobody can change it after the check.
    */
   readonly policyExtension: string;
   /**
-   * Other extensions to load with `-e`, before kobe-policy (e.g. `builtin:mcp`, KOBE-62). Must be
+   * Other extensions to load with `-e`, before kaiju-policy (e.g. `builtin:mcp`, KOBE-62). Must be
    * root-owned paths outside anything the sandbox user can write, or `builtin:<name>`.
    */
   readonly extensions?: readonly string[];
@@ -164,7 +164,7 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
   const mcp = input.mcp !== undefined && input.mcp.servers.length > 0 ? input.mcp : undefined;
   if (mcp !== undefined) args.push("--extension", "builtin:mcp");
   for (const extension of input.extensions ?? []) {
-    // kobe-policy only once, last: a second copy would find the channel taken and block everything.
+    // kaiju-policy only once, last: a second copy would find the channel taken and block everything.
     const resolved = extension.startsWith("builtin:") ? undefined : path.resolve(extension);
     if (extension === "builtin:mcp" && mcp !== undefined) continue;
     if (
@@ -220,7 +220,7 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
     env.KAIJU_TOOLS_NOTEBOOKS = "1";
   if (input.toolsExtension !== undefined && input.toolsMemory === true)
     env.KAIJU_TOOLS_MEMORY = "1";
-  // KOBE-776: built-ins Pi is not offered (kobe-policy removes them from its active tools).
+  // KOBE-776: built-ins Pi is not offered (kaiju-policy removes them from its active tools).
   if (config?.hidden_tools !== undefined && config.hidden_tools.length > 0) {
     env.KAIJU_HIDDEN_TOOLS = config.hidden_tools.join(",");
   }

@@ -16,7 +16,7 @@ import {
   memoryNotice,
   newNonce,
   untrustedMemoryBlock,
-} from "../kobe-tools/memory-fence.js";
+} from "../kaiju-tools/memory-fence.js";
 import type { MemoryFileContent, PicksPlacement } from "./context-file.js";
 import { projectContextText } from "./project-context.js";
 import type { RunGitRepo } from "@kaiju/protocol/sandbox-wire";
@@ -25,7 +25,7 @@ import { conflictNoteText } from "./conflict-context.js";
 import { semanticContextText, type SemanticRender } from "./semantic-context.js";
 
 /**
- * Where kobe-tools puts the per-message parts (picks, viewed file, sync conflicts) for each Site
+ * Where kaiju-tools puts the per-message parts (picks, viewed file, sync conflicts) for each Site
  * placement (KOBE-658): only `system` keeps them in the system prompt.
  */
 export function picksPlacementOf(placement: SemanticRender["placement"]): PicksPlacement {
@@ -41,7 +41,7 @@ export function picksPlacementOf(placement: SemanticRender["placement"]): PicksP
  * saved text: approved project memory reaches every member's context, so each is fenced as
  * untrusted data (a per-thread nonce, {@link threadFenceNonce}), sanitised, labelled with
  * its scope and provenance, and capped. The section reaches the model through the per-run memory
- * file and the kobe-tools extension, not the launch: a changed index never restarts Pi. Topic
+ * file and the kaiju-tools extension, not the launch: a changed index never restarts Pi. Topic
  * files are never preloaded; the model reads them with `recall`.
  */
 export const INDEX_MAX_BYTES = 12 * 1024;

@@ -1,0 +1,88 @@
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { parseAllDocuments } from "yaml";
+
+// KOBE-500 (theming plan TH5): the web gets KAIJU_SERVER_URL, the server's in-cluster origin, for
+// the site branding of every server render. Default: this release's server Service (port 80).
+
+const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
+const HELM = process.env.HELM_BIN ?? "helm";
+const BASE: Record<string, string> = {
+  "ingress.host": "kaiju.example.com",
+  "postgres.external.existingSecret": "kaiju-db",
+  "s3.endpoint": "https://s3.example.com",
+  "s3.bucket": "kaiju",
+  "s3.existingSecret": "kaiju-s3",
+  "smtp.host": "smtp.example.com",
+  "smtp.from": "Kaiju <kaiju@example.com>",
+  "global.allowGeneratedSecretsOffline": "true",
+};
+
+type Manifest = { kind: string; metadata: { name: string }; [k: string]: any };
+type EnvVar = { name: string; value?: string };
+
+function helm(values: Record<string, string>, release = "kaiju"): string {
+  const args = Object.entries({ ...BASE, ...values }).flatMap(([k, v]) => ["--set", `${k}=${v}`]);
+  return execFileSync(HELM, ["template", release, CHART_DIR, "-n", "kaiju", ...args], {
+    encoding: "utf8",
+    stdio: "pipe",
+  });
+}
+
+function envOf(
+  deployment: string,
+  values: Record<string, string> = {},
+  release = "kaiju",
+): EnvVar[] {
+  const ms = parseAllDocuments(helm(values, release))
+    .map((d) => d.toJSON() as Manifest | null)
+    .filter((m): m is Manifest => m !== null);
+  const dep = ms.find((m) => m.kind === "Deployment" && m.metadata.name === deployment);
+  return (dep?.spec.template.spec.containers[0].env ?? []) as EnvVar[];
+}
+
+const serverUrl = (env: EnvVar[]) => env.find((e) => e.name === "KAIJU_SERVER_URL")?.value;
+
+describe("web.serverUrl -> KAIJU_SERVER_URL", () => {
+  it("defaults to this release's server Service", () => {
+    expect(serverUrl(envOf("kaiju-web"))).toBe("http://kaiju-server");
+    expect(serverUrl(envOf("other-web", {}, "other"))).toBe("http://other-server");
+  });
+
+  it("is overridable for split installs, without a trailing slash", () => {
+    expect(serverUrl(envOf("kaiju-web", { "web.serverUrl": "https://api.internal:8443/" }))).toBe(
+      "https://api.internal:8443",
+    );
+  });
+
+  it("is set on the web only", () => {
+    for (const name of [
+      "kaiju-server",
+      "kaiju-scheduler",
+      "kaiju-mcp-proxy",
+      "kaiju-egress-proxy",
+    ]) {
+      expect(serverUrl(envOf(name)), name).toBeUndefined();
+    }
+  });
+
+  it.each(["kaiju-server", "ftp://kaiju-server", "http://kaiju-server/v1", "http://a b"])(
+    "rejects %s",
+    (v) => {
+      expect(() => helm({ "web.serverUrl": v })).toThrow();
+    },
+  );
+});
+
+// KOBE-616: the web also gets KAIJU_PUBLIC_URL (the server's value) for the guide's /llms.txt links.
+describe("KAIJU_PUBLIC_URL on the web", () => {
+  const publicUrl = (env: EnvVar[]) => env.find((e) => e.name === "KAIJU_PUBLIC_URL")?.value;
+
+  it("follows the ingress host, or publicUrl when set", () => {
+    expect(publicUrl(envOf("kaiju-web"))).toBe(publicUrl(envOf("kaiju-server")));
+    expect(publicUrl(envOf("kaiju-web", { publicUrl: "https://chat.example.com" }))).toBe(
+      "https://chat.example.com",
+    );
+  });
+});

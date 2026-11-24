@@ -1,0 +1,235 @@
+{{- $e := include "kaiju.embeddingsValues" . | fromJson -}}
+{{- if $e.enabled -}}
+{{- $fullname := include "kaiju.fullname" . -}}
+{{- $sel := dict "root" . "component" "embeddings" -}}
+{{- $claim := default (printf "%s-embeddings" $fullname) $e.persistence.existingClaim -}}
+# Optional in-cluster CPU embedding service (KOBE-659), on by default: llama.cpp's llama-server
+# (MIT, `ghcr.io/ggml-org/llama.cpp`, pinned by version and digest) serving one small embedding
+# model (nomic-embed-text v1.5, Apache-2.0) over an OpenAI-compatible API. Only Bifrost may connect:
+# every embedding call goes through the model gateway, where the server registers this service as
+# the keyless provider `kobe-local` (model `kobe-local/<model.name>`). The model file lives on a
+# PVC: the init container downloads it once (pinned URL, sha256 checked), or, for air-gapped
+# installs (model.download=false), only checks a file preloaded onto the claim. The pod's only
+# egress is that download (DNS and public HTTPS); with download off it has none.
+{{- if and $e.persistence.enabled (not $e.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fullname }}-embeddings
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+    app.kubernetes.io/component: embeddings
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- with $e.persistence.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $e.persistence.size }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-embeddings
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+    app.kubernetes.io/component: embeddings
+spec:
+  replicas: 1
+  # The model PVC is ReadWriteOnce: never two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "kaiju.selectorLabels" $sel | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaiju.selectorLabels" $sel | nindent 8 }}
+    spec:
+      {{- include "kaiju.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ $fullname }}-workload
+      automountServiceAccountToken: false
+      {{- include "kaiju.podSecurityContext" . | nindent 6 }}
+      initContainers:
+        # Puts the model file on the volume (download) or checks it is there (preloaded), and
+        # verifies its sha256 either way; a missing or wrong file fails the pod with a clear log.
+        - name: model
+          image: {{ include "kaiju.embeddingsImage" . | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          {{- include "kaiju.containerSecurityContext" . | nindent 10 }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              f="/models/$MODEL_FILE"
+              if [ -f "$f" ] && echo "$MODEL_SHA256  $f" | sha256sum -c - >/dev/null 2>&1; then
+                echo "model $MODEL_FILE present"; exit 0
+              fi
+              if [ "$MODEL_DOWNLOAD" != "true" ]; then
+                echo "model $MODEL_FILE missing or not matching its sha256 on the volume; preload it (embeddings.local.model.download=false)" >&2
+                exit 1
+              fi
+              echo "downloading $MODEL_FILE"
+              # A stalled connection must fail and retry, not hang until the rollout times out:
+              # under 1 KiB/s for 30 s counts as stalled; each retry resumes the partial file.
+              curl -fsSL --connect-timeout 20 --speed-limit 1024 --speed-time 30 \
+                --retry 8 --retry-delay 5 --retry-all-errors -C - -o "$f.part" "$MODEL_URL"
+              # A wrong partial file must not be resumed on the next start.
+              echo "$MODEL_SHA256  $f.part" | sha256sum -c - || { rm -f "$f.part"; exit 1; }
+              mv "$f.part" "$f"
+          env:
+            - name: MODEL_FILE
+              value: {{ $e.model.file | quote }}
+            - name: MODEL_SHA256
+              value: {{ $e.model.sha256 | quote }}
+            - name: MODEL_DOWNLOAD
+              value: {{ $e.model.download | toString | quote }}
+            - name: MODEL_URL
+              value: {{ $e.model.url | quote }}
+            - name: HOME
+              value: /tmp
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: embeddings
+          image: {{ include "kaiju.embeddingsImage" . | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          {{- include "kaiju.containerSecurityContext" . | nindent 10 }}
+          args:
+            - --model
+            - /models/{{ $e.model.file }}
+            - --alias
+            - {{ $e.model.name | quote }}
+            - --embeddings
+            - --no-webui
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8080"
+            - --threads
+            - {{ int $e.threads | quote }}
+            - --ctx-size
+            - {{ int $e.contextSize | quote }}
+            # An embedding input must fit one batch.
+            - --batch-size
+            - {{ int $e.contextSize | quote }}
+            - --ubatch-size
+            - {{ int $e.contextSize | quote }}
+            - --parallel
+            - "1"
+          env:
+            - name: HOME
+              value: /tmp
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 5
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 2
+            failureThreshold: 90
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml $e.resources | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /models
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: models
+          {{- if or $e.persistence.enabled $e.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ $claim }}
+          {{- else }}
+          emptyDir: { sizeLimit: 1Gi }
+          {{- end }}
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-embeddings
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+    app.kubernetes.io/component: embeddings
+spec:
+  selector:
+    {{- include "kaiju.selectorLabels" $sel | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# Only Bifrost (the model gateway) may connect; sandboxes, the shim and the server may not.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-embeddings
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+    app.kubernetes.io/component: embeddings
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "kaiju.selectorLabels" $sel | nindent 6 }}
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "kaiju.selectorLabels" (dict "root" . "component" "bifrost") | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+  {{- if or $e.model.download $e.networkPolicy.extraEgress }}
+  egress:
+    {{- if $e.model.download }}
+    # The model download (init container): DNS and public HTTPS only. A mirror on a private
+    # address needs a rule in embeddings.local.networkPolicy.extraEgress.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              {{- toYaml (include "kaiju.egressPrivateRanges" . | fromJsonArray) | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+    {{- with $e.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- else }}
+  egress: []
+  {{- end }}
+{{- end }}

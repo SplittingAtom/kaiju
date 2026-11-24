@@ -323,7 +323,7 @@ export class ThreadManager {
    * `thread.compact` (KOBE-213): Pi's `compact` as the compaction run. Refused while the thread has
    * any other run (Pi's compact would abort it), checked again under the thread lock; the thread is
    * busy until Pi answers. The run's model is selected before `compact` (Pi reads it first), its
-   * token is held in memory and handed to kobe-models on request, and the run ends with the answer.
+   * token is held in memory and handed to kaiju-models on request, and the run ends with the answer.
    */
   compact(frame: Frame<"thread.compact">): Promise<CompactReply> {
     return this.#claimed(frame.thread_id, (thread) => runCompaction(this.#port, thread, frame));
@@ -332,7 +332,7 @@ export class ThreadManager {
   /**
    * `thread.branch_summary` (KOBE-548, CT11): the branch summary run. Shaped like `#compact`: busy
    * refused under the lock, the run's model selected first (Pi summarises with its current model),
-   * the token held for kobe-models' `session_before_tree`. Then the agent arms the request and
+   * the token held for kaiju-models' `session_before_tree`. Then the agent arms the request and
    * sends the bare `/kobe-branch-summary` prompt; Pi answers it once the command has finished, and
    * the command has reported its outcome on the armed dialog by then.
    */
@@ -609,9 +609,9 @@ export class ThreadManager {
     try {
       await thread.waitPolicyReady();
     } catch (error) {
-      // Fail closed: a Pi whose kobe-policy did not load would run tools unchecked.
+      // Fail closed: a Pi whose kaiju-policy did not load would run tools unchecked.
       await thread.stopProcess();
-      return fail("pi_unavailable", `kobe-policy did not start: ${(error as Error).message}`);
+      return fail("pi_unavailable", `kaiju-policy did not start: ${(error as Error).message}`);
     }
     const tampered = await thread.verifyRuntime();
     if (tampered !== undefined) {

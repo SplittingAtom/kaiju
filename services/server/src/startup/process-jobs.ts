@@ -106,7 +106,7 @@ function startupJobs(c: ProcessJobsContext, isolationSettled: IsolationSettled):
   // Kaiju's own catalog skills seed (KOBE-317) retries until it gets through; started by
   // `seedAtStart` before the jobs, stopped with them.
   const seeds = c.startSeeds;
-  if (seeds) jobs.push(job("kobe-skills-seed", () => () => seeds.stop()));
+  if (seeds) jobs.push(job("kaiju-skills-seed", () => () => seeds.stop()));
   // Workspace blobs no manifest references are collected (KOBE-27).
   const sync = c.workspaceSync;
   if (sync) {

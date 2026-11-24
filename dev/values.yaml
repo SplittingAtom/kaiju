@@ -3,18 +3,18 @@ global:
   # Tilt renders offline (helm template); throwaway clusters may generate secrets per render.
   allowGeneratedSecretsOffline: true
 ingress:
-  host: kobe.localtest.me
+  host: kaiju.localtest.me
   tls:
     enabled: false
 postgres:
   mode: external
   external:
-    existingSecret: kobe-dev-db
+    existingSecret: kaiju-dev-db
 s3:
-  # dev/s3.yaml: SeaweedFS in kobe-deps (Apache-2.0; dev/e2e only, never in the chart).
-  endpoint: http://s3.kobe-deps.svc.cluster.local:8333
-  bucket: kobe
-  existingSecret: kobe-dev-s3
+  # dev/s3.yaml: SeaweedFS in kaiju-deps (Apache-2.0; dev/e2e only, never in the chart).
+  endpoint: http://s3.kaiju-deps.svc.cluster.local:8333
+  bucket: kaiju
+  existingSecret: kaiju-dev-s3
 # The e2e asserts a reconcile pass over the team namespace it creates (KOBE-126): run it often.
 server:
   teamReconcileSeconds: 30
@@ -32,14 +32,14 @@ sandbox:
     limits: { cpu: "1", memory: 1Gi }
 smtp:
   # dev/mailpit.yaml: an in-cluster SMTP sink (web UI on port 8025). Plain SMTP, no credentials.
-  host: mailpit.kobe-deps.svc.cluster.local
+  host: mailpit.kaiju-deps.svc.cluster.local
   port: 1025
   security: none
-  from: "Kaiju Dev <kaiju@kobe.localtest.me>"
-# The egress proxy reads allowlists from the dev Postgres (kobe-deps namespace).
+  from: "Kaiju Dev <kaiju@kaiju.localtest.me>"
+# The egress proxy reads allowlists from the dev Postgres (kaiju-deps namespace).
 egressProxy:
   networkPolicy:
     databasePeers:
       - namespaceSelector:
           matchLabels:
-            kubernetes.io/metadata.name: kobe-deps
+            kubernetes.io/metadata.name: kaiju-deps

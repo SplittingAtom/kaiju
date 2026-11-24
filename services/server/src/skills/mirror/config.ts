@@ -22,7 +22,7 @@ const schema = z.object({
     .regex(/^[A-Za-z0-9._-]{1,100}$/, "KAIJU_SKILL_MIRROR_USERNAME must be a plain user name")
     .default("x-access-token"),
   KAIJU_SKILL_MIRROR_AUTHOR_NAME: z.string().trim().min(1).max(100).default("Kaiju Registry"),
-  KAIJU_SKILL_MIRROR_AUTHOR_EMAIL: z.email().max(200).default("registry@kobe.invalid"),
+  KAIJU_SKILL_MIRROR_AUTHOR_EMAIL: z.email().max(200).default("registry@kaiju.invalid"),
 });
 
 export interface SkillMirrorConfig {

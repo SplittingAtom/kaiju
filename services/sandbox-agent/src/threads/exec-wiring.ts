@@ -68,12 +68,12 @@ export interface PiPrivateDirs {
 }
 
 /** Name prefix of Pi's private directories under the scratch volume (swept at agent start). */
-export const PI_PRIVATE_PREFIX = "kobe-pi-";
+export const PI_PRIVATE_PREFIX = "kaiju-pi-";
 
 /**
  * Pi's own HOME and TMPDIR once its tools are another uid (KOBE-196): Pi loads code from both
  * (jiti's transpile cache in `$TMPDIR/jiti`, Node's `$HOME/.node_modules`), so neither may be
- * writable by the partner uid, and `kobe-reclaim` must not hand them to the workspace group (they
+ * writable by the partner uid, and `kaiju-reclaim` must not hand them to the workspace group (they
  * are deleted before it runs). They live on the scratch volume (`base`, the pod's /tmp, sized for
  * tool output) and not on the small runtime volume the model file and egress token share: the bash
  * tool's "full output" logs land in this TMPDIR and are unbounded. `base` is a sticky directory, so

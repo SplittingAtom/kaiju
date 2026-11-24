@@ -3,7 +3,7 @@
 # with the executor on) and prints ONE line of key=value words: the fake model repeats a tool
 # result as a single line. Every `*_ok` count is the number of attempts that SUCCEEDED, so 0 is
 # the isolated answer. "other" = a different thread's Pi or executor.
-# Usage: probe.sh   (reads nothing; uses ps, /proc, /run/kobe-pi, /tmp/kobe-pi-*, /workspace)
+# Usage: probe.sh   (reads nothing; uses ps, /proc, /run/kaiju-pi, /tmp/kaiju-pi-*, /workspace)
 me=$(id -u)
 pi=$((me - 1000))
 printf 'uid=%s pi_uid=%s' "$me" "$pi"
@@ -34,7 +34,7 @@ printf ' agent_seen=%s own_pi=%s other_pis=%s others=%s signal_ok=%s environ_ok=
 
 # Pi runtime directories (model.json, agent/): read and write attempts, own Pi's and the others'.
 model_ok=0 agent_ls_ok=0 agent_w_ok=0 top_w_ok=0 own_tool_token=0 other_tool_token=0
-for d in /run/kobe-pi/*; do
+for d in /run/kaiju-pi/*; do
   [ -d "$d" ] || continue
   case $d in
     *-tool)
@@ -53,7 +53,7 @@ for d in /run/kobe-pi/*; do
   esac
 done
 tok_ok=0
-for f in /run/kobe-agent/bootstrap/bootstrap-token /var/run/kobe/sandbox-wire/token; do
+for f in /run/kaiju-agent/bootstrap/bootstrap-token /var/run/kaiju/sandbox-wire/token; do
   cat "$f" >/dev/null 2>&1 && tok_ok=$((tok_ok + 1))
 done
 printf ' model_json_ok=%s agent_dir_ok=%s agent_write_ok=%s runtime_write_ok=%s agent_tokens_ok=%s' \
@@ -62,7 +62,7 @@ printf ' own_tool_token=%s other_tool_token=%s' "$own_tool_token" "$other_tool_t
 
 # Pi's private HOME and TMPDIR (KOBE-196): nothing may be created, replaced or listed there.
 priv=0 priv_w=0 priv_ls=0
-for d in /tmp/kobe-pi-*; do
+for d in /tmp/kaiju-pi-*; do
   [ -d "$d" ] || continue
   priv=$((priv + 1))
   for s in home tmp; do
@@ -75,7 +75,7 @@ done
 printf ' private_dirs=%s private_write_ok=%s' "$priv" "$priv_w"
 # A "Full output" log of the tool stays readable to the read tool: tmp is listable, home is not.
 tmp_ls=0
-for d in /tmp/kobe-pi-*; do [ -d "$d/tmp" ] && ls "$d/tmp" >/dev/null 2>&1 && tmp_ls=$((tmp_ls + 1)); done
+for d in /tmp/kaiju-pi-*; do [ -d "$d/tmp" ] && ls "$d/tmp" >/dev/null 2>&1 && tmp_ls=$((tmp_ls + 1)); done
 printf ' private_tmp_listable=%s' "$tmp_ls"
 
 # Plant code where Pi (or a later Pi) might load it: the tool's own HOME and TMPDIR work, Pi's do not

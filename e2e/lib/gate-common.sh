@@ -76,7 +76,7 @@ ensure_fake_llm() {
   if [[ "$phase" == Active && "$($KUBECTL -n "$ns" get pod llm -o jsonpath='{.status.phase}' 2>/dev/null)" == Running ]]; then
     return
   fi
-  image=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}' | sed 's/kobe-server/kobe-model-gateway/')
+  image=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}' | sed 's/kaiju-server/kaiju-model-gateway/')
   $KUBECTL delete pod llm -n "$ns" --ignore-not-found --wait=true >/dev/null 2>&1 || true
   $KUBECTL create namespace "$ns" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
   $KUBECTL -n "$ns" run llm --restart=Never --image="$image" --image-pull-policy=IfNotPresent --labels=app=llm \

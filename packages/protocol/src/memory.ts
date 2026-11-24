@@ -15,10 +15,10 @@ import {
  * (~{@link MEMORY_INDEX_MAX_LINES} lines).
  *
  * Reaching a run: the server puts the effective indexes in `run.start.memory`
- * ({@link runMemoryContextSchema}); kobe-sandbox-agent appends them to the system prompt of every
+ * ({@link runMemoryContextSchema}); kaiju-sandbox-agent appends them to the system prompt of every
  * turn of that run. Topic files are never preloaded: the model reads them with `recall`.
  *
- * Writes: `remember` -> kobe-policy `policy.check` -> kobe-tools `memory.put` (kobe-tools channel,
+ * Writes: `remember` -> kaiju-policy `policy.check` -> kaiju-tools `memory.put` (kaiju-tools channel,
  * artifacts.ts) -> `memory.put` frame -> server. A `user` write is applied at once and emits
  * `memory.updated`, whose payload is enough for Undo ({@link undoMemoryAction}). A `project` write
  * is held for approval (the answer is `status: "pending_approval"`; the approval is the normal
@@ -200,9 +200,9 @@ export const memoryShowOkFields = {
 } as const;
 export const memoryFailFields = { ok: z.literal(false), error: memoryErrorSchema } as const;
 
-// ----------------------------------------------------------------------------- kobe-tools channel
+// ----------------------------------------------------------------------------- kaiju-tools channel
 
-/** Requests on the kobe-tools channel (KAIJU_TOOLS_FD); dispatch on `op`. */
+/** Requests on the kaiju-tools channel (KAIJU_TOOLS_FD); dispatch on `op`. */
 export const memoryToolsRequestSchema = z.union([
   z.strictObject({
     id: idSchema,

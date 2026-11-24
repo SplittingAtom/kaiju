@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadModelsConfig } from "./config.js";
 
 const full = {
-  KAIJU_BIFROST_URL: "http://kobe-bifrost:8080",
+  KAIJU_BIFROST_URL: "http://kaiju-bifrost:8080",
   KAIJU_BIFROST_ADMIN_PASSWORD: "p".repeat(40),
   KAIJU_MODELS_PROVIDER_KEY_SECRET: "a".repeat(40),
   KAIJU_MODELS_VIRTUAL_KEY_SECRET: "b".repeat(40),
@@ -15,7 +15,7 @@ describe("loadModelsConfig", () => {
 
   it("reads a complete configuration with defaults", () => {
     expect(loadModelsConfig(full)).toEqual({
-      bifrostUrl: "http://kobe-bifrost:8080",
+      bifrostUrl: "http://kaiju-bifrost:8080",
       adminUsername: "kobe",
       adminPassword: "p".repeat(40),
       providerKeySecrets: ["a".repeat(40)],
@@ -57,15 +57,15 @@ describe("loadModelsConfig", () => {
     expect(loadModelsConfig(full)?.localEmbedding).toBeUndefined();
     const c = loadModelsConfig({
       ...full,
-      KAIJU_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
+      KAIJU_EMBEDDINGS_LOCAL_URL: "http://kaiju-embeddings:8080",
       KAIJU_EMBEDDINGS_LOCAL_MODEL: "nomic-embed-text",
     });
     expect(c?.localEmbedding).toEqual({
-      url: "http://kobe-embeddings:8080",
+      url: "http://kaiju-embeddings:8080",
       model: "nomic-embed-text",
     });
     expect(() =>
-      loadModelsConfig({ ...full, KAIJU_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080" }),
+      loadModelsConfig({ ...full, KAIJU_EMBEDDINGS_LOCAL_URL: "http://kaiju-embeddings:8080" }),
     ).toThrow(/KAIJU_EMBEDDINGS_LOCAL_MODEL/);
     expect(() =>
       loadModelsConfig({
@@ -77,7 +77,7 @@ describe("loadModelsConfig", () => {
     expect(() =>
       loadModelsConfig({
         ...full,
-        KAIJU_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
+        KAIJU_EMBEDDINGS_LOCAL_URL: "http://kaiju-embeddings:8080",
         KAIJU_EMBEDDINGS_LOCAL_MODEL: "bad model/../x",
       }),
     ).toThrow(/KAIJU_EMBEDDINGS_LOCAL_MODEL/);

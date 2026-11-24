@@ -49,7 +49,7 @@ export async function runCompaction(
   try {
     const ready = await compactReady(port, thread, model);
     if (ready !== undefined) return ready;
-    // Memory only (KOBE-118): kobe-models asks for it when Pi starts summarizing.
+    // Memory only (KOBE-118): kaiju-models asks for it when Pi starts summarizing.
     await thread.attachRun(
       frame.run_id,
       model,

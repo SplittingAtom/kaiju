@@ -22,7 +22,7 @@
 # k3d (CI shard `gate4`): after the gate1-prep install. A real install: KAIJU_GATE4_NS, _RELEASE,
 # _CONTEXT, _MODEL, _OWNER_EMAIL/_PASSWORD; U7 against a real OAuth MCP server with
 # KAIJU_GATE4_MCP_URL (see the doc). It creates users gate4-*@gate4.test, teams gate4-a and gate4-b
-# and namespace kobe-gate4-infra (the fake OAuth MCP server and the Orbit test model). With
+# and namespace kaiju-gate4-infra (the fake OAuth MCP server and the Orbit test model). With
 # KAIJU_GATE4_FAKE_INFRA=1 (the k3d default) one `helm upgrade` lets the MCP proxy reach the fake
 # server, re-probes connectors every 60 s and lets Bifrost reach the test model; on a real cluster
 # it is undone on exit from the release's saved values.
@@ -31,17 +31,17 @@ cd "$(dirname "$0")/../.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KAIJU_GATE4_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATE4_RELEASE:-kobe}"
-CHART="${KAIJU_GATE4_CHART:-charts/kobe}"
+NS="${KAIJU_GATE4_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATE4_RELEASE:-kaiju}"
+CHART="${KAIJU_GATE4_CHART:-charts/kaiju}"
 STORIES=" ${KAIJU_GATE4_STORIES:-U1 U2 U5 U6 U7 U8 U11 U14 U15 U16} "
 MODEL_ALIAS="${KAIJU_GATE4_MODEL:-fast}"
 FAKE="${KAIJU_GATE4_FAKE:-$([[ "$MODEL_ALIAS" == fast ]] && echo 1 || echo 0)}"
 OWNER_EMAIL="${KAIJU_GATE4_OWNER_EMAIL:-owner@e2e.test}"
 OWNER_PASSWORD="${KAIJU_GATE4_OWNER_PASSWORD:-e2e owner password}"
 SBX_WAIT="${KAIJU_GATE4_SANDBOX_WAIT:-180}"
-MAILPIT="${KAIJU_GATE4_MAILPIT:-http://mailpit.kobe-deps.svc.cluster.local:8025}"
-INFRA_NS=kobe-gate4-infra
+MAILPIT="${KAIJU_GATE4_MAILPIT:-http://mailpit.kaiju-deps.svc.cluster.local:8025}"
+INFRA_NS=kaiju-gate4-infra
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
 NONCE="$(date +%s)"
@@ -154,7 +154,7 @@ chat() { turn "$(user_of "$SBX_WHO")" "$1"; } # scan.sh's Pi view runs through t
 if ((FAKE_INFRA)) && ((MODELS)); then
   echo "==> test servers in $INFRA_NS: an OAuth MCP server and the Orbit test model"
   SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-  SANDBOX_IMAGE="${KAIJU_GATE4_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
+  SANDBOX_IMAGE="${KAIJU_GATE4_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kaiju-sandbox}}"
   $KUBECTL create namespace "$INFRA_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
   for svc in fake-oauth orbit-model; do
     $KUBECTL -n "$INFRA_NS" get svc "$svc" >/dev/null 2>&1 \
@@ -559,10 +559,10 @@ if want U16; then
   }
   contains "U16: a RuntimeClass that does not exist is refused" 'refuses to run agents' "$(dry gate4-no-such-class)"
   if ((RUNC_CLASS)); then
-    printf 'apiVersion: node.k8s.io/v1\nkind: RuntimeClass\nmetadata: {name: kobe-gate4-runc}\nhandler: runc\n' | $KUBECTL apply -f - >/dev/null
-    UNDO+=("$KUBECTL delete runtimeclass kobe-gate4-runc --ignore-not-found")
-    contains "U16: a RuntimeClass whose handler is runc is refused (the handler is checked, not the name)" 'refuses to run agents' "$(dry kobe-gate4-runc)"
-    $KUBECTL delete runtimeclass kobe-gate4-runc --ignore-not-found >/dev/null 2>&1 || true
+    printf 'apiVersion: node.k8s.io/v1\nkind: RuntimeClass\nmetadata: {name: kaiju-gate4-runc}\nhandler: runc\n' | $KUBECTL apply -f - >/dev/null
+    UNDO+=("$KUBECTL delete runtimeclass kaiju-gate4-runc --ignore-not-found")
+    contains "U16: a RuntimeClass whose handler is runc is refused (the handler is checked, not the name)" 'refuses to run agents' "$(dry kaiju-gate4-runc)"
+    $KUBECTL delete runtimeclass kaiju-gate4-runc --ignore-not-found >/dev/null 2>&1 || true
   else
     notrun "U16: a runc-handler RuntimeClass (KAIJU_GATE4_RUNC_CLASS=0: it is cluster-scoped)"
   fi

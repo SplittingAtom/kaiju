@@ -104,7 +104,7 @@ export function createSandboxBus(options: BusOptions): SandboxBus {
     ? undefined
     : createListenClient({
         connectionString: requiredUrl(options.connectionString),
-        applicationName: "kobe-sandbox-bus",
+        applicationName: "kaiju-sandbox-bus",
         ...(options.reconnectMinMs === undefined ? {} : { reconnectMinMs: options.reconnectMinMs }),
         ...(options.reconnectMaxMs === undefined ? {} : { reconnectMaxMs: options.reconnectMaxMs }),
       });

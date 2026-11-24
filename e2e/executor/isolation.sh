@@ -68,7 +68,7 @@ contains "thread B ended run.completed" '^terminal=run.completed$' "$b_out"
 contains "workspace: the agent (uid 1000) can append to the tool's file" '^appended$' \
   "$(in_owner 'echo agent >> /workspace/kaiju168/from-tool.txt && echo appended')"
 contains "workspace: a Pi uid can append to the tool's file (shared by group 1000)" '^appended$' \
-  "$(in_owner 'R=/opt/kobe/bin/kobe-runas; $R 2015 sh -c "echo pi >> /workspace/kaiju168/from-tool.txt" && echo appended')"
+  "$(in_owner 'R=/opt/kaiju/bin/kaiju-runas; $R 2015 sh -c "echo pi >> /workspace/kaiju168/from-tool.txt" && echo appended')"
 contains "workspace: the directory is setgid group 1000 so new files stay shared" '^[0-9]*:1000:2775$' \
   "$(in_owner 'stat -c "%u:%g:%a" /workspace/kaiju168')"
 

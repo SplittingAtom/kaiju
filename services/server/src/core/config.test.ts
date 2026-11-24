@@ -212,8 +212,8 @@ describe("loadConfig", () => {
   it("reads the MCP proxy address for the pinning probe (KOBE-101)", () => {
     expect(loadConfig(REQUIRED).mcpProxyUrl).toBeUndefined();
     expect(
-      loadConfig({ ...REQUIRED, KAIJU_MCP_PROXY_URL: "http://kobe-mcp-proxy:80" }).mcpProxyUrl,
-    ).toBe("http://kobe-mcp-proxy:80");
+      loadConfig({ ...REQUIRED, KAIJU_MCP_PROXY_URL: "http://kaiju-mcp-proxy:80" }).mcpProxyUrl,
+    ).toBe("http://kaiju-mcp-proxy:80");
     expect(() => loadConfig({ ...REQUIRED, KAIJU_MCP_PROXY_URL: "ftp://x" })).toThrow(
       /KAIJU_MCP_PROXY_URL/,
     );
@@ -222,14 +222,14 @@ describe("loadConfig", () => {
   it("reads the model gateway's address for the server's own calls (KOBE-219)", () => {
     expect(loadConfig(REQUIRED).modelGatewayUrl).toBeUndefined();
     expect(
-      loadConfig({ ...REQUIRED, KAIJU_MODEL_GATEWAY_URL: "http://kobe-model-gateway" })
+      loadConfig({ ...REQUIRED, KAIJU_MODEL_GATEWAY_URL: "http://kaiju-model-gateway" })
         .modelGatewayUrl,
-    ).toBe("http://kobe-model-gateway");
+    ).toBe("http://kaiju-model-gateway");
     expect(() => loadConfig({ ...REQUIRED, KAIJU_MODEL_GATEWAY_URL: "ftp://x" })).toThrow(
       /KAIJU_MODEL_GATEWAY_URL/,
     );
     expect(() =>
-      loadConfig({ ...REQUIRED, KAIJU_MODEL_GATEWAY_URL: "http://u:p@kobe-model-gateway" }),
+      loadConfig({ ...REQUIRED, KAIJU_MODEL_GATEWAY_URL: "http://u:p@kaiju-model-gateway" }),
     ).toThrow(/KAIJU_MODEL_GATEWAY_URL/);
   });
 

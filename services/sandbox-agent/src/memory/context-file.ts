@@ -4,8 +4,8 @@ import type { SemanticSection } from "./semantic-context.js";
 
 /**
  * The per-run memory file (KOBE-157): `<runtimeDir>/memory-context.json`, agent-owned like the model
- * file (0600, or 0640 under a Pi identity), rewritten atomically before every prompt. The kobe-tools
- * extension reads it (kobe-tools/memory-hooks.ts), so a changed memory index is not a changed
+ * file (0600, or 0640 under a Pi identity), rewritten atomically before every prompt. The kaiju-tools
+ * extension reads it (kaiju-tools/memory-hooks.ts), so a changed memory index is not a changed
  * launch and never restarts Pi. `verify` is the tripwire: it must still be what the agent wrote.
  */
 export const MEMORY_FILE_NAME = "memory-context.json";
@@ -25,7 +25,7 @@ export interface MemoryFileContent {
   /** The held picks of `stable_plus_delta` (KOBE-658): in the system prompt, after the project. */
   readonly held?: string;
   /**
-   * Where kobe-tools puts `picks` (KOBE-658): in the system prompt (`system`, also absent), or
+   * Where kaiju-tools puts `picks` (KOBE-658): in the system prompt (`system`, also absent), or
    * before the newest user message, earlier messages keeping theirs (`message_keep`) or not
    * (`message_strip`).
    */
@@ -42,7 +42,7 @@ export interface MemoryFileContent {
   readonly conflicts?: string;
   /** Sync conflicts told mid-run (KOBE-492): a custom message before each later model call. */
   readonly conflictsLive?: string;
-  /** The viewer may edit the run's project (KOBE-580): kobe-tools lists `commit_project`. */
+  /** The viewer may edit the run's project (KOBE-580): kaiju-tools lists `commit_project`. */
   readonly projectWrite?: boolean;
   /**
    * The notes the thread's earlier messages were sent with (KOBE-662), `[user message timestamp,
@@ -53,7 +53,7 @@ export interface MemoryFileContent {
 
 export type PicksPlacement = "system" | "message_keep" | "message_strip";
 
-/** The file's JSON (what kobe-tools/memory-hooks.ts `readMemoryRunFile` parses). */
+/** The file's JSON (what kaiju-tools/memory-hooks.ts `readMemoryRunFile` parses). */
 export function memoryFileJson(content: MemoryFileContent): string {
   return JSON.stringify({
     tools: content.tools,

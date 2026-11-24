@@ -11,7 +11,7 @@ such as ISC, 0BSD, BlueOak-1.0.0, Zlib, CC0-1.0 and Unlicense count as part of t
 and source-available licenses are excluded). Fonts may also be SIL OFL 1.1 (`OFL-1.1`, approved by
 Chris on 2026-11-07, KOBE-555): shipped unmodified apart from a TTF-to-WOFF2 conversion, under their
 own names (the OFL's Reserved Font Name clause), with each project's `OFL.txt` beside the files and
-in the web image's `/usr/share/doc/kobe/fonts`, and a row in the inventory's Fonts section. The
+in the web image's `/usr/share/doc/kaiju/fonts`, and a row in the inventory's Fonts section. The
 check cannot tell a font from other code, so any OFL-1.1 package now passes it; an OFL dependency
 should still be a font. Anything else needs a documented, version-pinned
 entry that Chris decides on, recording **who approved it and when**:
@@ -76,14 +76,14 @@ drift. The sources:
   agent-sandbox, gVisor/Kata, CloudNativePG, PostgreSQL, Bifrost, ClamAV, Langfuse, ...), dev and
   test tools and assets. The check fails when a Dockerfile `FROM`, an image in the chart, `dev/`,
   `ci/`, a workflow or a script has no row (`images:` on a row covers a repository), and when a
-  top-level key of `charts/kobe/values.yaml` is not classified in `chartValues` (first-party,
+  top-level key of `charts/kaiju/values.yaml` is not classified in `chartValues` (first-party,
   site-provided, or the rows it brings in).
 - **NOTICE:** Kaiju's own notice, then the NOTICE file of every bundled component that ships one
   (npm packages shipped in an image, and the `notice` texts in the image reports), as Apache-2.0
   section 4(d) requires when redistributing them.
 
 Every Kaiju image ships `LICENSE`, `NOTICE` and `THIRD_PARTY_LICENSES.md` under
-`/usr/share/doc/kobe/`; `scripts/assert-image-licenses.sh` checks that they match the repository
+`/usr/share/doc/kaiju/`; `scripts/assert-image-licenses.sh` checks that they match the repository
 (CI `e2e` images job, `sandbox-image`, `orbit-eval-image`, `pnpm images:check`).
 
 **Adding a dependency, image or service:** run `pnpm licenses:update` and commit the result; for a
@@ -127,6 +127,6 @@ family. `pnpm license:check` names anything missing.
   libgfortran (GPL with the GCC Runtime Library Exception, which permits redistribution in non-GPL
   programs); pillow and pyarrow bundle further permissive libraries (inventory, "Container and base
   images").
-- **kobe-runas** is linked statically (`-static-pie`) against musl (MIT) with musl's own start
+- **kaiju-runas** is linked statically (`-static-pie`) against musl (MIT) with musl's own start
   files only: no glibc and no GCC runtime objects in the binary (Chris chose musl over glibc's
   LGPL on 2026-10-17, KOBE-375).

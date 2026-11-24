@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PI_PRIVATE_PREFIX, preparePiPrivateDirs, sweepPiPrivateDirs } from "./exec-wiring.js";
-import { mapHome } from "../kobe-exec/tools.js";
-import type { ExecTransport } from "../kobe-exec/client.js";
+import { mapHome } from "../kaiju-exec/tools.js";
+import type { ExecTransport } from "../kaiju-exec/client.js";
 
 let base: string;
 beforeEach(async () => {
@@ -102,19 +102,24 @@ describe("mapHome (KOBE-196)", () => {
     };
     return { seen, transport };
   }
-  const homes = { piHome: "/tmp/kobe-pi-x/home", toolHome: "/home/kobe" };
+  const homes = { piHome: "/tmp/kaiju-pi-x/home", toolHome: "/home/kobe" };
 
   it("rewrites a path or cwd under Pi's private home to the tools' home, nothing else", async () => {
     const { seen, transport } = recorder();
     const mapped = mapHome(transport, homes);
-    await mapped.request({ op: "read", path: "/tmp/kobe-pi-x/home/.bashrc", offset: 0, length: 1 });
-    await mapped.request({ op: "exec", cwd: "/tmp/kobe-pi-x/home", command: "ls" });
-    await mapped.request({ op: "stat", path: "/tmp/kobe-pi-x/homework" });
+    await mapped.request({
+      op: "read",
+      path: "/tmp/kaiju-pi-x/home/.bashrc",
+      offset: 0,
+      length: 1,
+    });
+    await mapped.request({ op: "exec", cwd: "/tmp/kaiju-pi-x/home", command: "ls" });
+    await mapped.request({ op: "stat", path: "/tmp/kaiju-pi-x/homework" });
     await mapped.request({ op: "stat", path: "/workspace/a" });
     expect(seen.map((b) => b.path ?? b.cwd)).toEqual([
       "/home/kobe/.bashrc",
       "/home/kobe",
-      "/tmp/kobe-pi-x/homework",
+      "/tmp/kaiju-pi-x/homework",
       "/workspace/a",
     ]);
   });

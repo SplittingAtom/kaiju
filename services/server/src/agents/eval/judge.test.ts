@@ -7,7 +7,7 @@ const report = (over: Record<string, unknown> = {}) => ({
   attempts: 5,
   attack_successes: 1,
   errors: 0,
-  pack: { id: "kobe-default", version: 1 },
+  pack: { id: "kaiju-default", version: 1 },
   ...over,
 });
 const logOf = (r: unknown, before = "ok: 5 scenarios\n") =>
@@ -66,12 +66,21 @@ describe("judge (fail closed)", () => {
   it("errors on a result for another pack or one that did not run every scenario", () => {
     for (const over of [
       { pack: { id: "other", version: 1 } },
-      { pack: { id: "kobe-default", version: 2 } },
+      { pack: { id: "kaiju-default", version: 2 } },
       { attempts: 4, attack_successes: 0 },
       { attempts: 5, errors: 0, attack_success_rate: 0, pack: undefined },
     ]) {
       expect(judge({ outcome: ok, log: logOf(report(over)), threshold: 1 }).status).toBe("errored");
     }
+  });
+
+  it("accepts the pack's pre-rename id for one release (an eval Job of the old image, KOBE-750)", () => {
+    const v = judge({
+      outcome: ok,
+      log: logOf(report({ pack: { id: "kobe-default", version: 1 } })),
+      threshold: 1,
+    });
+    expect(v.status).not.toBe("errored");
   });
 
   it("errors when nothing was scored", () => {

@@ -94,7 +94,7 @@ describe("Publish with the gate on (KOBE-93)", () => {
     const versions = (await builder.get(`/v1/agents/${id}/versions`)).json.versions;
     expect(versions[0].score).toMatchObject({ attackSuccessRate: 0, threshold: 0.2 });
     const detail = (await builder.get(`/v1/agents/${id}/evals/${list[0].id}`)).json.eval;
-    expect(detail.report.pack).toEqual({ id: "kobe-default", version: 1 });
+    expect(detail.report.pack).toEqual({ id: "kaiju-default", version: 1 });
 
     const [job] = kube.all("Job") as unknown as {
       metadata: { namespace: string };

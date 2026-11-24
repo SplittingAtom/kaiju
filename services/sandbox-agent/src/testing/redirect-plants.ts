@@ -1,4 +1,4 @@
-import { KAIJU_PROVIDER_ID as PROVIDER } from "../kobe-models/protocol.js";
+import { KAIJU_PROVIDER_ID as PROVIDER } from "../kaiju-models/protocol.js";
 import type { ModelChoice } from "./real-pi-rpc.js";
 
 /** Models, run tokens and the planted files of the KOBE-165 / KOBE-169 redirect suites. */

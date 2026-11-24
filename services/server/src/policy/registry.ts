@@ -13,7 +13,7 @@ export interface McpToolCatalog {
 export const NO_MCP_TOOLS: McpToolCatalog = { resolve: () => Promise.resolve(undefined) };
 
 /**
- * The server's tool registry: Pi 1.0.0 built-ins and kobe-tools from `BUILTIN_TOOLS`, then MCP
+ * The server's tool registry: Pi 1.0.0 built-ins and kaiju-tools from `BUILTIN_TOOLS`, then MCP
  * tools from the pinned catalog. Anything else is unknown (the engine denies it). A catalog entry
  * that claims a built-in's name or a non-MCP source is ignored, so a connector can never
  * masquerade as a built-in.

@@ -4,7 +4,7 @@ import path from "node:path";
 
 /**
  * Pi identities (KOBE-71): every Pi process, and so every tool it runs, gets a uid of its own
- * from a pool, through the image's `kobe-runas` helper (images/sandbox/runas/kobe-runas.c). The
+ * from a pool, through the image's `kaiju-runas` helper (images/sandbox/runas/kaiju-runas.c). The
  * agent keeps its own uid, so a thread's tools cannot read the agent's files (the bootstrap
  * token), write another thread's runtime directory, or signal/ptrace the agent or another
  * thread's processes.
@@ -12,7 +12,7 @@ import path from "node:path";
  * The pool is the agent's supplementary groups in [{@link PI_UID_MIN}, {@link PI_UID_MAX}]: the pod
  * spec lists them (KOBE-22 manifests) so the agent can hand each Pi a directory only that Pi's
  * group can read (uid = gid per identity). An identity is handed out again only after every
- * process of its uid is gone (`--kill-all`), its runtime directory is removed, and `kobe-reclaim`
+ * process of its uid is gone (`--kill-all`), its runtime directory is removed, and `kaiju-reclaim`
  * has given everything the uid still owns in the shared trees (/workspace, $HOME, /tmp, /dev/shm)
  * to the workspace group and removed its System V IPC objects. Files outlive the uid (the
  * workspace is shared, D13), but nothing stays private to it: the next thread that gets the uid
@@ -255,7 +255,7 @@ export class PiIdentities {
   /**
    * After {@link killAll}: as the identity, hand what it still owns under `dirs` to the workspace
    * group `gid`, delete what it owns in `purgeDirs`, and remove its System V IPC objects
-   * (`kobe-reclaim`, next to the helper). Throws if anything could not be reclaimed (non-zero
+   * (`kaiju-reclaim`, next to the helper). Throws if anything could not be reclaimed (non-zero
    * exit, after retries): the caller must then keep the identity out of use.
    */
   async reclaimFiles(
@@ -310,7 +310,7 @@ export class PiIdentities {
     }
   }
 
-  /** The reclaim script: `kobe-reclaim` in the helper's directory (root-owned, image). */
+  /** The reclaim script: `kaiju-reclaim` in the helper's directory (root-owned, image). */
   readonly reclaimScript: string;
 
   /**
@@ -376,7 +376,7 @@ export class PiIdentities {
   /**
    * As the first identity, a child process tries to ptrace its parent and read its memory
    * (`--probe-ptrace`): proves the helper switches uids, and that a tool (which shares its Pi's
-   * uid) cannot reach into its Pi, where kobe-policy and the policy socket live. Behavioural,
+   * uid) cannot reach into its Pi, where kaiju-policy and the policy socket live. Behavioural,
    * not a sysctl reading: whatever the kernel (gVisor, a Kata guest), both must be refused.
    */
   async probe(): Promise<void> {
@@ -400,7 +400,7 @@ export class PiIdentities {
   }
 }
 
-/** `kobe-runas <uid> [env TMPDIR=…] bin args…` (see {@link PiIdentities.command}). */
+/** `kaiju-runas <uid> [env TMPDIR=…] bin args…` (see {@link PiIdentities.command}). */
 function runasArgs(
   uid: number,
   bin: string,
@@ -411,9 +411,9 @@ function runasArgs(
   return [String(uid), ...tmpdir, bin, ...args];
 }
 
-/** `kobe-reclaim`, installed next to the helper. */
+/** `kaiju-reclaim`, installed next to the helper. */
 export function reclaimScriptFor(helper: string): string {
-  return path.join(path.dirname(helper), "kobe-reclaim");
+  return path.join(path.dirname(helper), "kaiju-reclaim");
 }
 
 /** The Pi identities among the agent's supplementary groups. */

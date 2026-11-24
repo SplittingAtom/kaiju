@@ -29,7 +29,7 @@ sudo scripts/install-gvisor-k3s.sh
 Then, once per cluster, create the RuntimeClass and install the agent-sandbox controller:
 
 ```bash
-kubectl apply -f charts/kobe/runtimeclass-gvisor.yaml
+kubectl apply -f charts/kaiju/runtimeclass-gvisor.yaml
 scripts/install-agent-sandbox.sh
 ```
 
@@ -62,7 +62,7 @@ created by hand. Every team namespace gets:
   outbound only to the Kaiju server's **sandbox port** (8081, a separate listener with no user API),
   the model-gateway shim (models; `sandbox.modelGatewayAccess`, default on), the MCP proxy and the
   egress proxy — never Bifrost itself. Sandboxes get no DNS: Kaiju's services
-  resolve through `/etc/hosts` (`*.kobe.internal` → the Services' ClusterIPs), so DNS cannot be
+  resolve through `/etc/hosts` (`*.kaiju.internal` → the Services' ClusterIPs), so DNS cannot be
   used to leak data past the egress proxy;
 - a **ResourceQuota** (`sandbox.teamQuota`: requests and limits for CPU, memory and ephemeral
   storage, pods, PVCs and requested storage) and a LimitRange with per-container defaults. **Size
@@ -85,7 +85,7 @@ mount Secrets, read Secrets into env, mount a Kubernetes API token, use host nam
 `hostPath`; they must meet Pod Security `restricted` (non-root, seccomp `RuntimeDefault`/
 `Localhost`, all capabilities dropped, no privileged containers, `restricted` volume types) with
 one exception: sandbox containers add `SETUID` and `SETGID` (nothing else) and allow privilege
-escalation, so the image's `kobe-runas` helper can run each Pi process and its tools under a uid
+escalation, so the image's `kaiju-runas` helper can run each Pi process and its tools under a uid
 of their own, separate from the agent and from other threads (KOBE-71; the capabilities exist
 inside the gVisor/Kata sandbox kernel only). That is why the namespace label says `baseline`; and
 only the Kaiju server may add or change NetworkPolicies there. The server's own
@@ -155,12 +155,12 @@ for a in sandbox-wire model-gateway mcp-proxy egress-proxy; do
   openssl genpkey -algorithm ed25519 -out "$a.key"
   openssl pkey -in "$a.key" -pubout -out "$a.pub"
 done
-kubectl -n kobe create secret generic kobe-session-keys \
+kubectl -n kaiju create secret generic kaiju-session-keys \
   --from-file=sandbox-wire.key --from-file=model-gateway.key \
   --from-file=mcp-proxy.key --from-file=egress-proxy.key \
   --from-literal=trace-span="$(openssl rand -base64 36)" \
   --from-literal=approval-hmac="$(openssl rand -base64 36)"
-kubectl -n kobe create configmap kobe-session-verify-keys \
+kubectl -n kaiju create configmap kaiju-session-verify-keys \
   --from-file=sandbox-wire=sandbox-wire.pub --from-file=model-gateway=model-gateway.pub \
   --from-file=mcp-proxy=mcp-proxy.pub --from-file=egress-proxy=egress-proxy.pub
 ```
@@ -424,10 +424,10 @@ equal the CONNECT host. It never decrypts traffic. Plain HTTP and other ports ar
   JSON on the proxy's stdout. Blocked attempts are shown on the user's active run (`egress.blocked`).
 - **Proxy credentials for tools:** Pi's environment is built from an allow-list, so the pod's
   `HTTPS_PROXY` (which has no credentials) does not reach the tools Pi runs. Instead
-  kobe-sandbox-agent keeps the sandbox's rotating egress token in a private file per Pi process
-  (0600), and Pi gets `BASH_ENV=/opt/kobe/egress-env.sh` (root-owned, in the sandbox image):
+  kaiju-sandbox-agent keeps the sandbox's rotating egress token in a private file per Pi process
+  (0600), and Pi gets `BASH_ENV=/opt/kaiju/egress-env.sh` (root-owned, in the sandbox image):
   every bash tool call sources it and exports
-  `HTTPS_PROXY=http://<thread id>:<token>@egress-proxy.kobe.internal:80` (and the lowercase and
+  `HTTPS_PROXY=http://<thread id>:<token>@egress-proxy.kaiju.internal:80` (and the lowercase and
   `HTTP_` variants), so curl, pip, npm, git and Python use the proxy with a fresh token, and a
   blocked request shows in the thread that made it. The token is never in a pod spec, Pi's
   environment or an argv, and the script pauses `bash -x` tracing while it handles it. It is in the
@@ -619,8 +619,8 @@ with other content is reported as a conflict), and Kaiju never reads the reposit
 1. Create a token that can push to the repository (GitHub: a fine-grained token with Contents
    read/write on that repository only; Forgejo/Gitea: an access token with repository write) and
    put it in a Secret in the release namespace:
-   `kubectl -n <ns> create secret generic kobe-skill-mirror --from-literal=token=<token>`.
-2. Set `server.skillMirror.tokenSecret.name: kobe-skill-mirror` (and `username` for Forgejo:
+   `kubectl -n <ns> create secret generic kaiju-skill-mirror --from-literal=token=<token>`.
+2. Set `server.skillMirror.tokenSecret.name: kaiju-skill-mirror` (and `username` for Forgejo:
    the token owner's user name). The token reaches the server only; never the database, a log
    or a sandbox.
 3. Add the remote's host to the **egress ceiling**: the server pushes through the egress proxy
@@ -687,7 +687,7 @@ only via Kaiju's **model-gateway shim** (spec D30): no provider key ever enters 
   requires entering the key again (a stored key is never sent somewhere new), and the audit log
   records the endpoint host. `bifrost.allowUnsafeProviderEndpoints` (Helm only, never the admin
   API) lifts the first two rules for test sites (the e2e suite's fake provider).
-- **Sandboxes call the shim** (`model-gateway.kobe.internal`) with their short-lived
+- **Sandboxes call the shim** (`model-gateway.kaiju.internal`) with their short-lived
   `kobe.model-gateway` session token as the API key (`Authorization: Bearer`, `x-api-key`,
   `x-goog-api-key` or `?key=`). The shim verifies it, checks that the user is still an active member
   and the sandbox not destroyed, hibernated or replaced (cached `modelGateway.cacheTtlSeconds`, 5 s:
@@ -994,7 +994,7 @@ team → team role.
 start): put the client secret in a Secret and list the provider under `auth.sso.providers`.
 
 ```bash
-kubectl -n kobe create secret generic kobe-sso-contoso --from-literal=client-secret='<value>'
+kubectl -n kaiju create secret generic kaiju-sso-contoso --from-literal=client-secret='<value>'
 ```
 
 ```yaml
@@ -1006,7 +1006,7 @@ auth:
         kind: entra
         tenantId: "<directory (tenant) id>"
         clientId: "<application (client) id>"
-        clientSecretSecret: { name: kobe-sso-contoso, key: client-secret }
+        clientSecretSecret: { name: kaiju-sso-contoso, key: client-secret }
         accessClaim: roles
         allowedEmailDomains: [contoso.com] # the tenant's verified domains
         # mfaRule: { amr_any: [mfa], acr_any: [], acrs_any: [c1] } # the Entra default
@@ -1104,7 +1104,7 @@ separate and their users comparable:
 
 ### Check the setup
 
-- `kubectl -n kobe logs deploy/kobe-server | grep "single sign-on"`: "single sign-on providers
+- `kubectl -n kaiju logs deploy/kaiju-server | grep "single sign-on"`: "single sign-on providers
   from the chart applied" for Helm providers (or the reason they were not).
 - Site console → Single sign-on → **Test**: every check passes (tenant pinned, address allowed,
   document fetched, issuer equal, code flow, PKCE S256, endpoints allowed).
@@ -1119,30 +1119,30 @@ separate and their users comparable:
 Create the Secrets the chart references, then install:
 
 ```bash
-kubectl create namespace kobe
-kubectl -n kobe create secret docker-registry ghcr-pull \
+kubectl create namespace kaiju
+kubectl -n kaiju create secret docker-registry ghcr-pull \
   --docker-server=ghcr.io --docker-username=<user> --docker-password=<read:packages token>
 
 # External Postgres: an app-role URL (non-owner, NOSUPERUSER NOBYPASSRLS) and an owner URL.
-kubectl -n kobe create secret generic kobe-db \
+kubectl -n kaiju create secret generic kaiju-db \
   --from-literal=app-url='postgres://kobe_app:...@db:5432/kobe' \
   --from-literal=migrate-url='postgres://kobe_owner:...@db:5432/kobe'
 
-kubectl -n kobe create secret generic kobe-s3 \
+kubectl -n kaiju create secret generic kaiju-s3 \
   --from-literal=access-key-id=... --from-literal=secret-access-key=...
 
 # SMTP credentials, if your relay needs AUTH (omit smtp.existingSecret otherwise).
-kubectl -n kobe create secret generic kobe-smtp \
+kubectl -n kaiju create secret generic kaiju-smtp \
   --from-literal=username=... --from-literal=password=...
 
-helm install kobe charts/kobe -n kobe \
+helm install kaiju charts/kaiju -n kaiju \
   --set global.imagePullSecrets[0].name=ghcr-pull \
-  --set ingress.host=kobe.example.com \
+  --set ingress.host=kaiju.example.com \
   --set ingress.tls.clusterIssuer=letsencrypt \
-  --set postgres.external.existingSecret=kobe-db \
-  --set s3.endpoint=https://s3.example.com --set s3.bucket=kobe --set s3.existingSecret=kobe-s3 \
+  --set postgres.external.existingSecret=kaiju-db \
+  --set s3.endpoint=https://s3.example.com --set s3.bucket=kaiju --set s3.existingSecret=kaiju-s3 \
   --set smtp.host=smtp.example.com --set smtp.from='Kaiju <kaiju@example.com>' \
-  --set smtp.existingSecret=kobe-smtp
+  --set smtp.existingSecret=kaiju-smtp
 ```
 
 **HTTPS and HSTS.** When the public URL is https (`ingress.tls.enabled`, the default, or an https
@@ -1162,7 +1162,7 @@ to restore a backup into: see [Backup and restore](#backup-and-restore)):
    which proves you control the site:
 
    ```bash
-   kubectl -n kobe get secret kobe-auth -o jsonpath='{.data.setup-token}' | base64 -d
+   kubectl -n kaiju get secret kaiju-auth -o jsonpath='{.data.setup-token}' | base64 -d
    ```
 
    (with `auth.existingSecret`, the `setup-token` key of that Secret). Setup runs once; afterwards
@@ -1172,7 +1172,7 @@ to restore a backup into: see [Backup and restore](#backup-and-restore)):
    create the Owner straight on the server, which then counts as its own address:
 
    ```bash
-   kubectl -n kobe port-forward svc/kobe-server 8080:8080 &
+   kubectl -n kaiju port-forward svc/kaiju-server 8080:8080 &
    curl -s http://localhost:8080/v1/setup -H 'content-type: application/json' -d \
      '{"setupToken":"<token>","email":"<you>","name":"<your name>","password":"<12+ characters>"}'
    ```
@@ -1230,9 +1230,9 @@ You may choose another noncurrent period; it is then the erasure delay your memb
 told. For example, with the AWS CLI (most S3-compatible stores accept the same document):
 
 ```bash
-aws s3api put-bucket-lifecycle-configuration --bucket kobe --lifecycle-configuration '{
+aws s3api put-bucket-lifecycle-configuration --bucket kaiju --lifecycle-configuration '{
   "Rules": [{
-    "ID": "kobe-erasure", "Status": "Enabled", "Filter": {"Prefix": ""},
+    "ID": "kaiju-erasure", "Status": "Enabled", "Filter": {"Prefix": ""},
     "NoncurrentVersionExpiration": {"NoncurrentDays": 30},
     "Expiration": {"ExpiredObjectDeleteMarker": true},
     "AbortIncompleteMultipartUpload": {"DaysAfterInitiation": 3}
@@ -1252,7 +1252,7 @@ not even the account owner, can shorten it, so a purge, an offboarding or an era
 cannot reach the bytes until the lock expires.
 
 `s3.prefix` (default empty) puts every object under a key prefix, for a bucket shared with other
-applications. It must be relative and end in `/` (for example `kobe/`; letters, digits and
+applications. It must be relative and end in `/` (for example `kaiju/`; letters, digits and
 `! _ . * ' ( ) / -` only); the chart rejects anything else. It is applied on the server and the
 scheduler (`KAIJU_S3_PREFIX`). Changing it on an existing site hides the objects written under
 the old prefix, so move them first or keep the old value. `kaiju backup` and `kaiju restore` read
@@ -1291,7 +1291,7 @@ A stuck network call must never pin a database transaction, its locks or a poole
   owner or on the backup role: migrations build indexes and backfill for longer, and
   `kaiju backup` holds its snapshot transaction open, idle, for the whole dump (it turns both
   timeouts off for its own session anyway). With bundled CloudNativePG the same commands work
-  in `psql` on the primary (`kubectl -n kobe exec -it kobe-pg-1 -c postgres -- psql -d kobe`);
+  in `psql` on the primary (`kubectl -n kaiju exec -it kaiju-pg-1 -c postgres -- psql -d kobe`);
   they are optional there.
 
 - **Object storage.** The server's and the `kaiju` CLI's S3 clients give up on a connection that
@@ -1389,7 +1389,7 @@ reach another thread's Pi (which also closes KOBE-228: with the flag on a Pi's H
 and that the workspace and KOBE-27 sync still work for both uids. To turn it on:
 
 ```bash
-helm upgrade kobe charts/kobe -n <namespace> -f <your values> --reset-values --set sandbox.toolExecutor.enabled=true
+helm upgrade <release> charts/kaiju -n <namespace> -f <your values> --reset-values --set sandbox.toolExecutor.enabled=true
 ```
 
 Running sandboxes keep the old setting until they restart (hibernate and wake them, or wait for
@@ -1430,12 +1430,12 @@ chart did not; CloudNativePG runs bootstrap SQL only once, so create it by hand,
 migrations again (`helm upgrade` with the same values), which adds the vector columns:
 
 ```bash
-PRIMARY=$(kubectl -n kobe get cluster kobe-pg -o jsonpath='{.status.currentPrimary}')
-kubectl -n kobe exec "$PRIMARY" -c postgres -- \
+PRIMARY=$(kubectl -n kaiju get cluster kaiju-pg -o jsonpath='{.status.currentPrimary}')
+kubectl -n kaiju exec "$PRIMARY" -c postgres -- \
   psql -d kobe -c 'CREATE EXTENSION IF NOT EXISTS vector SCHEMA public'
 ```
 
-(`kobe-pg` is `<release fullname>-pg`; `kubectl cnpg psql kobe-pg -- -d kobe` works too with the
+(`kaiju-pg` is `<release fullname>-pg`; `kubectl cnpg psql kaiju-pg -- -d kobe` works too with the
 CloudNativePG kubectl plugin.)
 
 **Production.** Bundled CloudNativePG is a supported production option, but the chart's defaults
@@ -1454,7 +1454,7 @@ are for evaluation: one instance, a 10 GiB volume, no backups. For production co
       backup:
         retentionPolicy: 30d
         barmanObjectStore:
-          destinationPath: s3://kobe-pg-backups/
+          destinationPath: s3://kaiju-pg-backups/
           endpointURL: https://s3.example.com
           s3Credentials:
             accessKeyId: { name: pg-backup-s3, key: access-key-id }
@@ -1474,7 +1474,7 @@ for its signature downloads from `database.clamav.net`. A private signature mirr
 `clamav.networkPolicy.extraEgress`. The image is pinned by tag and digest (`clamav.image.digest`);
 set the digest to `""` only for a mirror that re-tags it.
 
-Every value is validated by `charts/kobe/values.schema.json`; unknown keys are rejected.
+Every value is validated by `charts/kaiju/values.schema.json`; unknown keys are rejected.
 
 ### Branding and theming
 
@@ -1777,6 +1777,27 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Chart `charts/kaiju` and images `ghcr.io/splittingatom/kaiju-*` (Kaiju rename, KOBE-750).**
+  The chart directory and its name are `kaiju` (published as `oci://ghcr.io/splittingatom/charts/kaiju`,
+  version 0.2.0), and every image is `kaiju-<name>` under `global.imageRegistry` (`kaiju-server`,
+  `kaiju-web`, `kaiju-sandbox`, ...; the old `kobe-*` repositories get no new builds). Upgrade in place with your release name and your values unchanged:
+  `helm upgrade <release> charts/kaiju -n <namespace> -f <your values> --reset-values`. No values
+  key changed; if you mirror the images, mirror the new repositories first. Object names still come
+  from your release name, so nothing is recreated, and the pods keep the label
+  `app.kubernetes.io/name: kobe` (Deployment selectors cannot change in place, and the team
+  network policies select the chart's pods by it); label keys `kobe.splittingatom.io/*`, the
+  database name `kobe` and the role `kobe_app` stay too. Paths inside the images moved with them
+  (`/opt/kaiju`, `/run/kaiju-agent`, `/run/kaiju-pi`, `/run/kaiju-skills`, the `kaiju-runas` helper
+  and the `kaiju-*` Pi extensions, `/usr/share/doc/kaiju`, `/etc/kaiju/extra-ca` for
+  `server.extraCaBundle`): the server writes them into a team's SandboxTemplate together with the
+  new sandbox image at its next team reconcile (every 300 s). A sandbox that was running before the
+  upgrade keeps the old image and the old paths until it stops, and a hibernated one wakes on the
+  new image with the new paths, so nothing mixes. An agent
+  in a conversation that started before the upgrade may still see the old paths in earlier
+  messages; the next run uses the new ones. For this release the model gateway also serves an
+  Orbit eval Job of the old image (`/kobe/eval-cases`) and the server accepts its result
+  (pack `kobe-default`); evals report pack `kaiju-default` from now on. With several server replicas, an eval that finishes while the servers
+  roll can be judged by an old replica and end as errored; run it again.
 - **Environment variables are `KAIJU_*` (Kaiju rename, KOBE-748).** The chart sets the new
   names; the old `KOBE_*` names still work for this release, with a startup warning that names
   them. Rename any you set yourself ([Environment variable names](#environment-variable-names-kaiju_)).
@@ -2170,7 +2191,7 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   that needs approval. See [approvals](approvals.md).
 
 - **Model gateway (KOBE-40).** Sandboxes now reach models through the new `model-gateway` shim
-  (image `kobe-model-gateway`), and `sandbox.modelGatewayAccess` defaults to `true`. Bifrost moves
+  (image `kaiju-model-gateway`), and `sandbox.modelGatewayAccess` defaults to `true`. Bifrost moves
   to v2.2.5 (pinned by digest), gets a 1 Gi PVC by default (`bifrost.persistence.enabled`), a
   `Recreate` strategy, a config file and its admin password; only the shim and the server may reach
   it. Existing Bifrost state is replaced by Kaiju's on the first sync. Sandboxes pick up the shim's
@@ -2382,7 +2403,7 @@ To recover a site from a backup (full steps in
    (`auth.existingSecret`, `envelope.keySecret`, `bifrost.keysSecret`, ...) at it, with the same public URL and the same bucket (or a copy). **Skip
    first-run setup** ([First run](#first-run-to-the-first-chat)): the restore refuses a site with
    users. The server's start seeds the gallery agents; the restore replaces those.
-3. Stop the writers: `kubectl -n kobe scale deploy/kobe-server deploy/kobe-scheduler --replicas=0`.
+3. Stop the writers: `kubectl -n kaiju scale deploy/kaiju-server deploy/kaiju-scheduler --replicas=0`.
 4. Run `kaiju restore --from <backup>` as the owner role (`KAIJU_DB_MIGRATE_URL`), and check the
    printed fingerprint against the one recorded at backup time.
 5. If the backup is older than the bucket or the cluster, set `retention.paused: true` first; then

@@ -5,7 +5,7 @@
  */
 
 export const RETURN_TO_MAX = 2048;
-const BASE = "https://kobe.invalid";
+const BASE = "https://kaiju.invalid";
 
 export function safeReturnTo(raw: unknown): string {
   if (typeof raw !== "string" || raw.length === 0 || raw.length > RETURN_TO_MAX) return "/";

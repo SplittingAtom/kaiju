@@ -7,7 +7,7 @@ import {
 } from "../sandbox-wire/index.js";
 
 /**
- * KOBE-280: one gateway-model limit. The wire schema and the kobe-models model file (which keeps
+ * KOBE-280: one gateway-model limit. The wire schema and the kaiju-models model file (which keeps
  * a pinned copy of {@link GATEWAY_MODEL_PATTERN}) accept exactly the same ids: a provider of at most
  * 64 characters and a model of at most 191, so Pi is never started with a `--model` its model
  * file then refuses.

@@ -27,7 +27,7 @@ let kube: FakeKube;
 const registryTeam = randomUUID();
 const ids = { submitter: "", reviewer: "" };
 const SCAN = {
-  image: "ghcr.io/splittingatom/kobe-skill-scan:0.1.0",
+  image: "ghcr.io/splittingatom/kaiju-skill-scan:0.1.0",
   deadlineSeconds: 300,
   resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { cpu: "1", memory: "2Gi" } },
 };

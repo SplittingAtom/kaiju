@@ -141,7 +141,7 @@ export function selfTestIdentifiers() {
   const good = [
     "db.select().from(siteRoles).where(eq(siteSettings.key, k))",
     'action: "install.settings.updated", // historical',
-    "helm install kobe charts/kobe; installMemoryHooks(pi)",
+    "helm install kaiju charts/kaiju; installMemoryHooks(pi)",
     "INSERT INTO site_tool_rules; scope: 'install'",
     'action: "memory.install_settings_changed", // historical',
     'db.select().from(personalSkills); api.route("/site/skill-blocklist", siteSkillBlocklistRoutes(d))',

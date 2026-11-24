@@ -2,7 +2,7 @@ import type { PolicyDecision, PolicyEngine, PolicyInput } from "../policy.js";
 import { APPROVAL_TTL_MS } from "../approval.js";
 
 /**
- * Fake policy engine for tests of consumers (kobe-policy, MCP proxy, approvals, schedules).
+ * Fake policy engine for tests of consumers (kaiju-policy, MCP proxy, approvals, schedules).
  * Decisions come from a map keyed by tool name; anything else is denied (fail closed). It keeps
  * the contract invariant: in `auto` mode or for scheduled runs `require_approval` becomes `deny`.
  */

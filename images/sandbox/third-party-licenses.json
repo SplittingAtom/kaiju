@@ -251,7 +251,7 @@
       ],
       "ecosystem": "npm",
       "locations": [
-        "/opt/kobe/sandbox-agent"
+        "/opt/kaiju/sandbox-agent"
       ]
     },
     {
@@ -2613,7 +2613,7 @@
       ],
       "ecosystem": "npm",
       "locations": [
-        "/opt/kobe/sandbox-agent"
+        "/opt/kaiju/sandbox-agent"
       ]
     },
     {
@@ -2894,7 +2894,7 @@
       ],
       "ecosystem": "npm",
       "locations": [
-        "/opt/kobe/sandbox-agent",
+        "/opt/kaiju/sandbox-agent",
         "/opt/pi"
       ]
     },
@@ -2905,7 +2905,7 @@
       ],
       "ecosystem": "npm",
       "locations": [
-        "/opt/kobe/sandbox-agent"
+        "/opt/kaiju/sandbox-agent"
       ]
     },
     {

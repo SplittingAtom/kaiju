@@ -74,7 +74,7 @@ test("code completion: built-in first, then the kernel's variables, columns and 
     // A live variable from the run, marked "kernel"; Tab accepts it.
     await editor.click();
     await page.keyboard.press("ControlOrMeta+End");
-    await page.keyboard.type("kobe_li");
+    await page.keyboard.type("kaiju_li");
     const live = list.getByRole("option", { name: /kaiju_live_value/u });
     await expect(live).toBeVisible({ timeout: 10_000 });
     await expect(live).toContainText("kernel");
@@ -109,7 +109,7 @@ test("code completion: built-in first, then the kernel's variables, columns and 
     await expect(page.getByText("Kernel restarted: its variables are cleared.")).toBeVisible();
     await editor.click();
     await page.keyboard.press("ControlOrMeta+End");
-    await page.keyboard.type("\nkobe_li");
+    await page.keyboard.type("\nkaiju_li");
     await expect(note).toHaveText("Kernel completion off: the kernel is not started", {
       timeout: 10_000,
     });

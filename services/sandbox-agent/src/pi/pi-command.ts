@@ -5,7 +5,7 @@ import path from "node:path";
 /**
  * How Pi is executed (KOBE-71 review, HIGH 1a). Pi is a Node script (`#!/usr/bin/env node`) and
  * Pi 1.0.0 installs no SIGUSR1 handler, so a SIGUSR1 from a tool (which runs as Pi's uid) would
- * open Node's inspector inside Pi: code execution next to kobe-policy and its socket. Pi's
+ * open Node's inspector inside Pi: code execution next to kaiju-policy and its socket. Pi's
  * environment already carries `NODE_OPTIONS=--disable-sigusr1` (pi-launch.ts); the agent also
  * runs the script itself as `node --disable-sigusr1 <script>`, so the flag does not depend on the
  * environment reaching Node. Nothing else can turn the inspector on from outside: Pi's

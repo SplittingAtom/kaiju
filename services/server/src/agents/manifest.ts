@@ -70,7 +70,7 @@ export const toolManifestSchema = z.strictObject({
   format: z.literal(TOOL_MANIFEST_FORMAT),
   /** The floor it was computed against: site only (personal, gallery) or site + team. */
   floor: z.enum(["site", "team"]),
-  /** Built-in tools (Pi and kobe-tools) this version may call, by name. */
+  /** Built-in tools (Pi and kaiju-tools) this version may call, by name. */
   tools: z.array(manifestToolSchema),
   /**
    * Connectors whose (pinned) MCP tools this version may call, or `all` (KOBE-254): whichever the

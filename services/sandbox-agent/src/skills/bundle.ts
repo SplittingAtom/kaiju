@@ -3,7 +3,7 @@ import { crc32 } from "node:zlib";
 /**
  * Strict reader for a canonical skill bundle (KOBE-78: the zip the server stored and hashed:
  * regular files only, stored without compression, no directory entries, no extra fields or
- * comments, SKILL.md at the root). kobe-sandbox-agent runs it on bytes whose SHA-256 already
+ * comments, SKILL.md at the root). kaiju-sandbox-agent runs it on bytes whose SHA-256 already
  * matched the server's, and still re-applies every safety rule: the bytes come over a network
  * and are about to be written where model-run code reads them. Anything it can't vouch for is
  * refused, never guessed at (deflate, zip64, encryption, symlinks and other special files,

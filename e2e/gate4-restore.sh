@@ -5,7 +5,7 @@
 #   install   a throwaway source site is installed as docs/install.md describes (chart, first-run
 #             setup, a model provider and catalog entry, a team), timed to the first assistant token
 #   restore   it gets threads, artifacts, an upload, a shared file, a workspace file, a skill, a
-#             memory doc, a project file and an API-key connector grant; its writers stop; `kobe
+#             memory doc, a project file and an API-key connector grant; its writers stop; `kaiju
 #             backup` (docs/backup-restore.md, the operator CLI on this machine through a port-
 #             forward); the site is deleted; a fresh one is installed with the saved Secrets
 #             that hold key material (docs/backup-restore.md "Secrets"); `kaiju restore`; then: every team table's row count matches the
@@ -35,12 +35,12 @@ HELM="${HELM:-helm}"
 K3D="${K3D:-k3d}"
 context=$($KUBECTL config current-context)
 TARGET="${KAIJU_GATE4_RESTORE_TARGET:-$([[ "$context" == k3d-* ]] && echo k3d || echo namespace)}"
-NS="${KAIJU_GATE4_RESTORE_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATE4_RESTORE_RELEASE:-kobe}"
-CHART="${KAIJU_GATE4_RESTORE_CHART:-charts/kobe}"
+NS="${KAIJU_GATE4_RESTORE_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATE4_RESTORE_RELEASE:-kaiju}"
+CHART="${KAIJU_GATE4_RESTORE_CHART:-charts/kaiju}"
 VALUES="${KAIJU_GATE4_RESTORE_VALUES:-dev/values.yaml}"
 TAG="${KAIJU_IMAGE_TAG:-}"
-DEPS_NS="${KAIJU_GATE4_RESTORE_DEPS_NS:-kobe-deps}" # where `deploy/pg` (superuser `postgres`) runs
+DEPS_NS="${KAIJU_GATE4_RESTORE_DEPS_NS:-kaiju-deps}" # where `deploy/pg` (superuser `postgres`) runs
 MODEL_ALIAS=fast
 # shellcheck disable=SC2034 # read by e2e/lib/gate-turns.sh
 FAKE=1 # the scripted model (e2e/gate1's fake upstream): `bash: ...`, `tool: ...`, `history?`
@@ -67,7 +67,7 @@ case "$TARGET" in
   namespace)
     [[ "$context" == "${KAIJU_GATE4_RESTORE_CONTEXT:-}" ]] \
       || { echo "refusing context '$context' (set KAIJU_GATE4_RESTORE_CONTEXT=$context)" >&2; exit 2; }
-    [[ "$NS" != kobe-dev && -n "${KAIJU_GATE4_RESTORE_NS:-}" ]] \
+    [[ "$NS" != kaiju-dev && -n "${KAIJU_GATE4_RESTORE_NS:-}" ]] \
       || { echo "target namespace needs KAIJU_GATE4_RESTORE_NS (a new namespace)" >&2; exit 2; }
     DB_SECRET="${KAIJU_GATE4_RESTORE_DB_SECRET:?set KAIJU_GATE4_RESTORE_DB_SECRET=<namespace>/<secret> with app-url and migrate-url}"
     SRC_NS="$NS-src"
@@ -178,7 +178,7 @@ site_database() { # namespace database → the namespace, its database and the S
     $KUBECTL apply -f dev/mailpit.yaml >/dev/null
     $KUBECTL apply -f dev/s3.yaml >/dev/null
     $KUBECTL -n "$DEPS_NS" rollout status deploy/s3 --timeout=300s >/dev/null
-    DB_SECRET_OF_SITE=kobe-dev-db
+    DB_SECRET_OF_SITE=kaiju-dev-db
     return
   fi
   $KUBECTL create namespace "$ns" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null
@@ -204,7 +204,7 @@ copy_secrets() { # namespace → copies of the Secrets the values file names (KA
 }
 SITE_ARGS=() # the target's extra helm arguments (its restored Secrets), for its migration Job too
 # The chart's generated Secrets and the values key that reuses each (docs/backup-restore.md
-# "Secrets"; charts/kobe/tests/backup-secrets.test.ts keeps that table complete). The bundled
+# "Secrets"; charts/kaiju/tests/backup-secrets.test.ts keeps that table complete). The bundled
 # database's credentials are this harness's own (dev/postgres.yaml or the namespace's database).
 KEPT_SECRETS=(
   auth:auth.existingSecret envelope-key:envelope.keySecret model-keys:bifrost.keysSecret
@@ -406,26 +406,26 @@ contains "the source has team rows to back up" '^thread_entries=[1-9]' "$(cat "$
 openssl rand -base64 32 >"$WORK/backup.key"
 BACKUP_PW=$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')
 psql_super "$SRC_DB" "DO \$\$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kobe_gate4_backup') THEN
-    CREATE ROLE kobe_gate4_backup LOGIN NOSUPERUSER BYPASSRLS IN ROLE pg_read_all_data;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kaiju_gate4_backup') THEN
+    CREATE ROLE kaiju_gate4_backup LOGIN NOSUPERUSER BYPASSRLS IN ROLE pg_read_all_data;
   END IF;
-  ALTER ROLE kobe_gate4_backup PASSWORD '$BACKUP_PW';
+  ALTER ROLE kaiju_gate4_backup PASSWORD '$BACKUP_PW';
 END \$\$" >/dev/null
-[[ "$TARGET" == namespace ]] && UNDO+=("psql_super postgres 'DROP ROLE IF EXISTS kobe_gate4_backup'")
+[[ "$TARGET" == namespace ]] && UNDO+=("psql_super postgres 'DROP ROLE IF EXISTS kaiju_gate4_backup'")
 port_forward "$DEPS_NS" deploy/pg 5432
 pg_port=$PF_PORT
 s3_env=()
 if [[ "$TARGET" == k3d ]]; then
   port_forward "$DEPS_NS" deploy/s3 8333
   s3_port=$PF_PORT
-  s3_env=(KAIJU_S3_ENDPOINT="http://127.0.0.1:$s3_port" KAIJU_S3_BUCKET=kobe KAIJU_S3_ACCESS_KEY_ID=dev KAIJU_S3_SECRET_ACCESS_KEY=dev)
+  s3_env=(KAIJU_S3_ENDPOINT="http://127.0.0.1:$s3_port" KAIJU_S3_BUCKET=kaiju KAIJU_S3_ACCESS_KEY_ID=dev KAIJU_S3_SECRET_ACCESS_KEY=dev)
 else
   # KAIJU_S3_ENDPOINT, _BUCKET, _REGION, _ACCESS_KEY_ID, _SECRET_ACCESS_KEY come from the caller's environment.
   s3_env=("KAIJU_S3_PREFIX=$S3_PREFIX")
 fi
 BACKUP_DIR="$WORK/backup-$NONCE"
 backup_out=$(env KAIJU_BACKUP_KEY_FILE="$WORK/backup.key" \
-  KAIJU_BACKUP_DATABASE_URL="postgres://kobe_gate4_backup:$BACKUP_PW@127.0.0.1:$pg_port/$SRC_DB" \
+  KAIJU_BACKUP_DATABASE_URL="postgres://kaiju_gate4_backup:$BACKUP_PW@127.0.0.1:$pg_port/$SRC_DB" \
   "${s3_env[@]}" $CLI backup --out "$BACKUP_DIR" 2>&1) || true
 sed 's/^/     /' <<<"$backup_out"
 contains "kaiju backup writes an encrypted, signed backup" 'manifest fingerprint sha256:[0-9a-f]{64}' "$backup_out"
@@ -442,7 +442,7 @@ if [[ "$TARGET" == k3d ]]; then
   server_image=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
   s3_pod() { # name → a pod with the server image and the k3d S3 fixture's settings
     $KUBECTL -n "$NS" run "$1" --restart=Never --image="$server_image" --image-pull-policy=IfNotPresent \
-      --env=KAIJU_S3_ENDPOINT=http://s3.kobe-deps.svc.cluster.local:8333 --env=KAIJU_S3_BUCKET=kobe \
+      --env=KAIJU_S3_ENDPOINT=http://s3.kaiju-deps.svc.cluster.local:8333 --env=KAIJU_S3_BUCKET=kaiju \
       --env=KAIJU_S3_ACCESS_KEY_ID=dev --env=KAIJU_S3_SECRET_ACCESS_KEY=dev --command -- sleep 900 >/dev/null
     PODS+=("-n $NS $1")
     $KUBECTL -n "$NS" wait --for=condition=Ready "pod/$1" --timeout=120s >/dev/null
@@ -513,17 +513,17 @@ port_forward "$DEPS_NS" deploy/pg 5432
 pg_port=$PF_PORT
 if [[ "$TARGET" == k3d ]]; then
   port_forward "$DEPS_NS" deploy/s3 8333
-  s3_env=(KAIJU_S3_ENDPOINT="http://127.0.0.1:$PF_PORT" KAIJU_S3_BUCKET=kobe KAIJU_S3_ACCESS_KEY_ID=dev KAIJU_S3_SECRET_ACCESS_KEY=dev)
+  s3_env=(KAIJU_S3_ENDPOINT="http://127.0.0.1:$PF_PORT" KAIJU_S3_BUCKET=kaiju KAIJU_S3_ACCESS_KEY_ID=dev KAIJU_S3_SECRET_ACCESS_KEY=dev)
 fi
 migrate_url=$(url_with "$(secret_key "$NS" "$DB_SECRET_OF_SITE" migrate-url)" 127.0.0.1 "$pg_port" "")
 mkdir -p "$WORK/tmp"
 head_args=()
 [[ "$SRC_HEAD" =~ ^[0-9]+:[0-9a-f]{64}$ ]] && head_args=(--expect-audit-head "$SRC_HEAD")
-kobe_restore() { # → the CLI's output (docs/backup-restore.md "Restore onto a fresh cluster", step 4)
+kaiju_restore() { # → the CLI's output (docs/backup-restore.md "Restore onto a fresh cluster", step 4)
   env KAIJU_BACKUP_KEY_FILE="$WORK/backup.key" KAIJU_DB_MIGRATE_URL="$migrate_url" KAIJU_TMPDIR="$WORK/tmp" \
     "${s3_env[@]}" $CLI restore --from "$BACKUP_DIR" --operator gate4-restore ${head_args[@]+"${head_args[@]}"} 2>&1 || true
 }
-restore_out=$(kobe_restore)
+restore_out=$(kaiju_restore)
 sed 's/^/     /' <<<"$restore_out"
 # The server's start seeds the gallery agents (with their audit events) and the jobs' bookkeeping;
 # the restore replaces those rows (KOBE-422, @kaiju/db STARTUP_SEEDED_ROWS) and refuses anything else.
@@ -534,7 +534,7 @@ if ! grep -q "restored backup ${FINGERPRINT:-none}" <<<"$restore_out"; then
   echo "     restoring instead into a new, empty database that the chart's own migration Job migrated (the server never started)"
   if migrated_empty_db; then ok "the target's database is new and migrated by the chart's migration Job"
   else fail "the target's database is new and migrated by the chart's migration Job"; fi
-  restore_out=$(kobe_restore)
+  restore_out=$(kaiju_restore)
   sed 's/^/     /' <<<"$restore_out"
 fi
 stop_forwards

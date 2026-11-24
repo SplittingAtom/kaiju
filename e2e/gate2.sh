@@ -6,7 +6,7 @@
 #                  member token budget overshoot it by at most one call (reservations are shared)
 #   ac-2 egress    a blocked domain gives egress.blocked + Request access; after team-admin
 #                  enablement the same request succeeds
-#   ac-3 mcp       a sandbox with a tampered kobe-policy extension cannot execute an MCP write
+#   ac-3 mcp       a sandbox with a tampered kaiju-policy extension cannot execute an MCP write
 #                  without a valid signed approval: mcp-proxy refuses, nothing reaches the server
 #   ac-4 break-glass  needs a second site admin's approval, notifies the team's admins, and
 #                  audits every read
@@ -17,7 +17,7 @@
 # Runs after the gate1-prep install in CI (k3d) and against a real cluster's throwaway install:
 #   KAIJU_GATE2_NS=<release namespace> KAIJU_GATE2_RELEASE=<release> e2e/gate2.sh
 # Non-destructive outside what it creates: users gate2-*@gate2.test, team gate2-a (its
-# kobe-team-gate2-a namespace and the sandbox the server creates), namespace kobe-gate2-infra (a
+# kobe-team-gate2-a namespace and the sandbox the server creates), namespace kaiju-gate2-infra (a
 # fake MCP server and a TLS upstream), one connector row, break-glass grants (revoked at the end).
 # Temporary changes to the install, undone on exit: a price on the catalog model when it has none,
 # the test upstream in the egress ceiling, and (the one that rolls pods) the egress and MCP proxy
@@ -29,15 +29,15 @@ cd "$(dirname "$0")/.."
 
 KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
-NS="${KAIJU_GATE2_NS:-kobe-dev}"
-RELEASE="${KAIJU_GATE2_RELEASE:-kobe}"
-CHART="${KAIJU_GATE2_CHART:-charts/kobe}"
+NS="${KAIJU_GATE2_NS:-kaiju-dev}"
+RELEASE="${KAIJU_GATE2_RELEASE:-kaiju}"
+CHART="${KAIJU_GATE2_CHART:-charts/kaiju}"
 STEPS=" ${KAIJU_GATE2_STEPS:-budget replicas egress mcp break-glass scan} "
 SBX_WAIT="${KAIJU_GATE2_SANDBOX_WAIT:-180}" # seconds t2's sandbox pod may take to be Running and Ready
 MODEL_ALIAS="${KAIJU_GATE2_MODEL:-fast}"
 OWNER_EMAIL="${KAIJU_GATE2_OWNER_EMAIL:-owner@e2e.test}"
 OWNER_PASSWORD="${KAIJU_GATE2_OWNER_PASSWORD:-e2e owner password}"
-INFRA_NS=kobe-gate2-infra
+INFRA_NS=kaiju-gate2-infra
 TEAM_SLUG=gate2-a
 TNS="kobe-team-$TEAM_SLUG"
 CONNECTOR_ID=7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
@@ -120,7 +120,7 @@ OWNER_JSON=$(printf '{"email":"%s","password":"%s"}' "$OWNER_EMAIL" "$OWNER_PASS
 step() { client "$(printf '{"mode":"%s","base":"%s","owner":%s,%s}' "$1" "$BASE" "$OWNER_JSON" "$2")"; }
 server_now() { $KUBECTL -n "$NS" exec "$SERVER" -c server -- date -u +%Y-%m-%dT%H:%M:%SZ; }
 SERVER_IMAGE=$($KUBECTL -n "$NS" get "$SERVER" -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
-SANDBOX_IMAGE="${KAIJU_GATE2_SANDBOX_IMAGE:-${SERVER_IMAGE/kobe-server/kobe-sandbox}}"
+SANDBOX_IMAGE="${KAIJU_GATE2_SANDBOX_IMAGE:-${SERVER_IMAGE/kaiju-server/kaiju-sandbox}}"
 
 grant=$(step grant "\"userId\":\"$IA\"")
 contains "ia is a site admin; the site has at least two (Owner + admins)" '^role_status=(200|204)$' "$grant"
@@ -377,10 +377,10 @@ if [[ "$STEPS" == *" egress "* ]] && sbx_need "ac-2 (egress)"; then
   fi
 fi
 
-# ---- ac-3: tampered kobe-policy cannot execute an MCP write ------------------------------------------
+# ---- ac-3: tampered kaiju-policy cannot execute an MCP write ------------------------------------------
 if [[ "$STEPS" == *" mcp "* ]] && sbx_need "ac-3 (mcp)"; then
-  echo "==> ac-3: tampered kobe-policy: an MCP write needs a valid signed approval"
-  POLICY=/opt/kobe/pi-extensions/kobe-policy
+  echo "==> ac-3: tampered kaiju-policy: an MCP write needs a valid signed approval"
+  POLICY=/opt/kaiju/pi-extensions/kaiju-policy
   tamper=$(in_sbx "f=$POLICY/index.js
     echo before=\$(sha256sum \$f | cut -d' ' -f1)
     ( echo '// tampered' >> \$f ) 2>/dev/null && echo append=WRITTEN || echo append=DENIED

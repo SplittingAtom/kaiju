@@ -1,0 +1,61 @@
+{{- $s := include "kaiju.sandboxValues" . | fromJson -}}
+{{- if not $s.sessionKeysSecret -}}
+{{- include "kaiju.requireOnlineToGenerate" (dict "root" . "what" "the sandbox session keys" "value" "sandbox.sessionKeysSecret") -}}
+{{- $name := include "kaiju.sessionKeysSecretName" . -}}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace $name -}}
+{{- $data := ($existing).data | default dict -}}
+{{- /* One Ed25519 pair per audience, kept across upgrades. Helm cannot derive a bare public key,
+  so the public half is a self-signed certificate of the key (only the key in it is used). */ -}}
+{{- $pairs := dict -}}
+{{- range $env, $aud := include "kaiju.sessionKeyNames" . | fromJson }}
+{{- $k := printf "%s.key" $aud -}}
+{{- $p := printf "%s.pub" $aud -}}
+{{- if and (hasKey $data $k) (hasKey $data $p) }}
+{{- $_ := set $pairs $aud (dict "key" (index $data $k | b64dec) "pub" (index $data $p | b64dec)) -}}
+{{- else }}
+{{- $priv := genPrivateKey "ed25519" -}}
+{{- $cert := genSelfSignedCertWithKey (printf "kobe.%s session tokens" $aud) nil nil 36500 $priv -}}
+{{- $_ := set $pairs $aud (dict "key" $priv "pub" $cert.Cert) -}}
+{{- end }}
+{{- end }}
+# Sandbox session tokens (packages/session-token, KOBE-513): one Ed25519 key pair per audience.
+# `<audience>.key` (private, PKCS#8 PEM) is mounted in the server only; `<audience>.pub` (public,
+# PEM certificate or key; current and previous during a rotation, docs/install.md) is the server's
+# own rotation bundle (read from this Secret, never from the ConfigMap) and is copied into the
+# verify-keys ConfigMap below, which is all the verifying services get, so none of them can mint a
+# token. The `model-gateway` pair also signs run and server-call tokens (KOBE-521): the gateway
+# verifies them with its public key and can mint none. `trace-span` is the secret the server and
+# the gateway remap sandbox span ids with (KOBE-274); it authorises nothing (KOBE-521 replaced the
+# shared `model-gateway` master secret, which this Secret no longer holds).
+# approval-hmac signs tool-call approvals (D29, KOBE-37): only the server holds it, signing and
+# verifying; never mounted in a proxy or a sandbox. Rotating it voids approvals not yet used.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+type: Opaque
+stringData:
+  {{- range $aud, $pair := $pairs }}
+  {{ $aud }}.key: {{ $pair.key | quote }}
+  {{ $aud }}.pub: {{ $pair.pub | quote }}
+  {{- end }}
+  trace-span: {{ ternary (index $data "trace-span" | default "" | b64dec) (randAlphaNum 48) (hasKey $data "trace-span") | quote }}
+  approval-hmac: {{ ternary (index $data "approval-hmac" | default "" | b64dec) (randAlphaNum 48) (hasKey $data "approval-hmac") | quote }}
+---
+# Public keys of the sandbox session tokens, one bundle per audience (KOBE-513): what the egress
+# proxy, MCP proxy and model gateway verify with. Public material only.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kaiju.sessionVerifyKeysName" . }}
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+data:
+  {{- range $aud, $pair := $pairs }}
+  {{ $aud }}: {{ $pair.pub | quote }}
+  {{- end }}
+{{- end }}

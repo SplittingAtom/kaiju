@@ -94,7 +94,7 @@ export function gitConfigText(context: RunGitContext | undefined): string {
   const author = validIdentity(context?.author);
   const committer = author === undefined ? undefined : validIdentity(context?.committer);
   const lines = [
-    "# Written by kobe-sandbox-agent before every run (KOBE-764). Read-only for tools.",
+    "# Written by kaiju-sandbox-agent before every run (KOBE-764). Read-only for tools.",
     "# No credential is in the sandbox: connected organizations go through the egress proxy.",
     "[credential]",
     "\thelper =",

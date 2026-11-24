@@ -55,7 +55,7 @@ export interface GatewayOptions {
   /** Server-originated calls (KOBE-234); without it every server-call token is refused. */
   readonly serverCalls?: ServerCallOptions;
   /**
-   * Shared eval cases for a running Orbit eval Job (KOBE-276): `GET /kobe/eval-cases` with the
+   * Shared eval cases for a running Orbit eval Job (KOBE-276): `GET /kaiju/eval-cases` with the
    * eval's own token answers its `cases.json` (null: not that member's running eval, or none).
    * Absent: the route is a 404.
    */

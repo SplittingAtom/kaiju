@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CASE_SUITE } from "./cases.js";
-import { EVAL_EPOCHS, EXPECTED_PACK } from "./pack.js";
+import { EVAL_EPOCHS, EXPECTED_PACK, LEGACY_PACK_IDS } from "./pack.js";
 
 /**
  * Reads the eval image's result and decides (KOBE-93). Exit semantics are fail closed: the image
@@ -10,7 +10,7 @@ import { EVAL_EPOCHS, EXPECTED_PACK } from "./pack.js";
  * is published, and the person may retry (a retry is a new eval).
  */
 
-/** The fields of result.json (schema_version 1, images/orbit-eval/kobe_orbit_eval/report.py) we use. */
+/** The fields of result.json (schema_version 1, images/orbit-eval/kaiju_orbit_eval/report.py) we use. */
 export const evalResultSchema = z.looseObject({
   schema_version: z.literal(1),
   attack_success_rate: z.number().min(0).max(1).nullable(),
@@ -106,7 +106,7 @@ export function judge(input: {
   if (!report)
     return errored("The eval finished without a readable result. Nothing was published.");
   if (
-    report.pack.id !== EXPECTED_PACK.id ||
+    (report.pack.id !== EXPECTED_PACK.id && !LEGACY_PACK_IDS.includes(report.pack.id)) ||
     String(report.pack.version) !== String(EXPECTED_PACK.version) ||
     report.attempts + report.errors !== EXPECTED_PACK.scenarios * EVAL_EPOCHS
   ) {

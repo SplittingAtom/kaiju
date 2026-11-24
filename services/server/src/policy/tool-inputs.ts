@@ -25,7 +25,7 @@ import {
  *    Rules match the canonical path; the call itself runs with the original input (the signed
  *    one). Omitted optional paths (ls, grep, find) match as the cwd.
  *
- * kobe-tools: `create_artifact` / `update_artifact` use the published strict schemas
+ * kaiju-tools: `create_artifact` / `update_artifact` use the published strict schemas
  * (`artifactToolInputSchema`, KOBE-127: kinds, title and 512 KiB content caps, `language` only for
  * code). The others (`share_file`, `remember`, …) have no published schema yet (KOBE-54/56): any
  * JSON object passes, except that a string `path` is canonicalised too.

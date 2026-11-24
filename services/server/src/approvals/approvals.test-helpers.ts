@@ -15,7 +15,7 @@ import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testin
  * policy rule makes a tool call wait for its user; allow / deny / remember through the API on the
  * other replica; who may decide; TTL expiry ends the run; Stop, budget and a lost connection
  * expire the approval; the tool call id can't be replayed; and Gate 2 — the MCP proxy's
- * verify-and-consume seam refuses every call a tampered kobe-policy could make without a valid
+ * verify-and-consume seam refuses every call a tampered kaiju-policy could make without a valid
  * signed approval for exactly that input.
  */
 export const fx = new EventStreamFixture();

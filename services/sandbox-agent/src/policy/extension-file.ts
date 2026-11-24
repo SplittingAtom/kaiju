@@ -2,9 +2,9 @@ import { realpath, stat } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Startup check of a Kaiju Pi extension file (kobe-policy, KOBE-36; kobe-models, KOBE-41): a
+ * Startup check of a Kaiju Pi extension file (kaiju-policy, KOBE-36; kaiju-models, KOBE-41): a
  * regular file that only root can change — the file and every directory above it owned by uid 0
- * and not group/world-writable — as baked into the image (`/opt/kobe/pi-extensions/<name>`, 0444
+ * and not group/world-writable — as baked into the image (`/opt/kaiju/pi-extensions/<name>`, 0444
  * in 0555 directories). Model-run code runs as the sandbox user, so it must not be able to replace
  * or edit an extension Pi loads. Throws with the reason; the agent then exits non-zero (fail
  * fast). Returns the resolved path: the agent hands that to Pi, so no symlink along the configured
@@ -26,5 +26,5 @@ export async function checkExtensionFile(file: string, name: string): Promise<st
 }
 
 export function checkPolicyExtensionFile(file: string): Promise<string> {
-  return checkExtensionFile(file, "kobe-policy");
+  return checkExtensionFile(file, "kaiju-policy");
 }

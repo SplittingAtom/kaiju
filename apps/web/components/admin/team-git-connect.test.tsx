@@ -233,7 +233,7 @@ describe("Connect a git organization (KOBE-761 ac-1, ac-2)", () => {
           {
             test: report({
               provider: provider as "gitea",
-              actor: { kind: "token", login: "kobe-bot" },
+              actor: { kind: "token", login: "kaiju-bot" },
             }),
           },
         ],

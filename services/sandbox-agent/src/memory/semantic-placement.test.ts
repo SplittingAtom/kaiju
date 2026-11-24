@@ -7,7 +7,7 @@ import {
   type SemanticMemoryPlacement,
 } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { MARKER_BEGIN, MARKER_END } from "../kobe-tools/memory-fence.js";
+import { MARKER_BEGIN, MARKER_END } from "../kaiju-tools/memory-fence.js";
 import {
   HELD_HEADER,
   KNOWN_HEADER,

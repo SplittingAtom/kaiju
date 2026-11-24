@@ -226,7 +226,7 @@ describe("Gate 2: a budget stops a run after its current step (D30)", () => {
     await recordModelUsage(f.fx.db, [call(w.team, w.owner.id, 1, run)]);
     await f.fx.replica(0).deps.budgets.evaluate(w.team);
     await ws.sb.until(() => ws.sb.frames("run.stop").find((s) => s.run_id === run));
-    // Before the stop reached Pi, its next model call got the shim's 402 (kobe-models' error).
+    // Before the stop reached Pi, its next model call got the shim's 402 (kaiju-models' error).
     ws.event(start, { type: "agent_start" });
     ws.event(start, {
       type: "message_end",

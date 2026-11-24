@@ -29,7 +29,7 @@ import { uploadFileNameSchema } from "./uploads.js";
  * thread in the same project, copied up to the shared leaf. Unsharing makes it private again.
  *
  * Reaching a run: `run.start.project` ({@link runProjectContextSchema}) carries the instructions
- * of the thread's project; kobe-sandbox-agent appends them to the system prompt of every turn of
+ * of the thread's project; kaiju-sandbox-agent appends them to the system prompt of every turn of
  * the run (after the memory index). Project files are not sent: they are synced read-only into the
  * members' sandboxes at {@link projectMountPath} (workspace area `projects`, origin `server`).
  *

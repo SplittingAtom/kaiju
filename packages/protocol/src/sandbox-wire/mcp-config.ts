@@ -19,7 +19,7 @@ export const CAPABILITY_MCP = "mcp";
 export const RUN_MCP_SERVERS_MAX = 64;
 export const RUN_MCP_TOOLS_MAX = 256;
 
-/** `mcp__<server segment>__<tool>`: the name Pi registers and kobe-policy checks. */
+/** `mcp__<server segment>__<tool>`: the name Pi registers and kaiju-policy checks. */
 const piToolName = z
   .string()
   .max(256)

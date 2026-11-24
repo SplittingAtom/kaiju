@@ -72,11 +72,11 @@ export const SANDBOX_CONTAINER = "agent";
  */
 export const BOOTSTRAP_TOKEN_AUDIENCE = "kobe.sandbox-bootstrap";
 /**
- * Under the image's agent-only directory (`/run/kobe-agent`, 0700, KOBE-71): the projected file
+ * Under the image's agent-only directory (`/run/kaiju-agent`, 0700, KOBE-71): the projected file
  * itself is group-readable by the pod's fsGroup, which every Pi identity shares (the workspace
  * group), so only the parent keeps sandbox code out.
  */
-export const BOOTSTRAP_TOKEN_DIR = "/run/kobe-agent/bootstrap";
+export const BOOTSTRAP_TOKEN_DIR = "/run/kaiju-agent/bootstrap";
 export const BOOTSTRAP_TOKEN_FILE = `${BOOTSTRAP_TOKEN_DIR}/bootstrap-token`;
 /** Kubelet refreshes the projected token at 80% of this lifetime. */
 export const BOOTSTRAP_TOKEN_SECONDS = 3600;
@@ -87,10 +87,10 @@ export const BOOTSTRAP_TOKEN_SECONDS = 3600;
  * exfiltration channel around the default-deny egress policy. `.internal` is reserved for private use.
  */
 export const SANDBOX_HOSTS = {
-  server: "server.kobe.internal",
-  modelGateway: "model-gateway.kobe.internal",
-  mcpProxy: "mcp-proxy.kobe.internal",
-  egressProxy: "egress-proxy.kobe.internal",
+  server: "server.kaiju.internal",
+  modelGateway: "model-gateway.kaiju.internal",
+  mcpProxy: "mcp-proxy.kaiju.internal",
+  egressProxy: "egress-proxy.kaiju.internal",
 } as const;
 export type KaijuEndpoint = keyof typeof SANDBOX_HOSTS;
 export const KAIJU_ENDPOINTS = Object.keys(SANDBOX_HOSTS) as KaijuEndpoint[];
@@ -98,20 +98,20 @@ export const KAIJU_ENDPOINTS = Object.keys(SANDBOX_HOSTS) as KaijuEndpoint[];
 /**
  * Pod Security Admission level enforced on team namespaces. "baseline", not "restricted", for
  * one reason only (KOBE-71): the sandbox container adds the SETUID and SETGID capabilities and
- * allows privilege escalation, so the image's kobe-runas helper can start each Pi process under
+ * allows privilege escalation, so the image's kaiju-runas helper can start each Pi process under
  * its own uid. Everything else "restricted" demands (non-root, seccomp, drop ALL, volume types)
  * is enforced by Kaiju's own admission policy for team pods (chart: sandbox-admission.yaml).
  */
 export const POD_SECURITY_LEVEL = "baseline";
 /** UID/GID of the `kobe` user in images/sandbox/Dockerfile (the agent; the workspace group). */
 export const SANDBOX_UID = 1000;
-/** Group `kobe-agent` in the image: the only group allowed to execute kobe-runas (KOBE-71). */
+/** Group `kobe-agent` in the image: the only group allowed to execute kaiju-runas (KOBE-71). */
 export const SANDBOX_AGENT_GID = 1001;
-/** First Pi identity (`kobe-pi-0`, uid = gid) in the image; kobe-runas accepts 2000-2063. */
+/** First Pi identity (`kobe-pi-0`, uid = gid) in the image; kaiju-runas accepts 2000-2063. */
 export const PI_IDENTITY_BASE = 2000;
 /**
  * First partner (tool) identity (`kobe-tool-0`, uid = gid; KOBE-166): Pi identity `n` is paired
- * with `PARTNER_IDENTITY_BASE + n`, which kobe-runas accepts in 3000-3063. The agent gets their
+ * with `PARTNER_IDENTITY_BASE + n`, which kaiju-runas accepts in 3000-3063. The agent gets their
  * groups as well as the Pi ones. Keep equal to PI_IDENTITY_BASE + 1000
  * (services/sandbox-agent `PARTNER_UID_OFFSET`).
  */
@@ -127,15 +127,15 @@ export const PI_IDENTITIES = 16;
  * directories in it (on the disk-backed /tmp, 2777, any of them could). Small: Pi keeps only its
  * credential and catalog stores and the model file there.
  */
-export const PI_RUNTIME_DIR = "/run/kobe-pi";
+export const PI_RUNTIME_DIR = "/run/kaiju-pi";
 export const PI_RUNTIME_SIZE = "64Mi";
 /**
- * Where kobe-sandbox-agent materializes a run's effective skills (KOBE-82): a second memory-backed
+ * Where kaiju-sandbox-agent materializes a run's effective skills (KOBE-82): a second memory-backed
  * emptyDir for the same reason as PI_RUNTIME_DIR (sticky root no Pi identity can rename in), so
  * the agent's read-only skill directories can't be swapped by a tool. Sized for the agent's cap
  * (96 MiB across all live threads' skills, services/sandbox-agent skills/store.ts).
  */
-export const SKILLS_DIR = "/run/kobe-skills";
+export const SKILLS_DIR = "/run/kaiju-skills";
 export const SKILLS_SIZE = "128Mi";
 /**
  * The agent's own store under SKILLS_DIR: one `sk-<sha256>/` per bundle (sandbox-agent
@@ -143,6 +143,6 @@ export const SKILLS_SIZE = "128Mi";
  */
 export const SKILLS_STORE_SUBDIR = "store";
 /** The helper that starts Pi under its identity (images/sandbox/runas). */
-export const PI_RUNAS_HELPER = "/opt/kobe/bin/kobe-runas";
-/** The only capabilities a sandbox container adds (after dropping ALL), for kobe-runas. */
+export const PI_RUNAS_HELPER = "/opt/kaiju/bin/kaiju-runas";
+/** The only capabilities a sandbox container adds (after dropping ALL), for kaiju-runas. */
 export const SANDBOX_CAPABILITIES = ["SETUID", "SETGID"] as const;

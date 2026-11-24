@@ -123,7 +123,7 @@ describe("expiry and run ends", () => {
   });
 });
 
-describe("Gate 2: a tampered kobe-policy cannot run an MCP write without a signed approval", () => {
+describe("Gate 2: a tampered kaiju-policy cannot run an MCP write without a signed approval", () => {
   const TOOL = "mcp__jira__create_issue";
   const INPUT = { project: "OPS", summary: "R\u00e9sum\u00e9 keys", labels: ["sec"], priority: 2 };
   const verifier = () => fx.replica(1).deps.approvals.verifier;

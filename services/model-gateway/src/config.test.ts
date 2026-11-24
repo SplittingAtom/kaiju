@@ -18,7 +18,7 @@ const env = {
   KAIJU_TRACE_SPAN_KEY: "t".repeat(40),
   KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY: PAIR.publicPem,
   KAIJU_MODELS_VIRTUAL_KEY_SECRET: "v".repeat(40),
-  KAIJU_BIFROST_URL: "http://kobe-bifrost:8080/",
+  KAIJU_BIFROST_URL: "http://kaiju-bifrost:8080/",
 };
 
 describe("loadConfig", () => {
@@ -35,7 +35,7 @@ describe("loadConfig", () => {
   it("reads the chart's env with defaults", () => {
     expect(loadConfig(env)).toMatchObject({
       port: 8080,
-      bifrostUrl: "http://kobe-bifrost:8080",
+      bifrostUrl: "http://kaiju-bifrost:8080",
       maxBodyBytes: 8 * 1024 * 1024,
       inflightBytes: 128 * 1024 * 1024,
       inflightBytesPerSandbox: 32 * 1024 * 1024,
@@ -160,7 +160,7 @@ describe("old KOBE_* names for one release (KOBE-748)", () => {
   it("starts with only the old names and warns once, naming them without values", () => {
     const warn = vi.fn();
     const c = loadConfig(toLegacyEnv(env), warn);
-    expect(c.bifrostUrl).toBe("http://kobe-bifrost:8080");
+    expect(c.bifrostUrl).toBe("http://kaiju-bifrost:8080");
     expect(c.databaseUrl).toBe("postgres://app@db/kobe");
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[1]).toEqual({
@@ -181,7 +181,7 @@ describe("old KOBE_* names for one release (KOBE-748)", () => {
   it("the new name wins when both are set, and the warning names the conflict", () => {
     const warn = vi.fn();
     const c = loadConfig({ ...env, KOBE_BIFROST_URL: "http://old-bifrost:8080/" }, warn);
-    expect(c.bifrostUrl).toBe("http://kobe-bifrost:8080");
+    expect(c.bifrostUrl).toBe("http://kaiju-bifrost:8080");
     expect(warn.mock.calls[0]?.[1]).toEqual({ renamed: [], conflicts: ["KOBE_BIFROST_URL"] });
   });
 

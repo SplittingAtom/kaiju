@@ -25,7 +25,7 @@ import {
  * KOBE-196 (review of KOBE-167): nothing Pi reads or loads code from may be writable by the
  * partner uid. Pi loads extensions through jiti, which trusts a transpile cache in `$TMPDIR/jiti`,
  * and Node falls back to `$HOME/.node_modules` for optional modules the bundled provider SDKs
- * require. With a shared TMPDIR and HOME (and `kobe-reclaim` handing a finished Pi's files to the
+ * require. With a shared TMPDIR and HOME (and `kaiju-reclaim` handing a finished Pi's files to the
  * workspace group) a tool plants code there and the next Pi runs it. Real helper, real Pi: the
  * control shows the plant works against the old layout; the hardened layout (private HOME and
  * TMPDIR, caches off) does not run it, for the current Pi and for the next one.
@@ -34,7 +34,7 @@ const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
 const PACKAGE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MODELS_EXTENSION = path.join(
   PACKAGE,
-  process.env.CI === undefined ? "src/kobe-models/index.ts" : "dist/kobe-models/index.js",
+  process.env.CI === undefined ? "src/kaiju-models/index.ts" : "dist/kaiju-models/index.js",
 );
 
 function run(args: readonly string[]): Promise<{ code: number | null; out: string }> {
@@ -140,7 +140,7 @@ describe.runIf(PI_AVAILABLE && EXECUTOR_BUILT && HELPER !== undefined)(
       expect(existsSync(path.join(tmp, "jiti"))).toBe(true);
       await first.close();
       open.splice(0);
-      // What kobe-reclaim used to do to a finished Pi's files in /tmp.
+      // What kaiju-reclaim used to do to a finished Pi's files in /tmp.
       await asPi(`chgrp -R ${wsGid} ${tmp}/jiti && chmod -R g+rwX ${tmp}/jiti`);
       expect((await plantJiti(tmp, canary)).out).not.toContain("denied");
       await startPi(false, tmp);
@@ -191,7 +191,7 @@ describe.runIf(PI_AVAILABLE && EXECUTOR_BUILT && HELPER !== undefined)(
       expect(existsSync(canaryB)).toBe(false);
     }, 240_000);
 
-    it("kobe-reclaim deletes the jiti and compile caches of a finished Pi instead of opening them to the group", async () => {
+    it("kaiju-reclaim deletes the jiti and compile caches of a finished Pi instead of opening them to the group", async () => {
       const tmp = await sharedDir("tmp-reclaim");
       await asPi(
         `mkdir -p ${tmp}/jiti ${tmp}/node-compile-cache && echo x > ${tmp}/jiti/a.mjs && echo y > ${tmp}/other`,

@@ -213,7 +213,7 @@ describe("startServer (KOBE-709)", () => {
     expect(server.jobs).toEqual(
       expect.arrayContaining([
         "isolation",
-        "kobe-skills-seed",
+        "kaiju-skills-seed",
         "workspace-collector",
         "external-scan-sweep",
         "skill-late-scan",

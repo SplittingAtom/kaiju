@@ -36,7 +36,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     expect(bindings[0]).toMatchObject({
       metadata: { namespace: NS },
       roleRef: { kind: "ClusterRole", name: SETTINGS.managerClusterRole },
-      subjects: [{ kind: "ServiceAccount", name: "kobe-server", namespace: "kaiju" }],
+      subjects: [{ kind: "ServiceAccount", name: "kaiju-server", namespace: "kaiju" }],
     });
   });
 
@@ -124,7 +124,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
         spec: {
           runtimeClassName: "gvisor",
           hostAliases: expect.arrayContaining([
-            { ip: "10.43.0.10", hostnames: ["server.kobe.internal"] },
+            { ip: "10.43.0.10", hostnames: ["server.kaiju.internal"] },
           ]),
         },
       },
@@ -250,7 +250,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     kube.seed({
       apiVersion: "v1",
       kind: "Service",
-      metadata: { name: "kobe-bifrost", namespace: "kaiju" },
+      metadata: { name: "kaiju-bifrost", namespace: "kaiju" },
       spec: { clusterIP: "None" },
     });
     await expect(provider.ensureSandbox(TEAM, USER)).rejects.toThrow(/no ClusterIP/);

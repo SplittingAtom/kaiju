@@ -63,7 +63,7 @@ beforeAll(async () => {
       ]);
     await c.query(`INSERT INTO teams (id, slug, name) VALUES ($1, $2, 'Kaiju skills')`, [
       ids.team,
-      `kobe-skills-${suffix}`,
+      `kaiju-skills-${suffix}`,
     ]);
     await c.query(
       `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'team_admin')`,

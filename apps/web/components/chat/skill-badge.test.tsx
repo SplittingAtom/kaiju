@@ -22,7 +22,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fake.fetch);
 });
 
-const SKILL_PATH = `/run/kobe-skills/store/sk-${"a".repeat(64)}/SKILL.md`;
+const SKILL_PATH = `/run/kaiju-skills/store/sk-${"a".repeat(64)}/SKILL.md`;
 const read = (id: string, path: string) => ({
   role: "assistant",
   content: [{ type: "toolCall", id, name: "read", arguments: { path } }],

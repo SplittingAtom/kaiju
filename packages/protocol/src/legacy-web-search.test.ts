@@ -8,7 +8,7 @@ import {
 
 // KOBE-606: the built-in web search is gone; only old agents' frames are still understood.
 describe("retired web_search", () => {
-  it("is no longer a built-in tool or a kobe-tools op", () => {
+  it("is no longer a built-in tool or a kaiju-tools op", () => {
     expect(Object.keys(BUILTIN_TOOLS)).not.toContain("web_search");
     expect(builtinToolDescriptor("web_search")).toBeUndefined();
     const req = { id: "k1", op: "web_search", tool_call_id: "c", tool: "web_search", input: {} };

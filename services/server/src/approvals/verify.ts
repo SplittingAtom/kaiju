@@ -8,7 +8,7 @@ import { consumeApprovalInTx, loadApprovalForCall, loadApprovalRecord, tokenOf }
 
 /**
  * The verify-signature seam for the MCP proxy (KOBE-58; Gate 2: "a sandbox with a tampered
- * kobe-policy extension still cannot execute an MCP write without a signed approval").
+ * kaiju-policy extension still cannot execute an MCP write without a signed approval").
  *
  * The proxy never trusts the sandbox for an approval: it finds the approval itself by
  * (team, run, tool_call_id) — the token never leaves the server side — and runs both halves of
@@ -20,7 +20,7 @@ import { consumeApprovalInTx, loadApprovalForCall, loadApprovalRecord, tokenOf }
  *
  * Any failure is a refusal, audited `approval.rejected` (throttled per tool call and reason, repeats
  * counted as `suppressed`). A tampered
- * kobe-policy can skip the server's check, change the input after approval, reuse a tool call id,
+ * kaiju-policy can skip the server's check, change the input after approval, reuse a tool call id,
  * borrow another run's approval or wait out the token — each lands here as a refusal.
  */
 

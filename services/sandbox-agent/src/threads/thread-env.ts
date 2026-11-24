@@ -18,7 +18,7 @@ export const DIALOG_METHODS = new Set(["select", "confirm", "input", "editor"]);
 export const MAX_PENDING_DIALOGS = 64;
 /** Scratch trees every identity can write besides /workspace and $HOME (reclaimed per uid). */
 export const SHARED_SCRATCH_DIRS = ["/tmp", "/dev/shm"] as const;
-/** Pi startup (extension loading, jiti) up to kobe-policy's `channel.ready`. */
+/** Pi startup (extension loading, jiti) up to kaiju-policy's `channel.ready`. */
 export const POLICY_READY_TIMEOUT_MS = 30_000;
 
 export interface ThreadHooks {
@@ -38,11 +38,11 @@ export interface ThreadHooks {
     check: PolicyChannelCheck,
     reply: (message: PolicyChannelReply) => void,
   ) => void;
-  /** kobe-policy stopped waiting for one of its checks (timeout, Stop): free its slot. */
+  /** kaiju-policy stopped waiting for one of its checks (timeout, Stop): free its slot. */
   readonly policyCancel?: (threadId: string, requestId: string) => void;
   /** The thread's policy channel is unusable: every pending check of the thread is denied. */
   readonly policyChannelClosed: (threadId: string, reason: string) => void;
-  /** kobe-tools asked for an artifact (KOBE-128); absent: no tools channel is served. */
+  /** kaiju-tools asked for an artifact (KOBE-128); absent: no tools channel is served. */
   readonly toolsRequest?: (
     threadId: string,
     runId: string | undefined,
@@ -91,25 +91,25 @@ export interface ThreadEnv {
   readonly toolEnvScript?: string | undefined;
   /** mcp-proxy wiring for Pi's per-session MCP config (KOBE-111); absent: no connector tools. */
   readonly mcp?: McpWiring | undefined;
-  /** The kobe-policy extension (root-owned file), loaded last into every Pi (KOBE-36). */
+  /** The kaiju-policy extension (root-owned file), loaded last into every Pi (KOBE-36). */
   readonly policyExtension: string;
-  /** The kobe-tools extension (root-owned file, KOBE-128); absent: no tools, no fd 4. */
+  /** The kaiju-tools extension (root-owned file, KOBE-128); absent: no tools, no fd 4. */
   readonly toolsExtension?: string | undefined;
   /** The agent announced the `files` capability: the extension registers `share_file` (KOBE-149). */
   readonly shareFiles?: boolean | undefined;
-  /** The agent announced `projects` (KOBE-162): kobe-tools registers `commit_project`. */
+  /** The agent announced `projects` (KOBE-162): kaiju-tools registers `commit_project`. */
   readonly projectTools?: boolean | undefined;
-  /** The agent announced `skill_drafts` (KOBE-442): kobe-tools registers `save_skill_draft`. */
+  /** The agent announced `skill_drafts` (KOBE-442): kaiju-tools registers `save_skill_draft`. */
   readonly skillDraftTools?: boolean | undefined;
-  /** The agent announced `file_edits` (KOBE-462): kobe-tools registers `propose_file_edit`. */
+  /** The agent announced `file_edits` (KOBE-462): kaiju-tools registers `propose_file_edit`. */
   readonly fileEditTools?: boolean | undefined;
-  /** The agent announced `notebooks` (KOBE-464): kobe-tools registers `run_python`. */
+  /** The agent announced `notebooks` (KOBE-464): kaiju-tools registers `run_python`. */
   readonly notebookTools?: boolean | undefined;
-  /** The agent announced `memory` (KOBE-157): kobe-tools registers remember/recall. */
+  /** The agent announced `memory` (KOBE-157): kaiju-tools registers remember/recall. */
   readonly memoryTools?: boolean | undefined;
-  /** Other root-owned extension paths loaded with `-e`, before kobe-policy. */
+  /** Other root-owned extension paths loaded with `-e`, before kaiju-policy. */
   readonly extensions?: readonly string[];
-  /** How long a new Pi may take to report kobe-policy ready (default {@link POLICY_READY_TIMEOUT_MS}). */
+  /** How long a new Pi may take to report kaiju-policy ready (default {@link POLICY_READY_TIMEOUT_MS}). */
   readonly policyReadyTimeoutMs?: number;
   readonly workspaceDir: string;
   readonly sessionDir: string;
@@ -121,7 +121,7 @@ export interface ThreadEnv {
    */
   readonly identities?: PiIdentities | undefined;
   /**
-   * The tool executor (KOBE-167): present, a Pi started with the kobe-exec extension gets the fd-5
+   * The tool executor (KOBE-167): present, a Pi started with the kaiju-exec extension gets the fd-5
    * relay and its tools run in an executor under its partner uid. Absent: Pi runs its own tools.
    */
   readonly exec?: ExecWiring | undefined;
@@ -130,7 +130,7 @@ export interface ThreadEnv {
    * in the executor (KOBE-196). Default `/tmp`.
    */
   readonly piPrivateRoot?: string | undefined;
-  /** The kobe-exec extension (root-owned file); loaded into every Pi when `exec` is set. */
+  /** The kaiju-exec extension (root-owned file); loaded into every Pi when `exec` is set. */
   readonly execExtension?: string | undefined;
 }
 

@@ -10,7 +10,7 @@ import { MirrorSession, MirrorVersionError, type MirrorVersionInput } from "./gi
 
 const enc = (s: string) => new TextEncoder().encode(s);
 const CREDS = { username: "x-access-token", token: "tok-secret-123" };
-const AUTHOR = { name: "Kaiju Registry", email: "registry@kobe.invalid" };
+const AUTHOR = { name: "Kaiju Registry", email: "registry@kaiju.invalid" };
 
 function version(name: string, semver: string, body: string, id: string): MirrorVersionInput {
   const files = new Map<string, Uint8Array>([
@@ -106,7 +106,7 @@ describe("MirrorSession (KOBE-343)", () => {
       .trim()
       .split("\n");
     expect(log.map((l) => l.split(" ")[0])).toEqual([c.commit, b.commit, a.commit]);
-    expect(log[0]).toContain("Kaiju Registry <registry@kobe.invalid>");
+    expect(log[0]).toContain("Kaiju Registry <registry@kaiju.invalid>");
     const catalog = JSON.parse(
       server.git("catalog", ["show", "main:catalog.json"], { bare: true }),
     );

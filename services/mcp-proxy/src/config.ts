@@ -36,7 +36,7 @@ const key = (name: string) =>
 
 const configSchema = z.object({
   PORT: int("PORT", 1, 65535, 8080),
-  /** The server's internal listener (policy re-check), e.g. http://kobe-server:8082. */
+  /** The server's internal listener (policy re-check), e.g. http://kaiju-server:8082. */
   KAIJU_MCP_SERVER_URL: z.url({
     protocol: /^https?$/,
     error: "KAIJU_MCP_SERVER_URL must be an http(s) URL",

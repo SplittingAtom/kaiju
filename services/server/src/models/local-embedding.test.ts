@@ -11,7 +11,7 @@ import {
 // pushed by the gateway sync, besides the Site console's providers (which stay the way to use an
 // external embedding model: a LAN Ollama or a hosted provider with a site key).
 
-const LOCAL = { url: "http://kobe-embeddings:8080", model: "nomic-embed-text" };
+const LOCAL = { url: "http://kaiju-embeddings:8080", model: "nomic-embed-text" };
 const lanOllama: ProviderInput = {
   id: "ollama",
   kind: "ollama",

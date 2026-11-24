@@ -26,7 +26,7 @@ export interface EgressWiring {
   readonly proxyUrl: string;
   /** Hosts tools reach directly (the pod's `NO_PROXY`). */
   readonly noProxy: string;
-  /** The root-owned BASH_ENV script (`/opt/kobe/egress-env.sh`). */
+  /** The root-owned BASH_ENV script (`/opt/kaiju/egress-env.sh`). */
   readonly envScript: string;
   readonly tokens: ModelTokenSource;
 }

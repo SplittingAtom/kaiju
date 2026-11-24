@@ -2,11 +2,11 @@ import {
   parseBranchSummaryOutcome,
   type BranchSummaryOutcome,
   type BranchSummaryRequest,
-} from "../kobe-models/branch-summary-protocol.js";
+} from "../kaiju-models/branch-summary-protocol.js";
 import type { PiProcess, PiRecord } from "../pi/pi-process.js";
 
 /**
- * A branch summary the agent armed for its run (KOBE-548): handed to kobe-models once, on its
+ * A branch summary the agent armed for its run (KOBE-548): handed to kaiju-models once, on its
  * request dialog; then the outcome dialog is awaited. Memory only; cleared with the run.
  */
 export class BranchSummaryState {
@@ -23,7 +23,7 @@ export class BranchSummaryState {
     this.#armed = { runId, request, outcome: undefined };
   }
 
-  /** The outcome kobe-models reported for the armed summary (undefined: none came); disarms. */
+  /** The outcome kaiju-models reported for the armed summary (undefined: none came); disarms. */
   take(runId: string): BranchSummaryOutcome | undefined {
     const armed = this.#armed;
     if (armed?.runId !== runId) return undefined;
@@ -35,7 +35,7 @@ export class BranchSummaryState {
     this.#armed = undefined;
   }
 
-  /** kobe-models asks for the armed request: answered once, for `activeRunId` only. */
+  /** kaiju-models asks for the armed request: answered once, for `activeRunId` only. */
   answerRequest(
     pi: PiProcess,
     record: PiRecord,

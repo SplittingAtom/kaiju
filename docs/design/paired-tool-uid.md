@@ -1,17 +1,17 @@
 # Paired tool uid per thread (KOBE-119, spike for KOBE-74)
 
-Status: accepted (option B); implemented in KOBE-166 (uid pool, helper) and KOBE-167 (executor, `kobe-exec`, see "Implementation notes" at the end). The text below is the original proposal. Items marked **[unverified]** were not
+Status: accepted (option B); implemented in KOBE-166 (uid pool, helper) and KOBE-167 (executor, `kaiju-exec`, see "Implementation notes" at the end). The text below is the original proposal. Items marked **[unverified]** were not
 checked against code, docs or a running gVisor in this spike.
 
 ## Question
 
 KOBE-71 gave every live Pi process its own uid (`kobe-pi-<n>`, 2000-2063) started through the
-file-capability helper `kobe-runas`, with `no_new_privs` and no capabilities. Pi's tools (the `bash`
+file-capability helper `kaiju-runas`, with `no_new_privs` and no capabilities. Pi's tools (the `bash`
 tool and everything it starts, Python, `rg`/`fd`) and Pi's in-process tools (read, write, edit) run
 under that same uid. Should each thread get a second, distinct uid for tool execution?
 
 Constraints from `CLAUDE.md` and `docs/ledger/KOBE-71.md`: gVisor or Kata only; secrets never enter
-sandboxes except what the thread's Pi needs; Pi 1.0.x in RPC mode behind `kobe-sandbox-agent`; no
+sandboxes except what the thread's Pi needs; Pi 1.0.x in RPC mode behind `kaiju-sandbox-agent`; no
 `no_new_privs` weakening and no wider admission policy (only `agent` may add SETUID/SETGID) for any
 model-controlled process.
 
@@ -29,7 +29,7 @@ groups {P, 1000}, `no_new_privs`, no capabilities, as a descendant of Pi. What i
 | The Pi RPC pipe                                                           | No                     | Same reason; tools cannot inject RPC lines. They can still `kill`/`SIGSTOP` Pi (denial of service of their own thread).         |
 | **`model.json`** (0640, group = Pi's gid)                                 | **Yes**                | Holds the sandbox's model-gateway session token (`models/model-file.ts`). Under `requireRunToken` the token alone is refused.   |
 | **Pi's `agent/` dir** (2770, Pi uid)                                      | **Yes, writable**      | `models.json`, `settings.json`, `auth.json`. See "the bridge" below.                                                            |
-| Other threads' Pis, the agent, `/run/kobe-agent`                          | No                     | Different uid, directory modes (KOBE-71).                                                                                       |
+| Other threads' Pis, the agent, `/run/kaiju-agent`                         | No                     | Different uid, directory modes (KOBE-71).                                                                                       |
 | Shared `/workspace`, `$HOME`, `/tmp`, session files                       | Yes, by design (D13)   | Unchanged by this spike; KOBE-71 residual risks 1 and 4.                                                                        |
 
 **The bridge (the real gap).** Because the tool shares Pi's uid it can write Pi's `agent/` directory.
@@ -54,7 +54,7 @@ Idea from the KOBE-71 follow-up: `settings.json` `shellPath` points at `kaiju-to
 file-capability helper that Pi's group may execute and that switches `P -> T`.
 
 - Blocker 1 (KOBE-71, confirmed): a file-capability binary gains nothing under `no_new_privs`, and
-  `kobe-runas` sets it on Pi. Making A work needs Pi to run **without** `no_new_privs`, which violates
+  `kaiju-runas` sets it on Pi. Making A work needs Pi to run **without** `no_new_privs`, which violates
   the constraint above and lets any process of uid `P` (the tools themselves) use the capability
   binary and any future file-capability or setuid file in the image.
 - Blocker 2: only `shellPath` is redirected. Pi's `read`/`write`/`edit` run in-process as `P`, and
@@ -68,7 +68,7 @@ file-capability helper that Pi's group may execute and that switches `P -> T`.
 ### B. Separate executor process under the partner uid (recommended)
 
 The agent starts, next to each Pi, a small **tool executor** process under the partner uid `T`, using
-the same `kobe-runas` (switch to `T`, groups {T, 1000}, umask 002, no caps, `no_new_privs`). Pi's
+the same `kaiju-runas` (switch to `T`, groups {T, 1000}, umask 002, no caps, `no_new_privs`). Pi's
 tool operations are redirected to it by an extension, so Pi itself never spawns or touches a tool.
 
 How Pi 1.0.0 allows this without patching it (verified in the 1.0.0 package):
@@ -79,8 +79,8 @@ How Pi 1.0.0 allows this without patching it (verified in the 1.0.0 package):
   documented Gondolin extension (`examples/extensions/gondolin`, `docs/containerization.md`) does
   exactly this for all seven tools to run them in a micro-VM, and `docs/containerization.md` says
   other extension tools still run on the host unless they delegate too.
-- Kaiju already loads root-owned extensions with `-e` (kobe-models, kobe-tools, kobe-policy), so a
-  fourth, `kobe-exec`, needs no change to Pi. `kobe-policy` stays the last `-e`; it checks
+- Kaiju already loads root-owned extensions with `-e` (kaiju-models, kaiju-tools, kaiju-policy), so a
+  fourth, `kaiju-exec`, needs no change to Pi. `kaiju-policy` stays the last `-e`; it checks
   `tool_call` by tool name before `execute`, so overriding the implementation does not bypass it
   (**[unverified]**: needs a real-Pi test that policy still sees the overridden tools).
 - Pi's own internal spawns (git for version info, clipboard, models.json `!command`, MCP stdio
@@ -88,13 +88,13 @@ How Pi 1.0.0 allows this without patching it (verified in the 1.0.0 package):
   `builtin:mcp` (KOBE-62) goes through mcp-proxy. Inventory of remaining `spawn` sites in Pi is a
   task in T2. The RPC `bash` command is driven only by the agent, which never sends it **[unverified]**.
 
-Wiring: the agent creates two pipes and **relays** frames between Pi (new fd 5, `kobe-runas` already
+Wiring: the agent creates two pipes and **relays** frames between Pi (new fd 5, `kaiju-runas` already
 closes fds >= 5, so it learns to keep 5 exactly like 3 and 4) and the executor (its stdio). A relay in
 the agent avoids any socket path the tool uid could connect to, and keeps `T` from being able to talk
 to Pi's end. The executor speaks a small request/response protocol (exec with streamed stdout/stderr,
 read, write, stat, list, glob) and runs tools as its children.
 
-Fail closed: if the executor is missing or dies, `kobe-exec` returns a tool error; it never falls back
+Fail closed: if the executor is missing or dies, `kaiju-exec` returns a tool error; it never falls back
 to executing in Pi. Agent without the new capability: Pi runs as today (negotiated in `hello`).
 
 What it closes: signals to Pi, `/proc/<pi>/*` (environ, maps, cmdline: cross-uid, measured refused
@@ -133,7 +133,7 @@ catches the plant before the next prompt. Acceptable only if T1 shows the bridge
 | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | File-capability helper switches uid with `allowPrivilegeEscalation: true`; setuid-root binary does not            | Measured on the cluster's runsc (KOBE-71 ledger, "gVisor measurements") |
 | Yama `ptrace_scope` 1; cross-uid ptrace, `mem`, `environ`, `kill` refused; same-uid ancestor `mem`/ptrace refused | Measured (KOBE-71)                                                      |
-| `/run/kobe-pi` memory emptyDir is sticky 3777 and a mount point                                                   | Measured (KOBE-71)                                                      |
+| `/run/kaiju-pi` memory emptyDir is sticky 3777 and a mount point                                                  | Measured (KOBE-71)                                                      |
 | Second pool of uids needs no new capability: same helper, same two caps                                           | By construction; the new range check is in the helper                   |
 | POSIX ACLs on the workspace volume                                                                                | **[unverified]**; not needed (see next section)                         |
 | Kata guest kernel has Yama and the same `st_dev` behaviour                                                        | **[unverified]**; KOBE-71 residual risk 8 applies unchanged             |
@@ -156,7 +156,7 @@ KOBE-27), can read and write them. Paired uids keep exactly this:
 - `git` refuses repositories owned by another uid ("dubious ownership"). This already bites when a
   later thread gets a different uid; a system-wide `safe.directory = *` in the image's gitconfig
   fixes it for both models **[unverified whether already set]** (T3).
-- Executor and Pi must agree on cwd and path spelling: `kobe-exec` passes absolute paths and the
+- Executor and Pi must agree on cwd and path spelling: `kaiju-exec` passes absolute paths and the
   executor resolves them (`O_NOFOLLOW` where relevant). Pi's in-process work no longer needs
   read access beyond the session file and skills store.
 
@@ -164,7 +164,7 @@ KOBE-27), can read and write them. Paired uids keep exactly this:
 
 - Redirect without patching: yes, through `registerTool` + `operations`, as above (verified in the
   1.0.0 package; end-to-end behaviour under Kaiju's lockdown flags **[unverified]**).
-- Tool names, schemas and output limits must match the built-ins so models and `kobe-policy` see no
+- Tool names, schemas and output limits must match the built-ins so models and `kaiju-policy` see no
   difference; reuse Pi's `create*Tool` with Kaiju operations rather than reimplementing.
 - `grep`/`find` accept custom operations (Gondolin supplies them); the `rg --pre` risk in the KOBE-71
   note disappears because `rg` then runs as `T`.
@@ -174,7 +174,7 @@ KOBE-27), can read and write them. Paired uids keep exactly this:
 
 | Item                            | Estimate / note                                                                                                                           |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Helper change                   | Small: second uid range, `--kill-all` for both, keep fd 5. `kobe-runas.c` stays about 250 lines.                                          |
+| Helper change                   | Small: second uid range, `--kill-all` for both, keep fd 5. `kaiju-runas.c` stays about 250 lines.                                         |
 | Identity pool                   | Pair per Pi (`T = P + 1000`, 3000-3063); 64 more passwd/group entries; 16 more supplementary groups.                                      |
 | Executor + protocol + extension | Medium: framed exec/streaming, cancellation, timeouts, output caps, seven operation sets, Pi-version tests.                               |
 | Memory                          | One extra Node process per live Pi (tens of MB, lazy start on first tool call); measure against the pod limit.                            |
@@ -194,8 +194,8 @@ if not, schedule it as hardening after the gate tickets. Keep the tripwire eithe
 | #   | Title                                                           | Scope (one line)                                                                                                                                                                                            | Migration                    | Depends on            |
 | --- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------- |
 | T1  | Real-Pi test: can a tool redirect the Kaiju provider via agent/ | Plant `models.json`/`settings.json` from a tool uid during a run and after `set_model`; assert the run token never reaches a tool-owned listener (red test first).                                          | no                           | KOBE-118              |
-| T2  | kobe-exec: Pi tools routed through an executor extension        | Extension overriding the seven tools with remote operations, executor program, framing, relay in the agent on fd 5, fail-closed; Pi spawn-site inventory.                                                   | no                           | T3 (or stub), KOBE-71 |
-| T3  | Paired uid pool and helper support                              | `kobe-runas` second range and fd 5, pair allocation/reclaim in `pi/identities.ts`, passwd/group entries, `supplementalGroups`, git safe.directory, image checks.                                            | no (pod spec reconcile only) | KOBE-71               |
+| T2  | kaiju-exec: Pi tools routed through an executor extension       | Extension overriding the seven tools with remote operations, executor program, framing, relay in the agent on fd 5, fail-closed; Pi spawn-site inventory.                                                   | no                           | T3 (or stub), KOBE-71 |
+| T3  | Paired uid pool and helper support                              | `kaiju-runas` second range and fd 5, pair allocation/reclaim in `pi/identities.ts`, passwd/group entries, `supplementalGroups`, git safe.directory, image checks.                                           | no (pod spec reconcile only) | KOBE-71               |
 | T4  | Paired uid: end-to-end isolation tests and rollout              | Real-helper and e2e (gVisor) tests: tool cannot signal Pi, read `model.json`, write `agent/`; workspace sharing and KOBE-27 sync; cold-start budget; seccomp inside the executor as defence in depth; docs. | no                           | T2, T3                |
 
 If T1 shows the bridge is not exploitable, a cheaper interim step is to close it in the agent
@@ -212,11 +212,11 @@ mid-run, not only before prompts); that interim is not proposed as a replacement
 
 What was built, where it differs from the proposal, and the inventory T2 asked for.
 
-- **Pieces.** `services/sandbox-agent/src/kobe-exec/` is the Pi extension (loaded right before
-  kobe-policy; it re-registers the seven built-ins, `bash read write edit ls grep find`, and a
+- **Pieces.** `services/sandbox-agent/src/kaiju-exec/` is the Pi extension (loaded right before
+  kaiju-policy; it re-registers the seven built-ins, `bash read write edit ls grep find`, and a
   `user_bash` handler). `exec/relay.ts` is the agent's relay on Pi's fd 5, `exec/executor/` the
-  program that runs as the partner uid, `exec/spawn-executor.ts` starts it through `kobe-runas`,
-  `threads/exec-wiring.ts` ties it to a thread. The wire format is `kobe-exec/protocol.ts`.
+  program that runs as the partner uid, `exec/spawn-executor.ts` starts it through `kaiju-runas`,
+  `threads/exec-wiring.ts` ties it to a thread. The wire format is `kaiju-exec/protocol.ts`.
 - **Helper: no change.** KOBE-166's helper already keeps fd 3, 4 and 5 for a Pi and stdio only for a
   partner uid; the executor's channel is its stdio, the agent relays between the two sockets.
 - **Tool semantics.** Pi's own tool definitions are reused (schema, prompt text, renderers,
@@ -238,11 +238,11 @@ What was built, where it differs from the proposal, and the inventory T2 asked f
 
 ### Pi's own spawn sites (Pi 1.0.0)
 
-Pinned by `kobe-exec/pi-spawn-sites.test.ts` (it fails when an upgrade adds, moves or drops one).
+Pinned by `kaiju-exec/pi-spawn-sites.test.ts` (it fails when an upgrade adds, moves or drops one).
 
 | Site (module under `dist/`)                                                                                   | Starts                                                | In a Kaiju launch                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `core/tools/{bash,grep,find}.js`, `utils/shell.js`                                                            | shell, `rg`, `fd`, `which`                            | Replaced by kobe-exec; none runs in Pi any more. RPC `bash` and user `!` commands go through `user_bash` to the executor (tested against real Pi).                                                       |
+| `core/tools/{bash,grep,find}.js`, `utils/shell.js`                                                            | shell, `rg`, `fd`, `which`                            | Replaced by kaiju-exec; none runs in Pi any more. RPC `bash` and user `!` commands go through `user_bash` to the executor (tested against real Pi).                                                      |
 | `core/resolve-config-value.js`                                                                                | `!command` config values                              | **Stays in Pi's uid.** Inputs are `models.json`/`settings.json` (agent-written placeholders, 0440) and `auth.json` (Pi's own store) in `agent/`, which no tool can write now. The tripwire still checks. |
 | `core/exec.js` (`pi.exec`)                                                                                    | any program                                           | Not reachable: only Kaiju's root-owned extensions load (`--no-extensions`) and none calls it.                                                                                                            |
 | `extensions/mcp` (`builtin:mcp`) via pi-mcp `StdioTransport`                                                  | MCP stdio servers                                     | Servers come from `mcp.json` in the agent dir (not writable by tools); Kaiju wires MCP over HTTP through mcp-proxy (KOBE-62), no stdio server is written.                                                |

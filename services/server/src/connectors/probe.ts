@@ -79,7 +79,7 @@ const answerSchema = z.discriminatedUnion("ok", [
 export const PROBE_TIMEOUT_MS = 60_000;
 
 export interface ProxyProbeOptions {
-  /** The MCP proxy's base URL, e.g. http://kobe-mcp-proxy. */
+  /** The MCP proxy's base URL, e.g. http://kaiju-mcp-proxy. */
   readonly baseUrl: string;
   readonly internalKey: string;
   readonly timeoutMs: number;

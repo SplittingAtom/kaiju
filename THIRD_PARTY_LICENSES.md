@@ -25,7 +25,7 @@ Chris (`pnpm license:gate` fails while it is not empty):
 
 ## Web and services: npm packages (pnpm workspace)
 
-Every package in pnpm-lock.yaml (production and development, all platforms). "linked, bundled" packages are in the production dependencies of a deployable and ship in its image (the services via `pnpm deploy --prod`, web via the Next.js standalone output, kobe-sandbox-agent in the sandbox image); "dev-only" packages build, lint and test Kaiju and are never shipped. Checked by `pnpm license:check` (CI `checks`).
+Every package in pnpm-lock.yaml (production and development, all platforms). "linked, bundled" packages are in the production dependencies of a deployable and ship in its image (the services via `pnpm deploy --prod`, web via the Next.js standalone output, kaiju-sandbox-agent in the sandbox image); "dev-only" packages build, lint and test Kaiju and are never shipped. Checked by `pnpm license:check` (CI `checks`).
 
 937 packages, 637 of them shipped in an image.
 
@@ -977,7 +977,7 @@ Documented exceptions (`tools/license-check/license-exceptions.json`):
 
 ## Sandbox image: Python and npm packages
 
-What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sandbox`): the Python data stack (`images/sandbox/requirements.txt`), Pi and its dependencies (`images/sandbox/pi/package-lock.json`), kobe-sandbox-agent's production dependencies and the npm CLI. The committed report is `images/sandbox/third-party-licenses.json`; CI `sandbox-image` compares it with the built image and runs the policy check on it.
+What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kaiju-sandbox`): the Python data stack (`images/sandbox/requirements.txt`), Pi and its dependencies (`images/sandbox/pi/package-lock.json`), kaiju-sandbox-agent's production dependencies and the npm CLI. The committed report is `images/sandbox/third-party-licenses.json`; CI `sandbox-image` compares it with the built image and runs the policy check on it.
 
 311 packages, 311 of them shipped in an image.
 
@@ -1214,7 +1214,7 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | pexpect | 4.9.0 | ISC | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/pexpect/4.9.0/) |
 | picomatch | 4.0.5 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/picomatch/v/4.0.5) |
 | pillow | 13.0.0 | MIT-CMU (exception) | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/pillow/13.0.0/) |
-| pino | 10.4.0 | MIT | bundled (npm package) | sandbox: kobe-sandbox-agent | [license](https://www.npmjs.com/package/pino/v/10.4.0) |
+| pino | 10.4.0 | MIT | bundled (npm package) | sandbox: kaiju-sandbox-agent | [license](https://www.npmjs.com/package/pino/v/10.4.0) |
 | pip | 25.0.1 | MIT | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/pip/25.0.1/) |
 | platformdirs | 4.13.5 | MIT | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/platformdirs/4.13.5/) |
 | postcss-selector-parser | 7.1.6 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/postcss-selector-parser/v/7.1.6) |
@@ -1289,11 +1289,11 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | which | 2.0.2 | ISC | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/which/v/2.0.2) |
 | which | 7.0.0 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/which/v/7.0.0) |
 | write-file-atomic | 8.0.0 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/write-file-atomic/v/8.0.0) |
-| ws | 8.22.0 | MIT | bundled (npm package) | sandbox: kobe-sandbox-agent, Pi (/opt/pi) | [license](https://www.npmjs.com/package/ws/v/8.22.0) |
+| ws | 8.22.0 | MIT | bundled (npm package) | sandbox: kaiju-sandbox-agent, Pi (/opt/pi) | [license](https://www.npmjs.com/package/ws/v/8.22.0) |
 | yallist | 4.0.0 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/yallist/v/4.0.0) |
 | yallist | 5.0.0 | BlueOak-1.0.0 | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/yallist/v/5.0.0) |
 | yaml | 2.9.0 | ISC | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/yaml/v/2.9.0) |
-| zod | 4.6.7 | MIT | bundled (npm package) | sandbox: kobe-sandbox-agent | [license](https://www.npmjs.com/package/zod/v/4.6.7) |
+| zod | 4.6.7 | MIT | bundled (npm package) | sandbox: kaiju-sandbox-agent | [license](https://www.npmjs.com/package/zod/v/4.6.7) |
 
 Documented exceptions (`images/sandbox/license-exceptions.json`):
 
@@ -1307,7 +1307,7 @@ Documented exceptions (`images/sandbox/license-exceptions.json`):
 
 ## Orbit eval image: Python packages
 
-What the same script finds in the Orbit eval image (`kobe-orbit-eval`, KOBE-92): Orbit v1.0.3 and Inspect AI with their dependencies (`ci/orbit/requirements.txt`, `images/orbit-eval/orbit-requirements.txt`). The committed report is `images/orbit-eval/third-party-licenses.json`; CI `orbit-eval-image` compares it with the built image.
+What the same script finds in the Orbit eval image (`kaiju-orbit-eval`, KOBE-92): Orbit v1.0.3 and Inspect AI with their dependencies (`ci/orbit/requirements.txt`, `images/orbit-eval/orbit-requirements.txt`). The committed report is `images/orbit-eval/third-party-licenses.json`; CI `orbit-eval-image` compares it with the built image.
 
 88 packages, 88 of them shipped in an image.
 
@@ -1414,7 +1414,7 @@ Documented exceptions (`images/orbit-eval/license-exceptions.json`):
 
 ## External skill scanner image: Python packages
 
-What the same script finds in the optional external skill scanner image (`kobe-skill-scan`, KOBE-341): Cisco skill-scanner 2.2.1 (Apache-2.0) with the dependencies of its hashed lock exported without extras and without pcodedmp (`images/skill-scan/requirements.txt`, `scanner-requirements.txt`); its bundled CEL helper is the `skill-scan-cel-go` row. The image runs only when a Site admin turns the external scanner on, as a Job with no network. The committed report is `images/skill-scan/third-party-licenses.json`; CI `skill-scan-image` compares it with the built image.
+What the same script finds in the optional external skill scanner image (`kaiju-skill-scan`, KOBE-341): Cisco skill-scanner 2.2.1 (Apache-2.0) with the dependencies of its hashed lock exported without extras and without pcodedmp (`images/skill-scan/requirements.txt`, `scanner-requirements.txt`); its bundled CEL helper is the `skill-scan-cel-go` row. The image runs only when a Site admin turns the external scanner on, as a Job with no network. The committed report is `images/skill-scan/third-party-licenses.json`; CI `skill-scan-image` compares it with the built image.
 
 98 packages, 98 of them shipped in an image.
 
@@ -1541,17 +1541,17 @@ Base images of Kaiju's own images (every Dockerfile FROM) and what they bring al
 | Sandbox tools from Debian: git, less, procps | git 1:2.47.3-0+deb13u1, less 668-1, procps 2:4.0.4-9 | GPL-2.0-only AND (GPL-3.0-or-later OR BSD-2-Clause) AND GPL-2.0-or-later | bundled (separate process) | sandbox image | [license](https://sources.debian.org/src/git/1:2.47.3-0+deb13u1/debian/copyright/) | Separate, unmodified programs that agents invoke from the shell; Kaiju does not link against them, so GPL obligations stay with those programs (source from Debian). Approved by Chris on 2026-10-17 (KOBE-375). |
 | Sandbox tools from Debian: curl, jq, ripgrep, file, zip, unzip, libcap2-bin, ca-certificates | curl 8.14.1-2+deb13u7, jq 1.7.1-6+deb13u4, ripgrep 14.1.1-1+b4, file 1:5.46-5, zip 3.0-15+deb13u1, unzip 6.0-29+deb13u1, libcap2-bin 1:2.75-10+deb13u1+b3, ca-certificates 20250419 | curl AND MIT AND (MIT OR Unlicense) AND BSD-2-Clause AND Info-ZIP AND (BSD-3-Clause OR GPL-2.0-only) AND MPL-2.0 | bundled (separate process) | sandbox image | [license](https://www.debian.org/legal/licenses/) | Separate, unmodified programs (curl's and Info-ZIP's licenses are permissive, MIT-like); setcap from libcap2-bin is used at build time only. Approved by Chris on 2026-10-17 (KOBE-375). |
 | tini | 0.19.0-3+b8 (Debian) | MIT | bundled (separate process, PID 1) | sandbox image | [license](https://github.com/krallin/tini/blob/master/LICENSE) |  |
-| musl libc, statically linked into kobe-runas | 1.2.5 (Debian trixie musl-dev, build stage) | MIT | linked (static) into kobe-runas | sandbox image (/opt/kobe/bin/kobe-runas) | [license](https://git.musl-libc.org/cgit/musl/tree/COPYRIGHT) | kobe-runas is built -static-pie with musl-gcc against musl's start files and libc.a only (no glibc, no GCC crtbegin/crtend or libgcc; images/sandbox/Dockerfile), so the binary holds Kaiju's code (Apache-2.0) and musl (MIT). Chose musl over glibc (LGPL-2.1): Chris, 2026-10-17. |
+| musl libc, statically linked into kaiju-runas | 1.2.5 (Debian trixie musl-dev, build stage) | MIT | linked (static) into kaiju-runas | sandbox image (/opt/kaiju/bin/kaiju-runas) | [license](https://git.musl-libc.org/cgit/musl/tree/COPYRIGHT) | kaiju-runas is built -static-pie with musl-gcc against musl's start files and libc.a only (no glibc, no GCC crtbegin/crtend or libgcc; images/sandbox/Dockerfile), so the binary holds Kaiju's code (Apache-2.0) and musl (MIT). Chose musl over glibc (LGPL-2.1): Chris, 2026-10-17. |
 | Native libraries bundled in Python wheels (numpy.libs, pillow.libs, pyarrow) | as shipped in numpy 2.5.3, pillow 12.3.0, pyarrow 25.0.1 | BSD-3-Clause AND GPL-3.0-or-later WITH GCC-exception-3.1 AND FTL AND IJG AND libpng-2.0 AND libtiff AND MIT AND BSD-2-Clause AND Zlib AND Apache-2.0 | linked (by the Python packages that ship them) | sandbox image | [license](https://github.com/python-pillow/Pillow/blob/main/LICENSE) | numpy bundles OpenBLAS (BSD-3-Clause) and libgfortran/libquadmath (GPL with the GCC Runtime Library Exception, which permits use in non-GPL programs); pillow bundles FreeType (FTL, BSD-style), libjpeg-turbo (IJG), libpng, libtiff, libwebp, lcms2, harfbuzz, zstd, brotli, libavif, openjpeg, xz and libxcb (permissive); pyarrow bundles Apache Arrow's C++ libraries (Apache-2.0, NOTICE included in NOTICE). Approved by Chris on 2026-10-17 (KOBE-375). |
 | Native libraries bundled in the pyzmq wheel (pyzmq.libs) | libzmq 4.3.5 and libsodium (libsodium.so.26), as shipped in pyzmq 27.2.0 | MPL-2.0 AND ISC | linked (by pyzmq, the notebook kernel's transport) | sandbox image | [license](https://github.com/zeromq/pyzmq/blob/main/LICENSE.md) | KOBE-464 notebooks: jupyter_client and ipykernel talk over ZeroMQ (ipc transport, unix sockets only). pyzmq bundles libzmq (MPL-2.0) and libsodium (ISC); both are in the allowed family. |
 
 ## Chart and cluster components
 
-What the Helm chart deploys or needs on the cluster, and the services it talks to. None of these are linked into Kaiju's code. S3-compatible storage, SMTP, the audit SIEM and the OpenTelemetry backend are services the site operates (chart values `s3`, `smtp`, `auditForwarding`, `telemetry`); Kaiju ships none of them. Every top-level key of charts/kobe/values.yaml is classified in `chartValues` in tools/license-check/inventory.yaml.
+What the Helm chart deploys or needs on the cluster, and the services it talks to. None of these are linked into Kaiju's code. S3-compatible storage, SMTP, the audit SIEM and the OpenTelemetry backend are services the site operates (chart values `s3`, `smtp`, `auditForwarding`, `telemetry`); Kaiju ships none of them. Every top-level key of charts/kaiju/values.yaml is classified in `chartValues` in tools/license-check/inventory.yaml.
 
 | Component | Version | License (SPDX) | How used | Where | License text | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Pi coding agent (`@earendil-works/pi-coding-agent`) | 1.4.0 (pinned in images/sandbox/pi/package-lock.json) | MIT | bundled (separate process, RPC mode under kobe-sandbox-agent) | sandbox image (/opt/pi); dependencies in the sandbox table | [license](https://github.com/earendil-works/pi/blob/v1.4.0/LICENSE) | Checked at v1.0.0 and v1.4.0: the repository has one LICENSE (MIT) at its root; the npm package declares MIT; packages/mcp/LICENSES holds the MIT license of the MCP TypeScript SDK. |
+| Pi coding agent (`@earendil-works/pi-coding-agent`) | 1.4.0 (pinned in images/sandbox/pi/package-lock.json) | MIT | bundled (separate process, RPC mode under kaiju-sandbox-agent) | sandbox image (/opt/pi); dependencies in the sandbox table | [license](https://github.com/earendil-works/pi/blob/v1.4.0/LICENSE) | Checked at v1.0.0 and v1.4.0: the repository has one LICENSE (MIT) at its root; the npm package declares MIT; packages/mcp/LICENSES holds the MIT license of the MCP TypeScript SDK. |
 | agent-sandbox controller (kubernetes-sigs/agent-sandbox) | v1.0.4 (scripts/install-agent-sandbox.sh) | Apache-2.0 | separate process (cluster prerequisite, installed by the site) | cluster (agent-sandbox-system); CRDs Sandbox, SandboxTemplate/Claim/WarmPool | [license](https://github.com/kubernetes-sigs/agent-sandbox/blob/v1.0.4/LICENSE) | Checked at v1.0.4: a single LICENSE (Apache-2.0) at the repository root, no NOTICE. |
 | gVisor (runsc) | 20260928.0 (scripts/install-gvisor-k3s.sh, scripts/dev-cluster.sh) | Apache-2.0 | separate process (container runtime, cluster prerequisite) | every node; RuntimeClass handler runsc | [license](https://github.com/google/gvisor/blob/master/LICENSE) |  |
 | Kata Containers | chosen by the site (alternative to gVisor) | Apache-2.0 | separate process (container runtime, optional) | nodes; RuntimeClass handler kata* | [license](https://github.com/kata-containers/kata-containers/blob/main/LICENSE) |  |

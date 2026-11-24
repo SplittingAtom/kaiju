@@ -120,7 +120,7 @@ describe("remember / recall inputs", () => {
   });
 });
 
-describe("kobe-tools ops", () => {
+describe("kaiju-tools ops", () => {
   it("memory.put and memory.read requests", () => {
     const put = {
       id: "r1",

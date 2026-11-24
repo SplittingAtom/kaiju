@@ -3,24 +3,24 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { splitRenderedPrompt } from "../context/system-prompt.js";
-import type { ExecTransport } from "../kobe-exec/client.js";
-import { registerExecTools, TOOL_NAMES, type PiToolFactories } from "../kobe-exec/tools.js";
+import type { ExecTransport } from "../kaiju-exec/client.js";
+import { registerExecTools, TOOL_NAMES, type PiToolFactories } from "../kaiju-exec/tools.js";
 import {
   registerKaijuModels,
   type ExtensionApiLike as ModelsApi,
-} from "../kobe-models/register.js";
-import type { ModelFileState } from "../kobe-models/protocol.js";
+} from "../kaiju-models/register.js";
+import type { ModelFileState } from "../kaiju-models/protocol.js";
 import {
   registerKaijuPolicy,
   type ExtensionApiLike as PolicyApi,
-} from "../kobe-policy/extension.js";
-import { registerKaijuTools, type ExtensionApiLike as ToolsApi } from "../kobe-tools/extension.js";
-import type { ToolsTransport } from "../kobe-tools/tools.js";
+} from "../kaiju-policy/extension.js";
+import { registerKaijuTools, type ExtensionApiLike as ToolsApi } from "../kaiju-tools/extension.js";
+import type { ToolsTransport } from "../kaiju-tools/tools.js";
 
 /**
- * The Pi extension API that kobe-exec, kobe-models, kobe-policy and kobe-tools bind to (KOBE-511),
+ * The Pi extension API that kaiju-exec, kaiju-models, kaiju-policy and kaiju-tools bind to (KOBE-511),
  * checked against the pinned Pi in images/sandbox/pi. The extensions declare Pi's API structurally
- * (no Pi types at compile time) and some bind optionally (kobe-tools installs its memory hooks only
+ * (no Pi types at compile time) and some bind optionally (kaiju-tools installs its memory hooks only
  * when `on`/`getActiveTools`/`setActiveTools` exist), so a renamed method or event would fail
  * quietly at runtime. This suite makes a Pi bump fail here instead: it pins the verified version,
  * registers each extension through Pi's real extension loader, and checks the exports, event names,
@@ -115,7 +115,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     }
   });
 
-  it("kobe-exec: Pi's tool factories and helpers exist with the arity kobe-exec calls", async () => {
+  it("kaiju-exec: Pi's tool factories and helpers exist with the arity kaiju-exec calls", async () => {
     const pi = await piDist("index.js");
     for (const name of TOOL_NAMES) {
       const factory = `create${name[0]?.toUpperCase() ?? ""}${name.slice(1)}ToolDefinition`;
@@ -123,7 +123,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
       const def = (pi[factory] as Fn)("/w" as never, { operations: {} } as never) as Module;
       expect(def.name).toBe(name);
       expect(typeof def.parameters).toBe("object");
-      // execute(toolCallId, params, signal, onUpdate, ctx): kobe-exec passes ctx.cwd through.
+      // execute(toolCallId, params, signal, onUpdate, ctx): kaiju-exec passes ctx.cwd through.
       expect((def.execute as Fn).length).toBe(5);
     }
     for (const name of [
@@ -137,7 +137,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     expect(typeof pi.DEFAULT_MAX_BYTES).toBe("number");
   });
 
-  it("kobe-exec: registers the seven tools and the user_bash route through Pi's loader", async () => {
+  it("kaiju-exec: registers the seven tools and the user_bash route through Pi's loader", async () => {
     const pi = await piDist("index.js");
     const { extension } = await loadThroughPi((api) =>
       registerExecTools(api as never, unusedExec, pi as unknown as PiToolFactories, "/w"),
@@ -150,7 +150,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     expect(interfaceBody("ToolDefinition")).toMatch(/defaultActive\?: boolean;/);
   });
 
-  it("kobe-tools: registers its tools and all four memory hooks through Pi's loader", async () => {
+  it("kaiju-tools: registers its tools and all four memory hooks through Pi's loader", async () => {
     const { extension } = await loadThroughPi((api) =>
       registerKaijuTools(api as unknown as ToolsApi, unusedTools, {
         files: true,
@@ -170,7 +170,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     expect(interfaceBody("ToolDefinition")).toMatch(/promptGuidelines\?: string\[\];/);
   });
 
-  it("kobe-policy: binds tool_call through Pi's loader", async () => {
+  it("kaiju-policy: binds tool_call through Pi's loader", async () => {
     const { extension } = await loadThroughPi((api) =>
       registerKaijuPolicy(
         api as unknown as PolicyApi,
@@ -183,7 +183,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     expect(extension.handlers.has("tool_call")).toBe(true);
   });
 
-  it("kobe-models: registers the provider through Pi's loader with Pi's own pi-ai", async () => {
+  it("kaiju-models: registers the provider through Pi's loader with Pi's own pi-ai", async () => {
     // Pi's loader resolves an extension's `@earendil-works/pi-ai` to pi-ai's `compat` entry
     // (core/extensions/loader.js); pi-ai marks it temporary, so its removal must fail here.
     const ai = await importFrom(path.join(SCOPE, "pi-ai/dist/compat.js"));
@@ -240,12 +240,12 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     ]) {
       expect(events.has(event), event).toBe(true);
     }
-    // kobe-tools memory hooks: read `systemPrompt`, return `{ systemPrompt }`; `context` messages.
+    // kaiju-tools memory hooks: read `systemPrompt`, return `{ systemPrompt }`; `context` messages.
     expect(interfaceBody("BeforeAgentStartEventBase")).toMatch(/readonly systemPrompt: string;/);
     expect(interfaceBody("BeforeAgentStartEventResult")).toMatch(/systemPrompt\?: string;/);
     expect(interfaceBody("ContextEvent")).toMatch(/messages: AgentMessage\[\];/);
     expect(interfaceBody("ContextEventResult")).toMatch(/messages\?: AgentMessage\[\];/);
-    // kobe-policy: `{ block, reason }`.
+    // kaiju-policy: `{ block, reason }`.
     expect(interfaceBody("ToolCallEventResult")).toMatch(
       /block\?: boolean;[\s\S]*reason\?: string;/,
     );

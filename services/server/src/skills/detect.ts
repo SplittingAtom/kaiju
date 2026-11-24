@@ -17,14 +17,22 @@ import { SKILLS_DIR, SKILLS_STORE_SUBDIR } from "../sandbox/constants.js";
 const SKILL_MD = "SKILL.md";
 /** Longer paths are not skill paths (the longest is the store root plus 64 hex and SKILL.md). */
 const MAX_PATH = 512;
-const STORE = path.posix.join(SKILLS_DIR, SKILLS_STORE_SUBDIR);
+/**
+ * The skills directory of sandbox images built before the rename to Kaiju (KOBE-750), accepted
+ * for one release: a sandbox that was running (or a warm-pool pod created) before the upgrade
+ * keeps the old image, whose agent puts the store there. Removed in KOBE-754.
+ */
+export const LEGACY_SKILLS_DIR = "/run/kobe-skills";
+const STORES = [SKILLS_DIR, LEGACY_SKILLS_DIR].map((dir) =>
+  path.posix.join(dir, SKILLS_STORE_SUBDIR),
+);
 
-/** The SKILL.md path of a skill the run was given. */
-function skillMdPath(ref: RunSkillRef): string | undefined {
+/** The SKILL.md paths a skill the run was given can be read at (new and pre-rename store). */
+function skillMdPaths(ref: RunSkillRef): string[] {
   // `builtin` refs belong to runs from before KOBE-317, whose tool calls were matched long ago.
   return ref.sha256 === undefined
-    ? undefined
-    : path.posix.join(STORE, `sk-${ref.sha256}`, SKILL_MD);
+    ? []
+    : STORES.map((store) => path.posix.join(store, `sk-${ref.sha256}`, SKILL_MD));
 }
 
 /** The run's skill whose SKILL.md this tool call reads, if any. */
@@ -38,7 +46,7 @@ export function matchSkillRead(
   if (typeof raw !== "string" || raw.length > MAX_PATH || raw.includes("\u0000")) return undefined;
   if (!path.posix.isAbsolute(raw)) return undefined;
   const normalized = path.posix.normalize(raw);
-  return refs.find((ref) => skillMdPath(ref) === normalized);
+  return refs.find((ref) => skillMdPaths(ref).includes(normalized));
 }
 
 /**

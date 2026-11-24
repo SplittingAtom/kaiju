@@ -20,7 +20,7 @@ import { PendingRequests } from "./pending-requests.js";
 
 /**
  * The agent side of `save_skill_draft` (KOBE-442; contract: packages/protocol
- * `skill-draft-tool.ts`, push-then-save like `share_file`). One `skill.draft_save` kobe-tools
+ * `skill-draft-tool.ts`, push-then-save like `share_file`). One `skill.draft_save` kaiju-tools
  * request becomes, in this order and only if each step succeeds: find the folder
  * `/workspace/skills/<folder>/` (a real directory, reached without any symlink), list its files
  * (no symlinks or special files, no hidden files, no cache directories, within the draft's caps),

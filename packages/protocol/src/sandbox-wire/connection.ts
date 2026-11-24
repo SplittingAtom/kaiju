@@ -1,6 +1,6 @@
 /**
- * Sandbox ↔ server connection contract (D13). Consumers: KOBE-23 (kobe-sandbox-agent), KOBE-24
- * (server registry and routing), KOBE-36 (kobe-policy), KOBE-41 (model wiring), KOBE-62 (MCP wiring).
+ * Sandbox ↔ server connection contract (D13). Consumers: KOBE-23 (kaiju-sandbox-agent), KOBE-24
+ * (server registry and routing), KOBE-36 (kaiju-policy), KOBE-41 (model wiring), KOBE-62 (MCP wiring).
  *
  * Transport
  * - The sandbox dials out; sandboxes accept no inbound connections. One WebSocket per sandbox
@@ -29,7 +29,7 @@
  *   over its type's cap, or a large frame whose type can't be read that way, closes the connection
  *   with `protocol_error`.
  * - Inbound frames are parsed strictly (json-safety.ts): duplicate keys, U+0000 and `__proto__`
- *   keys make a frame malformed. kobe-sandbox-agent replaces U+0000 in Pi output with U+FFFD.
+ *   keys make a frame malformed. kaiju-sandbox-agent replaces U+0000 in Pi output with U+FFFD.
  *
  * Capabilities: `hello.capabilities` may list `artifacts` ({@link CAPABILITY_ARTIFACTS}, artifacts.ts):
  *   the agent then sends `artifact.put` and the server answers `artifact.result`. The server refuses
@@ -85,14 +85,14 @@
  *   same connection (ids are not portable across reconnects; the server re-issues).
  * - A lease ends when its run goes terminal. A late frame for an ended run of this connection
  *   (benign race after Stop) gets `error` `run_not_active` and is not executed — a late
- *   `policy.check` is answered with `policy.result` `deny` as well, so kobe-policy unblocks.
+ *   `policy.check` is answered with `policy.result` `deny` as well, so kaiju-policy unblocks.
  * - Anything else (a run/thread/command never leased to this connection) is a violation: `error`
  *   `unknown_run` / `unknown_thread`, frame dropped, connection closed with `lease_violation` (a
  *   sandbox naming another sandbox's run is compromised or broken).
  *
  * Delivery and resume
  * - Sandbox → server `pi.event` frames carry `run_id` and an outbound `seq` (per run, from 1,
- *   gapless, assigned by kobe-sandbox-agent). The agent keeps un-acked frames in memory.
+ *   gapless, assigned by kaiju-sandbox-agent). The agent keeps un-acked frames in memory.
  * - **Durable inbound cursor:** the server keeps the last accepted sandbox seq per run in
  *   **`runs.sandbox_seq`** (integer NOT NULL DEFAULT 0; added by KOBE-23/24). Accepting a
  *   `pi.event` with seq `s` is ONE transaction that starts with the compare-and-set

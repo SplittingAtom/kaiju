@@ -1,6 +1,6 @@
 """Runs the kernel bridge's completion helpers (KOBE-808) on plain Python, without IPython.
 
-Usage: python3 completion-harness.py <kobe-kernel-bridge.py> <scenario> [code...]. Prints JSON.
+Usage: python3 completion-harness.py <kaiju-kernel-bridge.py> <scenario> [code...]. Prints JSON.
 `doc:<name>` and `complete` run the bridge's STATIC_SOURCE resolver (`doc`, and `complete` for each
 code given, the cursor at its end) on a namespace of hostile objects (every probe of the security review's three rounds), and report what ran
 (`ran`: getters, descriptors, hooks, reprs, hashes, calls). `big` completes keys of a
@@ -315,7 +315,7 @@ def namespace():
 
 
 def static(bridge):
-    g = {"__name__": "kobe_static"}
+    g = {"__name__": "kaiju_static"}
     exec(bridge.STATIC_SOURCE, g)
     return g
 

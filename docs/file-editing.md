@@ -70,10 +70,10 @@ flowchart LR
   OS["Object storage<br/>content-addressed workspace blobs"]
 
   subgraph Pod["Sandbox pod, gVisor or Kata"]
-    SA["kobe-sandbox-agent<br/>FileEditBroker, FileOpenBroker, WorkspaceSync"]
+    SA["kaiju-sandbox-agent<br/>FileEditBroker, FileOpenBroker, WorkspaceSync"]
     PI["Pi 1.0.x, RPC mode<br/>write, edit, bash"]
-    KP["kobe-policy extension, fd 3"]
-    KT["kobe-tools extension, fd 4<br/>propose_file_edit, open_file"]
+    KP["kaiju-policy extension, fd 3"]
+    KT["kaiju-tools extension, fd 4<br/>propose_file_edit, open_file"]
     WS["/workspace volume"]
   end
 
@@ -121,8 +121,8 @@ flowchart LR
 | Proposals list            | `services/server/src/routes/thread-file-edits.ts`                                                      | The thread's `file.edit_proposed` events, for the owner only.                                                                                             |
 | Edit-as-file route        | `services/server/src/routes/artifact-edit-as-file.ts`                                                  | Copies a stored artifact version into the owner's workspace through the upload path.                                                                      |
 | Workspace sync (server)   | `services/server/src/workspace-sync/`                                                                  | Manifest, blobs, commit and pull for sandboxes. Brokers every byte to object storage.                                                                     |
-| kobe-sandbox-agent        | `services/sandbox-agent/src/agent.ts`, `tools/file-edit-broker.ts`, `tools/file-open-broker.ts`        | Announces `file_edits`, relays kobe-tools requests as wire frames, answers each request exactly once.                                                     |
-| kobe-tools tools          | `services/sandbox-agent/src/kobe-tools/file-edit-tool.ts`, `open-file-tool.ts`                         | Model-facing `propose_file_edit` and `open_file`, registered only when `file_edits` is on.                                                                |
+| kaiju-sandbox-agent       | `services/sandbox-agent/src/agent.ts`, `tools/file-edit-broker.ts`, `tools/file-open-broker.ts`        | Announces `file_edits`, relays kaiju-tools requests as wire frames, answers each request exactly once.                                                    |
+| kaiju-tools tools         | `services/sandbox-agent/src/kaiju-tools/file-edit-tool.ts`, `open-file-tool.ts`                        | Model-facing `propose_file_edit` and `open_file`, registered only when `file_edits` is on.                                                                |
 | Workspace sync (sandbox)  | `services/sandbox-agent/src/workspace/sync.ts`                                                         | Restore at startup, pull before each run and periodically, push on an interval, soon after a run ends, and before hibernation.                            |
 
 ## 3. Flows
@@ -152,7 +152,7 @@ sequenceDiagram
   S->>A: run.start over the agent's WSS
   A->>A: workspace pull before the run
   A->>P: prompt over RPC
-  P->>A: kobe-policy fd 3: check write
+  P->>A: kaiju-policy fd 3: check write
   A->>S: policy.check tool write, input
   alt approval needed
     S->>DB: approval.requested
@@ -189,14 +189,14 @@ To show the file right away, the agent calls `open_file`; that call pushes the f
 sequenceDiagram
   autonumber
   participant P as Pi
-  participant KT as kobe-tools fd 4
+  participant KT as kaiju-tools fd 4
   participant A as sandbox-agent FileOpenBroker
   participant S as Server
   participant DB as Postgres
   participant TC as Web thread-controller
   participant FT as File tab
 
-  P->>A: kobe-policy fd 3: check open_file
+  P->>A: kaiju-policy fd 3: check open_file
   A->>S: policy.check, risk read: allowed, input hash recorded
   P->>KT: open_file path
   KT->>A: op file.open, tool_call_id
@@ -238,9 +238,9 @@ sequenceDiagram
   participant A as sandbox-agent FileEditBroker
   participant P as Pi
 
-  P->>A: kobe-policy fd 3: check propose_file_edit
+  P->>A: kaiju-policy fd 3: check propose_file_edit
   A->>S: policy.check, risk read: allowed, input hash recorded
-  P->>A: kobe-tools fd 4 op file.edit_propose
+  P->>A: kaiju-tools fd 4 op file.edit_propose
   A->>S: frame file.edit_propose request_id, run_id, thread_id, input
   S->>S: file_edits capability, not an eval, run leased and active
   S->>S: consume the allowed call, single use, else not_allowed
@@ -474,7 +474,7 @@ Browser spec: `e2e/browser/tests/projects-in-conversations.spec.ts`. Design:
 ### Where people and policy decide
 
 - **Server decides every tool call.** Each Pi tool call, nested ones included, goes through
-  kobe-policy (`policy.check`). `require_approval` never reaches the sandbox: it waits with
+  kaiju-policy (`policy.check`). `require_approval` never reaches the sandbox: it waits with
   `policy.pending` while the member answers. Approvals are HMAC-signed over run, tool call and
   canonical input. Frames for bound tools (`file.edit_propose`, `file.open`) are accepted only for a
   call allowed with the same input hash, and only once.

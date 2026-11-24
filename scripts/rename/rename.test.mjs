@@ -391,26 +391,37 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
     ["apps/web/x.test.ts", 'fetch("http://kobe.test/v1/me")', "kobe"],
     ["packages/cli/src/x.test.ts", '"postgres://u:p@db:5432/kobe?sslmode=disable"', "kobe"],
     ["apps/web/x.test.tsx", "expect(text).toMatch(/kobe found/);", "kobe"],
+    // RN-6 (KOBE-750): in-pod paths, image names and the chart directory are renamed.
+    ["services/sandbox-agent/src/config.ts", '"/var/run/secrets/kobe/bootstrap-token"', "kobe"],
+    ["services/Dockerfile", "COPY ca.pem /etc/kobe/extra-ca/", "kobe"],
+    ["e2e/run/10-deploy.sh", "$HELM upgrade --install kobe charts/kobe -n x", "kobe"],
+    ["charts/kaiju/values.yaml", "image: ghcr.io/splittingatom/kobe-server", "kobe-server"],
     ["services/server/src/x.ts", "export type KobeTx = Tx;", "Kobe"],
   ];
   for (const [path, line, token] of gone) {
     assert.equal(realGroup(path, line, token), "unowned", `${line} ${token}`);
   }
   const kept = [
-    // A wire route between the model gateway and the eval image, and paths inside pods: RN-6.
+    // RN-6 is done (KOBE-750): the eval route's old name is served for one release only.
     [
       "services/model-gateway/src/gateway.ts",
-      'const CASES = "/kobe/eval-cases";',
+      'export const LEGACY_EVAL_CASES_PATH = "/kobe/eval-cases";',
       "kobe",
-      /^RN-6: Image names/,
+      /^permanent: Pre-rename names served or accepted for one release/,
+    ],
+    // The chart's selector label value and the database name stay (KOBE-750).
+    [
+      "charts/kaiju/templates/_helpers.tpl",
+      '{{- define "kaiju.appName" -}}kobe{{- end -}}',
+      "kobe",
+      /^permanent: The chart's selector label value/,
     ],
     [
-      "services/sandbox-agent/src/config.ts",
-      '"/var/run/secrets/kobe/bootstrap-token"',
+      "charts/kaiju/templates/postgres-cnpg.yaml",
+      "      database: kobe",
       "kobe",
-      /^RN-6: Image names/,
+      /^permanent: The Postgres database name/,
     ],
-    ["services/Dockerfile", "COPY ca.pem /etc/kobe/extra-ca/", "kobe", /^RN-6: Image names/],
     // The gallery agent's file moves with the agent (KOBE-831), not with RN-3.
     [
       "services/server/src/x.ts",
@@ -541,7 +552,7 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "KOBE_TEST",
       "permanent",
     ],
-    ["images/sandbox/runas/kobe-runas.c", "#define KOBE_AGENT_UID 1000", "KOBE_AGENT", "RN-6"],
+    ["images/sandbox/runas/kaiju-runas.c", "#define KOBE_AGENT_UID 1000", "KOBE_AGENT", "unowned"],
     // Round 2: both sides of a paired value stay together.
     [
       "packages/session-token/src/site.ts",
@@ -647,13 +658,15 @@ test("paired-value rule: a value owned by two steps is reported", () => {
  */
 const DISTINCT_VALUES = {
   "kobe-server":
-    "image/Service name (RN-6), signed issuer and connector URL host (kept), in-namespace RoleBinding/managed-by/field manager (RN-7)",
+    "signed issuer and connector URL host (kept), in-namespace RoleBinding/managed-by/field manager (RN-7); the image/Service name was renamed in RN-6",
   "kobe-sandbox":
-    "image name (RN-6) vs the ServiceAccount/template/warm pool in team namespaces (RN-7)",
-  "kobe-skill-scan": "image name (RN-6) vs the NetworkPolicy in team namespaces (RN-7)",
+    "the ServiceAccount/template/warm pool in team namespaces (RN-7); the image name was renamed in RN-6",
+  "kobe-skill-scan":
+    "the NetworkPolicy in team namespaces (RN-7); the image name was renamed in RN-6",
   "kobe-pi":
-    "runtime directories /run/kobe-pi, /tmp/kobe-pi-* (RN-6) vs the Unix user names (kept, Q7)",
-  "kobe-agent": "runtime directory /run/kobe-agent (RN-6) vs the Unix user (kept, Q7)",
+    "the Unix user names (kept, Q7); the runtime directories /run/kobe-pi, /tmp/kobe-pi-* were renamed in RN-6",
+  "kobe-agent":
+    "the Unix user (kept, Q7); the runtime directory /run/kobe-agent was renamed in RN-6",
   kobe_:
     "test database prefix (RN-8) vs column aliases in docs/perf queries (RN-5, with the span attributes they read)",
   "kobe-sign-in-throttle":

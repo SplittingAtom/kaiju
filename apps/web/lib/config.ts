@@ -46,7 +46,7 @@ function parsePublicUrl(env: Readonly<Record<string, string | undefined>>): stri
 }
 
 /** The one startup warning about old KOBE_* names (KOBE-748): names only, never values. */
-const warnLegacyEnv: LegacyEnvWarn = (message) => console.warn(`[kobe-web] ${message}`);
+const warnLegacyEnv: LegacyEnvWarn = (message) => console.warn(`[kaiju-web] ${message}`);
 
 export function parseWebConfig(
   rawEnv: Readonly<Record<string, string | undefined>>,

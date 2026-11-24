@@ -15,7 +15,7 @@ describe("normaliseImage", () => {
     ["mirror.gcr.io/library/registry:3@sha256:" + "a".repeat(64), "registry"],
     ["docker.io/maximhq/bifrost:v2.2.5@sha256:" + "b".repeat(64), "maximhq/bifrost"],
     ["ghcr.io/cloudnative-pg/postgresql:17", "ghcr.io/cloudnative-pg/postgresql"],
-    ["localhost:5005/kobe-web", "localhost:5005/kobe-web"],
+    ["localhost:5005/kaiju-web", "localhost:5005/kaiju-web"],
   ])("%s → %s", (ref, repo) => {
     expect(normaliseImage(ref)).toBe(repo);
   });
@@ -52,7 +52,7 @@ describe("textImages", () => {
       "docker run --rm busybox:1.37 cat /proc/x",
       '  "{\\"containers\\":[{\\"name\\":\\"c\\",\\"image\\":\\"busybox:1.37\\"}]}"',
       "          image: $SERVER_IMAGE",
-      '          image: {{ include "kobe.image" . }}',
+      '          image: {{ include "kaiju.image" . }}',
       "  # image: commented/out:1",
       '    ports: ["5432:5432"]',
     ].join("\n");
@@ -68,7 +68,7 @@ describe("textImages", () => {
 
   it("ignores Kaiju's own images and reports the rest without a row", () => {
     const refs = textImages(
-      ["image: ghcr.io/splittingatom/kobe-server:1", "image: new/thing:2", "image: node:24"].join(
+      ["image: ghcr.io/splittingatom/kaiju-server:1", "image: new/thing:2", "image: node:24"].join(
         "\n",
       ),
       "values.yaml",

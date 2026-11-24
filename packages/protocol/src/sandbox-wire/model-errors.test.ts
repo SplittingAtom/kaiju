@@ -6,7 +6,7 @@ import {
   parseKaijuModelError,
 } from "./pi-events.js";
 
-describe("kobe-models error messages (sandbox → server, in Pi's errorMessage)", () => {
+describe("kaiju-models error messages (sandbox → server, in Pi's errorMessage)", () => {
   it("round-trips a code through the message the extension writes", () => {
     const message = kaijuModelErrorMessage("model_not_enabled", "That model is not enabled.");
     expect(message.startsWith(KAIJU_MODEL_ERROR_PREFIX)).toBe(true);
@@ -21,7 +21,7 @@ describe("kobe-models error messages (sandbox → server, in Pi's errorMessage)"
     expect(parseKaijuModelError(`${KAIJU_MODEL_ERROR_PREFIX}MODEL_ERROR: x`)).toBeUndefined();
   });
 
-  it("ignores anything that is not a kobe-models message (untrusted Pi output)", () => {
+  it("ignores anything that is not a kaiju-models message (untrusted Pi output)", () => {
     expect(parseKaijuModelError(undefined)).toBeUndefined();
     expect(parseKaijuModelError(42)).toBeUndefined();
     expect(parseKaijuModelError('403: {"error":{"code":"model_not_enabled"}}')).toBeUndefined();

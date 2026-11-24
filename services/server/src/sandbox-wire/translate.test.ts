@@ -185,7 +185,7 @@ describe("model call failures (KOBE-41)", () => {
     message: { role: "assistant", ...message },
   });
 
-  it("fails the run at settle when its last assistant message ended in a kobe-models error", async () => {
+  it("fails the run at settle when its last assistant message ended in a kaiju-models error", async () => {
     const t = translator();
     await t.translate(1, { type: "message_start", message: { role: "assistant" } } as never);
     await t.translate(

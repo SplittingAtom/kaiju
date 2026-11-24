@@ -10,17 +10,17 @@ import { readThreadContext } from "./testing/thread-context.js";
 import { PI_AVAILABLE, PI_BIN, REAL_POLICY_EXTENSION } from "./testing/real-pi.js";
 
 /**
- * KOBE-470 against the REAL pinned Pi 1.0.0: kobe-models records what Pi handed it for the call
+ * KOBE-470 against the REAL pinned Pi 1.0.0: kaiju-models records what Pi handed it for the call
  * (the prompt as a leading system message with its tool declarations, then the conversation), and
  * `thread.context` answers it as sections, with the system prompt the agent appended.
  */
 const PACKAGE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REAL_MODELS_EXTENSION =
   process.env.CI === undefined
-    ? path.join(PACKAGE, "src/kobe-models/index.ts")
-    : path.join(PACKAGE, "dist/kobe-models/index.js");
+    ? path.join(PACKAGE, "src/kaiju-models/index.ts")
+    : path.join(PACKAGE, "dist/kaiju-models/index.js");
 if (process.env.CI !== undefined && !existsSync(REAL_MODELS_EXTENSION)) {
-  throw new Error(`kobe-models is not built: ${REAL_MODELS_EXTENSION} (run pnpm build first)`);
+  throw new Error(`kaiju-models is not built: ${REAL_MODELS_EXTENSION} (run pnpm build first)`);
 }
 const OPENAI = { alias: "fast", gateway_model: "openai/gpt-fake", api: "openai-completions" };
 

@@ -1,0 +1,139 @@
+{{- $fullname := include "kaiju.fullname" . -}}
+{{- $e := include "kaiju.egressProxyValues" . | fromJson -}}
+# Egress proxy (spec D28). Ingress: only sandboxes (team namespaces) and the server's site jobs
+# (KOBE-343), only the proxy port; the
+# team namespace's own policy says the same from the sending side, this is the receiving side that
+# holds regardless of how the CNI applies egress selectors (KOBE-22 kube-router finding).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-egress-proxy
+  labels:
+    {{- include "kaiju.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "kaiju.selectorLabels" (dict "root" . "component" "egress-proxy") | nindent 6 }}
+  policyTypes:
+    - Ingress
+    {{- if $e.networkPolicy.restrictEgress }}
+    - Egress
+    {{- end }}
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kobe.splittingatom.io/team-namespace: "true"
+        # The server's site jobs (KOBE-343: the catalog's git mirror), with a site egress token
+        # the proxy allows ceiling hosts only.
+        - podSelector:
+            matchLabels:
+              {{- include "kaiju.selectorLabels" (dict "root" . "component" "server") | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+  {{- if $e.networkPolicy.restrictEgress }}
+  # The proxy's own egress (defence in depth behind its address checks): DNS, Postgres, the server's
+  # internal listener (git decisions, KOBE-763), and public
+  # IPv4 addresses on the allowed ports only. Explicitly allowed internal targets are added below.
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    {{- if eq .Values.postgres.mode "cnpg" }}
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: {{ $fullname }}-pg
+      ports:
+        - protocol: TCP
+          port: 5432
+    {{- else if $e.networkPolicy.databasePeers }}
+    - to:
+        {{- toYaml $e.networkPolicy.databasePeers | nindent 8 }}
+      ports:
+        - protocol: TCP
+          port: {{ int $e.networkPolicy.databasePort }}
+    {{- else }}
+    # External Postgres without egressProxy.networkPolicy.databasePeers: any address, Postgres port
+    # only. Set databasePeers to narrow this to your database.
+    - ports:
+        - protocol: TCP
+          port: {{ int $e.networkPolicy.databasePort }}
+    {{- end }}
+    # The server's internal listener: git decisions and per-repository credentials (KOBE-763).
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "kaiju.selectorLabels" (dict "root" . "component" "server") | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: {{ include "kaiju.serverInternalPort" . }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              {{- toYaml (include "kaiju.egressPrivateRanges" . | fromJsonArray) | nindent 14 }}
+              {{- /* The proxy refuses deniedCidrs itself; mirrored here (IPv4 only, this rule is IPv4). */ -}}
+              {{- range $e.deniedCidrs }}
+              {{- if not (contains ":" .) }}
+              - {{ . }}
+              {{- end }}
+              {{- end }}
+      ports:
+        {{- range $e.allowedPorts }}
+        - protocol: TCP
+          port: {{ int . }}
+        {{- end }}
+    {{- range $e.allowedInternalCidrs }}
+    - to:
+        - ipBlock:
+            cidr: {{ . }}
+      ports:
+        {{- range $e.allowedPorts }}
+        - protocol: TCP
+          port: {{ int . }}
+        {{- end }}
+    {{- end }}
+    {{- with $e.clusterIngress }}
+    {{- if .enabled }}
+    # Same-cluster hosts (EA4): the ingress load balancer address(es) on the allowed ports (a rule
+    # of their own, so the internet rule's private-range exceptions do not cover them), and the
+    # ingress pods they are DNATed to, on the pods' ports. The proxy itself lets only hosts of
+    # internal patterns reach them.
+    - to:
+        {{- range .addresses }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        {{- range $e.allowedPorts }}
+        - protocol: TCP
+          port: {{ int . }}
+        {{- end }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .namespace | quote }}
+          podSelector:
+            {{- toYaml .podSelector | nindent 12 }}
+      ports:
+        {{- range .ports }}
+        - protocol: TCP
+          port: {{ int . }}
+        {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- with $e.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}

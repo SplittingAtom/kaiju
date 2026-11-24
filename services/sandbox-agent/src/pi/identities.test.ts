@@ -73,7 +73,7 @@ describe("PiIdentities (KOBE-71)", () => {
   });
 
   it("gives a slow reclaim its own timeout and retries it (real process runner)", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-reclaim-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-reclaim-"));
     try {
       // Real processes, killed at the real timeout: the first attempt runs a helper that hangs (a
       // huge workspace), the next one that finishes. Chosen per attempt here, not by a marker the
@@ -122,7 +122,7 @@ describe("PiIdentities (KOBE-71)", () => {
         seen.push(timeoutMs);
         return { code: 0, stderr: "" };
       },
-      "/opt/kobe/bin/kobe-reclaim",
+      "/opt/kaiju/bin/kaiju-reclaim",
     );
     await ids.reclaimFiles({ uid: 2000, gid: 2000 }, 1000, ["/workspace", "/tmp"]);
     expect(seen).toEqual([RECLAIM_TIMEOUT_MS]);
@@ -132,23 +132,23 @@ describe("PiIdentities (KOBE-71)", () => {
   it("passes the purge dirs after `--`, and gives the identity up when the reclaim keeps failing", async () => {
     const runner = fakeRunner(() => ({
       code: 70,
-      stderr: "kobe-reclaim: could not reclaim: /w/x",
+      stderr: "kaiju-reclaim: could not reclaim: /w/x",
     }));
-    const ids = new PiIdentities("/helper", [2000], runner.run, "/opt/kobe/bin/kobe-reclaim");
+    const ids = new PiIdentities("/helper", [2000], runner.run, "/opt/kaiju/bin/kaiju-reclaim");
     await expect(
       ids.reclaimFiles({ uid: 2000, gid: 2000 }, 1000, ["/workspace", "/tmp"], {
         delaysMs: [1],
-        purgeDirs: ["/run/kobe-pi"],
+        purgeDirs: ["/run/kaiju-pi"],
       }),
-    ).rejects.toThrow(/reclaim as 2000 failed: kobe-reclaim: could not reclaim/);
+    ).rejects.toThrow(/reclaim as 2000 failed: kaiju-reclaim: could not reclaim/);
     const args = [
       "2000",
-      "/opt/kobe/bin/kobe-reclaim",
+      "/opt/kaiju/bin/kaiju-reclaim",
       "1000",
       "/workspace",
       "/tmp",
       "--",
-      "/run/kobe-pi",
+      "/run/kaiju-pi",
     ];
     expect(runner.calls).toEqual([args, args]);
   });
@@ -173,8 +173,8 @@ describe("PiIdentities (KOBE-71)", () => {
     const identity = { uid: 2000, gid: 2000 };
     expect(ids.command(identity, "pi", ["--mode", "rpc"])).toEqual(["2000", "pi", "--mode", "rpc"]);
     expect(
-      ids.command(identity, "pi", ["-x"], { TMPDIR: "/tmp/kobe-pi/pi-1/tmp", HOME: "/h" }),
-    ).toEqual(["2000", "/usr/bin/env", "TMPDIR=/tmp/kobe-pi/pi-1/tmp", "pi", "-x"]);
+      ids.command(identity, "pi", ["-x"], { TMPDIR: "/tmp/kaiju-pi/pi-1/tmp", HOME: "/h" }),
+    ).toEqual(["2000", "/usr/bin/env", "TMPDIR=/tmp/kaiju-pi/pi-1/tmp", "pi", "-x"]);
   });
 
   it("stops and reclaims through the helper, and reports a failed kill-all", async () => {
@@ -184,14 +184,14 @@ describe("PiIdentities (KOBE-71)", () => {
     const ids = new PiIdentities("/helper", [2000], runner.run);
     const identity = { uid: 2000, gid: 2000 };
     await ids.signalGroup(identity, 42, "TERM");
-    await ids.removeContents(identity, "/tmp/kobe-pi/pi-1/agent");
+    await ids.removeContents(identity, "/tmp/kaiju-pi/pi-1/agent");
     expect(ids.cleanupFailed).toBe(false);
     await expect(ids.killAll(identity)).rejects.toThrow(/kill-all as 2000 failed: kill: boom/);
     // KOBE-733: remembered for the agent's life, so it never proves its copy complete.
     expect(ids.cleanupFailed).toBe(true);
     expect(runner.calls).toEqual([
       ["2000", "/bin/kill", "-s", "TERM", "--", "-42"],
-      ["2000", "/usr/bin/find", "/tmp/kobe-pi/pi-1/agent", "-mindepth", "1", "-delete"],
+      ["2000", "/usr/bin/find", "/tmp/kaiju-pi/pi-1/agent", "-mindepth", "1", "-delete"],
       ["2000", "--kill-all"],
     ]);
     expect(ids.byGid(2000)).toEqual(identity);
@@ -211,11 +211,11 @@ describe("loading Pi identities", () => {
   });
 
   it("accepts only a root-owned helper nobody else can change", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runas-"));
-    const own = path.join(dir, "kobe-runas");
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runas-"));
+    const own = path.join(dir, "kaiju-runas");
     await writeFile(own, "#!/bin/sh\n", { mode: 0o755 });
     await expect(checkHelperFile(own)).rejects.toThrow(/root-owned/);
-    await expect(checkHelperFile("relative/kobe-runas")).rejects.toThrow(/absolute/);
+    await expect(checkHelperFile("relative/kaiju-runas")).rejects.toThrow(/absolute/);
     await expect(checkHelperFile(path.join(dir, "missing"))).rejects.toThrow(PiIdentityError);
     await expect(checkHelperFile("/bin/sh")).resolves.toBeUndefined();
   });
@@ -226,7 +226,7 @@ describe("loading Pi identities", () => {
     ).rejects.toThrow(/2 Pi identities .* for 8 Pi processes/);
     const broken = fakeRunner(() => ({
       code: 71,
-      stderr: "kobe-runas: setgroups: Operation not permitted",
+      stderr: "kaiju-runas: setgroups: Operation not permitted",
     }));
     await expect(loadPiIdentities("/bin/sh", 1, [2000], broken.run, "/bin/sh")).rejects.toThrow(
       /cannot start processes as a Pi identity.*setgroups/,
@@ -343,7 +343,7 @@ describe("paired partner (tool) uids (KOBE-166)", () => {
     ]);
     const noPartner = fakeRunner((args) =>
       args[0] === "3000"
-        ? { code: 77, stderr: "kobe-runas: uid refused" }
+        ? { code: 77, stderr: "kaiju-runas: uid refused" }
         : { code: 0, stderr: "" },
     );
     await expect(

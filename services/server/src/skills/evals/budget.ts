@@ -48,7 +48,7 @@ export function evalBudgetMessage(line: BudgetLine): EvalBudgetBlock {
 }
 
 /**
- * Run failure codes of a gateway budget refusal (sandbox-agent `kobe-models/errors.ts`): a used-up
+ * Run failure codes of a gateway budget refusal (sandbox-agent `kaiju-models/errors.ts`): a used-up
  * budget or eval cap (spend plus the calls in flight), or a request larger than one.
  */
 export const BUDGET_FAILURES: ReadonlySet<string> = new Set([

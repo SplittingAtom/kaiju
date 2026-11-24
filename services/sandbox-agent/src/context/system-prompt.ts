@@ -16,7 +16,7 @@ import {
  * Pi 1.0.0 builds it from named sections (`core/system-prompt.js`): `preamble`, `tools`, `rules`,
  * `docs` (Pi's own text), `addendum` (Kaiju's `--append-system-prompt` file: the agent's
  * instructions), `project_context` (context files), `skills`, `cwd`, each but the preamble wrapped
- * in `<name>…</name>` and joined with blank lines. When kobe-tools adds the run's memory, project
+ * in `<name>…</name>` and joined with blank lines. When kaiju-tools adds the run's memory, project
  * instructions or viewed file (`before_agent_start` returning `systemPrompt`), Pi sends the whole
  * rendered prompt as one forced text instead, so it is split back here: exactly, from the parts
  * the agent wrote for the run, or by their headers when those no longer match.
@@ -29,7 +29,7 @@ export interface RawSection {
   readonly images?: number;
 }
 
-/** The per-run parts kobe-tools appended to the prompt, as the agent last wrote them. */
+/** The per-run parts kaiju-tools appended to the prompt, as the agent last wrote them. */
 export interface KaijuPromptParts {
   readonly memory: string;
   readonly project: string;
@@ -106,7 +106,7 @@ function section(name: string, text: string): RawSection {
 
 type TextPart = "memory" | "project" | "viewing" | "conflicts" | "known" | "picks" | "held";
 
-/** kobe-tools' parts in the order it appends them (kobe-tools/memory-hooks.ts, KOBE-383). */
+/** kaiju-tools' parts in the order it appends them (kaiju-tools/memory-hooks.ts, KOBE-383). */
 const KAIJU_SECTIONS: readonly {
   readonly part: TextPart;
   readonly header: string;
@@ -162,7 +162,7 @@ function partSections(s: (typeof KAIJU_SECTIONS)[number], parts: KaijuPromptPart
   return [{ kind: s.kind, label: s.label, text }];
 }
 
-/** A forced prompt: Pi's rendered prompt, then kobe-tools' parts (each after a blank line). */
+/** A forced prompt: Pi's rendered prompt, then kaiju-tools' parts (each after a blank line). */
 export function splitForcedPrompt(text: string, parts: KaijuPromptParts | undefined): RawSection[] {
   if (parts !== undefined) {
     const present = KAIJU_SECTIONS.filter((s) => (parts[s.part] ?? "") !== "");

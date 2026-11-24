@@ -5,7 +5,7 @@ import type { ApprovalVerifier } from "../approvals/verify.js";
 
 /**
  * Signed approvals at the MCP enforcement point (D29: "MCP calls are enforced a second time at the
- * MCP proxy"; Gate 2: a tampered `kobe-policy` cannot execute an MCP write without a signed
+ * MCP proxy"; Gate 2: a tampered `kaiju-policy` cannot execute an MCP write without a signed
  * approval). When the policy re-check says `require_approval`, the call runs only if KOBE-37's
  * verifier (`approvals/verify.ts`) finds the signed approval for exactly this call, verifies both
  * halves of `authorizeApprovedCall` against the input about to be forwarded, and consumes it.

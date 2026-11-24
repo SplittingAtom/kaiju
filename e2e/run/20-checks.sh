@@ -1,12 +1,12 @@
 # shellcheck shell=bash
 # Sourced by e2e/run.sh (KOBE-728 split of the former single script); not run on its own.
 echo "==> checks"
-psql_kobe() { $KUBECTL -n kobe-deps exec deploy/pg -- psql -U postgres -d kobe -tAc "$1" 2>&1; }
+psql_kaiju() { $KUBECTL -n kaiju-deps exec deploy/pg -- psql -U postgres -d kobe -tAc "$1" 2>&1; }
 # KOBE-415: a run whose event stream ended without a terminal event (the 5-minute stream timeout).
 # Says where it stopped: its events and status, and the server's warnings and sandbox-wire lines.
 hung_run_report() { # label run-id team-id
   echo "     $1: run ${2:-?} did not end (events, status):"
-  psql_kobe "SELECT * FROM (
+  psql_kaiju "SELECT * FROM (
       SELECT 'event ' || seq || ' ' || type || ' ' || left(payload::text, 300) FROM run_events
        WHERE team_id = '$3' AND run_id = '${2:-00000000-0000-4000-8000-000000000000}'
          AND type NOT LIKE '%.delta' ORDER BY seq) e
@@ -18,12 +18,12 @@ hung_run_report() { # label run-id team-id
 }
 
 for d in web server scheduler mcp-proxy egress-proxy model-gateway bifrost; do
-  if $KUBECTL -n "$NS" rollout status "deploy/kobe-$d" --timeout=60s >/dev/null 2>&1; then ok "deployment kobe-$d is available"
-  else fail "deployment kobe-$d is available"; fi
+  if $KUBECTL -n "$NS" rollout status "deploy/kaiju-$d" --timeout=60s >/dev/null 2>&1; then ok "deployment kaiju-$d is available"
+  else fail "deployment kaiju-$d is available"; fi
 done
 if [[ ${#restrict_egress[@]} -gt 0 ]]; then
-  contains "server and web run under their egress policies (KOBE-698)" '^kobe-server-egress kobe-web-egress$' \
-    "$($KUBECTL -n "$NS" get networkpolicy kobe-server-egress kobe-web-egress -o jsonpath='{.items[*].metadata.name}' 2>&1)"
+  contains "server and web run under their egress policies (KOBE-698)" '^kaiju-server-egress kaiju-web-egress$' \
+    "$($KUBECTL -n "$NS" get networkpolicy kaiju-server-egress kaiju-web-egress -o jsonpath='{.items[*].metadata.name}' 2>&1)"
 fi
 gated_pods='app.kubernetes.io/component in (server,scheduler)'
 gate_fmt='{range .items[*]}{range .status.initContainerStatuses[*]}{.name}={.state.terminated.reason}{"\n"}{end}{end}'
@@ -33,16 +33,16 @@ gate_count=$(printf '%s\n' "$gates" | grep -c .)
 # 2 server pods x wait-for-migrations + 1 scheduler pod x (isolation-preflight, wait-for-migrations);
 # the server checks isolation in process instead (KOBE-9).
 contains "init gates ran on all 3 server/scheduler pods" "^4$" "$gate_count"
-expect "app-role grants recorded for the newest migration" '^t$' "$(psql_kobe \
+expect "app-role grants recorded for the newest migration" '^t$' "$(psql_kaiju \
   'select (select migration_when from drizzle.kobe_grants_applied) = (select max(created_at) from drizzle.__drizzle_migrations)')"
-expect "team tables have FORCE ROW LEVEL SECURITY" '^team_members\|true$' "$(psql_kobe \
+expect "team tables have FORCE ROW LEVEL SECURITY" '^team_members\|true$' "$(psql_kaiju \
   "select c.relname || '|' || c.relforcerowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'team_members'")"
-wait_endpoints "$NS" kobe-web
+wait_endpoints "$NS" kaiju-web
 contains "web answers through the Traefik ingress" '"service":"web"' \
-  "$(reachable "$NS" kube-system traefik "--header 'Host: kobe.localtest.me' http://traefik.kube-system/api/healthz")"
+  "$(reachable "$NS" kube-system traefik "--header 'Host: kaiju.localtest.me' http://traefik.kube-system/api/healthz")"
 contains "the web app serves the chat (KOBE-32)" 'data-kaiju-chat' \
-  "$(reachable "$NS" kube-system traefik "--header 'Host: kobe.localtest.me' http://traefik.kube-system/")"
-contains "server answers" '"service":"server"' "$(reachable "$NS" "$NS" kobe-server http://kobe-server/healthz)"
+  "$(reachable "$NS" kube-system traefik "--header 'Host: kaiju.localtest.me' http://traefik.kube-system/")"
+contains "server answers" '"service":"server"' "$(reachable "$NS" "$NS" kaiju-server http://kaiju-server/healthz)"
 # KOBE-9: every server/scheduler process verified isolation itself (not disclosed by /readyz).
 # KOBE-125: judge only the CURRENT pods: those owned by the deployment's newest ReplicaSet and not
 # terminating (a rollout leaves old-ReplicaSet and terminating pods that never need to verify).
@@ -83,8 +83,8 @@ done
 contains "server and scheduler verified the gVisor RuntimeClass in process" '^verified verified verified $' "$iso"
 # KOBE-40: Bifrost admits only the server (config sync) and the model-gateway shim.
 # The sync's own record says whether it reached Bifrost (a pass lists and writes through its admin API).
-gateway_state() { psql_kobe "SELECT 'in_sync=' || (synced_version >= desired_version) || ' error=' || coalesce(last_error, '-') FROM model_gateway_state"; }
-wait_endpoints "$NS" kobe-bifrost
+gateway_state() { psql_kaiju "SELECT 'in_sync=' || (synced_version >= desired_version) || ' error=' || coalesce(last_error, '-') FROM model_gateway_state"; }
+wait_endpoints "$NS" kaiju-bifrost
 bifrost=$(wait_for 180 '^in_sync=true error=-$' gateway_state)
 contains "the server's gateway sync reached Bifrost (in sync, no error)" '^in_sync=true error=-$' "$bifrost"
 bifrost_restarts=$($KUBECTL -n "$NS" get pods -l app.kubernetes.io/component=bifrost \
@@ -114,20 +114,20 @@ if [[ "$bifrost_restarts" != 0 ]]; then # KOBE-242: say why it restarted (OOM, f
 fi
 contains "Bifrost has not restarted (other than for an upstream pricing outage)" '^0$' "$bifrost_restarts"
 # Once the control answers, the probe pod is in the policy ipsets: BLOCKED below is the policy.
-np=$(probe default "$(gated http://kobe-web.$NS/api/healthz bifrost http://kobe-bifrost.$NS:8080/health)")
+np=$(probe default "$(gated http://kaiju-web.$NS/api/healthz bifrost http://kaiju-bifrost.$NS:8080/health)")
 contains "probe from another namespace can reach unrestricted services (control)" '^control=REACHED$' "$np"
 contains "Bifrost is not reachable from other namespaces" '^bifrost=BLOCKED$' "$np"
-np=$(probe "$NS" "$(gated http://kobe-web/api/healthz bifrost http://kobe-bifrost:8080/health)")
+np=$(probe "$NS" "$(gated http://kaiju-web/api/healthz bifrost http://kaiju-bifrost:8080/health)")
 contains "control: a release-namespace probe reaches the web app" '^control=REACHED$' "$np"
 contains "Bifrost refuses other pods of the release namespace (only server and shim)" '^bifrost=BLOCKED$' "$np"
 # First-run setup through the ingress (KOBE-12): needs the site's setup token.
-setup_token=$($KUBECTL -n "$NS" get secret kobe-auth -o jsonpath='{.data.setup-token}' | base64 -d)
+setup_token=$($KUBECTL -n "$NS" get secret kaiju-auth -o jsonpath='{.data.setup-token}' | base64 -d)
 ingress() { # method path [json]: full response (status line + body) via the Traefik ingress
   local data=""
   if [[ -n "${3:-}" ]]; then data="--post-data '$3'"; fi
   wait_endpoints kube-system traefik
   probe "$NS" "$(retry 'nc -w 3 traefik.kube-system 80 </dev/null'); \
-    wget -qO- -S --header 'Host: kobe.localtest.me' --header 'Origin: http://kobe.localtest.me' \
+    wget -qO- -S --header 'Host: kaiju.localtest.me' --header 'Origin: http://kaiju.localtest.me' \
     --header 'Content-Type: application/json' $data http://traefik.kube-system$2 2>&1"
 }
 contains "first-run setup is required on a fresh install" '"required":true' "$(ingress GET /v1/setup)"
@@ -148,14 +148,14 @@ contains "password reset answers 200" 'HTTP/1.1 200' \
   "$(ingress POST /api/auth/request-password-reset '{"email":"owner@e2e.test"}')"
 contains "password reset for an unknown address answers the same" 'HTTP/1.1 200' \
   "$(ingress POST /api/auth/request-password-reset '{"email":"nobody@e2e.test"}')"
-mailbox=http://mailpit.kobe-deps:8025/api/v1/messages
-wait_endpoints kobe-deps mailpit
+mailbox=http://mailpit.kaiju-deps:8025/api/v1/messages
+wait_endpoints kaiju-deps mailpit
 mail=$(probe "$NS" "$(retry "$(answers $mailbox) | grep -q 'Reset your Kaiju password'"); $(answers $mailbox)")
 contains "the server delivered the reset email over SMTP" 'Reset your Kaiju password' "$mail"
 contains "the reset email went to the account's address" 'owner@e2e.test' "$mail"
 if printf '%s' "$mail" | grep -q 'nobody@e2e.test'; then fail "no email for an unknown address"; else ok "no email for an unknown address"; fi
 contains "chart refuses a RuntimeClass that does not isolate" 'refuses to run agents' \
-  "$($HELM upgrade kobe charts/kobe -n "$NS" --reuse-values --set isolation.runtimeClassName=does-not-exist 2>&1 || true)"
+  "$($HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --set isolation.runtimeClassName=does-not-exist 2>&1 || true)"
 
 start_sandbox() {
   $KUBECTL create namespace "$SANDBOX_NS" --dry-run=client -o yaml | $KUBECTL apply -f - >/dev/null &&

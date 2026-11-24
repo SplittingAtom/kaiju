@@ -7,7 +7,7 @@ import { evalConfigMapManifest, evalJobManifest, evalJobName, type EvalJobInput 
 
 const EVAL_ID = "4f9c2d5a-6b7e-4f90-8abc-4d5e6f708192";
 const EVAL: OrbitEvalSettings = {
-  image: "ghcr.io/splittingatom/kobe-orbit-eval:0.1.0",
+  image: "ghcr.io/splittingatom/kaiju-orbit-eval:0.1.0",
   deadlineSeconds: 900,
   resources: {
     requests: { cpu: "250m", memory: "512Mi" },
@@ -127,11 +127,11 @@ describe("Orbit eval Job manifest (KOBE-93)", () => {
     const pod = spec.template.spec;
     expect(pod.dnsPolicy).toBe("None");
     expect(pod.hostAliases).toEqual([
-      { ip: "10.43.0.11", hostnames: ["model-gateway.kobe.internal"] },
+      { ip: "10.43.0.11", hostnames: ["model-gateway.kaiju.internal"] },
     ]);
     const env = Object.fromEntries((pod.containers[0]?.env ?? []).map((e) => [e.name, e.value]));
     expect(env).toEqual({
-      KAIJU_MODEL_GATEWAY_URL: "http://model-gateway.kobe.internal:8080",
+      KAIJU_MODEL_GATEWAY_URL: "http://model-gateway.kaiju.internal:8080",
       KAIJU_MODEL_SESSION_TOKEN: TOKEN,
       KAIJU_EVAL_MODEL: "anthropic/claude-smart",
     });

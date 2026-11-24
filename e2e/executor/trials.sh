@@ -1,5 +1,5 @@
 # KOBE-168: cold start and workspace sync with the paired tool uid. Sourced by e2e/run.sh near the
-# end of the suite (needs chat_run, owner_id, TEAM_NS, E2E_TEAM_ID, psql_kobe, until_ok, contains,
+# end of the suite (needs chat_run, owner_id, TEAM_NS, E2E_TEAM_ID, psql_kaiju, until_ok, contains,
 # ok, fail). `executor_first_token_trials` runs with the flag off (suite shard) and on (executor
 # shard), so CI prints both for the ledger; `executor_sync_checks` only with the flag on.
 owner_claim_uid() { $KUBECTL -n "$TEAM_NS" get sandboxclaim "u-$owner_id" -o jsonpath='{.metadata.uid}' 2>/dev/null || true; }
@@ -8,7 +8,7 @@ in_owner() { $KUBECTL -n "$TEAM_NS" exec "$(owner_pod_now)" -c agent -- sh -c "$
 tool_said() { sed -n 's/^text=fake-openai: tool said: //p' <<<"$1" | sed -n 1p; } # chat_run output → the tool's one line
 EXEC_LABEL=$([[ "${KAIJU_E2E_TOOL_EXECUTOR:-}" == 1 ]] && echo on || echo off)
 owner_lifecycle() { # hibernate|wake → the CLI's answer
-  $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node dist/cli/lifecycle.js "$1" \
+  $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node dist/cli/lifecycle.js "$1" \
     --team-id "$E2E_TEAM_ID" --user-id "$owner_id" 2>&1 | grep -E '^\{"(hibernated|woken)"' || true
 }
 # KOBE-563: hibernation refuses while any run of the owner is queued, running or waiting for an
@@ -17,7 +17,7 @@ owner_lifecycle() { # hibernate|wake → the CLI's answer
 # token-rotation checks failed. Hibernate on the actual answer, never on a non-empty one.
 owner_busy_report() { # label → why the owner's sandbox is busy (active runs, commands in flight)
   echo "     $1: the owner's sandbox is busy (active runs, commands in flight):"
-  psql_kobe "SELECT 'run ' || r.id || ' ' || r.status || ' started ' || coalesce(r.started_at::text, '-') FROM runs r
+  psql_kaiju "SELECT 'run ' || r.id || ' ' || r.status || ' started ' || coalesce(r.started_at::text, '-') FROM runs r
       JOIN threads t ON t.team_id = r.team_id AND t.id = r.thread_id
      WHERE r.team_id = '$E2E_TEAM_ID' AND t.owner_user_id = '$owner_id'
        AND r.status IN ('queued', 'running', 'waiting_approval')
@@ -26,7 +26,7 @@ owner_busy_report() { # label → why the owner's sandbox is busy (active runs, 
     | sed 's/^/       /' || true
 }
 owner_active_run_ids() {
-  psql_kobe "SELECT r.id FROM runs r JOIN threads t ON t.team_id = r.team_id AND t.id = r.thread_id
+  psql_kaiju "SELECT r.id FROM runs r JOIN threads t ON t.team_id = r.team_id AND t.id = r.thread_id
      WHERE r.team_id = '$E2E_TEAM_ID' AND t.owner_user_id = '$owner_id'
        AND r.status IN ('queued', 'running', 'waiting_approval')"
 }
@@ -66,7 +66,7 @@ field_of() { sed -n "s/^$1=//p" <<<"$2" | sed -n 1p; } # key, chat_run output �
 # upgrades, so the job's final diagnostics no longer hold the window (KOBE-168: one 34 s trial).
 slow_trial_diagnostics() { # since (RFC3339)
   echo "     SLOW wake since $1: server wake/sandbox log lines, claim and pod events"
-  $KUBECTL -n "$NS" logs deploy/kobe-server -c server --since-time="$1" 2>&1 \
+  $KUBECTL -n "$NS" logs deploy/kaiju-server -c server --since-time="$1" 2>&1 \
     | grep -iE 'wake|woken|sandbox|lease|pod' | cut -c1-300 | tail -40 || true
   $KUBECTL -n "$TEAM_NS" get events --sort-by=.lastTimestamp 2>&1 | tail -25 | cut -c1-260 || true
   $KUBECTL -n "$TEAM_NS" logs -l "agents.x-k8s.io/claim-uid=$(owner_claim_uid)" -c agent --tail=40 2>&1 | cut -c1-300 || true
@@ -118,7 +118,7 @@ executor_sync_checks() {
   contains "a tool wrote the report as a partner uid" '^text=fake-openai: tool said: 30[0-9]{2}$' "$out"
   if owner_hibernate "sync"; then ok "the idle sandbox hibernates"; else fail "the idle sandbox hibernates"; fi
   until_ok 120 owner_pod_gone || true
-  sync_row_of() { psql_kobe "SELECT sha256 FROM workspace_files WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND path = 'kaiju168-sync/q3.md' AND NOT deleted"; }
+  sync_row_of() { psql_kaiju "SELECT sha256 FROM workspace_files WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$owner_id' AND path = 'kaiju168-sync/q3.md' AND NOT deleted"; }
   row_ready() { [[ "$(sync_row_of)" =~ ^[0-9a-f]{64}$ ]]; }
   if until_ok 60 row_ready; then ok "hibernation pushed the tool-written file to the durable copy"
   else fail "hibernation pushed the tool-written file to the durable copy: got [$(sync_row_of)]"; fi

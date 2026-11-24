@@ -119,7 +119,7 @@ export const ENABLED_ALL: ConnectorPolicyState = {
   drifted_tools: [],
 };
 
-/** A valid input for every built-in (strict Pi 1.0.0 schemas; kobe-tools accept any object). */
+/** A valid input for every built-in (strict Pi 1.0.0 schemas; kaiju-tools accept any object). */
 export const SAMPLE_INPUTS: Readonly<Record<string, JsonObject>> = {
   read: { path: "notes.md" },
   write: { path: "notes.md", content: "x" },

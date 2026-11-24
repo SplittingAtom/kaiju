@@ -261,7 +261,7 @@ describe("run.start project context", () => {
 });
 
 describe("propose_project_file (removed in WS-7)", () => {
-  it("the tool, its kobe-tools op and its frames no longer decode", () => {
+  it("the tool, its kaiju-tools op and its frames no longer decode", () => {
     expect(CAPABILITY_PROJECTS).toBe("projects");
     expect(
       kaijuToolsRequestSchema.safeParse({

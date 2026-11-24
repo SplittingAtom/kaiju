@@ -33,7 +33,7 @@ import {
 } from "./testing/harness.js";
 
 /**
- * Privilege separation with the real helper (KOBE-71). Needs Linux, a `kobe-runas` built for this
+ * Privilege separation with the real helper (KOBE-71). Needs Linux, a `kaiju-runas` built for this
  * user (KAIJU_TEST_PI_RUNAS: root-owned, cap_setuid/cap_setgid, executable by one of our groups)
  * and the Pi identity groups among this process's supplementary groups — CI sets that up
  * (services/sandbox-agent/scripts/test-identities.sh). Skipped elsewhere.
@@ -42,7 +42,7 @@ import {
  * one, so it runs as that Pi's identity.
  */
 const HELPER = process.env.KAIJU_TEST_PI_RUNAS;
-const MODELS_EXTENSION = "/opt/kobe/pi-extensions/kobe-models/index.js";
+const MODELS_EXTENSION = "/opt/kaiju/pi-extensions/kaiju-models/index.js";
 const MODEL = {
   alias: "fast",
   gateway_model: "openai/gpt-fake",
@@ -115,7 +115,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
       identities,
       runtimeDir: path.join(shm, "pi-runtime"),
       models: {
-        gatewayUrl: "http://model-gateway.kobe.internal:80",
+        gatewayUrl: "http://model-gateway.kaiju.internal:80",
         extension: MODELS_EXTENSION,
         tokens,
       },
@@ -314,7 +314,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
       {},
       {
         mcp: {
-          proxyUrl: "http://mcp-proxy.kobe.internal:80",
+          proxyUrl: "http://mcp-proxy.kaiju.internal:80",
           tokens: {
             current: async () => "mcp-token-".padEnd(40, "x"),
             onChange: () => () => undefined,
@@ -680,7 +680,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     const failing = path.join(scratch, "failing-reclaim");
     await writeFile(
       failing,
-      "#!/bin/sh\necho 'kobe-reclaim: could not reclaim: x' >&2\nexit 70\n",
+      "#!/bin/sh\necho 'kaiju-reclaim: could not reclaim: x' >&2\nexit 70\n",
       {
         mode: 0o755,
       },
@@ -708,7 +708,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
       identities: retiring,
       runtimeDir: path.join(shm, "pi-runtime"),
       models: {
-        gatewayUrl: "http://model-gateway.kobe.internal:80",
+        gatewayUrl: "http://model-gateway.kaiju.internal:80",
         extension: MODELS_EXTENSION,
         tokens,
       },

@@ -17,36 +17,42 @@ const read = (path: unknown, extra: Record<string, unknown> = {}) =>
 
 describe("matchSkillRead (KOBE-297)", () => {
   it("names the run's bundle whose SKILL.md was read, by its hash directory", () => {
-    expect(read(`/run/kobe-skills/store/sk-${A}/SKILL.md`)).toEqual(refs[0]);
-    expect(read(`/run/kobe-skills/store/sk-${B}/SKILL.md`)).toEqual(refs[1]);
+    expect(read(`/run/kaiju-skills/store/sk-${A}/SKILL.md`)).toEqual(refs[0]);
+    expect(read(`/run/kaiju-skills/store/sk-${B}/SKILL.md`)).toEqual(refs[1]);
   });
 
   it("names a Kaiju skill (a former built-in) by its bundle directory, like any other (KOBE-317)", () => {
-    expect(read(`/run/kobe-skills/store/sk-${C}/SKILL.md`)).toEqual(refs[2]);
+    expect(read(`/run/kaiju-skills/store/sk-${C}/SKILL.md`)).toEqual(refs[2]);
+  });
+
+  it("also matches the pre-rename store of a sandbox still on the old image, for one release (KOBE-750)", () => {
+    expect(read(`/run/kobe-skills/store/sk-${A}/SKILL.md`)).toEqual(refs[0]);
+    expect(read(`/run/kobe-skills/store/sk-${B}/reference.md`)).toBeUndefined();
+    expect(read(`/run/kobe-skill/store/sk-${A}/SKILL.md`)).toBeUndefined();
   });
 
   it("normalizes the path the tool reads (doubled slashes, dot segments)", () => {
-    expect(read(`/run/kobe-skills//store/./sk-x/../sk-${A}/SKILL.md`)).toEqual(refs[0]);
+    expect(read(`/run/kaiju-skills//store/./sk-x/../sk-${A}/SKILL.md`)).toEqual(refs[0]);
   });
 
   it.each([
-    ["another file of the skill", `/run/kobe-skills/store/sk-${A}/reference.md`],
-    ["the skill directory itself", `/run/kobe-skills/store/sk-${A}`],
+    ["another file of the skill", `/run/kaiju-skills/store/sk-${A}/reference.md`],
+    ["the skill directory itself", `/run/kaiju-skills/store/sk-${A}`],
     [
       "a hash the run was not given (forged)",
-      `/run/kobe-skills/store/sk-${"d".repeat(64)}/SKILL.md`,
+      `/run/kaiju-skills/store/sk-${"d".repeat(64)}/SKILL.md`,
     ],
-    ["the old image directory of a built-in", "/opt/kobe/skills/docx/SKILL.md"],
+    ["the old image directory of a built-in", "/opt/kaiju/skills/docx/SKILL.md"],
     ["a workspace SKILL.md", "/workspace/pretty-html/SKILL.md"],
-    ["a workspace copy named like the store", `/workspace/run/kobe-skills/store/sk-${A}/SKILL.md`],
-    ["a relative path", `run/kobe-skills/store/sk-${A}/SKILL.md`],
+    ["a workspace copy named like the store", `/workspace/run/kaiju-skills/store/sk-${A}/SKILL.md`],
+    ["a relative path", `run/kaiju-skills/store/sk-${A}/SKILL.md`],
     [
       "a path climbing out of the store",
-      `/run/kobe-skills/store/sk-${A}/../../../../workspace/SKILL.md`,
+      `/run/kaiju-skills/store/sk-${A}/../../../../workspace/SKILL.md`,
     ],
-    ["a lower-case name", `/run/kobe-skills/store/sk-${A}/skill.md`],
-    ["a NUL byte", `/run/kobe-skills/store/sk-${A}/SKILL.md\u0000`],
-    ["an oversized path", `/run/kobe-skills/store/sk-${A}/SKILL.md`.padStart(5000, "/")],
+    ["a lower-case name", `/run/kaiju-skills/store/sk-${A}/skill.md`],
+    ["a NUL byte", `/run/kaiju-skills/store/sk-${A}/SKILL.md\u0000`],
+    ["an oversized path", `/run/kaiju-skills/store/sk-${A}/SKILL.md`.padStart(5000, "/")],
     ["not a string", 42],
     ["no path at all", undefined],
   ])("counts nothing for %s", (_name, path) => {
@@ -60,14 +66,14 @@ describe("matchSkillRead (KOBE-297)", () => {
   });
 
   it("counts only the read tool", () => {
-    expect(matchSkillRead("bash", { path: `/run/kobe-skills/store/sk-${A}/SKILL.md` }, refs)).toBe(
+    expect(matchSkillRead("bash", { path: `/run/kaiju-skills/store/sk-${A}/SKILL.md` }, refs)).toBe(
       undefined,
     );
     expect(matchSkillRead("read", null, refs)).toBeUndefined();
   });
 
   it("counts nothing for a run that was given no skills", () => {
-    expect(matchSkillRead("read", { path: `/run/kobe-skills/store/sk-${A}/SKILL.md` }, [])).toBe(
+    expect(matchSkillRead("read", { path: `/run/kaiju-skills/store/sk-${A}/SKILL.md` }, [])).toBe(
       undefined,
     );
   });
@@ -105,7 +111,7 @@ describe("runSkillRefs", () => {
     );
     expect(refs).toEqual([{ name: "team-one", source: "team", sha256: A }]);
     expect(
-      matchSkillRead("read", { path: `/run/kobe-skills/store/sk-${A}/SKILL.md` }, refs),
+      matchSkillRead("read", { path: `/run/kaiju-skills/store/sk-${A}/SKILL.md` }, refs),
     ).toEqual({ name: "team-one", source: "team", sha256: A });
   });
 
@@ -123,7 +129,7 @@ describe("skillUsesFrom", () => {
     type: "tool.result",
     payload: { tool_call_id: id, tool, is_error: isError, preview: "", truncated: false },
   });
-  const skill = `/run/kobe-skills/store/sk-${A}/SKILL.md`;
+  const skill = `/run/kaiju-skills/store/sk-${A}/SKILL.md`;
 
   it("counts a read whose result came back without error, once per tool call", () => {
     const { uses, unresolved } = skillUsesFrom(

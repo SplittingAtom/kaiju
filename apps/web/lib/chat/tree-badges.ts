@@ -2,16 +2,16 @@
  * Badges of a tree node (CT6, KOBE-545): what an answer's run left behind that branching does not
  * undo. Counted client-side, best effort, from the tool calls in the node's own entries: Pi's
  * `write` and `edit` tools (a shell command that writes is not seen) and the memory agent's
- * `remember` (services/sandbox-agent kobe-tools). Only a call with a stored, non-error result
+ * `remember` (services/sandbox-agent kaiju-tools). Only a call with a stored, non-error result
  * counts: a failed call, or one cut off with no result (the run stopped mid-call), is left out.
  */
 import type { ParsedEntry } from "./entries";
 import type { ThreadEntry } from "./types";
 
-/** Pi's file-changing tools (services/sandbox-agent `kobe-exec/tools.ts` TOOL_NAMES). */
+/** Pi's file-changing tools (services/sandbox-agent `kaiju-exec/tools.ts` TOOL_NAMES). */
 export const FILE_WRITE_TOOLS: ReadonlySet<string> = new Set(["write", "edit"]);
 
-/** The memory agent's write tool (`kobe-tools/protocol.ts` TOOL_REMEMBER); `recall` only reads. */
+/** The memory agent's write tool (`kaiju-tools/protocol.ts` TOOL_REMEMBER); `recall` only reads. */
 export const MEMORY_WRITE_TOOLS: ReadonlySet<string> = new Set(["remember"]);
 
 /** Paths listed in a files badge's tooltip at most. */

@@ -28,7 +28,7 @@ import { pushHistory, readRemote, resumeIndex } from "./push.js";
  * same hashes, an interrupted push resumes after the last batch, and a branch someone else wrote
  * to stops the attempt.
  */
-const CREDS = { username: "kobe-bot", token: "conversion-test-token" };
+const CREDS = { username: "kaiju-bot", token: "conversion-test-token" };
 const sha = (b: Uint8Array | string) => createHash("sha256").update(b).digest("hex");
 const text = (s: string) => new TextEncoder().encode(s);
 

@@ -90,7 +90,7 @@ if (mode === "setup") {
 }
 JS
     projects_js() { # mode [project-id] [thread-id] → the PROJECTS_JS output
-      $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- \
+      $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- \
         node --input-type=module -e "$PROJECTS_JS" "$E2E_TEAM_ID" "$1" reader@e2e.test "${2:-}" "${3:-}" "$READER_ID" 2>&1 | tail -24
     }
     pr_out=$(projects_js setup)
@@ -113,10 +113,10 @@ JS
     pr_thread=$(printf '%s\n' "$pr_chat" | sed -n 's/^thread_id=//p')
     contains "projects: a conversation in the project completes a run" '^terminal=run.completed$' "$pr_chat"
     contains "projects: the thread belongs to the project and is private" '^true\|false$' \
-      "$(psql_kobe "SELECT (project_id = '${pr_id:-00000000-0000-4000-8000-000000000000}')::text || '|' || shared_to_project::text FROM threads WHERE id = '${pr_thread:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT (project_id = '${pr_id:-00000000-0000-4000-8000-000000000000}')::text || '|' || shared_to_project::text FROM threads WHERE id = '${pr_thread:-00000000-0000-4000-8000-000000000000}'")"
     # KOBE-245: the instructions reach the model (the fake model echoes the system messages it got);
     # a conversation outside any project never sees them.
-    pr_marker=$(psql_kobe "SELECT instructions FROM projects WHERE id = '${pr_id:-00000000-0000-4000-8000-000000000000}'")
+    pr_marker=$(psql_kaiju "SELECT instructions FROM projects WHERE id = '${pr_id:-00000000-0000-4000-8000-000000000000}'")
     pr_sys=$(chat_run "system?" 300000 "" "" "$pr_thread")
     contains "projects: a project run's model input has the labelled instructions" \
       '^text=.*Project instructions \(set by project admins\)' "$pr_sys"
@@ -213,7 +213,7 @@ if (mode === "fork") {
 }
 JS
     fork_js() { # mode source-id marker-a marker-b title [fork-id] [chosen-id] → the FORK_JS output
-      $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- \
+      $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- \
         node --input-type=module -e "$FORK_JS" "$E2E_TEAM_ID" "$1" reader@e2e.test "$2" "$3" "$4" "$5" "${6:-}" "${7:-}" 2>&1 | tail -16
     }
     fk_id="$(date +%s)-$RANDOM"

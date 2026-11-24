@@ -71,7 +71,7 @@ export function clip(text: string, max: number): string {
 }
 
 // Credential-like names (review L6; KOBE-816): the same rule as the kernel bridge's `_secret`
-// (images/sandbox/kernel/kobe-kernel-bridge.py), both tested against
+// (images/sandbox/kernel/kaiju-kernel-bridge.py), both tested against
 // images/sandbox/kernel/secret-name-cases.json. The name splits into lowercase tokens (camelCase
 // boundaries and any non-alphanumeric character separate); it is credential-like when a token is
 // a secret word (unless followed by a size-like word: `token_count`), "key" alone or after a

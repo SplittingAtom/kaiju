@@ -388,7 +388,7 @@ describe("sandbox wire", () => {
     };
     expect(decodeServerFrame(JSON.stringify(fail)).ok).toBe(true);
   });
-  it("commit_project tool input, registry entry and kobe-tools op", () => {
+  it("commit_project tool input, registry entry and kaiju-tools op", () => {
     expect(commitProjectToolInputSchema.safeParse({ message: "m" }).success).toBe(true);
     expect(commitProjectToolInputSchema.safeParse({ message: "m", project_id: ID }).success).toBe(
       false,

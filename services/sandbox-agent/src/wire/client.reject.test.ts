@@ -144,8 +144,8 @@ describe("WireClient with a refused session token (KOBE-522)", () => {
   it("recovers through the session client's bootstrap re-trade, without a restart", async () => {
     let trades = 0;
     const session = new SessionClient({
-      serverUrl: "ws://server.kobe.internal:8081",
-      bootstrapTokenFile: "/var/run/secrets/kobe/bootstrap-token",
+      serverUrl: "ws://server.kaiju.internal:8081",
+      bootstrapTokenFile: "/var/run/secrets/kaiju/bootstrap-token",
       readFile: async () => "bootstrap",
       fetch: (async () => {
         trades += 1;

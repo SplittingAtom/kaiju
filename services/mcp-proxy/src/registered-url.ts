@@ -11,7 +11,7 @@ import { z } from "zod";
 export type RegisteredUrlLookup = (connectorId: string) => Promise<string | undefined>;
 
 export interface RegisteredUrlLookupOptions {
-  /** The server's internal listener, e.g. http://kobe-server:8082. */
+  /** The server's internal listener, e.g. http://kaiju-server:8082. */
   readonly baseUrl: string;
   /** What the proxy presents to that listener (KAIJU_MCP_INTERNAL_KEY). */
   readonly internalKey: string;

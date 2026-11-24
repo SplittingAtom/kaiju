@@ -9,12 +9,12 @@ import {
   parseEnvelope,
   parseReply,
   type FinalFrame,
-} from "../kobe-exec/protocol.js";
+} from "../kaiju-exec/protocol.js";
 import { sanitizeString } from "../sanitize.js";
 
 /**
- * Agent end of the exec channel (KOBE-167; fd 5 of each `pi --mode rpc`, see kobe-exec/protocol.ts).
- * It relays frames between the kobe-exec extension in Pi and the thread's executor, a process
+ * Agent end of the exec channel (KOBE-167; fd 5 of each `pi --mode rpc`, see kaiju-exec/protocol.ts).
+ * It relays frames between the kaiju-exec extension in Pi and the thread's executor, a process
  * running as the Pi identity's partner uid, so Pi never touches a tool and the tool uid never
  * touches Pi's end: both are pipes the agent made, nothing listens, and no path leads from one
  * to the other except through here.

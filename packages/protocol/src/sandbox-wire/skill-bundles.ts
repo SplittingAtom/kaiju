@@ -7,7 +7,7 @@ import { sha256HexSchema } from "./workspace-sync.js";
  * - `run.start.config.skill_bundles` lists each effective skill as `{name, sha256, size}`: the
  *   SHA-256 and byte size of the **canonical zip** (KOBE-78) the server decided to use. The
  *   server drops blocklisted, unapproved and team-disabled skills before it builds this list
- *   (same transaction as resolution), so the list is the whole truth for the run: kobe-sandbox-agent
+ *   (same transaction as resolution), so the list is the whole truth for the run: kaiju-sandbox-agent
  *   makes exactly these skills present and registers exactly these with Pi, and removes every
  *   other materialized skill.
  * - The bytes travel over HTTP on the server's **sandbox listener** (the port the sandbox
@@ -19,7 +19,7 @@ import { sha256HexSchema } from "./workspace-sync.js";
  *   command not yet answered) and not blocklisted right now, and streams the object, verifying the
  *   hash while it does. Anything else is a 404. The list was decided at run start, so a skill
  *   replaced or re-reviewed meanwhile does not break the run that was started with it.
- * - kobe-sandbox-agent verifies size and SHA-256 against the frame before extracting, and extraction
+ * - kaiju-sandbox-agent verifies size and SHA-256 against the frame before extracting, and extraction
  *   re-applies the bundle safety rules (safe paths, regular files only, size caps).
  *
  * Compatibility: `skill_bundles` is additive and optional, omitted when empty. The server sends it

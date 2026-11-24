@@ -1,0 +1,892 @@
+# Kaiju Helm values. Every key is validated by values.schema.json (unknown keys are rejected).
+
+global:
+  # Registry for Kaiju images; images are private, so set imagePullSecrets (applied to every pod).
+  imageRegistry: ghcr.io/splittingatom
+  # Defaults to the chart appVersion.
+  imageTag: ""
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # Generated secrets (auth, bundled-Postgres password) are kept by looking up the existing Secret.
+  # Offline renders (helm template, GitOps) can't, so they fail unless you pass existingSecrets.
+  # true only for throwaway environments (dev loop, CI).
+  allowGeneratedSecretsOffline: false
+
+# Kaiju refuses to run agents without a gVisor or Kata RuntimeClass (spec D4). The install fails
+# when none exists; there is no switch to disable this check.
+isolation:
+  # RuntimeClass sandboxes run under; its handler must be runsc (gVisor) or kata*.
+  runtimeClassName: gvisor
+
+# Sandboxes (spec D11, D12): one per (user, team), in namespace kobe-team-<slug>, run by the
+# agent-sandbox controller under isolation.runtimeClassName. The server creates and manages the
+# team namespaces (default-deny NetworkPolicy, ResourceQuota, warm pool); see docs/install.md.
+sandbox:
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: "2", memory: 4Gi }
+  # Container ephemeral storage (writable layer, logs, the /tmp and $HOME emptyDirs).
+  ephemeralStorage: { request: 1Gi, limit: 4Gi }
+  # Let sandboxes reach models through the model-gateway shim (KOBE-40), which verifies their
+  # session tokens and forwards inference only. false cuts sandboxes off from every model.
+  modelGatewayAccess: true
+  workspace:
+    # Persistent /workspace per sandbox.
+    size: 10Gi
+    # "" uses the cluster default (k3s: local-path, which pins a sandbox to its node; use
+    # Longhorn on multi-node clusters).
+    storageClass: ""
+    # Longhorn only: create a StorageClass with one replica on the sandbox's own node
+    # (dataLocality strict-local) and use it for workspaces. Wakes attach a local replica (faster
+    # cold start); a lost node loses its sandboxes' volumes, which are restored from the S3
+    # workspace sync (docs/install.md). Leave storageClass empty when enabling this.
+    longhornStrictLocal:
+      enabled: false
+  # /tmp and $HOME are emptyDirs, wiped on hibernate.
+  tmpSize: 2Gi
+  homeSize: 1Gi
+  # ResourceQuota of every team namespace (sandbox compute is capped here, not in dollars).
+  # Limits are capped too, so a team's sandboxes cannot burst into other teams' memory.
+  teamQuota:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    requests.ephemeral-storage: 40Gi
+    limits.ephemeral-storage: 160Gi
+    requests.storage: 500Gi
+    persistentvolumeclaims: "50"
+    pods: "50"
+  warmPool:
+    # Pre-started sandboxes per team namespace (agent-sandbox warm pools are namespaced). Each
+    # one counts against its team's quota. 0 disables warm starts.
+    replicasPerTeam: 1
+  # Spec D14: an awake sandbox hibernates (pod stopped, /workspace kept, /tmp wiped) this many
+  # minutes after its last activity; teams may choose 5-60 (team setting sandbox_idle_minutes).
+  # Waking costs a cold pod start (the warm pool only serves first sandboxes).
+  hibernation:
+    enabled: true
+    idleMinutes: 15
+    # How often each server replica looks for idle sandboxes.
+    sweepSeconds: 60
+    # Dormant-volume reclaim (KOBE-733), off by default. When on, a sandbox hibernated for
+    # dormantDays loses its claim and workspace volume, freeing the team's PVC quota, but only when
+    # its agent proved at shutdown that the object-storage copy is complete (final push after every
+    # process stopped, then nothing local-only: no symlink, special file, unsyncable name, refused
+    # or unreadable file), and no upload, wake or legal hold came after. Older sandbox images never
+    # prove it. The member's next message starts a new sandbox that restores the workspace (empty
+    # folders, node_modules, __pycache__, .venv and .kobe are not restored, and of file modes only
+    # the executable bit is). Needs workspaceSync and s3.*. Audited as sandbox.volume_reclaimed.
+    # There is no k3d end-to-end test of wake-after-reclaim yet. Files downloaded or changed since
+    # the last check are re-hashed inside the 15 s shutdown flush; beyond a few GB of such files the
+    # proof times out and the volume is simply kept.
+    reclaim:
+      enabled: false
+      dormantDays: 30
+  # Lost workspace volumes (KOBE-739). With detection on, the server reads PersistentVolumes and
+  # Nodes cluster-wide (read-only RBAC in the orchestrator ClusterRole) to tell when a volume's
+  # only copy was on a node that is gone; the member (or a team admin) may then rebuild the
+  # workspace from the last sync. A missing or not-Ready node must stay so, by the server's own
+  # observations, for graceMinutes before the rebuild is offered (a claim Lost or a Failed or
+  # missing PV counts at once). Off: no Node/PV reads, and a volume is never reported lost.
+  volumeLoss:
+    detection: true
+    graceMinutes: 30
+  # Durable copy of every sandbox's /workspace in object storage (s3.*), so losing or rebuilding a
+  # volume loses no files (KOBE-27). The server brokers every transfer on its sandbox port:
+  # sandboxes hold no storage credentials and gain no network access. Off without s3.bucket.
+  workspaceSync:
+    enabled: true
+    # Sandboxes push changes this often (also after every run and before hibernating).
+    pushIntervalSeconds: 60
+    # Larger files are not synced (they stay on the volume only). At most 5Gi: S3 stores each file
+    # with one PutObject/CopyObject request, limited to 5 GiB (the chart refuses more).
+    maxFileSize: 1Gi
+    # Per workspace; empty = the /workspace volume size. Teams' storage quota (D26) comes later.
+    maxWorkspaceSize: ""
+    maxFiles: 100000
+    # How often each server replica collects unreferenced content and old deletion markers.
+    collectSeconds: 3600
+  # Run Pi's built-in tools (bash, read, write, edit, ls, grep, find) in an executor process under a
+  # uid of their own, the partner of the thread's Pi uid (KOBE-167, docs/design/paired-tool-uid.md):
+  # a tool then cannot read or signal Pi, read the model-gateway tokens in Pi's memory and model
+  # file, or write Pi's config directory. Off until the rollout (KOBE-168) turns it on; sandboxes
+  # started before the change keep running the tools in Pi.
+  toolExecutor:
+    enabled: false
+  # Skill evals (KOBE-325): each eval case runs in its own short-lived sandbox (same pod as a
+  # member's, /workspace an emptyDir, gone afterwards). At most this many per team at once (the
+  # Site setting may lower it); more wait their turn. Each team quota grows by this many sandbox
+  # pods, counted apart (PriorityClass kobe-skill-eval, quota kobe-skill-eval-quota), so evals
+  # never use what members' sandboxes need; under node pressure a member's sandbox wins.
+  skillEval:
+    maxConcurrentPerTeam: 4
+    # An eval sandbox's /workspace: an emptyDir on the node's own disk (root filesystem), counted
+    # in the pod's ephemeral storage, so keep it below ephemeralStorage.limit minus tmpSize and
+    # homeSize. Busy evals add up to maxConcurrentPerTeam x this per team on the nodes' disks.
+    workspaceSize: 2Gi
+  # Pre-publish Orbit evals (KOBE-93): when a team turns the gate on, Publish runs the kaiju-orbit-eval
+  # image as a Job in the team namespace, under the same isolation as sandboxes (gVisor/Kata, no
+  # service account token, a NetworkPolicy that reaches only the model gateway).
+  orbitEval:
+    # activeDeadlineSeconds of the Job; an eval that runs longer is errored and publish stays blocked.
+    deadlineSeconds: 900
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: "1", memory: 2Gi }
+  # The optional external skill scanner (KOBE-341, SK32): when a Site admin turns it on, each
+  # Registry submission is scanned by the kaiju-skill-scan image (Cisco skill-scanner) as a Job in
+  # the Registry team's namespace: gVisor/Kata, no service account token, no Secret, no DNS and a
+  # NetworkPolicy that allows no traffic at all. Its findings are advisory (Caution at most).
+  skillScan:
+    # Off: the server has no scanner image, and a Site admin who turns the scanner on sees each
+    # scan recorded "unavailable" (a Caution item to acknowledge). On: the kaiju-skill-scan image
+    # must be in the registry (it is not published with the other images).
+    enabled: false
+    # activeDeadlineSeconds of the Job; a scan that runs longer is recorded as failed.
+    deadlineSeconds: 300
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { cpu: "1", memory: 2Gi }
+  # Sandbox session tokens are signed with Ed25519, one key pair per audience (KOBE-513). Empty:
+  # generated and kept (Secret <release>-sandbox-session-keys, public keys in ConfigMap
+  # <release>-sandbox-session-verify-keys). A pre-created Secret holds, for each audience
+  # sandbox-wire, model-gateway, mcp-proxy, egress-proxy, `<audience>.key` (Ed25519 private key,
+  # PKCS#8 PEM, all different; the server only); plus model-gateway (>= 32 chars: the gateway's
+  # master secret shared with the server) and approval-hmac (>= 32 chars: signs tool-call
+  # approvals, KOBE-37; without it every call that needs approval is denied). See docs/install.md.
+  sessionKeysSecret: ""
+  # With sessionKeysSecret: a pre-created ConfigMap whose keys sandbox-wire, model-gateway,
+  # mcp-proxy, egress-proxy hold each audience's public key PEM (two during a rotation).
+  sessionVerifyKeysConfigMap: ""
+
+# Rancher-managed clusters: grant the server's ServiceAccount `updatepsa` on Rancher projects, which
+# Rancher's namespace webhook requires to create the (Pod Security labelled) team namespaces.
+rancher:
+  enabled: false
+
+# Public origin users reach Kaiju at (cookies, WebAuthn relying party). Defaults to
+# http(s)://<ingress.host>; set it when Kaiju sits behind another proxy or ingress is disabled.
+publicUrl: ""
+
+auth:
+  # Secret with keys "secret" (>= 32 chars) and "setup-token" (>= 24 chars). Empty: generated, kept.
+  existingSecret: ""
+  # Proxies whose X-Forwarded-For is trusted for client IPs (rate limits): Traefik runs in the k3s
+  # pod network. Add your load balancer's CIDR if one sits in front.
+  trustedProxies:
+    - 10.42.0.0/16
+  # Single sign-on with OpenID Connect (KOBE-626, spec docs/specs/sso-oidc-scim.md): Microsoft
+  # Entra ID first, any OIDC provider with PKCE S256. Providers are added in the Site console
+  # (People > Single sign-on) or declared here; local sign-in keeps working beside them.
+  sso:
+    # Kill switch: false hides every single sign-on route, page and button and refuses SSO
+    # sign-in, without a database change. Local sign-in (passwords, passkeys) is unaffected.
+    enabled: true
+    # The server calls each provider itself (discovery, keys, token endpoint) and refuses http,
+    # private, loopback, link-local and metadata addresses and redirects. List the private ranges
+    # of an on-premises provider here (CIDRs); a private CA goes in server.extraCaBundle.
+    allowedInternalCidrs: []
+    # Ports a provider may use (an on-premises Keycloak on 8443, for example).
+    allowedPorts: [443]
+    # Providers as configuration (upserted at every server start, read-only in the console except
+    # their access mappings). The client secret is read from an existing Secret, never from values,
+    # and never copied into the database. Each entry:
+    #   - slug: contoso              # in the redirect URI https://<kaiju>/api/auth/sso/callback/<slug>
+    #     displayName: Contoso       # the sign-in button says "Sign in with Contoso"
+    #     kind: entra                # entra (tenantId) or oidc (issuer)
+    #     tenantId: "<directory (tenant) id GUID>"  # Entra; common/organizations/consumers refused
+    #     # issuer: https://idp.example.com/realms/kaiju   # oidc: the exact issuer
+    #     clientId: "<application (client) id>"
+    #     clientSecretSecret: { name: kaiju-sso-contoso, key: client-secret }
+    #     accessClaim: roles         # roles (app roles, recommended) or groups
+    #     # subjectClaim: oid        # default: oid for entra, sub for oidc
+    #     # mfaRule: { amr_any: [mfa], acr_any: [], acrs_any: [c1] }   # default per kind
+    #     # allowedEmailDomains: [contoso.com]   # admin-expected links only
+    #     # jitProvisioning: true
+    #     # enabled: true
+    #     # maxSessionHours: 12
+    providers: []
+    # With server.networkPolicy.restrictEgress (KOBE-698) public HTTPS is already allowed. Without
+    # it, if your namespace denies egress by default, enable this to allow the server DNS and HTTPS
+    # to the identity provider. It selects
+    # the server pods, so on its own it would also make every other server egress default-deny:
+    # enable it only beside your own allow rules for Postgres, S3, SMTP and the Kubernetes API.
+    # Entra ID needs login.microsoftonline.com (discovery, keys and token endpoint) on 443; its
+    # addresses are not fixed, so the default allows public addresses on allowedPorts.
+    networkPolicy:
+      enabled: false
+      # Destination CIDRs on allowedPorts; empty = every public address (private ranges excluded).
+      cidrs: []
+      # Extra raw NetworkPolicy egress rules for the server.
+      extraEgress: []
+
+# Outgoing email (spec D7: required): invitations, password resets, notifications. API server only.
+smtp:
+  # SMTP relay host (required), e.g. smtp.example.com.
+  host: ""
+  port: 587
+  # starttls: STARTTLS required (587); tls: implicit TLS (465); none: unencrypted, for an in-cluster
+  # dev relay only, and never with credentials. Certificates are always verified.
+  security: starttls
+  # Sender (required): "Kaiju <kaiju@example.com>" or an address.
+  from: ""
+  # Secret with keys "username" and "password" for SMTP AUTH. Empty: no authentication.
+  existingSecret: ""
+
+web:
+  replicas: 1
+  # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
+  podDisruptionBudget:
+    enabled: true
+  topologySpread:
+    enabled: true
+    topologyKey: kubernetes.io/hostname
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 512Mi }
+  # The server's in-cluster origin the web reads the site branding from on every server render
+  # (KOBE-500, theming plan TH5): KAIJU_SERVER_URL. Empty = this release's server Service
+  # (http://<fullname>-server, port 80 -> the server's 8080, which the not-from-sandboxes
+  # NetworkPolicy already admits). Set it only for split installs where web and server are not one
+  # release. Origin only (http(s)://host[:port]); when unreachable the web serves the Kaiju defaults.
+  serverUrl: ""
+  networkPolicy:
+    # Opt-in egress policy (KOBE-698): DNS and the server's pods on 8080 only. A serverUrl outside
+    # this release needs a rule in extraEgress (raw NetworkPolicy egress rules).
+    restrictEgress: false
+    extraEgress: []
+
+server:
+  # Stateless; at least two replicas from day one (spec D2).
+  replicas: 2
+  # Postgres connections per pod (KOBE-736): the query pool and the event-stream read pool, plus
+  # one LISTEN connection. Budget: docs/install.md "Postgres connections".
+  database:
+    poolMax: 10
+    streamPoolMax: 4
+  # Replicated workloads (KOBE-515), applied only while replicas > 1: a PodDisruptionBudget
+  # (minAvailable 1) so a node drain keeps one replica serving, and a soft topology spread
+  # (maxSkew 1, ScheduleAnyway) so replicas land on different nodes when they can.
+  podDisruptionBudget:
+    enabled: true
+  topologySpread:
+    enabled: true
+    # Spread over this node label; e.g. topology.kubernetes.io/zone for zones.
+    topologyKey: kubernetes.io/hostname
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits: { cpu: "2", memory: 1Gi }
+  # Size limit of the server's /tmp (an emptyDir; KOBE-765). Convert to repo builds a project's git
+  # objects there (one conversion per replica, at most 2 GiB of content: the loose objects plus one
+  # push's pack, so up to about 4 GiB) next to the server's other temporary files. The Repo mirror
+  # (KOBE-766) fetches there too: at most 816 MiB on disk per refresh (pack plus objects, derived
+  # from the Repo limits; up to one 50 MiB object past it), 2 at once, so about 1.7 GiB.
+  # Conversion 4 GiB + mirror 1.7 GiB = 5.7 GiB, plus 2.3 GiB for the server's other temporary
+  # files (uploads in flight, exports): 8Gi. Above the limit the kubelet evicts the pod, so keep
+  # it at least 7Gi while conversions and Repos are possible, and count it in the node's
+  # ephemeral storage.
+  tmpSizeLimit: 8Gi
+  # Seconds between reconciles of every team namespace's NetworkPolicies, quota and other managed
+  # objects (KOBE-115); also run at server start. 0 = only at start; otherwise 30..86400.
+  teamReconcileSeconds: 300
+  # Hours a skill version's rescan under a new scanner rule set may keep not finishing (timing out)
+  # before the version is suspended like a Block, until a rescan finishes and passes or a reviewer
+  # decides it (KOBE-781 review). 0 = never; otherwise up to 8760.
+  skillRescanIncompleteSuspendHours: 24
+  # Seconds between re-probes of every pinned MCP connector for tool drift (KOBE-102); changed or
+  # new tools stay disabled until a site admin re-approves them. 0 = never; otherwise 60..86400.
+  connectorRefreshSeconds: 3600
+  # Lifetime of sandbox session tokens, 10..900 s. Leave at 900 (15 min); only the e2e shortens it
+  # to run a real Pi past a token rotation (KOBE-241).
+  sessionTokenTtlSeconds: 900
+  # Output limit and context window (tokens) of catalog models that have none of their own
+  # (KOBE-259); site admins set either per model on the Models page. Not any provider's maximum:
+  # a provider refuses calls above its own, so set the model's limits there when it allows less.
+  # Each model call's budget reservation holds the output limit while the call runs, and a call
+  # that is stopped or cut off without a usage report is charged the full output limit (hidden
+  # reasoning is never seen), so a higher limit makes interrupted calls cost more. A budget below
+  # one call's output limit still serves calls (a call alone is admitted and may overshoot).
+  modelDefaults:
+    # Models that answer directly: what every model got before KOBE-259 (256..131072).
+    maxOutputTokens: 16384
+    # Models flagged "reasons before answering": their hidden reasoning spends the same allowance,
+    # so they get twice that (256..131072).
+    reasoningMaxOutputTokens: 32768
+    # Context window (1024..10000000); both output limits must be below it.
+    contextWindow: 128000
+  # File uploads (KOBE-143); these are the server's code defaults.
+  uploads:
+    # Largest single file (bytes): 100 MiB.
+    maxFileBytes: 104857600
+    # Largest total per message (bytes): 500 MiB. Also bounds a single file.
+    maxMessageBytes: 524288000
+    # Storage quota per team (bytes) when the team has no value of its own: 50 GiB. Counts uploaded
+    # files and live workspace-sync bytes; uploads and sync pushes are refused beyond it.
+    teamStorageQuotaBytes: 53687091200
+    # Hours an upload that never joined a thread is kept (1..720).
+    orphanHours: 24
+    # Object budget per workspace (team) when it has none of its own (Workspaces GV2): S3 objects
+    # of scratchspaces, uploads and projects together; pushes beyond it and commits are refused.
+    teamMaxObjects: 2000000
+    # Commits kept per project at most, whatever the workspace's history setting (GV2/GV3).
+    projectHistoryMaxCommits: 1000
+  # Extra CA certificates the server trusts for its outgoing TLS (KOBE-182): a syslog or OTLP
+  # collector (auditForwarding), an OIDC issuer or S3 endpoint signed by a private CA. Name one
+  # Secret or one ConfigMap (not both) and the key holding PEM certificates; the server mounts it
+  # read-only and sets NODE_EXTRA_CA_CERTS, so these CAs are trusted in addition to the public
+  # ones. Node reads the bundle only at start: restart the server after rotating it.
+  extraCaBundle:
+    secretName: ""
+    configMapName: ""
+    key: ca.crt
+  # The catalog's optional one-way git mirror (KOBE-343, spec SK29). A Site admin turns it on and
+  # names the https remote in the Site console (Skills > Registry); this holds what stays out of
+  # the database: the remote's token, read from an existing Secret (never a value here), and the
+  # commit identity. Pushes go through the egress proxy: add the remote's host to the site egress
+  # ceiling. Without a token Secret the console shows the mirror as unable to push.
+  skillMirror:
+    tokenSecret:
+      # Secret name in the release namespace; empty = no token (mirror can't push).
+      name: ""
+      key: token
+    # Basic-auth user name sent with the token. GitHub: any (x-access-token for App tokens);
+    # Forgejo/Gitea: the token owner's user name.
+    username: x-access-token
+    authorName: Kaiju Registry
+    authorEmail: registry@kaiju.invalid
+  # Opt-in egress policy (KOBE-698; off keeps the server's egress open, as before). On: DNS,
+  # Postgres, Kaiju's own services, the Kubernetes API, public addresses on allowedPorts (S3, the
+  # identity provider, OAuth, model discovery) and the SMTP relay on smtp.port. Anything on the LAN
+  # or in the cluster (S3, SMTP, IdP, telemetry, SIEM) needs a rule in extraEgress (docs/install.md).
+  networkPolicy:
+    restrictEgress: false
+    allowedPorts: [443]
+    # External Postgres only, required when restrictEgress is on: NetworkPolicy peers (ipBlock /
+    # selectors) of your database.
+    databasePeers: []
+    databasePort: 5432
+    # The API server as the pod sees it after the kubernetes Service's DNAT (its own address and
+    # port; `kubectl get endpoints kubernetes`). Required when restrictEgress is on.
+    kubernetesApi:
+      peers: []
+      ports: [443, 6443]
+    # Extra raw NetworkPolicy egress rules for the server, e.g. a LAN S3 endpoint:
+    # [{to: [{ipBlock: {cidr: 10.20.30.40/32}}], ports: [{protocol: TCP, port: 9000}]}].
+    extraEgress: []
+
+scheduler:
+  # Replicas > 1 are safe: each due occurrence is claimed under a row lease and a unique index
+  # (exactly once across replicas, KOBE-174); more replicas only add failover.
+  replicas: 1
+  # Query pool per pod (KOBE-736), plus one LISTEN connection.
+  database:
+    poolMax: 10
+  # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
+  podDisruptionBudget:
+    enabled: true
+  topologySpread:
+    enabled: true
+    topologyKey: kubernetes.io/hostname
+  # Seconds between scans for due schedules (a schedule fires within one tick of its time).
+  tickSeconds: 15
+  # After downtime an overdue occurrence still fires once (the latest) if it is at most this many
+  # minutes late; older ones are skipped and recorded.
+  catchUpGraceMinutes: 60
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+# MCP proxy (spec D27): sandboxes reach remote MCP servers (Streamable HTTP) only through it. The
+# server decides every call (policy re-check, signed approvals, audit) on its internal port 8082.
+mcpProxy:
+  replicas: 1
+  # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
+  podDisruptionBudget:
+    enabled: true
+  topologySpread:
+    enabled: true
+    topologyKey: kubernetes.io/hostname
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: "1", memory: 512Mi }
+  # Plain-http connector URLs. Development and CI only: user credentials would travel unencrypted.
+  allowInsecureHttp: false
+  # Upstream ports connectors may use.
+  allowedPorts: [443]
+  # Internal targets (CIDRs) connectors may resolve to, e.g. an on-premises MCP server. Private,
+  # loopback, link-local (cloud metadata) and reserved addresses are refused unless listed here.
+  allowedInternalCidrs: []
+  # More ranges to refuse (your cluster's pod/Service CIDRs if they are not private addresses).
+  deniedCidrs: []
+  # Secret with key "key" (>= 32 chars) the proxy presents to the server, and "routes-key" (>= 32
+  # chars) the server presents to the proxy's internal routes (KOBE-693; without it "key" serves
+  # both ways). Empty: generated, kept.
+  internalKeySecret: ""
+  limits:
+    # Largest request from a sandbox and largest upstream answer.
+    maxRequestBytes: 1048576
+    maxResponseBytes: 4194304
+    # A whole upstream call; stays under Pi's 60 s MCP request timeout.
+    upstreamTimeoutSeconds: 55
+    # Concurrent calls per sandbox and per proxy replica.
+    callsPerSandbox: 8
+    concurrentCalls: 256
+    # Requests per sandbox: a burst, then this many per second (per replica).
+    requestBurst: 60
+    requestsPerSecond: 10
+  networkPolicy:
+    # Restrict the proxy's own egress to DNS, the server's internal port and public addresses on
+    # allowedPorts (plus allowedInternalCidrs).
+    restrictEgress: true
+    # Extra raw NetworkPolicy egress rules for the proxy.
+    extraEgress: []
+
+# Envelope encryption (KOBE-107): the site key-encryption key for per-record secrets such as
+# connector credentials. Existing Secret (key `key`, optional `key-previous`), or empty to generate
+# one and keep it across upgrades. Only the API server gets it; mcp-proxy never decrypts.
+envelope:
+  keySecret: ""
+
+# OpenTelemetry tracing (KOBE-10, spec D31) for the server, scheduler, MCP proxy, egress proxy and
+# model gateway. Off without an endpoint. Spans carry ids, names, durations, status codes and sizes
+# only; captureContent adds prompts, tool input/output and query strings (install-level opt-in).
+telemetry:
+  # OTLP/HTTP base URL of a collector or backend, e.g. http://otel-collector.observability:4318
+  # (Tempo, Langfuse, Phoenix: see docs/tracing.md).
+  endpoint: ""
+  # Existing Secret with key `headers` (name=value,name=value) for hosted backends; optional.
+  headersSecret: ""
+  captureContent: false
+
+# Default-deny egress proxy (spec D28): sandboxes reach the internet only through it, HTTPS only,
+# to domains their team enabled within the site's egress ceiling (admin consoles).
+egressProxy:
+  replicas: 1
+  # Query pool per pod (KOBE-736), plus one LISTEN connection.
+  database:
+    poolMax: 10
+  # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
+  podDisruptionBudget:
+    enabled: true
+  topologySpread:
+    enabled: true
+    topologyKey: kubernetes.io/hostname
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: "1", memory: 512Mi }
+  # Destination ports sandboxes may CONNECT to.
+  allowedPorts: [443]
+  # Internal targets sandboxes may reach (CIDRs), still only for allowlisted domains. Everything
+  # private, loopback, link-local (cloud metadata) and reserved is refused unless listed here.
+  # The broader legacy option: these CIDRs open to EVERY allowlisted domain (any name that resolves
+  # there). For hosts served by this cluster's ingress prefer clusterIngress below, which opens its
+  # addresses only to ceiling patterns a site admin marks internal.
+  allowedInternalCidrs: []
+  # Same-cluster hosts (EA4): names served by this cluster's own ingress resolve to its load
+  # balancer address, which the proxy refuses as internal. When enabled, a host matched by a
+  # ceiling pattern a site admin marked "Internal (same cluster)" may resolve to `addresses` (only
+  # those; loopback, link-local and cloud metadata never), every other host stays refused (DNS
+  # rebinding safe). Sets KAIJU_EGRESS_INTERNAL_TARGETS and adds NetworkPolicy egress to the
+  # addresses (on allowedPorts) and to the ingress pods (on `ports`), since kube-proxy/servicelb
+  # DNATs the load balancer address to those pods.
+  clusterIngress:
+    enabled: false
+    # The ingress load balancer address(es), as CIDRs (e.g. 192.0.2.10/32).
+    addresses: []
+    # The ingress controller pods: a label selector, e.g. {matchLabels: {app.kubernetes.io/name: traefik}}.
+    podSelector: {}
+    # The ingress controller's namespace (matched by its kubernetes.io/metadata.name label).
+    namespace: ""
+    # The ports the ingress pods listen on after DNAT (e.g. Traefik's 8443), not the 443 sandboxes use.
+    ports: []
+  # More ranges to refuse: your cluster's pod/Service CIDRs if they are not private addresses.
+  # IPv4 entries are also excluded from the proxy's own NetworkPolicy.
+  deniedCidrs: []
+  # Connections are written to the audit log aggregated per user, host and outcome over this window.
+  auditFlushSeconds: 60
+  # Header injection (KOBE-39): an existing Secret (key `secret`, optional `secret-previous`) that
+  # seals the headers team admins inject for egress domains. Empty: generated and kept.
+  headerSecret: ""
+  # Plain-HTTP requests to header-injected domains, upgraded to verified HTTPS by the proxy.
+  upgrade:
+    maxRequestBytes: 104857600
+    maxResponseBytes: 2147483648
+    timeoutSeconds: 600
+  # Git smart-HTTP for a Workspace's connected organizations (KOBE-763): the proxy asks the
+  # server for a per-repository credential and adds it upstream; the sandbox never holds one. The
+  # git host must be in the site egress ceiling (a private address: marked internal, with
+  # clusterIngress or allowedInternalCidrs). The push limit is per connection (Git section).
+  git:
+    # Existing Secret (key `key`) the proxy presents to the server; empty: generated and kept.
+    internalKeySecret: ""
+    # Fetch negotiation bodies (wants and haves), responses (clone and fetch packs), whole exchange.
+    maxFetchRequestBytes: 67108864
+    maxResponseBytes: 4294967296
+    timeoutSeconds: 1800
+    # Per sandbox and proxy replica: git requests running at once, and requests (burst, per second).
+    concurrentPerSandbox: 8
+    requestBurst: 60
+    requestsPerSecond: 2
+    # Different repositories asked about per sandbox per minute (each may cost host API calls).
+    lookupsPerMinute: 30
+  limits:
+    # Concurrent tunnels per sandbox and in total (per proxy replica).
+    connectionsPerSandbox: 64
+    connections: 4096
+    # Per sandbox, both directions together; 0 disables.
+    bandwidthBytesPerSecond: 20971520
+    idleTimeoutSeconds: 300
+    # Tunnels close after this long, and when the session token that opened them expires (15 min).
+    maxTunnelSeconds: 3600
+    # Sockets that have not authenticated yet (5 s to send the request head): per source address
+    # (one sandbox pod) and in total, separate from the tunnel limit above.
+    unauthenticatedPerSource: 16
+    unauthenticated: 1024
+  networkPolicy:
+    # Restrict the proxy's own egress to DNS, Postgres and public addresses on allowedPorts.
+    restrictEgress: true
+    # External Postgres only: NetworkPolicy peers (ipBlock / namespaceSelector) of your database.
+    # Empty: the proxy may reach any address on databasePort.
+    databasePeers: []
+    databasePort: 5432
+    # Extra raw NetworkPolicy egress rules for the proxy.
+    extraEgress: []
+
+# Model gateway shim (spec D30, KOBE-40): the only way sandboxes reach a model. It verifies their
+# model-gateway session token, checks the member and sandbox are still live, and forwards inference
+# (only) to Bifrost with the member's virtual key. Holds no provider key.
+modelGateway:
+  # Two replicas: one shim restarting or busy does not cut every team off from models.
+  replicas: 2
+  # Query pool per pod (KOBE-736), plus one LISTEN connection. `ratePoolMax`: the member rate
+  # limiter's own pool per pod (KOBE-810; 2 s acquire and statement timeouts).
+  database:
+    poolMax: 10
+    ratePoolMax: 2
+  # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
+  podDisruptionBudget:
+    enabled: true
+  topologySpread:
+    enabled: true
+    topologyKey: kubernetes.io/hostname
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    # Must cover limits.inflightBytes + 256Mi (checked at render time).
+    limits: { cpu: "1", memory: 512Mi }
+  limits:
+    # Request bodies (prompts, images) up to this size.
+    maxBodyBytes: 8388608
+    # Request bytes held in memory at once, per replica and per sandbox (beyond them: 429).
+    inflightBytes: 134217728
+    inflightBytesPerSandbox: 33554432
+    # Concurrent model calls per sandbox and in total (per replica); beyond them: 429.
+    callsPerSandbox: 16
+    calls: 1024
+    # Requests per sandbox: a burst, then this many per second (per replica); beyond them: 429.
+    requestBurst: 60
+    requestsPerSecond: 10
+    # A call that moves no bytes either way for this long is cut.
+    idleTimeoutSeconds: 300
+  # Membership, sandbox liveness and virtual keys are cached this long: a removed member, a
+  # deactivated user or a destroyed sandbox loses model access within it.
+  cacheTtlSeconds: 5
+  # Refuse model calls that carry no run-bound token (KOBE-118). Turn on once every sandbox agent
+  # image supports run tokens; until then calls without one keep the advisory x-kaiju-run-id.
+  # WARNING: when true, every call without a run token is refused with 401, including calls that
+  # belong to no run (Orbit eval sandboxes) and runs whose token fetch timed out. Keep it false
+  # until those are covered.
+  requireRunToken: false
+  networkPolicy:
+    # Restrict the shim's own egress to DNS, Bifrost and Postgres.
+    restrictEgress: true
+    # External Postgres only: NetworkPolicy peers of your database (as for egressProxy).
+    databasePeers: []
+    databasePort: 5432
+    # More egress rules (NetworkPolicy egress items), e.g. to a trace collector when
+    # telemetry.endpoint is set (KOBE-273). Nothing else needs it: the shim never calls providers.
+    extraEgress: []
+
+# Model gateway (spec D4, D30), always installed: Bifrost (Apache-2.0) holds the provider keys and
+# enforces each member's model allowlist. Kaiju is the source of truth (Site console and
+# API): the server pushes providers, keys, catalog models and the customer/team/virtual-key
+# hierarchy to it. Only the shim and the server can reach it.
+bifrost:
+  image:
+    repository: docker.io/maximhq/bifrost
+    tag: v2.5.1
+    # Multi-arch index digest of the tag (pinned; update both together).
+    digest: sha256:5ec9873acaf1687556b6e4dd854b92b539d9debf87a5a683b66338648b84d3c8
+  # Exactly one: Bifrost keeps virtual keys (and, with budgets, spend counters) in its own store.
+  replicas: 1
+  persistence:
+    # Keeps Bifrost's store across restarts (virtual keys, budget counters). Without it the sync
+    # rebuilds everything after a restart, with new virtual keys and budget counters reset.
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+  # Secret with keys bifrost-admin-password, bifrost-encryption-key, provider-keys, virtual-keys
+  # (>= 32 chars each, all different), optionally provider-keys-previous / virtual-keys-previous
+  # during a rotation. Empty: generated, kept.
+  keysSecret: ""
+  # Test sites only (e2e with a fake provider): lets OpenAI/Anthropic/Gemini providers take a
+  # base_url and keyed providers a plain-http endpoint. Off: a provider key only ever goes to its
+  # vendor, or over https to the endpoint it was entered with.
+  allowUnsafeProviderEndpoints: false
+  networkPolicy:
+    # Restrict Bifrost's egress to DNS and public addresses on allowedPorts (model providers).
+    restrictEgress: true
+    allowedPorts: [443]
+    # Local model servers (Ollama, vLLM) on private addresses: raw NetworkPolicy egress rules, e.g.
+    # [{to: [{ipBlock: {cidr: 10.20.30.40/32}}], ports: [{protocol: TCP, port: 11434}]}].
+    extraEgress: []
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: "1", memory: 512Mi }
+
+# Embedding models (KOBE-659). Every embedding call goes through the model gateway (Bifrost).
+# `local` runs a small CPU embedding model in the cluster, on by default: llama.cpp's llama-server
+# (MIT) with nomic-embed-text v1.5 (Apache-2.0, 768 dimensions, ~270 MB). The server registers it
+# in Bifrost as the keyless provider `kobe-local` (model `kobe-local/<model.name>`); only Bifrost
+# can reach it. Off: use an external model instead, added as a Site console provider (a LAN
+# Ollama or a hosted provider with a site key; a private address needs
+# bifrost.networkPolicy.extraEgress).
+embeddings:
+  local:
+    enabled: true
+    image:
+      repository: ghcr.io/ggml-org/llama.cpp
+      # A llama.cpp build tag, never `latest`; multi-arch index digest of the tag (update both).
+      tag: server-b12004
+      digest: sha256:b32890309c1a33a534a01b0b461e953dc2c5a6bac20213abcf48e22847a19c85
+    model:
+      # Served under this name (`/v1/models`); the gateway model is kobe-local/<name>.
+      name: nomic-embed-text
+      # GGUF file on the model volume.
+      file: nomic-embed-text-v1.5.f16.gguf
+      # true: the init container downloads `url` once onto the volume (needs egress to it: DNS and
+      # public HTTPS are allowed while this is on). false (air-gapped): the file must already be
+      # on the volume (persistence.existingClaim); the pod then has no egress at all.
+      download: true
+      url: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/0188c9bf409793f810680a5a431e7b899c46104c/nomic-embed-text-v1.5.f16.gguf
+      # Checked on every start, downloaded or preloaded.
+      sha256: f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb
+    # Tokens per input (nomic-embed-text v1.5 was trained on 2048).
+    contextSize: 2048
+    # CPU threads for inference; keep at or below resources.limits.cpu.
+    threads: 2
+    persistence:
+      # Keeps the model across restarts (one download). Off: an emptyDir, downloaded every start.
+      enabled: true
+      size: 1Gi
+      storageClass: ""
+      # A claim you preloaded with the model file (air-gapped installs); no PVC is created.
+      existingClaim: ""
+    networkPolicy:
+      # More egress rules, e.g. to a model mirror on a private address while download is on.
+      extraEgress: []
+    resources:
+      requests: { cpu: "1", memory: 1Gi }
+      limits: { cpu: "2", memory: 1Gi }
+
+postgres:
+  # external: bring your own Postgres 17 (+pg_trgm). cnpg: bundle a CloudNativePG Cluster (the
+  # CloudNativePG operator must already be installed).
+  mode: external
+  external:
+    # Secret with an app-role connection URL (non-owner role) and an owner URL for migrations.
+    existingSecret: ""
+    appUrlKey: app-url
+    migrateUrlKey: migrate-url
+    # Login role in app-url; the migration runner grants it privileges and refuses unsafe roles.
+    appRole: kobe_app
+  # The migration Job (pre-install/pre-upgrade hook). activeDeadlineSeconds bounds a whole upgrade's
+  # migrations; concurrent index builds (KOBE-734) on large tables take longer than plain DDL, and
+  # each may wait up to 2 min for older transactions. Keep `helm upgrade --timeout` above it.
+  migrateJob:
+    activeDeadlineSeconds: 1800
+  cnpg:
+    instances: 1
+    # Namespace of the CloudNativePG operator (allowed through the Postgres NetworkPolicy).
+    operatorNamespace: cnpg-system
+    # Pre-created kubernetes.io/basic-auth Secret for kobe_app (username kobe_app, password).
+    # Required for GitOps/offline renders; otherwise the chart generates and keeps one.
+    existingAppSecret: ""
+    imageName: ghcr.io/cloudnative-pg/postgresql:17
+    storage:
+      size: 10Gi
+      storageClass: ""
+    # PostgreSQL settings passed verbatim to the Cluster's spec.postgresql.parameters (KOBE-736),
+    # string values, e.g. {max_connections: "200", shared_buffers: "512MB"}. Size max_connections
+    # from docs/install.md "Postgres connections"; the default 100 fits the chart defaults only.
+    parameters: {}
+    # Passed verbatim to the Cluster's spec.backup (KOBE-737), e.g. barmanObjectStore (WAL archive
+    # and base backups to S3) and retentionPolicy. Empty: no backups. Production installs set it
+    # and add a ScheduledBackup (docs/install.md "Bundled Postgres (CloudNativePG)").
+    backup: {}
+    # Passed verbatim to the Cluster's spec.plugins (KOBE-737), e.g. the Barman Cloud plugin, which
+    # replaces barmanObjectStore on CloudNativePG 1.26 and later. Empty: none.
+    plugins: []
+
+# External S3-compatible object storage (no bundled S3).
+# The nightly retention pass (KOBE-18). Set paused: true after restoring the database from an older
+# backup and leave it until the bucket is reconciled (docs/backup-restore.md); otherwise the orphan
+# sweep deletes bodies the restored database does not know about.
+retention:
+  paused: false
+  # Table sweeps of the nightly pass (KOBE-741): tables that would otherwise grow for ever lose
+  # rows older than their period. Set enabled: false to keep a table for ever. Rows of members under
+  # a legal hold are kept. The audit log is never swept. docs/install.md "Retention sweeps".
+  sweeps:
+    # Processed and failed events (schedule fires and skips, egress blocks); never pending work or
+    # a schedule's latest fire. Days, 2-3650.
+    events:
+      enabled: true
+      days: 30
+    # Notifications a member has read; unread ones are kept. Days, 1-3650.
+    readNotifications:
+      enabled: true
+      days: 180
+    # Model usage rows, one per model call (the usage page's detail). Budgets and spend totals use
+    # daily rollups, which are kept. Months, 4-120.
+    runUsage:
+      enabled: true
+      months: 13
+    # Finished agent evals, except each agent's latest and those that published a version.
+    # Months, 1-120.
+    evalHistory:
+      enabled: true
+      months: 12
+
+# Branding defaults for GitOps installs (KOBE-503, theming T7). The API server writes each set
+# value into the site settings at start ONLY while that setting is unset: an admin's change on the
+# Appearance page always wins and is never overwritten on a restart or upgrade. Changing a value
+# here later does not change a site that already has the setting; "Reset to defaults" on the
+# Appearance page returns to these values at once (clear a value to reset to Kaiju's built-in one).
+branding:
+  # The site's name (1-40 characters, plain text on one line). Empty: "Kaiju".
+  appName: ""
+  # One of default, slate, forest, plum, ember, tokyo-nights, catalyst. Empty: the built-in default.
+  preset: ""
+  # Show the name next to the logo in the header. Only false is seeded (true is the default).
+  showName: true
+
+s3:
+  endpoint: ""
+  region: us-east-1
+  bucket: ""
+  forcePathStyle: true
+  # Optional key prefix for every object (relative, must end in "/", e.g. "kaiju/"). Empty = bucket root.
+  # Changing it on an existing site hides objects written under the old prefix.
+  prefix: ""
+  # Secret with keys access-key-id and secret-access-key.
+  existingSecret: ""
+
+ingress:
+  enabled: true
+  className: traefik
+  host: ""
+  annotations: {}
+  tls:
+    enabled: true
+    secretName: ""
+    # cert-manager ClusterIssuer; leave empty to manage the TLS Secret yourself.
+    clusterIssuer: ""
+  # Strict-Transport-Security (KOBE-695): the server and the web send it themselves whenever the
+  # public URL is https (max-age one year). includeSubDomains extends it to every subdomain of the
+  # public host's domain; leave it off when Kaiju shares a parent domain with other sites.
+  hsts:
+    includeSubDomains: false
+  # Optional per-source-IP rate limit at the ingress (KOBE-811), off by default: a Traefik
+  # Middleware (traefik.io/v1alpha1) on every route of the Ingress. Traefik counts `average`
+  # requests per `period` per client and allows bursts up to `burst`; past that it answers 429.
+  # The application's own limits stay in force behind it. A page load fetches many assets, so
+  # keep the defaults generous.
+  # BEFORE ENABLING on stock k3s: ServiceLB with the Traefik Service's default
+  # externalTrafficPolicy Cluster hides client addresses (Traefik sees a node/pod address), so
+  # every user would share one bucket per node. Set the Traefik Service to
+  # externalTrafficPolicy: Local first (k3s HelmChartConfig in docs/install.md, "Rate limit at the
+  # ingress") and check which address Traefik logs.
+  # REQUIRES Traefik v3 (k3s 1.32 or later): the event-stream Ingress below uses the PathRegexp
+  # path matcher, which Traefik v2 lacks. The render fails below Kubernetes 1.32 unless
+  # assumeTraefikV3 is true (you run Traefik v3 yourself on an older cluster).
+  rateLimit:
+    enabled: false
+    average: 100
+    burst: 300
+    period: 1s
+    assumeTraefikV3: false
+    # You limit requests per client at your own edge (load balancer, WAF, CDN, or your own
+    # ingress when ingress.enabled is false): true tells the Site console, which otherwise shows
+    # an informational notice that no ingress rate limit is configured (or that Kaiju cannot tell).
+    external: false
+    # Event streams (SSE: run events, workspace events and changes, skill-eval events) get their
+    # own Ingress and their own, separate budget (by default stricter per second than the main
+    # one), so stream reconnects never spend the page budget; open streams are never cut (a limit
+    # only applies when a request starts). enabled: false leaves the streams unlimited at the
+    # ingress. The sandbox WebSocket and the MCP proxy do not pass the ingress at all (in-cluster
+    # ports), so they need no exclusion.
+    streams:
+      enabled: true
+      average: 60
+      burst: 120
+      period: 1m
+    # Which client a request counts against. Default (all empty, recommended): the address
+    # Traefik receives the connection from, which is the client's once externalTrafficPolicy is
+    # Local (see above). Only when an L7 proxy or load balancer in front of Traefik always adds
+    # X-Forwarded-For, and Traefik's entryPoint forwardedHeaders.trustedIPs trusts it, set ONE of:
+    # depth (the Nth address from the right of X-Forwarded-For), or excludedIPs /
+    # excludeTrustedProxies (the rightmost address not in these CIDRs; excludeTrustedProxies adds
+    # auth.trustedProxies, so Traefik skips the same proxies the server trusts). WARNING: with
+    # either set and no usable address (header missing or not trusted, or every address
+    # excluded), Traefik counts the request against one empty source: the whole Site shares one
+    # bucket. ServiceLB (layer 4) cannot add the header, so do not set these on stock k3s.
+    ipStrategy:
+      depth: 0
+      excludedIPs: []
+      excludeTrustedProxies: false
+
+# Optional upload scanning (spec D26), off by default. When on, the server streams every upload to
+# clamd and refuses it unless clamd says clean: a hit is 422 scan_rejected, clamd down or still
+# loading signatures is 503 scan_unavailable (fail closed). ClamAV (GPL-2.0) runs as its own image,
+# non-root with a read-only root filesystem; it needs egress to database.clamav.net for signatures.
+clamav:
+  enabled: false
+  image:
+    repository: docker.io/clamav/clamav
+    tag: "1.4"
+    # Multi-arch index digest of the tag (pinned; update both together). Empty uses the tag alone.
+    digest: sha256:b7357e2c1c59480628839df301b0d27923561389b36cf341911e1dd9e02cdd05
+  networkPolicy:
+    # Its egress is DNS and public addresses on 443/80 (signature downloads). A private signature
+    # mirror: raw NetworkPolicy egress rules, e.g.
+    # [{to: [{ipBlock: {cidr: 10.20.30.40/32}}], ports: [{protocol: TCP, port: 443}]}].
+    extraEgress: []
+  resources:
+    requests: { cpu: 100m, memory: 1Gi }
+    limits: { cpu: "1", memory: 2Gi }
+
+# Optional forwarding of audit events to a SIEM (spec D31, KOBE-19), off by default. One server
+# replica forwards at a time; each destination keeps its own cursor, retries with backoff when it
+# fails, and shows its state in the site admin's audit health view. Forwarding starts at the
+# newest event when first enabled; use the export for history. Workspace events are forwarded
+# in the Site view (KOBE-676): no thread-derived ids; the full record stays in each Workspace's
+# own audit log (docs/audit-log.md, Export and forwarding).
+auditForwarding:
+  # Syslog (RFC 5424) over TCP. With tls: true the collector's certificate must chain to a CA
+  # the server trusts: a public one, or a private CA given in server.extraCaBundle.
+  syslog:
+    enabled: false
+    host: ""
+    port: 6514
+    tls: true
+    # IANA private enterprise number in the RFC 5424 structured-data ID (kaiju@<number>). 32473
+    # is the number RFC 5612 reserves for documentation; set your organisation's registered PEN
+    # if it has one. Digits only.
+    enterpriseNumber: 32473
+  # OTLP/HTTP logs (JSON). endpoint is the full logs URL, e.g. https://collector:4318/v1/logs.
+  # headersSecret names a Secret with key "headers": "Name=value,Name2=value2" (auth tokens).
+  otlp:
+    enabled: false
+    endpoint: ""
+    headersSecret: ""

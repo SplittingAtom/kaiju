@@ -7,7 +7,7 @@ import {
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseModelFile } from "./kobe-models/protocol.js";
+import { parseModelFile } from "./kaiju-models/protocol.js";
 import type { ModelWiring } from "./models/types.js";
 import { RUN, THREAD, runStart, startHarness, until, type Harness } from "./testing/harness.js";
 
@@ -59,8 +59,8 @@ describe("run spans over the wire (KOBE-274)", () => {
 
   it("has Pi's first model call carry the run span: the model file holds it when the prompt arrives", async () => {
     const models: ModelWiring = {
-      gatewayUrl: "http://model-gateway.kobe.internal:80",
-      extension: "/opt/kobe/pi-extensions/kobe-models/index.js",
+      gatewayUrl: "http://model-gateway.kaiju.internal:80",
+      extension: "/opt/kaiju/pi-extensions/kaiju-models/index.js",
       tokens: { current: async () => "model-token-".padEnd(40, "1"), onChange: () => () => true },
     };
     h = await startHarness({ models });

@@ -14,7 +14,7 @@ import { rememberRuleSchema } from "./remember.js";
 
 /**
  * Policy decision contract (D29). The policy engine (KOBE-35) decides every tool call; the
- * `kobe-policy` Pi extension (KOBE-36) asks through the sandbox wire (`policy.check`), the MCP proxy
+ * `kaiju-policy` Pi extension (KOBE-36) asks through the sandbox wire (`policy.check`), the MCP proxy
  * (KOBE-58) asks again before calling upstream, approvals (KOBE-37) resolve `require_approval`,
  * schedules (KOBE-65) run in `auto` mode.
  *
@@ -173,7 +173,7 @@ export const POLICY_REASON_CODES = [
   // KOBE-762 (spec workspace-git G9, G12): a git host tool the connection (level, agents), the
   // member's role or the Site refuses now → deny (stage team_deny), before anyone is asked.
   "git_not_allowed",
-  // Sandbox-side deny (kobe-policy / kobe-sandbox-agent): no server decision could be obtained
+  // Sandbox-side deny (kaiju-policy / kaiju-sandbox-agent): no server decision could be obtained
   // (policy channel closed, timed out, extension refused). Never produced by the server.
   "sandbox_policy_unavailable",
 ] as const;

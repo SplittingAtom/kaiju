@@ -11,7 +11,7 @@ export * from "../workspace-paths.js";
 
 /**
  * Workspace sync contract (KOBE-27, spec D12, D13, D15, D23, D26): `/workspace` ↔ S3 through the
- * server. Consumers: kobe-sandbox-agent (client), the server's sandbox listener (endpoints), and
+ * server. Consumers: kaiju-sandbox-agent (client), the server's sandbox listener (endpoints), and
  * the server-side writers KOBE-53 (uploads), KOBE-54 (file browser), KOBE-57 (project files).
  *
  * Transport and trust

@@ -15,7 +15,7 @@ import {
 
 const TOKEN = "session-token-for-mcp-proxy-0123456789";
 const TOKEN_2 = "rotated-token-for-mcp-proxy-9876543210";
-const PROXY = "http://mcp-proxy.kobe.internal:80";
+const PROXY = "http://mcp-proxy.kaiju.internal:80";
 const TOKEN_FILE = "/run/pi-abc123/agent/mcp-token";
 const THREAD = "33333333-3333-4333-8333-333333333333";
 const ID = "11111111-1111-4111-8111-111111111111";

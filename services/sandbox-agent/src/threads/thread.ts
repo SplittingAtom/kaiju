@@ -23,13 +23,13 @@ import {
   MEMORY_PICKS_TYPE,
   PICKS_NOTES_MAX,
   perMessageNote,
-} from "../kobe-tools/memory-hooks.js";
+} from "../kaiju-tools/memory-hooks.js";
 import { PiProcessError, type PiExit, type PiProcess, type PiRecord } from "../pi/pi-process.js";
 import type { PiLaunch } from "../pi/pi-launch.js";
 import type {
   BranchSummaryOutcome,
   BranchSummaryRequest,
-} from "../kobe-models/branch-summary-protocol.js";
+} from "../kaiju-models/branch-summary-protocol.js";
 import type { KaijuPromptParts } from "../context/system-prompt.js";
 import type { SystemPromptFile } from "../pi/system-prompt-file.js";
 import { MCP_TOKEN_FILE, mcpTokenFileText, writeAgentFile } from "../mcp/pi-mcp-config.js";
@@ -106,7 +106,7 @@ export class Thread {
   #repo: { readonly runId: string; readonly repo: RunGitRepo } | undefined;
   #promptFile: SystemPromptFile | undefined;
   #memoryFile: MemoryContextFile | undefined;
-  /** Where the current Pi's kobe-models records its latest model call (KOBE-470). */
+  /** Where the current Pi's kaiju-models records its latest model call (KOBE-470). */
   #contextFile: string | undefined;
   /** Conflicts told during the current run (KOBE-492); cleared when the next run attaches. */
   #liveConflicts: readonly SyncConflict[] = [];
@@ -154,7 +154,7 @@ export class Thread {
     return this.#pi !== undefined;
   }
 
-  /** kobe-policy in the current Pi reported ready and its channel is still open. */
+  /** kaiju-policy in the current Pi reported ready and its channel is still open. */
   get policyUsable(): boolean {
     return this.#policy?.ready === true && !this.#policy.closed;
   }
@@ -413,7 +413,7 @@ export class Thread {
   }
 
   /**
-   * The run's memory (KOBE-157): the kobe-tools extension lists `remember` / `recall` and adds the
+   * The run's memory (KOBE-157): the kaiju-tools extension lists `remember` / `recall` and adds the
    * fenced index to the run's prompt only while this says so. A per-run file, not a launch input.
    */
   async attachMemory(
@@ -433,7 +433,7 @@ export class Thread {
       conflicts,
       repo,
     );
-    // KOBE-662: what kobe-tools will put before this run's message, kept for later messages.
+    // KOBE-662: what kaiju-tools will put before this run's message, kept for later messages.
     const note =
       (content.picksPlacement ?? "system") === "system"
         ? ""
@@ -448,8 +448,8 @@ export class Thread {
   }
 
   /**
-   * Binds the run's note to its starting message (KOBE-662), as kobe-tools does: the first user
-   * message of the run, or a custom one that is not a kobe-tools note.
+   * Binds the run's note to its starting message (KOBE-662), as kaiju-tools does: the first user
+   * message of the run, or a custom one that is not a kaiju-tools note.
    */
   #bindRunNote(runId: string, event: PiRecord): void {
     const pending = this.#runNote;
@@ -475,8 +475,8 @@ export class Thread {
 
   /**
    * Sync conflicts told while `runId` is running (KOBE-492): added to the run's memory file, so
-   * kobe-tools puts them before every later model call of this run. False when the run is not
-   * this thread's active one or the thread has no memory file (no kobe-tools).
+   * kaiju-tools puts them before every later model call of this run. False when the run is not
+   * this thread's active one or the thread has no memory file (no kaiju-tools).
    */
   async noteConflicts(runId: string, conflicts: readonly SyncConflict[]): Promise<boolean> {
     const file = this.#memoryFile;
@@ -488,7 +488,7 @@ export class Thread {
   }
 
   /**
-   * The context viewer (KOBE-470): where the running Pi's kobe-models records its latest model
+   * The context viewer (KOBE-470): where the running Pi's kaiju-models records its latest model
    * call (undefined without a Pi or without model wiring), and the memory, project and viewed-file
    * parts the agent last wrote for its prompt (to split a forced prompt exactly).
    */
@@ -537,7 +537,7 @@ export class Thread {
   }
 
   /**
-   * Wait until kobe-policy in the current Pi reported `channel.ready` (call inside the lock, right
+   * Wait until kaiju-policy in the current Pi reported `channel.ready` (call inside the lock, right
    * after {@link spawn}). No prompt reaches a Pi whose policy extension did not load and self-check:
    * without it Pi would run tools unchecked.
    */
@@ -693,7 +693,7 @@ export class Thread {
   }
 
   /**
-   * Arm one branch summary for the active run (KOBE-548): the next request dialog from kobe-models
+   * Arm one branch summary for the active run (KOBE-548): the next request dialog from kaiju-models
    * gets `request`, once. Without arming the command is refused (a member typed it).
    */
   armBranchSummary(runId: string, request: BranchSummaryRequest): boolean {
@@ -702,7 +702,7 @@ export class Thread {
     return true;
   }
 
-  /** The outcome kobe-models reported for the armed summary (undefined: none came); disarms. */
+  /** The outcome kaiju-models reported for the armed summary (undefined: none came); disarms. */
   takeBranchSummary(runId: string): BranchSummaryOutcome | undefined {
     return this.#branchSummary.take(runId);
   }

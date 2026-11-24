@@ -62,7 +62,7 @@ if (mode === "scan") {
 }
 JS
     upload_js() { # mode [thread-id] → the UPLOAD_JS output
-      $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- \
+      $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- \
         node --input-type=module -e "$UPLOAD_JS" "$E2E_TEAM_ID" "$1" "${2:-}" "${UPLOAD_CONTENT:-}" 2>&1 | tail -8
     }
     UPLOAD_CONTENT="kobe-146 $(date +%s) $RANDOM"
@@ -75,11 +75,11 @@ JS
     contains "uploads: a file over the limit is refused (413 file_too_large, the limit named)" \
       '^limit=413:file_too_large:1048576$' "$up_out"
     contains "uploads: the stored file has a row (kind upload, scan_status none)" '^upload\|none$' \
-      "$(psql_kobe "SELECT kind || '|' || scan_status FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${up_file:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT kind || '|' || scan_status FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${up_file:-00000000-0000-4000-8000-000000000000}'")"
     contains "uploads: only the one accepted file is stored (the refused one left nothing)" '^1$' \
-      "$(psql_kobe "SELECT count(*) FROM files WHERE team_id = '$E2E_TEAM_ID' AND thread_id = '${up_thread:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT count(*) FROM files WHERE team_id = '$E2E_TEAM_ID' AND thread_id = '${up_thread:-00000000-0000-4000-8000-000000000000}'")"
     s3_ls() { # thread-id → the object listing of the thread's uploads in S3
-      $KUBECTL -n kobe-deps exec deploy/s3 -- sh -c "echo 'fs.ls /buckets/kobe/teams/$E2E_TEAM_ID/threads/$1/uploads/' | weed shell -master=localhost:9333" 2>&1 || true
+      $KUBECTL -n kaiju-deps exec deploy/s3 -- sh -c "echo 'fs.ls /buckets/kaiju/teams/$E2E_TEAM_ID/threads/$1/uploads/' | weed shell -master=localhost:9333" 2>&1 || true
     }
     contains "uploads: the object is in S3 inside the thread's tree" "${up_file:-none}" "$(s3_ls "${up_thread:-none}")"
     msg_out=$(chat_run "bash: cat /workspace/uploads/$up_thread/e2e-upload.txt; exit 0" 300000 "" "" "$up_thread" 1 "$up_file")
@@ -89,7 +89,7 @@ JS
     contains "uploads: the sandbox read the file under /workspace/uploads/<thread>/" \
       "^text=fake-openai: tool said: ${UPLOAD_CONTENT}( |\$)" "$msg_out"
     contains "uploads: the file is attached to the run (files.run_id set)" '^t$' \
-      "$(psql_kobe "SELECT run_id IS NOT NULL FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${up_file:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT run_id IS NOT NULL FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${up_file:-00000000-0000-4000-8000-000000000000}'")"
     contains "uploads: attaching the file keeps its object until the thread goes" "${up_file:-none}" \
       "$(s3_ls "${up_thread:-none}")"
     # KOBE-223 (CE22): an @file mention. The upload is now a file of the Owner's workspace
@@ -104,10 +104,10 @@ JS
     contains "mentions: a message with an @file mention starts a run (201)" '^message=201$' "$mention_out"
     contains "mentions: the stored prompt names the absolute sandbox path, not the marker" \
       "^bash: cat /workspace/$mention_path; exit 0\$" \
-      "$(psql_kobe "SELECT input FROM runs WHERE team_id = '$E2E_TEAM_ID' AND id = '${mention_run:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT input FROM runs WHERE team_id = '$E2E_TEAM_ID' AND id = '${mention_run:-00000000-0000-4000-8000-000000000000}'")"
     contains "mentions: the agent read the mentioned file by that path" \
       "^text=fake-openai: tool said: ${UPLOAD_CONTENT}( |\$)" "$mention_out"
-    mention_runs() { psql_kobe "SELECT count(*) FROM runs WHERE team_id = '$E2E_TEAM_ID' AND thread_id = '${up_thread:-00000000-0000-4000-8000-000000000000}'"; }
+    mention_runs() { psql_kaiju "SELECT count(*) FROM runs WHERE team_id = '$E2E_TEAM_ID' AND thread_id = '${up_thread:-00000000-0000-4000-8000-000000000000}'"; }
     mention_before=$(mention_runs)
     for bad in "/etc/passwd" "../../etc/passwd" "uploads/$up_thread/missing.txt"; do
       contains "mentions: $bad is refused (422)" '^message=422$' \
@@ -120,39 +120,39 @@ JS
     if until_ok 60 up_purged; then ok "uploads: the thread purge removed the object from S3"
     else fail "uploads: the thread purge removed the object from S3"; fi
     contains "uploads: the file row is gone with the thread" '^0$' \
-      "$(psql_kobe "SELECT count(*) FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${up_file:-00000000-0000-4000-8000-000000000000}'")"
+      "$(psql_kaiju "SELECT count(*) FROM files WHERE team_id = '$E2E_TEAM_ID' AND id = '${up_file:-00000000-0000-4000-8000-000000000000}'")"
 
     if [[ "${KAIJU_E2E_CLAMAV:-}" == 1 ]]; then
       # ClamAV on (the real clamav/clamav image; it downloads its signature database first, so the
       # rollout is given 10 min). EICAR is rejected and leaves no object or row, a clean file passes
       # with scan "clean", and with clamd gone uploads fail closed (503 scan_unavailable).
       echo "==> uploads with ClamAV (KOBE-146)"
-      if out=$($HELM upgrade kobe charts/kobe -n "$NS" --reuse-values --wait --timeout 10m --set clamav.enabled=true 2>&1); then
+      if out=$($HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --wait --timeout 10m --set clamav.enabled=true 2>&1); then
         ok "uploads: chart upgraded with clamav.enabled=true"
       else fail "uploads: chart upgraded with clamav.enabled=true: $out"; fi
       av_pod_user() { $KUBECTL -n "$NS" get pod -l app.kubernetes.io/component=clamav -o jsonpath='{.items[0].spec.securityContext.runAsUser}' 2>/dev/null; }
       contains "uploads: clamd runs as a non-root user (uid 100)" '^100$' "$(av_pod_user)"
       contains "uploads: the clamd container really runs as uid 100, not root" '^100$' \
-        "$($KUBECTL -n "$NS" exec deploy/kobe-clamav -- id -u 2>&1 | tr -d ' ')"
+        "$($KUBECTL -n "$NS" exec deploy/kaiju-clamav -- id -u 2>&1 | tr -d ' ')"
       scan_thread=$(as_owner "POST /v1/threads {\"title\":\"kobe-146-scan\"}" | sed -n 's/.*"thread_id":"\([0-9a-f-]*\)".*/\1/p')
       scan_out=$(upload_js scan "$scan_thread")
       printf '     scan: %s\n' "$(printf '%s' "$scan_out" | tr '\n' ' ')"
       contains "uploads: an EICAR upload is rejected (422 scan_rejected)" '^eicar=422:scan_rejected$' "$scan_out"
       contains "uploads: a clean upload passes the scan (201, scan clean)" '^clean=201:clean$' "$scan_out"
       contains "uploads: the rejection is audited" '^1$' \
-        "$(psql_kobe "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'workspace.upload_scan_refused' AND target->>'reason' = 'scan_rejected'")"
+        "$(psql_kaiju "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'workspace.upload_scan_refused' AND target->>'reason' = 'scan_rejected'")"
       contains "uploads: the rejected file left no row (only the clean files)" '^2$' \
-        "$(psql_kobe "SELECT count(*) FROM files WHERE team_id = '$E2E_TEAM_ID' AND thread_id = '${scan_thread:-00000000-0000-4000-8000-000000000000}'")"
-      $KUBECTL -n "$NS" scale deploy/kobe-clamav --replicas=0 >/dev/null 2>&1 || true
+        "$(psql_kaiju "SELECT count(*) FROM files WHERE team_id = '$E2E_TEAM_ID' AND thread_id = '${scan_thread:-00000000-0000-4000-8000-000000000000}'")"
+      $KUBECTL -n "$NS" scale deploy/kaiju-clamav --replicas=0 >/dev/null 2>&1 || true
       $KUBECTL -n "$NS" wait --for=delete pod -l app.kubernetes.io/component=clamav --timeout=120s >/dev/null 2>&1 || true
       down_out=$(upload_js scan "$scan_thread")
       contains "uploads: with clamd down an upload fails closed (503 scan_unavailable)" '^clean=503:scan_unavailable$' "$down_out"
-      if out=$($HELM upgrade kobe charts/kobe -n "$NS" --reuse-values --wait --timeout 5m --set clamav.enabled=false 2>&1); then
+      if out=$($HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --wait --timeout 5m --set clamav.enabled=false 2>&1); then
         ok "uploads: chart upgraded back with clamav.enabled=false"
       else fail "uploads: chart upgraded back with clamav.enabled=false: $out"; fi
     fi
 
     # ac-2: a revoked session token cannot call Bifrost (the member left the team; token unexpired).
-    psql_kobe "DELETE FROM team_members WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$MODEL_USER_ID';" >/dev/null
+    psql_kaiju "DELETE FROM team_members WHERE team_id = '$E2E_TEAM_ID' AND user_id = '$MODEL_USER_ID';" >/dev/null
     contains "a revoked session token (member removed) is refused (401)" '^code=401$' \
       "$(until_code 401 openai/gpt-fake "$model_token")"

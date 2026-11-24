@@ -1,14 +1,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { captureText } from "./kobe-models/context-capture.js";
+import { captureText } from "./kaiju-models/context-capture.js";
 import type { ModelWiring } from "./models/types.js";
 import { THREAD, runStart, startHarness, until, type Harness } from "./testing/harness.js";
 import { readThreadContext } from "./testing/thread-context.js";
 
 /**
  * `thread.context` through the agent (KOBE-470, docs/specs/context-viewer.md) with the scripted
- * Pi: nothing before any call, the session file's latest call, and the capture kobe-models writes
+ * Pi: nothing before any call, the session file's latest call, and the capture kaiju-models writes
  * into the running Pi's private dir.
  */
 let h: Harness | undefined;
@@ -73,10 +73,10 @@ describe("thread.context (KOBE-470)", () => {
     });
   });
 
-  it("answers what the running Pi's kobe-models recorded", async () => {
+  it("answers what the running Pi's kaiju-models recorded", async () => {
     const models: ModelWiring = {
-      gatewayUrl: "http://model-gateway.kobe.internal:80",
-      extension: "/opt/kobe/pi-extensions/kobe-models/index.js",
+      gatewayUrl: "http://model-gateway.kaiju.internal:80",
+      extension: "/opt/kaiju/pi-extensions/kaiju-models/index.js",
       tokens: { current: async () => "t".repeat(40), onChange: () => () => undefined },
     };
     h = await startHarness({ models });

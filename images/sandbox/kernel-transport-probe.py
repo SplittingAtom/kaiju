@@ -1,5 +1,5 @@
 """KOBE-808/816: completion, docs and the variables snapshot through the real bridge transport
-fire none of the kernel's execution machinery. Usage: python3 kernel-transport-probe.py <python> <kobe-kernel-bridge.py>.
+fire none of the kernel's execution machinery. Usage: python3 kernel-transport-probe.py <python> <kaiju-kernel-bridge.py>.
 
 Run by images/sandbox/test-image.sh (in the image) and by sandbox-agent's
 transport.e2e.test.ts (with KAIJU_TEST_KERNEL_PYTHON pointing at a Python with ipykernel).

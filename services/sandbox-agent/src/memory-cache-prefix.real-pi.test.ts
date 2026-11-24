@@ -17,10 +17,10 @@ import {
 
 /**
  * KOBE-662: the request up to the newest user message stays byte-stable from one message to the
- * next, against the REAL Pi with the real kobe-tools, through kobe-sandbox-agent, as gate1 runs
+ * next, against the REAL Pi with the real kaiju-tools, through kaiju-sandbox-agent, as gate1 runs
  * it. The server sends every run after the first with `parent_entry_id` = the thread's leaf, so
  * the agent stops Pi, appends the run's `kobe.branch` marker and starts a new Pi for each message.
- * Before the fix the picks notes of earlier messages lived only in kobe-tools' memory and died
+ * Before the fix the picks notes of earlier messages lived only in kaiju-tools' memory and died
  * with that Pi: `latest_user_keep` (and `tool_only`, which the server runs as keep until
  * KOBE-399) dropped the previous message's note on every turn, so the provider's cache (Ollama
  * Cloud keeps one checkpoint just before the end of the previous prompt) never hit. A scripted

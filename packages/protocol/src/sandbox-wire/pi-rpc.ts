@@ -49,7 +49,7 @@ export const piBridgeCommandSchema = z.discriminatedUnion("type", [
   // call, so compaction goes only through `thread.compact` (a compaction run with its own token).
   // No `set_model` (KOBE-169): it resolves the model from Pi's catalog, which re-reads the
   // writable agent/ config (KOBE-165). A thread's model choice goes through `run.start`
-  // (config.model, applied by kobe-models), never through a pi.command.
+  // (config.model, applied by kaiju-models), never through a pi.command.
   z.strictObject({
     id: piId,
     type: z.literal("set_thinking_level"),
@@ -59,7 +59,7 @@ export const piBridgeCommandSchema = z.discriminatedUnion("type", [
 ]);
 export type PiBridgeCommand = z.infer<typeof piBridgeCommandSchema>;
 
-/** The `prompt` / `steer` / `follow_up` command shapes kobe-sandbox-agent writes to Pi itself. */
+/** The `prompt` / `steer` / `follow_up` command shapes kaiju-sandbox-agent writes to Pi itself. */
 export const piPromptCommandSchema = z.strictObject({
   id: piId.optional(),
   type: z.enum(["prompt", "steer", "follow_up"]),

@@ -12,7 +12,7 @@ ARG NPM_VERSION=12.2.2
 # Init for PID 1 (reaps orphaned tool processes, forwards signals). MIT ("Expat").
 ARG TINI_VERSION=0.19.0-3+b8
 
-# kobe-sandbox-agent, built and deployed with production dependencies only (ships dist/ only).
+# kaiju-sandbox-agent, built and deployed with production dependencies only (ships dist/ only).
 FROM ${NODE_IMAGE} AS agent
 ARG PNPM_VERSION
 RUN npm install -g pnpm@${PNPM_VERSION}
@@ -24,7 +24,7 @@ RUN pnpm install --offline --frozen-lockfile \
  && pnpm turbo run build --filter=@kaiju/sandbox-agent... \
  && pnpm --filter=@kaiju/sandbox-agent deploy --prod --legacy /out
 
-# kobe-runas (KOBE-71): the one privileged file in the image. Starts each Pi process (and so the
+# kaiju-runas (KOBE-71): the one privileged file in the image. Starts each Pi process (and so the
 # tools it runs) under its own uid; static, so the runtime image needs no compiler.
 # Linked statically against musl (MIT, KOBE-375) instead of glibc (LGPL): Debian's musl-gcc, the
 # kernel UAPI headers (linux/, asm/; libc-independent) and only musl's start files and libc.a,
@@ -34,7 +34,7 @@ FROM ${PYTHON_IMAGE} AS runas
 RUN apt-get update \
  && apt-get install -y --no-install-recommends gcc musl-tools linux-libc-dev \
  && rm -rf /var/lib/apt/lists/*
-COPY images/sandbox/runas/kobe-runas.c /src/kobe-runas.c
+COPY images/sandbox/runas/kaiju-runas.c /src/kaiju-runas.c
 RUN mkdir -p /out /uapi \
  && ln -s /usr/include/linux /usr/include/asm-generic /uapi/ \
  && triplet="$(gcc -dumpmachine)" \
@@ -42,8 +42,8 @@ RUN mkdir -p /out /uapi \
  && musl="/usr/lib/${triplet%-gnu}-musl" \
  && musl-gcc -std=c11 -O2 -Wall -Wextra -Werror -isystem /uapi -static-pie -fPIE \
       -D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wl,-z,relro,-z,now \
-      -nostartfiles -nodefaultlibs -o /out/kobe-runas \
-      "$musl/rcrt1.o" "$musl/crti.o" /src/kobe-runas.c -lc "$musl/crtn.o"
+      -nostartfiles -nodefaultlibs -o /out/kaiju-runas \
+      "$musl/rcrt1.o" "$musl/crti.o" /src/kaiju-runas.c -lc "$musl/crtn.o"
 
 # Node runtime with a pinned npm, and Pi 1.4.x from its lockfile (spec D13). Dependency install
 # scripts are not run (Pi works without them; they would run as root at build time).
@@ -86,57 +86,57 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
  && ln -s /opt/pi/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js /usr/local/bin/pi
 
-COPY --from=agent /out/dist /opt/kobe/sandbox-agent/dist
-COPY --from=agent /out/node_modules /opt/kobe/sandbox-agent/node_modules
-COPY --from=agent /out/package.json /opt/kobe/sandbox-agent/package.json
-COPY images/sandbox/entrypoint.sh /opt/kobe/entrypoint.sh
-COPY --from=runas /out/kobe-runas /opt/kobe/bin/kobe-runas
-COPY images/sandbox/runas/kobe-reclaim.sh /opt/kobe/bin/kobe-reclaim
-# kobe-policy (KOBE-36): the Pi extension that asks the server about every tool call. Loaded by the
+COPY --from=agent /out/dist /opt/kaiju/sandbox-agent/dist
+COPY --from=agent /out/node_modules /opt/kaiju/sandbox-agent/node_modules
+COPY --from=agent /out/package.json /opt/kaiju/sandbox-agent/package.json
+COPY images/sandbox/entrypoint.sh /opt/kaiju/entrypoint.sh
+COPY --from=runas /out/kaiju-runas /opt/kaiju/bin/kaiju-runas
+COPY images/sandbox/runas/kaiju-reclaim.sh /opt/kaiju/bin/kaiju-reclaim
+# kaiju-policy (KOBE-36): the Pi extension that asks the server about every tool call. Loaded by the
 # agent with --extension, last; root-owned and read-only so sandbox code cannot replace it. Only the
 # compiled .js files (it imports nothing but node builtins and its own files).
-COPY --from=agent /out/dist/kobe-policy/*.js /opt/kobe/pi-extensions/kobe-policy/
-# kobe-models (KOBE-41): the Pi extension that serves the run's model through the Kaiju model
-# gateway with the sandbox's session token. Loaded right before kobe-policy; root-owned and
+COPY --from=agent /out/dist/kaiju-policy/*.js /opt/kaiju/pi-extensions/kaiju-policy/
+# kaiju-models (KOBE-41): the Pi extension that serves the run's model through the Kaiju model
+# gateway with the sandbox's session token. Loaded right before kaiju-policy; root-owned and
 # read-only; imports node builtins, Pi's own pi-ai and its own files only.
-COPY --from=agent /out/dist/kobe-models/*.js /opt/kobe/pi-extensions/kobe-models/
-# kobe-tools (KOBE-128): the Pi extension that registers create_artifact / update_artifact and talks
-# to the agent over fd 4. Loaded before kobe-policy; root-owned and read-only like it; node builtins
+COPY --from=agent /out/dist/kaiju-models/*.js /opt/kaiju/pi-extensions/kaiju-models/
+# kaiju-tools (KOBE-128): the Pi extension that registers create_artifact / update_artifact and talks
+# to the agent over fd 4. Loaded before kaiju-policy; root-owned and read-only like it; node builtins
 # and its own files only. The env var turns it on (and the `artifacts` capability with it).
-COPY --from=agent /out/dist/kobe-tools/*.js /opt/kobe/pi-extensions/kobe-tools/
-ENV KAIJU_TOOLS_EXTENSION=/opt/kobe/pi-extensions/kobe-tools/index.js
-# kobe-exec (KOBE-167): the Pi extension that replaces Pi's seven built-in tools with ones that run
+COPY --from=agent /out/dist/kaiju-tools/*.js /opt/kaiju/pi-extensions/kaiju-tools/
+ENV KAIJU_TOOLS_EXTENSION=/opt/kaiju/pi-extensions/kaiju-tools/index.js
+# kaiju-exec (KOBE-167): the Pi extension that replaces Pi's seven built-in tools with ones that run
 # in an executor process under the Pi identity's partner uid (the agent's dist/exec/executor, read
-# by those uids), over fd 5. Loaded right before kobe-policy; root-owned and read-only like it;
+# by those uids), over fd 5. Loaded right before kaiju-policy; root-owned and read-only like it;
 # node builtins, Pi's own package and its own files only. KAIJU_TOOL_EXECUTOR (the pod spec, from
 # the chart's sandbox.toolExecutor.enabled) switches the routing on or off per install.
-COPY --from=agent /out/dist/kobe-exec/*.js /opt/kobe/pi-extensions/kobe-exec/
-ENV KAIJU_EXEC_EXTENSION=/opt/kobe/pi-extensions/kobe-exec/index.js
+COPY --from=agent /out/dist/kaiju-exec/*.js /opt/kaiju/pi-extensions/kaiju-exec/
+ENV KAIJU_EXEC_EXTENSION=/opt/kaiju/pi-extensions/kaiju-exec/index.js
 # Egress for Pi's tools (KOBE-39): the BASH_ENV script that turns the agent's rotating egress
 # token file into HTTPS_PROXY for each bash tool call. Root-owned and read-only: it runs in every
 # tool's shell, so sandbox code must not be able to change it.
-COPY images/sandbox/egress-env.sh /opt/kobe/egress-env.sh
+COPY images/sandbox/egress-env.sh /opt/kaiju/egress-env.sh
 # Notebooks (KOBE-464, docs/specs/notebooks.md NB10): the bridge the agent starts per thread kernel,
 # under the kernel's own uid, over stdio. Root-owned and read-only like the extensions; it starts
 # ipykernel with the ZeroMQ ipc transport (unix sockets in a private directory, no TCP port).
-COPY images/sandbox/kernel/kobe-kernel-bridge.py /opt/kobe/kernel/kobe-kernel-bridge.py
-ENV KAIJU_KERNEL_BRIDGE=/opt/kobe/kernel/kobe-kernel-bridge.py
+COPY images/sandbox/kernel/kaiju-kernel-bridge.py /opt/kaiju/kernel/kaiju-kernel-bridge.py
+ENV KAIJU_KERNEL_BRIDGE=/opt/kaiju/kernel/kaiju-kernel-bridge.py
 # The former built-in gallery skills (KOBE-88) are Kaiju-published catalog skills (KOBE-317): the
 # server ships them (services/server/builtin-skills) and each run fetches them as skill bundles,
 # so the image carries none. Their helper scripts run on the Python stack above.
 
-# Users (KOBE-71): `kobe` (1000) runs kobe-sandbox-agent; group `kobe` (1000) is also the shared
+# Users (KOBE-71): `kobe` (1000) runs kaiju-sandbox-agent; group `kobe` (1000) is also the shared
 # /workspace group (the pod's fsGroup). `kobe-agent` (1001) is a group only the agent has (pod
-# supplementalGroups): it alone may execute kobe-runas. `kobe-pi-<n>` (2000+n, own group each) are
+# supplementalGroups): it alone may execute kaiju-runas. `kobe-pi-<n>` (2000+n, own group each) are
 # the Pi identities: each Pi process and its tools run as one of them (the pod gives the agent
 # their groups too, so it can hand a Pi its private runtime directory). `kobe-tool-<n>` (3000+n,
 # own group each) are their partner (tool) uids (KOBE-166, docs/design/paired-tool-uid.md): n pairs
 # with `kobe-pi-<n>`, shares the workspace group 1000 only, and is in no group of the Pi's.
-# /workspace is the persistent volume, /opt/kobe/pi-extensions the root-owned Pi extensions, /run/kobe-agent the
-# agent-only directory the pod mounts the bootstrap token under, /run/kobe-pi the mount point of
+# /workspace is the persistent volume, /opt/kaiju/pi-extensions the root-owned Pi extensions, /run/kaiju-agent the
+# agent-only directory the pod mounts the bootstrap token under, /run/kaiju-pi the mount point of
 # the volume the agent creates each Pi's private runtime directory in (KOBE-41/71).
 # Setuid/setgid bits are stripped so sandbox code has no privilege-escalation helpers; the only
-# privileged file is kobe-runas (file capabilities setuid+setgid, executable by `kobe-agent` only).
+# privileged file is kaiju-runas (file capabilities setuid+setgid, executable by `kobe-agent` only).
 RUN groupadd --gid 1000 kobe \
  && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/kobe --shell /bin/bash kobe \
  && groupadd --gid 1001 kobe-agent \
@@ -152,27 +152,27 @@ RUN groupadd --gid 1000 kobe \
     done \
  && git config --system --add safe.directory /workspace \
  && git config --system --add safe.directory '/workspace/*' \
- && mkdir -p /workspace /run/kobe-agent /run/kobe-pi \
- && chown 1000:1001 /run/kobe-agent && chmod 0700 /run/kobe-agent \
- && chmod 0555 /opt/kobe/entrypoint.sh \
- && chown 0:0 /opt/kobe/egress-env.sh && chmod 0444 /opt/kobe/egress-env.sh \
- && chown -R 0:0 /opt/kobe/kernel && chmod 0444 /opt/kobe/kernel/kobe-kernel-bridge.py \
- && chmod 0555 /opt/kobe/kernel \
- && chown -R 0:0 /opt/kobe/pi-extensions \
- && chmod 0444 /opt/kobe/pi-extensions/kobe-policy/*.js /opt/kobe/pi-extensions/kobe-models/*.js /opt/kobe/pi-extensions/kobe-tools/*.js /opt/kobe/pi-extensions/kobe-exec/*.js \
- && chmod 0555 /opt/kobe/pi-extensions /opt/kobe/pi-extensions/kobe-policy /opt/kobe/pi-extensions/kobe-models /opt/kobe/pi-extensions/kobe-tools /opt/kobe/pi-extensions/kobe-exec \
+ && mkdir -p /workspace /run/kaiju-agent /run/kaiju-pi \
+ && chown 1000:1001 /run/kaiju-agent && chmod 0700 /run/kaiju-agent \
+ && chmod 0555 /opt/kaiju/entrypoint.sh \
+ && chown 0:0 /opt/kaiju/egress-env.sh && chmod 0444 /opt/kaiju/egress-env.sh \
+ && chown -R 0:0 /opt/kaiju/kernel && chmod 0444 /opt/kaiju/kernel/kaiju-kernel-bridge.py \
+ && chmod 0555 /opt/kaiju/kernel \
+ && chown -R 0:0 /opt/kaiju/pi-extensions \
+ && chmod 0444 /opt/kaiju/pi-extensions/kaiju-policy/*.js /opt/kaiju/pi-extensions/kaiju-models/*.js /opt/kaiju/pi-extensions/kaiju-tools/*.js /opt/kaiju/pi-extensions/kaiju-exec/*.js \
+ && chmod 0555 /opt/kaiju/pi-extensions /opt/kaiju/pi-extensions/kaiju-policy /opt/kaiju/pi-extensions/kaiju-models /opt/kaiju/pi-extensions/kaiju-tools /opt/kaiju/pi-extensions/kaiju-exec \
  && chown kobe:kobe /workspace \
  && find / -xdev -perm /6000 -type f -exec chmod a-s {} + \
- && chown 0:1001 /opt/kobe/bin/kobe-runas && chmod 0750 /opt/kobe/bin/kobe-runas \
- && chown 0:0 /opt/kobe/bin/kobe-reclaim && chmod 0555 /opt/kobe/bin/kobe-reclaim \
- && chmod 0755 /opt/kobe/bin \
- && setcap cap_setuid,cap_setgid=ep /opt/kobe/bin/kobe-runas \
+ && chown 0:1001 /opt/kaiju/bin/kaiju-runas && chmod 0750 /opt/kaiju/bin/kaiju-runas \
+ && chown 0:0 /opt/kaiju/bin/kaiju-reclaim && chmod 0555 /opt/kaiju/bin/kaiju-reclaim \
+ && chmod 0755 /opt/kaiju/bin \
+ && setcap cap_setuid,cap_setgid=ep /opt/kaiju/bin/kaiju-runas \
  && chmod 0644 /etc/passwd /etc/group && chmod 0640 /etc/shadow
 
 # Kaiju's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
-COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kobe/
+COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kaiju/
 USER 1000:1000
 WORKDIR /workspace
 # tini is PID 1; the entrypoint disables core dumps and runs node with --disable-sigusr1. Pod specs
 # must set `args` only, never `command` (that would bypass all three).
-ENTRYPOINT ["/usr/bin/tini", "--", "/opt/kobe/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/opt/kaiju/entrypoint.sh"]

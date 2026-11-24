@@ -11,7 +11,7 @@ import {
   type RunSemanticMemoryItem,
 } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { MARKER_BEGIN, MARKER_END, sanitizeForStorage } from "../kobe-tools/memory-fence.js";
+import { MARKER_BEGIN, MARKER_END, sanitizeForStorage } from "../kaiju-tools/memory-fence.js";
 import {
   KNOWN_HEADER,
   PICKS_HEADER,

@@ -19,8 +19,8 @@ import { sha256HexSchema, workspaceOriginSchema, workspacePathSchema } from "./w
  *
  * Push-then-share (normative). The server only has what the sandbox pushed through workspace sync
  * (sandbox-wire/workspace-sync.ts); it never reads the sandbox's disk for a share. Sequence:
- *  1. `share_file` runs through kobe-policy `policy.check` like any tool (`primary_arg` `/path`).
- *  2. kobe-tools sends `{op:"file.share"}` on fd 4 (`KAIJU_TOOLS_FD`, artifacts.ts).
+ *  1. `share_file` runs through kaiju-policy `policy.check` like any tool (`primary_arg` `/path`).
+ *  2. kaiju-tools sends `{op:"file.share"}` on fd 4 (`KAIJU_TOOLS_FD`, artifacts.ts).
  *  3. The agent normalizes `input.path` to a workspace path (strip `/workspace/`), refuses paths
  *     outside the workspace, in `.kobe/`, or not a regular file, then **pushes that path**: hash,
  *     blob upload and workspace `commit` (a no-op commit is fine when the server already has the
@@ -246,7 +246,7 @@ export type ShareFileWorkspaceRef = z.infer<typeof shareFileWorkspaceRefSchema>;
 export const sharedFileSchema = uploadResponseSchema.extend({ sha256: sha256HexSchema });
 export type SharedFile = z.infer<typeof sharedFileSchema>;
 
-/** Success fields shared by the `file.share_result` frame and the kobe-tools response (flat). */
+/** Success fields shared by the `file.share_result` frame and the kaiju-tools response (flat). */
 export const fileShareOkFields = { ok: z.literal(true), ...sharedFileSchema.shape } as const;
 
 /** Server answer codes; open on the sandbox side (any `^[a-z][a-z0-9_]{0,63}$` decodes). */
@@ -267,7 +267,7 @@ export const fileShareCallShape = {
   input: shareFileInputSchema,
 } as const;
 
-/** kobe-tools request (fd 4) for `share_file`; member of `kaijuToolsRequestSchema`. */
+/** kaiju-tools request (fd 4) for `share_file`; member of `kaijuToolsRequestSchema`. */
 export const fileShareToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("file.share"),

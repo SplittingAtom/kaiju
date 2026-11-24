@@ -137,7 +137,7 @@ async function startOf(w: World, thread: string, ws?: FakeWorkspace) {
   return { run, ws: sandbox, frame: await sandbox.started(run) };
 }
 
-const storePath = (hash: string) => `/run/kobe-skills/store/sk-${hash}/SKILL.md`;
+const storePath = (hash: string) => `/run/kaiju-skills/store/sk-${hash}/SKILL.md`;
 
 function readCall(ws: FakeWorkspace, s: RunStart, id: string, path: string) {
   ws.event(s, { type: "tool_execution_start", toolCallId: id, toolName: "read", args: { path } });

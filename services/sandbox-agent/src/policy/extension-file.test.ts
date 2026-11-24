@@ -18,7 +18,7 @@ describe("checkPolicyExtensionFile", () => {
   });
 
   it("refuses a missing file", async () => {
-    await expect(checkPolicyExtensionFile("/nonexistent/kobe-policy/index.js")).rejects.toThrow(
+    await expect(checkPolicyExtensionFile("/nonexistent/kaiju-policy/index.js")).rejects.toThrow(
       /not found/,
     );
   });

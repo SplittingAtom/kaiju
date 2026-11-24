@@ -77,12 +77,12 @@ if (ask === "ask") {
 }
 JS
   egress_chat() { # content [thread-id|-] [ask] → key=value lines
-    $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- env KAIJU_E2E_DOMAIN="$UPSTREAM_HOST" \
+    $KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- env KAIJU_E2E_DOMAIN="$UPSTREAM_HOST" \
       node --input-type=module -e "$EGRESS_JS" "$E2E_TEAM_ID" "$1" 300000 "${2:--}" "${3:-}" 2>&1 | grep -E '^[a-z_]+=' || true
   }
   # Sandbox tools run without approval unless a rule asks (KOBE-37's story left an ask rule on bash);
   # the upstream is in the ceiling (KOBE-38's story) but not enabled for the team.
-  psql_kobe "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';
+  psql_kaiju "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';
     DELETE FROM team_egress WHERE team_id = '$E2E_TEAM_ID' AND domain = '$UPSTREAM_HOST';
     INSERT INTO egress_domains (domain, in_ceiling) VALUES ('$UPSTREAM_HOST', true)
       ON CONFLICT (domain) DO UPDATE SET in_ceiling = true;
@@ -101,7 +101,7 @@ JS
   contains "the blocked request reached the run as egress.blocked with request access" \
     "^blocked=.*${UPSTREAM_HOST}:true" "$first"
   contains "the proxy attributed the blocked request to the thread (BASH_ENV proxy user = thread id)" '^[1-9][0-9]*$' \
-    "$(psql_kobe "SELECT count(*) FROM events WHERE team_id = '$E2E_TEAM_ID' AND kind = 'egress.blocked'
+    "$(psql_kaiju "SELECT count(*) FROM events WHERE team_id = '$E2E_TEAM_ID' AND kind = 'egress.blocked'
       AND ref->>'domain' = '$UPSTREAM_HOST' AND ref->>'thread_id' = '${e_thread:-none}'")"
   contains "the member asked for access from the thread (pending)" '^request=201:pending$' "$first"
   e_request=$(printf '%s\n' "$first" | sed -n 's/^request_id=//p')
@@ -111,7 +111,7 @@ JS
   contains "the team admin approves the request" '^200 \{"request":\{.*"status":"approved"' \
     "$(as_owner "POST /v1/team/egress/requests/${e_request:-none} {\"decision\":\"approve\"}")"
   contains "the approval enabled the domain for the team" '^1$' \
-    "$(psql_kobe "SELECT count(*) FROM team_egress WHERE team_id = '$E2E_TEAM_ID' AND domain = '$UPSTREAM_HOST'")"
+    "$(psql_kaiju "SELECT count(*) FROM team_egress WHERE team_id = '$E2E_TEAM_ID' AND domain = '$UPSTREAM_HOST'")"
   # A first run that never ended still holds the thread: the second would only queue behind it
   # and wait out another stream timeout (KOBE-415). Stop it so the second runs.
   e_first_run=$(printf '%s\n' "$first" | sed -n 's/^run=//p')
@@ -123,7 +123,7 @@ JS
   printf '     after approval: %s\n' "$(printf '%s' "$second" | tr '\n' ' ' | cut -c1-400)"
   contains "the same tool succeeds after the approval (Gate 2)" '^text=.*s_server' "$second"
   contains "request access is audited (created, decided)" '^egress.request.created,egress.request.decided$' \
-    "$(psql_kobe "SELECT string_agg(DISTINCT action, ',' ORDER BY action) FROM audit_log
+    "$(psql_kaiju "SELECT string_agg(DISTINCT action, ',' ORDER BY action) FROM audit_log
       WHERE team_id = '$E2E_TEAM_ID' AND action LIKE 'egress.request.%'")"
 
   # Header injection: the team admin sets a header for the (now enabled) upstream.
@@ -133,7 +133,7 @@ JS
   else fail "the header value is never returned by the API"; fi
   if [[ -n "${EGRESS_CLIENT:-}" ]]; then
     h_token=$(mint kobe.egress-proxy)
-    h_proxy="http://kobe:$h_token@egress-proxy.kobe.internal:80"
+    h_proxy="http://kaiju:$h_token@egress-proxy.kaiju.internal:80"
     hdr=$($KUBECTL -n "$TEAM_NS" exec "$EGRESS_CLIENT" -c client -- sh -c "
       for i in \$(seq 1 20); do
         c=\$(curl -sk -m 10 -o /dev/null -w '%{http_connect}' -x '$h_proxy' https://$UPSTREAM_HOST/)
@@ -146,10 +146,10 @@ JS
     fail "header injection checks need the egress client pod (KOBE-38 section)"
   fi
   contains "header changes are audited by name only" '^1$' \
-    "$(psql_kobe "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'egress.header.set'
+    "$(psql_kaiju "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'egress.header.set'
       AND target->'headerNames' = '[\"X-E2E-Key\"]' AND target::text NOT LIKE '%e2e-header-secret-value%'")"
   contains "the header value is stored sealed (never in clear)" '^0$' \
-    "$(psql_kobe "SELECT count(*) FROM team_egress WHERE headers_sealed LIKE '%e2e-header-secret-value%'")"
+    "$(psql_kaiju "SELECT count(*) FROM team_egress WHERE headers_sealed LIKE '%e2e-header-secret-value%'")"
   expect "the team admin removes the header" '^204 ' \
     "$(as_owner "DELETE /v1/team/egress/domains/$UPSTREAM_HOST/headers")"
 elif [[ "${CI:-}" == "true" ]]; then

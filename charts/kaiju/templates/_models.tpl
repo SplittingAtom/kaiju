@@ -1,0 +1,191 @@
+{{/*
+Model gateway values with defaults filled in, so `helm upgrade --reuse-values` from a release that
+predates these keys still renders (KOBE-40). Keep in sync with values.yaml.
+*/}}
+{{- define "kaiju.bifrostValues" -}}
+{{- $defaults := dict
+  "image" (dict "repository" "docker.io/maximhq/bifrost" "tag" "v2.5.1" "digest" "sha256:5ec9873acaf1687556b6e4dd854b92b539d9debf87a5a683b66338648b84d3c8")
+  "replicas" 1
+  "persistence" (dict "enabled" true "size" "1Gi" "storageClass" "")
+  "keysSecret" ""
+  "allowUnsafeProviderEndpoints" false
+  "networkPolicy" (dict "restrictEgress" true "allowedPorts" (list 443) "extraEgress" (list))
+  "resources" (dict "requests" (dict "cpu" "100m" "memory" "128Mi") "limits" (dict "cpu" "1" "memory" "512Mi")) -}}
+{{- mustMergeOverwrite $defaults (deepCopy (.Values.bifrost | default dict)) | toJson -}}
+{{- end -}}
+
+{{- define "kaiju.modelGatewayValues" -}}
+{{- $defaults := dict
+  "replicas" 2
+  "resources" (dict "requests" (dict "cpu" "50m" "memory" "256Mi") "limits" (dict "cpu" "1" "memory" "512Mi"))
+  "limits" (dict "maxBodyBytes" 8388608 "inflightBytes" 134217728 "inflightBytesPerSandbox" 33554432 "callsPerSandbox" 16 "calls" 1024 "idleTimeoutSeconds" 300 "requestBurst" 60 "requestsPerSecond" 10)
+  "cacheTtlSeconds" 5
+  "networkPolicy" (dict "restrictEgress" true "databasePeers" (list) "databasePort" 5432 "extraEgress" (list))
+  "database" (dict "poolMax" 10 "ratePoolMax" 2) -}}
+{{- mustMergeOverwrite $defaults (deepCopy (.Values.modelGateway | default dict)) | toJson -}}
+{{- end -}}
+
+{{/* Secret holding the model gateway's secrets (bifrost.keysSecret, or generated and kept). */}}
+{{- define "kaiju.modelKeysSecretName" -}}
+{{- $b := include "kaiju.bifrostValues" . | fromJson -}}
+{{- default (printf "%s-model-keys" (include "kaiju.fullname" .)) $b.keysSecret -}}
+{{- end -}}
+
+{{/* Keys of that Secret: who gets which is in the env helpers below. */}}
+{{- define "kaiju.modelKeyNames" -}}
+{{- toJson (list "bifrost-admin-password" "bifrost-encryption-key" "provider-keys" "virtual-keys") -}}
+{{- end -}}
+
+{{/* The model-gateway shim's in-cluster URL (Service port 80): the server's own calls (KOBE-219). */}}
+{{- define "kaiju.modelGatewayUrl" -}}
+{{- printf "http://%s-model-gateway" (include "kaiju.fullname" .) -}}
+{{- end -}}
+
+{{- define "kaiju.bifrostUrl" -}}
+{{- printf "http://%s-bifrost:8080" (include "kaiju.fullname" .) -}}
+{{- end -}}
+
+{{- define "kaiju.bifrostImage" -}}
+{{- $b := include "kaiju.bifrostValues" . | fromJson -}}
+{{- if $b.image.digest -}}
+{{- printf "%s:%s@%s" $b.image.repository $b.image.tag $b.image.digest -}}
+{{- else -}}
+{{- printf "%s:%s" $b.image.repository $b.image.tag -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "kaiju.modelKeyRef" -}}
+valueFrom:
+  secretKeyRef:
+    name: {{ include "kaiju.modelKeysSecretName" .root }}
+    key: {{ .key }}
+    {{- if .optional }}
+    optional: true
+    {{- end }}
+{{- end -}}
+
+{{/* A memory quantity (Ki/Mi/Gi/Ti, k/K/M/G/T, m or plain bytes) in bytes, for sizing checks. */}}
+{{- define "kaiju.memoryBytes" -}}
+{{- $q := toString . -}}
+{{- $n := regexFind "^[0-9.]+" $q | float64 -}}
+{{- $unit := trimPrefix (regexFind "^[0-9.]+" $q) $q -}}
+{{- $mult := dict "" 1.0 "Ki" 1024.0 "Mi" 1048576.0 "Gi" 1073741824.0 "Ti" 1099511627776.0 "m" 0.001 "k" 1000.0 "K" 1000.0 "M" 1000000.0 "G" 1000000000.0 "T" 1000000000000.0 -}}
+{{- if not (hasKey $mult $unit) -}}{{- fail (printf "unsupported memory quantity %q" $q) -}}{{- end -}}
+{{- mulf $n (index $mult $unit) | int64 -}}
+{{- end -}}
+
+{{/*
+Server env (services/server/src/models/config.ts): Bifrost's admin API (it reconciles Bifrost) and
+both sealing secrets, and the model gateway for its own calls after a run (KOBE-219 auto-titles,
+with a server-call token from the gateway session key it already has). The scheduler gets none of
+this.
+*/}}
+{{- define "kaiju.serverModelsEnv" -}}
+- name: KAIJU_BIFROST_URL
+  value: {{ include "kaiju.bifrostUrl" . | quote }}
+- name: KAIJU_MODEL_GATEWAY_URL
+  value: {{ include "kaiju.modelGatewayUrl" . | quote }}
+- name: KAIJU_BIFROST_ADMIN_USERNAME
+  value: kobe
+- name: KAIJU_BIFROST_ADMIN_PASSWORD
+  {{- include "kaiju.modelKeyRef" (dict "root" . "key" "bifrost-admin-password") | nindent 2 }}
+- name: KAIJU_MODELS_PROVIDER_KEY_SECRET
+  {{- include "kaiju.modelKeyRef" (dict "root" . "key" "provider-keys") | nindent 2 }}
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET
+  {{- include "kaiju.modelKeyRef" (dict "root" . "key" "virtual-keys") | nindent 2 }}
+# Rotation: the previous secrets, if the Secret holds them (values sealed with them still open
+# and are re-sealed by the sync).
+- name: KAIJU_MODELS_PROVIDER_KEY_SECRET_PREVIOUS
+  {{- include "kaiju.modelKeyRef" (dict "root" . "key" "provider-keys-previous" "optional" true) | nindent 2 }}
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS
+  {{- include "kaiju.modelKeyRef" (dict "root" . "key" "virtual-keys-previous" "optional" true) | nindent 2 }}
+- name: KAIJU_MODELS_ALLOW_UNSAFE_ENDPOINTS
+  value: {{ (include "kaiju.bifrostValues" . | fromJson).allowUnsafeProviderEndpoints | toString | quote }}
+{{- include "kaiju.embeddingsServerEnv" . }}
+{{- end -}}
+
+{{/*
+Model gateway shim env (services/model-gateway/src/config.ts): the database (app role), the
+model-gateway public key only (session, run and server-call tokens: verify only, KOBE-513/521),
+the trace-span secret (span id remapping, budget salt; authorises nothing), the virtual-key secret
+only (never provider keys, Bifrost's admin password or any key that mints a credential).
+*/}}
+{{- define "kaiju.modelGatewayEnv" -}}
+{{- $g := include "kaiju.modelGatewayValues" . | fromJson -}}
+{{ include "kaiju.databaseEnv" . }}
+- name: KAIJU_DB_POOL_MAX
+  value: {{ int $g.database.poolMax | quote }}
+- name: KAIJU_MODEL_GATEWAY_RATE_POOL_MAX
+  value: {{ int $g.database.ratePoolMax | quote }}
+{{ include "kaiju.sessionVerifyKeyEnv" (dict "root" . "env" "MODEL_GATEWAY" "aud" "model-gateway") }}
+- name: KAIJU_TRACE_SPAN_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "kaiju.sessionKeysSecretName" . }}
+      key: trace-span
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET
+  {{- include "kaiju.modelKeyRef" (dict "root" . "key" "virtual-keys") | nindent 2 }}
+- name: KAIJU_MODELS_VIRTUAL_KEY_SECRET_PREVIOUS
+  {{- include "kaiju.modelKeyRef" (dict "root" . "key" "virtual-keys-previous" "optional" true) | nindent 2 }}
+- name: KAIJU_BIFROST_URL
+  value: {{ include "kaiju.bifrostUrl" . | quote }}
+- name: KAIJU_MODEL_GATEWAY_MAX_BODY_BYTES
+  value: {{ int64 $g.limits.maxBodyBytes | quote }}
+- name: KAIJU_MODEL_GATEWAY_INFLIGHT_BYTES
+  value: {{ int64 $g.limits.inflightBytes | quote }}
+- name: KAIJU_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX
+  value: {{ int64 $g.limits.inflightBytesPerSandbox | quote }}
+- name: KAIJU_MODEL_GATEWAY_RATE_BURST
+  value: {{ int $g.limits.requestBurst | quote }}
+- name: KAIJU_MODEL_GATEWAY_RATE_PER_SECOND
+  value: {{ int $g.limits.requestsPerSecond | quote }}
+- name: KAIJU_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX
+  value: {{ int $g.limits.callsPerSandbox | quote }}
+- name: KAIJU_MODEL_GATEWAY_MAX_CALLS
+  value: {{ int $g.limits.calls | quote }}
+- name: KAIJU_MODEL_GATEWAY_IDLE_TIMEOUT_MS
+  value: {{ mul (int $g.limits.idleTimeoutSeconds) 1000 | quote }}
+- name: KAIJU_MODEL_GATEWAY_CACHE_TTL_MS
+  value: {{ mul (int $g.cacheTtlSeconds) 1000 | quote }}
+- name: KAIJU_MODEL_GATEWAY_REQUIRE_RUN_TOKEN
+  value: {{ ternary "true" "false" (default false $g.requireRunToken) | quote }}
+{{- end -}}
+
+{{/*
+Bifrost's config.json (no secrets: values come from env). Kaiju owns this Bifrost: the server
+pushes providers, keys, the customer/team/virtual-key hierarchy (KOBE-40). Inference requires a
+virtual key; no direct provider keys from callers; no request/response logging (prompts never
+stored in Bifrost); admin API behind the admin password.
+*/}}
+{{- define "kaiju.bifrostConfig" -}}
+{{- toPrettyJson (dict
+  "encryption_key" "env.BIFROST_ENCRYPTION_KEY"
+  "client" (dict
+    "enforce_auth_on_inference" true
+    "allow_direct_keys" false
+    "enable_logging" false
+    "disable_content_logging" true
+    "allow_per_request_content_storage_override" false
+    "allow_per_request_raw_override" false
+    "allowed_origins" (list))
+  "governance" (dict "auth_config" (dict
+    "admin_username" "env.BIFROST_ADMIN_USERNAME"
+    "admin_password" "env.BIFROST_ADMIN_PASSWORD"
+    "is_enabled" true))
+  "config_store" (dict "enabled" true "type" "sqlite" "config" (dict "path" "/app/data/config.db"))
+  "logs_store" (dict "enabled" false)) -}}
+{{- end -}}
+
+
+{{/*
+The shim buffers request bodies up to limits.inflightBytes per replica: its memory limit must
+cover that plus Node's own needs (256 Mi), or one sandbox's uploads could OOM it for every team.
+*/}}
+{{- define "kaiju.checkModelGatewayMemory" -}}
+{{- $g := include "kaiju.modelGatewayValues" . | fromJson -}}
+{{- $limit := include "kaiju.memoryBytes" $g.resources.limits.memory | int64 -}}
+{{- $need := add (int64 $g.limits.inflightBytes) 268435456 -}}
+{{- if lt $limit $need -}}
+{{- fail (printf "modelGateway.resources.limits.memory (%s) must be at least modelGateway.limits.inflightBytes + 256Mi (%d bytes)" (toString $g.resources.limits.memory) $need) -}}
+{{- end -}}
+{{- end -}}

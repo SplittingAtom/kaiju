@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { MARKER_BEGIN, MARKER_END } from "../kobe-tools/memory-fence.js";
+import { MARKER_BEGIN, MARKER_END } from "../kaiju-tools/memory-fence.js";
 import { memoryRunFileContent, threadFenceNonce } from "./context.js";
 import { MemoryContextFile } from "./context-file.js";
 import { VIEWING_HEADER, viewingBegin, viewingContextText, viewingEnd } from "./viewing-context.js";

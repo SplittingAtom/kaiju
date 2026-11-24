@@ -8,7 +8,7 @@ import { frame } from "./wire.js";
 
 /**
  * Sandbox -> server (KOBE-127, artifacts.ts), behind hello capability `artifacts`: the
- * `create_artifact` / `update_artifact` call kobe-policy let through. The server answers with
+ * `create_artifact` / `update_artifact` call kaiju-policy let through. The server answers with
  * `artifact.result` for the same `request_id`. At most 1 MiB (own entry in
  * {@link SANDBOX_FRAME_MAX_BYTES_BY_TYPE}); the server refuses it from a connection that did not
  * announce the capability and checks it against what it allowed for `tool_call_id` (KOBE-129).
@@ -26,7 +26,7 @@ export const artifactPutFrameSchema = z.union([
 
 /**
  * Sandbox -> server (KOBE-147, files.ts), behind hello capability `files`: the `share_file` call
- * kobe-policy let through, sent AFTER the agent pushed the file through workspace sync (push-then-
+ * kaiju-policy let through, sent AFTER the agent pushed the file through workspace sync (push-then-
  * share, files.ts); `workspace` is the pushed entry the server must find unchanged. Answered by
  * `file.share_result` for the same `request_id`. A small frame (no own size entry).
  */

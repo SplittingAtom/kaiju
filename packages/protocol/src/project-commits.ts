@@ -432,7 +432,7 @@ export const projectCommitFailFields = {
   error: projectCommitFailSchema,
 } as const;
 
-/** kobe-tools request (fd 4); member of the tools request union. */
+/** kaiju-tools request (fd 4); member of the tools request union. */
 export const projectCommitToolsRequestSchema = z.strictObject({
   id: idSchema,
   op: z.literal("project.commit"),

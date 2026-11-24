@@ -238,7 +238,7 @@ describe("GitHub adapter specifics (KOBE-758)", () => {
       fake.options = { patExpiration: "2026-12-31 08:00:00 +0100" };
       const probe = await make(PAT).probe();
       expect(probe).toMatchObject({
-        actor: { kind: "token", login: "kobe-bot-test" },
+        actor: { kind: "token", login: "kaiju-bot-test" },
         capabilities: { read: "yes", create: "unknown", write: "unknown", admin: "unknown" },
         excess: [],
       });

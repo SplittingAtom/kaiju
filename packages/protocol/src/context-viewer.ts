@@ -120,7 +120,7 @@ export type ContextSource = z.infer<typeof contextSourceSchema>;
  * (the call failed, or nothing was called), so the sum is the estimate itself.
  */
 /**
- * What a `session` answer cannot hold (CV4): the per-run parts kobe-tools adds to the prompt never
+ * What a `session` answer cannot hold (CV4): the per-run parts kaiju-tools adds to the prompt never
  * reach the session, and the call's context window is not recorded there. `older_history`: the
  * session file was longer than the agent reads (its tail), and the call's context began before it.
  */

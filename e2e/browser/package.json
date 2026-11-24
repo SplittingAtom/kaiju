@@ -1,5 +1,5 @@
 {
-  "name": "kobe-browser-e2e",
+  "name": "kaiju-browser-e2e",
   "private": true,
   "license": "Apache-2.0",
   "description": "Playwright browser suite for the chat surfaces, run against a deployment (not in CI).",

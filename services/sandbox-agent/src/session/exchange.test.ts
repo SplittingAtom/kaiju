@@ -33,8 +33,8 @@ function harness(steps: Step[], opts: { file?: () => string; random?: () => numb
   const prefers: (string | null)[] = [];
   const logs: unknown[] = [];
   const client = new SessionClient({
-    serverUrl: "ws://server.kobe.internal:8081",
-    bootstrapTokenFile: "/var/run/secrets/kobe/bootstrap-token",
+    serverUrl: "ws://server.kaiju.internal:8081",
+    bootstrapTokenFile: "/var/run/secrets/kaiju/bootstrap-token",
     readFile: async () => (opts.file ?? (() => "bootstrap-token-value\n"))(),
     fetch: (async (url: string, init: RequestInit) => {
       requests.push({
@@ -78,8 +78,8 @@ function harness(steps: Step[], opts: { file?: () => string; random?: () => numb
 
 describe("sessionUrl", () => {
   it("maps the wire URL to the session endpoint on the same listener", () => {
-    expect(sessionUrl("ws://server.kobe.internal:8081")).toBe(
-      "http://server.kobe.internal:8081/v1/sandbox/session",
+    expect(sessionUrl("ws://server.kaiju.internal:8081")).toBe(
+      "http://server.kaiju.internal:8081/v1/sandbox/session",
     );
     expect(sessionUrl("wss://kaiju/x?y=1")).toBe("https://kaiju/v1/sandbox/session");
   });
@@ -90,7 +90,7 @@ describe("SessionClient (bootstrap → session tokens)", () => {
     const h = harness([json(200, grantBody(1_000_000 + 900_000))]);
     await expect(h.client.wireToken()).resolves.toBe(token("wire"));
     expect(h.requests[0]).toEqual({
-      url: "http://server.kobe.internal:8081/v1/sandbox/session",
+      url: "http://server.kaiju.internal:8081/v1/sandbox/session",
       auth: "Bearer bootstrap-token-value",
       timeout: true,
     });

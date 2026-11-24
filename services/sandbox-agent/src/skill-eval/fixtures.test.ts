@@ -53,8 +53,8 @@ describe("prepareFixtures (KOBE-325)", () => {
   });
 
   it("asks the server's sandbox listener for the path", () => {
-    expect(fixtureUrl("wss://server.kobe.internal", "a b/c.csv")).toBe(
-      "https://server.kobe.internal/v1/sandbox/skill-evals/fixtures?path=a+b%2Fc.csv",
+    expect(fixtureUrl("wss://server.kaiju.internal", "a b/c.csv")).toBe(
+      "https://server.kaiju.internal/v1/sandbox/skill-evals/fixtures?path=a+b%2Fc.csv",
     );
   });
 });

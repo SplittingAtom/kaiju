@@ -1,5 +1,5 @@
 {
-  "name": "kobe-sandbox-pi",
+  "name": "kaiju-sandbox-pi",
   "private": true,
   "description": "Pins Pi and its full dependency tree for the sandbox image (installed with npm ci)",
   "license": "Apache-2.0",

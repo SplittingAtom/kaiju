@@ -5,8 +5,8 @@ import {
 import {
   BRANCH_SUMMARY_REQUEST_UI_TITLE,
   BRANCH_SUMMARY_RESULT_UI_TITLE,
-} from "../kobe-models/branch-summary-protocol.js";
-import { RUN_TOKEN_UI_TITLE } from "../kobe-models/protocol.js";
+} from "../kaiju-models/branch-summary-protocol.js";
+import { RUN_TOKEN_UI_TITLE } from "../kaiju-models/protocol.js";
 import type { PiProcess, PiRecord } from "../pi/pi-process.js";
 import type { BranchSummaryState } from "./branch-summary-state.js";
 import { DIALOG_METHODS, MAX_PENDING_DIALOGS, type ThreadHooks } from "./thread-env.js";
@@ -70,7 +70,7 @@ export function routeUiRequest(port: UiRequestPort, pi: PiProcess, record: PiRec
 }
 
 /**
- * kobe-models asks for the run's gateway token (KOBE-118). Answered here, never relayed to the
+ * kaiju-models asks for the run's gateway token (KOBE-118). Answered here, never relayed to the
  * server: the token for the active run, else a cancel (no run, no token, an older server).
  */
 function answerRunToken(port: UiRequestPort, pi: PiProcess, record: PiRecord): void {

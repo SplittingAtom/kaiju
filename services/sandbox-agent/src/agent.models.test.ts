@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseModelFile } from "./kobe-models/protocol.js";
+import { parseModelFile } from "./kaiju-models/protocol.js";
 import type { ModelTokenSource, ModelWiring } from "./models/types.js";
 import {
   RUN,
@@ -19,7 +19,7 @@ import {
  * Model wiring through the agent (KOBE-41) with the scripted Pi: the private per-process config
  * dir, the model file (token, run id, model), its rotation, and what happens without a model.
  */
-const MODELS_EXTENSION = "/opt/kobe/pi-extensions/kobe-models/index.js";
+const MODELS_EXTENSION = "/opt/kaiju/pi-extensions/kaiju-models/index.js";
 const TOKEN_1 = "model-token-one-".padEnd(40, "1");
 const TOKEN_2 = "model-token-two-".padEnd(40, "2");
 const MODEL = {
@@ -52,7 +52,7 @@ afterEach(async () => {
 
 async function start(tokens: ModelTokenSource) {
   const models: ModelWiring = {
-    gatewayUrl: "http://model-gateway.kobe.internal:80",
+    gatewayUrl: "http://model-gateway.kaiju.internal:80",
     extension: MODELS_EXTENSION,
     tokens,
   };
@@ -96,7 +96,7 @@ describe("model wiring (KOBE-41)", () => {
     expect((await stat(launch.modelFile)).mode & 0o777).toBe(0o600);
     expect(parseModelFile(await readFile(launch.modelFile, "utf8"))).toEqual({
       v: 1,
-      gateway_url: "http://model-gateway.kobe.internal:80",
+      gateway_url: "http://model-gateway.kaiju.internal:80",
       model: { gateway_model: "openai/gpt-fake", api: "openai-completions" },
       token: TOKEN_1,
       run_id: RUN,
@@ -200,7 +200,7 @@ describe("model wiring (KOBE-41)", () => {
     await start(fakeTokens(TOKEN_1));
     const runtime = path.join(h.dir, "pi-runtime");
     await mkdir(runtime, { recursive: true });
-    // A sibling thread's tool polling /tmp/kobe-pi: it writes SYSTEM.md the moment the
+    // A sibling thread's tool polling /tmp/kaiju-pi: it writes SYSTEM.md the moment the
     // directory's agent/ appears, between mkdtemp and Pi's start. It keeps trying until the write
     // lands: the directory shows before its agent/ does, and under load that gap is wide enough
     // for a single early attempt to fail and the plant never to happen (KOBE-415).

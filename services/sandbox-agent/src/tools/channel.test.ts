@@ -121,7 +121,7 @@ describe("ToolsChannel", () => {
     const t = await setup();
     t.send("garbage");
     await t.tick();
-    expect(t.closed).toEqual(["malformed kobe-tools request"]);
+    expect(t.closed).toEqual(["malformed kaiju-tools request"]);
     expect(t.channel.closed).toBe(true);
   });
 
@@ -129,13 +129,13 @@ describe("ToolsChannel", () => {
     const t = await setup();
     t.extensionEnd.write("x".repeat(TOOLS_CHANNEL_MAX_LINE_BYTES + 1) + "\n");
     await t.tick();
-    expect(t.closed).toEqual(["oversize kobe-tools request"]);
+    expect(t.closed).toEqual(["oversize kaiju-tools request"]);
   });
 
   it("reports the close once when the extension end goes away", async () => {
     const t = await setup();
     t.extensionEnd.destroy();
     await t.tick();
-    expect(t.closed).toEqual(["kobe-tools channel closed"]);
+    expect(t.closed).toEqual(["kaiju-tools channel closed"]);
   });
 });

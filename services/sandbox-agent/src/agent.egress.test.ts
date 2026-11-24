@@ -13,7 +13,7 @@ import { RUN_2, THREAD, runStart, startHarness, until, type Harness } from "./te
  */
 const TOKEN_1 = "egress.token.one";
 const TOKEN_2 = "egress.token.two";
-const SCRIPT = "/opt/kobe/egress-env.sh";
+const SCRIPT = "/opt/kaiju/egress-env.sh";
 
 function fakeTokens(initial: string): ModelTokenSource & { rotate(token: string): void } {
   let current = initial;
@@ -50,8 +50,8 @@ interface Launch {
 
 async function start(tokens: ModelTokenSource, message = "hang"): Promise<Launch> {
   const egress: EgressWiring = {
-    proxyUrl: "http://egress-proxy.kobe.internal:80",
-    noProxy: "server.kobe.internal,localhost",
+    proxyUrl: "http://egress-proxy.kaiju.internal:80",
+    noProxy: "server.kaiju.internal,localhost",
     envScript: SCRIPT,
     tokens,
   };
@@ -66,7 +66,7 @@ describe("egress for Pi's tools (KOBE-39)", () => {
   it("gives each Pi a private token file and BASH_ENV; the token is in no variable", async () => {
     const launch = await start(fakeTokens(TOKEN_1));
     expect(launch.bashEnv).toBe(SCRIPT);
-    expect(launch.egressProxy).toBe("http://egress-proxy.kobe.internal:80");
+    expect(launch.egressProxy).toBe("http://egress-proxy.kaiju.internal:80");
     expect(launch.threadId).toBe(THREAD);
     expect(launch.env).toEqual(expect.arrayContaining(["NO_PROXY", "no_proxy"]));
     // The pod's credential-less HTTPS_PROXY is not inherited; the script builds it per shell.

@@ -9,10 +9,10 @@ import {
 import { LineSplitter, encodeJsonl } from "../jsonl.js";
 
 /**
- * Agent end of the kobe-tools channel (fd 4 of each `pi --mode rpc`; KOBE-128, shapes in packages/
- * protocol `artifacts.ts`; extension end in `kobe-tools/`). Same transport and trust notes as the
+ * Agent end of the kaiju-tools channel (fd 4 of each `pi --mode rpc`; KOBE-128, shapes in packages/
+ * protocol `artifacts.ts`; extension end in `kaiju-tools/`). Same transport and trust notes as the
  * policy channel (`policy/channel.ts`): a socket pair the agent made when it spawned Pi, nothing
- * listens, JSONL, LF-split. There is no nonce: no tool exists on the channel before kobe-policy
+ * listens, JSONL, LF-split. There is no nonce: no tool exists on the channel before kaiju-policy
  * allows its call, and the server re-checks every `artifact.put` against what it allowed (D-3).
  *
  * extension → agent: `{"id","op":"artifact.put","tool_call_id","tool","input"}` (validated with the
@@ -51,13 +51,13 @@ export class ToolsChannel {
     const splitter = new LineSplitter({
       maxLineBytes: TOOLS_CHANNEL_MAX_LINE_BYTES,
       onLine: (line) => this.#onLine(line),
-      onOversize: () => this.close("oversize kobe-tools request"),
+      onOversize: () => this.close("oversize kaiju-tools request"),
     });
     stream.on("data", (chunk: Buffer) => {
       if (!this.#closed) splitter.push(chunk);
     });
     stream.on("error", () => undefined);
-    stream.on("close", () => this.close("kobe-tools channel closed"));
+    stream.on("close", () => this.close("kaiju-tools channel closed"));
   }
 
   get closed(): boolean {
@@ -67,7 +67,7 @@ export class ToolsChannel {
   reply(response: KaijuToolsResponse): void {
     if (this.#closed || this.#stream.destroyed || !this.#stream.writable) return;
     if (this.#stream.writableLength > TOOLS_CHANNEL_MAX_WRITE_BUFFER) {
-      this.close("kobe-tools channel reader is not reading");
+      this.close("kaiju-tools channel reader is not reading");
       return;
     }
     this.#stream.write(encodeJsonl(response));
@@ -84,7 +84,7 @@ export class ToolsChannel {
     if (this.#closed) return;
     const strict = parseJsonStrict(line);
     if (!strict.ok) {
-      this.close("malformed kobe-tools request");
+      this.close("malformed kaiju-tools request");
       return;
     }
     const parsed = kaijuToolsRequestSchema.safeParse(strict.value);
@@ -97,6 +97,6 @@ export class ToolsChannel {
     if (idSchema.safeParse(id).success) {
       this.reply(toolsError(id as string, "invalid_input", "malformed request"));
     }
-    this.#handlers.onDiagnostic?.("malformed kobe-tools request");
+    this.#handlers.onDiagnostic?.("malformed kaiju-tools request");
   }
 }

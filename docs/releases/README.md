@@ -11,7 +11,9 @@ are `X-Kaiju-*` (the server still accepts `X-Kobe-Team` from API clients for one
 span, attribute and `service.name` values and the audit forwarding's syslog and OTLP names start
 with `kaiju` instead of `kobe`: update SIEM rules, saved queries and dashboards. Browser cookies
 and storage keys were renamed, so each browser forgets its per-browser choices (theme, last
-Workspace and conversation, panel layout, dismissed notices) once; sessions are kept. See
+Workspace and conversation, panel layout, dismissed notices) once; sessions are kept. The Helm
+chart is `charts/kaiju` and the images are `ghcr.io/splittingatom/kaiju-*`: upgrade an existing
+release in place with `helm upgrade <release> charts/kaiju` and unchanged values. See
 [Upgrade notes](../install.md#upgrade-notes).
 
 - [v1.4: Git organizations](v1.4.md)

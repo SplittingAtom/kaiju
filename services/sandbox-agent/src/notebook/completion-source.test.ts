@@ -4,14 +4,14 @@ import { NOTEBOOK_COMPLETE_MATCHES_MAX, notebookCompletionResultSchema } from "@
 import { beforeAll, describe, expect, it } from "vitest";
 
 /**
- * The kernel bridge's completion helpers (KOBE-808, images/sandbox/kernel/kobe-kernel-bridge.py)
+ * The kernel bridge's completion helpers (KOBE-808, images/sandbox/kernel/kaiju-kernel-bridge.py)
  * on plain Python (testing/completion-harness.py): `doc` resolves names without running any of the
  * member's code (no property getter, `__getattr__`, repr or call), and `completion_result` caps
  * and cleans a `complete_reply`. The real kernel (jedi off, limited evaluation, silent requests)
  * is checked by images/sandbox/test-image.sh.
  */
 const BRIDGE = fileURLToPath(
-  new URL("../../../../images/sandbox/kernel/kobe-kernel-bridge.py", import.meta.url),
+  new URL("../../../../images/sandbox/kernel/kaiju-kernel-bridge.py", import.meta.url),
 );
 const HARNESS = fileURLToPath(new URL("./testing/completion-harness.py", import.meta.url));
 const hasPython = spawnSync("python3", ["--version"]).status === 0;

@@ -14,7 +14,7 @@ function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
 }
 
 /**
- * Sandbox -> server (KOBE-576, CM6): the `commit_project` call kobe-policy let through, sent AFTER
+ * Sandbox -> server (KOBE-576, CM6): the `commit_project` call kaiju-policy let through, sent AFTER
  * the agent pushed its working copy. Answered by `project.commit_result` for the same
  * `request_id`. Needs `run.start.project.access: "write"`; refused in auto and scheduled runs.
  */

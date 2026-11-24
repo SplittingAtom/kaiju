@@ -61,11 +61,11 @@ out("entry", (entries.json.entries ?? []).some((e) => e.type === "compaction") ?
 const again = await call("POST", "/v1/threads/" + threadId + "/compact", {});
 out("again", again.status + ":" + (again.json.code ?? "-"));
 JS
-    compact_out=$($KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$COMPACT_JS" "$E2E_TEAM_ID" "${compact_thread:-none}" 2>&1 | grep -E '^(signin|active_team|compact|compact_code|summary_by_model|focus_in_summary|entry|again)=' || true)
+    compact_out=$($KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "$COMPACT_JS" "$E2E_TEAM_ID" "${compact_thread:-none}" 2>&1 | grep -E '^(signin|active_team|compact|compact_code|summary_by_model|focus_in_summary|entry|again)=' || true)
     printf '     compact: %s\n' "$(printf '%s' "$compact_out" | tr '\n' ' ')"
     if ! grep -q '^compact=200$' <<<"$compact_out"; then
       # Diagnostics: what the server and the Owner's sandbox said about the compaction.
-      $KUBECTL -n "$NS" logs deploy/kobe-server -c server --since=20m 2>/dev/null | grep -iE 'compact' | tail -20 || true
+      $KUBECTL -n "$NS" logs deploy/kaiju-server -c server --since=20m 2>/dev/null | grep -iE 'compact' | tail -20 || true
       $KUBECTL -n "$TEAM_NS" logs "${owner_pod:-pod/none}" -c agent --since=20m 2>/dev/null | grep -iE 'compact|refused' | tail -20 || true
     fi
     contains "the compaction check signed in and chose the team" '^active_team=200$' "$compact_out"
@@ -74,7 +74,7 @@ JS
     contains "the focus reached Pi's summary prompt" '^focus_in_summary=yes$' "$compact_out"
     contains "the compaction entry is mirrored into the thread" '^entry=compaction$' "$compact_out"
     contains "compacting again right away has nothing to compact (409)" '^again=409:nothing_to_compact$' "$compact_out"
-    compact_usage() { psql_kobe "SELECT count(*) FROM run_usage u JOIN runs r ON r.team_id = u.team_id AND r.id = u.run_id WHERE u.team_id = '$E2E_TEAM_ID' AND r.thread_id = '${compact_thread:-00000000-0000-4000-8000-000000000000}' AND r.kind = 'compaction' AND r.status = 'completed'"; }
+    compact_usage() { psql_kaiju "SELECT count(*) FROM run_usage u JOIN runs r ON r.team_id = u.team_id AND r.id = u.run_id WHERE u.team_id = '$E2E_TEAM_ID' AND r.thread_id = '${compact_thread:-00000000-0000-4000-8000-000000000000}' AND r.kind = 'compaction' AND r.status = 'completed'"; }
     contains "the summary call is billed to the completed compaction run" '^[1-9][0-9]*$' "$(wait_for 30 '^[1-9]' compact_usage)"
 
     # KOBE-290: Stop before the first token on real Pi. The fake model holds back its answer to a
@@ -148,7 +148,7 @@ out("run", run.json.status + ":" + (run.json.user_entry_id === prompts[0]?.entry
 const markers = await call("GET", "/v1/threads/" + id + "/markers");
 out("marker", (markers.json.runs || []).map((r) => r.status + ":" + (r.user_entry_id === prompts[0]?.entry_id)).join(",") || "-");
 JS
-    stop_early_out=$($KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$STOP_EARLY_JS" "$E2E_TEAM_ID" "kaiju-slow-start stop me $RANDOM" 2>&1 || true)
+    stop_early_out=$($KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "$STOP_EARLY_JS" "$E2E_TEAM_ID" "kaiju-slow-start stop me $RANDOM" 2>&1 || true)
     printf '     stop early: %s\n' "$(tr '\n' ' ' <<<"$stop_early_out")"
     contains "KOBE-290: the prompt is mirrored once Pi has it, before any text" '^committed=true:0$' "$stop_early_out"
     contains "KOBE-290: Stop cancels the run before the first token" '^cancel=cancelled$' "$stop_early_out"
@@ -207,16 +207,16 @@ JS
     budget_run_sql="'${budget_run:-00000000-0000-4000-8000-000000000000}'"
     contains "Gate 2: the run ends budget_stopped" '^terminal=run.budget_stopped$' "$budget_out"
     contains "Gate 2: with the budget's message" 'used up' \
-      "$(psql_kobe "SELECT payload->>'message' FROM run_events WHERE run_id = $budget_run_sql AND type = 'run.budget_stopped'")"
+      "$(psql_kaiju "SELECT payload->>'message' FROM run_events WHERE run_id = $budget_run_sql AND type = 'run.budget_stopped'")"
     contains "Gate 2: the step in flight finished (its model call is in the ledger)" '^1$' \
-      "$(psql_kobe "SELECT count(*) FROM run_usage WHERE run_id = $budget_run_sql AND status = 200")"
+      "$(psql_kaiju "SELECT count(*) FROM run_usage WHERE run_id = $budget_run_sql AND status = 200")"
     # Deterministic: the fake model's tool step runs 3 s, and the stop reaches Pi meanwhile.
     contains "Gate 2: the stop reached the run during its step (after_step)" '^after_step$' \
-      "$(psql_kobe "SELECT CASE WHEN EXISTS (SELECT 1 FROM audit_log WHERE action = 'run.budget_stopped' AND target->>'runId' = '${budget_run:-none}') THEN 'after_step' END")"
+      "$(psql_kaiju "SELECT CASE WHEN EXISTS (SELECT 1 FROM audit_log WHERE action = 'run.budget_stopped' AND target->>'runId' = '${budget_run:-none}') THEN 'after_step' END")"
     contains "Gate 2: no new model call started after the budget was used up" '^1$' \
-      "$(psql_kobe "SELECT count(*) FROM run_usage WHERE run_id = $budget_run_sql")"
+      "$(psql_kaiju "SELECT count(*) FROM run_usage WHERE run_id = $budget_run_sql")"
     contains "Gate 2: the budget reached is audited once" '^1$' \
-      "$(psql_kobe "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'models.budget.reached'")"
+      "$(psql_kaiju "SELECT count(*) FROM audit_log WHERE team_id = '$E2E_TEAM_ID' AND action = 'models.budget.reached'")"
     contains "Gate 2: new runs are refused while the budget is used up" '^message=429$' \
       "$(chat_run "refused-$RANDOM" 60000)"
     restore=$(as_owner \
@@ -231,8 +231,8 @@ JS
     # model, so the runs use the team default. The server seeded it at start. Sandbox tools run
     # without approval unless a rule asks (KOBE-37 left one).
     echo "==> gallery agent Kobe (KOBE-89, KOBE-254)"
-    psql_kobe "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';" >/dev/null
-    gallery_id() { psql_kobe "SELECT id FROM site_agents WHERE scope = 'gallery' AND gallery_key = '$1' AND archived_at IS NULL"; }
+    psql_kaiju "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';" >/dev/null
+    gallery_id() { psql_kaiju "SELECT id FROM site_agents WHERE scope = 'gallery' AND gallery_key = '$1' AND archived_at IS NULL"; }
     gallery_run() { # key content [timeout-ms] → CHAT_JS output for a thread with that gallery agent
       local id
       id=$(gallery_id "$1")
@@ -240,22 +240,22 @@ JS
       chat_run "$2" "${3:-300000}" "" "$id"
     }
     gal_dir='cd "${TMPDIR:-/tmp}" && rm -rf g89 && mkdir g89 && cd g89'
-    kobe_dir() { # a Kaiju skill's directory in the run's skill store: its newest approved version
-      printf '/run/kobe-skills/store/sk-%s' "$(psql_kobe "SELECT v.runtime_hash FROM registry_versions v JOIN registry_skills s ON s.id = v.skill_id WHERE s.name = '$1' AND s.publisher = 'kobe' AND v.state = 'approved' ORDER BY v.seq DESC LIMIT 1")"
+    kaiju_dir() { # a Kaiju skill's directory in the run's skill store: its newest approved version
+      printf '/run/kaiju-skills/store/sk-%s' "$(psql_kaiju "SELECT v.runtime_hash FROM registry_versions v JOIN registry_skills s ON s.id = v.skill_id WHERE s.name = '$1' AND s.publisher = 'kobe' AND v.state = 'approved' ORDER BY v.seq DESC LIMIT 1")"
     }
     contains "Kaiju skills: the eight are Kaiju-published catalog skills, approved (KOBE-317; kobe-guide KOBE-620)" '^8$' \
-      "$(psql_kobe "SELECT count(DISTINCT s.name) FROM registry_skills s JOIN registry_versions v ON v.skill_id = s.id WHERE s.publisher = 'kobe' AND v.state = 'approved'")"
+      "$(psql_kaiju "SELECT count(DISTINCT s.name) FROM registry_skills s JOIN registry_versions v ON v.skill_id = s.id WHERE s.publisher = 'kobe' AND v.state = 'approved'")"
     contains "the gallery holds exactly one agent, Kobe (key kobe)" '^kobe$' \
-      "$(psql_kobe "SELECT string_agg(gallery_key, ',') FROM site_agents WHERE scope = 'gallery' AND archived_at IS NULL")"
+      "$(psql_kaiju "SELECT string_agg(gallery_key, ',') FROM site_agents WHERE scope = 'gallery' AND archived_at IS NULL")"
     contains "Kaiju asks for every team connector and narrows no tool" '^all:none$' \
-      "$(psql_kobe "SELECT (v.frontmatter->>'connectors') || ':' || coalesce(v.frontmatter->>'tools', 'none') FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kobe'")"
-    g_out=$(gallery_run kobe "hello-kobe-$RANDOM")
+      "$(psql_kaiju "SELECT (v.frontmatter->>'connectors') || ':' || coalesce(v.frontmatter->>'tools', 'none') FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kobe'")"
+    g_out=$(gallery_run kobe "hello-kaiju-$RANDOM")
     printf '     gallery kobe: %s\n' "$(printf '%s' "$g_out" | grep -v '^text=' | tr '\n' ' ')"
     contains "Kaiju: a thread with it starts (201, team default model)" '^thread=201:default$' "$g_out"
-    contains "Kaiju: the run completed with the expected text" '^text=fake-openai: hello-kobe-[0-9]+$' "$g_out"
+    contains "Kaiju: the run completed with the expected text" '^text=fake-openai: hello-kaiju-[0-9]+$' "$g_out"
     contains "Kaiju: the thread is pinned to the gallery agent" '^gallery$' \
-      "$(psql_kobe "SELECT agent_scope FROM threads WHERE id = '$(printf '%s\n' "$g_out" | sed -n 's/^thread_id=//p')'")"
-    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kobe_dir data-analysis)/scripts/describe.py $(kobe_dir data-analysis)/scripts/sample.csv | grep -c 'rows: 6' && python $(kobe_dir charts)/scripts/chart.py $(kobe_dir charts)/scripts/sample.csv --kind bar --x region --y amount --agg sum --title t --out c.png >/dev/null && echo chart-bytes \$(wc -c < c.png)")
+      "$(psql_kaiju "SELECT agent_scope FROM threads WHERE id = '$(printf '%s\n' "$g_out" | sed -n 's/^thread_id=//p')'")"
+    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kaiju_dir data-analysis)/scripts/describe.py $(kaiju_dir data-analysis)/scripts/sample.csv | grep -c 'rows: 6' && python $(kaiju_dir charts)/scripts/chart.py $(kaiju_dir charts)/scripts/sample.csv --kind bar --x region --y amount --agg sum --title t --out c.png >/dev/null && echo chart-bytes \$(wc -c < c.png)")
     printf '     kobe data: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
     contains "Kaiju data: the run completed" '^terminal=run.completed$' "$g_out"
     contains "Kaiju data: the data-analysis skill profiled the data and the charts skill produced a PNG" \
@@ -267,12 +267,12 @@ JS
     contains "Kaiju: its research guidance (connectors, KOBE-606) reaches the model through Pi's system prompt" \
       '^text=fake-openai: system said: .*Research: for current or outside facts, use a connector tool' "$g_out"
     contains "Kaiju: its published prompt no longer names the retired built-in web search (KOBE-606)" '^0$' \
-      "$(psql_kobe "SELECT count(*) FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kobe' AND v.prompt ~* 'web_search|web search'")"
-    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kobe_dir docx)/scripts/md_to_docx.py $(kobe_dir docx)/scripts/sample.md out.docx --title T >/dev/null && python $(kobe_dir docx)/scripts/docx_text.py out.docx | grep -c 'south | 310.35' && python $(kobe_dir pdf)/scripts/md_to_pdf.py $(kobe_dir pdf)/scripts/sample.md out.pdf --title T >/dev/null && test -s out.pdf && echo docx-and-pdf-produced")
+      "$(psql_kaiju "SELECT count(*) FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kobe' AND v.prompt ~* 'web_search|web search'")"
+    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kaiju_dir docx)/scripts/md_to_docx.py $(kaiju_dir docx)/scripts/sample.md out.docx --title T >/dev/null && python $(kaiju_dir docx)/scripts/docx_text.py out.docx | grep -c 'south | 310.35' && python $(kaiju_dir pdf)/scripts/md_to_pdf.py $(kaiju_dir pdf)/scripts/sample.md out.pdf --title T >/dev/null && test -s out.pdf && echo docx-and-pdf-produced")
     printf '     kobe documents: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
     contains "Kaiju documents: the docx and pdf skills produced and read back the files offline" \
       '^text=fake-openai: tool said: 1 docx-and-pdf-produced$' "$g_out"
-    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kobe_dir code-review)/scripts/scan.py $(kobe_dir code-review)/scripts/sample.py | grep -o '[0-9]* finding' | head -1")
+    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kaiju_dir code-review)/scripts/scan.py $(kaiju_dir code-review)/scripts/sample.py | grep -o '[0-9]* finding' | head -1")
     printf '     kobe code: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
     contains "Kaiju code: the code-review skill scanned the sample" '^text=fake-openai: tool said: 4 finding$' "$g_out"
 

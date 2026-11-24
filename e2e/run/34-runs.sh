@@ -3,8 +3,8 @@
 # KOBE-30: messages and runs through the server API against the in-cluster Postgres. No model or
 # agent answers yet, so the run is stopped while its start waits for the (unwoken) sandbox.
 echo "==> runs (KOBE-30)"
-owner_id=$(psql_kobe "SELECT id FROM users WHERE email = 'owner@e2e.test'")
-psql_kobe "INSERT INTO team_members (team_id, user_id, role) VALUES ('$E2E_TEAM_ID', '$owner_id', 'member') ON CONFLICT DO NOTHING;" >/dev/null
+owner_id=$(psql_kaiju "SELECT id FROM users WHERE email = 'owner@e2e.test'")
+psql_kaiju "INSERT INTO team_members (team_id, user_id, role) VALUES ('$E2E_TEAM_ID', '$owner_id', 'member') ON CONFLICT DO NOTHING;" >/dev/null
 read -r -d '' RUNS_JS <<'JS' || true
 const [team] = process.argv.slice(1);
 const base = "http://127.0.0.1:" + process.env.PORT;
@@ -64,7 +64,7 @@ const said = (text) => (reload.json.entries || []).filter((e) => e.payload?.mess
 out("reload", reload.status + ":" + said("hello").length + ":" + said("again").length + ":" +
   (said("hello")[0]?.entry_id === reload.json.leaf_entry_id));
 JS
-runs_out=$($KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$RUNS_JS" "$E2E_TEAM_ID" 2>&1 | tail -14)
+runs_out=$($KUBECTL -n "$NS" exec deploy/kaiju-server -c server -- node --input-type=module -e "$RUNS_JS" "$E2E_TEAM_ID" 2>&1 | tail -14)
 printf '     runs: %s\n' "$(printf '%s' "$runs_out" | tr '\n' ' ')"
 contains "a team member signs in and selects the team" '^active=200$' "$runs_out"
 contains "a message starts a run at once on an idle thread" '^message=201:false$' "$runs_out"
