@@ -87,4 +87,14 @@ bullet; the rename line in `docs/releases/README.md` (the place for unreleased n
 
 ## Evidence
 
-See the final section below (filled after the last run).
+Final run after merging the RN-3 base fix (`1b4ec8d41`), one command at a time, TMPDIR on disk:
+
+- `pnpm build`, `typecheck`, `lint`, `format:check`: ok. Guard ok (41,615 allowed, 225 entries);
+  self-test 23/23; `check-site-wording.mjs` and `check-public-hygiene.sh` ok.
+- Unit suites (all packages): protocol 1,380; db 1,110; cli 101; egress-proxy 182; mcp-proxy 173;
+  model-gateway 263; sandbox-agent 1,293 (196 skipped: real-helper and real-Pi files, whose env
+  names were read by hand: `KAIJU_TEST_PI_RUNAS` is written by `scripts/test-identities.sh`,
+  the rest by the agent itself); server 4,569 (8 skipped); web 4,311; chart 398; telemetry 32;
+  session-token 24; guide 33; agent-file 68; address-policy 16; skill-scanner 180; license-check 86.
+- DB suites: `@kaiju/db test:db` 2,180 passed; `@kaiju/server test:db` 3,749 passed.
+- Not run here: browser suite, e2e gate scripts and image builds (CI and e2e per step).
