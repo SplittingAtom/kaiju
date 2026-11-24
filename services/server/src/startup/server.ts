@@ -12,6 +12,7 @@ import { logger as rootLogger } from "../logger.js";
 import type { IsolationProbe } from "../runs/seams.js";
 import { quantityBytes } from "../sandbox/config.js";
 import { createPgReconcileLock } from "../sandbox/reconcile-lock.js";
+import { checkTeamNamespacePrefixAtStart } from "../sandbox/namespace-prefix.js";
 import { createSandboxRuntime, type SandboxRuntime } from "../sandbox/runtime.js";
 import { createDeferredWaker, createSandboxLifecycle } from "../sandbox-lifecycle/index.js";
 import { SkillEvalHub } from "../skills/evals/events.js";
@@ -341,6 +342,15 @@ export async function startServer(
   if (isServer) warnMissingServerSettings(settings, log);
   if (isServer && config.auth) warnTrustedProxies(config.auth.trustedProxies, log);
   const { sandbox, providerRuntime } = sandboxRuntimes(config, env, isolation.gate, deps, log);
+  // KOBE-751: refuse to start when team namespaces exist under another prefix than the configured
+  // one (the message names the value to set); an unreachable API defers it to provisioning.
+  if (providerRuntime) {
+    await checkTeamNamespacePrefixAtStart(
+      providerRuntime.kube,
+      providerRuntime.settings.teamNamespacePrefix,
+      log,
+    );
+  }
   const workspaceSync =
     sandbox && deps ? workspaceSyncOf(deps, sandbox, settings, config, log) : undefined;
   if (workspaceSync && deps) bindWorkspace(deps, workspaceSync, settings);

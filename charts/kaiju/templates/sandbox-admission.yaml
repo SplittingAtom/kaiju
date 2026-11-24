@@ -1,7 +1,9 @@
 {{- $serverUser := printf "system:serviceaccount:%s:%s" .Release.Namespace (include "kaiju.serverServiceAccount" .) -}}
 {{- $manager := include "kaiju.sandboxManagerRole" . -}}
 {{- $handler := "^(runsc|kata(-[a-z0-9]+)*)$" -}}
-{{- $inTeam := "request.namespace.startsWith('kobe-team-')" -}}
+{{- /* KOBE-751: the one team namespace prefix of this install (never both). */ -}}
+{{- $prefix := include "kaiju.teamNamespacePrefix" . -}}
+{{- $inTeam := printf "request.namespace.startsWith('%s')" $prefix -}}
 {{- $scope := include "kaiju.clusterName" (dict "root" . "suffix" "server-scope") -}}
 {{- $pods := include "kaiju.clusterName" (dict "root" . "suffix" "sandbox-pods") -}}
 {{- $specs := include "kaiju.clusterName" (dict "root" . "suffix" "sandbox-specs") -}}
@@ -11,7 +13,11 @@
 # controller creates on its own (warm pool), and confine the server's cluster-wide RBAC.
 # failurePolicy Fail: if a policy cannot be evaluated, the request is refused.
 #
-# 1. The server's ServiceAccount may write namespaces and RoleBindings only in kobe-team-*:
+# <prefix> is sandbox.teamNamespacePrefix (kaiju-team-, or kobe-team- on an install created before
+# the rename; detected on upgrade, see kaiju.teamNamespacePrefix). The server's self-check expects
+# the refusal message below to name the same prefix as its own configuration.
+#
+# 1. The server's ServiceAccount may write namespaces and RoleBindings only in <prefix>*:
 #    namespaces labelled as team namespaces under Pod Security "baseline" (KOBE-71: the sandbox
 #    container adds SETUID/SETGID for its Pi identities; policy 2 enforces the rest of
 #    "restricted") or "restricted"; RoleBindings granting the sandbox manager role to the server
@@ -47,8 +53,8 @@ spec:
     - name: oldLabels
       expression: "request.operation == 'UPDATE' && variables.isNamespace && has(oldObject.metadata.labels) ? oldObject.metadata.labels : {}"
   validations:
-    - expression: "variables.target.startsWith('kobe-team-')"
-      messageExpression: "'Kaiju may only manage kobe-team-* namespaces, not ' + variables.target"
+    - expression: {{ printf "variables.target.startsWith('%s')" $prefix | quote }}
+      messageExpression: {{ printf "'Kaiju may only manage %s* namespaces, not ' + variables.target" $prefix | quote }}
     - expression: >-
         !variables.isNamespace || request.operation == 'DELETE' ||
         (variables.labels[?'kobe.splittingatom.io/team-namespace'].orValue('') == 'true' &&
@@ -78,7 +84,7 @@ spec:
   policyName: {{ $scope }}
   validationActions: ["Deny"]
 ---
-# 2. Every pod in a kobe-team-* namespace runs under the configured RuntimeClass, whose handler
+# 2. Every pod in a <prefix>* namespace runs under the configured RuntimeClass, whose handler
 #    must be gVisor or Kata (checked against the live RuntimeClass object: the param), and carries
 #    no credentials: no Secret volumes or env, no API token, no host namespaces or hostPath, and
 #    projected ServiceAccount tokens only for the Kaiju bootstrap audience. It also meets Pod
@@ -188,7 +194,7 @@ spec:
     name: {{ .Values.isolation.runtimeClassName | quote }}
     parameterNotFoundAction: Deny
 ---
-# 3. Sandbox and SandboxTemplate specs in kobe-team-* use the configured RuntimeClass, and
+# 3. Sandbox and SandboxTemplate specs in <prefix>* use the configured RuntimeClass, and
 #    templates leave networking to Kaiju's default-deny policy (the controller's "Managed" policy
 #    would add internet egress).
 apiVersion: admissionregistration.k8s.io/v1
@@ -238,7 +244,7 @@ spec:
     name: {{ .Values.isolation.runtimeClassName | quote }}
     parameterNotFoundAction: Deny
 ---
-# 4. Only the Kaiju server creates or changes NetworkPolicies in kobe-team-* (they are additive:
+# 4. Only the Kaiju server creates or changes NetworkPolicies in <prefix>* (they are additive:
 #    anyone else's policy could widen the default deny). Deletes are not matched, so namespace
 #    deletion still works; the server has no delete permission on them.
 apiVersion: admissionregistration.k8s.io/v1

@@ -41,9 +41,9 @@ type Pod = {
 
 describe("names", () => {
   it("names the team namespace kobe-team-<slug> and refuses invalid slugs", () => {
-    expect(teamNamespaceName(TEAM)).toBe("kobe-team-finance");
+    expect(teamNamespaceName(TEAM, SETTINGS)).toBe("kobe-team-finance");
     for (const slug of ["", "-a", "a-", "A", "a_b", "a".repeat(33), "../x"]) {
-      expect(() => teamNamespaceName({ id: TEAM.id, slug })).toThrow(TypeError);
+      expect(() => teamNamespaceName({ id: TEAM.id, slug }, SETTINGS)).toThrow(TypeError);
     }
   });
 
@@ -314,7 +314,7 @@ describe("template, warm pool and claim", () => {
   });
 
   it("claims carry identity metadata only, so warm-pool adoption stays possible", () => {
-    const claim = sandboxClaimManifest("kobe-team-finance", TEAM, USER);
+    const claim = sandboxClaimManifest("kobe-team-finance", TEAM, USER, SETTINGS);
     expect(claim.spec).toEqual({
       warmPoolRef: { name: "kobe-sandbox" },
       additionalPodMetadata: {

@@ -78,6 +78,7 @@ describe("the scan Job", () => {
       part: 1,
       bytes: new Uint8Array([1, 2, 3]),
       owner: { name: scanJobName(versionId), uid: "u-1" },
+      sandbox: SETTINGS,
     });
     expect(cm.binaryData).toEqual({ "part-001": "AQID" });
     // Owned by the Job from creation: it goes with the Job (review-341 L5).
@@ -86,7 +87,7 @@ describe("the scan Job", () => {
     ]);
     const parts = packageParts(new Uint8Array(SCAN_PART_BYTES * 2 + 1));
     expect(parts.map((p) => p.length)).toEqual([SCAN_PART_BYTES, SCAN_PART_BYTES, 1]);
-    const policy = skillScanNetworkPolicyManifest("kobe-team-registry");
+    const policy = skillScanNetworkPolicyManifest("kobe-team-registry", SETTINGS);
     expect(policy.spec).toEqual({
       podSelector: {
         matchExpressions: [{ key: "kobe.splittingatom.io/skill-scan", operator: "Exists" }],

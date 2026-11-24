@@ -6,6 +6,12 @@ import {
   type TokenReviewResult,
 } from "../sandbox/kube.js";
 import type { KubeMetadata, KubeObject } from "../sandbox/manifests.js";
+import {
+  DEFAULT_TEAM_NAMESPACE_PREFIX,
+  TEAM_NAMESPACE_PREFIXES,
+  sandboxNames,
+  type TeamNamespacePrefix,
+} from "../sandbox/constants.js";
 
 /**
  * In-memory Kubernetes for sandbox provider tests: objects by (apiVersion, kind, namespace, name),
@@ -68,6 +74,8 @@ export interface FakeKube extends KubeClient {
   afterWrite?: (object: KubeObject, fake: FakeKube) => void;
   /** Answers a dry-run create (default: the admission policy denies out-of-prefix namespaces). */
   dryRun?: (object: KubeObject) => KubeObject;
+  /** The prefix the simulated admission policy pins (the chart's, KOBE-751). */
+  admissionPrefix: TeamNamespacePrefix;
   /** Set by simulateAgentSandbox: ends the grace period of terminating pods. */
   finishTermination?: () => void;
   /** Called on every get (e.g. to make a controller act lazily). */
@@ -131,6 +139,7 @@ export function createFakeKube(): FakeKube {
 
   const fake: FakeKube = {
     calls: [],
+    admissionPrefix: DEFAULT_TEAM_NAMESPACE_PREFIX,
     tokens: new Map(),
     podLogs: new Map(),
     seed: (object) => put(object, undefined),
@@ -168,7 +177,7 @@ export function createFakeKube(): FakeKube {
         if (fake.dryRun) return fake.dryRun(object);
         throw new KubeApiError(
           403,
-          `admission webhook denied: Kaiju may only manage kobe-team-* namespaces, not ${object.metadata.name}`,
+          `admission webhook denied: Kaiju may only manage ${fake.admissionPrefix}* namespaces, not ${object.metadata.name}`,
         );
       }
       if (store.has(key({ ...object, ...object.metadata }))) {
@@ -278,10 +287,12 @@ export function simulateAgentSandbox(fake: FakeKube, options: ControllerOptions 
   let pendingGets = new Map<string, number>();
   const reconcile = (claim: KubeObject) => {
     const ns = claim.metadata.namespace as string;
+    const prefix = TEAM_NAMESPACE_PREFIXES.find((p) => ns.startsWith(p));
+    if (!prefix) return;
     const template = fake.peek({
       apiVersion: "extensions.agents.x-k8s.io/v1beta1",
       kind: "SandboxTemplate",
-      name: "kobe-sandbox",
+      name: sandboxNames(prefix).template,
       namespace: ns,
     });
     if (!template) return;

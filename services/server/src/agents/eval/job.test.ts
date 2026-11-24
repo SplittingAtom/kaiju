@@ -157,6 +157,7 @@ describe("Orbit eval Job manifest (KOBE-93)", () => {
       teamId: TEAM.id,
       evalId: EVAL_ID,
       orbitYaml: "name: x\n",
+      sandbox: SETTINGS,
     });
     expect(map.data).toEqual({ "agent.yaml": "name: x\n" });
     expect(JSON.stringify(map)).not.toContain(TOKEN);

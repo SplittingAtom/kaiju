@@ -45,7 +45,7 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
     userId: string,
     options: { readonly retainVolume: boolean },
   ): Promise<DestroyResult> => {
-    const namespace = teamNamespaceName(team);
+    const namespace = teamNamespaceName(team, settings);
     const name = claimName(userId);
     const claim = await kube.get(CLAIM(namespace, name));
     if (!claim) return {};
@@ -90,14 +90,14 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
     if (!WORKSPACE_PVC.test(pvcName)) {
       throw new SandboxProvisioningError(`${pvcName} is not a workspace volume; not deleting it`);
     }
-    if (!(await deleteWithRetry(PVC(teamNamespaceName(team), pvcName)))) {
+    if (!(await deleteWithRetry(PVC(teamNamespaceName(team, settings), pvcName)))) {
       throw new SandboxProvisioningError(`Volume ${pvcName} could not be deleted; retry`);
     }
   };
 
   /** The workspace PVC's name: from the claim's Sandbox, or the claim's own name (they match). */
   const workspaceVolumeOf = async (team: TeamRef, userId: string) => {
-    const namespace = teamNamespaceName(team);
+    const namespace = teamNamespaceName(team, settings);
     const name = claimName(userId);
     const claim = await kube.get(CLAIM(namespace, name));
     const sandboxName = (claim ? str(claim, "status", "sandbox", "name") : undefined) ?? name;

@@ -9,6 +9,7 @@ import {
   type SessionKeys,
   type SessionVerifyKeySets,
 } from "./config.js";
+import { namesOf } from "./constants.js";
 import { createKubeClient, type KubeClient } from "./kube.js";
 import { logger } from "../logger.js";
 import type { ReconcileLock } from "./reconcile-lock.js";
@@ -70,7 +71,7 @@ export function createSandboxRuntime(
   const config = options?.providerOnly ? providerOnlyConfig(env) : loadSandboxConfig(env);
   if (!config) return undefined;
   const runtimeClassName = env.KAIJU_RUNTIME_CLASS?.trim();
-  const kube = createKubeClient();
+  const kube = createKubeClient(namesOf(config.settings).fieldManager);
   const provider = createSandboxProvider({
     kube,
     isolation,

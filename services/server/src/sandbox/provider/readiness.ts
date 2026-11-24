@@ -1,4 +1,5 @@
 import { quantityBytes } from "../config.js";
+import { namesOf } from "../constants.js";
 import {
   assertTeamRef,
   assertUserId,
@@ -26,7 +27,7 @@ export function createReadinessOps(ctx: ProviderContext): Pick<SandboxProvider, 
 
   /** The claim's Sandbox, pod name and workspace PVC name (undefined while they do not exist). */
   const locate = async (team: TeamRef, userId: string) => {
-    const namespace = teamNamespaceName(team);
+    const namespace = teamNamespaceName(team, settings);
     const claim = await kube.get(CLAIM(namespace, claimName(userId)));
     const sandboxName = claim ? str(claim, "status", "sandbox", "name") : undefined;
     const sandbox = sandboxName ? await kube.get(SANDBOX(namespace, sandboxName)) : undefined;
@@ -53,7 +54,9 @@ export function createReadinessOps(ctx: ProviderContext): Pick<SandboxProvider, 
     for (;;) {
       const found = await locate(team, userId);
       if (!found) {
-        throw new SandboxProvisioningError(`Sandbox for ${teamNamespaceName(team)} vanished`);
+        throw new SandboxProvisioningError(
+          `Sandbox for ${teamNamespaceName(team, settings)} vanished`,
+        );
       }
       const pod = await kube.get(POD(found.namespace, found.podName));
       if (isPodReady(pod)) return { ready: true };
@@ -66,6 +69,7 @@ export function createReadinessOps(ctx: ProviderContext): Pick<SandboxProvider, 
           found.namespace,
           found.podName,
           found.pvcName,
+          namesOf(settings).memberResourceQuota,
           since,
           now(),
           quantityBytes(settings.workspace.size),

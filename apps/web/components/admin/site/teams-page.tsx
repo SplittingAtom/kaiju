@@ -172,8 +172,8 @@ function CreateTeam({
         </FormRow>
       </form>
       <p id="team-slug-hint" className="m-0 text-sm text-console-muted">
-        Lowercase letters, digits and hyphens. The slug names the team&apos;s sandbox namespace
-        (kobe-team-{effectiveSlug || "slug"}) and can&apos;t be changed later.
+        Lowercase letters, digits and hyphens. The slug becomes part of the team&apos;s sandbox
+        namespace name and can&apos;t be changed later.
       </p>
     </Section>
   );

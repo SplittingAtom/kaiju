@@ -88,7 +88,6 @@ export class KubeApiError extends Error {
 export const isKubeStatus = (err: unknown, status: number): boolean =>
   err instanceof KubeApiError && err.status === status;
 
-export const FIELD_MANAGER = "kobe-server";
 export const KUBE_API_TIMEOUT_MS = 10_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
@@ -146,8 +145,16 @@ const header = (ref: ObjectRef): Header => ({
 /** JSON round trip: typed client models (Date fields, classes) become plain JSON objects. */
 const plain = <T>(value: T): KubeObject => JSON.parse(JSON.stringify(value)) as KubeObject;
 
-/** Uses the in-cluster ServiceAccount (or local kubeconfig). */
-export function createKubeClient(timeoutMs = KUBE_API_TIMEOUT_MS): KubeClient {
+/**
+ * Uses the in-cluster ServiceAccount (or local kubeconfig). `fieldManager` is the server-side
+ * apply field manager: `SandboxNames.fieldManager` of the configured prefix (KOBE-751), so an
+ * install keeps the manager that owns its objects' fields.
+ */
+export function createKubeClient(
+  fieldManager: string,
+  timeoutMs = KUBE_API_TIMEOUT_MS,
+): KubeClient {
+  const FIELD_MANAGER = fieldManager;
   const kc = new KubeConfig();
   kc.loadFromDefault();
   const objects = KubernetesObjectApi.makeApiClient(kc);

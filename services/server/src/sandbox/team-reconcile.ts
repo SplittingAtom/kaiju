@@ -1,12 +1,5 @@
 import { isKubeStatus, type KubeClient, type ObjectRef } from "./kube.js";
-import {
-  EVAL_NETWORK_POLICY,
-  LABEL_TEAM_ID,
-  LABEL_TEAM_NAMESPACE,
-  NETWORK_POLICY,
-  SKILL_SCAN_NETWORK_POLICY,
-  TEAM_NAMESPACE_PREFIX,
-} from "./constants.js";
+import { LABEL_TEAM_ID, LABEL_TEAM_NAMESPACE, type SandboxNames } from "./constants.js";
 import { assertTeamRef, type KubeObject, type TeamRef } from "./manifests.js";
 
 /** Team namespaces converged at once: bounded so a large install does not flood the API server. */
@@ -27,6 +20,8 @@ export interface TeamReconcileSummary {
 
 export interface TeamReconcileOptions {
   readonly kube: KubeClient;
+  /** The configured prefix's names (KOBE-751): only namespaces under its prefix are converged. */
+  readonly names: SandboxNames;
   /** The provider's own convergence function (the one sandbox setup uses). */
   readonly converge: (team: TeamRef) => Promise<unknown>;
   readonly concurrency?: number;
@@ -43,21 +38,28 @@ const POLICY = (name: string, namespace: string): ObjectRef => ({
 });
 
 /** The specs of the managed NetworkPolicies, to tell whether a convergence changed them. */
-async function policySpecs(kube: KubeClient, namespace: string): Promise<string> {
+async function policySpecs(
+  kube: KubeClient,
+  names: SandboxNames,
+  namespace: string,
+): Promise<string> {
   const objects: (KubeObject | undefined)[] = await Promise.all(
-    [NETWORK_POLICY, EVAL_NETWORK_POLICY, SKILL_SCAN_NETWORK_POLICY].map((n) =>
+    [names.networkPolicy, names.evalNetworkPolicy, names.skillScanNetworkPolicy].map((n) =>
       kube.get(POLICY(n, namespace)),
     ),
   );
   return JSON.stringify(objects.map((o) => o?.spec ?? null));
 }
 
-/** The team a managed namespace belongs to, from its labels and name; undefined if malformed. */
-export function teamOfNamespace(ns: KubeObject): TeamRef | undefined {
+/**
+ * The team a managed namespace belongs to, from its labels and its name under the configured
+ * prefix; undefined if malformed or under another prefix (never this install's to converge).
+ */
+export function teamOfNamespace(ns: KubeObject, names: SandboxNames): TeamRef | undefined {
   const id = ns.metadata.labels?.[LABEL_TEAM_ID];
   const name = ns.metadata.name;
-  if (!id || !name.startsWith(TEAM_NAMESPACE_PREFIX)) return undefined;
-  const team = { id, slug: name.slice(TEAM_NAMESPACE_PREFIX.length) };
+  if (!id || !name.startsWith(names.prefix)) return undefined;
+  const team = { id, slug: name.slice(names.prefix.length) };
   try {
     assertTeamRef(team);
   } catch {
@@ -74,7 +76,7 @@ export function teamOfNamespace(ns: KubeObject): TeamRef | undefined {
 export async function reconcileTeamNamespaces(
   options: TeamReconcileOptions,
 ): Promise<TeamReconcileSummary> {
-  const { kube, converge, now = () => Date.now() } = options;
+  const { kube, names, converge, now = () => Date.now() } = options;
   const started = now();
   const namespaces = await kube.list("v1", "Namespace", undefined, `${LABEL_TEAM_NAMESPACE}=true`);
   const queue = [...namespaces];
@@ -84,15 +86,15 @@ export async function reconcileTeamNamespaces(
   let failed = 0;
 
   const one = async (ns: KubeObject): Promise<void> => {
-    const team = teamOfNamespace(ns);
+    const team = teamOfNamespace(ns, names);
     if (!team || ns.metadata.deletionTimestamp) {
       skipped++;
       return;
     }
     try {
-      const before = await policySpecs(kube, ns.metadata.name);
+      const before = await policySpecs(kube, names, ns.metadata.name);
       await converge(team);
-      const after = await policySpecs(kube, ns.metadata.name);
+      const after = await policySpecs(kube, names, ns.metadata.name);
       if (before !== after) policyChanged.push(ns.metadata.name);
       converged++;
     } catch (err) {

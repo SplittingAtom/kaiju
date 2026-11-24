@@ -154,6 +154,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "teamNamespacePrefix": {
+          "type": "string",
+          "enum": ["", "kaiju-team-", "kobe-team-"]
+        },
         "resources": {
           "$ref": "#/$defs/resources"
         },

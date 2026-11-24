@@ -6,7 +6,10 @@ import {
   signRunToken,
   verifyRunToken,
 } from "../../../packages/session-token/src/index.js";
-import { EVAL_PRIORITY_CLASS } from "../../../services/server/src/sandbox/constants.js";
+import {
+  DEFAULT_TEAM_NAMESPACE_PREFIX,
+  sandboxNames,
+} from "../../../services/server/src/sandbox/constants.js";
 import {
   render,
   renderError,
@@ -226,7 +229,11 @@ describe("server sandbox configuration", () => {
       workspaceSize: "2Gi",
     });
     expect(renderError({ "sandbox.skillEval.maxConcurrentPerTeam": "40" })).toMatch(/maximum/);
-    const pc = find(ms, "PriorityClass", EVAL_PRIORITY_CLASS);
+    const pc = find(
+      ms,
+      "PriorityClass",
+      sandboxNames(DEFAULT_TEAM_NAMESPACE_PREFIX).evalPriorityClass,
+    );
     expect(pc).toMatchObject({ value: -100, preemptionPolicy: "Never", globalDefault: false });
   });
 

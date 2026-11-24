@@ -54,7 +54,7 @@ describe("createKubeClient timeouts (KOBE-732)", () => {
     );
     vi.stubEnv("KUBECONFIG", file);
     try {
-      const kube = createKubeClient(300);
+      const kube = createKubeClient("kaiju-server", 300);
       const started = Date.now();
       await expect(
         kube.get({ apiVersion: "v1", kind: "Pod", name: "p", namespace: "n" }),

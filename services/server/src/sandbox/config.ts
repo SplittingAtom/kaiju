@@ -10,7 +10,7 @@ import {
   type SessionVerifyKeys,
 } from "@kaiju/session-token";
 import { z } from "zod";
-import { KAIJU_ENDPOINTS, type KaijuEndpoint } from "./constants.js";
+import { KAIJU_ENDPOINTS, TEAM_NAMESPACE_PREFIXES, type KaijuEndpoint } from "./constants.js";
 
 /**
  * Sandbox provider configuration (spec D11, D12). The chart renders it into KAIJU_SANDBOX_CONFIG
@@ -99,6 +99,11 @@ export const sandboxSettingsSchema = z.strictObject({
   /** Copied into team namespaces for the kubelet; never mounted into sandboxes. */
   imagePullSecrets: z.array(dnsName).max(8),
   releaseNamespace: dnsLabel,
+  /**
+   * KOBE-751: the team namespace prefix, from `sandbox.teamNamespacePrefix` (the chart detects it
+   * on upgrade). It also picks the names of the objects in team namespaces (`sandboxNames`).
+   */
+  teamNamespacePrefix: z.enum(TEAM_NAMESPACE_PREFIXES),
   /** The server's ServiceAccount (bound to managerClusterRole in each team namespace). */
   serverServiceAccount: dnsName,
   managerClusterRole: dnsName,

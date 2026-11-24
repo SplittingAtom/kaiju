@@ -8,17 +8,17 @@ import {
   must,
   seedCluster,
 } from "../testing/sandbox-fixtures.js";
-import {
-  EVAL_NETWORK_POLICY,
-  LABEL_SKILL_SCAN,
-  NETWORK_POLICY,
-  SKILL_SCAN_NETWORK_POLICY,
-} from "./constants.js";
+import { LABEL_SKILL_SCAN, namesOf } from "./constants.js";
 import { reconcileTeamNamespaces } from "./team-reconcile.js";
 import { createSandboxProvider } from "./provider.js";
 import { createPgReconcileLock } from "./reconcile-lock.js";
 
 const NS = "kobe-team-finance";
+const {
+  networkPolicy: NETWORK_POLICY,
+  evalNetworkPolicy: EVAL_NETWORK_POLICY,
+  skillScanNetworkPolicy: SKILL_SCAN_NETWORK_POLICY,
+} = namesOf(SETTINGS);
 const policyRef = (name: string, namespace = NS) => ({
   apiVersion: "networking.k8s.io/v1",
   kind: "NetworkPolicy",
@@ -171,7 +171,12 @@ describe("reconcileTeams (KOBE-115)", () => {
     });
     const converge = vi.fn(() => Promise.reject(new TypeError("real bug")));
     const onFailure = vi.fn();
-    const summary = await reconcileTeamNamespaces({ kube, converge, onFailure });
+    const summary = await reconcileTeamNamespaces({
+      kube,
+      names: namesOf(SETTINGS),
+      converge,
+      onFailure,
+    });
     expect(summary).toMatchObject({ namespaces: 3, converged: 0, skipped: 1, failed: 2 });
     expect(onFailure).toHaveBeenCalledTimes(2);
     expect(onFailure).toHaveBeenCalledWith(NS, expect.any(TypeError));

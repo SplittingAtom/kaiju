@@ -1,5 +1,4 @@
 import { quantityBytes } from "./config.js";
-import { MEMBER_RESOURCE_QUOTA } from "./constants.js";
 import { podTermination } from "./pod-termination.js";
 import { judgeScheduling } from "./scheduling-message.js";
 import type { KubeClient } from "./kube.js";
@@ -124,7 +123,7 @@ const bytesOf = (q: unknown): number | undefined => {
 };
 
 /**
- * Why the team's member quota (`kobe-team-member-quota`) cannot take one more workspace volume of
+ * Why the team's member quota (`SandboxNames.memberResourceQuota`) cannot take one more workspace volume of
  * `volumeBytes`: no PVC left, or not enough storage left. Undefined when it can (or is unknown).
  */
 export function quotaShortfall(
@@ -134,17 +133,18 @@ export function quotaShortfall(
   const status = (quota?.["status"] ?? {}) as Record<string, Record<string, unknown> | undefined>;
   const hard = status["hard"] ?? {};
   const used = status["used"] ?? {};
+  const name = quota?.metadata.name ?? "member quota";
   const count = (k: string) => bytesOf(hard[k]) !== undefined && bytesOf(used[k]) !== undefined;
   if (count("persistentvolumeclaims")) {
     const h = bytesOf(hard["persistentvolumeclaims"]) as number;
     const u = bytesOf(used["persistentvolumeclaims"]) as number;
-    if (u >= h) return `quota ${MEMBER_RESOURCE_QUOTA}: persistentvolumeclaims used ${u} of ${h}`;
+    if (u >= h) return `quota ${name}: persistentvolumeclaims used ${u} of ${h}`;
   }
   if (count("requests.storage")) {
     const h = bytesOf(hard["requests.storage"]) as number;
     const u = bytesOf(used["requests.storage"]) as number;
     if (u + (volumeBytes ?? 1) > h) {
-      return `quota ${MEMBER_RESOURCE_QUOTA}: requests.storage used ${String(used["requests.storage"])} of ${String(hard["requests.storage"])}`;
+      return `quota ${name}: requests.storage used ${String(used["requests.storage"])} of ${String(hard["requests.storage"])}`;
     }
   }
   return undefined;
@@ -260,6 +260,8 @@ export async function diagnoseStall(
   namespace: string,
   podName: string,
   pvcName: string,
+  /** The team's member quota (`SandboxNames.memberResourceQuota`, KOBE-751). */
+  memberQuotaName: string,
   since: number,
   now: number,
   volumeBytes?: number,
@@ -275,7 +277,7 @@ export async function diagnoseStall(
   const quota = pvc
     ? undefined
     : await kube
-        .get({ apiVersion: "v1", kind: "ResourceQuota", name: MEMBER_RESOURCE_QUOTA, namespace })
+        .get({ apiVersion: "v1", kind: "ResourceQuota", name: memberQuotaName, namespace })
         .catch(() => undefined);
   // KOBE-739: only with a volume; a read failure (older RBAC: no PV or Node reads) is no diagnosis.
   const volume =

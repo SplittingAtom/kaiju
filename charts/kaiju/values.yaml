@@ -18,10 +18,18 @@ isolation:
   # RuntimeClass sandboxes run under; its handler must be runsc (gVisor) or kata*.
   runtimeClassName: gvisor
 
-# Sandboxes (spec D11, D12): one per (user, team), in namespace kobe-team-<slug>, run by the
-# agent-sandbox controller under isolation.runtimeClassName. The server creates and manages the
-# team namespaces (default-deny NetworkPolicy, ResourceQuota, warm pool); see docs/install.md.
+# Sandboxes (spec D11, D12): one per (user, team), in namespace <teamNamespacePrefix><slug>, run
+# by the agent-sandbox controller under isolation.runtimeClassName. The server creates and manages
+# the team namespaces (default-deny NetworkPolicy, ResourceQuota, warm pool); see docs/install.md.
 sandbox:
+  # Prefix of the team namespaces: "kaiju-team-" or "kobe-team-" (an install created before the
+  # rename to Kaiju keeps its namespaces and the kobe-* object names in them). Empty: detected by
+  # `helm install`/`helm upgrade` from the existing team namespaces, "kaiju-team-" when there are
+  # none. Offline renders (helm template, Argo CD, Flux) cannot detect it and must set it (except
+  # with global.allowGeneratedSecretsOffline, where empty means "kaiju-team-"). The admission
+  # policy confines the server to this prefix, and the server refuses to start when team
+  # namespaces exist under the other one. Moving an install to another prefix is not supported.
+  teamNamespacePrefix: ""
   resources:
     requests: { cpu: 500m, memory: 1Gi }
     limits: { cpu: "2", memory: 4Gi }
@@ -117,8 +125,9 @@ sandbox:
   # Skill evals (KOBE-325): each eval case runs in its own short-lived sandbox (same pod as a
   # member's, /workspace an emptyDir, gone afterwards). At most this many per team at once (the
   # Site setting may lower it); more wait their turn. Each team quota grows by this many sandbox
-  # pods, counted apart (PriorityClass kobe-skill-eval, quota kobe-skill-eval-quota), so evals
-  # never use what members' sandboxes need; under node pressure a member's sandbox wins.
+  # pods, counted apart (PriorityClass kaiju-skill-eval, quota kaiju-skill-eval-quota; kobe-* with
+  # teamNamespacePrefix kobe-team-), so evals never use what members' sandboxes need; under node
+  # pressure a member's sandbox wins.
   skillEval:
     maxConcurrentPerTeam: 4
     # An eval sandbox's /workspace: an emptyDir on the node's own disk (root filesystem), counted

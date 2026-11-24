@@ -12,8 +12,8 @@ import {
 } from "../../../packages/session-token/src/index.js";
 import {
   BOOTSTRAP_TOKEN_AUDIENCE,
+  DEFAULT_TEAM_NAMESPACE_PREFIX as TEAM_NAMESPACE_PREFIX,
   LABEL_TEAM_NAMESPACE,
-  TEAM_NAMESPACE_PREFIX,
 } from "../../../services/server/src/sandbox/constants.js";
 import {
   type Manifest,
@@ -166,7 +166,11 @@ describe("session keys Secret", () => {
 
   it("refuses to generate them in an offline render", () => {
     expect(
-      renderError({ "global.allowGeneratedSecretsOffline": "false", "auth.existingSecret": "a" }),
+      renderError({
+        "global.allowGeneratedSecretsOffline": "false",
+        "sandbox.teamNamespacePrefix": "kaiju-team-",
+        "auth.existingSecret": "a",
+      }),
     ).toMatch(/sandbox\.sessionKeysSecret/);
   });
 });
@@ -455,7 +459,7 @@ describe("sandbox admission policies (KOBE-9 binding requirement 3)", () => {
     expect(expressions("-server-scope")).toContain("in ['baseline', 'restricted']");
   });
 
-  it("confines the server's namespace and RoleBinding writes to labelled kobe-team-* namespaces", () => {
+  it("confines the server's namespace and RoleBinding writes to labelled team namespaces", () => {
     const p = policy("-server-scope");
     expect(p?.spec.matchConditions).toEqual([
       {

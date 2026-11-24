@@ -10,7 +10,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-/** Site-wide. A team's slug names its sandbox namespace `kobe-team-<slug>` (≤ 63 chars). */
+/** Site-wide. A team's slug names its sandbox namespace `<prefix><slug>` (≤ 63 chars). */
 export const teams = pgTable(
   "teams",
   {
