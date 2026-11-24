@@ -21,7 +21,8 @@ docs/install.md /(?<=\(before: `)kobe-migrate(?=`)|(?<=`kobe-migrate`, `)kobe-db
 docs/guide/whats-new.md /(?<=The old `)X-Kobe-Team(?=` still works)/
 docs/install.md /(?<=accepts `)X-Kobe-Team(?=` for)|(?<=and `)X-Kobe-Sha256(?=`\.)|(?<=with `kaiju` instead of `)kobe(?=`)/
 docs/install.md /(?<=the old `)kobe-(?=\*` repositories)|(?<=app\.kubernetes\.io\/name: )kobe(?=`)|(?<=database name `)kobe(?=`)|(?<=\(`)\/kobe\/eval-cases(?=`\))|(?<=\(pack `)kobe-default(?=`\))/
-docs/development.md /(?<=is called `)kobe(?=`)|(?<=KAIJU_CLUSTER=)kobe\b|(?<=namespace `)kobe-dev(?=` to)/
+docs/install.md /(?<=[`"])kobe-team-(?=[`"])|(?<=teamNamespacePrefix: )kobe-team-(?=`)|(?<=`)kobe-(?:sandbox(?:-isolation)?|team-quota|skill-eval)(?=`)|(?<=managed-by=)kobe-server(?=`)|(?<=as `)kobe-(?=` in the names)/
+docs/development.md /(?<=is called `)kobe(?=`)|(?<=team namespaces \(`)kobe-team-\*(?=`\))|(?<=KAIJU_CLUSTER=)kobe\b|(?<=namespace `)kobe-dev(?=` to)/
 docs/tracing.md /(?<=renamed )Kobe(?= to Kaiju \(KOBE-749\))|(?<=instead of `)kobe\.(?=`)|(?<=\(each was `)kobe-(?=\*`\))|(?<=reads their `)kobe\.(?=\*` span)/
 
 == permanent: Applied migrations (contents and file names, which the journal names) and their snapshots are never edited; database objects and the Drizzle properties that map to their columns keep their names (spec §3 stays 2, §5 no migration)
@@ -120,6 +121,7 @@ charts/** dev/** e2e/** docs/** /(?<=:5432\/)kobe\b(?![\w-])|(?<=\bdatabase: "?)
 == permanent: The pre-rename team namespace prefix `kobe-team-` and its naming generation (`kobe-sandbox`, `kobe-server`, `kobe-team-quota`, ...): an install created before the rename keeps its team namespaces and the objects in them (nothing recreated); `sandbox.teamNamespacePrefix` is set or detected per install, exactly one prefix is in force, and the server refuses to start when namespaces exist under the other one (KOBE-751, spec §5)
 services/server/src/sandbox/constants.ts services/server/src/sandbox/namespace-prefix.ts charts/k{obe,aiju}/templates/_sandbox.tpl charts/k{obe,aiju}/templates/sandbox-admission.yaml charts/k{obe,aiju}/templates/skill-eval-priorityclass.yaml charts/k{obe,aiju}/values.yaml charts/k{obe,aiju}/values.schema.json /(?<=["`])kobe-team-(?=["`])|(?<=\\")kobe-team-(?=\\")|(?<=, or )kobe-team-(?= on an install)|(?<=keeps )kobe-team-(?=, KOBE-751)|(?<=teamNamespacePrefix )kobe-team-(?=\))|(?<=prefix )kobe-team-(?= \(KOBE-751\))|(?<=the )kobe-\*(?= object names)|(?<=; )kobe-\*(?= with)|(?<=or ")kobe(?=" with)/
 charts/k{obe,aiju}/templates/skill-eval-priorityclass.yaml /(?<=; )kobe-skill-eval(?= on an install)/
+e2e/run/54-chart-upgrade.sh /\bkobe-team-(?=e2e-prefix-probe\b)|(?<=prefixes kaiju-team- and )kobe-team-/
 charts/k{obe,aiju}/tests/team-namespace-prefix.test.ts services/server/src/sandbox/namespace-prefix.test.ts services/server/src/sandbox/provider-prefix.test.ts /\bkobe-[\w*-]*/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations

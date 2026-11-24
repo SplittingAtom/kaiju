@@ -1,5 +1,11 @@
 # shellcheck shell=bash
 # Sourced by e2e/run.sh (KOBE-728 split of the former single script); not run on its own.
+# KOBE-751: what the team namespace looks like before the upgrades below (it must come through
+# them untouched, under the prefix the chart detects on upgrade).
+team_ns_uid() { $KUBECTL get namespace "$TEAM_NS" -o jsonpath='{.metadata.uid}' 2>/dev/null; }
+team_quota_uid() { $KUBECTL -n "$TEAM_NS" get resourcequota kaiju-team-quota -o jsonpath='{.metadata.uid}' 2>/dev/null; }
+team_ns_uid_before=$(team_ns_uid)
+team_quota_uid_before=$(team_quota_uid)
 echo "==> chart upgrade reaches an awake sandbox (KOBE-116)"
 if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" ]]; then
   # Exit status = reachability, from the real agent container; --noproxy: the pod's HTTP_PROXY
@@ -62,3 +68,22 @@ else
   echo "SKIP upgrade-reaches-sandbox check (KAIJU_SANDBOX_IMAGE not set)"
 fi
 
+echo "==> team namespace prefix: detected on upgrade, exactly one in force (KOBE-751)"
+deployed_prefix() {
+  $KUBECTL -n "$NS" get deploy kaiju-server -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="KAIJU_SANDBOX_CONFIG")].value}' \
+    | grep -o '"teamNamespacePrefix":"[^"]*"'
+}
+# The upgrades above reuse the install's values, where the prefix is empty: the chart looked it up.
+contains "the upgraded release keeps the detected prefix kaiju-team-" '^"teamNamespacePrefix":"kaiju-team-"$' "$(deployed_prefix)"
+contains "the team namespace and its quota came through the upgrades untouched (same uids)" \
+  "^${team_ns_uid_before:-none}|${team_quota_uid_before:-none}\$" "$(team_ns_uid)|$(team_quota_uid)"
+# A team namespace under the other prefix: the chart refuses to render (a server-side dry run can
+# look it up), and the running server never touches it.
+PROBE_NS=kobe-team-e2e-prefix-probe
+$KUBECTL create namespace "$PROBE_NS" >/dev/null 2>&1 || true
+$KUBECTL label namespace "$PROBE_NS" kobe.splittingatom.io/team-namespace=true --overwrite >/dev/null
+dry=$($HELM upgrade kaiju charts/kaiju -n "$NS" --reuse-values --dry-run=server 2>&1 || true)
+contains "an upgrade with team namespaces under both prefixes fails, naming them" 'both prefixes kaiju-team- and kobe-team-' "$dry"
+leaked=$($KUBECTL -n "$PROBE_NS" get networkpolicy,resourcequota,limitrange,rolebinding -o name 2>/dev/null || true)
+contains "the server created nothing in the other prefix's namespace" '^none$' "${leaked:-none}"
+$KUBECTL delete namespace "$PROBE_NS" --wait=false >/dev/null 2>&1 || true

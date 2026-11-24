@@ -52,15 +52,15 @@ export function prefixMismatchMessage(
   const [only] = found;
   if (found.size === 1 && only !== undefined) {
     return (
-      `${head} Set the Helm value sandbox.teamNamespacePrefix to "${only}" (the prefix this ` +
-      `install's team namespaces use) and upgrade again; moving an install to another prefix is ` +
-      `not supported.`
+      `${head} Set the Helm value sandbox.teamNamespacePrefix to "${only}" (the prefix the ` +
+      `existing team namespaces use) and upgrade again; moving team namespaces to another prefix ` +
+      `is not supported.`
     );
   }
   return (
     `${head} They are labelled ${LABEL_TEAM_NAMESPACE}=true but are not all under one of the ` +
     `prefixes Kaiju uses (${TEAM_NAMESPACE_PREFIXES.join(", ")}). Set ` +
-    `sandbox.teamNamespacePrefix to the prefix of this install's team namespaces, and remove the ` +
+    `sandbox.teamNamespacePrefix to the prefix of the Site's team namespaces, and remove the ` +
     `label from namespaces Kaiju did not create.`
   );
 }

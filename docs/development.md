@@ -55,7 +55,11 @@ http://localhost:3000. `tilt ci` does the same non-interactively and exits once 
 healthy (or fails). `tilt down` removes the deployment; `k3d cluster delete kaiju` removes the
 cluster. A dev cluster created before the rename is called `kobe`: keep using it with
 `KAIJU_CLUSTER=kobe scripts/dev-cluster.sh`, or delete it and create the new one (the dev release
-moved from namespace `kobe-dev` to `kaiju-dev`, so `tilt up` deploys it afresh).
+moved from namespace `kobe-dev` to `kaiju-dev`, so `tilt up` deploys it afresh). The old
+cluster still has the old release's team namespaces (`kobe-team-*`), and the new server refuses to
+start next to them (KOBE-751, one team namespace prefix per install): delete them first
+(`kubectl delete namespace -l kobe.splittingatom.io/team-namespace=true`, which drops their
+sandboxes and workspace volumes).
 
 The dev deployment uses `dev/values.yaml` and `dev/postgres.yaml`: a throwaway Postgres with the
 production role split (`kobe_owner` migrates, `kobe_app` is the app login) and placeholder S3

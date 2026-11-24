@@ -56,7 +56,24 @@ apply`, or deleting the RuntimeClass later cannot run agents without isolation:
 Each user gets one sandbox per team (spec D11): an agent-sandbox `Sandbox` under
 `isolation.runtimeClassName`, with a persistent `/workspace` volume, in the team's namespace
 `kaiju-team-<slug>`. The server creates and maintains these namespaces itself; nothing needs to be
-created by hand. Every team namespace gets:
+created by hand.
+
+**Team namespace prefix (`sandbox.teamNamespacePrefix`).** `kaiju-team-` on a new install. An
+install created before the rename to Kaiju keeps `kobe-team-` and the names of the objects in
+those namespaces (`kobe-sandbox`, `kobe-sandbox-isolation`, `kobe-team-quota`, label
+`app.kubernetes.io/managed-by=kobe-server`, the PriorityClass `kobe-skill-eval`, ...), so nothing
+is recreated; read `kaiju-` as `kobe-` in the names and commands below on such an install. Leave
+the value empty and `helm install`/`helm upgrade` detect it from the existing team namespaces
+(labelled `kobe.splittingatom.io/team-namespace=true`). Renders that cannot reach the cluster
+(`helm template`, Argo CD, Flux, a client-side `--dry-run`) cannot detect it: set it explicitly
+there (the render fails otherwise, unless `global.allowGeneratedSecretsOffline` marks a throwaway
+environment, where empty means `kaiju-team-`). Exactly one prefix is in force: the admission
+policies below pin it, the server refuses to start when team namespaces exist under the other one
+(its log names the value to set: `Set the Helm value sandbox.teamNamespacePrefix to "kobe-team-"`),
+and a render that can reach the cluster fails the same way. Moving an install to the other prefix
+is not supported.
+
+Every team namespace gets:
 
 - a **default-deny NetworkPolicy** (`kaiju-sandbox-isolation`): no inbound connections at all;
   outbound only to the Kaiju server's **sandbox port** (8081, a separate listener with no user API),
@@ -1777,6 +1794,14 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
+  `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
+  namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces
+  and keeps them and their objects (`kobe-sandbox`, `kobe-team-quota`, `kobe-skill-eval`, ...), so
+  sandboxes, volumes and quotas are untouched. If you render offline (`helm template`, Argo CD,
+  Flux), set `sandbox.teamNamespacePrefix: kobe-team-` in your values before upgrading: an offline
+  render without it fails, and a server configured for the wrong prefix refuses to start and says
+  which value to set ([Team namespace prefix](#sandboxes)).
 - **Chart `charts/kaiju` and images `ghcr.io/splittingatom/kaiju-*` (Kaiju rename, KOBE-750).**
   The chart directory and its name are `kaiju` (published as `oci://ghcr.io/splittingatom/charts/kaiju`,
   version 0.2.0), and every image is `kaiju-<name>` under `global.imageRegistry` (`kaiju-server`,

@@ -49,8 +49,8 @@ describe("team namespace prefix check (KOBE-751)", () => {
     expect(err).toBeInstanceOf(TeamNamespacePrefixError);
     expect((err as Error).message).toBe(
       'Team namespaces exist under another prefix than the configured sandbox.teamNamespacePrefix "kaiju-team-": kobe-team-finance, kobe-team-sales. ' +
-        'Set the Helm value sandbox.teamNamespacePrefix to "kobe-team-" (the prefix this install\'s team namespaces use) and upgrade again; ' +
-        "moving an install to another prefix is not supported.",
+        'Set the Helm value sandbox.teamNamespacePrefix to "kobe-team-" (the prefix the existing team namespaces use) and upgrade again; ' +
+        "moving team namespaces to another prefix is not supported.",
     );
   });
 
