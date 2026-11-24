@@ -3,7 +3,7 @@
 > **Status: fallback only.** Since the repository went public, CI runs on GitHub-hosted runners
 > (free for public repos, faster SSD disks, up to 20 parallel jobs). The `KAIJU_RUNNER` variable is
 > unset, so every job uses `ubuntu-latest`. These runners stay installed and idle at zero; set
-> `gh variable set KAIJU_RUNNER --body kobe-k3s --repo SplittingAtom/kobe` to switch back.
+> `gh variable set KAIJU_RUNNER --body kobe-k3s --repo SplittingAtom/kaiju` to switch back.
 
 GitHub-hosted minutes for this private repo are metered and run out quickly with several agents
 pushing in parallel, so CI runs on our own k3s cluster with

@@ -299,16 +299,6 @@ apps/web/components/admin/site/gallery-agent-editor.test.tsx apps/web/components
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
 
-== RN-8: Repository, worktree paths and remotes (GitHub redirects the old URL)
-** /\bSplittingAtom\/kobe(?![\w-])/i
-** /(?<![\w-])Kobe-(?:wt|g)(?=[\d<N])/
-** /\.\.\/Kobe\b/
-
-== RN-8: CI: the runner variables and the shared setup action (the runner set itself keeps its names, see the permanent group)
-** /\bKOBE_(?:BUILD_)?RUNNER\b/
-** /\bsetup-kobe\b/
-path .github/actions/setup-kobe/** /kobe/
-
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
 # triages them: narrows the pattern, renames, or moves an entry to another group.

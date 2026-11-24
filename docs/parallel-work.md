@@ -12,7 +12,7 @@ name below is derived from them.
 
 ```bash
 git worktree add ../Kaiju-wt<N> -b kobe-<N>-<slug> origin/main
-cp ../Kaiju/CLAUDE.local.md ../Kaiju-wt<N>/   # local infra notes (gitignored)
+cp ../Kaiju/CLAUDE.local.md ../Kaiju-wt<N>/  # local infra notes (gitignored)
 cd ../Kaiju-wt<N> && pnpm install --frozen-lockfile
 ```
 
@@ -91,8 +91,8 @@ worktree it is run in (the branch there, not main's checkout), using the main ch
 the script file only. Or merge main into the branch first:
 
 ```bash
-cd ../Kaiju-wt<N>                          # the old branch, clean working tree
-../Kaiju/scripts/onto-main.sh              # ../Kaiju: a checkout of main at or after KOBE-815
+cd ../Kaiju-wt<N>                         # the old branch, clean working tree
+../Kaiju/scripts/onto-main.sh             # ../Kaiju: a checkout of main at or after KOBE-815
 # it drops the branch's services/server/openapi.json and stops on docs/audit-log.md:
 git checkout --theirs -- docs/audit-log.md
 #   move each row the branch added or changed, e.g.
