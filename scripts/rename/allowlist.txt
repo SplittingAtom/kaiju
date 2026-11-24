@@ -144,7 +144,7 @@ packages/protocol/src/sandbox-wire/trace-frames.ts /(?<=")kobe\.(?=")|`kobe\.\*`
 packages/protocol/src/sandbox-wire/trace-frames.test.ts /(?<=")kobe\.tool\.(?:call_id|outcome|nope)\b/
 apps/web/lib/build/reload-draft.ts apps/web/lib/build/reload-draft.test.ts /\bkobe\.reload-drafts\b/
 
-== permanent: Pre-rename names served or accepted for one release across the image rename (KOBE-750): the model gateway's old eval-cases route and the eval image's fallback to it, the eval pack's old id, and the old skills store path a sandbox on the old image reads skills from in results of eval Jobs that run across the upgrade; removed with the one-release fallbacks in KOBE-754
+== permanent: Pre-rename names served or accepted for one release across the image rename (KOBE-750): the model gateway's old eval-cases route and the eval image's fallback to it, the eval pack's old id, and the old skills store path (`/run/kobe-skills`) that sandboxes and eval Jobs still on the old image read skills from; removed with the one-release fallbacks in KOBE-754
 services/model-gateway/src/gateway.ts services/model-gateway/src/gateway-tracing.test.ts images/orbit-eval/kaiju_orbit_eval/cases.py /(?<=")\/kobe\/eval-cases(?=")/
 services/server/src/agents/eval/pack.ts services/server/src/agents/eval/judge.test.ts /(?<=")kobe-default(?=")/
 services/server/src/skills/detect.ts services/server/src/skills/detect.test.ts /(?<=["`])\/run\/kobe-skills?(?=["\/])/
