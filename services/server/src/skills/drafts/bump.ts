@@ -1,4 +1,5 @@
 import { parse } from "yaml";
+import { isManifestPath } from "@kaiju/protocol";
 import { parseSemver } from "../semver.js";
 import { manifestWithoutNumber } from "./manifest-sync.js";
 
@@ -52,10 +53,10 @@ function partsOf(bytes: Uint8Array | undefined): SkillMdParts | null {
 const same = (a: Uint8Array | undefined, b: Uint8Array | undefined): boolean =>
   a !== undefined && b !== undefined && Buffer.from(a).equals(Buffer.from(b));
 
-/** Same file; for kaiju.skill.yaml, the same apart from the number and changelog a save writes. */
+/** Same file; for the manifest (either name), the same apart from the number and changelog a save writes. */
 function sameFile(path: string, a: Uint8Array | undefined, b: Uint8Array | undefined): boolean {
   if (same(a, b)) return true;
-  if (path !== "kaiju.skill.yaml" || !a || !b) return false;
+  if (!isManifestPath(path) || !a || !b) return false;
   const x = manifestWithoutNumber(a);
   return x !== null && x === manifestWithoutNumber(b);
 }

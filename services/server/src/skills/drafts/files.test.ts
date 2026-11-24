@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { draftContent, draftPathProblem, pathFromUrl, skeletonSkillMd } from "./files.js";
 import { parseSkillMd } from "../skill-md.js";
+import { renamed } from "./fork.js";
 
 describe("draft file paths (KOBE-320)", () => {
   it("decodes each URL segment on its own and refuses a decoded slash", () => {
@@ -36,5 +37,30 @@ describe("draft file paths (KOBE-320)", () => {
   it("starts a blank draft with a SKILL.md that parses under its name", () => {
     const parsed = parseSkillMd(new TextEncoder().encode(skeletonSkillMd("my-skill")));
     expect(typeof parsed === "string" ? parsed : parsed.name).toBe("my-skill");
+  });
+});
+
+describe("the manifest's two names in a draft (KOBE-825)", () => {
+  it("refuses adding one name while the draft has the other, saying which to keep", () => {
+    const others = ["SKILL.md", "kobe.skill.yaml"];
+    expect(draftPathProblem("kaiju.skill.yaml", others)).toMatch(/kobe\.skill\.yaml, the old name/);
+    expect(draftPathProblem("kobe.skill.yaml", ["SKILL.md", "kaiju.skill.yaml"])).toMatch(
+      /old name/,
+    );
+    expect(draftPathProblem("kobe.skill.yaml", others)).toBeNull();
+    expect(draftPathProblem("kaiju.skill.yaml", ["SKILL.md"])).toBeNull();
+  });
+
+  it("renames a forked skill in kobe.skill.yaml where it has that name, adding no other", () => {
+    const enc = (s: string) => new TextEncoder().encode(s);
+    const out = renamed(
+      new Map([
+        ["SKILL.md", enc("---\nname: notes\ndescription: Notes\n---\nBe brief.\n")],
+        ["kobe.skill.yaml", enc("apiVersion: kobe.dev/skill/v1\nname: notes\n")],
+      ]),
+      "notes-custom",
+    );
+    expect([...out.keys()]).toEqual(["SKILL.md", "kobe.skill.yaml"]);
+    expect(new TextDecoder().decode(out.get("kobe.skill.yaml"))).toContain("name: notes-custom");
   });
 });

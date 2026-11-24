@@ -1,4 +1,4 @@
-import { MANIFEST_PATH } from "@kaiju/protocol";
+import { MANIFEST_PATH, manifestPathIn } from "@kaiju/protocol";
 import { withTeam } from "@kaiju/db";
 import { Hono } from "hono";
 import type { TeamVariables } from "../../authz/middleware.js";
@@ -50,8 +50,9 @@ export function draftManifestRoutes(kit: DraftKit): Hono<{ Variables: TeamVariab
       return draft ? { draft, files: await readAllFiles(tx, ctx.teamId, id.data) } : null;
     });
     if (!loaded) return error(c, 404, "not_found", "No such draft.");
-    if (loaded.files.has(MANIFEST_PATH))
-      return error(c, 409, "has_manifest", "This draft already has a kaiju.skill.yaml.");
+    const existing = manifestPathIn(loaded.files);
+    if (existing !== null)
+      return error(c, 409, "has_manifest", `This draft already has a ${existing}.`);
     if (loaded.draft.rev !== rev)
       return error(c, 409, "stale_revision", "This draft changed. Reload it to see the change.", {
         rev: loaded.draft.rev,

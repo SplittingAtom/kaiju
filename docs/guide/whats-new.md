@@ -21,6 +21,10 @@ during the upgrade, start the sign-in again.
 For admins with scripts or tools that call Kaiju's API: send the Workspace as `X-Kaiju-Team`.
 The old `X-Kobe-Team` still works for this release only.
 
+Skill authors: the skill manifest is now `kaiju.skill.yaml` (its `compatibility.kobe` range is
+now `compatibility.kaiju`). Skills that still have `kobe.skill.yaml` keep working, with no change
+needed; a skill with both files is refused. See [Skills](agents/skills.md).
+
 ## v1.4: git organizations
 
 A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub

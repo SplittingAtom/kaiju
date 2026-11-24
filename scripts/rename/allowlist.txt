@@ -173,6 +173,11 @@ CLAUDE.md /(?<=was called )Kobe(?= until the rename)/
 docs/specs/** /kobe/i
 ** /(?<=spec |specs\/|\* )kobe-admin-mcp(?= §| KA|\.md)/
 
+== permanent: The skill manifest's pre-rename names, read everywhere next to the new ones (owner decision 2026-11-24, spec §11 A2, KOBE-825): `kobe.skill.yaml` and its `compatibility.kobe` key live in skill packages outside the database (object-store packages, Registry versions, exports people downloaded, the built-ins until KOBE-833) that are never rewritten, since the package hash covers the path; the protocol constant and schema key, the readers' messages and comments, the pre-rename golden hash vector, the contract and guide pages, and the tests that read them
+packages/protocol/src/skill-package/layout.ts packages/protocol/src/testing/skill-hash-vectors.ts services/server/src/skills/bundle.ts services/server/src/skills/drafts/files.ts services/server/src/skills/drafts/fork.ts apps/web/lib/skills/paths.ts apps/web/components/skills/draft-manifest.tsx docs/skill-package.md docs/guide/agents/skills.md docs/guide/whats-new.md /\bkobe\.skill\.yaml\b|\bcompatibility\.kobe\b/
+packages/protocol/src/skill-package/manifest.ts /\bkobe\.skill\.yaml\b|\bcompatibility\.kobe\b|(?<=`)kobe(?=`)|^\s*kobe(?=: z\.)|\bc\.kobe\b|(?<=path: \[")kobe(?="\])/
+packages/protocol/src/skill-package/skill-package.test.ts services/server/src/skills/bundle-package.test.ts services/server/src/skills/drafts/files.test.ts services/server/src/skills/drafts/manifest-sync.test.ts apps/web/lib/skills/paths.test.ts /\bkobe\\?\.skill\\?\.yaml\b|\bcompatibility\.kobe\b|(?<=\{ |, )kobe(?=: ")/i
+
 # ---------------------------------------------------------------------------------------------
 # To rename. Specific steps sit above the generic ones (the Triage tails last), so the
 # order of work reads bottom-up: RN-12..RN-20 (the owner's answers of 2026-11-24, KOBE-824), then
@@ -291,12 +296,6 @@ e2e/browser/tests/kaiju-admin-mcp.spec.ts /\bmcp__kobe(?=\(|\[)|(?<=\{ )kobe(?=\
 apps/web/components/admin/team-connectors-page.test.tsx apps/web/components/admin/team/agent-builder/agent-creator.test.tsx /(?<![@\w\/-])kobe(?![\w\/-])|(?<=name: \/)kobe(?=\/)/
 packages/db/src/connectors/builtin.ts packages/db/src/schema/connectors.ts services/server/src/k{obe,aiju}-mcp/** services/server/src/threads/admin-redaction.ts services/server/src/git-tools/catalog.ts apps/web/lib/admin/api/team/connectors.ts /`kobe`|"kobe" in hex/
 path packages/db/src/** /(?<=^packages\/db\/src\/)kobe(?=-builtin-(?:connector|upgrade)\.db\.test\.ts$)/
-
-== RN-12 (KOBE-825): Skill package manifest file name and its `compatibility.kobe` field, inside packages that already exist outside the database (like kobe.dev/skill/v1): the new names written, both accepted (owner decision 2026-11-24, was Q2)
-** /\bkobe\\?\.skill\\?\.yaml\b/i
-docs/skill-package.md /\bcompatibility\.kobe\b/
-packages/protocol/src/skill-package/manifest.ts /^\s*kobe(?=: z\.)/
-** /(?<=compatibility: \{ )kobe(?=: ")/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area

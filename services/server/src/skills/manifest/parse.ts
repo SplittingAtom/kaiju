@@ -3,6 +3,7 @@ import {
   LICENSE_PATTERN,
   MANIFEST_API_VERSION,
   MANIFEST_MAX_BYTES,
+  MANIFEST_PATH,
   MAX_EGRESS_HOSTS,
   MAX_PACKAGES_PER_MANAGER,
   MAX_TAGS,
@@ -176,7 +177,7 @@ export function manifestFromReply(reply: string, seed: ManifestSeed): ParsedMani
 
 export class ManifestYamlError extends Error {
   constructor(message: string) {
-    super(`kaiju.skill.yaml: ${message}`);
+    super(`${MANIFEST_PATH}: ${message}`);
     this.name = "ManifestYamlError";
   }
 }

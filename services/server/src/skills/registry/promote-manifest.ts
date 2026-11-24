@@ -1,4 +1,4 @@
-import { MANIFEST_PATH, type KaijuSkillManifest } from "@kaiju/protocol";
+import { MANIFEST_PATH, manifestPathIn, type KaijuSkillManifest } from "@kaiju/protocol";
 import { withTeam, type KaijuDb, type TeamRole } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { teamRoleAllows } from "../../authz/permissions.js";
@@ -98,8 +98,8 @@ export async function createManifestDraft(
       return refuse("unavailable", "That version's files can't be read yet.");
     return refuse("not_found", "No such skill version.");
   }
-  if (read.files.has(MANIFEST_PATH))
-    return refuse("has_manifest", "This version already has a kaiju.skill.yaml.");
+  const existing = manifestPathIn(read.files);
+  if (existing !== null) return refuse("has_manifest", `This version already has a ${existing}.`);
   const semver =
     (await deps.store.listVersions(location, source.skillId)).find(
       (v) => v.version === source.version,

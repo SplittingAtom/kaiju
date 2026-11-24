@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { structuredPatch } from "diff";
 import { unzipSync } from "fflate";
+import { isManifestPath } from "@kaiju/protocol";
 import type { BlobStore } from "../../retention/blobs.js";
 import { readVerified } from "../blob-read.js";
 
@@ -182,7 +183,7 @@ const CODE = /\.(sh|bash|zsh|py|js|mjs|cjs|ts|rb|pl|php|ps1|bat|cmd|lua|r|go|rs)
 
 export function readingRank(path: string): number {
   if (path === "SKILL.md") return 0;
-  if (path === "kaiju.skill.yaml") return 1;
+  if (isManifestPath(path)) return 1;
   if (path.startsWith("scripts/") || path.startsWith("bin/") || CODE.test(path)) return 2;
   return 3;
 }

@@ -5,6 +5,7 @@ import type { ApiError } from "../../lib/api/client";
 import { manifestWrittenNotice, type ManifestDraftChoice } from "../../lib/skills/manifest-choice";
 import { ErrorNotice } from "../admin/error-notice";
 import { Notice } from "../ui/console";
+import { isManifestPath } from "@kaiju/protocol";
 import { ManifestChoiceForm } from "./create-manifest";
 import { MANIFEST, type DraftEditor } from "./use-draft-editor";
 
@@ -28,7 +29,8 @@ export function DraftManifest({
   const [error, setError] = useState<ApiError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const create = editor.createManifest;
-  const has = editor.files.some((f) => f.path === MANIFEST);
+  // Either name (KOBE-825): a draft of an older version keeps kobe.skill.yaml.
+  const has = editor.files.some((f) => isManifestPath(f.path));
   if (!create || (has && notice === null)) return null;
   // Made just now: the offer is spent, the notice stays until the author moves on.
   if (has)

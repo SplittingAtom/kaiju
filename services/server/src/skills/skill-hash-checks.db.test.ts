@@ -38,7 +38,8 @@ const stored = {
   b: zip({
     ...PAYLOAD,
     "evals/cases.yaml": "b: 2\n",
-    "kaiju.skill.yaml": "apiVersion: kobe.dev/skill/v1\nname: shared\nversion: 0.1.0\nsummary: S.\n",
+    "kaiju.skill.yaml":
+      "apiVersion: kobe.dev/skill/v1\nname: shared\nversion: 0.1.0\nsummary: S.\n",
   }),
   c: runtimeZip(asMap(PAYLOAD)),
   d: zip({ ...PAYLOAD, "provenance.json": "{}" }),

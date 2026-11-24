@@ -1,8 +1,8 @@
 import { isMap, parseDocument } from "yaml";
-import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
+import { MANIFEST_YAML_OPTIONS, manifestPathIn } from "@kaiju/protocol";
 
 /**
- * A draft's `kaiju.skill.yaml` at Save version (KOBE-322). The manifest's `version` and
+ * A draft's manifest at Save version (KOBE-322), under whichever name it has (KOBE-825). The manifest's `version` and
  * `changelog` must equal the version saved, but a draft's manifest was copied from its parent
  * (a fork) or written before the author chose the number. So the save writes the number and the
  * changelog the author gave into the manifest it packages; every other key stays as written
@@ -14,13 +14,14 @@ export function withSavedNumber(
   changelog: string,
 ): Map<string, Uint8Array> {
   const out = new Map(files);
-  const raw = files.get(MANIFEST_PATH);
-  if (!raw) return out;
+  const path = manifestPathIn(files);
+  const raw = path === null ? undefined : files.get(path);
+  if (path === null || !raw) return out;
   const doc = parseDocument(new TextDecoder().decode(raw), MANIFEST_YAML_OPTIONS);
   if (doc.errors.length > 0 || !isMap(doc.contents)) return out;
   doc.set("version", semver);
   doc.set("changelog", changelog);
-  out.set(MANIFEST_PATH, new TextEncoder().encode(doc.toString()));
+  out.set(path, new TextEncoder().encode(doc.toString()));
   return out;
 }
 

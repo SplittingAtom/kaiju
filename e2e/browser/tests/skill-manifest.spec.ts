@@ -131,7 +131,9 @@ test("the Workbench editor writes kaiju.skill.yaml into an open draft", async ({
     ),
   ).toBeVisible({ timeout: RUN_TIMEOUT_MS });
   // The offer is spent; the file is in the tree and open.
-  await expect(panelOf(page).getByRole("group", { name: "Create kaiju.skill.yaml" })).toHaveCount(0);
+  await expect(panelOf(page).getByRole("group", { name: "Create kaiju.skill.yaml" })).toHaveCount(
+    0,
+  );
   await expectManifestOpen(page, DRAFTED);
   // It survives a reload (it is a draft file like any other).
   await page.reload();

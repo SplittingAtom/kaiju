@@ -20,6 +20,13 @@ describe("newPathProblem (KOBE-321)", () => {
     expect(newPathProblem("scripts/run.sh", others)).toMatch(/file and a folder/);
     expect(newPathProblem("", others)).toMatch(/Give the file a path/);
   });
+
+  it("refuses the manifest's new name next to its old one, kobe.skill.yaml (KOBE-825)", () => {
+    expect(newPathProblem("kobe.skill.yaml", others)).toBeNull();
+    expect(newPathProblem("kaiju.skill.yaml", [...others, "kobe.skill.yaml"])).toMatch(
+      /kobe\.skill\.yaml, the old name/,
+    );
+  });
 });
 
 describe("newFolderProblem (KOBE-478)", () => {

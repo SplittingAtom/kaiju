@@ -1,7 +1,7 @@
 import type { Readable } from "node:stream";
 import { unzipSync } from "fflate";
 import { parse as parseYaml } from "yaml";
-import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
+import { isManifestPath, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
 import type { ScanResult } from "@kaiju/skill-scanner";
 import {
   and,
@@ -119,7 +119,7 @@ export type SandboxBundle =
  * One exported version. `runtimeHash` is its identity under the package contract (for a version
  * stored before KOBE-310 with `evals/`, not its `contentHash`): promotion and the catalog use it.
  * `legacy` lists why a version can't leave until re-saved: today's path rules, an invalid SKILL.md
- * or `kaiju.skill.yaml`, or a manifest whose version is not the version's semver.
+ * or manifest (either name), both manifest names, or a manifest whose version is not the version's semver.
  */
 export type ExportedVersion =
   | {
@@ -285,7 +285,11 @@ export class PostgresSkillStore implements SkillStore {
         ? await readVerified(this.blobs, version.packageStorageKey, version.packageHash, null)
         : await stored();
     if (!bytes) throw new Error(`skills: stored package of ${version.contentHash} is missing`);
-    const manifest = unzipSync(bytes, { filter: (f) => f.name === MANIFEST_PATH })[MANIFEST_PATH];
+    // Either name (KOBE-825); a package stored with both (only possible before the rename, when
+    // `kaiju.skill.yaml` was an ordinary file) is not exported as a package.
+    const manifests = unzipSync(bytes, { filter: (f) => isManifestPath(f.name) });
+    if (Object.keys(manifests).length > 1) return { version, legacy: ["two_manifests"] };
+    const [manifest] = Object.values(manifests);
     if (manifest && !manifestNumbers(manifest, version.semver))
       return { version, legacy: ["manifest_version_mismatch"] };
     return { version, runtimeHash: outcome.runtimeHash, bytes };
@@ -395,7 +399,7 @@ async function packageCandidates(
 }
 
 /**
- * Whether a stored (already validated) `kaiju.skill.yaml` names `semver`: a version uploaded
+ * Whether a stored (already validated) manifest names `semver`: a version uploaded
  * before KOBE-310 was numbered 0.<n>.0 whatever its manifest said, and such a package can't
  * leave under a number its own manifest contradicts.
  */

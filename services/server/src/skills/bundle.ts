@@ -7,9 +7,11 @@ import {
   hashedPackageFiles,
   kaijuSkillManifestSchema,
   MANIFEST_MAX_BYTES,
+  LEGACY_MANIFEST_PATH,
   MANIFEST_PATH,
   MANIFEST_YAML_OPTIONS,
   manifestMismatches,
+  manifestPathIn,
   runtimeFiles,
   type KaijuSkillManifest,
   type PackageProblem,
@@ -46,7 +48,7 @@ export type Result<T> =
 export interface ValidBundle extends SkillMd {
   /**
    * The runtime zip (KOBE-309 contract): the canonical zip of the payload, without `evals/` and
-   * `kaiju.skill.yaml`, the single wrapper directory stripped. What is stored as the version's
+   * the manifest, the single wrapper directory stripped. What is stored as the version's
    * bundle, hashed as its `content_hash` (= runtime hash) and served to sandboxes.
    */
   readonly zip: Uint8Array;
@@ -54,7 +56,10 @@ export interface ValidBundle extends SkillMd {
   readonly packageZip: Uint8Array | null;
   /** SHA-256 of `packageZip`, or of `zip` when there is none. */
   readonly packageHash: string;
-  /** The parsed `kaiju.skill.yaml`, if the package has one (its name matches SKILL.md). */
+  /**
+   * The parsed manifest (`kaiju.skill.yaml`, or `kobe.skill.yaml` before the rename), if the
+   * package has one (its name matches SKILL.md).
+   */
   readonly manifest: KaijuSkillManifest | null;
   /** Files and bytes of the runtime payload (what a sandbox unpacks). */
   readonly fileCount: number;
@@ -118,7 +123,7 @@ export function validateZipBundle(
     );
   const parsed = parseSkillMd(skillMd);
   if (typeof parsed === "string") return fail("invalid_skill_md", parsed);
-  const manifest = readManifest(contents.get(MANIFEST_PATH), parsed.name);
+  const manifest = readManifestIn(contents, parsed.name);
   if (!manifest.ok) return manifest;
   return { ok: true, value: { ...parsed, ...packageZips(contents), manifest: manifest.value } };
 }
@@ -146,7 +151,11 @@ const PROBLEM_CODES: Partial<Record<PackageProblem["problem"], BundleErrorCode>>
   reserved_name_case: "reserved_path",
   reserved_directory: "reserved_path",
   provenance_not_allowed: "reserved_path",
+  two_manifests: "invalid_manifest",
 };
+
+/** Why a package holding both manifest names is refused (KOBE-825), for every reader. */
+export const TWO_MANIFESTS_MESSAGE = `The package has both ${MANIFEST_PATH} and ${LEGACY_MANIFEST_PATH} (its name before the rename): keep one, ${MANIFEST_PATH}.`;
 
 /**
  * The KOBE-309 path rules for authored content (no provenance.json), after the upload's own
@@ -158,24 +167,42 @@ function checkContract(names: readonly string[]): Result<never> | null {
   if (!problem) return null;
   const code = PROBLEM_CODES[problem.problem] ?? "unsafe_path";
   const why =
-    code === "reserved_path"
-      ? `${printable(problem.path)} is reserved: only SKILL.md, evals/ and kaiju.skill.yaml, spelled exactly so, are special, and Kaiju writes provenance.json itself.`
-      : code === "path_conflict"
-        ? `${printable(problem.path)} is both a file and a folder.`
-        : `Unsafe path in bundle: ${printable(problem.path)} (${problem.problem.replaceAll("_", " ")})`;
+    problem.problem === "two_manifests"
+      ? TWO_MANIFESTS_MESSAGE
+      : code === "reserved_path"
+        ? `${printable(problem.path)} is reserved: only SKILL.md, evals/ and ${MANIFEST_PATH} (or ${LEGACY_MANIFEST_PATH}), spelled exactly so, are special, and Kaiju writes provenance.json itself.`
+        : code === "path_conflict"
+          ? `${printable(problem.path)} is both a file and a folder.`
+          : `Unsafe path in bundle: ${printable(problem.path)} (${problem.problem.replaceAll("_", " ")})`;
   return fail(code, why);
 }
 
 /**
- * Parses and checks `kaiju.skill.yaml` by the contract's text rules; null when absent. Also used on
- * stored packages (KOBE-310 recompute and export), whose manifests were never read before.
+ * The manifest of a file set under either name (KOBE-825), read by {@link readManifest}; refused
+ * when the set holds both names.
+ */
+export function readManifestIn(
+  files: ReadonlyMap<string, Uint8Array>,
+  skillName: string,
+): Result<KaijuSkillManifest | null> {
+  if (files.has(MANIFEST_PATH) && files.has(LEGACY_MANIFEST_PATH))
+    return fail("invalid_manifest", TWO_MANIFESTS_MESSAGE);
+  const path = manifestPathIn(files);
+  return path === null ? { ok: true, value: null } : readManifest(files.get(path), skillName, path);
+}
+
+/**
+ * Parses and checks a manifest by the contract's text rules; null when absent. `path` names the
+ * file in messages. Also used on stored packages (KOBE-310 recompute and export), whose
+ * manifests were never read before.
  */
 export function readManifest(
   bytes: Uint8Array | undefined,
   skillName: string,
+  path: string = MANIFEST_PATH,
 ): Result<KaijuSkillManifest | null> {
   if (!bytes) return { ok: true, value: null };
-  const bad = (why: string) => fail("invalid_manifest", `kaiju.skill.yaml: ${why}`);
+  const bad = (why: string) => fail("invalid_manifest", `${path}: ${why}`);
   if (bytes.length > MANIFEST_MAX_BYTES) return bad(`larger than ${MANIFEST_MAX_BYTES} bytes.`);
   let value: unknown;
   try {

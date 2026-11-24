@@ -2,7 +2,7 @@ import { z } from "zod";
 import { SEMVER_PATTERN, SKILL_NAME_PATTERN } from "./layout.js";
 
 /**
- * `kaiju.skill.yaml` (KOBE-309, spec SK19): the author-edited registry metadata of a skill
+ * `kaiju.skill.yaml`, or `kobe.skill.yaml` before the rename (KOBE-309, spec SK19; layout.ts): the author-edited registry metadata of a skill
  * package. Kaiju never loads it into a sandbox (it is outside the runtime hash) and nothing in it
  * grants anything: capabilities are checked against the team's egress and policy, never trusted
  * (no approval bypass).
@@ -73,10 +73,20 @@ export const kaijuSkillManifestSchema = z.strictObject({
       packages: z.strictObject({ pip: packages.optional(), npm: packages.optional() }).optional(),
     })
     .optional(),
+  /**
+   * Informational version ranges. `kaiju` is the current key; `kobe`, its pre-rename spelling,
+   * is still read (KOBE-825). Both may be present only with the same range: a manifest that names
+   * two different ranges for one product is refused, as which one counts would be a guess.
+   */
   compatibility: z
     .strictObject({
       kaiju: z.string().regex(COMPATIBILITY_PATTERN).optional(),
+      kobe: z.string().regex(COMPATIBILITY_PATTERN).optional(),
       pi: z.string().regex(COMPATIBILITY_PATTERN).optional(),
+    })
+    .refine((c) => c.kaiju === undefined || c.kobe === undefined || c.kaiju === c.kobe, {
+      message: "compatibility.kaiju and compatibility.kobe differ: keep compatibility.kaiju only",
+      path: ["kobe"],
     })
     .optional(),
   changelog: z.string().trim().min(1).max(CHANGELOG_MAX_CHARS).optional(),

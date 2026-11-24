@@ -57,7 +57,11 @@ describe("refused before anything is stored", () => {
     ["a case variant of evals/", { "Evals/cases.yaml": "x" }, "reserved_path"],
     ["a file and folder clash", { scripts: "x", "scripts/run.py": "y" }, "path_conflict"],
     ["a bidi control in a name", { "run‮gnp.sh": "x" }, "unsafe_path"],
-    ["an invalid kaiju.skill.yaml", { "kaiju.skill.yaml": "apiVersion: nope\n" }, "invalid_manifest"],
+    [
+      "an invalid kaiju.skill.yaml",
+      { "kaiju.skill.yaml": "apiVersion: nope\n" },
+      "invalid_manifest",
+    ],
   ] as const) {
     it(what, async () => {
       const before = objects.objects.size;
@@ -104,12 +108,16 @@ describe("packages with evals/ and kaiju.skill.yaml", () => {
       "&semver=1.4.0",
     );
     expect(res.status).toBe(400);
-    expect(res.json.message).toMatch(/kaiju\.skill\.yaml/);
+    expect(res.json.message).toMatch(/manifest's version 1\.3\.0/);
   });
 
   it("makes an evals-only change a new version with the same runtime hash", async () => {
     const res = await upload(
-      zipOf({ ...files, "evals/cases.yaml": "cases: [1]\n", "kaiju.skill.yaml": manifest("1.2.1") }),
+      zipOf({
+        ...files,
+        "evals/cases.yaml": "cases: [1]\n",
+        "kaiju.skill.yaml": manifest("1.2.1"),
+      }),
     );
     expect(res.status, JSON.stringify(res.json)).toBe(201);
     expect(res.json.version).toMatchObject({

@@ -221,7 +221,7 @@ async function refusalsOf(
   else if (rules.requireLicense && !plan.bundle.manifest.license)
     out.push({
       code: "license",
-      message: "kaiju.skill.yaml needs a license (Proprietary is fine).",
+      message: "The manifest needs a license (Proprietary is fine).",
     });
   // A scan that didn't finish is never submitted as a verdict (P2-11): try again.
   if (scanIncomplete(plan.scan))

@@ -11,9 +11,14 @@ import {
   crc32,
   hashedPackageFiles,
   kaijuSkillManifestSchema,
+  isManifestPath,
   MANIFEST_MAX_BYTES,
+  MANIFEST_PATH,
+  MANIFEST_PATHS,
   MANIFEST_YAML_OPTIONS,
   manifestMismatches,
+  manifestPathIn,
+  manifestWritePath,
   packageFileRole,
   packagePathProblem,
   provenanceMismatches,
@@ -39,6 +44,30 @@ describe("package layout (KOBE-309)", () => {
     expect(packageFileRole("evals/fixtures/a.csv")).toBe("evals");
     expect(packageFileRole("kaiju.skill.yaml")).toBe("manifest");
     expect(packageFileRole("provenance.json")).toBe("provenance");
+  });
+
+  it("reads the manifest's pre-rename name like the current one, and refuses both (KOBE-825)", () => {
+    expect(packageFileRole("kobe.skill.yaml")).toBe("manifest");
+    expect(packageFileRole("references/kobe.skill.yaml")).toBe("runtime");
+    expect(MANIFEST_PATHS).toEqual(["kaiju.skill.yaml", "kobe.skill.yaml"]);
+    expect(isManifestPath("kobe.skill.yaml") && isManifestPath("kaiju.skill.yaml")).toBe(true);
+    const legacy = new Map([
+      ["SKILL.md", utf8("x")],
+      ["kobe.skill.yaml", utf8("m")],
+    ]);
+    expect([...runtimeFiles(legacy).keys()]).toEqual(["SKILL.md"]);
+    expect(manifestPathIn(legacy)).toBe("kobe.skill.yaml");
+    expect(manifestWritePath(legacy)).toBe("kobe.skill.yaml");
+    expect(manifestPathIn(new Map([["SKILL.md", utf8("x")]]))).toBeNull();
+    expect(manifestWritePath(new Map([["SKILL.md", utf8("x")]]))).toBe(MANIFEST_PATH);
+    expect(checkPackagePaths(["SKILL.md", "kobe.skill.yaml"])).toEqual([]);
+    expect(checkPackagePaths(["SKILL.md", "kaiju.skill.yaml"])).toEqual([]);
+    expect(checkPackagePaths(["SKILL.md", "kaiju.skill.yaml", "kobe.skill.yaml"])).toEqual([
+      { path: "kobe.skill.yaml", problem: "two_manifests" },
+    ]);
+    expect(checkPackagePaths(["SKILL.md", "KOBE.SKILL.YAML"])).toEqual([
+      { path: "KOBE.SKILL.YAML", problem: "reserved_name_case" },
+    ]);
   });
 
   it("splits a package into the runtime payload and the hashed package", () => {
@@ -350,6 +379,23 @@ describe("kaiju.skill.yaml (KOBE-309 ac-1)", () => {
       compatibility: { kaiju: ">=1.2", pi: "1.0.x" },
       changelog: "Adds a totals row per region.",
     });
+  });
+
+  it("reads compatibility.kobe, the pre-rename key; both keys only with the same range (KOBE-825)", () => {
+    const base = {
+      apiVersion: "kobe.dev/skill/v1",
+      name: "notes",
+      version: "1.0.0",
+      summary: "S.",
+    };
+    const parse = (compatibility: Record<string, string>) =>
+      kaijuSkillManifestSchema.safeParse({ ...base, compatibility });
+    expect(parse({ kobe: ">=1" }).success).toBe(true);
+    expect(parse({ kaiju: ">=1" }).success).toBe(true);
+    expect(parse({ kaiju: ">=1", kobe: ">=1" }).success).toBe(true);
+    const differ = parse({ kaiju: ">=2", kobe: ">=1" });
+    expect(differ.success).toBe(false);
+    expect(differ.error?.issues.map(issueAt)).toEqual(["compatibility.kobe"]);
   });
 
   it("must name the SKILL.md name and the saved semver", () => {

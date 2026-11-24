@@ -1,7 +1,7 @@
 import { strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { describe, expect, it } from "vitest";
 import { packageHash, runtimeHash } from "@kaiju/protocol/node";
-import { validateZipBundle } from "./bundle.js";
+import { readManifestIn, TWO_MANIFESTS_MESSAGE, validateZipBundle } from "./bundle.js";
 import { sha256Hex } from "./storage.js";
 
 /**
@@ -92,5 +92,33 @@ describe("runtime and package zips", () => {
     });
     expect(other).toMatchObject({ code: "invalid_manifest" });
     expect(other.message).toMatch(/name/);
+  });
+
+  it("reads kobe.skill.yaml, the manifest's name before the rename (KOBE-825)", () => {
+    const result = validateZipBundle(zip({ "SKILL.md": SKILL_MD, "kobe.skill.yaml": MANIFEST }));
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.manifest).toMatchObject({ name: "demo-skill", version: "1.2.0" });
+    expect(names(result.value.zip)).toEqual(["SKILL.md"]);
+    // A package persisted before the rename keeps its path, so its hashes don't move.
+    expect(names(result.value.packageZip ?? new Uint8Array())).toEqual([
+      "SKILL.md",
+      "kobe.skill.yaml",
+    ]);
+    const bad = failure({ "kobe.skill.yaml": "a: 1\na: 2\n" });
+    expect(bad).toMatchObject({ code: "invalid_manifest" });
+    expect(bad.message).toMatch(/^kobe\.skill\.yaml: /);
+  });
+
+  it("refuses a package holding both manifest names, with a message naming both (KOBE-825 ac-2)", () => {
+    const both = failure({ "kaiju.skill.yaml": MANIFEST, "kobe.skill.yaml": MANIFEST });
+    expect(both.code).toBe("invalid_manifest");
+    expect(both.message).toBe(TWO_MANIFESTS_MESSAGE);
+    expect(both.message).toMatch(/kaiju\.skill\.yaml.*kobe\.skill\.yaml/);
+    expect(
+      readManifestIn(
+        asMap({ "kaiju.skill.yaml": MANIFEST, "kobe.skill.yaml": MANIFEST }),
+        "demo-skill",
+      ),
+    ).toMatchObject({ ok: false, error: { message: TWO_MANIFESTS_MESSAGE } });
   });
 });

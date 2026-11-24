@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { and, eq, registryTags, withTeam, type KaijuDb } from "@kaiju/db";
-import { MANIFEST_PATH, SERVER_CALL_LIMITS, type KaijuSkillManifest } from "@kaiju/protocol";
+import { isManifestPath, SERVER_CALL_LIMITS, type KaijuSkillManifest } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
 import { resolveRunModel } from "../../runs/models.js";
@@ -171,7 +171,7 @@ export function createSkillManifestGenerator(
         semver: request.semver,
         skillMd: new TextDecoder().decode(md),
         paths: [...request.files.keys()]
-          .filter((p) => p !== SKILL_MD_PATH && p !== MANIFEST_PATH)
+          .filter((p) => p !== SKILL_MD_PATH && !isManifestPath(p))
           .sort(),
         knownTags: await knownTags(),
         // Fresh per call, never stored or sent anywhere but in this call's user message.

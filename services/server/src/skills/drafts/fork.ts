@@ -1,6 +1,6 @@
 import { unzipSync } from "fflate";
 import { isMap, parseDocument } from "yaml";
-import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
+import { MANIFEST_YAML_OPTIONS, manifestPathIn } from "@kaiju/protocol";
 import {
   and,
   eq,
@@ -174,12 +174,14 @@ export function renamed(
       out.set(SKILL_MD_PATH, new TextEncoder().encode(next));
     }
   }
-  const manifest = files.get(MANIFEST_PATH);
-  if (manifest) {
+  // Renamed where it is: a fork of a pre-rename version keeps kobe.skill.yaml (KOBE-825).
+  const manifestPath = manifestPathIn(files);
+  const manifest = manifestPath === null ? undefined : files.get(manifestPath);
+  if (manifestPath !== null && manifest) {
     const doc = parseDocument(new TextDecoder().decode(manifest), MANIFEST_YAML_OPTIONS);
     if (doc.errors.length === 0 && isMap(doc.contents)) {
       doc.set("name", name);
-      out.set(MANIFEST_PATH, new TextEncoder().encode(doc.toString()));
+      out.set(manifestPath, new TextEncoder().encode(doc.toString()));
     }
   }
   return out;

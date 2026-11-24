@@ -17,9 +17,11 @@ const MESSAGES: Readonly<Record<PackageProblemCode, string>> = {
   duplicate: "Another file has this path in a different case.",
   file_and_directory: "That path is both a file and a folder.",
   reserved_name_case:
-    "Only SKILL.md, evals/ and kaiju.skill.yaml are special: spell them exactly so.",
+    "Only SKILL.md, evals/ and kaiju.skill.yaml (or kobe.skill.yaml, its old name) are special: spell them exactly so.",
   reserved_directory: "evals is a folder: put files inside it.",
   provenance_not_allowed: "Kaiju writes provenance.json itself.",
+  two_manifests:
+    "The skill already has its manifest as kobe.skill.yaml, the old name: keep that file, or delete it first.",
   skill_md_missing: "",
 };
 
@@ -28,7 +30,8 @@ export function newPathProblem(path: string, others: readonly string[]): string 
   if (others.includes(path)) return "A file already has this path.";
   const problem = checkPackagePaths([...others, path]).find(
     (p) =>
-      p.problem !== "skill_md_missing" && (p.path === path || p.problem === "file_and_directory"),
+      p.problem !== "skill_md_missing" &&
+      (p.path === path || p.problem === "file_and_directory" || p.problem === "two_manifests"),
   );
   return problem ? MESSAGES[problem.problem] : null;
 }

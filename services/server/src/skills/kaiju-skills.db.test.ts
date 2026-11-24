@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { KAIJU_SKILL_NAMES } from "@kaiju/protocol";
+import { KAIJU_SKILL_NAMES, manifestWritePath } from "@kaiju/protocol";
 import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { defaultSyncOnce } from "./default-sync.js";
@@ -369,7 +369,12 @@ describe("versions only rise", () => {
   async function variant(name: string, semver: string, extra?: Record<string, string>) {
     const dir = await mkdtemp(path.join(tmpdir(), "kaiju-variant-"));
     await cp(path.join(KAIJU_PACKAGES_DIR, name), path.join(dir, name), { recursive: true });
-    const yaml = path.join(dir, name, "kaiju.skill.yaml");
+    // Either manifest name: the built-ins keep the pre-rename one until KOBE-833.
+    const yaml = path.join(
+      dir,
+      name,
+      manifestWritePath(new Set(await readdir(path.join(dir, name)))),
+    );
     await writeFile(
       yaml,
       (await readFile(yaml, "utf8")).replace("version: 1.0.0", `version: ${semver}`),

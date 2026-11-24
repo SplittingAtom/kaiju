@@ -15,9 +15,17 @@ The eval suite's own format is in [skill-evals.md](skill-evals.md).
 SKILL.md                 required; portable skill (Agent Skills format)   runtime payload
 scripts/ references/ assets/ (any other path too)                         runtime payload
 evals/cases.yaml         eval suite (KOBE-324), evals/fixtures/           package only
-kaiju.skill.yaml          author-edited registry metadata                  package only
+kaiju.skill.yaml         author-edited registry metadata                  package only
 provenance.json          Kaiju-generated at promotion                      in neither hash
 ```
+
+The manifest's name before the rename, `kobe.skill.yaml`, is read like `kaiju.skill.yaml`
+everywhere (KOBE-825): uploads, imports, drafts and the Workbench, scans, exports, the Registry and
+the git mirror. Packages persisted before the rename (object-store packages, Registry versions,
+exports people downloaded) keep it and are never rewritten, since the package hash covers the
+path. Kaiju writes `kaiju.skill.yaml` for a new manifest and edits an existing one where it is
+(Save version's number, a fork's name). A package holding both names is refused
+(`two_manifests`), as which one counts would be a guess. The runtime payload excludes both names.
 
 Only these root names are reserved: `scripts/evals/x` is payload. `checkPackagePaths` is the
 validator, and the zip and hash functions run it themselves (no unchecked entry point; they throw
@@ -45,10 +53,10 @@ validator, and the zip and hash functions run it themselves (no unchecked entry 
 
 Both are lowercase hex SHA-256 of a **canonical zip**:
 
-| Hash         | Covers                                                                | Used for                                                                                               |
-| ------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Hash         | Covers                                                                 | Used for                                                                                               |
+| ------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Runtime hash | the payload: all but `evals/**`, `kaiju.skill.yaml`, `provenance.json` | identity everywhere: `content_hash`, blocklist, resolver, materialization, the sandbox's `--skill` dir |
-| Package hash | all but `provenance.json`                                             | `package_hash`, Registry versions, scorecard freshness (SK20), package zips                            |
+| Package hash | all but `provenance.json`                                              | `package_hash`, Registry versions, scorecard freshness (SK20), package zips                            |
 
 `provenance.json` records both hashes, so neither covers it. For a skill without `evals/` and
 `kaiju.skill.yaml`, the two hashes are equal.
@@ -135,19 +143,19 @@ tool can reproduce them:
 UTF-8, at most 16 KiB, one YAML 1.2 (core schema) document whose root is a mapping; duplicate
 keys and aliases are refused (`MANIFEST_YAML_OPTIONS` for eemeli/yaml). Unknown keys are refused.
 
-| Key                                  | Rule                                                                                 |
-| ------------------------------------ | ------------------------------------------------------------------------------------ |
-| `apiVersion`                         | `kobe.dev/skill/v1`                                                                  |
-| `name`                               | skill name pattern; must equal the SKILL.md frontmatter `name`                       |
-| `version`                            | MAJOR.MINOR.PATCH (9 digits a part, no pre-release); must equal the saved semver     |
-| `summary`                            | 1–280 characters (UTF-16 code units, as everywhere in this contract)                 |
-| `tags`                               | ≤ 10 unique topic slugs (unknown ones are proposals)                                 |
-| `license`                            | SPDX expression or `Proprietary`; required at submission (SK20), not in a draft      |
-| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kaiju sets maintainers on approval (SK24)      |
-| `capabilities.egress`                | ≤ 50 exact lowercase hosts (no wildcard, no port), checked against the team's egress |
-| `capabilities.packages.pip` / `.npm` | ≤ 50 requirement strings each, no whitespace                                         |
-| `compatibility.kaiju` / `.pi`         | short version ranges, informational                                                  |
-| `changelog`                          | 1–1024 characters                                                                    |
+| Key                                  | Rule                                                                                                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiVersion`                         | `kobe.dev/skill/v1`                                                                                                                                               |
+| `name`                               | skill name pattern; must equal the SKILL.md frontmatter `name`                                                                                                    |
+| `version`                            | MAJOR.MINOR.PATCH (9 digits a part, no pre-release); must equal the saved semver                                                                                  |
+| `summary`                            | 1–280 characters (UTF-16 code units, as everywhere in this contract)                                                                                              |
+| `tags`                               | ≤ 10 unique topic slugs (unknown ones are proposals)                                                                                                              |
+| `license`                            | SPDX expression or `Proprietary`; required at submission (SK20), not in a draft                                                                                   |
+| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kaiju sets maintainers on approval (SK24)                                                                                   |
+| `capabilities.egress`                | ≤ 50 exact lowercase hosts (no wildcard, no port), checked against the team's egress                                                                              |
+| `capabilities.packages.pip` / `.npm` | ≤ 50 requirement strings each, no whitespace                                                                                                                      |
+| `compatibility.kaiju` / `.pi`        | short version ranges, informational; `.kobe`, the pre-rename key, is still read, and when both `.kaiju` and `.kobe` are present they must be equal (else refused) |
+| `changelog`                          | 1–1024 characters                                                                                                                                                 |
 
 Nothing in it grants anything: capabilities and any frontmatter never pre-approve tools.
 
@@ -209,7 +217,8 @@ it; a scorecard from another package hash is stale.
 
 Kaiju's own catalog skills (KOBE-317, SK4: the former built-ins) are published by the server
 itself from the package set it ships (`services/server/builtin-skills/<name>/`, each with a
-`kaiju.skill.yaml` whose `version` is the catalog semver). Nobody promotes them, so their
+manifest whose `version` is the catalog semver; they keep `kobe.skill.yaml` until their next
+versions, KOBE-833, since renaming the file changes the package hash). Nobody promotes them, so their
 provenance (stored with the version) has `publisher: "kobe"` instead of `source`, `submitter`,
 `confirmedBy`, `origin` and `scorecard`; the rest is as above. Their versions only rise: changing a
 skill's files means raising its `version` (`kaiju-packages.test.ts` holds each version's hashes),
