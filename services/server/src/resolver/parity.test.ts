@@ -16,9 +16,9 @@ import { RUN_SKILLS_MAX, resolveEffective, type ResolveInput, type SkillRef } fr
  *   personal (`shadowed_by_agent`) nor an offered skill of that name stands in;
  * - D3: a blocklisted offered skill gets a `blocklisted` notice (it was left out silently);
  * - D4: the cap of 64 counts in the new order (named, offered, personal);
- * - D5 (KOBE-317): a built-in the agent names is a named Kobe catalog skill (step 2, after the
+ * - D5 (KOBE-317): a built-in the agent names is a named Kaiju catalog skill (step 2, after the
  *   local named ones): it is in `skills` with its catalog hash and counts against the cap. It holds
- *   its name exactly as the built-in did, and a Kobe name never resolves to a local skill, so the
+ *   its name exactly as the built-in did, and a Kaiju name never resolves to a local skill, so the
  *   fixtures' named, pending and suspended entries of that name are the team's own and dropped
  *   from both sides ({@link split}).
  */
@@ -32,7 +32,7 @@ const kobeRef = (name: string): SkillRef => ({ name, hash: `kobe-${name}`, sourc
 
 /**
  * The same site before and after KOBE-317: the legacy input without local entries under a
- * built-in name (D5), and the new input where each built-in is a named Kobe catalog skill.
+ * built-in name (D5), and the new input where each built-in is a named Kaiju catalog skill.
  */
 function split(input: LegacyInput): { legacy: LegacyInput; now: ResolveInput; kobe: SkillRef[] } {
   const builtins = [...new Set(input.agent.builtinSkills ?? [])];
@@ -258,7 +258,7 @@ function expectedNow(input: LegacyInput, kobe: readonly SkillRef[]) {
     team: { ...team, offeredSkills: offered },
     user: { ...user, skills: user.skills.filter((s) => !shadowed.has(s.name)) },
   });
-  // D4 and D5: the new order (Kobe's named after the local named), then the cap.
+  // D4 and D5: the new order (Kaiju's named after the local named), then the cap.
   const rank = (s: SkillRef) =>
     agent.skills.includes(s)
       ? 0

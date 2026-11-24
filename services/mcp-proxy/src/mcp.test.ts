@@ -101,7 +101,7 @@ class FakePolicyServer implements PolicyServer {
     return Promise.resolve(this.tools);
   }
 
-  /** The built-in Kobe connector (KOBE-619): what the server lists and answers. */
+  /** The built-in Kaiju connector (KOBE-619): what the server lists and answers. */
   readonly kobeAsked: { token: string; query: Omit<CallQuery, "connectorId"> }[] = [];
   kobeTools: ServerAnswer<ToolsResponse> = {
     ok: true,
@@ -631,7 +631,7 @@ describe("tools/call", () => {
     });
     const res = await rpc("tools/call", { name: "create_issue", arguments: { title: "x" } });
     expect(res.json?.result).toEqual({
-      content: [{ type: "text", text: "Kobe denied this call: This call needs your approval." }],
+      content: [{ type: "text", text: "Kaiju denied this call: This call needs your approval." }],
       isError: true,
     });
     expect(fake.received).toEqual([]);
@@ -1101,7 +1101,7 @@ describe("tracing (KOBE-274)", () => {
 });
 
 describe("the built-in git connector (KOBE-762)", () => {
-  it("is served by the server's git endpoints, never upstream, apart from the Kobe connector", async () => {
+  it("is served by the server's git endpoints, never upstream, apart from the Kaiju connector", async () => {
     const git = { connector: GIT_BUILTIN_CONNECTOR_ID };
     expect((await rpc("tools/list", undefined, git)).status).toBe(200);
     const res = await rpc("tools/call", { name: "git_list_connections", arguments: {} }, git);
@@ -1114,10 +1114,10 @@ describe("the built-in git connector (KOBE-762)", () => {
   });
 });
 
-describe("the built-in Kobe connector (KOBE-619)", () => {
+describe("the built-in Kaiju connector (KOBE-619)", () => {
   const kobe = { connector: KOBE_BUILTIN_CONNECTOR_ID };
 
-  it("lists its tools from the server's Kobe endpoint, never a connector's pinned list", async () => {
+  it("lists its tools from the server's Kaiju endpoint, never a connector's pinned list", async () => {
     const res = await rpc("tools/list", undefined, kobe);
     expect(res.status).toBe(200);
     expect(res.json?.result.tools.map((t: { name: string }) => t.name)).toEqual([
@@ -1172,7 +1172,7 @@ describe("the built-in Kobe connector (KOBE-619)", () => {
     };
     const denied = await rpc("tools/call", { name: "team_members_set_role", arguments: {} }, kobe);
     expect(denied.json?.result).toEqual({
-      content: [{ type: "text", text: "Kobe denied this call: Not for you." }],
+      content: [{ type: "text", text: "Kaiju denied this call: Not for you." }],
       isError: true,
     });
     server.kobeAnswer = {

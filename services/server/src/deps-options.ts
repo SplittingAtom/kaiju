@@ -51,7 +51,7 @@ export interface ServerDepsOptions {
    * `kobe-server-listen`) and tuning (tests shorten the timers).
    */
   readonly listen?: Partial<ListenTuning> & { readonly applicationName?: string };
-  /** Kobe Event Stream tuning (tests shorten the timers). */
+  /** Kaiju Event Stream tuning (tests shorten the timers). */
   readonly eventStream?: {
     readonly hub?: Omit<
       HubOptions,

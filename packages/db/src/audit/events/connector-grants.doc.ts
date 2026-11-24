@@ -29,7 +29,7 @@ export const CONNECTOR_GRANTS_EVENT_DOCS = {
   },
   "mcp.kobe.team_level_changed": {
     fields: "`from`, `to` (docs, read, read_write)",
-    when: "A team admin changed the team's level of the built-in Kobe connector in Team console › Connectors (KOBE-623); no event when nothing changed",
+    when: "A team admin changed the team's level of the built-in Kaiju connector in Team console › Connectors (KOBE-623); no event when nothing changed",
   },
   "mcp.web_search.configured": {
     fields: "`provider`, `enabled`, `keyChanged`",

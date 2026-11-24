@@ -146,7 +146,7 @@ export interface ServerDeps {
    * eval progress, the egress relay and the gateway sync subscribe to their channels on it.
    */
   readonly listen: ListenClient;
-  /** Kobe Event Stream fan-out (on the shared LISTEN connection) and SSE timings (KOBE-31). */
+  /** Kaiju Event Stream fan-out (on the shared LISTEN connection) and SSE timings (KOBE-31). */
   readonly eventStream: {
     readonly hub: RunEventHub;
     readonly reader: StreamReader;
@@ -222,7 +222,7 @@ export interface ServerDeps {
    */
   readonly mcp: McpService;
   /**
-   * The built-in Kobe MCP server (KOBE-619): its tools listed and decided-and-executed on the
+   * The built-in Kaiju MCP server (KOBE-619): its tools listed and decided-and-executed on the
    * internal listener; `createApp` binds the public API router it dispatches admin tools to.
    */
   readonly kobeMcp: KobeMcpService;
@@ -577,7 +577,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     })(),
     ...(options.mcp?.now ? { now: options.mcp.now } : {}),
   });
-  // KOBE-762: the built-in git connector, on the same decision path as the Kobe connector.
+  // KOBE-762: the built-in git connector, on the same decision path as the Kaiju connector.
   const gitMcp = createGitMcpService({
     db: database.db,
     publicUrl: new URL(options.publicUrl).origin,

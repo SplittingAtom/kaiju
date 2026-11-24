@@ -55,8 +55,8 @@ export function ConnectionCard({
         <Notice tone="warn" role="none">
           <p className="m-0">
             {c.health.lastError?.endsWith("site_git_off")
-              ? "Git connections are turned off for this Site: agents cannot use this connection, and Kobe sends nothing to the host, until a Site admin turns them on again in the Site console's Settings."
-              : `The Site does not allow git connections to ${host} any more: agents cannot use this connection, and Kobe sends nothing to the host. Ask a Site admin to add the host to the Site's allowed git hosts, or disconnect it.`}
+              ? "Git connections are turned off for this Site: agents cannot use this connection, and Kaiju sends nothing to the host, until a Site admin turns them on again in the Site console's Settings."
+              : `The Site does not allow git connections to ${host} any more: agents cannot use this connection, and Kaiju sends nothing to the host. Ask a Site admin to add the host to the Site's allowed git hosts, or disconnect it.`}
           </p>
         </Notice>
       ) : null}
@@ -117,7 +117,7 @@ export function ConnectionCard({
         />
         {c.excessPermissions.length > 0 ? (
           <p className="m-0 mt-1 text-sm text-console-muted">
-            More than Kobe needs: {c.excessPermissions.join(", ")}.
+            More than Kaiju needs: {c.excessPermissions.join(", ")}.
           </p>
         ) : null}
       </div>

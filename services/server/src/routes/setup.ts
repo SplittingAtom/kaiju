@@ -36,7 +36,7 @@ export function setupRoutes(deps: ServerDeps): Hono {
       .where(eq(siteRoles.role, "owner"));
     return (row?.n ?? 0) > 0;
   };
-  const complete = { code: "setup_complete", message: "Kobe is already set up." } as const;
+  const complete = { code: "setup_complete", message: "Kaiju is already set up." } as const;
 
   app.get("/", async (c) => c.json({ required: !(await ownerExists()) }));
 

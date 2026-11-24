@@ -1,5 +1,5 @@
 /**
- * The one fetch wrapper for Kobe's API (same origin: the ingress routes `/v1` to the server).
+ * The one fetch wrapper for Kaiju's API (same origin: the ingress routes `/v1` to the server).
  * It never throws for HTTP or network failures: callers get an `ApiResult` and render the error.
  * Authorization is the server's: a 403 here is the answer, whatever the UI showed.
  */
@@ -53,7 +53,7 @@ export interface RequestOptions {
 const MAX_MESSAGE = 300;
 
 const FALLBACK: Readonly<Record<number, readonly [string, string]>> = {
-  0: ["network_error", "Kobe is unreachable. Check your connection and try again."],
+  0: ["network_error", "Kaiju is unreachable. Check your connection and try again."],
   400: ["invalid_request", "Check the request and try again."],
   401: ["unauthenticated", "Your session has ended. Sign in again."],
   403: ["forbidden", "You don't have permission to do that."],
@@ -82,11 +82,11 @@ const SHOWN_5XX_CODES: ReadonlySet<string> = new Set([
   "quota_exceeded",
   // Compact now (KOBE-213): the contract's fixed message (502); never the sandbox's text.
   "compaction_failed",
-  // Connector Re-probe (KOBE-430): Kobe's fixed sentence per failure code, never the remote's text.
+  // Connector Re-probe (KOBE-430): Kaiju's fixed sentence per failure code, never the remote's text.
   "reprobe_failed",
   // Workbench scan preview (KOBE-321): the scan couldn't finish; the page retries.
   "scan_unavailable",
-  // Create kobe.skill.yaml (KOBE-564): Kobe's own sentence naming the model and the gateway's
+  // Create kobe.skill.yaml (KOBE-564): Kaiju's own sentence naming the model and the gateway's
   // code, never the model's text; and the server without a gateway for its own calls.
   "call_failed",
   "model_calls_unavailable",
@@ -96,7 +96,7 @@ const SHOWN_5XX_CODES: ReadonlySet<string> = new Set([
   "host_unreachable",
   "host_error",
   "host_rate_limited",
-  // The Repo mirror's Refresh and Relink (KOBE-766/768): Kobe's fixed sentence, never the host's.
+  // The Repo mirror's Refresh and Relink (KOBE-766/768): Kaiju's fixed sentence, never the host's.
   "credential_rejected",
 ]);
 
@@ -107,7 +107,7 @@ function fallback(status: number): ApiError {
     return {
       status,
       code: "server_error",
-      message: `Kobe had a problem (HTTP ${status}). Try again in a moment.`,
+      message: `Kaiju had a problem (HTTP ${status}). Try again in a moment.`,
     };
   }
   return { status, code: "http_error", message: `The request failed (HTTP ${status}).` };

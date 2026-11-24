@@ -37,7 +37,7 @@ import { ShareCaseDialog } from "./share-case-dialog";
  * assistant-ui's `ActionBarPrimitive.FeedbackPositive/Negative` were the first choice but don't
  * fit: they submit through a runtime adapter and keep the state in the runtime's message metadata
  * (rebuilt here from the entry projection on every change), and they can't clear a rating or take
- * reasons. The buttons below keep their shape (`aria-pressed`) with Kobe's state.
+ * reasons. The buttons below keep their shape (`aria-pressed`) with Kaiju's state.
  */
 
 interface Answer {

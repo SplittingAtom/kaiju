@@ -37,7 +37,7 @@ export const catalogSkillHref = (id: string) =>
 export const catalogEditHref = (id: string) => `${catalogSkillHref(id)}/edit`;
 
 const PUBLISHER: Readonly<Record<CatalogVersionRow["publisher"], string>> = {
-  kobe: "Kobe",
+  kobe: "Kaiju",
   maintainer: "Maintainer",
   site: "Site",
 };
@@ -151,9 +151,9 @@ function SkillView({
     } else if (skill.kobe && !skill.kobe.detached) {
       const yes = await confirm(
         {
-          title: `Edit ${skill.name}, a Kobe skill?`,
+          title: `Edit ${skill.name}, a Kaiju skill?`,
           description:
-            "Editing detaches it: Kobe releases stop updating it until you reset it to Kobe.",
+            "Editing detaches it: Kaiju releases stop updating it until you reset it to Kaiju.",
           confirmLabel: "Edit and detach",
         },
         trigger,
@@ -169,7 +169,7 @@ function SkillView({
       <PageHeader
         title={
           <>
-            {skill.name} <Badge>{skill.publisher === "kobe" ? "Kobe" : "Team-published"}</Badge>{" "}
+            {skill.name} <Badge>{skill.publisher === "kobe" ? "Kaiju" : "Team-published"}</Badge>{" "}
             <DetachedBadge kobe={skill.kobe} />
           </>
         }
@@ -214,7 +214,7 @@ function SkillView({
 /**
  * One catalog skill in the Site Console (KOBE-495): its versions with publisher and state, each
  * version's files read-only, frontmatter, scan, provenance and hashes; Edit opens a site draft
- * from a chosen version. A Kobe skill shows whether it is detached, with Compare and Reset.
+ * from a chosen version. A Kaiju skill shows whether it is detached, with Compare and Reset.
  */
 export function CatalogSkillPage({ skillId }: { readonly skillId: string }) {
   const { state, reload } = useResource(() => getCatalogSkill(skillId));

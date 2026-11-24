@@ -15,7 +15,7 @@ const TOKEN_SHAPE = /^[\x21-\x7e]+$/;
 const ID_SHAPE = /^[1-9]\d{0,15}$/;
 /** Refused before anything is sent (the server takes 8 KiB keys in requests of at most 64 KiB). */
 const KEY_TOO_LONG =
-  "That is too long for a private key: Kobe accepts up to 8 KiB (a GitHub App key is about 2 KiB). Use the .pem file GitHub generated.";
+  "That is too long for a private key: Kaiju accepts up to 8 KiB (a GitHub App key is about 2 KiB). Use the .pem file GitHub generated.";
 
 /**
  * Reads the credential at submit time (the only moment it leaves the form) and wipes it. The

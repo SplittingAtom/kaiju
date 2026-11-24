@@ -8,8 +8,8 @@ import { pageApi } from "./support/gate5.js";
 /**
  * KOBE-553 (ac-7, DRAG-CONTRACT.md): a real pointer drag from a Lakehouse Picker row inside the
  * rail frame to the composer. Chromium refuses native drags between cross-origin frames
- * (crbug.com/59081), so the picker drives the drag with captured pointer events and tells Kobe
- * over the bridge; Kobe draws the ghost chip, lights the composer while the pointer is over it,
+ * (crbug.com/59081), so the picker drives the drag with captured pointer events and tells Kaiju
+ * over the bridge; Kaiju draws the ghost chip, lights the composer while the pointer is over it,
  * and on release adds exactly the click's chip (from "Lakehouse Picker"), no text, and the send
  * carries it in `references`.
  *
@@ -41,7 +41,7 @@ const chipRow = (page: Page) =>
 /** The new picker build in place of the deployed template, after the deployment's own guard. */
 function pickerBody(realBody: string, html: string): string {
   const guard = FRAME_GUARD.exec(realBody)?.[0];
-  expect(guard, "the frame document starts with Kobe's WebRTC guard").toBeDefined();
+  expect(guard, "the frame document starts with Kaiju's WebRTC guard").toBeDefined();
   const doctype = /<!doctype html>/i.exec(html);
   if (!doctype) return `<!doctype html>${guard ?? ""}${html}`;
   const at = doctype.index + doctype[0].length;

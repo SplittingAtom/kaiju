@@ -306,7 +306,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     if (previous === "rebuilding") {
       throw new SandboxWakeError("workspace_rebuilding", WORKSPACE_REBUILDING_MESSAGE);
     }
-    // No row: never started through Kobe; hibernated: a resume. A `running` row whose sandbox is
+    // No row: never started through Kaiju; hibernated: a resume. A `running` row whose sandbox is
     // merely disconnected (pod restarting) is not announced. (`rebuild`, a lost volume, is the
     // wire's: KOBE-24 restores the session.)
     entry.reason =

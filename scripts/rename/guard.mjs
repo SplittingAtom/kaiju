@@ -21,6 +21,7 @@ import {
   audit,
   loadAllowlist,
   splitValues,
+  stepProgress,
   tokenAt,
 } from "./lib.mjs";
 
@@ -98,11 +99,16 @@ function main(args) {
   for (const g of open) {
     console.error(`${ALLOWLIST}:${g.line}: not done: [${g.step}] ${g.reason}`);
   }
-  if (unowned.length > 0 || stale.length > 0 || open.length > 0) {
+  const { outOfOrder } = stepProgress(list.groups);
+  for (const step of outOfOrder) {
+    console.error(`${ALLOWLIST}: ${step} has no groups left while an earlier step still has some`);
+  }
+  if (unowned.length > 0 || stale.length > 0 || open.length > 0 || outOfOrder.length > 0) {
     console.error(
       `error: ${unowned.length} occurrence(s) of the old name not covered by ${ALLOWLIST}` +
         `${unowned.length > 200 ? " (first 200 shown)" : ""}, ${stale.length} stale entr(ies)` +
-        `${open.length > 0 ? `, ${open.length} group(s) not done (--final)` : ""}. ` +
+        `${open.length > 0 ? `, ${open.length} group(s) not done (--final)` : ""}` +
+        `${outOfOrder.length > 0 ? `, step(s) done out of order: ${outOfOrder.join(", ")}` : ""}. ` +
         "Use the new name, or add an entry with its reason and step (scripts/rename/README.md).",
     );
     return 1;

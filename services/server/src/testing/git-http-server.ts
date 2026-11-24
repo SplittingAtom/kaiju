@@ -210,7 +210,7 @@ export async function startConnectProxy(opts: {
         .trim();
       connects.push(target ?? "");
       if (method !== "CONNECT" || !opts.accept(auth, target ?? "")) {
-        client.end("HTTP/1.1 403 Kobe egress blocked: test\r\n\r\n");
+        client.end("HTTP/1.1 403 Kaiju egress blocked: test\r\n\r\n");
         return;
       }
       const upstream = netConnect(opts.upstreamPort, "127.0.0.1", () => {

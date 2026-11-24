@@ -1,4 +1,4 @@
-# Using [Kobe]
+# Using [Kaiju]
 
 > How agents read the guide.
 

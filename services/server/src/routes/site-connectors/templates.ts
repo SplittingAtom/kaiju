@@ -24,7 +24,7 @@ export function connectorTemplateRoutes(kit: ConnectorKit): Hono<{ Variables: Au
   });
 
   // A template's bytes for the escaped diff and the stubbed preview: JSON only, never text/html,
-  // never cached, never sniffed or run as a page on Kobe's origin (spec MA4).
+  // never cached, never sniffed or run as a page on Kaiju's origin (spec MA4).
   app.get("/:id/templates/source", async (c) => {
     const id = param(c, "id", idSchema);
     const uri = c.req.query("uri");
@@ -40,13 +40,13 @@ export function connectorTemplateRoutes(kit: ConnectorKit): Hono<{ Variables: Au
 
   // The admin preview of a template's live or approved bytes (KOBE-434 review M2): text/html only
   // with the app frame's header CSP (sandbox allow-scripts: an opaque origin even top-level, no
-  // network), only into a frame of Kobe's own page. Members never reach this route (site
+  // network), only into a frame of Kaiju's own page. Members never reach this route (site
   // permission above); MA-5's member route serves only approved templates.
   app.get("/:id/templates/frame", async (c) => {
-    // Only into a frame of Kobe's own page (review LOW-1).
+    // Only into a frame of Kaiju's own page (review LOW-1).
     if (!mayLoadAppFrame(c.req.raw.headers, deps.publicUrl)) {
       return c.json(
-        { code: "forbidden_origin", message: "Only Kobe's own frames load this." },
+        { code: "forbidden_origin", message: "Only Kaiju's own frames load this." },
         403,
       );
     }

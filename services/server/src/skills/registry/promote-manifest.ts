@@ -14,7 +14,7 @@ import type { PromoteSource } from "./promote-check.js";
 /**
  * Create kobe.skill.yaml for a version that has none (KOBE-564): what the Promote panel offers
  * when SK20 refuses a version with `no_manifest`. A stored version is immutable (its hashes are
- * its identity), so the manifest cannot be added to it: Kobe drafts the file with the model the
+ * its identity), so the manifest cannot be added to it: Kaiju drafts the file with the model the
  * member chose, then forks the version into a new Workbench draft of the member's with the file in
  * place, at one revision. The member reviews it there, saves the next version (a new package
  * hash, so the full evals run again, SK20) and promotes that one. Nothing leaves the team here:

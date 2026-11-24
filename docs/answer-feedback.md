@@ -2,7 +2,7 @@
 
 Member guide: [Writing messages](guide/chat/composer.md) (Rate an answer). This page is the engineering reference.
 
-Members rate an agent's answers with thumbs up or down (KOBE-275). Kobe can't retrain models, so
+Members rate an agent's answers with thumbs up or down (KOBE-275). Kaiju can't retrain models, so
 ratings are a quality signal for agent builders and, with tracing, a way to line a bad answer up
 with what the agent did.
 
@@ -17,7 +17,7 @@ with what the agent did.
 - Ratings are conversation content: they go with the conversation (Trash purge, retention, team
   delete), appear in the member's own export (`feedback.json`) and are readable by an install admin
   only under break-glass.
-- Under a legal hold a member changes or clears a rating as usual; Kobe keeps the old values aside
+- Under a legal hold a member changes or clears a rating as usual; Kaiju keeps the old values aside
   for the hold and purges them in the retention pass once the hold is released.
 
 ## Totals for agent owners
@@ -75,7 +75,7 @@ lists your cases whether or not the rating still exists, and `DELETE /v1/eval-ca
 withdraws one; My area, **Shared cases** (profile menu, My shared cases) lists them with Withdraw. Cases are in your export (`eval-cases.json`), are
 purged once older than the team's retention period, go with a departed member's data at
 offboarding (unaudited on their own, so the audit log never names a sharer) and with the team.
-Under a legal hold a withdrawal answers as usual while Kobe keeps the copy aside for the hold; the
+Under a legal hold a withdrawal answers as usual while Kaiju keeps the copy aside for the hold; the
 retention pass purges it after the release. A case a hold keeps past the retention period, or
 past its sharer's membership, is shown to nobody and runs in no eval, exactly as if purged, and
 stays so if the retention period is lengthened later or the member rejoins.

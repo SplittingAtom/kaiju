@@ -28,7 +28,7 @@ for the team (`resolveRunModel`; never a fallback), else the team default. Limit
 (`SERVER_CALL_LIMITS.skill_manifest`): 1024 / 3072 output tokens, 60 s, messages up to 120 000
 characters (SKILL.md is cut at 60 000 in the prompt), 512 KiB body, temperature 0.2, skipped only at
 100 %. The skill's content travels between per-call nonce delimiters as data, as the judge's does.
-Details in [skill-package.md](../skill-package.md#created-by-kobe-on-request-kobe-564).
+Details in [skill-package.md](../skill-package.md#created-by-kaiju-on-request-kobe-564).
 
 **Learning pass (KOBE-390 contract, semantic memory SM14/SM15).** Purpose `memory_learn`: one
 extractor call per learning pass, bound to the leaf's last completed run (so the run check admits

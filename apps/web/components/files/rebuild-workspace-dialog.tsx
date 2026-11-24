@@ -93,8 +93,8 @@ export function RebuildWorkspaceDialog({
             {status && !status.rebuildable && notLostText(status)}
             {status?.rebuildable &&
               (status.volume === "rebuilding"
-                ? `The rebuild of ${whose} sandbox was confirmed but has not finished. Kobe keeps trying on its own; you can also finish it now.`
-                : `The storage that held ${whose} sandbox is lost: the server it lived on has been gone too long. Kobe can rebuild the sandbox from the last sync of My files.`)}
+                ? `The rebuild of ${whose} sandbox was confirmed but has not finished. Kaiju keeps trying on its own; you can also finish it now.`
+                : `The storage that held ${whose} sandbox is lost: the server it lived on has been gone too long. Kaiju can rebuild the sandbox from the last sync of My files.`)}
           </Dialog.Description>
           {status?.rebuildable && (
             <div className="grid gap-2 text-sm">
@@ -144,7 +144,7 @@ function notLostText(status: RebuildStatus): string {
     return `The server that holds the sandbox's storage isn't answering (since ${since}). It may come back with the files, so the rebuild is offered only if it stays down until ${offer}.`;
   }
   if (status.volume === "unknown") {
-    return "Kobe couldn't check the sandbox's storage right now, so it can't be rebuilt. Try again in a moment.";
+    return "Kaiju couldn't check the sandbox's storage right now, so it can't be rebuilt. Try again in a moment.";
   }
   return "The sandbox's storage isn't lost, so there is nothing to rebuild. If it still doesn't start, ask your site admin.";
 }

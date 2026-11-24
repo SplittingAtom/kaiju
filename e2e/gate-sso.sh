@@ -6,10 +6,10 @@
 #
 # The mock (e2e/sso/mock-entra.mjs) runs from the installed server image (its own `jose`, no new
 # image) in namespace kobe-sso-infra, with TLS from a CA made here. CoreDNS answers
-# login.microsoftonline.com with the mock's Service, so Kobe's real Entra provider code (issuer
+# login.microsoftonline.com with the mock's Service, so Kaiju's real Entra provider code (issuer
 # https://login.microsoftonline.com/<tid>/v2.0, discovery, JWKS, token endpoint) talks to it; the
 # server trusts the CA through the chart's server.extraCaBundle and reaches the private address
-# through auth.sso.allowedInternalCidrs. Kobe gets no test-only switch. The browser hops and
+# through auth.sso.allowedInternalCidrs. Kaiju gets no test-only switch. The browser hops and
 # Entra's provisioning service are played from a server pod (e2e/gate-sso/client.mjs,
 # e2e/sso/scim-client.mjs). Parts: setup, sign-in + JIT by mapping, refusals (unmapped, overage,
 # IdP error, replayed state, every bad-token mode), MFA (acrs c1 proving and not, under
@@ -56,7 +56,7 @@ cleanup() {
   local u
   for u in "${UNDO[@]+"${UNDO[@]}"}"; do eval "$u" >/dev/null 2>&1 || true; done
   rm -rf "$WORK"
-  verdict_on_exit "$rc" "Kobe SSO Gate"
+  verdict_on_exit "$rc" "Kaiju SSO Gate"
 }
 trap cleanup EXIT
 
@@ -79,7 +79,7 @@ if $KUBECTL -n "$INFRA_NS" get secret mock-entra-ca >/dev/null 2>&1; then
   $KUBECTL -n "$INFRA_NS" get secret mock-entra-ca -o jsonpath='{.data.tls\.crt}' | base64 -d >"$WORK/ca.crt"
   $KUBECTL -n "$INFRA_NS" get secret mock-entra-ca -o jsonpath='{.data.tls\.key}' | base64 -d >"$WORK/ca.key"
 else
-  openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=Kobe SSO gate test CA" \
+  openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=Kaiju SSO gate test CA" \
     -keyout "$WORK/ca.key" -out "$WORK/ca.crt" \
     -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" 2>/dev/null
   $KUBECTL -n "$INFRA_NS" create secret tls mock-entra-ca --cert="$WORK/ca.crt" --key="$WORK/ca.key" >/dev/null
@@ -208,7 +208,7 @@ fx=$(client "$(printf '{"mode":"fixtures","base":"%s","owner":{"email":"%s","pas
   "$BASE" "$OWNER_EMAIL" "$OWNER_PASSWORD" "$setup_token" "$TEAM_SLUG")")
 TEAM=$(field fixtures "$fx" | sed -n 's/.*"teams":{"a":"\([0-9a-f-]*\)".*/\1/p')
 [[ "$TEAM" =~ ^[0-9a-f-]{36}$ ]] && ok "fixtures: team $TEAM_SLUG" || { show fixtures "$fx"; fail "fixtures: team $TEAM_SLUG"; exit 1; }
-mappings=$(printf '[{"slug":"entra-mock","value":"Kobe.Member","role":"member"},{"slug":"entra-mock","value":"Kobe.TeamAdmin","role":"team_admin"},{"slug":"entra-groups","value":"%s","role":"contributor"}]' "$GROUP_ID")
+mappings=$(printf '[{"slug":"entra-mock","value":"Kaiju.Member","role":"member"},{"slug":"entra-mock","value":"Kaiju.TeamAdmin","role":"team_admin"},{"slug":"entra-groups","value":"%s","role":"contributor"}]' "$GROUP_ID")
 su=$(step sso-setup "\"slugs\":[\"entra-mock\",\"entra-groups\"],\"teamId\":\"$TEAM\",\"mappings\":$mappings")
 show setup "$su"
 contains "both providers are Helm-managed Entra providers" '^provider_entra-mock=entra:helm$' "$su"
@@ -224,7 +224,7 @@ user_json() { # key roles-json [extra-json-fields] → a mock person (oid fresh 
   printf '{"oid":"%s","upn":"%s-%s@sso.test","name":"SSO %s","roles":%s%s}' \
     "$(uuid)" "$1" "$NONCE" "$1" "$2" "${3:+,$3}"
 }
-# Each sign-in from a random client address: Kobe allows 20 SSO starts and callbacks per address
+# Each sign-in from a random client address: Kaiju allows 20 SSO starts and callbacks per address
 # a minute (called in $(...), so a counter would not survive).
 signin() { # slug user-json [extra config fields] → the step's output
   local ip
@@ -234,21 +234,21 @@ signin() { # slug user-json [extra config fields] → the step's output
 
 # ---- sign-in and JIT by mapping --------------------------------------------------------------------
 part_begin "sign-in: a mapped Entra person gets a user, a team role and a session"
-U1=$(user_json u1 '["Kobe.Member"]' '"mfa":true')
+U1=$(user_json u1 '["Kaiju.Member"]' '"mfa":true')
 s1=$(signin entra-mock "$U1")
 show u1 "$s1"
-contains "Kobe sends the browser to login.microsoftonline.com with PKCE S256" '^authorize_host=login\.microsoftonline\.com$' "$s1"
+contains "Kaiju sends the browser to login.microsoftonline.com with PKCE S256" '^authorize_host=login\.microsoftonline\.com$' "$s1"
 contains "...asking for the authentication context c1 (MFA)" '^claims_param=\{"id_token":\{"acrs":\{"essential":true,"value":"c1"\}\}\}$' "$s1"
-contains "the mock sends the browser back to Kobe's redirect URI" '^redirect_uri=public$' "$s1"
+contains "the mock sends the browser back to Kaiju's redirect URI" '^redirect_uri=public$' "$s1"
 contains "the callback lands on the requested page" '^landed=/$' "$s1"
 contains "...with a working session" '^session=200$' "$s1"
-contains "JIT: the user exists, made by the mapping (Kobe.Member → member of $TEAM_SLUG)" "^teams=$TEAM_SLUG:member\$" "$s1"
+contains "JIT: the user exists, made by the mapping (Kaiju.Member → member of $TEAM_SLUG)" "^teams=$TEAM_SLUG:member\$" "$s1"
 contains "...linked by JIT on the Entra object id" '^identity=jit:' "$s1"
 U1_ID=$(field user_id "$s1")
 s1b=$(signin entra-mock "$U1")
 contains "a second sign-in is the same user" "^user_id=$U1_ID\$" "$s1b"
 contains "...and makes no second user" '^users=1$' "$s1b"
-s4=$(signin entra-mock "$(user_json u4 '["Kobe.TeamAdmin"]')")
+s4=$(signin entra-mock "$(user_json u4 '["Kaiju.TeamAdmin"]')")
 contains "an app role mapped to team admin gives that role" "^teams=$TEAM_SLUG:team_admin\$" "$s4"
 s5=$(signin entra-groups "$(user_json u5 '[]' "\"groups\":[\"$GROUP_ID\"]")")
 contains "a group mapping (groups claim, second tenant) gives contributor" "^teams=$TEAM_SLUG:contributor\$" "$s5"
@@ -265,17 +265,17 @@ many="[${many%,}]"
 r=$(signin entra-groups "$(user_json r2 '[]' "\"groups\":$many")")
 contains "a groups overage (201 groups, no SCIM) is refused (groups_overage)" '^sso_error=groups_overage$' "$r"
 contains "...and gets no user" '^users=0$' "$r"
-r=$(signin entra-mock "$(user_json r3 '["Kobe.Member"]')" '"mockMode":"deny"')
+r=$(signin entra-mock "$(user_json r3 '["Kaiju.Member"]')" '"mockMode":"deny"')
 contains "the IdP answering access_denied is refused (idp_error)" '^sso_error=idp_error$' "$r"
-r=$(signin entra-mock "$(user_json r4 '["Kobe.Member"]')" '"replay":true')
+r=$(signin entra-mock "$(user_json r4 '["Kaiju.Member"]')" '"replay":true')
 contains "a replayed callback is refused (state_invalid) after the first one signed in" '^replay_landed=/sign-in\?sso_error=state_invalid$' "$r"
-# wrong_iss: openid-client refuses the issuer before Kobe's own check (which would say tenant_mismatch).
+# wrong_iss: openid-client refuses the issuer before Kaiju's own check (which would say tenant_mismatch).
 for case in wrong_iss:token_invalid wrong_aud:token_invalid wrong_nonce:token_invalid expired:token_invalid \
   stale_auth_time:token_invalid alg_none:token_invalid hs256:token_invalid foreign_key:token_invalid \
   missing_tid:tenant_mismatch wrong_tid:tenant_mismatch; do
   mode=${case%%:*}
   want=${case#*:}
-  r=$(signin entra-mock "$(user_json "bad-${mode//_/-}" '["Kobe.Member"]')" "\"mockMode\":\"$mode\"")
+  r=$(signin entra-mock "$(user_json "bad-${mode//_/-}" '["Kaiju.Member"]')" "\"mockMode\":\"$mode\"")
   if grep -Eq "^sso_error=$want\$" <<<"$r" && grep -Eq '^users=0$' <<<"$r" && grep -Eq '^session=401$' <<<"$r"; then
     ok "bad token $mode: refused ($want), no user, no session"
   else
@@ -286,7 +286,7 @@ part_end refusal
 
 # ---- MFA -----------------------------------------------------------------------------------------
 part_begin "MFA: acrs c1 proves MFA; without it require_2fa refuses and ends weak sessions"
-U2=$(user_json u2 '["Kobe.Member"]' '"mfa":false')
+U2=$(user_json u2 '["Kaiju.Member"]' '"mfa":false')
 m2=$(signin entra-mock "$U2")
 contains "without require_2fa a person without MFA signs in" '^session=200$' "$m2"
 contains "...recorded as not MFA-proven" '^sso_mfa=false$' "$m2"
@@ -329,7 +329,7 @@ SCIM_ID=$(field scim_id "$p")
 u=$(scim update "$SCIM_ID")
 contains "PATCH with Entra's quirks (Replace/Add, emails[type eq \"work\"].value, path-less object)" '^update=200' "$u"
 contains "...renames the user" '^display_name=Scim Three-Renamed$' "$u"
-U3=$(printf '{"oid":"%s","upn":"%s","name":"Scim Three","roles":["Kobe.Member"]}' "$OID3" "$UPN3")
+U3=$(printf '{"oid":"%s","upn":"%s","name":"Scim Three","roles":["Kaiju.Member"]}' "$OID3" "$UPN3")
 s3=$(signin entra-mock "$U3")
 contains "the provisioned person signs in by SSO" '^session=200$' "$s3"
 contains "...as the SCIM-made user (linked by SCIM on externalId)" "^identity=scim:$SCIM_ID\$" "$s3"
@@ -360,14 +360,14 @@ echo "     $stats"
 token_ok=$(sed -n 's/.*"token_ok":\([0-9]*\).*/\1/p' <<<"$stats")
 discovery=$(sed -n 's/.*"discovery":\([0-9]*\).*/\1/p' <<<"$stats")
 if [[ "${token_ok:-0}" -ge 5 && "${discovery:-0}" -ge 2 ]]; then
-  ok "Kobe's own discovery and token requests reached the mock ($discovery, $token_ok)"
+  ok "Kaiju's own discovery and token requests reached the mock ($discovery, $token_ok)"
 else
-  fail "Kobe's own discovery and token requests reached the mock: got [$stats]"
+  fail "Kaiju's own discovery and token requests reached the mock: got [$stats]"
   PARTS_FAILED+="mock "
 fi
 
 if [[ "$PARTS_FAILED" != " " ]]; then
-  verdict "Kobe SSO Gate: FAILED (parts failed:${PARTS_FAILED% })"
+  verdict "Kaiju SSO Gate: FAILED (parts failed:${PARTS_FAILED% })"
   exit 1
 fi
-verdict "Kobe SSO Gate (k3d): proven"
+verdict "Kaiju SSO Gate (k3d): proven"

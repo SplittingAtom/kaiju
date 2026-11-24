@@ -214,7 +214,7 @@ describe("add (ac-2, ac-4)", () => {
     ]);
     await mailer.settle();
     expect(mailer.to(email("bob"))).toEqual([
-      expect.objectContaining({ subject: "siteAdmin added you to the finance team on Kobe" }),
+      expect.objectContaining({ subject: "siteAdmin added you to the finance team on Kaiju" }),
     ]);
     // The team's own admin sees who added Bob in the team's audit view and the roster.
     await as.alice.put("/v1/me/teams/active", { teamId: team });
@@ -244,7 +244,7 @@ describe("add (ac-2, ac-4)", () => {
     );
     expect(mailer.to(email("alice"))).toEqual([
       expect.objectContaining({
-        subject: "A site admin changed the finance team's members on Kobe",
+        subject: "A site admin changed the finance team's members on Kaiju",
         text: expect.stringContaining("siteAdmin, a site admin, added bob to the finance team"),
       }),
     ]);

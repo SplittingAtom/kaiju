@@ -11,7 +11,7 @@ import type { Person } from "../testing/event-stream-fixture.js";
 /**
  * KA-6 (KOBE-623, spec kobe-admin-mcp §6–§8): what the web relies on from the server. The
  * "Admin change" card's server summary, the team level and site switch round trips, audit "via
- * agent" with a thread link only for those who may read it, and shared-thread redaction of Kobe
+ * agent" with a thread link only for those who may read it, and shared-thread redaction of Kaiju
  * admin results wherever a reader is served a tool's output.
  */
 
@@ -99,7 +99,7 @@ describe("the Admin change approval card", () => {
   });
 });
 
-describe("Team console › Connectors: the Kobe level", () => {
+describe("Team console › Connectors: the Kaiju level", () => {
   it("round-trips for a team admin, audited; members read it but cannot change it", async () => {
     const w = await h.world(null);
     const got = await w.admin.browser.get("/v1/team/connectors/kobe");
@@ -142,7 +142,7 @@ describe("Team console › Connectors: the Kobe level", () => {
   });
 });
 
-describe("Site console › Settings: the Kobe MCP switch", () => {
+describe("Site console › Settings: the Kaiju MCP switch", () => {
   it("round-trips for a site admin, audited; others are refused", async () => {
     const w = await h.world();
     await h.setSite(KOBE_MCP_MODE_KEY, null);
@@ -168,7 +168,7 @@ describe("Site console › Settings: the Kobe MCP switch", () => {
   });
 });
 
-describe("Site console › Settings: the Kobe admin limits (KOBE-814)", () => {
+describe("Site console › Settings: the Kaiju admin limits (KOBE-814)", () => {
   it("shows the defaults, validates bounds, audits, and applies without a restart", async () => {
     const w = await h.world();
     await h.setSite("kobe_mcp.reads_per_minute", null);
@@ -258,7 +258,7 @@ describe("audit views: via agent", () => {
   });
 });
 
-describe("shared threads hide Kobe admin results (KA6)", () => {
+describe("shared threads hide Kaiju admin results (KA6)", () => {
   const SECRET = "ana@example.test team_admin";
 
   async function sharedThread(w: KobeWorld) {
@@ -287,7 +287,7 @@ describe("shared threads hide Kobe admin results (KA6)", () => {
         ],
       );
     await result("e1", null, h.pi("team_members_list"), SECRET);
-    await result("e2", "e1", h.pi("docs_index"), "# Kobe docs");
+    await result("e2", "e1", h.pi("docs_index"), "# Kaiju docs");
     await h.fx.admin.query(
       `UPDATE threads SET shared_to_team = true, leaf_entry_id = 'e2' WHERE id = $1`,
       [s.threadId],
@@ -308,7 +308,7 @@ describe("shared threads hide Kobe admin results (KA6)", () => {
       expect(entry(read.json, "e1")).toMatchObject({ admin_result_hidden: true });
       expect(JSON.stringify(entry(read.json, "e1"))).toContain(KOBE_ADMIN_RESULT_HIDDEN);
       // The docs tools are never hidden, and the call itself still shows.
-      expect(JSON.stringify(entry(read.json, "e2"))).toContain("# Kobe docs");
+      expect(JSON.stringify(entry(read.json, "e2"))).toContain("# Kaiju docs");
       expect(JSON.stringify(entry(read.json, "e1"))).toContain(h.pi("team_members_list"));
     }
     const output = await w.member.browser.get(`/v1/threads/${s.threadId}/entries/e1/output`);
@@ -343,7 +343,7 @@ describe("shared threads hide Kobe admin results (KA6)", () => {
     );
     expect(rows).toHaveLength(2);
     expect(JSON.stringify(rows)).not.toContain("ana@example.test");
-    expect(JSON.stringify(rows)).toContain("# Kobe docs");
+    expect(JSON.stringify(rows)).toContain("# Kaiju docs");
   });
 
   it("hides tool.result previews in a reader's event stream", async () => {
@@ -419,7 +419,7 @@ describe("shared threads hide Kobe admin results (KA6)", () => {
   });
 });
 
-describe("the composer's Connectors list the built-in Kobe connector", () => {
+describe("the composer's Connectors list the built-in Kaiju connector", () => {
   it("always on, with the admin tools the member would get; no toggle", async () => {
     const w = await h.world("read");
     const kobeRow = async (p: Person) =>

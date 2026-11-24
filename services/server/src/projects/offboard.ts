@@ -81,7 +81,7 @@ export async function endCheckoutsWithoutEditInTx(
 
 /**
  * Deactivation (MT4): {@link endProjectStandingInTx} in every workspace the user belongs to, then
- * their mounts are reconciled (their threads stay; nothing stays mounted while deactivated). Kobe
+ * their mounts are reconciled (their threads stay; nothing stays mounted while deactivated). Kaiju
  * does it (system actor). Every team is tried; failures are thrown together, like `endUserShares`.
  */
 export async function endUserProjects(

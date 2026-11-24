@@ -43,7 +43,7 @@ export const REGISTRY_SUBMISSION_DEFAULTS: RegistrySubmissionRules =
   registrySubmissionRulesSchema.parse({});
 
 /**
- * Where Kobe may import skills from (D2, KOBE-344, SK30 "hosts and organizations"): a lowercase
+ * Where Kaiju may import skills from (D2, KOBE-344, SK30 "hosts and organizations"): a lowercase
  * DNS host (`github.com`: any repository there) or a host and one owner (`github.com/acme`: only
  * that organization's or user's repositories). No scheme, port or deeper path.
  */
@@ -92,7 +92,7 @@ export const registryJudgeAliasSchema = z.string().min(1).max(64);
 
 /**
  * `PUT /v1/site/skills/registry/settings`: any subset of the settings, at least one. The Registry
- * team is not among them: it is always a dedicated team Kobe creates ({@link
+ * team is not among them: it is always a dedicated team Kaiju creates ({@link
  * registryTeamCreateSchema}), never an existing one (coordinator decision, KOBE-330 review H1).
  */
 export const registrySettingsUpdateSchema = z
@@ -108,7 +108,7 @@ export const registrySettingsUpdateSchema = z
 export type RegistrySettingsUpdate = z.infer<typeof registrySettingsUpdateSchema>;
 
 /**
- * `POST /v1/site/skills/registry/team`: Kobe creates the dedicated Registry team (flagged, at most
+ * `POST /v1/site/skills/registry/team`: Kaiju creates the dedicated Registry team (flagged, at most
  * one), with the creating Site admin as its team admin and every Skill reviewer as a member.
  */
 export const registryTeamCreateSchema = z.strictObject({

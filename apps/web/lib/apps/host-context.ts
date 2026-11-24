@@ -1,14 +1,14 @@
 import { OS_DARK_QUERY, parseTheme, type Theme } from "../theme/theme";
 
 /**
- * The `hostContext` Kobe gives an app (spec §7): Kobe's current theme and its colours as the
+ * The `hostContext` Kaiju gives an app (spec §7): Kaiju's current theme and its colours as the
  * ext-apps CSS variables, the display mode, the locale and the container size. Never a user or
  * team identifier.
  */
 /** `rail`: a picker in the rail's Apps tab (KOBE-460), inline to the app, filling its section. */
 export type Placement = "inline" | "expanded" | "rail";
 
-/** ext-apps style variable → Kobe's theme token (`app/theme.css`). */
+/** ext-apps style variable → Kaiju's theme token (`app/theme.css`). */
 const STYLE_TOKENS: Readonly<Record<string, string>> = {
   "--color-background-primary": "--background",
   "--color-background-secondary": "--muted",

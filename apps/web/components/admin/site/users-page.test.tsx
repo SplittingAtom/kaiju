@@ -52,7 +52,7 @@ describe("sign-in protection on the Users page", () => {
       [PROTECTION]: [200, { throttled: [], unknownClientIp: { since: "2026-11-22T08:00:00Z" } }],
     });
     renderSite(<UsersPage />);
-    const notice = await screen.findByText(/without a client address Kobe can trust/);
+    const notice = await screen.findByText(/without a client address Kaiju can trust/);
     expect(notice.textContent).toContain("auth.trustedProxies");
     expect(screen.queryByText(/Sign-in is slowed down/)).toBeNull();
   });

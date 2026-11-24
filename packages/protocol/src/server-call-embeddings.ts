@@ -19,14 +19,14 @@ export const SERVER_CALL_EMBEDDINGS_PATH = "/v1/embeddings";
 export const MEMORY_EMBED_MAX_INPUTS = 64;
 /** Longest input, UTF-16 code units: statements are at most 500; a query is cut to this. */
 export const MEMORY_EMBED_MAX_INPUT_CHARS = 4000;
-/** Largest vector Kobe stores (the migration's CHECK on `embedding_dims`). */
+/** Largest vector Kaiju stores (the migration's CHECK on `embedding_dims`). */
 export const MEMORY_EMBED_MAX_DIMS = 4096;
 
 const input = z.string().min(1).max(MEMORY_EMBED_MAX_INPUT_CHARS);
 
 /**
  * The body an embedding server call may send: an OpenAI Embeddings subset. Strict: no
- * `dimensions` (the model decides; Kobe stores what it returns), no `user`, floats only.
+ * `dimensions` (the model decides; Kaiju stores what it returns), no `user`, floats only.
  */
 export const serverCallEmbeddingsRequestSchema = z.strictObject({
   model: gatewayModelSchema,

@@ -332,7 +332,7 @@ describe("Team connectors (KOBE-105)", () => {
   });
 });
 
-describe("the built-in Kobe connector (KOBE-623)", () => {
+describe("the built-in Kaiju connector (KOBE-623)", () => {
   const kobe = (over: Record<string, unknown> = {}) => ({
     connector_id: "6b6f6265-0000-4000-8000-000000000001",
     name: "kobe",
@@ -353,7 +353,7 @@ describe("the built-in Kobe connector (KOBE-623)", () => {
       [`PUT ${BASE}/kobe`]: [200, { kobe: kobe({ level: "read_write" }) }],
     });
     renderTeam(<TeamConnectorsPage />, { permissions: ["team.read", "team.connectors.manage"] });
-    const k = within(await screen.findByRole("article", { name: "Kobe" }));
+    const k = within(await screen.findByRole("article", { name: "Kaiju" }));
     const docs = k.getByRole("radio", { name: "Docs only" }) as HTMLInputElement;
     expect(docs.checked).toBe(true);
     expect(k.getByRole("radio", { name: "Read" })).toBeTruthy();
@@ -364,10 +364,10 @@ describe("the built-in Kobe connector (KOBE-623)", () => {
     await userEvent.click(k.getByRole("button", { name: /Save level/ }));
     const put = calls.find((c) => c.method === "PUT");
     expect(JSON.parse(String(put?.body))).toEqual({ level: "read_write", expected_level: "docs" });
-    await screen.findByText("Kobe connector: Read and write.");
+    await screen.findByText("Kaiju connector: Read and write.");
     expect(
       (
-        within(screen.getByRole("article", { name: "Kobe" })).getByRole("radio", {
+        within(screen.getByRole("article", { name: "Kaiju" })).getByRole("radio", {
           name: "Read and write",
         }) as HTMLInputElement
       ).checked,
@@ -380,10 +380,10 @@ describe("the built-in Kobe connector (KOBE-623)", () => {
       [`GET ${BASE}/kobe`]: [200, { kobe: kobe({ mode: "docs", level: "read" }) }],
     });
     renderTeam(<TeamConnectorsPage />, { role: "member", permissions: ["team.read"] });
-    const k = within(await screen.findByRole("article", { name: "Kobe" }));
+    const k = within(await screen.findByRole("article", { name: "Kaiju" }));
     expect((k.getByRole("radio", { name: "Read" }) as HTMLInputElement).disabled).toBe(true);
     expect(k.queryByRole("button", { name: /Save level/ })).toBeNull();
-    expect(k.getByText(/limited Kobe to its docs tools/)).toBeTruthy();
+    expect(k.getByText(/limited Kaiju to its docs tools/)).toBeTruthy();
   });
 
   it("is not shown while the site switch is off", async () => {
@@ -393,6 +393,6 @@ describe("the built-in Kobe connector (KOBE-623)", () => {
     });
     renderTeam(<TeamConnectorsPage />);
     await screen.findByRole("article", { name: "jira" });
-    expect(screen.queryByRole("article", { name: "Kobe" })).toBeNull();
+    expect(screen.queryByRole("article", { name: "Kaiju" })).toBeNull();
   });
 });

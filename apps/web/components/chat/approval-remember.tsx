@@ -110,7 +110,7 @@ export function RememberControls({
       {unattendedSibling && (
         <p className={styles.hint} id={`${ids}-unattended`}>
           A scheduled or automatic run of yours is going, and it doesn&apos;t use remembered
-          approvals: Kobe asks again for this tool until it ends.
+          approvals: Kaiju asks again for this tool until it ends.
         </p>
       )}
       {value.remember && picked && (

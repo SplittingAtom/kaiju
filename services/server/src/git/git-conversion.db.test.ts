@@ -78,11 +78,11 @@ describe("converting a project with history (ac-1, ac-3)", () => {
     const ownerRow = must(names.find((n) => n.id === w.owner.id));
     const memberRow = must(names.find((n) => n.id === w.member.id));
     expect(log[0]).toBe(
-      `${ownerRow.name}|${ownerRow.email}|${ownerRow.name} via Kobe|Start the project`,
+      `${ownerRow.name}|${ownerRow.email}|${ownerRow.name} via Kaiju|Start the project`,
     );
     expect(log[1]).toMatch(
       new RegExp(
-        `^${memberRow.name}\\|[0-9a-f]{10}\\+[a-z0-9-]+@users\\.noreply\\.kobe\\.test\\|${memberRow.name} via Kobe\\|Add a script$`,
+        `^${memberRow.name}\\|[0-9a-f]{10}\\+[a-z0-9-]+@users\\.noreply\\.kobe\\.test\\|${memberRow.name} via Kaiju\\|Add a script$`,
       ),
     );
     expect(log[1]).not.toContain(memberRow.email);
@@ -141,7 +141,7 @@ describe("converting a project with history (ac-1, ac-3)", () => {
       kind: "repo",
       repo_conversion: null,
     });
-    // After conversion: the Files panel reads it as before; every Kobe write is refused (G17).
+    // After conversion: the Files panel reads it as before; every Kaiju write is refused (G17).
     const files = await w.owner.browser.request("GET", `/v1/projects/${p.id}/files`);
     expect(files.status).toBe(200);
     expect(files.json.files.map((f: { path: string }) => f.path)).toEqual(["bin/run.sh"]);
@@ -154,7 +154,7 @@ describe("converting a project with history (ac-1, ac-3)", () => {
     const commit = await w.owner.browser.request("POST", `/v1/projects/${p.id}/commit`, {
       message: "more",
     });
-    // KOBE-767: Kobe's commit flow goes to the host now; it needs a checkout like any commit.
+    // KOBE-767: Kaiju's commit flow goes to the host now; it needs a checkout like any commit.
     expect(commit.status).toBe(409);
     expect(commit.json.code).toBe("checkout_required");
     const fileId = files.json.files[0].id as string;
@@ -185,7 +185,7 @@ describe("converting a project with history (ac-1, ac-3)", () => {
     const repo = `acme/hist-off-${p.slug}`;
     expect(bare(repo, ["rev-list", "--count", "main"]).trim()).toBe("1");
     expect(bare(repo, ["log", "-1", "--format=%ae|%s", "main"]).trim()).toBe(
-      `${w.admin.email}|Project ${p.slug}: files from Kobe`,
+      `${w.admin.email}|Project ${p.slug}: files from Kaiju`,
     );
     expect(bare(repo, ["ls-tree", "-r", "--name-only", "main"]).trim()).toBe("a.txt\nb.txt");
   });

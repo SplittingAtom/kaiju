@@ -38,7 +38,7 @@ export const users = pgTable(
      */
     deactivatedAt: timestamp({ withTimezone: true }),
     /**
-     * Who deactivated the user (SSO11): `admin` (Site console, Kobe MCP), or `scim:<provider id>`.
+     * Who deactivated the user (SSO11): `admin` (Site console, Kaiju MCP), or `scim:<provider id>`.
      * SCIM may reactivate only a user its own provider deactivated. NULL while active (deactivations
      * from before the column were backfilled as `admin` by migration 0212). Not a Better Auth field.
      */

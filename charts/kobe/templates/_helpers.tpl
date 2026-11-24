@@ -99,7 +99,7 @@ spec:
 {{- end -}}
 {{- end -}}
 
-{{/* Kobe image: <registry>/kobe-<name>:<tag or appVersion>. */}}
+{{/* Kaiju image: <registry>/kobe-<name>:<tag or appVersion>. */}}
 {{- define "kobe.image" -}}
 {{- printf "%s/kobe-%s:%s" .root.Values.global.imageRegistry .name (default .root.Chart.AppVersion .root.Values.global.imageTag) -}}
 {{- end -}}
@@ -217,13 +217,13 @@ max_connections. An estimate: rollout surge pods, the migrate Job and `kobe back
 {{- define "kobe.smtpEnv" -}}
 {{- $smtp := .Values.smtp | default dict -}}
 - name: KOBE_SMTP_HOST
-  value: {{ required "smtp.host is required (spec D7: Kobe sends invitations and password resets by email)" $smtp.host | quote }}
+  value: {{ required "smtp.host is required (spec D7: Kaiju sends invitations and password resets by email)" $smtp.host | quote }}
 - name: KOBE_SMTP_PORT
   value: {{ $smtp.port | default 587 | quote }}
 - name: KOBE_SMTP_SECURITY
   value: {{ $smtp.security | default "starttls" | quote }}
 - name: KOBE_SMTP_FROM
-  value: {{ required "smtp.from is required, e.g. \"Kobe <kobe@example.com>\"" $smtp.from | quote }}
+  value: {{ required "smtp.from is required, e.g. \"Kaiju <kobe@example.com>\"" $smtp.from | quote }}
 {{- with $smtp.existingSecret }}
 - name: KOBE_SMTP_USERNAME
   valueFrom:
@@ -278,7 +278,7 @@ existing Secret, unless explicitly allowed for throwaway environments (dev, CI).
 {{- end -}}
 
 {{/*
-Deployment + Service for a Kobe Node service.
+Deployment + Service for a Kaiju Node service.
 Args: root, name (image + component), values, env (YAML list string), serviceAccount, healthPath,
 extraVolumes / extraMounts / extraPorts / extraServicePorts (YAML list strings), preflight (isolation initContainer), migrations
 (wait-for-migrations initContainer).
@@ -468,7 +468,7 @@ missing Secret leaves the mirror unable to push rather than the server down), an
 - name: KOBE_SKILL_MIRROR_USERNAME
   value: {{ $m.username | default "x-access-token" | quote }}
 - name: KOBE_SKILL_MIRROR_AUTHOR_NAME
-  value: {{ $m.authorName | default "Kobe Registry" | quote }}
+  value: {{ $m.authorName | default "Kaiju Registry" | quote }}
 - name: KOBE_SKILL_MIRROR_AUTHOR_EMAIL
   value: {{ $m.authorEmail | default "registry@kobe.invalid" | quote }}
 {{- if $t.name }}

@@ -200,7 +200,7 @@ export async function startFork(
   source: ForkSource,
   name?: string,
   /**
-   * Files written over the copy in the same start (KOBE-564: the `kobe.skill.yaml` Kobe drafted
+   * Files written over the copy in the same start (KOBE-564: the `kobe.skill.yaml` Kaiju drafted
    * for a version without one), so the draft begins at one revision with them in place.
    */
   extraFiles?: ReadonlyMap<string, Uint8Array>,
@@ -210,7 +210,7 @@ export async function startFork(
       ? await copyCatalog(ctx, ctx.db, deps.blobs, source)
       : await copyLocal(ctx, deps.store, source);
   if (typeof copy === "string") return { ok: false, error: copy };
-  // Kobe writes provenance.json itself on export; a copy never carries one (authored content).
+  // Kaiju writes provenance.json itself on export; a copy never carries one (authored content).
   copy.files.delete("provenance.json");
   const original = nameIn(copy.files);
   const target = name ?? original;

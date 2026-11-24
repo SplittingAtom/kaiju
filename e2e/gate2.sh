@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gate 2 (KOBE-2, Safety) against an installed Kobe, five criteria end to end:
+# Gate 2 (KOBE-2, Safety) against an installed Kaiju, five criteria end to end:
 #   ac-1 budget    a team budget at 100% lets the run in flight finish its current model step, then
 #                  stops it with run.budget_stopped (and refuses new runs)
 #   replicas       (KOBE-121) concurrent calls straight at both model-gateway replicas against a small
@@ -351,7 +351,7 @@ if [[ "$STEPS" == *" egress "* ]] && sbx_need "ac-2 (egress)"; then
     first=$(chat "$tool" "" true)
     printf '%s\n' "$first" | cut -c1-300 | sed 's/^/     /'
     contains "the run completed (the sandbox's tool ran curl)" '^terminal=run.completed$' "$first"
-    contains "the request was blocked by the egress proxy" '^text=.*(403|Kobe egress)|^tool_output=.*(403|Kobe egress)' "$first"
+    contains "the request was blocked by the egress proxy" '^text=.*(403|Kaiju egress)|^tool_output=.*(403|Kaiju egress)' "$first"
     contains "the blocked request reached the run as egress.blocked with request access" "^blocked=.*$UP_HOST:true" "$first"
     contains "the member asked for access from the thread (pending)" '^request=201:pending$' "$first"
     e_thread=$(field thread "$first")
@@ -425,7 +425,7 @@ if [[ "$STEPS" == *" mcp "* ]] && sbx_need "ac-3 (mcp)"; then
   write=$(mcp_rpc "$mcp_token" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"create_thing","arguments":{"title":"x"}}}')
   printf '     MCP write without approval: %s\n' "$(printf '%s' "$write" | tr '\n' ' ' | cut -c1-200)"
   contains "an MCP write without a signed approval is refused at the proxy" '"isError":true' "$write"
-  contains "the refusal is the server's policy decision" 'Kobe denied this call' "$write"
+  contains "the refusal is the server's policy decision" 'Kaiju denied this call' "$write"
   contains "the remote server received the read (and only the read)" "^$((reads0 + 1))\$" "$(fake_calls get_thing)"
   contains "the remote server never received the unapproved write" "^$writes0\$" "$(fake_calls create_thing)"
   contains "the sandbox's session token never reaches the remote server" "^$auth0\$" "$(fake_auth)"

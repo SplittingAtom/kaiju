@@ -29,7 +29,7 @@ in a fresh 0700 directory, signed with a random key. No TCP port is opened: ipyk
 the launcher below, so a forked child's Python-level prints are not shown. The kernel's own
 stdin/stdout/stderr are /dev/null, so nothing it writes can reach this protocol. IPython and Jupyter
 read their configuration and startup files from that directory only (never the shared $HOME).
-Outputs are passed on as the kernel sends them; the agent applies Kobe's caps and MIME allow-list.
+Outputs are passed on as the kernel sends them; the agent applies Kaiju's caps and MIME allow-list.
 
 Internet (NB17): like the shell tool, through egress-proxy. The agent passes the token *file*
 (KOBE_EGRESS_TOKEN_FILE), the proxy URL and the thread id, never the token; before each cell the
@@ -1536,7 +1536,7 @@ def emit_output(exec_id, output):
     message = {"ev": "output", "id": exec_id, "output": output}
     size = len(json.dumps(message, ensure_ascii=False).encode("utf-8"))
     if size > MAX_LINE_BYTES:
-        message["output"] = note(f"[Kobe: output truncated: one output of {size} bytes was too large]\n")
+        message["output"] = note(f"[Kaiju: output truncated: one output of {size} bytes was too large]\n")
     emit(message)
 
 
@@ -1548,7 +1548,7 @@ def write_kernel_spec(private, data_dir):
     os.makedirs(spec_dir, mode=0o700, exist_ok=True)
     spec = {
         "argv": [sys.executable, launcher, "-f", "{connection_file}"],
-        "display_name": "Python 3 (Kobe)",
+        "display_name": "Python 3 (Kaiju)",
         "language": "python",
     }
     with open(os.path.join(spec_dir, "kernel.json"), "w", encoding="utf-8") as f:

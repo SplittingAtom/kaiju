@@ -62,7 +62,7 @@ export const sitePlatformAreas: readonly CatalogArea[] = [
         "get",
         "/v1/site/connectors/{id}/templates/frame",
         "Preview a template in a sandboxed frame",
-        "Site admins (`site.connectors.manage`). Answers HTML for Kobe's own page frame only.",
+        "Site admins (`site.connectors.manage`). Answers HTML for Kaiju's own page frame only.",
       ],
       [
         "put",

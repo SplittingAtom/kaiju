@@ -21,7 +21,7 @@ import { reopenRetentionInTx } from "../../offboarding/reopen.js";
  * taken by the Owner or a Site admin, audited. Site admins and the Owner may hold it too
  * (coordinator decision, review-336): it adds no decision power they lack, only membership of the
  * Registry team, which re-runs need. Another admin gives it; a self-grant is refused except on a
- * single-admin Site, where it is allowed and flagged (`selfGranted`), as with self-approval. Kobe adds every grantee to the dedicated Registry
+ * single-admin Site, where it is allowed and flagged (`selfGranted`), as with self-approval. Kaiju adds every grantee to the dedicated Registry
  * team (never another team: review H1) as a member it marks `added_via` the grant, and taking the
  * grant removes exactly those memberships (a member by invitation, or one a team admin changed,
  * stays). The grant and the membership change are one transaction (review M4).
@@ -82,7 +82,7 @@ export async function reviewerIds(db: KobeDb | KobeTx): Promise<string[]> {
 }
 
 /**
- * Adds grantees to the Registry team (inside its team transaction) as members Kobe made; anyone
+ * Adds grantees to the Registry team (inside its team transaction) as members Kaiju made; anyone
  * already a member keeps their own membership. Each addition is audited in the team's log.
  */
 export async function joinRegistryTeamInTx(

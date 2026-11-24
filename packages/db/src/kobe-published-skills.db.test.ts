@@ -11,10 +11,10 @@ import {
 } from "./test-support/database.js";
 
 /**
- * KOBE-317: Kobe-published catalog skills (0137, 0138). A site with catalog rows (a maintainer
+ * KOBE-317: Kaiju-published catalog skills (0137, 0138). A site with catalog rows (a maintainer
  * skill, a version, a tag, an install and a Default sync) migrates as the non-superuser owner and
- * keeps them as they were; Kobe's own rows carry no person (requester NULL, marker set, CHECKs);
- * built-in names stay Kobe's; the publisher and recorded bytes are immutable.
+ * keeps them as they were; Kaiju's own rows carry no person (requester NULL, marker set, CHECKs);
+ * built-in names stay Kaiju's; the publisher and recorded bytes are immutable.
  */
 const MARKER = 'ADD COLUMN "publisher" "registry_publisher"';
 
@@ -61,7 +61,7 @@ beforeAll(async () => {
         name,
         `${name.toLowerCase()}-${suffix}@example.test`,
       ]);
-    await c.query(`INSERT INTO teams (id, slug, name) VALUES ($1, $2, 'Kobe skills')`, [
+    await c.query(`INSERT INTO teams (id, slug, name) VALUES ($1, $2, 'Kaiju skills')`, [
       ids.team,
       `kobe-skills-${suffix}`,
     ]);
@@ -143,8 +143,8 @@ describe("upgrade (0137, 0138)", () => {
   });
 });
 
-describe("Kobe-published rows carry no person", () => {
-  it("publishes a Kobe version with no submitter or reviewer, approved, with its bytes", async () => {
+describe("Kaiju-published rows carry no person", () => {
+  it("publishes a Kaiju version with no submitter or reviewer, approved, with its bytes", async () => {
     await withClient(database().appUrl, async (c) => {
       const skill = await c.query<{ id: string }>(
         `INSERT INTO registry_skills (name, summary, publisher) VALUES ('pdf', 'PDFs.', 'kobe')
@@ -182,7 +182,7 @@ describe("Kobe-published rows carry no person", () => {
     });
   });
 
-  it("refuses a version without a person that is not Kobe's, and either on the other's skill", async () => {
+  it("refuses a version without a person that is not Kaiju's, and either on the other's skill", async () => {
     await withClient(database().appUrl, async (c) => {
       const insert = (skill: string, publisher: string, submitter: string | null, semver: string) =>
         c.query(
@@ -195,7 +195,7 @@ describe("Kobe-published rows carry no person", () => {
       await expect(insert(ids.skill, "maintainer", null, "2.0.0")).rejects.toMatchObject({
         constraint: "registry_versions_kobe_publisher",
       });
-      // Nobody submits a version of a Kobe skill, and Kobe never publishes a maintainer's.
+      // Nobody submits a version of a Kaiju skill, and Kaiju never publishes a maintainer's.
       await expect(insert(kobeSkill, "maintainer", ids.user, "2.0.0")).rejects.toMatchObject({
         constraint: "registry_versions_publisher_fk",
       });
@@ -205,7 +205,7 @@ describe("Kobe-published rows carry no person", () => {
     });
   });
 
-  it("keeps built-in names Kobe's, and Kobe to them", async () => {
+  it("keeps built-in names Kaiju's, and Kaiju to them", async () => {
     await withClient(database().appUrl, async (c) => {
       await expect(
         c.query(`INSERT INTO registry_skills (name, summary) VALUES ('xlsx', 'Mine.')`),
@@ -213,7 +213,7 @@ describe("Kobe-published rows carry no person", () => {
       await expect(
         c.query(`UPDATE registry_skills SET publisher = 'maintainer' WHERE id = $1`, [kobeSkill]),
       ).rejects.toMatchObject({ constraint: "registry_skills_kobe_names" });
-      // And Kobe publishes only those (review-317 S2): no other name, no rename away.
+      // And Kaiju publishes only those (review-317 S2): no other name, no rename away.
       await expect(
         c.query(
           `INSERT INTO registry_skills (name, summary, publisher) VALUES ('my-tool', 'M.', 'kobe')`,
@@ -225,7 +225,7 @@ describe("Kobe-published rows carry no person", () => {
     });
   });
 
-  it("marks Kobe's tag, sync and install rows, and nothing else may lack a person", async () => {
+  it("marks Kaiju's tag, sync and install rows, and nothing else may lack a person", async () => {
     await withClient(database().appUrl, async (c) => {
       const tag = `(SELECT id FROM registry_tags WHERE name = 'default')`;
       await expect(
@@ -298,7 +298,7 @@ describe("immutable identity (0138)", () => {
           ids.version,
         ]),
       ).rejects.toMatchObject({ code: "55000" });
-      // Retirement still moves (a Site admin deprecates a Kobe version).
+      // Retirement still moves (a Site admin deprecates a Kaiju version).
       await c.query(`UPDATE registry_versions SET state = 'deprecated' WHERE id = $1`, [
         kobeVersion,
       ]);

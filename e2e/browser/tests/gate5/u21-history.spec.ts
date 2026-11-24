@@ -73,7 +73,7 @@ test("U21: a tool output over 64 KB is read in full when its card opens", async 
   page,
 }) => {
   await chat.open();
-  // Pi trims what a tool returns before Kobe sees it (bash and read at 50 KB, MCP at 20 KB of
+  // Pi trims what a tool returns before Kaiju sees it (bash and read at 50 KB, MCP at 20 KB of
   // text), but the chat's 64 KB limit is on the stored JSON of the output: 40,000 double quotes
   // are 40 KB of text (under Pi's limit) and 80 KB escaped, so a real bash output crosses it.
   // The card also shows the command, so the output's last line is computed by the shell: the

@@ -109,7 +109,7 @@ export function RememberedRules({
       {
         title: `${verb} the remembered approval${who} for ${rule.toolGlob}?`,
         description: rule.applies
-          ? "Kobe asks again the next time this tool needs approval."
+          ? "Kaiju asks again the next time this tool needs approval."
           : "It no longer applies; this removes it from the list.",
         confirmLabel: verb,
       },

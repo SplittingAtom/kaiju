@@ -13,7 +13,7 @@ import { gitConnector, gitPinnedTool, loadGitBuiltin } from "./pinned.js";
 
 /**
  * The built-in git connector's MCP server, hosted by the server (KOBE-762; owner decision
- * 2026-11-22: its own connector, apart from the Kobe MCP connector). The MCP proxy routes it here
+ * 2026-11-22: its own connector, apart from the Kaiju MCP connector). The MCP proxy routes it here
  * (`/internal/v1/mcp/git/{list,calls}`); each call is decided and executed in this one request on
  * the same decision path as every connector call (`decideMcpCall`: the policy engine under every
  * active run of the sandbox, the git access check as the person half, a signed approval verified
@@ -118,7 +118,7 @@ export function createGitMcpService(options: GitMcpServiceOptions): GitMcpServic
         decided.tool.name !== request.tool
       ) {
         logger.error({ sandboxId: principal.sandboxId }, "git-mcp: allow without a run; refused");
-        return { outcome: "error", code: "failed", message: "Kobe could not run this tool." };
+        return { outcome: "error", code: "failed", message: "Kaiju could not run this tool." };
       }
       const toolCallId =
         decided.tool_call_id !== undefined && PLAIN_ID.test(decided.tool_call_id)

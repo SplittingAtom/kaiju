@@ -67,8 +67,8 @@ export async function freshBrowser(browser: Browser): Promise<Page> {
 
 /** Answers the mock's authorize step as `person` (the test-only `mock_user` parameter). */
 export async function signInAs(page: Page, person: MockPerson): Promise<void> {
-  // Kobe's start route answers 302 to the mock's authorize URL; Playwright does not route redirected
-  // requests, so the person is added to that redirect's Location at Kobe's start step instead (its
+  // Kaiju's start route answers 302 to the mock's authorize URL; Playwright does not route redirected
+  // requests, so the person is added to that redirect's Location at Kaiju's start step instead (its
   // Set-Cookie, the sealed flow state, passes through unchanged).
   await page.route(
     (url) => url.pathname.startsWith(`/api/auth/sso/start/${MOCK.slug}`),

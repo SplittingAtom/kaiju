@@ -168,7 +168,7 @@ export function slashItems(
 }
 
 /**
- * A Pi built-in command typed in full (KOBE-450) whose word no Kobe command has: Kobe's command
+ * A Pi built-in command typed in full (KOBE-450) whose word no Kaiju command has: Kaiju's command
  * for it (`/name` offers `/rename`), or one disabled row saying why it isn't offered, so the word
  * is neither run by Pi nor sent to it as a message.
  */

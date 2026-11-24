@@ -128,7 +128,7 @@ export function UsersPage() {
         title="Users"
         description={
           <>
-            People join Kobe by invitation.{" "}
+            People join Kaiju by invitation.{" "}
             <Link href={`${consoleHref("site")}/invites`}>Invite someone</Link>.
           </>
         }

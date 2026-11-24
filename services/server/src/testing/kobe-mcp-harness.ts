@@ -34,7 +34,7 @@ import {
 } from "./mcp-fixtures.js";
 
 /**
- * The built-in Kobe MCP server end to end for db tests (KOBE-619 setup, shared by KOBE-621): the
+ * The built-in Kaiju MCP server end to end for db tests (KOBE-619 setup, shared by KOBE-621): the
  * real MCP proxy app talks HTTP to the real internal listener; the server decides and executes
  * the console route in process as the person.
  */

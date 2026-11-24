@@ -202,8 +202,8 @@ export async function notifyTeamAdmins(
   const who = `"${oneLine(found.team.requester, 64).replaceAll('"', "'")}" <${found.team.email}>, a member of the ${team} team,`;
   const text = [
     request.installed
-      ? `${who} asked for a change to the team's install of the catalog skill ${skill} (now ${oneLine(request.installed, 32)}) on Kobe.`
-      : `${who} asked to install the catalog skill ${skill} for the team on Kobe.`,
+      ? `${who} asked for a change to the team's install of the catalog skill ${skill} (now ${oneLine(request.installed, 32)}) on Kaiju.`
+      : `${who} asked to install the catalog skill ${skill} for the team on Kaiju.`,
     "",
     `Install it, or dismiss the request, in your team console: ${deps.publicUrl}${CONSOLE_PATHS.teamSkills}`,
   ].join("\n");

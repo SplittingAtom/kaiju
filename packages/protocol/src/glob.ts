@@ -2,7 +2,7 @@ import { z } from "zod";
 import { canonicalJson } from "./canonical-json.js";
 
 /**
- * The only pattern language in Kobe policy (`tool_rules.tool_glob`, `tool_rules.arg_pattern`,
+ * The only pattern language in Kaiju policy (`tool_rules.tool_glob`, `tool_rules.arg_pattern`,
  * agent `tools.allow/deny`). No regular expressions anywhere a user can write a pattern (no ReDoS,
  * one obvious meaning).
  *

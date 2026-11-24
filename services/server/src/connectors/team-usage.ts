@@ -66,7 +66,7 @@ export async function teamIdsUsing(db: KobeDb, connectorId: string): Promise<str
 
 /**
  * The teams that have the connector enabled, with their exposure, ordered by team name; undefined
- * when the connector is unknown, removed or the built-in Kobe connector (which has team levels, not
+ * when the connector is unknown, removed or the built-in Kaiju connector (which has team levels, not
  * enablements). A custom count only counts ticks that still name a pinned tool.
  */
 export async function listTeamsUsing(

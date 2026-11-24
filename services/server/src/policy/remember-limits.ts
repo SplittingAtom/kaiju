@@ -44,7 +44,7 @@ export const RULE_REFUSAL_TEXT: Readonly<Record<RuleRefusal, string>> = {
 
 /**
  * Whether a rule is "only this exact action" as exact-only limits mean it: every glob literal
- * (review S4), and for a tool without a primary argument (MCP, Kobe tools) also the key set
+ * (review S4), and for a tool without a primary argument (MCP, Kaiju tools) also the key set
  * pinned (`exact_keys`, review R2): an older literal rule without it still allows extra arguments.
  */
 export function exactPattern(

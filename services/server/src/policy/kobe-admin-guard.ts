@@ -10,14 +10,14 @@ import { KOBE_BUILTIN_CONNECTOR_ID } from "@kobe/db";
 import { isKobeDocsToolName } from "../kobe-mcp/docs/index.js";
 
 /**
- * The Kobe admin guard (KOBE-619, spec kobe-admin-mcp §6, KA2), applied after the policy engine at
+ * The Kaiju admin guard (KOBE-619, spec kobe-admin-mcp §6, KA2), applied after the policy engine at
  * both enforcement points (the sandbox's `policy.check` and the MCP proxy's re-check), like the
  * viewed-file guard:
  *
- * - a Kobe admin **write** asks in every approval mode, Dangerous and remembered approvals
+ * - a Kaiju admin **write** asks in every approval mode, Dangerous and remembered approvals
  *   included (their allow reasons are dropped, so neither is recorded as having applied);
  * - where nobody can be asked it is denied: `auto` here, scheduled runs and skill evals below;
- * - a Kobe admin tool of any kind is denied in scheduled runs and skill evals (they get the docs
+ * - a Kaiju admin tool of any kind is denied in scheduled runs and skill evals (they get the docs
  *   tools only, §3);
  * - an engine deny stands as it is; reads otherwise follow the ordinary policy;
  * - the docs tools (KOBE-620, KA4) are no admin tools: the ordinary policy alone decides them, in
@@ -30,16 +30,16 @@ import { isKobeDocsToolName } from "../kobe-mcp/docs/index.js";
 export const KOBE_ADMIN_WRITE_REASON = "kobe_admin_write";
 export const KOBE_ADMIN_NOT_ALLOWED_REASON = "kobe_admin_not_allowed";
 
-/** Why a Kobe admin approval offers no "remember" (and refuses one). */
+/** Why a Kaiju admin approval offers no "remember" (and refuses one). */
 export const KOBE_ADMIN_NOT_REMEMBERED =
-  "Kobe admin changes are asked every time, so this approval is never remembered.";
+  "Kaiju admin changes are asked every time, so this approval is never remembered.";
 
-/** A tool of the built-in Kobe connector, by the server's own descriptor. */
+/** A tool of the built-in Kaiju connector, by the server's own descriptor. */
 export function isKobeTool(tool: Pick<ToolDescriptor, "source" | "connector_id">): boolean {
   return tool.source === "mcp" && tool.connector_id === KOBE_BUILTIN_CONNECTOR_ID;
 }
 
-/** A Kobe **admin** tool: a tool of the built-in connector other than the docs tools (KOBE-620). */
+/** A Kaiju **admin** tool: a tool of the built-in connector other than the docs tools (KOBE-620). */
 export function isKobeAdminTool(
   tool: Pick<ToolDescriptor, "source" | "connector_id" | "name">,
 ): boolean {
@@ -48,7 +48,7 @@ export function isKobeAdminTool(
   return name === undefined || !isKobeDocsToolName(name);
 }
 
-/** The Kobe tool's catalog name (`team_members_set_role`) from its Pi name. */
+/** The Kaiju tool's catalog name (`team_members_set_role`) from its Pi name. */
 export function kobeToolName(piName: string): string | undefined {
   return parseMcpToolName(piName)?.tool_segment;
 }
@@ -86,7 +86,7 @@ export function guardKobeAdmin(decision: PolicyDecision, g: KobeAdminGuard): Pol
   if (g.input.actor.kind === "schedule" || g.evalRun) {
     return notAllowed(
       decision,
-      "Kobe admin tools are not available in scheduled runs or skill evals; this call was denied.",
+      "Kaiju admin tools are not available in scheduled runs or skill evals; this call was denied.",
     );
   }
   if (g.tool.risk === "read") return decision;
@@ -99,7 +99,7 @@ export function guardKobeAdmin(decision: PolicyDecision, g: KobeAdminGuard): Pol
           code: KOBE_ADMIN_WRITE_REASON,
           stage: "approval_mode",
           message:
-            "Kobe admin changes always need the person's approval, and this run never asks; it was denied.",
+            "Kaiju admin changes always need the person's approval, and this run never asks; it was denied.",
         },
       ],
     };
@@ -107,7 +107,7 @@ export function guardKobeAdmin(decision: PolicyDecision, g: KobeAdminGuard): Pol
   const ask: PolicyReason = {
     code: KOBE_ADMIN_WRITE_REASON,
     stage: "ask_rule",
-    message: "A Kobe admin change: the person approves every one, in every approval mode.",
+    message: "A Kaiju admin change: the person approves every one, in every approval mode.",
   };
   return {
     effect: "require_approval",

@@ -34,7 +34,7 @@ export interface Candidate {
   /** The memory an update, supersede or conflict acts on (null when gone or for add). */
   readonly target: RelatedItem | null;
   /**
-   * The memory was changed since Kobe suggested this (KOBE-779): the comparison shows it as it is
+   * The memory was changed since Kaiju suggested this (KOBE-779): the comparison shows it as it is
    * now, and Save sends the version shown (`targetVersion`).
    */
   readonly targetChanged?: boolean;

@@ -17,7 +17,7 @@ import { invalidRequest, param, parseBody } from "../http/request.js";
 const NOT_FOUND: LearnRefusal = { code: "thread_not_found", message: "Thread not found." };
 const READ_ONLY: LearnRefusal = {
   code: "read_only",
-  message: "Only the thread's author can teach Kobe from it.",
+  message: "Only the thread's author can teach Kaiju from it.",
 };
 
 const refusal = (c: Context, r: LearnRefusal) => c.json(r, LEARN_REFUSAL_HTTP_STATUS[r.code]);

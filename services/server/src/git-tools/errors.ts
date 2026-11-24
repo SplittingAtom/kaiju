@@ -9,7 +9,7 @@ export interface GitToolError {
   readonly ok: false;
   readonly code: string;
   readonly message: string;
-  /** ISO time after which a retry may succeed (host rate limits, Kobe's own limits). */
+  /** ISO time after which a retry may succeed (host rate limits, Kaiju's own limits). */
   readonly retryAt?: string;
 }
 
@@ -33,7 +33,7 @@ export function hostError(err: unknown): GitToolError {
     case "invalid_request":
       return toolError(
         "invalid_request",
-        "The git host (or Kobe) refused that input as not valid.",
+        "The git host (or Kaiju) refused that input as not valid.",
       );
     case "conflict":
       return toolError("already_exists", "That already exists on the git host.");
@@ -52,7 +52,7 @@ export function hostError(err: unknown): GitToolError {
     case "rate_limited":
       return toolError(
         "host_rate_limited",
-        "The git host is rate limiting Kobe.",
+        "The git host is rate limiting Kaiju.",
         err.resetAt ?? new Date(Date.now() + 60_000),
       );
     case "host_refused":
@@ -60,7 +60,7 @@ export function hostError(err: unknown): GitToolError {
     case "unsupported_host":
       return toolError(
         "unsupported_host",
-        "The git host runs a version Kobe does not support; a Workspace admin should check the connection.",
+        "The git host runs a version Kaiju does not support; a Workspace admin should check the connection.",
       );
     default:
       return toolError("host_unavailable", "The git host could not be reached; try again shortly.");

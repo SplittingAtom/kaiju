@@ -72,8 +72,8 @@ export function PermissionsHelp({
         </p>
         <Rows rows={GITEA_SCOPES} caption={`${label} token scopes`} />
         <p className="m-0 text-console-muted">
-          The token is the whole grant: Kobe cannot narrow it, and actions appear as the bot
-          account. Kobe supports {label} {MINIMUM_VERSION[provider]} and later.
+          The token is the whole grant: Kaiju cannot narrow it, and actions appear as the bot
+          account. Kaiju supports {label} {MINIMUM_VERSION[provider]} and later.
         </p>
       </div>
     );
@@ -96,7 +96,7 @@ export function PermissionsHelp({
           At Read, Read is enough for Contents, Pull requests and Issues, and Administration is not
           needed. Install the App on the organization (all repositories when agents create
           repositories), generate a private key, and copy the App ID and the installation ID (the
-          number at the end of the installation&apos;s settings address). Kobe mints a one-hour
+          number at the end of the installation&apos;s settings address). Kaiju mints a one-hour
           token per use, limited to the repository and permissions that use needs; actions appear as
           the App&apos;s bot.
         </p>
@@ -119,8 +119,8 @@ export function PermissionsHelp({
       </p>
       <Rows rows={GITHUB_PERMISSIONS} caption="Fine-grained token permissions" />
       <p className="m-0 text-console-muted">
-        The token is the whole grant: Kobe cannot narrow it per use, and actions appear as the
-        token&apos;s owner. Kobe shows the expiry and emails Workspace admins 14 days before it. A
+        The token is the whole grant: Kaiju cannot narrow it per use, and actions appear as the
+        token&apos;s owner. Kaiju shows the expiry and emails Workspace admins 14 days before it. A
         classic token works but is flagged for its extra scopes.
       </p>
     </div>

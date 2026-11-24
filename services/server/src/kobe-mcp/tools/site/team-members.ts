@@ -90,8 +90,8 @@ export const siteTeamMembersAdd = kobeTool({
   name: "site_team_members_add",
   title: "Add users to a team",
   description:
-    "Adds existing, active Kobe users to a team at once, without an invitation (Site console › " +
-    "Teams › Manage members); they are told in Kobe and by email. Give the team_id (from " +
+    "Adds existing, active Kaiju users to a team at once, without an invitation (Site console › " +
+    "Teams › Manage members); they are told in Kaiju and by email. Give the team_id (from " +
     "site_teams_list), up to 50 user_ids (from site_users_list) and one team role for all of " +
     "them. All or nothing: refused when any user is deactivated, already a member, or yourself " +
     "(site admins reach team content only through break-glass). The person is always asked to " +

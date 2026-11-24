@@ -14,7 +14,7 @@ import {
  * to memory never restarts Pi:
  *  - `tools`: whether memory is on for this run; `remember` / `recall` / `show_memory_item` are
  *    active only then;
- *  - `known` / `picks` (KOBE-383): "What Kobe knows", the stable part first and the per-message
+ *  - `known` / `picks` (KOBE-383): "What Kaiju knows", the stable part first and the per-message
  *    picks after the project instructions; added with or without Notes (Policy reaches every agent);
  *  - `picks_placement` / `held` (KOBE-658): with `message_keep` / `message_strip` the picks leave
  *    the system prompt and go before the run's user message instead (see {@link installMemoryHooks});
@@ -32,9 +32,9 @@ import {
 export interface MemoryRunFile {
   readonly tools: boolean;
   readonly text: string;
-  /** What Kobe knows, stable part (KOBE-383): first, with or without Notes. */
+  /** What Kaiju knows, stable part (KOBE-383): first, with or without Notes. */
   readonly known: string;
-  /** What Kobe knows, per-message picks (KOBE-383): after the project instructions. */
+  /** What Kaiju knows, per-message picks (KOBE-383): after the project instructions. */
   readonly picks: string;
   /** Held picks (KOBE-658, stable_plus_delta): in the system prompt after the project. */
   readonly held: string;
@@ -205,7 +205,7 @@ export function installMemoryHooks(
   const notes = new Map<number, string>();
   let pending: { readonly text: string; readonly since: number } | undefined;
   pi.on("before_agent_start", ((event: { systemPrompt: string }) => {
-    // Stable first, so the provider caches the longest prefix (KOBE-383, Q6): What Kobe knows'
+    // Stable first, so the provider caches the longest prefix (KOBE-383, Q6): What Kaiju knows'
     // stable part, Notes, project instructions; then what changes per message.
     const { known, text, project, held, picks, picksPlacement, viewing, conflicts } = state();
     // KOBE-658: outside `system` everything that changes per message (picks, the viewed file,
@@ -225,7 +225,7 @@ export function installMemoryHooks(
       : { systemPrompt: `${event.systemPrompt}\n\n${parts.join("\n\n")}` };
   }) as never);
   // Sync conflicts told mid-run (KOBE-492): before each later model call of the run, a custom
-  // message (Pi sends it in user role; the text says it is a Kobe notice). Not stored in the
+  // message (Pi sends it in user role; the text says it is a Kaiju notice). Not stored in the
   // session: Pi's `context` result only shapes this request.
   // Tool results are rewritten for each request too (KOBE-383 review M1): a copy of a memory
   // block with the thread's nonce (stable across runs) never works as a fence there.
@@ -327,7 +327,7 @@ export function withPicksNotes(
 }
 
 /**
- * With picks in messages the preamble says blocks count only in Kobe's notes and the system
+ * With picks in messages the preamble says blocks count only in Kaiju's notes and the system
  * prompt (KOBE-658), so a fence a person typed (or pasted) is put through
  * `neutralizeMemoryMarkers` for the request, like tool results. The same array when unchanged.
  */

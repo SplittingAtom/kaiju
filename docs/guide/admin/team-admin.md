@@ -68,7 +68,7 @@ workspace; switch workspace first to manage another.
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Models**              | Which models from the site catalog the team may use, and the team default.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | **Budgets**             | Daily or monthly dollar budgets for the team, a default member budget, and budgets per member. Alert emails at 80% and 100% go to team admins, at most 20 a day per person across all workspaces ([Models](../models.md)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| **Connectors**          | Enable registered connectors and choose each one's exposure; set the built-in **Kobe** connector's level.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Connectors**          | Enable registered connectors and choose each one's exposure; set the built-in **Kaiju** connector's level.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | **Egress**              | Enable domains within the site ceiling, answer access requests, and inject headers for a domain.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | **Git**                 | Connect git organizations on GitHub, GitHub Enterprise Server, Gitea or Forgejo, test them, set their access level and repository defaults, replace credentials, disconnect; see [Git organizations](git-organizations.md).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | **Policy**              | Team deny, ask and allow rules inside the site floor, remember limits, and members' remembered approvals.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -111,24 +111,24 @@ edited before save, proposed, suggested to editors, dismissed, expired and still
 
 - **Import**: paste or choose Markdown bullets (`- [fact] Invoices go out on the 1st #billing`:
   the kind in brackets, tags at the end), a CSV with the columns `statement,kind,tags,pinned`
-  (tags separated by `;`), or a Kobe export file, at most 200 rows. **Preview** checks every row
+  (tags separated by `;`), or a Kaiju export file, at most 200 rows. **Preview** checks every row
   with the save checks above and stores nothing; each row says what it is: **New**,
   **Near-duplicate**, **Conflicts with Policy**, **Blocked by Policy rules** (for example a
   Policy row outside the Site), **Secret: never saved**, **Flagged by checks** or **Can't be
   imported** (unreadable, or memories turned off). No model reads the file. A row holding a
   secret is never shown back, whatever else is wrong with it. **Import** saves the new rows only, all at once; add the
   others one by one, where you can save over a warning. If anything changed since the preview,
-  nothing is saved and Kobe asks you to preview again. Archived rows in a file count against the
+  nothing is saved and Kaiju asks you to preview again. Archived rows in a file count against the
   workspace's limit like active ones. Imports and exports are limited per person per minute.
   Imports are audited (`memory.items.imported`, counts only).
-- **Export**: the workspace's memories as JSON (a Kobe export, which imports again as it was) or
+- **Export**: the workspace's memories as JSON (a Kaiju export, which imports again as it was) or
   CSV, optionally with archived and superseded ones. Statements, kinds, tags and pins only; never
   who wrote them or the conversations they came from. Every export is audited
   (`memory.items.exported`).
 
 Each registered connector on the **Connectors** page lists its tools in two columns with counts:
 **Read only** (tools that declare themselves read-only) and **Write** (every other tool, including
-one that declares nothing, which Kobe treats as able to change data). The exposure still decides
+one that declares nothing, which Kaiju treats as able to change data). The exposure still decides
 what the team gets: while the saved exposure is **Read-only tools**, the Write column's tools are
 marked **Not offered to the team**; choosing **Read-only tools** without saving marks them **Would
 not be offered under Read-only tools**. A tool only an app may call (not the agent) is marked
@@ -138,7 +138,7 @@ tools in either column. On a narrow window the columns stack. A tool changed ups
 `ui://` template) carries an **MCP-UI** badge; hover or focus it to see the template and whether a
 site admin has approved it (an app that is not approved yet does not open).
 
-The **Kobe** card on the **Connectors** page sets what agents may do with Kobe's own admin tools
+The **Kaiju** card on the **Connectors** page sets what agents may do with Kaiju's own admin tools
 in this team: **Docs only** (the default), **Read** or **Read and write**. Agents always have the
 docs tools. Admin tools act as the person in the conversation, within that person's permissions,
 and every change asks them first. It works only while a site admin allows admin tools. See
@@ -177,10 +177,10 @@ after saving.
 
 ## From a conversation
 
-With the Kobe connector at **Read and write**, most of this console can also be run by asking the
+With the Kaiju connector at **Read and write**, most of this console can also be run by asking the
 agent: change a role, send an invitation, approve a skill version, enable a domain, pause a
 schedule, read usage or the audit log. Each change shows an **Admin change** card first and is
-audited as you "via agent". Break-glass, retention, deletions, injected headers and the Kobe level
+audited as you "via agent". Break-glass, retention, deletions, injected headers and the Kaiju level
 itself stay in the console. See [Admin from a conversation](admin-from-a-conversation.md).
 
 ## What team admins cannot do

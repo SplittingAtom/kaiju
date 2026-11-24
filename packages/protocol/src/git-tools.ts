@@ -4,7 +4,7 @@ import { z } from "zod";
  * The approval card of a git host write (KOBE-762, spec workspace-git G9, G10, G13): built by the
  * server from the approved input and the Workspace's connection, never from anything else the
  * model said. It names the host, organization and repository and shows exactly what will be
- * created or posted: titles and bodies as plain text (the body with the line Kobe adds naming the
+ * created or posted: titles and bodies as plain text (the body with the line Kaiju adds naming the
  * member and the conversation), the branches of a pull request, and a new repository's
  * visibility. Clients render every string as text, never as HTML or Markdown. Additive: clients
  * that predate it show the ordinary card with the raw input.
@@ -18,7 +18,7 @@ export const GIT_APPROVAL_ACTIONS = [
 ] as const;
 export type GitApprovalAction = (typeof GIT_APPROVAL_ACTIONS)[number];
 
-/** Longest posted text a card carries (the tools' body cap plus Kobe's footer line). */
+/** Longest posted text a card carries (the tools' body cap plus Kaiju's footer line). */
 export const GIT_APPROVAL_TEXT_MAX = 21_000;
 
 export const gitApprovalSchema = z.strictObject({
@@ -33,7 +33,7 @@ export const gitApprovalSchema = z.strictObject({
   visibility: z.enum(["private", "internal"]).optional(),
   description: z.string().max(400).optional(),
   title: z.string().max(300).optional(),
-  /** The full text that will be posted, Kobe's footer included. */
+  /** The full text that will be posted, Kaiju's footer included. */
   body: z.string().max(GIT_APPROVAL_TEXT_MAX).optional(),
   head: z.string().max(300).optional(),
   base: z.string().max(300).optional(),
@@ -49,7 +49,7 @@ export type GitApproval = z.infer<typeof gitApprovalSchema>;
 
 /**
  * The built-in git connector (KOBE-762, owner decision 2026-11-22): the git host tools as their own
- * connector, apart from the Kobe MCP connector, with a fixed id the same on every site (`@kobe/db`
+ * connector, apart from the Kaiju MCP connector, with a fixed id the same on every site (`@kobe/db`
  * `GIT_BUILTIN_CONNECTOR_ID`). The MCP proxy routes `POST /v1/mcp/<this id>` to the server's
  * internal listener (`/internal/v1/mcp/git/*`).
  */

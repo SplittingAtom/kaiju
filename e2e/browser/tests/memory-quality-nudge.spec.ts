@@ -138,7 +138,7 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
   await expect(plus.locator('[data-kobe-learn-mark="dot"]')).toBeVisible();
   await expect(plus).not.toHaveAttribute("data-kobe-learn-state", "spinner");
   await expect(page.locator("[data-kobe-learn-notice]")).not.toContainText(
-    "Kobe is learning from this chat",
+    "Kaiju is learning from this chat",
   );
 
   // A correction: thumbs down on the last answer; the next read (here a reload) pulses again.

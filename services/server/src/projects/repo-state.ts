@@ -1,13 +1,13 @@
 import { sql, type KobeTx } from "@kobe/db";
 
 /**
- * Whether Kobe may write a project's files now (KOBE-765, spec workspace-git G16, G17, GQ4).
+ * Whether Kaiju may write a project's files now (KOBE-765, spec workspace-git G16, G17, GQ4).
  *
  * - `repo`: the project was converted to a Repo. Its record is the repository on the git host and
- *   Kobe keeps a mirror of the default branch (G17, GQ4: "Kobe's commits stop for that project").
- *   Every direct Kobe write refuses: revert, upload, Add to project, an accepted proposal,
- *   removing a file. A commit from Kobe's commit flow goes to the host instead (KOBE-767,
- *   `git/repo-commit`), and Kobe's copy takes it only through `writeCommit`'s `repoMirror`.
+ *   Kaiju keeps a mirror of the default branch (G17, GQ4: "Kaiju's commits stop for that project").
+ *   Every direct Kaiju write refuses: revert, upload, Add to project, an accepted proposal,
+ *   removing a file. A commit from Kaiju's commit flow goes to the host instead (KOBE-767,
+ *   `git/repo-commit`), and Kaiju's copy takes it only through `writeCommit`'s `repoMirror`.
  * - `converting`: a conversion is running, or failed and waits for a retry or abandon. The
  *   history being written to the host must not move under it.
  *

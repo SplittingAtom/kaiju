@@ -24,7 +24,7 @@
 #   namespace  (a real cluster) source `<ns>-src` and target `<ns>`, each its own release with its
 #              own new database on an existing Postgres and the same bucket under a per-run prefix;
 #              the source release, namespace and team namespaces are deleted before the target is
-#              installed. Refuses while any other Kobe server runs in the cluster: every Kobe server
+#              installed. Refuses while any other Kaiju server runs in the cluster: every Kaiju server
 #              converges every team namespace of the cluster (docs/gates/gate-4.md).
 # docs/gates/gate-4.md ("Backup → fresh site → restore") lists the variables and what this proves.
 set -euo pipefail
@@ -156,7 +156,7 @@ if [[ "$TARGET" == namespace ]]; then
     -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name} {.spec.replicas}{"\n"}{end}' 2>/dev/null \
     | awk -v a="$SRC_NS" -v b="$NS" '{ split($1, p, "/") } p[1] != a && p[1] != b && $2 > 0 { print $1 }')
   if [[ -n "$others" ]]; then
-    echo "refusing: other Kobe servers run in this cluster ($(tr '\n' ' ' <<<"$others")). Every Kobe server converges" >&2
+    echo "refusing: other Kaiju servers run in this cluster ($(tr '\n' ' ' <<<"$others")). Every Kaiju server converges" >&2
     echo "every team namespace of the cluster, so a second site would rewrite their sandbox policies. Scale them to 0 first." >&2
     exit 2
   fi
@@ -463,7 +463,7 @@ if [[ "$TARGET" == k3d ]]; then
   CLUSTER_SECONDS=$((SECONDS - t0))
   if out=$(e2e/load-images.sh "$CLUSTER" "$TAG" 2>&1); then ok "the images are loaded into it"
   else fail "the images are loaded into it: $(tail -5 <<<"$out")"; exit 1; fi
-  contains "the new cluster has no Kobe namespaces" '^none$' \
+  contains "the new cluster has no Kaiju namespaces" '^none$' \
     "$($KUBECTL get namespaces -o name | grep -E "namespace/($NS|$TNS)$" || echo none)"
 else
   $HELM uninstall "$RELEASE" -n "$SRC_NS" --wait >/dev/null 2>&1 || true

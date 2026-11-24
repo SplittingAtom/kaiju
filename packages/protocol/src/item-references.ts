@@ -14,7 +14,7 @@ export const ITEM_REFERENCE_NAME_MAX = 200;
 /** `_meta["io.kobe/item-kind"]`; anything outside {@link ITEM_KINDS} is {@link GENERIC_ITEM_KIND}. */
 export const ITEM_KIND_META_KEY = "io.kobe/item-kind";
 export const GENERIC_ITEM_KIND = "item";
-/** The kinds Kobe knows (an icon each); `item` is the generic one. */
+/** The kinds Kaiju knows (an icon each); `item` is the generic one. */
 export const ITEM_KINDS = [
   "catalog",
   "namespace",

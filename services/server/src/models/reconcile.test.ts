@@ -70,7 +70,7 @@ const desired = (over: Partial<{ providers: ProviderInput[]; teams: TeamInput[] 
   );
 
 describe("buildDesiredState", () => {
-  it("maps D30's hierarchy: site customer, a team per Kobe team, a key per member", () => {
+  it("maps D30's hierarchy: site customer, a team per Kaiju team, a key per member", () => {
     const d = desired();
     expect(d.customer.name).toBe(SITE_CUSTOMER);
     expect(d.teams.map((t) => t.name)).toEqual([gatewayTeamName(teamA), gatewayTeamName(teamB)]);
@@ -328,7 +328,7 @@ describe("reconcile", () => {
     expect(bifrost.providers.has("gemini")).toBe(false);
   });
 
-  it("removes foreign objects and duplicate virtual keys (Kobe owns the gateway)", async () => {
+  it("removes foreign objects and duplicate virtual keys (Kaiju owns the gateway)", async () => {
     await reconcile(desired(), bifrost, logger);
     await bifrost.addProvider({
       name: "mistral",

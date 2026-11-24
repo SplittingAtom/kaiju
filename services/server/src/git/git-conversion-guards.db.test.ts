@@ -246,7 +246,7 @@ describe("existing repositories (M2, L6)", () => {
     hostRepo(`marked-${p.slug}`);
     forgejo.editRepository(`marked-${p.slug}`, {
       description:
-        "Converted from a Kobe project. kobe-conversion:00000000-0000-4000-8000-000000000000",
+        "Converted from a Kaiju project. kobe-conversion:00000000-0000-4000-8000-000000000000",
     });
     expect((await run(`marked-${p.slug}`)).error?.code).toBe("repository_in_use");
     await abandon();
@@ -430,7 +430,7 @@ describe("the project while a conversion holds it (L3) and unsaved working copie
 });
 
 describe("a converted Repo under the Repo read rule (KOBE-762)", () => {
-  it("is matched by its host id: project readers read it, pushes need editor, Kobe writes are refused", async () => {
+  it("is matched by its host id: project readers read it, pushes need editor, Kaiju writes are refused", async () => {
     const w = await world();
     const p = await project(w, [{ by: w.owner, message: "one", files: { "a.txt": "1" } }]);
     hostRepo(p.slug);
@@ -464,7 +464,7 @@ describe("a converted Repo under the Repo read rule (KOBE-762)", () => {
       [repo],
     );
     expect(repoRefusal("contributor", ownerRules)).toBeUndefined();
-    // Kobe's own writes are refused; a commit goes to the host (KOBE-767) and needs a checkout.
+    // Kaiju's own writes are refused; a commit goes to the host (KOBE-767) and needs a checkout.
     const upload = await w.owner.browser.request("POST", `/v1/projects/${p.id}/commit`, {
       message: "more",
     });

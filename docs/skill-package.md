@@ -1,7 +1,7 @@
 # Skill package contract
 
 The files of one skill version as promotion, the Skills Registry, export and the git mirror carry
-them (KOBE-309; spec Kobe v1.2 Skills System, SK14, SK19, SK29). The code is the contract:
+them (KOBE-309; spec Kaiju v1.2 Skills System, SK14, SK19, SK29). The code is the contract:
 `packages/protocol/src/skill-package/` (layout, canonical zip, `kobe.skill.yaml`,
 `provenance.json`) and `@kobe/protocol/node` (`runtimeHash`, `packageHash`). Golden vectors:
 `@kobe/protocol/testing` `SKILL_HASH_VECTORS`; golden fixtures:
@@ -16,7 +16,7 @@ SKILL.md                 required; portable skill (Agent Skills format)   runtim
 scripts/ references/ assets/ (any other path too)                         runtime payload
 evals/cases.yaml         eval suite (KOBE-324), evals/fixtures/           package only
 kobe.skill.yaml          author-edited registry metadata                  package only
-provenance.json          Kobe-generated at promotion                      in neither hash
+provenance.json          Kaiju-generated at promotion                      in neither hash
 ```
 
 Only these root names are reserved: `scripts/evals/x` is payload. `checkPackagePaths` is the
@@ -33,8 +33,8 @@ validator, and the zip and hash functions run it themselves (no unchecked entry 
 - **Reserved names are exact:** a root name that is a case variant of one (`Evals/`,
   `KOBE.SKILL.YAML`, `Provenance.json`, `skill.md`) is **refused**, not treated as payload or as
   reserved. A file named `evals` is refused.
-- **`provenance.json` is Kobe's:** authored content (uploads, drafts, imports, built-ins) never
-  carries one; it is refused unless Kobe assembled the package (`{ kobeProvenance: true }`).
+- **`provenance.json` is Kaiju's:** authored content (uploads, drafts, imports, built-ins) never
+  carries one; it is refused unless Kaiju assembled the package (`{ kobeProvenance: true }`).
 - **Files only:** symlinks are refused at the source (a git mode 120000 entry is refused, never
   stored as its target text); file modes are not part of a package (the sandbox writes 0644, so
   scripts run through an interpreter); bytes are raw, with no line-ending normalization (a git
@@ -57,7 +57,7 @@ Both are lowercase hex SHA-256 of a **canonical zip**:
 
 **The identity of a skill version is the hash of the zip its sandboxes receive.** Blocklist,
 resolver, materialization, promotion and imports all use that one hash, and from KOBE-310 on it is
-always the runtime hash: Kobe stores the runtime zip for the sandbox and `content_hash =
+always the runtime hash: Kaiju stores the runtime zip for the sandbox and `content_hash =
 runtimeHash`. The resolver and the Pi `--skill` directory are unchanged.
 
 Before KOBE-310 the server hashes the whole upload. For a bundle without the reserved root names
@@ -143,7 +143,7 @@ keys and aliases are refused (`MANIFEST_YAML_OPTIONS` for eemeli/yaml). Unknown 
 | `summary`                            | 1–280 characters (UTF-16 code units, as everywhere in this contract)                 |
 | `tags`                               | ≤ 10 unique topic slugs (unknown ones are proposals)                                 |
 | `license`                            | SPDX expression or `Proprietary`; required at submission (SK20), not in a draft      |
-| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kobe sets maintainers on approval (SK24)       |
+| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kaiju sets maintainers on approval (SK24)      |
 | `capabilities.egress`                | ≤ 50 exact lowercase hosts (no wildcard, no port), checked against the team's egress |
 | `capabilities.packages.pip` / `.npm` | ≤ 50 requirement strings each, no whitespace                                         |
 | `compatibility.kobe` / `.pi`         | short version ranges, informational                                                  |
@@ -151,12 +151,12 @@ keys and aliases are refused (`MANIFEST_YAML_OPTIONS` for eemeli/yaml). Unknown 
 
 Nothing in it grants anything: capabilities and any frontmatter never pre-approve tools.
 
-### Created by Kobe on request (KOBE-564)
+### Created by Kaiju on request (KOBE-564)
 
 A version promoted without a manifest is refused (`no_manifest`, SK20). The Promote panel then
 offers **Create kobe.skill.yaml**: the member picks a model the team enables (the team default
 preselected) and their license (`Proprietary`, `Apache-2.0`, `MIT`, `BSD-3-Clause`; the license is
-the author's statement, never the model's), and Kobe asks that model, in one server-originated
+the author's statement, never the model's), and Kaiju asks that model, in one server-originated
 call (purpose `skill_manifest`, [server-model-calls.md](design/server-model-calls.md)), for the
 `summary`, `tags` and `capabilities` from SKILL.md and the file list. The reply is untrusted text:
 the one JSON object in it is read leniently, each field is cleaned to the rules above or dropped
@@ -179,16 +179,16 @@ for its own calls.
 
 ## provenance.json
 
-Kobe writes it at promotion as canonical JSON (RFC 8785), at most 256 KiB; never author-edited.
+Kaiju writes it at promotion as canonical JSON (RFC 8785), at most 256 KiB; never author-edited.
 **It is unsigned and informational:** anyone who handles an exported or mirrored package can edit
-it without changing a hash. Kobe never reads one back as fact: an incoming `provenance.json`
-(upload, draft, zip or git import) is refused (`checkPackagePaths`), and Kobe writes its own from
+it without changing a hash. Kaiju never reads one back as fact: an incoming `provenance.json`
+(upload, draft, zip or git import) is refused (`checkPackagePaths`), and Kaiju writes its own from
 its records on every export. Its fields are of three kinds:
 
 | Kind                                                    | Fields                                                                        |
 | ------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Verifiable against the package (`provenanceMismatches`) | `name`, `version`, `hashes`, `scorecard.packageHash` (freshness)              |
-| Kobe-attested: authoritative only in Kobe's records     | `source`, `submitter`, `confirmedBy`, `scan`, the scorecard numbers, `origin` |
+| Kaiju-attested: authoritative only in Kaiju's records   | `source`, `submitter`, `confirmedBy`, `scan`, the scorecard numbers, `origin` |
 | Informational                                           | `fromConversation`, `createdAt`                                               |
 
 `apiVersion: kobe.dev/skill-provenance/v1`, `name`, `version`, `hashes {runtime, package}`,
@@ -205,9 +205,9 @@ counts, cost, judge source, run-model fallback, `at`) and
 eval detail never leaves the team. `provenanceMismatches` checks it against the package beside
 it; a scorecard from another package hash is stale.
 
-### Kobe-published versions
+### Kaiju-published versions
 
-Kobe's own catalog skills (KOBE-317, SK4: the former built-ins) are published by the server
+Kaiju's own catalog skills (KOBE-317, SK4: the former built-ins) are published by the server
 itself from the package set it ships (`services/server/builtin-skills/<name>/`, each with a
 `kobe.skill.yaml` whose `version` is the catalog semver). Nobody promotes them, so their
 provenance (stored with the version) has `publisher: "kobe"` instead of `source`, `submitter`,
@@ -232,10 +232,10 @@ SKILL.md frontmatter checks, the same package limits) and publish a new version 
 - **Provenance** has `publisher: "site"`, `publishedBy` (the admin and when), `basedOn` (the
   version the draft started from) and `previous` (the version it follows: publisher, semver),
   instead of `source`, `submitter` and `scorecard`; the hashes and scan are as above.
-- **Kobe skills detach.** The first site edit (starting a site draft) of a Kobe-shipped skill
-  detaches it: the Kobe seed then publishes nothing for it and only records the shipped version,
-  and never retires it. When Kobe ships a version above the one it was detached from, the console
-  says so and offers Compare (files diff) and Reset to Kobe, which re-attaches it once the shipped
+- **Kaiju skills detach.** The first site edit (starting a site draft) of a Kaiju-shipped skill
+  detaches it: the Kaiju seed then publishes nothing for it and only records the shipped version,
+  and never retires it. When Kaiju ships a version above the one it was detached from, the console
+  says so and offers Compare (files diff) and Reset to Kaiju, which re-attaches it once the shipped
   version is above every Site version (otherwise it stays detached and says why); the shipped
   version is then published at once.
 - **Team-published skills** keep their maintainers; the Site's version records the previous
@@ -244,7 +244,7 @@ SKILL.md frontmatter checks, the same package limits) and publish a new version 
 - **Guards.** Site Owner and Admins only, re-checked in every writing transaction; a skill with
   bytes on the blocklist can't be edited until they are unblocked; a deprecated or archived skill
   only after Restore. A site draft is one per skill, shared by the Site admins, and goes away when
-  it is published, discarded or the skill is reset to Kobe.
+  it is published, discarded or the skill is reset to Kaiju.
 
 ## Scan limits
 

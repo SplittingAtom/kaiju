@@ -20,7 +20,7 @@ const SEGMENT = /^[a-z][a-z0-9_]*$/;
 /** The chip's "from …" (the picker's title on the gate install; a drag names no app). */
 export const LAKEHOUSE_DROP_FROM = "Lakehouse Picker";
 export const LAKEHOUSE_DROP_REFUSED =
-  "This item can't go into a message: the app sent an identifier Kobe can't use.";
+  "This item can't go into a message: the app sent an identifier Kaiju can't use.";
 
 /** The segments each kind has: catalog, then namespace, then name. */
 const SHAPES = {

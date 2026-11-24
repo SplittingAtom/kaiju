@@ -125,8 +125,8 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
     reply(
       res,
       FAILURE_STATUS[reason] ?? 502,
-      `Kobe egress: git request to ${host} failed`,
-      message ?? `Kobe egress: the git request to ${host} failed (${reason}).`,
+      `Kaiju egress: git request to ${host} failed`,
+      message ?? `Kaiju egress: the git request to ${host} failed (${reason}).`,
     );
   };
   // Review M2: the source resumes only when the destination drained AND the throttle allows;
@@ -182,7 +182,7 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
         up.destroy();
         fail(
           "upstream_auth",
-          `Kobe egress: ${host} refused the Workspace's git credential; a Workspace admin should check the connection.`,
+          `Kaiju egress: ${host} refused the Workspace's git credential; a Workspace admin should check the connection.`,
         );
         return;
       }
@@ -190,7 +190,7 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
         up.destroy();
         fail(
           "redirect_refused",
-          `Kobe egress: ${host} answered with a redirect, which Kobe does not follow for git; check the repository's current name.`,
+          `Kaiju egress: ${host} answered with a redirect, which Kaiju does not follow for git; check the repository's current name.`,
         );
         return;
       }
@@ -198,7 +198,7 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
         up.destroy();
         fail(
           "encoded_response",
-          `Kobe egress: ${host} answered with an encoded body, which Kobe does not relay for git.`,
+          `Kaiju egress: ${host} answered with an encoded body, which Kaiju does not relay for git.`,
         );
         return;
       }
@@ -248,7 +248,7 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
     if (state.bytesUp > input.requestLimit) {
       fail(
         "request_too_large",
-        `Kobe egress: git requests to this connection are limited to ${input.requestLimit} bytes.`,
+        `Kaiju egress: git requests to this connection are limited to ${input.requestLimit} bytes.`,
       );
       return;
     }

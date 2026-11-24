@@ -20,7 +20,7 @@ export type IssuerCheck =
 
 const MESSAGES: Readonly<Record<IssuerFailure, string>> = {
   multi_tenant_issuer:
-    "Kobe accepts only a tenant-specific issuer: common, organizations and consumers let any tenant sign in.",
+    "Kaiju accepts only a tenant-specific issuer: common, organizations and consumers let any tenant sign in.",
   invalid_tenant: "Give the directory (tenant) ID: a GUID from the app registration's Overview.",
   invalid_issuer: "Give the issuer as an https:// URL without a query, fragment or credentials.",
 };

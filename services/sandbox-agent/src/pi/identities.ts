@@ -449,7 +449,7 @@ export async function checkHelperFile(helper: string): Promise<void> {
 
 /**
  * Pi identities from the helper and the agent's groups, checked: the helper file, at least
- * `minimum` identities, and one real switch. Fails closed: Kobe's pods ask for separation, and
+ * `minimum` identities, and one real switch. Fails closed: Kaiju's pods ask for separation, and
  * an agent that cannot provide it must not start Pi under the agent's uid instead.
  */
 export async function loadPiIdentities(

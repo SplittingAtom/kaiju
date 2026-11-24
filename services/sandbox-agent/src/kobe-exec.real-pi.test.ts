@@ -19,7 +19,7 @@ import {
 
 /**
  * KOBE-167 against the REAL pinned Pi 1.0.0 with the real kobe-policy and kobe-exec, through
- * kobe-sandbox-agent (relay on fd 5, executor process) and a fake Kobe server. A scripted model
+ * kobe-sandbox-agent (relay on fd 5, executor process) and a fake Kaiju server. A scripted model
  * makes Pi call its built-in tools without credentials. Here executor and Pi share the machine's
  * uid; that the executor runs as another uid is proven with the real helper in
  * exec.real.test.ts and what that uid cannot reach in identities.partner.real.test.ts.

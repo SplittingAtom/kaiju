@@ -48,7 +48,7 @@ spec:
       expression: "request.operation == 'UPDATE' && variables.isNamespace && has(oldObject.metadata.labels) ? oldObject.metadata.labels : {}"
   validations:
     - expression: "variables.target.startsWith('kobe-team-')"
-      messageExpression: "'Kobe may only manage kobe-team-* namespaces, not ' + variables.target"
+      messageExpression: "'Kaiju may only manage kobe-team-* namespaces, not ' + variables.target"
     - expression: >-
         !variables.isNamespace || request.operation == 'DELETE' ||
         (variables.labels[?'kobe.splittingatom.io/team-namespace'].orValue('') == 'true' &&
@@ -66,7 +66,7 @@ spec:
         (object.roleRef.kind == 'ClusterRole' && object.roleRef.name == '{{ $manager }}' &&
          has(object.subjects) && object.subjects.all(s, s.kind == 'ServiceAccount' &&
            s.name == '{{ include "kobe.serverServiceAccount" . }}' && s.namespace == '{{ .Release.Namespace }}'))
-      message: "Kobe may only bind its sandbox manager role to its own server"
+      message: "Kaiju may only bind its sandbox manager role to its own server"
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
@@ -81,7 +81,7 @@ spec:
 # 2. Every pod in a kobe-team-* namespace runs under the configured RuntimeClass, whose handler
 #    must be gVisor or Kata (checked against the live RuntimeClass object: the param), and carries
 #    no credentials: no Secret volumes or env, no API token, no host namespaces or hostPath, and
-#    projected ServiceAccount tokens only for the Kobe bootstrap audience. It also meets Pod
+#    projected ServiceAccount tokens only for the Kaiju bootstrap audience. It also meets Pod
 #    Security "restricted" except for two things the namespace's "baseline" level lets through
 #    (KOBE-71): containers may add SETUID and SETGID (nothing else) and allow privilege escalation,
 #    for the image's kobe-runas helper. Non-root, seccomp, drop ALL, no privileged containers and
@@ -189,7 +189,7 @@ spec:
     parameterNotFoundAction: Deny
 ---
 # 3. Sandbox and SandboxTemplate specs in kobe-team-* use the configured RuntimeClass, and
-#    templates leave networking to Kobe's default-deny policy (the controller's "Managed" policy
+#    templates leave networking to Kaiju's default-deny policy (the controller's "Managed" policy
 #    would add internet egress).
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
@@ -238,7 +238,7 @@ spec:
     name: {{ .Values.isolation.runtimeClassName | quote }}
     parameterNotFoundAction: Deny
 ---
-# 4. Only the Kobe server creates or changes NetworkPolicies in kobe-team-* (they are additive:
+# 4. Only the Kaiju server creates or changes NetworkPolicies in kobe-team-* (they are additive:
 #    anyone else's policy could widen the default deny). Deletes are not matched, so namespace
 #    deletion still works; the server has no delete permission on them.
 apiVersion: admissionregistration.k8s.io/v1
@@ -260,7 +260,7 @@ spec:
       expression: {{ $inTeam | quote }}
   validations:
     - expression: {{ printf "request.userInfo.username == '%s'" $serverUser | quote }}
-      message: "only the Kobe server manages NetworkPolicies in team namespaces"
+      message: "only the Kaiju server manages NetworkPolicies in team namespaces"
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding

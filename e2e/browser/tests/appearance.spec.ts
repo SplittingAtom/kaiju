@@ -6,10 +6,10 @@ import { panelOf } from "./support/panel.js";
 /**
  * KOBE-501 (theming plan §6, ac-1..ac-3): the site Owner (KOBE_USER) brands the site on Site →
  * Appearance: renames it (the bar's h1 and document.title follow, and the server-rendered HTML of
- * a fresh load already carries the name, so no frame reads "Kobe"), uploads a generated PNG logo
+ * a fresh load already carries the name, so no frame reads "Kaiju"), uploads a generated PNG logo
  * (the header's <img>) and favicon (<link rel=icon>), has a `<script>` SVG refused with the reason,
  * picks the Plum preset (AA in both themes on a console page and on the chat, support/colours.ts)
- * and resets to Kobe's defaults. The web caches the branding for 30 s (TH5), so each check polls a
+ * and resets to Kaiju's defaults. The web caches the branding for 30 s (TH5), so each check polls a
  * fresh server render. It resets the site at the end even when a step fails. No model tokens:
  * `npx playwright test appearance`.
  */
@@ -127,7 +127,7 @@ test("an admin brands the site: name, logo, favicon, preset, refusals and reset 
     await expect(panel.getByText(`Site console · ${name}`)).toBeVisible();
     await save(page);
     const html = await rendered(page, "/", (h) => h.includes(`<title>${name}</title>`));
-    expect(html).not.toMatch(/<h1[^>]*>Kobe<\/h1>/);
+    expect(html).not.toMatch(/<h1[^>]*>Kaiju<\/h1>/);
     await page.goto("/");
     await expect(page.locator("header h1").first()).toHaveText(name, { timeout: SHELL_TIMEOUT_MS });
     expect(await page.title()).toBe(name);
@@ -183,14 +183,14 @@ test("an admin brands the site: name, logo, favicon, preset, refusals and reset 
     }
     await context.clearCookies({ name: THEME_COOKIE });
 
-    // Reset: "Kobe" again.
+    // Reset: "Kaiju" again.
     await openAppearance(page);
     await panel.getByRole("button", { name: "Reset to defaults" }).click();
     const dialog = page.getByRole("alertdialog", { name: /Reset the appearance/ });
     const reloaded = page.waitForEvent("load");
     await dialog.getByRole("button", { name: "Reset", exact: true }).click();
     await reloaded;
-    await rendered(page, "/", (h) => h.includes("<title>Kobe</title>") && !h.includes(name));
+    await rendered(page, "/", (h) => h.includes("<title>Kaiju</title>") && !h.includes(name));
   } finally {
     await resetByApi(page);
   }

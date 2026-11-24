@@ -123,7 +123,7 @@ export async function readSignedManifest(
 ): Promise<{ manifest: Manifest; keys: BackupKeys; fingerprint: string }> {
   const path = join(dir, MANIFEST_FILE);
   if ((await stat(path)).size > MAX_MANIFEST_BYTES) {
-    throw new Error(`${MANIFEST_FILE} is too large to be a Kobe manifest`);
+    throw new Error(`${MANIFEST_FILE} is too large to be a Kaiju manifest`);
   }
   const body = await readFile(path);
   let signature: string;

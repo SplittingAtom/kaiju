@@ -46,7 +46,7 @@ export const teamSkillInstalls = pgTable(
     /** `default_tag`: made by the Default tag (SK6); the team's later changes stick. */
     origin: skillInstallOrigin().notNull().default("team"),
     // Users are deactivated, never deleted (NO ACTION); a Default install names who tagged it,
-    // or no one when Kobe's own Default sync made it (`by_kobe`, KOBE-317).
+    // or no one when Kaiju's own Default sync made it (`by_kobe`, KOBE-317).
     installedBy: uuid().references(() => users.id),
     byKobe: boolean().notNull().default(false),
     /**

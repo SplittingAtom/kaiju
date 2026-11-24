@@ -14,7 +14,7 @@ elif [[ -n "${KOBE_SANDBOX_IMAGE:-}" && "$(type -t chat_run)" == function && -n 
   ROT_TTL=10
   ROT_AGENT=6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
   rot_t0=$SECONDS
-  # A published personal agent of the owner: Kobe's definition with only the e2e-fake connector.
+  # A published personal agent of the owner: Kaiju's definition with only the e2e-fake connector.
   psql_kobe "DELETE FROM site_agents WHERE id = '$ROT_AGENT' AND current_version IS NULL;
     INSERT INTO site_agents (id, scope, owner_user_id, slug, frontmatter, prompt)
       SELECT '$ROT_AGENT', 'personal', '$owner_id', 'e2e-mcp-rotation',

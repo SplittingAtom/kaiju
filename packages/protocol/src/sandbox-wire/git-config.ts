@@ -7,7 +7,7 @@ import { SANDBOX_WIRE_VERSION } from "./connection.js";
  * sends `run.start.git` only to agents whose `hello.capabilities` lists {@link CAPABILITY_GIT}.
  *
  * It carries the commit identity the agent writes into the thread's git config (G13: the member
- * as author, "via Kobe" in the committer) and the base URL and organization of each Workspace
+ * as author, "via Kaiju" in the committer) and the base URL and organization of each Workspace
  * connection the sandbox's git may use (G11). It carries no credential, no token and no proxy URL:
  * the agent maps `https://<host>/<organization>/` remotes to plain-HTTP ones, which go to the egress
  * proxy with the sandbox's own egress token, and the proxy adds the Workspace's credential
@@ -73,7 +73,7 @@ const slug = z
   .string()
   .max(PROJECT_SLUG_MAX)
   .regex(/^[a-z0-9][a-z0-9-]*$/);
-/** `refs/heads/<name>` names Kobe sends or reads back (no `..`, no leading `-`, at most 255). */
+/** `refs/heads/<name>` names Kaiju sends or reads back (no `..`, no leading `-`, at most 255). */
 const branchName = z
   .string()
   .min(1)
@@ -107,9 +107,9 @@ export const runGitRepoSchema = z.object({
 export type RunGitRepo = z.infer<typeof runGitRepoSchema>;
 
 export const runGitContextSchema = z.object({
-  /** The member (G13): their name and their Kobe email, or the Workspace's no-reply form (GQ10). */
+  /** The member (G13): their name and their Kaiju email, or the Workspace's no-reply form (GQ10). */
   author: gitIdentitySchema,
-  /** The member's name with "via Kobe", and the author's email. */
+  /** The member's name with "via Kaiju", and the author's email. */
   committer: gitIdentitySchema,
   /** The connected organizations the sandbox's git may reach through the egress proxy. */
   remotes: z.array(runGitRemoteSchema).max(RUN_GIT_REMOTES_MAX),

@@ -166,7 +166,7 @@ function Editor({
     const yes = await confirm(
       {
         title: `Discard the site draft of ${skill.name}?`,
-        description: "Published versions stay. A detached Kobe skill stays detached until reset.",
+        description: "Published versions stay. A detached Kaiju skill stays detached until reset.",
         confirmLabel: "Discard draft",
       },
       eventTrigger(e),

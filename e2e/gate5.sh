@@ -79,7 +79,7 @@ api_end() { # story
 
 # What each story's acceptance criteria are, and its browser specs (e2e/browser/tests/...).
 STORY_TEXT=(
-  "U17|Kobe is one workspace: the CE7 table holds at four widths; the conversation never under 400 px; rail state, divider and artifact width persist across two browsers."
+  "U17|Kaiju is one workspace: the CE7 table holds at four widths; the conversation never under 400 px; rail state, divider and artifact width persist across two browsers."
   "U18|I never lose the conversation: artifacts, files, memory, settings open beside the thread; scrolled up mid-stream holds and the Jump pill counts; the composer is visible at every width."
   "U19|The steering panel walks idle, active, queued, waiting, interrupted; queued messages edited, deleted, reordered; Steer, Stop, Retry, Continue; zero height when idle."
   "U20|The gauge is the latest run_usage prompt over context_window; thresholds at 65% and 85%; Compact now with a focus makes a compaction marker with the summary."

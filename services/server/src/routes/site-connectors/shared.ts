@@ -27,7 +27,7 @@ export const SITE_AUTH_REQUIRED =
 
 /** An OAuth connector is probed with the acting admin's own connected account (KOBE-784). */
 export const OAUTH_AUTH_REQUIRED =
-  "The server asked for credentials. Kobe probes an OAuth connector with your own connected account: connect your own account for this connector first (My connectors, in a team that enabled it), then pin it again; never a member's. Tools stay unpinned (none are offered).";
+  "The server asked for credentials. Kaiju probes an OAuth connector with your own connected account: connect your own account for this connector first (My connectors, in a team that enabled it), then pin it again; never a member's. Tools stay unpinned (none are offered).";
 
 export const pinBody = (
   pin: PinOutcome,

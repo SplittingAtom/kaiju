@@ -3,7 +3,7 @@
 import { SiteGrantSection, type SiteGrantCopy } from "./site-grant-section";
 
 export const REVIEWER_HINT =
-  "Skill reviewers see the Registry queue and may claim, comment, approve, request changes and reject. They can't block, withdraw, revoke, tag Default or change Registry settings. Kobe adds them to the Registry team, where re-runs run; a Site admin needs the grant for that too. Another admin gives it to you; on a single-admin Site you may give it to yourself (flagged).";
+  "Skill reviewers see the Registry queue and may claim, comment, approve, request changes and reject. They can't block, withdraw, revoke, tag Default or change Registry settings. Kaiju adds them to the Registry team, where re-runs run; a Site admin needs the grant for that too. Another admin gives it to you; on a single-admin Site you may give it to yourself (flagged).";
 
 const REVIEWER_COPY: SiteGrantCopy = {
   grant: "skill_reviewer",

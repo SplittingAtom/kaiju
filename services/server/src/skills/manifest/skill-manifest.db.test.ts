@@ -173,7 +173,7 @@ beforeEach(() => {
 });
 
 describe("POST /v1/skills/promotions/manifest (KOBE-564)", () => {
-  it("the preview refuses the version for no_manifest; Kobe then drafts one with the chosen model into a new draft", async () => {
+  it("the preview refuses the version for no_manifest; Kaiju then drafts one with the chosen model into a new draft", async () => {
     const v = await uploadTeam(builder, bare("sales-report"));
     const preview = await builder.get(
       `/v1/skills/promotions/preview?scope=team&skillId=${v.skillId}&version=${v.version}`,

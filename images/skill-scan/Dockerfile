@@ -1,5 +1,5 @@
-# Kobe's external skill scanner image (KOBE-341, spec SK32): Cisco skill-scanner (Apache-2.0) and
-# Kobe's runner, which scans one catalog package (mounted read-only under /input in parts) with
+# Kaiju's external skill scanner image (KOBE-341, spec SK32): Cisco skill-scanner (Apache-2.0) and
+# Kaiju's runner, which scans one catalog package (mounted read-only under /input in parts) with
 # the scanner's offline analyzers and prints one result line. No network, no secrets: the Job
 # that runs it has no service account token, no Secret, no DNS and a deny-all NetworkPolicy.
 # Build from the repository root: docker build -f images/skill-scan/Dockerfile .
@@ -33,7 +33,7 @@ RUN pip install --require-hashes --no-deps -r /tmp/requirements.txt \
  && python -m compileall -q -x 'olefile/olefile2\.py$' /usr/local/lib/python3.12/site-packages \
  && pip uninstall -y pip setuptools wheel
 
-# Kobe's runner: root-owned and read-only.
+# Kaiju's runner: root-owned and read-only.
 COPY images/skill-scan/kobe_skill_scan /opt/kobe/skill-scan/kobe_skill_scan
 
 # User 1000:1000 (numeric, for runAsNonRoot). /input holds the package parts (ConfigMaps). No setuid
@@ -52,7 +52,7 @@ RUN apt-get update \
  && find / -xdev -perm /6000 -type f -exec chmod a-s {} + \
  && rm -rf /usr/bin/apt* /usr/bin/dpkg* /usr/sbin/dpkg* /usr/lib/apt /var/cache/apt /var/lib/apt
 
-# Kobe's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
+# Kaiju's license, NOTICE and third-party inventory (Apache-2.0 section 4, KOBE-375).
 COPY LICENSE NOTICE THIRD_PARTY_LICENSES.md /usr/share/doc/kobe/
 USER 1000:1000
 WORKDIR /tmp

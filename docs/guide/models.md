@@ -6,7 +6,7 @@ order: 1
 audience: member
 ---
 
-Kobe can use several AI models. Your team admins decide which ones your workspace may use; you
+Kaiju can use several AI models. Your team admins decide which ones your workspace may use; you
 choose among them per conversation. This page covers picking a model, setting how much the model
 thinks before it answers, and the limits you may run into.
 
@@ -59,7 +59,7 @@ The model's reasoning appears as steps in the answer; **Show details** opens the
 
 Site admins connect model providers and build the site's model catalog (**Models and providers**
 in the site console). Team admins enable models from that catalog for the team and pick the team
-default (**Models** in the team console). Model calls go through Kobe's model gateway; the
+default (**Models** in the team console). Model calls go through Kaiju's model gateway; the
 sandbox never holds a provider key.
 
 ## Related

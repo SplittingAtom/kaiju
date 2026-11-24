@@ -25,7 +25,7 @@ import { reachableBase } from "./transport.js";
  * the commit identity and the base URL and organization of each connection the sandbox's git may
  * use through the egress proxy (which decides every request, KOBE-763).
  *
- * Authorship (G13): the member's name and their Kobe email as author, "<name> via Kobe" with the
+ * Authorship (G13): the member's name and their Kaiju email as author, "<name> via Kaiju" with the
  * same email as committer. A Workspace setting (GQ10, `teams.settings.git_commit_email`) switches
  * the email to a no-reply form under the Site's own host,
  * `<short id>+<name slug>@users.noreply.<host>` ({@link gitNoReplyEmail}): stable per member,
@@ -36,9 +36,9 @@ import { reachableBase } from "./transport.js";
 export const TEAM_GIT_COMMIT_EMAIL_SETTING = "git_commit_email";
 export { GIT_COMMIT_EMAIL_MODES, type GitCommitEmailMode };
 
-/** What "via Kobe" says in the committer (G13). */
-export const GIT_COMMITTER_SUFFIX = " via Kobe";
-const FALLBACK_NAME = "Kobe member";
+/** What "via Kaiju" says in the committer (G13). */
+export const GIT_COMMITTER_SUFFIX = " via Kaiju";
+const FALLBACK_NAME = "Kaiju member";
 
 /** The Workspace's choice from `teams.settings`; anything but `noreply` is the member's email. */
 export function gitCommitEmailMode(settings: unknown): GitCommitEmailMode {

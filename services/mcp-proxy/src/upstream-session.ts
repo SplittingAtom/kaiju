@@ -112,7 +112,7 @@ function endSession(t: UpstreamTransport, url: URL, call: UpstreamBase, session:
 
 /**
  * One upstream session as a client span `mcp.upstream` (KOBE-527/528), so a trace separates the
- * upstream's time from Kobe's. Low-cardinality attributes only: the path's kind, the MCP method,
+ * upstream's time from Kaiju's. Low-cardinality attributes only: the path's kind, the MCP method,
  * the outcome (`ok` or the failure kind), an error flag and the request count; never the
  * connector, its URL, the tool or any content. The best-effort session DELETE is not in it.
  */

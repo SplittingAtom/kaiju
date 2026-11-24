@@ -218,7 +218,7 @@ function AddMembers({ team, onAdded }: { readonly team: SiteTeam; readonly onAdd
     <section aria-label={`Add members to ${team.name}`} className="flex flex-col gap-2">
       <h3 className="m-0 text-sm font-semibold">Add existing users</h3>
       <p className="m-0 text-sm text-console-muted">
-        They join at once, without an invitation, and are told in Kobe (and by email). Deactivated
+        They join at once, without an invitation, and are told in Kaiju (and by email). Deactivated
         users and you yourself can&apos;t be added.
       </p>
       <form onSubmit={onSearch} aria-label={`Search users for ${team.name}`}>

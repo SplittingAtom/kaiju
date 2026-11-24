@@ -35,7 +35,7 @@ describe("site requires 2FA: trust the IdP's MFA (KOBE-629, SSO3, SSO7)", () => 
       )
     ).rows;
 
-  it("ac-1: an MFA-proving sign-in (Entra acrs c1) passes require_2fa without Kobe TOTP", async () => {
+  it("ac-1: an MFA-proving sign-in (Entra acrs c1) passes require_2fa without Kaiju TOTP", async () => {
     await requireTwoFactor(true);
     try {
       const { location, browser } = await signInVia(

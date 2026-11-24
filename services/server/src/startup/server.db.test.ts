@@ -163,7 +163,7 @@ function serverConfig(extra: Record<string, string> = {}): Config {
     KOBE_AUTH_SECRET: "s".repeat(48),
     KOBE_SETUP_TOKEN: "setup-token-for-start-server-0",
     KOBE_SMTP_HOST: "127.0.0.1",
-    KOBE_SMTP_FROM: "Kobe <kobe@example.com>",
+    KOBE_SMTP_FROM: "Kaiju <kobe@example.com>",
   });
   // Any free port.
   return { ...config, port: 0 };

@@ -78,7 +78,7 @@ interface ActiveRun {
 const PICKS_NOTES_MAX_BYTES = 4 * 1024 * 1024;
 
 /**
- * One Kobe thread's Pi process and its active run. All lifecycle changes (spawn, restart, stop,
+ * One Kaiju thread's Pi process and its active run. All lifecycle changes (spawn, restart, stop,
  * session-file writes) are serialised through `withLock`; Pi requests run outside the lock.
  * Starting a Pi is in `spawn.ts`, the tamper check in `runtime-check.ts`, the reclaim after exit in
  * `reclaim.ts`, and extension UI routing in `dialogs.ts`.

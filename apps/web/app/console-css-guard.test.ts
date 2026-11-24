@@ -37,7 +37,7 @@ function generated(node: ChildNode): boolean {
   if (node.type !== "atrule") return false;
   if (node.name === "layer") return ["theme", "utilities", "properties"].includes(node.params);
   if (node.name === "property") return node.params.startsWith("--tw-");
-  // Tailwind's and tw-animate's keyframes (spin, pulse, enter, exit, …); Kobe's start with kobe-.
+  // Tailwind's and tw-animate's keyframes (spin, pulse, enter, exit, …); Kaiju's start with kobe-.
   if (node.name === "keyframes") return !node.params.startsWith("kobe-");
   return false;
 }

@@ -35,7 +35,7 @@ const testFailure =
 
 const Settings = named("GitTeamSettings", gitTeamSettingsSchema);
 const settingsDescription =
-  "`commit_email`: `member` (the member's Kobe email as author of sandbox commits, the default) or " +
+  "`commit_email`: `member` (the member's Kaiju email as author of sandbox commits, the default) or " +
   "`noreply` (`<short id>+<name>@users.noreply.<Site host>`); `noreply_example` is the caller's own " +
   "no-reply address.";
 

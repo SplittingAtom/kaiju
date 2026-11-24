@@ -94,7 +94,7 @@ export async function sweepGitMirrors(deps: MirrorDeps): Promise<MirrorPass> {
 }
 
 /**
- * A refresh now on this replica, without waiting (an open, Refresh, a push Kobe made). When this
+ * A refresh now on this replica, without waiting (an open, Refresh, a push Kaiju made). When this
  * replica has no free slot, or another run holds the Repo, it is asked for instead so the next
  * pass takes it (review L6).
  */

@@ -58,7 +58,7 @@ export async function handleConnect(
       socket,
       407,
       "Proxy Authentication Required",
-      "Kobe egress proxy: send the sandbox's egress session token.",
+      "Kaiju egress proxy: send the sandbox's egress session token.",
       [`Proxy-Authenticate: ${REALM}`],
     );
     return;
@@ -78,8 +78,8 @@ export async function handleConnect(
       attempt,
       "connection_limit",
       429,
-      "Kobe egress: too many connections",
-      "Kobe egress: this sandbox has too many open connections; close some and retry.",
+      "Kaiju egress: too many connections",
+      "Kaiju egress: this sandbox has too many open connections; close some and retry.",
     );
     return;
   }
@@ -106,8 +106,8 @@ async function setUp(
       attempt,
       "invalid_target",
       403,
-      "Kobe egress blocked: invalid target",
-      "Kobe egress: CONNECT needs a host name and port (IP addresses are never allowed).",
+      "Kaiju egress blocked: invalid target",
+      "Kaiju egress: CONNECT needs a host name and port (IP addresses are never allowed).",
     );
     return;
   }
@@ -118,8 +118,8 @@ async function setUp(
       attempt,
       "port_not_allowed",
       403,
-      `Kobe egress blocked: port ${target.port} is not allowed`,
-      `Kobe egress: only HTTPS ports ${settings.allowedPorts.join(", ")} are allowed.`,
+      `Kaiju egress blocked: port ${target.port} is not allowed`,
+      `Kaiju egress: only HTTPS ports ${settings.allowedPorts.join(", ")} are allowed.`,
     );
     return;
   }
@@ -146,8 +146,8 @@ async function decideConnect(
       reply(
         socket,
         403,
-        "Kobe egress blocked: not an active team member",
-        "Kobe egress: this sandbox's user is not an active member of its team.",
+        "Kaiju egress blocked: not an active team member",
+        "Kaiju egress: this sandbox's user is not an active member of its team.",
       );
       return undefined;
     } else decision = await deps.policy.decide(identity.teamId, host);
@@ -157,8 +157,8 @@ async function decideConnect(
     reply(
       socket,
       503,
-      "Kobe egress: allowlist unavailable",
-      "Kobe egress: the allowlist could not be read; try again shortly.",
+      "Kaiju egress: allowlist unavailable",
+      "Kaiju egress: the allowlist could not be read; try again shortly.",
     );
     return undefined;
   }
@@ -170,8 +170,8 @@ async function decideConnect(
         attempt,
         "not_enabled",
         403,
-        `Kobe egress blocked: ${host} is not enabled for this team`,
-        `Kobe egress: ${host} is not enabled for this team. A team admin can enable it (Request access).`,
+        `Kaiju egress blocked: ${host} is not enabled for this team`,
+        `Kaiju egress: ${host} is not enabled for this team. A team admin can enable it (Request access).`,
         true,
       );
     } else {
@@ -182,8 +182,8 @@ async function decideConnect(
         attempt,
         "not_in_ceiling",
         403,
-        `Kobe egress blocked: ${host} is not allowed on this site`,
-        `Kobe egress: ${host} is not in this site's egress ceiling; a site admin must add it first (Request access).`,
+        `Kaiju egress blocked: ${host} is not allowed on this site`,
+        `Kaiju egress: ${host} is not in this site's egress ceiling; a site admin must add it first (Request access).`,
         true,
       );
     }
@@ -203,8 +203,8 @@ async function decideConnect(
     reply(
       socket,
       503,
-      "Kobe egress: allowlist unavailable",
-      "Kobe egress: the allowlist could not be read; try again shortly.",
+      "Kaiju egress: allowlist unavailable",
+      "Kaiju egress: the allowlist could not be read; try again shortly.",
     );
     return undefined;
   }
@@ -213,8 +213,8 @@ async function decideConnect(
     reply(
       socket,
       403,
-      `Kobe egress blocked: use http://${host} (team credentials are injected)`,
-      `Kobe egress: your team injects credentials for ${host}. Use http://${host}/... instead of ` +
+      `Kaiju egress blocked: use http://${host} (team credentials are injected)`,
+      `Kaiju egress: your team injects credentials for ${host}. Use http://${host}/... instead of ` +
         "https:// — the proxy adds them and connects over verified HTTPS for you.",
     );
     return undefined;
@@ -246,8 +246,8 @@ async function openTunnel(
       reply(
         socket,
         502,
-        `Kobe egress: cannot resolve ${host}`,
-        `Kobe egress: ${host} does not resolve.`,
+        `Kaiju egress: cannot resolve ${host}`,
+        `Kaiju egress: ${host} does not resolve.`,
       );
       return;
     }
@@ -261,8 +261,8 @@ async function openTunnel(
         attempt,
         "forbidden_address",
         403,
-        `Kobe egress blocked: ${host} resolves to an internal address`,
-        `Kobe egress: ${host} resolves to an internal or reserved address, which sandboxes may not reach unless a site admin marks it internal (Request access).`,
+        `Kaiju egress blocked: ${host} resolves to an internal address`,
+        `Kaiju egress: ${host} resolves to an internal or reserved address, which sandboxes may not reach unless a site admin marks it internal (Request access).`,
         true,
       );
       return;
@@ -275,8 +275,8 @@ async function openTunnel(
       reply(
         socket,
         502,
-        `Kobe egress: cannot connect to ${host}`,
-        `Kobe egress: ${host} did not accept a connection.`,
+        `Kaiju egress: cannot connect to ${host}`,
+        `Kaiju egress: ${host} did not accept a connection.`,
       );
       return;
     }

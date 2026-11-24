@@ -16,7 +16,7 @@ import {
 import { logger } from "./logger.js";
 
 /*
- * The server's view of Kobe's durable rate limiters. The SQL lives only in `@kobe/db`
+ * The server's view of Kaiju's durable rate limiters. The SQL lives only in `@kobe/db`
  * (`packages/db/src/rate-limit.ts`, KOBE-810), which the model gateway shares; these wrappers add
  * the server's logging of failed prunes.
  */

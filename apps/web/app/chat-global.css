@@ -61,7 +61,7 @@ body:has([data-kobe-chat]) {
     cursor: pointer;
   }
 
-  /* Kobe's own controls (queue, run panel, approvals, thread list) look like shadcn's outline
+  /* Kaiju's own controls (queue, run panel, approvals, thread list) look like shadcn's outline
      button. `:where` keeps specificity at zero, so any utility class overrides it. */
   [data-kobe-chat]
     :where(button:not([data-slot])):where(:not([data-kobe-console], [data-kobe-console] *)) {

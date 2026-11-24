@@ -39,7 +39,7 @@ export const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
     "Your workspace could not be started because the storage that held it is lost (the server it lived on has been gone too long). You can rebuild it from the last sync: changes made after the last sync are not recovered, even if that server comes back later.",
   // KOBE-739: that server is down, but not for the grace period yet (it may come back).
   workspace_volume_unreachable:
-    "Your workspace could not be started because the server that holds its storage is not answering. It may come back with your files; if it stays down, Kobe offers to rebuild the workspace from the last sync. Try again later.",
+    "Your workspace could not be started because the server that holds its storage is not answering. It may come back with your files; if it stays down, Kaiju offers to rebuild the workspace from the last sync. Try again later.",
   // KOBE-739: a confirmed rebuild is still removing the old storage.
   workspace_rebuilding:
     "Your workspace is being rebuilt from the last sync. Send your message again in a few minutes.",
@@ -83,7 +83,7 @@ export const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
   // KOBE-317: a run.start queued before the upgrade still lists the image's built-in skills; the
   // workspace is new and nothing needs upgrading: the member resends (the prompt is kept).
   queued_before_upgrade:
-    "This message was queued while Kobe was being upgraded and couldn't start. Send it again.",
+    "This message was queued while Kaiju was being upgraded and couldn't start. Send it again.",
   // A compaction run's end (KOBE-213); not a chat turn, so these are seen only in its events.
   compaction_failed: "The conversation could not be compacted.",
   nothing_to_compact: "There was nothing to compact.",

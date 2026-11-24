@@ -5,7 +5,7 @@ import { FAKE_MODEL, longAnswer, pageApi } from "../support/gate5.js";
 import { launchFromPlusMenu } from "../support/plus-apps.js";
 
 /**
- * The Kobe Explorer Gate (KOBE-441, spec §11): an MCP App in the conversation first, then from the
+ * The Kaiju Explorer Gate (KOBE-441, spec §11): an MCP App in the conversation first, then from the
  * rail, in a real Chromium against a deployment (e2e/gate-apps.sh; the coordinator's runbook for
  * the gate install). One spec drives both runs:
  *
@@ -43,7 +43,7 @@ interface App {
 }
 
 /**
- * Everything the browser received from Kobe in this file's earlier tests (for the key check; one
+ * Everything the browser received from Kaiju in this file's earlier tests (for the key check; one
  * worker runs the file in order, KOBE_WORKERS=1, the config's default).
  */
 const bodies: string[] = [];
@@ -144,7 +144,7 @@ test("in the conversation: the app renders, calls once, gives a chip, inserts wi
     "the tool card has its app (the claim matched what Pi sent)",
   ).toBe(true);
 
-  // Expanding a node makes app calls through Kobe (k3d: exactly one).
+  // Expanding a node makes app calls through Kaiju (k3d: exactly one).
   const before = seen.calls();
   await first.click();
   await expect.poll(() => seen.calls()).toBeGreaterThan(before);
@@ -348,7 +348,7 @@ test("from the rail during a run: the launch waits as a chip and goes in after t
 
 test("no credential reaches the browser or the frame", async ({ chat, page }) => {
   test.skip(SECRET === "", "KOBE_APPS_SECRET names the credential to look for");
-  // Every answer from Kobe while the app opens from the rail and renders, frame document included.
+  // Every answer from Kaiju while the app opens from the rail and renders, frame document included.
   const seen: string[] = [];
   page.on("response", (r: Response) => {
     if (!new URL(r.url()).pathname.startsWith("/v1/")) return;

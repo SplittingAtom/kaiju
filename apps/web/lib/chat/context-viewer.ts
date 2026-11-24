@@ -91,7 +91,7 @@ export async function readThreadContext(
   } catch {
     return fail(
       "network_error",
-      "Kobe is unreachable. Check your connection and try again.",
+      "Kaiju is unreachable. Check your connection and try again.",
       false,
     );
   }

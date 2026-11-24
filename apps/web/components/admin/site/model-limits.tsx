@@ -99,7 +99,7 @@ export function LimitsFields({
     <>
       <Checkbox
         label="Reasons before answering (a thinking model)."
-        hint="Its reasoning counts against the output limit, so it gets the higher default, and Kobe's short calls after a run (conversation titles) ask it for low reasoning effort with more room."
+        hint="Its reasoning counts against the output limit, so it gets the higher default, and Kaiju's short calls after a run (conversation titles) ask it for low reasoning effort with more room."
         checked={choice.reasoning}
         onChange={(e) => choice.setReasoning(e.target.checked)}
       />

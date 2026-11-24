@@ -27,7 +27,7 @@ const ADD_ERRORS = {
     403,
     "You can't add yourself to a team here. Site admins reach team content through break-glass.",
   ],
-  user_not_found: [404, "No Kobe user with that id."],
+  user_not_found: [404, "No Kaiju user with that id."],
   user_deactivated: [409, "That account is deactivated. Reactivate it first."],
   user_unverified: [
     409,

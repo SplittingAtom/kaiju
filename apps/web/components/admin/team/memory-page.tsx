@@ -53,7 +53,7 @@ export const WORKSPACE_SWITCHES: readonly SwitchSpec<WorkspaceSwitch>[] = [
   {
     key: "memoriesEnabled",
     label: "Allow memories",
-    hint: "Short statements Kobe knows about a person, this workspace and the site, given to the agent at the start of each run. Off keeps every memory stored.",
+    hint: "Short statements Kaiju knows about a person, this workspace and the site, given to the agent at the start of each run. Off keeps every memory stored.",
     needs: ["memoryEnabled"],
   },
   {
@@ -71,7 +71,7 @@ export const WORKSPACE_SWITCHES: readonly SwitchSpec<WorkspaceSwitch>[] = [
   {
     key: "learnEnabled",
     label: "Learn from this chat",
-    hint: "People can ask Kobe to suggest memories from a conversation and review every suggestion before anything is saved. Needs a learning model (below).",
+    hint: "People can ask Kaiju to suggest memories from a conversation and review every suggestion before anything is saved. Needs a learning model (below).",
     needs: ["memoryEnabled", "memoriesEnabled"],
   },
   {
@@ -124,7 +124,7 @@ export function TeamMemoryPage() {
         </TabsList>
         <TabsContent value="memories">
           <p className="m-0 mb-4 text-console-muted">
-            Short statements Kobe gives every agent in this workspace at the start of each run.
+            Short statements Kaiju gives every agent in this workspace at the start of each run.
             {curate
               ? " Nothing is ever deleted: archive what should no longer be used."
               : " Only Team admins and memory stewards change them."}

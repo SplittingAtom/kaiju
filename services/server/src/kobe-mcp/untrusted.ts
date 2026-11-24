@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 /**
- * Saved memory text in Kobe admin tool results (KOBE-650 review L1). Memory statements were written
+ * Saved memory text in Kaiju admin tool results (KOBE-650 review L1). Memory statements were written
  * by people or earlier runs, and land in an agent context that also holds admin write tools, so
  * they reach the model the way the sandbox frames memory (`sandbox-agent/src/kobe-tools/
  * memory-fence.ts`, KOBE-157; the same markers, so one notice reads the same everywhere):

@@ -1,4 +1,4 @@
-"""Runtime settings from the environment. Model access is only ever the Kobe model gateway."""
+"""Runtime settings from the environment. Model access is only ever the Kaiju model gateway."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     url = source.get("KOBE_MODEL_GATEWAY_URL", "").strip()
     token = source.get("KOBE_MODEL_SESSION_TOKEN", "").strip()
     if not url.startswith(("http://", "https://")):
-        raise SettingsError("KOBE_MODEL_GATEWAY_URL must be an http(s) URL (the Kobe model gateway)")
+        raise SettingsError("KOBE_MODEL_GATEWAY_URL must be an http(s) URL (the Kaiju model gateway)")
     if not token:
         raise SettingsError("KOBE_MODEL_SESSION_TOKEN is required (a gateway session token)")
     override = source.get("KOBE_EVAL_MODEL", "").strip() or None

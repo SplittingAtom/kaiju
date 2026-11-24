@@ -1,12 +1,12 @@
 ---
 title: Glossary
-summary: Short definitions of the words Kobe uses, from agent and approval to workspace and scratchspace.
+summary: Short definitions of the words Kaiju uses, from agent and approval to workspace and scratchspace.
 section: Reference
 order: 3
 audience: member
 ---
 
-The words Kobe uses, in alphabetical order, each with a link to the page that explains it.
+The words Kaiju uses, in alphabetical order, each with a link to the page that explains it.
 
 ## Terms
 
@@ -27,7 +27,7 @@ only) Dangerous.
 
 **Artifact.** Something the agent made for you to keep (a document, a chart, code), shown in a tab
 of the artifact column. **Edit as file** copies a text artifact into My files. HTML and SVG
-artifacts run in a locked-down frame with no network access, shown only inside Kobe; download one
+artifacts run in a locked-down frame with no network access, shown only inside Kaiju; download one
 to keep a copy.
 
 **Artifact column.** The centre column, between the rail and the conversation, with tabs for
@@ -42,13 +42,13 @@ discard.
 **Commit.** A saved version of a project's files, with a message and an author.
 
 **Connector.** A link to another system through MCP that gives the agent tools. The built-in
-**Kobe** connector is Kobe's own: the guide for every agent, and admin tools where admins turn
+**Kaiju** connector is Kaiju's own: the guide for every agent, and admin tools where admins turn
 them on. See [Admin from a conversation](admin/admin-from-a-conversation.md).
 
 **Contributor.** A team role between member and team admin: builds agents, publishes skills,
 creates projects.
 
-**Egress.** The agent's internet access, through Kobe's egress proxy. The **egress ceiling** is the
+**Egress.** The agent's internet access, through Kaiju's egress proxy. The **egress ceiling** is the
 site's list of allowed sites. See [Internet access](internet-and-approvals/internet-access.md).
 
 **Fork.** A new thread copied from another up to a point.
@@ -58,13 +58,13 @@ admin with a GitHub App or an access token. The credential stays on the server. 
 [Git organizations](admin/git-organizations.md).
 
 **Identity provider.** Your organization's sign-in service (for example Microsoft Entra ID) that
-Kobe trusts for single sign-on.
+Kaiju trusts for single sign-on.
 
 **Kernel.** The live Python process in your sandbox that runs notebooks and `.py` files. See
 [Notebooks and Python](files/notebooks.md).
 
-**Linked sign-in.** An identity provider account joined to a Kobe account, so either signs you
-in. Linking needs your Kobe password or passkey, or an administrator's **expected link**. See
+**Linked sign-in.** An identity provider account joined to a Kaiju account, so either signs you
+in. Linking needs your Kaiju password or passkey, or an administrator's **expected link**. See
 [Signing in with your organization](getting-started/single-sign-on.md).
 
 **Managed member.** A team membership an access mapping made; it shows "Managed by _provider_"
@@ -110,17 +110,17 @@ it sleeps when idle.
 
 **Schedule.** A prompt sent to an agent at set times.
 
-**SCIM.** The standard an identity provider uses to create, update and deactivate Kobe accounts
+**SCIM.** The standard an identity provider uses to create, update and deactivate Kaiju accounts
 on its own. A **SCIM token** (created in the Site console, shown once) lets one provider do this.
 
 **Set by the Site.** The label on a Site memory (knowledge the Site gives every workspace's agents)
 wherever you see one outside the site console. It never says which workspace the memory came
 from. See [Memory](memory.md#site-memories-outside-the-site-console).
 
-**Single sign-on (SSO).** Signing in to Kobe with your organization's account instead of a Kobe
+**Single sign-on (SSO).** Signing in to Kaiju with your organization's account instead of a Kaiju
 password. See [Signing in with your organization](getting-started/single-sign-on.md).
 
-**Site.** The whole Kobe installation of your organization, run by site admins.
+**Site.** The whole Kaiju installation of your organization, run by site admins.
 
 **Skill.** Packaged know-how an agent can load: `SKILL.md` plus files. See [Skills](agents/skills.md).
 
@@ -136,5 +136,5 @@ can belong to several and switch between them.
 
 ## For agents
 
-An AI agent working inside Kobe should read [Concepts for agents](for-agents/concepts.md), which
+An AI agent working inside Kaiju should read [Concepts for agents](for-agents/concepts.md), which
 maps these words to tools and paths.

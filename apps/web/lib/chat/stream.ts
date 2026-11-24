@@ -1,5 +1,5 @@
 /**
- * One run's Kobe Event Stream in the browser (KOBE-31): an `EventSource` on
+ * One run's Kaiju Event Stream in the browser (KOBE-31): an `EventSource` on
  * `GET /v1/runs/{id}/events?starting_after=<seq>` with the session cookie (EventSource can't send
  * `X-Kobe-Team`; the server doesn't need it on GET). The browser reconnects by itself with
  * `Last-Event-ID` after a network drop; the server takes max(starting_after, Last-Event-ID), so
@@ -116,7 +116,7 @@ export function openRunStream(
     try {
       parsed = JSON.parse(message.data);
     } catch {
-      return; // not a Kobe event; the seq cursor is unchanged
+      return; // not a Kaiju event; the seq cursor is unchanged
     }
     const result = kobeEventSchema.safeParse(parsed);
     if (!result.success) {

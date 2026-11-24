@@ -17,7 +17,7 @@ export const teamMembers = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     role: teamRole().notNull(),
     /**
-     * Who made the membership when Kobe did it (KOBE-331 review): `skill_reviewer_grant` = Kobe
+     * Who made the membership when Kaiju did it (KOBE-331 review): `skill_reviewer_grant` = Kaiju
      * added a Skill reviewer to the Registry team, and taking the grant removes it. Null = the
      * team's own member (an invitation, an admin's change, or a member before the grant); it never
      * goes from null back to the grant. `idp:<provider uuid>` (KOBE-625, spec sso-oidc-scim §7) =

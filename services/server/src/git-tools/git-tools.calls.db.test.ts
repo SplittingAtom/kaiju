@@ -134,7 +134,7 @@ describe("writes ask by default and need a signed approval of exactly that input
         .text,
     );
     expect(pr.pull_request.body).toContain("Fixes the typo.");
-    expect(pr.pull_request.body).toContain("Opened by Ana Lee via Kobe, from conversation");
+    expect(pr.pull_request.body).toContain("Opened by Ana Lee via Kaiju, from conversation");
     expect(pr.pull_request.body).toContain(`?thread=${s.threadId}`);
 
     const [opened] = (await auditRows(w.team, "git.pull_request")).map((r) => r);
@@ -351,7 +351,7 @@ describe("Gitea and Forgejo (ac-3)", () => {
           })
         ).text,
       );
-      expect(issue.issue.body).toContain("Opened by Ana Lee via Kobe");
+      expect(issue.issue.body).toContain("Opened by Ana Lee via Kaiju");
       expect((await auditRows(w.team)).map((r) => r.action)).toEqual(
         expect.arrayContaining([
           "git.branch.created",
@@ -392,7 +392,7 @@ describe("the approval card (G9)", () => {
       connection_name: "acme on Forgejo",
       repository: "docs",
       title: "<b>Hi</b>",
-      body: `Body\n\n---\nOpened by Ana Lee via Kobe, from conversation https://kobe.test/?thread=${threadId}`,
+      body: `Body\n\n---\nOpened by Ana Lee via Kaiju, from conversation https://kobe.test/?thread=${threadId}`,
       head: "f",
       base: "main",
       draft: false,

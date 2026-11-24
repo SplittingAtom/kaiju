@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Where Kobe's proxies may connect: the non-global address ranges both the egress proxy and the MCP proxy refuse (one list, no drift)",
+  "description": "Where Kaiju's proxies may connect: the non-global address ranges both the egress proxy and the MCP proxy refuse (one list, no drift)",
   "type": "module",
   "files": [
     "dist"

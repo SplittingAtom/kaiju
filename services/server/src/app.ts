@@ -221,7 +221,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   // Site branding (TH6): public reads, before the session check; request context only.
   app.route("/v1/site/branding", siteBrandingPublicRoutes(deps));
 
-  // Kobe's OAuth Client ID Metadata Document (KOBE-109): public, fetched by authorization servers.
+  // Kaiju's OAuth Client ID Metadata Document (KOBE-109): public, fetched by authorization servers.
   app.get("/v1/oauth/client-metadata.json", (c) => {
     c.header("Cache-Control", "public, max-age=3600");
     return c.json(clientMetadataDocument(kobeOrigin(deps.publicUrl)));
@@ -236,7 +236,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
     if (
       !["GET", "HEAD", "OPTIONS"].includes(c.req.method) &&
       c.req.header("origin") !== deps.publicUrl &&
-      // A Kobe MCP delegation (KOBE-619) is an in-process call, never a browser's.
+      // A Kaiju MCP delegation (KOBE-619) is an in-process call, never a browser's.
       delegationOf(c) === undefined
     ) {
       return c.json({ code: "forbidden_origin", message: "Cross-origin request rejected." }, 403);
@@ -398,7 +398,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
     siteHealthRoutes({ ingressRateLimit: options.ingressRateLimit ?? "unknown" }),
   );
   app.route("/v1", api);
-  // Kobe MCP admin tools (KOBE-619) run their console routes in process through this router.
+  // Kaiju MCP admin tools (KOBE-619) run their console routes in process through this router.
   deps.kobeMcp.bindApi(app);
   return app;
 }

@@ -252,7 +252,7 @@ export const EARLY_CASES: readonly Case[] = [
     codes: ["risk_read"],
   },
   {
-    name: "ask-on-write prompts for a Kobe-scoped write",
+    name: "ask-on-write prompts for a Kaiju-scoped write",
     tool: kobeWrite,
     effect: "require_approval",
     codes: ["risk_write"],

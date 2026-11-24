@@ -115,7 +115,7 @@ export function UtilityBar({
                 onOpenFiles={onOpenFiles}
               />
             )}
-            {/* The Kobe guide (KOBE-616): a panel over the workspace, like the consoles. */}
+            {/* The Kaiju guide (KOBE-616): a panel over the workspace, like the consoles. */}
             <IconAction command="docs" className={styles.iconLink} />
             <ThemeToggle />
             <ProfileMenu />

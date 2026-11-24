@@ -23,7 +23,7 @@ describe("gitErrorMessage (KOBE-761 mapping of KOBE-760's typed errors)", () => 
     ["credential_forbidden", "token_owner_mismatch", /token belongs to another account/],
     ["credential_forbidden", "user_namespace", /cannot act in a personal account/],
     ["unsupported_host", "version_unreadable", /did not say which version/],
-    ["host_refused", "redirect", /redirect Kobe does not follow/],
+    ["host_refused", "redirect", /redirect Kaiju does not follow/],
     [
       "host_refused",
       "not_reachable",
@@ -47,14 +47,14 @@ describe("gitErrorMessage (KOBE-761 mapping of KOBE-760's typed errors)", () => 
   it("keeps the server's own sentence where it carries the facts", () => {
     const old = err(
       "unsupported_host",
-      "The git host runs Gitea 1.25.4; Kobe supports Gitea 1.26.0 and later.",
+      "The git host runs Gitea 1.25.4; Kaiju supports Gitea 1.26.0 and later.",
       {
         code: "unsupported_host",
         reason: "version_too_old",
       },
     );
     expect(gitErrorMessage(old)).toBe(
-      "The git host runs Gitea 1.25.4; Kobe supports Gitea 1.26.0 and later.",
+      "The git host runs Gitea 1.25.4; Kaiju supports Gitea 1.26.0 and later.",
     );
     expect(
       gitErrorMessage(

@@ -19,7 +19,7 @@ const configSchema = z.object({
    */
   KOBE_SANDBOX_TOKEN_FILE: z.string().startsWith("/").default("/var/run/kobe/sandbox-wire/token"),
   /**
-   * Kobe's sandbox pods (KOBE-22): the projected bootstrap token, traded at the server for the
+   * Kaiju's sandbox pods (KOBE-22): the projected bootstrap token, traded at the server for the
    * sandbox id and its session tokens (session/exchange.ts). Takes precedence over the two above.
    */
   KOBE_BOOTSTRAP_TOKEN_FILE: z.string().startsWith("/").optional(),
@@ -35,7 +35,7 @@ const configSchema = z.object({
   KOBE_PI_RUNTIME_DIR: z.string().startsWith("/").default("/tmp/kobe-pi"),
   /**
    * Where the run's effective skills are materialized (KOBE-82): a directory only the agent
-   * writes, readable by the Pi uids. Kobe's pod spec mounts a memory-backed volume (sticky root,
+   * writes, readable by the Pi uids. Kaiju's pod spec mounts a memory-backed volume (sticky root,
    * like the Pi runtime directories). Unset: this sandbox cannot materialize skills.
    */
   KOBE_SKILLS_DIR: z.string().startsWith("/").optional(),
@@ -99,7 +99,7 @@ const configSchema = z.object({
    * KOBE-167 rollout switch (the chart's `sandbox.toolExecutor.enabled`, via the server's pod
    * spec): "true"/"1" routes every Pi's built-in tools to an executor under the partner uid of its
    * Pi identity (needs KOBE_EXEC_EXTENSION); "false"/"0" leaves them in Pi. Unset: on outside
-   * Kobe's pods (development and tests exercise the routing), off inside them (a server that does
+   * Kaiju's pods (development and tests exercise the routing), off inside them (a server that does
    * not know the setting has not asked for it, and has not given the pod the partner groups).
    */
   KOBE_TOOL_EXECUTOR: z
@@ -111,7 +111,7 @@ const configSchema = z.object({
     .startsWith("/")
     .default("/opt/kobe/pi-extensions/kobe-policy/index.js"),
   /**
-   * KOBE-71: the image's `kobe-runas` helper. Set (by Kobe's pod spec), every Pi process runs as
+   * KOBE-71: the image's `kobe-runas` helper. Set (by Kaiju's pod spec), every Pi process runs as
    * a Pi identity of its own (the agent's supplementary groups 2000-2063), and the agent refuses
    * to start when it cannot do that. Unset (development, tests): Pi runs as the agent's uid.
    */
@@ -132,7 +132,7 @@ const configSchema = z.object({
   KOBE_RESTORE_MAX_BYTES: positiveInt(512 * 1024 * 1024),
   /**
    * KOBE-27: push /workspace changes to the server this often (and restore at start, pull before
-   * runs). Set by the server's pod spec; 0 (the default outside Kobe pods) turns sync off.
+   * runs). Set by the server's pod spec; 0 (the default outside Kaiju pods) turns sync off.
    */
   KOBE_WORKSPACE_SYNC_INTERVAL_MS: z.coerce.number().int().min(0).max(3_600_000).default(0),
 });

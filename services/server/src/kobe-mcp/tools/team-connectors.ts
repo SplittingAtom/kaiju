@@ -9,7 +9,7 @@ import {
 
 /**
  * Team console › Connectors (`/v1/team/connectors`, page permission `team.connectors.manage`).
- * The built-in Kobe connector's own level is not offered: it is a safety switch a team admin sets
+ * The built-in Kaiju connector's own level is not offered: it is a safety switch a team admin sets
  * in the console (KA5), never from a conversation.
  */
 

@@ -47,9 +47,9 @@ export const PROJECT_COMMIT_ERROR_CODES = [
   "proposal_not_found", // 404 no such proposal in that thread (or its run was compacted)
   "proposal_stale", // 409 the file changed in the project after the agent proposed the edit
   "proposal_not_allowed", // 409 the proposal can no longer be accepted (see its reason)
-  "project_is_repo", // 409 a Repo takes no Kobe commits or file changes (KOBE-765, G17)
+  "project_is_repo", // 409 a Repo takes no Kaiju commits or file changes (KOBE-765, G17)
   "conversion_in_progress", // 409 the project is being converted to a Repo (KOBE-765)
-  "repo_moved", // 409 a Repo's default branch moved on the host since Kobe's copy: Update, then commit (KOBE-767)
+  "repo_moved", // 409 a Repo's default branch moved on the host since Kaiju's copy: Update, then commit (KOBE-767)
   "repo_unavailable", // 409 a Repo's connection, host or repository cannot take the commit now (KOBE-767)
   "repo_push_rejected", // 409 the git host refused the push (hook, size, protection) (KOBE-767)
   "rate_limited", // 429 too many commits to Repos; `retry_after_seconds` (KOBE-767)
@@ -162,17 +162,17 @@ export type CommitProjectRequest = z.infer<typeof commitProjectRequestSchema>;
 
 /** A git commit id on the host (SHA-1, or SHA-256 for a SHA-256 repository). */
 export const gitCommitShaSchema = z.string().regex(/^([0-9a-f]{40}|[0-9a-f]{64})$/);
-/** A branch Kobe pushed a Repo commit to (`refs/heads/<branch>`, at most 255 characters). */
+/** A branch Kaiju pushed a Repo commit to (`refs/heads/<branch>`, at most 255 characters). */
 export const repoBranchSchema = z
   .string()
   .min(1)
   .max(255)
   .regex(/^[^\s:~^?*[\\]+$/);
-/** The host's web link, or "" when the host gave none Kobe could keep. */
+/** The host's web link, or "" when the host gave none Kaiju could keep. */
 const hostWebUrlSchema = z.union([z.url({ protocol: /^https?$/ }).max(2048), z.literal("")]);
 
 /**
- * KOBE-767 (spec workspace-git G18, GQ11): a commit to a Repo from Kobe's commit flow became a git
+ * KOBE-767 (spec workspace-git G18, GQ11): a commit to a Repo from Kaiju's commit flow became a git
  * commit on the host. By default it is pushed to a branch of its own and a pull request is opened
  * (`opened`: true) or, while the member's pull request from the same working copy is still open,
  * added to it (`opened`: false). `fallback`: the connection allows direct commits but the host
@@ -191,8 +191,8 @@ export type RepoPullRequestCommit = z.infer<typeof repoPullRequestCommitSchema>;
 
 /**
  * KOBE-767: a commit to a Repo pushed straight to its default branch (the connection allows direct
- * commits, G18). `seq`/`commit_id`: Kobe's copy of the Repo took the same commit; null when the
- * working copy changed meanwhile (Kobe's copy then follows at its next refresh).
+ * commits, G18). `seq`/`commit_id`: Kaiju's copy of the Repo took the same commit; null when the
+ * working copy changed meanwhile (Kaiju's copy then follows at its next refresh).
  */
 export const repoPushedCommitSchema = z.strictObject({
   status: z.literal("pushed"),

@@ -249,7 +249,7 @@ function RegistryForm({
 }
 
 export const REGISTRY_TEAM_HINT =
-  "Kobe creates a dedicated team for the Registry: its budget, policy and egress govern reviewer re-runs and catalog scorecards. You become its team admin and every Skill reviewer joins it. An existing team can't be used.";
+  "Kaiju creates a dedicated team for the Registry: its budget, policy and egress govern reviewer re-runs and catalog scorecards. You become its team admin and every Skill reviewer joins it. An existing team can't be used.";
 
 /** Creates the dedicated Registry team (KOBE-330 review H1): never an existing team. */
 function CreateRegistryTeam({ onCreated }: { readonly onCreated: () => void }) {

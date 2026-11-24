@@ -76,7 +76,7 @@ export type CommitRefusal =
   /** KOBE-765: the project is a Repo (G17) or being converted to one. */
   | "repo"
   | "converting"
-  /** KOBE-767 (commit to a Repo): the default branch moved on the host since Kobe's copy. */
+  /** KOBE-767 (commit to a Repo): the default branch moved on the host since Kaiju's copy. */
   | "repo_moved"
   /** KOBE-767: the Repo's connection, the host or the repository cannot take a commit now. */
   | "repo_unavailable"
@@ -126,7 +126,7 @@ export interface CommitRequest {
   /** An approved agent commit (CM6): the working copy must still be exactly this. */
   readonly expect?: { readonly baseSeq: number | null; readonly diffHash: string };
   /**
-   * KOBE-767: Kobe pushed this working copy to the Repo's default branch as `headSha`; its copy of
+   * KOBE-767: Kaiju pushed this working copy to the Repo's default branch as `headSha`; its copy of
    * the Repo takes the same commit, and the repository's mirror head moves from `baseSha` to it
    * in the same transaction (refused as `changed` when the mirror head moved meanwhile).
    */
@@ -401,7 +401,7 @@ async function writeStep(
           ...(mirror ? { mirror: true } : {}),
         });
         if (mirror) {
-          // KOBE-767: the mirror head moves with Kobe's copy, only from the base it was pushed on.
+          // KOBE-767: the mirror head moves with Kaiju's copy, only from the base it was pushed on.
           const moved = await sp.execute(sql`
             UPDATE git_repositories
                SET mirror_head_sha = ${mirror.headSha}, mirror_commit_id = ${commit.commitId},
@@ -433,7 +433,7 @@ async function writeStep(
   });
 }
 
-/** The Repo's mirror head moved between the push and Kobe's copy of the commit (KOBE-767). */
+/** The Repo's mirror head moved between the push and Kaiju's copy of the commit (KOBE-767). */
 class MirrorMoved extends Error {
   constructor() {
     super("the repository's mirror head moved");

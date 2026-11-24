@@ -4,7 +4,7 @@ import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
- * KOBE-332 (SK24): names and maintainers. Kobe's names are reserved and a catalog name is taken
+ * KOBE-332 (SK24): names and maintainers. Kaiju's names are reserved and a catalog name is taken
  * except by its maintainers (who are named in the refusal); near names are a reviewer hint. Its
  * maintainers (and Site admins) add and remove maintainers, never the last; Site admins reassign;
  * every change is audited. When the last active maintainer is deactivated the skill is
@@ -64,7 +64,7 @@ const M = (id: string) => `/v1/skills/catalog/${id}/maintainers`;
 const db = () => h.deps.database.db;
 
 describe("names (ac-1)", () => {
-  it("refuses Kobe's names and a taken name, naming its maintainers; a new name is free", async () => {
+  it("refuses Kaiju's names and a taken name, naming its maintainers; a new name is free", async () => {
     expect(await submissionRight(db(), "pdf", ids.bob)).toMatchObject({
       ok: false,
       code: "reserved",
@@ -83,7 +83,7 @@ describe("names (ac-1)", () => {
       ok: false,
       code: "taken",
     });
-    // The database keeps the namespace flat and Kobe's names Kobe's.
+    // The database keeps the namespace flat and Kaiju's names Kaiju's.
     await expect(
       h.admin.query(`INSERT INTO registry_skills (name, summary) VALUES ('invoice-checker', 'x')`),
     ).rejects.toMatchObject({ code: "23505" });
@@ -92,7 +92,7 @@ describe("names (ac-1)", () => {
     ).rejects.toMatchObject({ code: "23514" });
   });
 
-  it("lets the maintainers of a skill that held kobe-guide before Kobe reserved it keep it (KOBE-620)", async () => {
+  it("lets the maintainers of a skill that held kobe-guide before Kaiju reserved it keep it (KOBE-620)", async () => {
     expect(await submissionRight(db(), "kobe-guide", ids.bob)).toMatchObject({
       ok: false,
       code: "reserved",

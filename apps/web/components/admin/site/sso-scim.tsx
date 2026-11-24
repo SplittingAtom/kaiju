@@ -87,7 +87,7 @@ export function ScimPanel({
   return (
     <Section
       title={`SCIM provisioning: ${provider.displayName}`}
-      description="Your identity provider creates, updates and deactivates Kobe accounts. Kobe never deactivates the Owner or a site Admin this way."
+      description="Your identity provider creates, updates and deactivates Kaiju accounts. Kaiju never deactivates the Owner or a site Admin this way."
       actions={<Button onClick={onClose}>Close</Button>}
     >
       <MutationStatus error={mutation.error} notice={mutation.notice} />
@@ -201,7 +201,7 @@ function IssuedToken({
     <Notice
       tone="success"
       role="status"
-      title="Copy the token now: Kobe shows it only once."
+      title="Copy the token now: Kaiju shows it only once."
       actions={
         <>
           <Button size="sm" onClick={() => void copy()}>

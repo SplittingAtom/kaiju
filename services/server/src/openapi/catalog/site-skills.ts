@@ -81,12 +81,12 @@ export const siteSkillsAreas: readonly CatalogArea[] = [
       [
         "get",
         "/v1/site/skills/catalog-skills/{skillId}/kobe/compare",
-        "Compare a catalog skill with the version Kobe ships",
+        "Compare a catalog skill with the version Kaiju ships",
       ],
       [
         "post",
         "/v1/site/skills/catalog-skills/{skillId}/kobe/reset",
-        "Reset a catalog skill to the version Kobe ships",
+        "Reset a catalog skill to the version Kaiju ships",
       ],
       [
         "get",

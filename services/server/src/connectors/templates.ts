@@ -14,7 +14,7 @@ import { z } from "zod";
 
 /**
  * MCP Apps templates (KOBE-433, spec mcp-apps-host §5, MA9). Pure; nothing here touches the
- * database. The proxy's probe returns the `ui://` templates the live tools name; Kobe validates
+ * database. The proxy's probe returns the `ui://` templates the live tools name; Kaiju validates
  * them, hashes the bytes itself (a server's `contentHash` is only cross-checked) and pins them
  * like tools: a changed template is `drifted` (approved bytes kept, live ones proposed), a new one
  * is `drifted` until approved, and one the server no longer lists is removed. Only `pinned`
@@ -24,7 +24,7 @@ import { z } from "zod";
 /** The `_meta` key Catalyst (M6) uses for the template's SHA-256. */
 export const CONTENT_HASH_KEY = "io.splittingatom/contentHash";
 
-/** A valid live template: Kobe's own hashes over exactly what it would store. */
+/** A valid live template: Kaiju's own hashes over exactly what it would store. */
 export interface LiveTemplate {
   readonly uri: string;
   readonly mimeType: string;

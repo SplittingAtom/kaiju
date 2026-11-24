@@ -1,7 +1,7 @@
 import { sql, type KobeTx } from "@kobe/db";
 
 /**
- * The last line Kobe adds to every pull request, issue and comment it posts (spec workspace-git
+ * The last line Kaiju adds to every pull request, issue and comment it posts (spec workspace-git
  * G13): the member on whose behalf the agent acted and a link to the conversation. Built by the
  * server only, the same way for the approval card and the executor, so the card shows exactly the
  * text that is posted.
@@ -25,7 +25,7 @@ export function footerLine(
   threadId: string,
 ): string {
   const verb = kind === "opened" ? "Opened" : "Posted";
-  return `${verb} by ${markdownName(memberName)} via Kobe, from conversation ${conversationLink(publicUrl, threadId)}`;
+  return `${verb} by ${markdownName(memberName)} via Kaiju, from conversation ${conversationLink(publicUrl, threadId)}`;
 }
 
 /** The body exactly as it is sent to the host. */
@@ -39,5 +39,5 @@ export async function memberName(tx: Pick<KobeTx, "execute">, userId: string): P
   const res = await tx.execute<{ name: string | null }>(
     sql`SELECT name FROM public.users WHERE id = ${userId}`,
   );
-  return res.rows[0]?.name?.trim() || "a Kobe member";
+  return res.rows[0]?.name?.trim() || "a Kaiju member";
 }

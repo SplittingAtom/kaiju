@@ -225,15 +225,15 @@ export class Agent {
       onReady: (ack) => this.#onReady(ack),
       onFrame: (frame) => this.#onFrame(frame),
       onDisconnected: () => {
-        this.#broker.failAll("connection to Kobe server lost");
-        this.#tools.artifacts.failAll("connection to Kobe server lost");
-        this.#tools.shares.failAll("connection to Kobe server lost");
-        this.#tools.commits.failAll("connection to Kobe server lost");
-        this.#tools.skillDrafts.failAll("connection to Kobe server lost");
-        this.#tools.fileEdits.failAll("connection to Kobe server lost");
-        this.#tools.fileOpens.failAll("connection to Kobe server lost");
-        this.#tools.notebooks.failAll("connection to Kobe server lost");
-        this.#tools.memory.failAll("connection to Kobe server lost");
+        this.#broker.failAll("connection to Kaiju server lost");
+        this.#tools.artifacts.failAll("connection to Kaiju server lost");
+        this.#tools.shares.failAll("connection to Kaiju server lost");
+        this.#tools.commits.failAll("connection to Kaiju server lost");
+        this.#tools.skillDrafts.failAll("connection to Kaiju server lost");
+        this.#tools.fileEdits.failAll("connection to Kaiju server lost");
+        this.#tools.fileOpens.failAll("connection to Kaiju server lost");
+        this.#tools.notebooks.failAll("connection to Kaiju server lost");
+        this.#tools.memory.failAll("connection to Kaiju server lost");
         void this.#threads.abortRestores();
       },
       onFatal: (reason) => void this.#onFatal(reason),

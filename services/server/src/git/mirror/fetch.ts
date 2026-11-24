@@ -14,7 +14,7 @@ import { GIT_MIRROR_AUTHOR_MAX, GIT_MIRROR_LOG_MAX, GIT_MIRROR_MESSAGE_MAX } fro
  * fetch of that branch (the newest {@link GIT_MIRROR_LOG_MAX} commits) into a work folder, then
  * the head's files and the commit list read from it. isomorphic-git runs no hooks, checks out
  * nothing and follows no submodule. Symlinks and submodules are not files: they are left out and
- * counted. Everything read here is untrusted host content: paths are checked against Kobe's
+ * counted. Everything read here is untrusted host content: paths are checked against Kaiju's
  * project path rules, sizes and counts against the caps, and commit text is cut and kept as
  * plain text.
  */
@@ -73,7 +73,7 @@ function asFailure(err: unknown): Error {
     if (status === 403) return new GitHostError("forbidden", "The git host refused the request.");
     if (status === 404) return new GitHostError("not_found", "The repository is not on the host.");
     if (status === 429)
-      return new GitHostError("rate_limited", "The git host is rate limiting Kobe.");
+      return new GitHostError("rate_limited", "The git host is rate limiting Kaiju.");
     if (status >= 500)
       return new GitHostError("host_unreachable", "The git host is not answering.");
   }

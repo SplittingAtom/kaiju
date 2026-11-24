@@ -28,7 +28,7 @@ import { withTeam } from "../with-team.js";
  * - {@link MODELS_CONFIG_CHANGED}: providers, catalog or a team's enablement changed (committed with
  *   the change, together with a `desired_version` bump); the server's gateway sync reconciles.
  * - `ensure:<team>:<user>`: the shim found no virtual key for a member; the sync creates it now.
- * - {@link MODELS_RESYNC}: the shim saw Bifrost refuse a virtual key Kobe holds (Bifrost lost its
+ * - {@link MODELS_RESYNC}: the shim saw Bifrost refuse a virtual key Kaiju holds (Bifrost lost its
  *   state); the sync re-pushes everything.
  * - `keys:<team>`: the sync changed virtual keys of that team; shims drop their cached copies.
  * - `spend:<team>` / `budgets:<team|*>` (KOBE-42): usage written / budgets changed.

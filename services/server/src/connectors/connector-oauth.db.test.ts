@@ -163,7 +163,7 @@ describe("connecting an OAuth connector", () => {
     expect(done.status, done.text).toBe(303);
     expect(done.headers.get("location")).toContain("connector_oauth=connected");
 
-    // PKCE: the verifier Kobe sent at the token endpoint hashes to the challenge it announced.
+    // PKCE: the verifier Kaiju sent at the token endpoint hashes to the challenge it announced.
     const token = fake.tokenRequests.at(-1);
     const verifier = token?.get("code_verifier") ?? "";
     expect(verifier.length).toBeGreaterThanOrEqual(43);
@@ -402,7 +402,7 @@ describe("connector lifecycle edge cases (KOBE-784)", () => {
 });
 
 describe("client metadata", () => {
-  it("publishes Kobe's Client ID Metadata Document without a session", async () => {
+  it("publishes Kaiju's Client ID Metadata Document without a session", async () => {
     const res = await h.app.request("http://kobe.test/v1/oauth/client-metadata.json");
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({

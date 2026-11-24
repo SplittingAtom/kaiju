@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Kobe API server: REST + SSE, auth, runs, policy, sandbox orchestration",
+  "description": "Kaiju API server: REST + SSE, auth, runs, policy, sandbox orchestration",
   "type": "module",
   "files": [
     "dist",

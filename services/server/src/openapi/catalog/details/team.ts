@@ -303,7 +303,7 @@ export const teamDetails: Readonly<Record<string, CatalogDetail>> = {
   "get /v1/team/apps/{appId}/frame": {
     query: frameQuerySchema,
     produces: "text/html",
-    responseDescription: "The app's sandboxed frame document (only into Kobe's own page).",
+    responseDescription: "The app's sandboxed frame document (only into Kaiju's own page).",
     errors: ["404", "409"],
   },
   "get /v1/team/apps/{appId}/template": {

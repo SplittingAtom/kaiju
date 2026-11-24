@@ -72,7 +72,7 @@ export const updateSchema = z
     credentialSource: z.enum(CONNECTOR_CREDENTIAL_SOURCES),
     /**
      * The status the caller saw (KOBE-622): refused `changed_since_approval` under the row lock
-     * when it is another one now (the Kobe MCP tool sends the approved before-state).
+     * when it is another one now (the Kaiju MCP tool sends the approved before-state).
      */
     expectedStatus: z.enum(STATUSES),
   })
@@ -152,7 +152,7 @@ const columns = {
   updatedAt: connectors.updatedAt,
 } as const;
 
-// The built-in Kobe connector (KOBE-619) is not a registered server: the registry never lists,
+// The built-in Kaiju connector (KOBE-619) is not a registered server: the registry never lists,
 // edits, probes, pins or removes it (the site switch `kobe_mcp.mode` governs it).
 const live = and(isNull(connectors.deletedAt), isNull(connectors.builtin));
 
@@ -344,7 +344,7 @@ export interface RemovalResult {
  * Its secrets do not outlive it (KOBE-454): the sealed site key and every member's grant (API keys
  * and OAuth tokens, in every team) are deleted in the same transaction, so restoring the row by
  * hand or registering the server again never revives them. OAuth tokens are only deleted, not
- * revoked at the provider (Kobe has no revocation client). The MCP proxy caches no credential
+ * revoked at the provider (Kaiju has no revocation client). The MCP proxy caches no credential
  * (it asks the server per call), so the next call is refused. Audited with counts, never values.
  */
 export async function removeConnector(db: KobeDb, id: string): Promise<RemovalResult | undefined> {

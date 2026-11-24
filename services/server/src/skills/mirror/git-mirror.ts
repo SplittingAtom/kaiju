@@ -138,7 +138,7 @@ export class MirrorSession {
       const commit = existingTag.peeled ?? existingTag.oid;
       if ((await this.skillTreeAt(commit, v.name)) !== tree)
         throw new MirrorVersionError(
-          `the remote already has tag ${tagName} with other content; Kobe never moves a tag`,
+          `the remote already has tag ${tagName} with other content; Kaiju never moves a tag`,
         );
       // Listed again when it was left out (withdrawn, then published again: P2-10).
       await this.commitCatalog(this.catalogEntry(v, tagName), `${v.name} v${v.semver} listed`);
@@ -186,7 +186,7 @@ export class MirrorSession {
       type: "blob",
       oid: await git.writeBlob({ fs, dir: this.dir, blob: after }),
     });
-    return this.commitTree(root, [title, "", "Kobe's catalog index, regenerated.", ""]);
+    return this.commitTree(root, [title, "", "Kaiju's catalog index, regenerated.", ""]);
   }
 
   /** Commits `root` on the head and pushes the branch (never forced). */
@@ -346,7 +346,7 @@ export class MirrorSession {
     return this.commitTree(root, [
       `${v.name} v${v.semver}`,
       "",
-      "An approved Kobe catalog version, mirrored one way: Kobe never reads this repository back.",
+      "An approved Kaiju catalog version, mirrored one way: Kaiju never reads this repository back.",
       "",
       `Kobe-Registry-Version: ${v.registryVersionId}`,
       `Kobe-Runtime-Hash: ${v.runtimeHash}`,

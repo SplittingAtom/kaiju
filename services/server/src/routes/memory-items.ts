@@ -49,7 +49,7 @@ export const issueText = (e: z.ZodError) =>
 export function memoryItemRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
   const db = deps.database.db;
-  // An agent has no write path to items (KOBE-650): a Kobe admin tool's change is refused before
+  // An agent has no write path to items (KOBE-650): a Kaiju admin tool's change is refused before
   // its body or path is read, so it is always 403 (review I1). Reads are checked in `answer`.
   app.use("*", refuseAgentWrites);
   const { answer, readBody } = memoryRouteKit(deps);
@@ -169,7 +169,7 @@ export function memoryRouteKit(deps: ServerDeps) {
   };
 
   /**
-   * Resolves the Workspace, runs a store call and maps refusals to the contract's answers. A Kobe
+   * Resolves the Workspace, runs a store call and maps refusals to the contract's answers. A Kaiju
    * MCP admin tool's call (KOBE-650) may only read Workspace or Site items its person curates. A
    * route may answer with its own response (an export download).
    */
@@ -201,7 +201,7 @@ export function memoryRouteKit(deps: ServerDeps) {
 }
 
 /**
- * Agents never change memories (KOBE-650): any non-GET call made through a Kobe admin tool is
+ * Agents never change memories (KOBE-650): any non-GET call made through a Kaiju admin tool is
  * refused before its body is read. Mounted on the item routes and the import/export routes.
  */
 export const refuseAgentWrites: MiddlewareHandler<{ Variables: TeamVariables }> = async (

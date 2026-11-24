@@ -102,13 +102,13 @@ export function TestReportView({
         <Notice key={w.code} tone="warn" role="none">
           {w.code === "excess_permissions" ? (
             <p className="m-0">
-              The credential can do more than Kobe needs ({w.permissions.join(", ")}). Kobe never
+              The credential can do more than Kaiju needs ({w.permissions.join(", ")}). Kaiju never
               uses these, but a narrower credential is safer.
             </p>
           ) : w.code === "more_than_level" ? (
             <p className="m-0">
               The credential can also {names(w.capabilities)}, more than {ACCESS_LABEL[accessLevel]}{" "}
-              needs. Kobe will not use it at this level.
+              needs. Kaiju will not use it at this level.
             </p>
           ) : (
             <p className="m-0">

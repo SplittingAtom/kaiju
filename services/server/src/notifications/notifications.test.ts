@@ -38,7 +38,7 @@ describe("scheduleWhen", () => {
 
 describe("scheduledRunMessage", () => {
   const base = {
-    appName: "Kobe",
+    appName: "Kaiju",
     to: "a@x.test",
     teamName: "Finance",
     when: "daily at 09:00 (UTC)",

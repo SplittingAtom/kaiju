@@ -9,7 +9,7 @@ import { useOpenDraft } from "./new-draft";
 
 /**
  * Governed import (KOBE-344, SK30): Builders import a git repository at a full commit SHA (and a
- * folder in it), or a zip URL with its SHA-256, from the hosts the Site allows. Kobe fetches it
+ * folder in it), or a zip URL with its SHA-256, from the hosts the Site allows. Kaiju fetches it
  * once, re-hashes it and opens a private draft that records where it came from; evals, a version
  * and review follow as for any draft. Public hubs are only places to find skills.
  */

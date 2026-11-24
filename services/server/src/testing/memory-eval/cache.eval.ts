@@ -8,7 +8,7 @@ import { cacheShares, formatCacheShare, runUsageSchema } from "./score.js";
 
 /**
  * `e2e/memory-eval.sh cache` (KOBE-387): replays e2e/fixtures/memory-cache/turns.json in one new
- * thread on a running Kobe through its public API, as a member would, and reports the cache-read
+ * thread on a running Kaiju through its public API, as a member would, and reports the cache-read
  * share from the gateway's usage records (`GET /v1/threads/{id}/usage`, the same `run_usage` rows
  * the docs/gates/gate-7a.md SQL reads). Gate A runs it once on the KOBE-382 build ("before") and
  * once on the KOBE-383 build ("after"). Everything comes from the environment (e2e/memory-eval.sh

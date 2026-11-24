@@ -45,7 +45,7 @@ export function siteGrantMessage(
   };
   const requester = oneLine(detail.requestedBy.name);
   const lines = [
-    `${requester} asked for read-only break-glass access to ${whose} on Kobe.`,
+    `${requester} asked for read-only break-glass access to ${whose} on Kaiju.`,
     "Portable memories are the preferences that follow a person into every Workspace.",
   ];
   if (event === "requested") {

@@ -34,7 +34,7 @@ export const SITE_SWITCHES: readonly SwitchSpec<SiteSwitch>[] = [
   {
     key: "memoriesEnabled",
     label: "Allow memories on this site",
-    hint: "Short statements Kobe knows about a person, a workspace and the site, given to the agent at the start of each run. Off keeps every memory stored.",
+    hint: "Short statements Kaiju knows about a person, a workspace and the site, given to the agent at the start of each run. Off keeps every memory stored.",
     needs: ["memoryEnabled"],
   },
   {
@@ -46,7 +46,7 @@ export const SITE_SWITCHES: readonly SwitchSpec<SiteSwitch>[] = [
   {
     key: "learnEnabled",
     label: "Learn from this chat",
-    hint: "People can ask Kobe to suggest memories from a conversation and review every suggestion before anything is saved. Needs a learning model (below).",
+    hint: "People can ask Kaiju to suggest memories from a conversation and review every suggestion before anything is saved. Needs a learning model (below).",
     needs: ["memoryEnabled", "memoriesEnabled"],
   },
   {
@@ -58,7 +58,7 @@ export const SITE_SWITCHES: readonly SwitchSpec<SiteSwitch>[] = [
   {
     key: "learnNudgeEnabled",
     label: "Nudge to learn",
-    hint: "The dot on the + button in the composer pulses once after about 10 new messages since Kobe last learned from a conversation, or after someone corrects the agent (a thumbs down or an edited message). It never starts learning by itself.",
+    hint: "The dot on the + button in the composer pulses once after about 10 new messages since Kaiju last learned from a conversation, or after someone corrects the agent (a thumbs down or an edited message). It never starts learning by itself.",
     needs: ["memoryEnabled", "memoriesEnabled", "learnEnabled"],
   },
 ];

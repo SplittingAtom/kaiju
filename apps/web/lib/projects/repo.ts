@@ -71,11 +71,11 @@ export function aheadBehindText(copy: RepoWorkingCopy): {
 export function readOnlyText(reason: NonNullable<RepoView["readOnlyReason"]>): string {
   switch (reason) {
     case "archived":
-      return "The repository is archived on the host, so this Repo is read-only: Kobe shows its last mirror.";
+      return "The repository is archived on the host, so this Repo is read-only: Kaiju shows its last mirror.";
     case "deleted":
-      return "The repository is no longer on the host (deleted, or moved out of the organization), so this Repo is read-only: Kobe shows its last mirror.";
+      return "The repository is no longer on the host (deleted, or moved out of the organization), so this Repo is read-only: Kaiju shows its last mirror.";
     case "connection_removed":
-      return "The Repo's git connection was removed, so this Repo is read-only: Kobe shows its last mirror.";
+      return "The Repo's git connection was removed, so this Repo is read-only: Kaiju shows its last mirror.";
   }
 }
 
@@ -89,7 +89,7 @@ export function mirrorStateText(mirror: RepoMirror, now: number = Date.now()): s
   if (mirror.error === null) return last;
   const next =
     mirror.nextAttemptAt !== null && Date.parse(mirror.nextAttemptAt) > now
-      ? ` Kobe tries again ${syncTimeText(mirror.nextAttemptAt)}.`
+      ? ` Kaiju tries again ${syncTimeText(mirror.nextAttemptAt)}.`
       : "";
   return `${last} ${mirror.error.message}${mirror.tooLarge ? "" : next}`;
 }
@@ -154,7 +154,7 @@ const isNamedPath = (v: unknown): v is NamedPath =>
 
 /**
  * A refused start, retry, abandon, refresh, relink or detach in plain words: the server's message
- * (Kobe's own sentence per code, G16 "the dialog says which"), plus the files it names when the
+ * (Kaiju's own sentence per code, G16 "the dialog says which"), plus the files it names when the
  * message does not already list them.
  */
 export function refusalText(error: ApiError): string {

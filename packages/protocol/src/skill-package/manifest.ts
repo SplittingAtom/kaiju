@@ -3,7 +3,7 @@ import { SEMVER_PATTERN, SKILL_NAME_PATTERN } from "./layout.js";
 
 /**
  * `kobe.skill.yaml` (KOBE-309, spec SK19): the author-edited registry metadata of a skill
- * package. Kobe never loads it into a sandbox (it is outside the runtime hash) and nothing in it
+ * package. Kaiju never loads it into a sandbox (it is outside the runtime hash) and nothing in it
  * grants anything: capabilities are checked against the team's egress and policy, never trusted
  * (no approval bypass).
  *
@@ -34,7 +34,7 @@ export const MAX_PACKAGES_PER_MANAGER = 50;
 
 /** Topic tag: a slug from the Site vocabulary (unknown tags are proposals, not errors). */
 export const TAG_PATTERN = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
-/** A maintainer: `user:<uuid>` (lowercase), a Kobe user id. */
+/** A maintainer: `user:<uuid>` (lowercase), a Kaiju user id. */
 export const MAINTAINER_PATTERN =
   /^user:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** An SPDX license expression or `Proprietary` (letters, digits, `.-+:()` and spaces). */
@@ -65,7 +65,7 @@ export const kobeSkillManifestSchema = z.strictObject({
   tags: unique(z.string().regex(TAG_PATTERN), MAX_TAGS).optional(),
   /** Required at submission (SK20 rule "License field"); a draft may leave it out. */
   license: z.string().regex(LICENSE_PATTERN).optional(),
-  /** Set by Kobe on approval (SK24); an author's list is a request, not a grant. */
+  /** Set by Kaiju on approval (SK24); an author's list is a request, not a grant. */
   maintainers: unique(z.string().regex(MAINTAINER_PATTERN), MAX_MAINTAINERS).optional(),
   capabilities: z
     .strictObject({

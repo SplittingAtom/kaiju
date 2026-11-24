@@ -12,7 +12,7 @@ import {
 
 /**
  * KOBE-462 against the REAL pinned Pi with the real kobe-policy and kobe-tools, through
- * kobe-sandbox-agent and a fake Kobe server: Pi lists `propose_file_edit`, kobe-policy decides
+ * kobe-sandbox-agent and a fake Kaiju server: Pi lists `propose_file_edit`, kobe-policy decides
  * first, the agent sends `file.edit_propose` with the call's input (nothing pushed or written),
  * and the server's answer is the tool result.
  */

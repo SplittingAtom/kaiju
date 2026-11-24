@@ -50,7 +50,7 @@ export function openApiDocument(): Record<string, unknown> {
   return {
     openapi: "3.1.0",
     info: {
-      title: "Kobe API",
+      title: "Kaiju API",
       version: "0.0.0",
       description:
         "Team-scoped routes act on the session's active team (spec D9); send X-Kobe-Team on " +

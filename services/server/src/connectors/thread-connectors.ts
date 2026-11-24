@@ -57,7 +57,7 @@ export const PROBLEM_TEXT: Readonly<
     fix: null,
   },
   refresh_auth_required: {
-    message: "Kobe can't check this server for changes. Ask a site admin.",
+    message: "Kaiju can't check this server for changes. Ask a site admin.",
     fix: null,
   },
   tools_awaiting_approval: {
@@ -74,9 +74,9 @@ export interface ChatConnector {
   /** Why it is not working; null when it works. */
   readonly problem: ConnectorProblem | null;
   /**
-   * The built-in Kobe connector (KOBE-623, spec kobe-admin-mcp KA7): its docs tools are on in every
+   * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp KA7): its docs tools are on in every
    * conversation, so it has no toggle; `admin` says which admin tools the member gets where the
-   * agent uses the Kobe connector (`off` while the switches or their role give none).
+   * agent uses the Kaiju connector (`off` while the switches or their role give none).
    */
   readonly builtin?: {
     /** `git`: the built-in git connector (KOBE-762); `admin` then says read or read and write. */
@@ -139,7 +139,7 @@ export async function listChatConnectors(
 }
 
 /**
- * The built-in git connector's row (KOBE-762): its own group, independent of the Kobe connector
+ * The built-in git connector's row (KOBE-762): its own group, independent of the Kaiju connector
  * and its switches, shown while the member's agents get git tools (the Site's Git switch and the
  * connections are its ceiling). No toggle; connections limited to chosen agents are not counted.
  */
@@ -166,7 +166,7 @@ async function gitChatConnector(
 }
 
 /**
- * The built-in Kobe connector's row (first in the list) while the site switch is not `off`: always
+ * The built-in Kaiju connector's row (first in the list) while the site switch is not `off`: always
  * on, and the admin tools the member would get now (switches and role).
  */
 async function kobeChatConnector(
@@ -302,7 +302,7 @@ export async function checkConnectorsOff(
   const listed = new Map((await listChatConnectors(tx, viewer, null)).map((c) => [c.id, c]));
   for (const id of ids) {
     const c = listed.get(id);
-    // The built-in Kobe connector cannot be turned off (its docs tools are always on).
+    // The built-in Kaiju connector cannot be turned off (its docs tools are always on).
     if (!c || c.builtin !== undefined) return "connector_not_found";
     if (c.problem !== null) return "connector_not_working";
   }

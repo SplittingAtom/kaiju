@@ -42,7 +42,7 @@ export function saveSkillDraftTool(transport: ToolsTransport): ToolDefinitionLik
     name: TOOL_SAVE_SKILL_DRAFT,
     label: "Save skill draft",
     description:
-      "Save the skill in /workspace/skills/<folder>/ as the user's private draft in their Kobe Workbench (saving again from this conversation updates the same draft). It checks the skill as an upload would and returns the draft. It does not publish, share or test the skill.",
+      "Save the skill in /workspace/skills/<folder>/ as the user's private draft in their Kaiju Workbench (saving again from this conversation updates the same draft). It checks the skill as an upload would and returns the draft. It does not publish, share or test the skill.",
     promptSnippet: "Save a finished skill folder to the user's Workbench as a private draft",
     promptGuidelines: [
       "Use save_skill_draft after the skill's validate.py passes; save again after later changes. The user then opens the draft in their Workbench to test it, run its evals and save a version.",

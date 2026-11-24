@@ -27,7 +27,7 @@ import { invalidRequest, parseBody } from "../http/request.js";
  *   document of the app's iframe, the only `text/html` here, with `APP_FRAME_HEADERS` (CSP
  *   `sandbox allow-scripts`: an opaque origin even top-level, no network). Only pinned and
  *   approved bytes (`servedTemplate`), only the bytes the page names, only into a frame of
- *   Kobe's own page, only for the team the page names (a frame cannot send `X-Kobe-Team`).
+ *   Kaiju's own page, only for the team the page names (a frame cannot send `X-Kobe-Team`).
  *   Separate from the admin preview route, which may show unapproved bytes.
  * - `GET /v1/team/apps/:appId/tools`: the bridge's `tools/list` (spec §7): the tools of the
  *   app's connector that pass `checkAppTool`, in MCP's shape, under the calls' rate limit.
@@ -99,7 +99,7 @@ export function teamAppsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariable
   app.get("/:appId/frame", async (c) => {
     if (!mayLoadAppFrame(c.req.raw.headers, deps.publicUrl)) {
       return c.json(
-        { code: "forbidden_origin", message: "Only Kobe's own frames load this." },
+        { code: "forbidden_origin", message: "Only Kaiju's own frames load this." },
         403,
       );
     }

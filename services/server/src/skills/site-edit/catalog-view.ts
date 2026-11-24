@@ -23,7 +23,7 @@ export interface SiteVersionRow {
   readonly verdict: "pass" | "caution" | "block";
   readonly approvedAt: string | null;
   readonly submittedAt: string;
-  /** Who submitted it (a maintainer) or published it (a Site admin); null for Kobe's. */
+  /** Who submitted it (a maintainer) or published it (a Site admin); null for Kaiju's. */
   readonly submittedBy: string | null;
   readonly runtimeHash: string;
   readonly packageHash: string;
@@ -39,7 +39,7 @@ export interface KobeState {
   readonly detachedFromVersion: string | null;
   /** The newest shipped version the seed recorded while the skill was detached. */
   readonly shippedVersion: string | null;
-  /** Detached, and Kobe ships a version above the one it was detached from. */
+  /** Detached, and Kaiju ships a version above the one it was detached from. */
   readonly updateAvailable: boolean;
 }
 

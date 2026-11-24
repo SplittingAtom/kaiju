@@ -6,12 +6,12 @@ order: 1
 audience: member
 ---
 
-Kobe has a light and a dark theme, and your organization can give it its own name, logo and style.
+Kaiju has a light and a dark theme, and your organization can give it its own name, logo and style.
 You choose light or dark for yourself; the rest is set once for the whole site by a site admin.
 
 ## Light or dark
 
-Until you choose, Kobe follows your device's setting: light when your system is light, dark when it
+Until you choose, Kaiju follows your device's setting: light when your system is light, dark when it
 is dark. To choose yourself, press **Dark theme** (the sun or moon button) in the top bar; it is
 also in the command palette (Ctrl+K or Cmd+K). The admin consoles have the same button.
 
@@ -29,16 +29,16 @@ Site admins set the look for everyone, in the site console's **Appearance** page
 - **Style**: one of the presets **Default**, **Slate**, **Forest**, **Plum**, **Ember**, **Tokyo
   Nights** and **Catalyst**, or **Custom** (an accent colour, **Corners** and a **Typeface**).
 
-Every style has a light and a dark version, and Kobe refuses colours that would make text too hard
+Every style has a light and a dark version, and Kaiju refuses colours that would make text too hard
 to read. Changes reach everyone within about 30 seconds. There are no per-team or per-member styles.
 
 ## Accessibility
 
-- Kobe follows your system's reduced-motion setting: glows and animations stay still.
+- Kaiju follows your system's reduced-motion setting: glows and animations stay still.
 - Every action has a text label for screen readers, and most have a keyboard shortcut. See
   [Keyboard shortcuts](reference/keyboard-shortcuts.md).
 - Browser zoom works throughout; on narrow windows the layout switches to the phone layout. See
-  [The Kobe screen](getting-started/layout.md).
+  [The Kaiju screen](getting-started/layout.md).
 
 ## Related
 

@@ -506,7 +506,7 @@ async function acrossSandboxRuns(
         // built-in ignores it.
         { enforcementPoint: "sandbox", exposure: "all" },
       );
-      // The proxy's Kobe connector guard, per run (kobe-mcp/service.ts); a no-op for built-ins.
+      // The proxy's Kaiju connector guard, per run (kobe-mcp/service.ts); a no-op for built-ins.
       return guardKobeAdmin(await deps.engine.decide(siblingInput), {
         tool: input.tool,
         input: siblingInput,
@@ -598,7 +598,7 @@ async function guardedDecision(d: Deciding, evaluated: Decided): Promise<PolicyD
       proposeAvailable(evaluated.input.agent, target.fileEdits === true, viewedPath),
     now: new Date(),
   });
-  // KOBE-619: Kobe admin tools only for a person who may use them now; writes ask in every mode.
+  // KOBE-619: Kaiju admin tools only for a person who may use them now; writes ask in every mode.
   const guarded = await guardKobeAdminCall(
     deps.db,
     target,

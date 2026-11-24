@@ -1,5 +1,5 @@
 /**
- * Reads pnpm-lock.yaml (v9) into a dependency graph and classifies every package by how Kobe uses
+ * Reads pnpm-lock.yaml (v9) into a dependency graph and classifies every package by how Kaiju uses
  * it: shipped in a deployable's image (production closure of apps/* and services/*), dev-only, and
  * whether it only installs on some platforms (os/cpu/libc). The package set comes from the lockfile,
  * not from node_modules, so the inventory is the same on every machine.

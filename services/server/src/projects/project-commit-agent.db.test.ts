@@ -483,7 +483,7 @@ describe("project.commit on a Repo (KOBE-767 review M2)", () => {
     );
     expect(remembered.status).toBe(400);
     expect(String(remembered.json.message)).toMatch(/approved each time/);
-    // Approved: the commit goes to the Repo's flow (which cannot reach this host), never Kobe's.
+    // Approved: the commit goes to the Repo's flow (which cannot reach this host), never Kaiju's.
     await decide(w.owner, w.team, must(approval, "approval").id, "allow");
     await new Promise((r) => setTimeout(r, 500));
     expect(await commits(w.projectId)).toHaveLength(1);

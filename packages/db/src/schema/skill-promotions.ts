@@ -24,7 +24,7 @@ const NOTE_MAX = 1000;
 
 /**
  * Team table (RLS, KOBE-333, SK19): a Builder's **Promote to Site** of a team skill version, in the
- * team's review queue until a Team admin confirms (Kobe then submits it to the Registry) or
+ * team's review queue until a Team admin confirms (Kaiju then submits it to the Registry) or
  * declines with a note. While a team has "Builders may promote without confirmation" on, a
  * Builder's promotion is submitted at once and no request is kept. One open request per version.
  */

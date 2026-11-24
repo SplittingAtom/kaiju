@@ -43,7 +43,7 @@ export const decisionSchema = z.strictObject({
     .optional(),
   /**
    * KOBE-621: the review's status as the caller saw it; another one is a 409
-   * `changed_since_approval` (a Kobe MCP write's approved before-state).
+   * `changed_since_approval` (a Kaiju MCP write's approved before-state).
    */
   expectedStatus: z.enum(["pending", "approved", "rejected"]).optional(),
 });

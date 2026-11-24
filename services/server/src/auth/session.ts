@@ -95,7 +95,7 @@ function twoFactorRefusal(canEnrol: boolean): SessionOutcome {
 }
 
 /**
- * A Kobe MCP admin tool's in-process call (KOBE-619, KA1): the person of the run, re-read here
+ * A Kaiju MCP admin tool's in-process call (KOBE-619, KA1): the person of the run, re-read here
  * exactly like a session's user (deactivation, site role, the site's 2FA requirement). Only the
  * executor can mint one (`kobe-mcp/delegation.ts`); nothing on the wire can.
  */
@@ -203,7 +203,7 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
     twoFactorEnabled: session.user.twoFactorEnabled === true,
   };
   if (account.requireTwoFactor) {
-    // An SSO session counts only by its own sign-in's MFA proof (§8, SSO3): a Kobe TOTP factor
+    // An SSO session counts only by its own sign-in's MFA proof (§8, SSO3): a Kaiju TOTP factor
     // never stands in for it, and it is never sent to TOTP enrolment (SSO7). A local session
     // needs the enrolled factor, which its sign-in had to pass.
     const sso = account.ssoProviderId !== null;
@@ -219,7 +219,7 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
  * immediate) and, when the site requires 2FA, an enrolled TOTP factor (local sessions) or an IdP
  * MFA proof (SSO sessions, `session_sso_contexts.mfa_satisfied`). Enrollment itself goes through
  * /api/auth/two-factor/*, which this middleware does not guard; auth.ts refuses it from an SSO
- * session without MFA proof. A Kobe MCP admin tool's delegated call passes the same checks.
+ * session without MFA proof. A Kaiju MCP admin tool's delegated call passes the same checks.
  */
 export function requireSession(deps: ServerDeps) {
   return createMiddleware<{ Variables: AuthVariables }>(async (c, next) => {

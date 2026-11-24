@@ -39,7 +39,7 @@ export interface TeamInviteSummary extends TeamInvite {
 
 /**
  * Invites an address into the team (or renews the invitation with the new role). The answer is
- * the same whether or not the address belongs to a Kobe user; only current members (visible on the
+ * the same whether or not the address belongs to a Kaiju user; only current members (visible on the
  * roster anyway) are reported.
  */
 export async function inviteToTeam(
@@ -229,7 +229,7 @@ export async function acceptTeamInvite(
       .returning({ role: teamMembers.role });
     // A returning member's old 30-day record is reopened (KOBE-386 review H1).
     if (joined.length > 0) await reopenRetentionInTx(tx, teamId, [user.id]);
-    // Already a member that Kobe added for the Skill reviewer grant: accepting an invitation
+    // Already a member that Kaiju added for the Skill reviewer grant: accepting an invitation
     // makes them the team's own member, so taking the grant later keeps them (KOBE-331 review).
     // A row an identity provider manages stays managed: only an audited Take over makes it the
     // team's own (KOBE-627, SSO10).

@@ -105,7 +105,7 @@ describe("Microsoft Entra's SCIM request sequence for Users (ac-1, ac-2)", () =>
     });
     expect(multi.status, JSON.stringify(multi.json)).toBe(200);
     expect(multi.json.emails[0].value).toBe(`updated_${suffix}@contoso.com`);
-    // One name part alone keeps the name (Kobe keeps a single name).
+    // One name part alone keeps the name (Kaiju keeps a single name).
     expect(multi.json.displayName).toBe("givenName familyName");
 
     // PATCH single-valued: userName (now the UPN), and a path-less value object.
@@ -152,7 +152,7 @@ describe("Microsoft Entra's SCIM request sequence for Users (ac-1, ac-2)", () =>
     expect(on.json.active).toBe(true);
     expect((await auditRows("identity.scim.user.reactivated")).at(-1).target.userId).toBe(id);
 
-    // DELETE deactivates and unlinks; the user row stays (Kobe never deletes users).
+    // DELETE deactivates and unlinks; the user row stays (Kaiju never deletes users).
     const del = await scim("DELETE", `/contoso/Users/${id}`, t);
     expect(del.status).toBe(204);
     expect((await scim("GET", `/contoso/Users/${id}`, t)).status).toBe(404);

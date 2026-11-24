@@ -118,7 +118,7 @@ describe("seedBrandingDefaults (KOBE-503)", () => {
 
   it("drops the branding cache, so the public snapshot shows the seeded values at once", async () => {
     const cache = brandingCache(h.deps.database.db);
-    expect((await cache.get()).settings.appName).toBe("Kobe");
+    expect((await cache.get()).settings.appName).toBe("Kaiju");
     await seedBrandingDefaults(h.deps.database.db, { appName: "Acme Assist", preset: "ember" });
     const { settings: seeded } = await cache.get();
     expect(seeded.appName).toBe("Acme Assist");
@@ -169,7 +169,7 @@ describe("POST /v1/site/branding/reset with chart defaults (KOBE-503)", () => {
       [since],
     );
     expect(events.rows).toEqual([
-      { actor_kind: "user", target: { setting: "app_name", value: "Kobe" } },
+      { actor_kind: "user", target: { setting: "app_name", value: "Kaiju" } },
       { actor_kind: "user", target: { setting: "show_name", value: "true" } },
       { actor_kind: "user", target: { setting: "theme", value: "theme:default" } },
       { actor_kind: "system", target: { setting: "app_name", value: "Acme Assist" } },
@@ -217,7 +217,7 @@ describe("POST /v1/site/branding/reset without chart defaults (KOBE-503)", () =>
     const owner = await h.signIn("owner@plain.test");
     await owner.put("/v1/site/branding", { appName: "Admin Choice", theme: { preset: "plum" } });
     const res = await owner.post("/v1/site/branding/reset");
-    expect(res.json).toMatchObject({ appName: "Kobe", theme: { preset: "default" } });
+    expect(res.json).toMatchObject({ appName: "Kaiju", theme: { preset: "default" } });
     expect(await settings()).toEqual({});
   });
 });

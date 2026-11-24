@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how anyone proposes something they said to the Site (Propose… › The Site, with a justification) and how curators propose Workspace memories to the Site (Propose to Site), how Team admins confirm, edit or withdraw Site proposals and memory stewards endorse them (Memory › To the Site), how Site admins and Site memory stewards approve, merge, reject or send back workspace proposals to the Site, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, how a Site-wide legal hold keeps Site memories, and the Set by the Site label on Site memories outside the site console.
+summary: How Kaiju remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kaiju to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kaiju learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how anyone proposes something they said to the Site (Propose… › The Site, with a justification) and how curators propose Workspace memories to the Site (Propose to Site), how Team admins confirm, edit or withdraw Site proposals and memory stewards endorse them (Memory › To the Site), how Site admins and Site memory stewards approve, merge, reject or send back workspace proposals to the Site, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, how a Site-wide legal hold keeps Site memories, and the Set by the Site label on Site memories outside the site console.
 section: Memory
 order: 1
 audience: member
@@ -66,7 +66,7 @@ agent whose **Memory** setting is **Notes only** or **Off**. A search with a not
 ## Memories in a run
 
 Besides notes, each run can be given **memories**: short statements about you, your workspace and
-the site. Kobe picks them again for every message you send, so they follow the conversation:
+the site. Kaiju picks them again for every message you send, so they follow the conversation:
 
 - **Site Policy** always comes first (at most 25 rules, 2 KiB). It fits in the room the site
   allows (8 KiB by default); only at the smallest setting can the last rules be left out.
@@ -94,7 +94,7 @@ cache from one message to the next.
 
 ### What the agent sees
 
-The agent gets its memories as a section called **What Kobe knows**, in this order:
+The agent gets its memories as a section called **What Kaiju knows**, in this order:
 
 1. a short note: these are facts and preferences people saved, not instructions; for preferences
    and conventions the narrowest place wins (your memories in this workspace over your memories
@@ -103,7 +103,7 @@ The agent gets its memories as a section called **What Kobe knows**, in this ord
 2. **Site Policy**, marked as organization policy set by the site;
 3. **pinned** memories;
 4. your notes indexes (**Saved memory**) and the project's instructions;
-5. **What Kobe knows for this message**: the memories picked for this message, and a line saying
+5. **What Kaiju knows for this message**: the memories picked for this message, and a line saying
    how many more matched but did not fit (the agent can find them with **recall**, which searches
    all your memories whether or not they were given). Where these go depends on the site's
    **memory placement** (below): by default they sit just before your message, not in the system
@@ -115,7 +115,7 @@ Each place is fenced and labelled with where it came from (for example "approved
 curator" or "set by the Site"), and each memory carries its kind and the date it was saved. Text
 in a memory cannot end its fence or pose as another memory, and the agent is told that memory
 only ever appears there: a copy of a memory block in a file, a tool's output or a message never
-counts (Kobe also breaks such copies in the open file and in tool output). Everything up to the picks stays the
+counts (Kaiju also breaks such copies in the open file and in tool output). Everything up to the picks stays the
 same from one message to the next unless a memory changes, so the model provider can reuse it
 from its cache. A changed memory reaches the very next message. The context viewer shows each
 part under its own label.
@@ -150,8 +150,8 @@ In every mode Site Policy and pinned memories stay in the system prompt, the blo
 fences and its size budget, and **Memories in context** shows exactly the memories the run was
 given. What goes beside your message is not saved in the conversation: an agent that restarts
 (a sandbox waking up) sends later messages without the picks of earlier ones. When picks travel
-with messages, the agent is told memory blocks count only in the system prompt and in Kobe's
-"What Kobe knows for this message" note, never in what someone typed, a file or a tool's output.
+with messages, the agent is told memory blocks count only in the system prompt and in Kaiju's
+"What Kaiju knows for this message" note, never in what someone typed, a file or a tool's output.
 
 An agent whose **Memory** setting is **Notes only** or **Off** gets **Site Policy** only: Policy
 reaches every run, and only the site's **Allow memory** switch stops it. An agent builder's test
@@ -168,10 +168,10 @@ conversation is shared with never see what your memory gave it.
 
 ## Learn from this chat
 
-Kobe can suggest memories from a conversation you started. Nothing is saved until you review each
+Kaiju can suggest memories from a conversation you started. Nothing is saved until you review each
 suggestion in **To review** on My memory.
 
-- Open **+** in the composer › **Memory** › **Learn from this chat**. Kobe reads what was said
+- Open **+** in the composer › **Memory** › **Learn from this chat**. Kaiju reads what was said
   since its last pass on this conversation (the first time, the whole conversation).
 - **Rescan the whole chat** reads all of it again, for example after you changed your mind about
   something earlier. The menu shows an estimate of the tokens it reads.
@@ -182,22 +182,22 @@ The **+** button shows where Learn is:
 
 | On the + button | Meaning                                                                     |
 | --------------- | --------------------------------------------------------------------------- |
-| A dot           | New messages since Kobe last learned from this conversation                 |
-| A spinner       | Kobe is learning from it now; you can keep chatting                         |
+| A dot           | New messages since Kaiju last learned from this conversation                |
+| A spinner       | Kaiju is learning from it now; you can keep chatting                        |
 | A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
 
-**The nudge.** The dot pulses once, as a reminder, after about 10 of your messages since Kobe last
+**The nudge.** The dot pulses once, as a reminder, after about 10 of your messages since Kaiju last
 learned from this conversation (or since it started), or after you correct the agent: a thumbs
 down on an answer, or editing one of your messages or sending a new one from an earlier answer (Regenerate and Retry don't count). It pulses
 once for each of these, then stays still until the next time; with reduced motion turned on in your
 system settings it doesn't move at all. The nudge never starts learning: only you do. A site admin
 can turn it off (**Nudge to learn**).
 
-When a pass ends, Kobe says how many suggestions it found, or why it stopped (try again from the
+When a pass ends, Kaiju says how many suggestions it found, or why it stopped (try again from the
 same menu). If it found something while you are on the conversation, To review opens by itself
-(see [To review](#to-review)). If Kobe can't confirm that a pass finished within a few minutes, the
-spinner stops and Kobe asks you to try again. If something else is changing the conversation at
-that moment, Kobe says it is busy (when you start, or if it stays busy while Kobe saves what it
+(see [To review](#to-review)). If Kaiju can't confirm that a pass finished within a few minutes, the
+spinner stops and Kaiju asks you to try again. If something else is changing the conversation at
+that moment, Kaiju says it is busy (when you start, or if it stays busy while Kaiju saves what it
 learned) and you try again. Learn is only for the conversation's author: people it is shared with don't see it,
 and Workbench, agent test and eval chats are refused. When Learn can't run, the menu item stays
 visible and says why: memories or Learn are switched off, no learning model is available (see
@@ -207,7 +207,7 @@ you like any other model call.
 
 Learn never suggests, at any level (yours or the Workspace's):
 
-- something only Kobe, a tool's output, a file or a summary said: every suggestion rests on your
+- something only Kaiju, a tool's output, a file or a summary said: every suggestion rests on your
   own words;
 - a password, key or token, or a statement that reads as an order to the agent;
 - a request to change what the agent may do: internet access, approvals, tool or connector
@@ -230,7 +230,7 @@ The **Memories** tab of **My memory** is where you keep your own memories. It ha
 
 **Add a memory** with its text (at most 500 characters), its kind (preference, fact, convention,
 definition or decision) and up to five tags, separated by commas. For a preference you can tick
-**Use in all my workspaces**; Kobe then asks **Use in all my workspaces?** and shows the text, so
+**Use in all my workspaces**; Kaiju then asks **Use in all my workspaces?** and shows the text, so
 nothing about your work leaves the workspace by accident. Other kinds can't be moved there.
 
 Each memory has **Edit**, **Pin** and **Archive**. Pinned memories (up to 10 in each group) are
@@ -238,9 +238,9 @@ listed first and always given to your agents; **Show more** lists older ones. Ar
 deletes: **Show archived** lists archived memories with **Restore**. After every change the page says what happened (**Memory saved**, **Archived**,
 ...) with **Undo**; an undone edit brings back the version before it.
 
-Every save runs the [checks](#what-kobe-checks-before-a-memory-is-saved) first. Their warnings
+Every save runs the [checks](#what-kaiju-checks-before-a-memory-is-saved) first. Their warnings
 appear under the memory you were saving, a similar memory as a link to it, with **Save anyway**;
-a secret is never saved. If the memory changed in another tab since you opened it, Kobe says so;
+a secret is never saved. If the memory changed in another tab since you opened it, Kaiju says so;
 **Reload** shows the saved text above your draft, which is kept, and **Save** replaces it. An
 **Undo** that comes too late (the memory changed since) is withdrawn. Each group says when it is
 80% full, and when it is full (by default 300 memories only in this workspace and 50 in all your
@@ -253,7 +253,7 @@ consoles' [Quality tab](#memory-quality). Nobody else sees these numbers for you
 
 ## To review
 
-When you ask Kobe to learn from a conversation, nothing is saved until you choose. What it found
+When you ask Kaiju to learn from a conversation, nothing is saved until you choose. What it found
 waits in **To review**, at the top of the **Memories** tab of **My memory**, for the conversation
 on screen. It opens by itself when the learning finishes while you are on that conversation and
 no other panel is open; otherwise the bell says "3 memories to review" (its **Open To review**
@@ -262,20 +262,20 @@ button opens it) and the count waits for you.
 Each suggestion is a card with:
 
 - the **statement**, which you can **Edit** (text and kind) before saving;
-- where it came from: **You said**, **You confirmed** or **Kobe noticed** (something Kobe concluded
+- where it came from: **You said**, **You confirmed** or **Kaiju noticed** (something Kaiju concluded
   rather than heard from you), with its confidence, its kind and the days left;
-- **why** Kobe suggests it and the **quotes** it rests on: choose a quote to scroll the
+- **why** Kaiju suggests it and the **quotes** it rests on: choose a quote to scroll the
   conversation to that message, which flashes briefly;
 - **Keep it for**: **Just me (this workspace)** or **This Workspace**. Only the places allowed are
-  offered: something Kobe noticed always stays yours, and a Workspace memory needs your own words
+  offered: something Kaiju noticed always stays yours, and a Workspace memory needs your own words
   in the conversation. Saving to the Workspace needs a Team admin or memory steward; anyone else
   can [propose it](#propose-a-memory-to-the-workspace). Anyone can also
   [propose it to the Site](#propose-a-memory-to-the-site) with **Propose…**. For a
-  preference you can tick **Use in all my workspaces**; Kobe asks first and shows the text;
+  preference you can tick **Use in all my workspaces**; Kaiju asks first and shows the text;
 - for a change to a memory you already have (an update, a replacement or a contradiction), the
   **changes** word by word, removed words struck through and new ones underlined. Such a change
-  stays in that memory's place (yours, all your workspaces or the Workspace), whatever Kobe
-  guessed. If someone changed the memory after Kobe suggested this, the card says so and the
+  stays in that memory's place (yours, all your workspaces or the Workspace), whatever Kaiju
+  guessed. If someone changed the memory after Kaiju suggested this, the card says so and the
   comparison shows the memory as it is now: check it before you save. A save made just as it
   changes is refused with **Reload**, which shows the card again with the latest memory, so a
   newer edit is never overwritten without you seeing it;
@@ -285,14 +285,14 @@ Each suggestion is a card with:
   the project's notes asks for a signed approval of the change, while a project file's Accept
   changes only that file.
 
-**Save** keeps it as a memory (with the same [checks](#what-kobe-checks-before-a-memory-is-saved)
+**Save** keeps it as a memory (with the same [checks](#what-kaiju-checks-before-a-memory-is-saved)
 as any save) and **Dismiss** drops it: later learning in the same conversation doesn't suggest it
 again. **Save all mine** saves every new personal suggestion at once; if one of them needs your
 attention, nothing is saved and the cards say why. After a save or **Save all mine**, **Undo**
-takes it all back and the suggestions return to To review. Kobe checks your rights, the switches
+takes it all back and the suggestions return to To review. Kaiju checks your rights, the switches
 and the limits again on every click. Suggestions you leave expire after 14 days (they are not
 counted as dismissed), and learning again adds new suggestions to the ones still open, without
-repeating any. When Kobe thinks a procedure could be a skill it says so, with a link to the
+repeating any. When Kaiju thinks a procedure could be a skill it says so, with a link to the
 **Skill Workbench**.
 
 ### Propose a memory to the Workspace
@@ -304,7 +304,7 @@ first if you like, add an optional note for the curators (at most 1,000 characte
 review; nothing is saved until a curator approves. Curators (Team admins and memory stewards) see
 the statement, its kind, your name, your note, your words from the conversation (only those
 quotes; the conversation itself opens for them only if it is shared with them) and anything the
-[checks](#what-kobe-checks-before-a-memory-is-saved) find, such as a similar Workspace memory or a
+[checks](#what-kaiju-checks-before-a-memory-is-saved) find, such as a similar Workspace memory or a
 Site Policy it may contradict. A secret is refused before it is sent. Team admins and memory
 stewards save their own suggestions to the Workspace directly (recorded in the audit log with
 their name), so they never propose.
@@ -327,19 +327,19 @@ Something every workspace should know (a company-wide fact or convention) can be
 should know this** (required, at most 1,000 characters) and choose **Propose to the Site**. Edit
 the statement or kind first if you like. The card leaves To review.
 
-- Only what you **said** or **confirmed** can go to the Site, and only as a new memory. **Kobe
+- Only what you **said** or **confirmed** can go to the Site, and only as a new memory. **Kaiju
   noticed** suggestions, and changes to a memory you already have, show the option disabled with
   the reason.
 - Only the statement, its kind and your justification ever leave the workspace: never your words
-  from the conversation, the conversation itself or Kobe's reasons.
+  from the conversation, the conversation itself or Kaiju's reasons.
 - A **Team admin** of your workspace confirms it first (see
   [below](#confirm-site-proposals-team-admins)); a Team admin's own proposal goes straight to the
   Site. Then a Site admin or Site memory steward approves it (it becomes a Site memory, "set by the
   Site"), merges it into a Site memory, rejects it with a reason, or asks for changes (back to your
   Team admins, at most three times). It waits up to 30 days.
-- Kobe refuses a secret and says so. Warnings and a Site Policy it may contradict don't stop it:
+- Kaiju refuses a secret and says so. Warnings and a Site Policy it may contradict don't stop it:
   the notice tells you, and the Site's curators see it too.
-- When the workspace's **Members may propose to the Site** switch is off, Kobe refuses and says
+- When the workspace's **Members may propose to the Site** switch is off, Kaiju refuses and says
   why.
 
 Team admins and memory stewards can also propose a **Workspace memory**: on the team console's
@@ -357,7 +357,7 @@ Memory page instead).
 
 Wherever you see a Site memory outside the site console (an **Open in Memory** link, **Memories
 in context**, or the team console's **Memory › Memories** list with **Scope** set to Site
-memories), it carries the label **Set by the Site** and is read-only. Kobe never says which
+memories), it carries the label **Set by the Site** and is read-only. Kaiju never says which
 workspace a Site memory came from, there or to the agent ("set by the Site"). Only Site admins and
 Site memory stewards see the source workspace, under **Proposals** in the site console; their own
 **Memory › Memories** list there has no label, since every memory in it is a Site memory.
@@ -395,7 +395,7 @@ curator endorsed it, and, when the Site asked for changes, the Site's note and t
 - **Withdraw…** (Team admins, or the proposer for their own) takes it back after a question; it
   won't reach the Site.
 
-Kobe shows its refusal in the card when a proposal was already decided, withdrawn or expired, or
+Kaiju shows its refusal in the card when a proposal was already decided, withdrawn or expired, or
 when **Members may propose to the Site** is off (then nothing from this workspace reaches the
 Site, Team admins' proposals included). After the Site asks for changes, the proposal waits here
 again with the Site's note; confirm it again (edited or not), or withdraw it.
@@ -403,7 +403,7 @@ again with the Site's note; confirm it again (edited or not), or withdraw it.
 ### Memory quality
 
 The **Quality** tab of the Memory page (team console for team admins and memory stewards; Site
-console for Site admins and Site memory stewards) shows how memory is doing. Kobe works the
+console for Site admins and Site memory stewards) shows how memory is doing. Kaiju works the
 numbers out when you open the tab; nothing is archived, changed or deleted because of them.
 
 - **Queue health**: for each review queue, how many items wait now, how long the oldest has
@@ -430,8 +430,8 @@ numbers out when you open the tab; nothing is archived, changed or deleted becau
 In a conversation that belongs to a project, each card also offers **Add to project notes** if
 you are an editor or owner of the project, or a Team admin. It adds the statement (as you edited
 it) as one line under `## Learned` in the project's `MEMORY.md`, starting that section if the file
-has none. Kobe first shows you the exact line and the file; **Approve and add** is your signed
-approval of that change, and Kobe writes it only if nothing changed since: your role in the
+has none. Kaiju first shows you the exact line and the file; **Approve and add** is your signed
+approval of that change, and Kaiju writes it only if nothing changed since: your role in the
 project, the project memory switch, the conversation still being in the project, and the file
 itself (otherwise add it again to see the new change). The line is in the project's **Notes**, so
 everyone who can read the project sees it and the agent reads it in project conversations; change
@@ -449,7 +449,7 @@ and only by clicking: agents and scheduled or automatic runs never add to projec
 If you only read the project, you can't change its notes, so the card offers **Suggest to
 editors** instead. After you confirm, the statement (as you edited it) and its kind go to the
 project's editors, owners and the Team admins, with the quotes from **your own messages** in this
-conversation (never the agent's replies; without a quote of yours Kobe refuses the suggestion).
+conversation (never the agent's replies; without a quote of yours Kaiju refuses the suggestion).
 The same checks as for adding apply first: secrets are refused, text that reads like an
 instruction to the agent is refused, and the button is disabled while project memory is turned
 off. The suggestion then leaves your To review.
@@ -468,7 +468,7 @@ suggestions** on the project's **Memory** tab (**Projects** › the project › 
 | **Conversation left the project** | The conversation was moved out of the project (or to another one) while it waited, so it no longer applies: it was for that project's notes. |
 
 Suggestions closed undecided before these two labels existed show **Expired after 30 days**
-unless Kobe could tell the conversation had moved (it closed before its 30 days were up).
+unless Kaiju could tell the conversation had moved (it closed before its 30 days were up).
 
 ### Readers' suggestions
 
@@ -478,9 +478,9 @@ for all your projects at once, **Suggested for project notes** under To review o
 Each card shows the statement, its kind, who suggested it and when, and their own words from the
 conversation.
 
-- **Approve** shows the exact line Kobe adds under `## Learned` in the project's `MEMORY.md`;
+- **Approve** shows the exact line Kaiju adds under `## Learned` in the project's `MEMORY.md`;
   **Approve and add** is your signed approval of that change, as for
-  [Add to project notes](#add-to-project-notes). Kobe checks again, at that moment, that you
+  [Add to project notes](#add-to-project-notes). Kaiju checks again, at that moment, that you
   still decide for the project, that project memory is on, that the conversation is still in the
   project and that the file has not changed; the line is written as yours (the Notes history
   shows it).
@@ -508,7 +508,7 @@ while it is on at both levels that have it. Every switch is on unless an admin t
   recall tools and the memory index) **and** no memories in that workspace or on the site; Site
   Policy still applies unless the site's switch is off (below).
 - **Allow project notes** (site and workspace): project memory, as above. Needs memory.
-- **Allow memories** (site and workspace): short statements Kobe knows about you, your workspace
+- **Allow memories** (site and workspace): short statements Kaiju knows about you, your workspace
   and the site, given to the agent at the start of each run. Needs memory. Turning **Allow
   memory** off now also turns memories off, not only notes.
 - **Workspace memories** (workspace): memories everyone in the workspace shares, curated by team
@@ -526,7 +526,7 @@ turns Policy off.
   read them; a site admin can read them only under a time-boxed, read-only break-glass grant that a
   second site admin approved. You are emailed when it starts and ends (unless it is a legal hold),
   and every read is in the site audit log and the audit view of each of your workspaces.
-- **Learn from this chat** (site and workspace): you can ask Kobe to suggest memories from a
+- **Learn from this chat** (site and workspace): you can ask Kaiju to suggest memories from a
   conversation and review every suggestion before anything is saved.
 - **Nudge to learn** (site): the dot on the **+** button pulses once when a conversation has
   enough new messages or a correction to learn from (see [Learn from this chat](#learn-from-this-chat)).
@@ -579,7 +579,7 @@ proposals are in each state (waiting for the Site, back with the Team admins, ap
 rejected, expired, withdrawn) and filters by state and by source workspace. **Review** opens one:
 its statement, kind, the justification, the source workspace, who proposed and confirmed it, the
 date, whether a workspace curator endorsed it, and the round. Below that is what the
-[checks](#what-kobe-checks-before-a-memory-is-saved) find now: Site Policy it may contradict and
+[checks](#what-kaiju-checks-before-a-memory-is-saved) find now: Site Policy it may contradict and
 similar Site memories, each with a word diff (struck words are the saved memory's, underlined
 words the proposal's), other warnings, and a secret, which can't be saved.
 
@@ -630,9 +630,9 @@ answer), search uses word matching alone and nothing else changes.
   then, the memory is saved all the same and word matching finds it until **Build vectors** runs. Saving a new model builds vectors for every memory in the
   background (if a build is already running, it carries on with the new model); until a memory has a vector from the current model, word matching finds it. The
   **Search by meaning** section shows how many memories have one (for example "812 of 840") and
-  has a **Build vectors** (or **Re-embed**) button to fill the gaps, for example after Kobe was
+  has a **Build vectors** (or **Re-embed**) button to fill the gaps, for example after Kaiju was
   upgraded or a build stopped. Nothing runs by itself after an upgrade. An upgrade can also change
-  how Kobe prepares memories for a model, which makes its old vectors out of date: the count then
+  how Kaiju prepares memories for a model, which makes its old vectors out of date: the count then
   drops (to "0 of 840", say) and word matching carries on alone until you press **Re-embed**. The
   release that tuned search by meaning did this for **nomic-embed-text** (including the in-cluster
   `kobe-local/nomic-embed-text`).
@@ -651,13 +651,13 @@ answer), search uses word matching alone and nothing else changes.
   100% of a budget line gets no new vectors (the memory is saved all the same, and found by word
   matching); a build skips what that workspace would pay for, finishes the rest and says it
   stopped for a budget line; press the button again later. Only one build runs at a time, across
-  all of Kobe's servers; the section shows it while it runs.
+  all of Kaiju's servers; the section shows it while it runs.
 - **When it is off.** The section says why search is word matching only, and what to do:
-  - _this Postgres server has no pgvector_: the people who run Kobe install pgvector for its
+  - _this Postgres server has no pgvector_: the people who run Kaiju install pgvector for its
     Postgres server (see the install guide), run `CREATE EXTENSION vector;` as a superuser and
-    upgrade Kobe;
-  - _pgvector is not enabled_: it is installed but Kobe may not enable it; a superuser runs
-    `CREATE EXTENSION vector;` in Kobe's database, then Kobe is upgraded;
+    upgrade Kaiju;
+  - _pgvector is not enabled_: it is installed but Kaiju may not enable it; a superuser runs
+    `CREATE EXTENSION vector;` in Kaiju's database, then Kaiju is upgraded;
   - _no embedding model is set_, or _the embedding model's provider is gone_: choose one above.
 
 - **What is sent to the embedding provider.** Choosing an embedding model sends text to that
@@ -686,7 +686,7 @@ as-of date, and for tags a count and a fingerprint (not the tags themselves). A 
 as it lasts (edits still work; nothing of those memories is pruned or cleaned up). A hold on a whole
 workspace covers that workspace's memories, not the Site's.
 
-**Workspaces with Site proposals are not deleted.** Kobe has no way to delete a workspace today.
+**Workspaces with Site proposals are not deleted.** Kaiju has no way to delete a workspace today.
 The database refuses to delete one that has ever proposed something to the Site, whatever state
 its proposals are in (waiting, withdrawn, expired or decided), so a proposal never disappears
 with its workspace behind a legal hold's back. Any future way to delete a workspace has to check
@@ -697,7 +697,7 @@ entries) and remove them before it deletes the workspace.
 
 ## How long memories are kept
 
-Kobe never deletes a memory you still use: a live memory stays however old it is, and nothing is
+Kaiju never deletes a memory you still use: a live memory stays however old it is, and nothing is
 archived for you. What goes, and when:
 
 - **Archived and replaced memories, and earlier versions.** In a workspace they are deleted once
@@ -749,7 +749,7 @@ archived for you. What goes, and when:
   don't expire while a Site-wide hold is in force (their reminders wait too), or while a
   hold covers the person who proposed them.
 
-## What Kobe checks before a memory is saved
+## What Kaiju checks before a memory is saved
 
 Memories are short statements: facts, preferences, conventions, definitions and decisions. Every
 way of saving one (the editor, an edit or **Undo**, restoring from the archive, turning Site Policy
@@ -817,7 +817,7 @@ when it is your turn. Each notification has a button that opens the place where 
   admin **confirmed** it. A Site admin or Site memory steward who is not a member of the proposing
   workspace gets that notification, and its reminders, in their own workspace (the one they last
   used) within about 15 minutes; one who belongs to no workspace sees it only in Site memory.
-- **Memories to review**: Kobe found things to remember in a conversation while you were
+- **Memories to review**: Kaiju found things to remember in a conversation while you were
   elsewhere ("3 memories to review"); **Open To review** opens that conversation's
   [To review](#to-review) section. When To review opened by itself, the notification is already
   read.

@@ -310,7 +310,7 @@ export const teamAgentVersions = pgTable(
     /**
      * The frozen local skill versions (KOBE-318, SK28): the exact team skill version each named
      * local skill resolved to at publish, `{"skills": [{"name", "skill_id", "version"}]}` in the
-     * agent's order. Runs load these versions, never a newer one; catalog skills (Kobe's too)
+     * agent's order. Runs load these versions, never a newer one; catalog skills (Kaiju's too)
      * are not listed and follow the team install. Nullable here only for the backfill: custom
      * migration 0140_agent_skill_manifest_backfill freezes existing versions and then requires a
      * manifest with the SQL-only check `team_agent_versions_skill_manifest`.

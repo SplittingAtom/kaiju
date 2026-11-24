@@ -259,7 +259,7 @@ describe("SMTP (KOBE-13)", () => {
     expect(server).toContainEqual({ name: "KOBE_SMTP_HOST", value: "smtp.example.com" });
     expect(server).toContainEqual({ name: "KOBE_SMTP_PORT", value: "587" });
     expect(server).toContainEqual({ name: "KOBE_SMTP_SECURITY", value: "starttls" });
-    expect(server).toContainEqual({ name: "KOBE_SMTP_FROM", value: "Kobe <kobe@example.com>" });
+    expect(server).toContainEqual({ name: "KOBE_SMTP_FROM", value: "Kaiju <kobe@example.com>" });
     expect(JSON.stringify(server)).not.toContain("KOBE_SMTP_PASSWORD");
     for (const name of ["kobe-scheduler", "kobe-web", "kobe-mcp-proxy", "kobe-egress-proxy"]) {
       expect(JSON.stringify(find(ms, "Deployment", name)), name).not.toContain("KOBE_SMTP");

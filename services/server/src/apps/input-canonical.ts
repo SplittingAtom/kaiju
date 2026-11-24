@@ -4,7 +4,7 @@ import { parseToolsSnapshot, sql, type KobeTx } from "@kobe/db";
 
 /**
  * The canonical form of an MCP App tool's input against its pinned input schema (KOBE-441: the
- * Kobe Explorer Gate found real Pi's tool-call input and the proxy's captured input differ). Pi
+ * Kaiju Explorer Gate found real Pi's tool-call input and the proxy's captured input differ). Pi
  * records the model's raw arguments in `tool.call`, but converts them before it calls the tool:
  * TypeBox `Value.Convert` and its own JSON-schema coercion turn `"5"` into `5` for an integer, and
  * an optional `null` is dropped. Some MCP clients also fill in schema defaults. So the capture

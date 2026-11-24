@@ -156,7 +156,7 @@ describe("per-connection budget (M2)", () => {
   });
 });
 
-describe("the git tools follow the Git switch, never the Kobe connector's (M3)", () => {
+describe("the git tools follow the Git switch, never the Kaiju connector's (M3)", () => {
   const kobeMode = (mode: string | null) => h.setSite(KOBE_MCP_MODE_KEY, mode);
   const gitSwitch = (on: boolean) => h.setSite(GIT_SITE_ENABLED_KEY, on ? null : "false");
 
@@ -166,7 +166,7 @@ describe("the git tools follow the Git switch, never the Kobe connector's (M3)",
     [true, "admin", true],
     [false, "off", false],
     [false, "admin", false],
-  ] as const)("Git switch %s, Kobe MCP %s: git tools offered %s", async (git, mode, offered) => {
+  ] as const)("Git switch %s, Kaiju MCP %s: git tools offered %s", async (git, mode, offered) => {
     const w = await world();
     const id = await connect(w, "forgejo");
     const s = await h.sandboxFor(w.team, w.contributor);
@@ -186,7 +186,7 @@ describe("the git tools follow the Git switch, never the Kobe connector's (M3)",
     }
   });
 
-  it("keeps the git tools when the Kobe connector is off in the conversation", async () => {
+  it("keeps the git tools when the Kaiju connector is off in the conversation", async () => {
     const w = await world();
     const id = await connect(w, "gitea");
     const s = await h.sandboxFor(w.team, w.contributor);
@@ -199,7 +199,7 @@ describe("the git tools follow the Git switch, never the Kobe connector's (M3)",
   });
 });
 
-describe("Kobe Repos are read with a role on their project (M4)", () => {
+describe("Kaiju Repos are read with a role on their project (M4)", () => {
   async function repoFor(w: World, connection: string, hostRepoId: string, fullName: string) {
     const project = randomUUID();
     await h.fx.admin.query(

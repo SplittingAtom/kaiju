@@ -51,7 +51,7 @@ describe("bucketLifecycleWarning (KOBE-738)", () => {
     expect(await bucketLifecycleWarning(store("Suspended", []), "b", "")).toMatch(/suspended/);
   });
 
-  it("is quiet without versioning or with an expiry rule covering Kobe's prefix", async () => {
+  it("is quiet without versioning or with an expiry rule covering Kaiju's prefix", async () => {
     expect(await bucketLifecycleWarning(store(undefined, []), "b", "")).toBeUndefined();
     expect(await bucketLifecycleWarning(store("Enabled", [expiry()]), "b", "")).toBeUndefined();
     expect(

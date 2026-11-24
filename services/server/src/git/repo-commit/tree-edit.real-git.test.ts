@@ -126,14 +126,14 @@ describe("git objects (KOBE-767)", () => {
         tree,
         parent: base,
         author: { name: "Ada Lovelace", email: "ada@acme.test" },
-        committer: { name: "Ada Lovelace via Kobe", email: "ada@acme.test" },
+        committer: { name: "Ada Lovelace via Kaiju", email: "ada@acme.test" },
         at: new Date("2026-11-23T10:00:00Z"),
         message: "Fix the docs\n\nWith a body.  \n",
       }),
     );
     git(["fsck", "--strict", "--no-dangling"]);
     expect(git(["log", "-1", "--format=%an <%ae>|%cn|%s|%P", commit])).toBe(
-      `Ada Lovelace <ada@acme.test>|Ada Lovelace via Kobe|Fix the docs|${base}`,
+      `Ada Lovelace <ada@acme.test>|Ada Lovelace via Kaiju|Fix the docs|${base}`,
     );
     expect(git(["cat-file", "-p", commit]).endsWith("Fix the docs\n\nWith a body.")).toBe(true);
   });
@@ -167,7 +167,7 @@ describe("pull request names and text (KOBE-767)", () => {
         memberName: "Ada *L*",
         publicUrl: "https://k.test",
       }),
-    ).toBe("Why it changed.\n\n---\nCommitted by Ada \\*L\\* with Kobe's commit dialog");
+    ).toBe("Why it changed.\n\n---\nCommitted by Ada \\*L\\* with Kaiju's commit dialog");
     const agent = pullRequestBody({
       message: "Only a title",
       memberName: "Ada",
@@ -175,7 +175,7 @@ describe("pull request names and text (KOBE-767)", () => {
       threadId: "11111111-1111-4111-8111-111111111111",
     });
     expect(agent).toBe(
-      "Committed by Ada via Kobe, from conversation https://k.test/?thread=11111111-1111-4111-8111-111111111111",
+      "Committed by Ada via Kaiju, from conversation https://k.test/?thread=11111111-1111-4111-8111-111111111111",
     );
     const long = pullRequestBody({
       message: `t\n${"x".repeat(30_000)}`,
@@ -183,6 +183,6 @@ describe("pull request names and text (KOBE-767)", () => {
       publicUrl: "https://k.test",
     });
     expect(long.length).toBeLessThanOrEqual(20_000);
-    expect(long.endsWith("with Kobe's commit dialog")).toBe(true);
+    expect(long.endsWith("with Kaiju's commit dialog")).toBe(true);
   });
 });

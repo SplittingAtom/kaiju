@@ -66,7 +66,7 @@ const settle = () =>
   });
 
 describe("AppFrame (KOBE-437)", () => {
-  it("loads Kobe's member frame route in an opaque-origin sandbox with no permissions", () => {
+  it("loads Kaiju's member frame route in an opaque-origin sandbox with no permissions", () => {
     const { iframe } = mount();
     expect(iframe.getAttribute("src")).toBe(
       `/v1/team/apps/${APP.appId}/frame?team=${TEAM}&sha256=${APP.sha256}`,

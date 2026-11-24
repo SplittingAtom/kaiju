@@ -39,7 +39,7 @@ function statusText(view: View, domain: string, scope: Scope): string | null {
   switch (view.kind) {
     case "request":
       if (view.request.status === "pending") {
-        return `Access requested: ${audience(scope)} were notified. Kobe tells you when they decide.`;
+        return `Access requested: ${audience(scope)} were notified. Kaiju tells you when they decide.`;
       }
       return view.request.status === "approved"
         ? `${deciderWord(scope)} enabled ${view.request.pattern}. Ask the agent to try again.`

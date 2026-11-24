@@ -25,7 +25,7 @@ can fork it; they cannot write in it, approve its tool calls or see what its mod
 see "This conversation is shared with you read-only." Files from your own My files are never named
 to them (see [The Threads panel](threads-panel.md)).
 
-If the agent used Kobe's admin tools in the thread, readers see that the tool ran and its summary,
+If the agent used Kaiju's admin tools in the thread, readers see that the tool ran and its summary,
 but its result reads "Admin result hidden" unless they hold the same permission, in their forks
 too. The agent's own answers are not hidden, so check what they say before sharing. See
 [Admin from a conversation](../admin/admin-from-a-conversation.md).
@@ -70,7 +70,7 @@ looking. A node's menu offers, where they apply:
 - **Compare with…**, **Fork a new thread here** and **Copy text**.
 
 Making a branch current warns when files changed on the branch you leave stay changed: files are
-not rolled back. If a branch is longer than the model's window, Kobe says so; compact after
+not rolled back. If a branch is longer than the model's window, Kaiju says so; compact after
 switching. Readers of a shared thread can browse every branch but cannot make one current, label
 or summarise.
 

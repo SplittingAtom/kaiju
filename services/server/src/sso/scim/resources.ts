@@ -13,7 +13,7 @@ export function scimBaseUrl(publicUrl: string, slug: string): string {
   return `${new URL(publicUrl).origin}/v1/scim/v2/${slug}`;
 }
 
-/** A Kobe user as a SCIM User resource (only what Kobe keeps). */
+/** A Kaiju user as a SCIM User resource (only what Kaiju keeps). */
 export function userResource(row: ScimUserRow, base: string) {
   return {
     schemas: [USER_SCHEMA],
@@ -62,7 +62,7 @@ export function serviceProviderConfig(base: string) {
       {
         type: "oauthbearertoken",
         name: "OAuth Bearer Token",
-        description: "The SCIM token from the Kobe Site console (Single sign-on → SCIM).",
+        description: "The SCIM token from the Kaiju Site console (Single sign-on → SCIM).",
         primary: true,
       },
     ],
@@ -77,7 +77,7 @@ export function userResourceType(base: string) {
     id: "User",
     name: "User",
     endpoint: "/Users",
-    description: "Kobe user account",
+    description: "Kaiju user account",
     schema: USER_SCHEMA,
     schemaExtensions: [],
     meta: { resourceType: "ResourceType", location: `${base}/ResourceTypes/User` },
@@ -96,13 +96,13 @@ const attribute = (name: string, extra: Record<string, unknown> = {}): Record<st
   ...extra,
 });
 
-/** The core User schema, limited to the attributes Kobe keeps. */
+/** The core User schema, limited to the attributes Kaiju keeps. */
 export function userSchema(base: string) {
   return {
     schemas: [SCHEMA_SCHEMA],
     id: USER_SCHEMA,
     name: "User",
-    description: "Kobe user account",
+    description: "Kaiju user account",
     attributes: [
       attribute("userName", { required: true, uniqueness: "server" }),
       attribute("externalId", { caseExact: true }),

@@ -23,7 +23,7 @@ import type { RunModel } from "../models/types.js";
  * cannot be read-only). `--no-extensions` stops extension discovery and built-ins (explicit `-e`
  * paths still load: that is how kobe-policy, KOBE-36, and kobe-models, KOBE-41, are added, from
  * root-owned paths); `--no-approve` ignores project-local
- * `.pi/` files; `--no-context-files` stops `AGENTS.md`/`CLAUDE.md` discovery (Kobe's instructions
+ * `.pi/` files; `--no-context-files` stops `AGENTS.md`/`CLAUDE.md` discovery (Kaiju's instructions
  * come from agent files, D19; a model-written AGENTS.md would otherwise be a persistent prompt
  * injection across threads); `--no-skills` / `--no-prompt-templates` / `--no-themes` stop discovery.
  * Skills (KOBE-82) are registered the one way Pi 1.0.0 documents for explicit paths: one repeatable
@@ -94,7 +94,7 @@ export interface PiLaunchInput {
    */
   readonly model?: RunModel | null | undefined;
   /**
-   * kobe-tools (KOBE-128): a root-owned, read-only file that registers Kobe's own tools, loaded
+   * kobe-tools (KOBE-128): a root-owned, read-only file that registers Kaiju's own tools, loaded
    * right before kobe-policy (which therefore checks its calls) and given the channel on fd 4.
    * Absent: no fd 4, no tools (the agent then does not announce the `artifacts` capability).
    */

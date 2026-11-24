@@ -113,7 +113,7 @@ describe("a Repo in the project section (KOBE-767)", () => {
     const text = projectContextText(project({ access: "write" }), repo) ?? "";
     expect(text).toContain("/workspace/.kobe/repos/apollo");
     expect(text).toContain("https://github.com/acme/apollo.git (default branch main)");
-    expect(text).toContain("projects/apollo is Kobe's read-only copy");
+    expect(text).toContain("projects/apollo is Kaiju's read-only copy");
     expect(text).toContain("git_open_pull_request");
     const read = projectContextText(project({ access: "read" }), { ...repo, access: "read" }) ?? "";
     expect(read).toContain("cannot push");

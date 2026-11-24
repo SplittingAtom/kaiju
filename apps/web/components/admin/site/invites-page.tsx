@@ -89,7 +89,7 @@ export function SiteInvitesPage() {
     <>
       <PageHeader
         title="Invitations"
-        description="An invitation brings someone into Kobe. Team admins then invite them into their teams."
+        description="An invitation brings someone into Kaiju. Team admins then invite them into their teams."
       />
       <form onSubmit={onInvite} aria-label="Invite someone">
         <FormRow>

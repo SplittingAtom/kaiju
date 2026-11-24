@@ -24,7 +24,7 @@ const GROUPS: DocsNavGroup[] = [
     section: "Reference",
     id: "reference",
     pages: [
-      { slug: "glossary", title: "Glossary", summary: "The words Kobe uses." },
+      { slug: "glossary", title: "Glossary", summary: "The words Kaiju uses." },
       { slug: "ref/limits", title: "Limits", summary: "Upload and run limits." },
     ],
   },
@@ -71,7 +71,7 @@ describe("DocsNav", () => {
     await userEvent.clear(screen.getByRole("searchbox", { name: "Filter pages" }));
     await userEvent.type(screen.getByRole("searchbox", { name: "Filter pages" }), "zzz");
     expect(within(nav).getByText("No pages match.")).toBeTruthy();
-    expect(filterPages(GROUPS, "kobe WORDS").map((p) => p.slug)).toEqual(["glossary"]);
+    expect(filterPages(GROUPS, "kaiju WORDS").map((p) => p.slug)).toEqual(["glossary"]);
     expect(filterPages(GROUPS, " ")).toHaveLength(3);
   });
 

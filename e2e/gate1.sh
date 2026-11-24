@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gate 1 (KOBE-1, Spine) against an installed Kobe: two teams of five users chat concurrently,
+# Gate 1 (KOBE-1, Spine) against an installed Kaiju: two teams of five users chat concurrently,
 # the cross-team probe on the site's own data, refresh mid-run resumes gapless, killing a
 # sandbox mid-run gives `interrupted` + Retry with history intact, and hibernated → first sandbox
 # answer over 20 trials. docs/gates/gate-1.md records what each check proves and what it does not.

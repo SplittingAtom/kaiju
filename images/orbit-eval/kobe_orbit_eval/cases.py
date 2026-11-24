@@ -2,7 +2,7 @@
 
 Each case is a copied exchange (the prompt, optionally earlier turns, the tool outputs the member
 shared) plus the agent owner's expected behaviour. The mapped agent answers the prompt again with
-simulated tools that replay the shared outputs; the task's model (the Kobe gateway, the eval's
+simulated tools that replay the shared outputs; the task's model (the Kaiju gateway, the eval's
 only credential) then grades the new answer against the expected behaviour. A case passes or
 fails; one the grader can't decide is an error (the server fails the eval closed). The result
 carries case ids and outcomes only: never case text or the grader's words.
@@ -113,7 +113,7 @@ class CasesUnavailable(RuntimeError):
 
 
 def fetch_cases(gateway_url: str, session_token: str, timeout: float = 30.0) -> CaseFile:
-    """The eval's shared cases from the Kobe model gateway (KOBE-276): never stored in the Job."""
+    """The eval's shared cases from the Kaiju model gateway (KOBE-276): never stored in the Job."""
     import urllib.error
     import urllib.request
 

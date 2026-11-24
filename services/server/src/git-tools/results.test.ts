@@ -28,7 +28,7 @@ describe("posted text (G13)", () => {
   it("ends with a line naming the member and the conversation", () => {
     const footer = footerLine("opened", "Ana Lee", "https://kobe.example/", "ABC-1");
     expect(footer).toBe(
-      "Opened by Ana Lee via Kobe, from conversation https://kobe.example/?thread=abc-1",
+      "Opened by Ana Lee via Kaiju, from conversation https://kobe.example/?thread=abc-1",
     );
     expect(postedBody("Fixes it.\n\n", footer)).toBe(`Fixes it.\n\n---\n${footer}`);
     expect(postedBody("", footer)).toBe(footer);
@@ -118,7 +118,7 @@ describe("errors", () => {
     expect(hostError(new GitHostError("rate_limited", "x", { resetAt }))).toEqual({
       ok: false,
       code: "host_rate_limited",
-      message: "The git host is rate limiting Kobe. Try again after 2030-01-01T00:00:00.000Z.",
+      message: "The git host is rate limiting Kaiju. Try again after 2030-01-01T00:00:00.000Z.",
       retryAt: "2030-01-01T00:00:00.000Z",
     });
     expect(toolError("x", "y")).toEqual({ ok: false, code: "x", message: "y" });

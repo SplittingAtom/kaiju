@@ -1,6 +1,6 @@
 # Parallel work
 
-How several agents build Kobe tickets at the same time without colliding. One coordinator session
+How several agents build Kaiju tickets at the same time without colliding. One coordinator session
 picks ready tickets, starts one agent per ticket, reviews and merges; ticket agents follow the rules
 below.
 

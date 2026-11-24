@@ -11,7 +11,7 @@
 {{- end }}
 # Server egress (KOBE-698, review SEC-9; opt-in, server.networkPolicy.restrictEgress). The server
 # holds the envelope KEK, the approval key and the session signing keys, so a bypass of one of its
-# outbound checks must not reach the cluster or the LAN: DNS, Postgres, Kobe's own services, the
+# outbound checks must not reach the cluster or the LAN: DNS, Postgres, Kaiju's own services, the
 # Kubernetes API, public addresses on allowedPorts (S3, the identity provider, OAuth, model
 # discovery) and SMTP. LAN or in-cluster S3, SMTP, IdP, telemetry or SIEM destinations need rules
 # in server.networkPolicy.extraEgress (docs/install.md). NetworkPolicies add up: auth.sso's policy
@@ -55,7 +55,7 @@ spec:
         - protocol: TCP
           port: {{ int $np.databasePort }}
     {{- end }}
-    # Kobe's own services: Bifrost's admin API, the model gateway, the MCP proxy, the egress proxy
+    # Kaiju's own services: Bifrost's admin API, the model gateway, the MCP proxy, the egress proxy
     # (site jobs), ClamAV and the embedding service. Each has its own ingress policy.
     - to:
         - podSelector:

@@ -42,13 +42,13 @@ describe("PageHeader, Section and Card", () => {
       <EmbeddedPage.Provider value={true}>
         <PageHeader
           title="My memory"
-          description="What Kobe remembers."
+          description="What Kaiju remembers."
           actions={<Button>Add</Button>}
         />
       </EmbeddedPage.Provider>,
     );
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-    expect(screen.getByText("What Kobe remembers.")).toBeTruthy();
+    expect(screen.getByText("What Kaiju remembers.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add" })).toBeTruthy();
   });
 

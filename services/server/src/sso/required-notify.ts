@@ -36,7 +36,7 @@ export function ssoRequiredOffMessage(
         ];
   return {
     to,
-    subject: "Kobe: single sign-on is no longer required",
+    subject: "Kaiju: single sign-on is no longer required",
     text: [
       ...why,
       "so Require single sign-on turned itself off: people can sign in with their",

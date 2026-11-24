@@ -52,7 +52,7 @@ export const serverCallPurposeSchema = z.enum(SERVER_CALL_PURPOSES);
 export type ServerCallPurpose = z.infer<typeof serverCallPurposeSchema>;
 /**
  * Every purpose a server-call token may carry: the epilogue's, the eval judge's, and the skill
- * manifest's (`skill_manifest`, KOBE-564: a member asks Kobe to write a version's
+ * manifest's (`skill_manifest`, KOBE-564: a member asks Kaiju to write a version's
  * `kobe.skill.yaml` with the model they chose; the only purpose a member starts, so it names no
  * thread or run: {@link RUNLESS_SERVER_CALL_PURPOSES}), and the learning pass's (`memory_learn`,
  * KOBE-390, SM14/SM15: one extractor call per pass, bound to the leaf's last completed run and
@@ -104,7 +104,7 @@ export function serverCallBoundToRun(purpose: ServerCallTokenPurpose): boolean {
 export const SERVER_CALL_TOKEN_HEADER = "x-kobe-server-call";
 /** The signed JWS `typ` of a server-call token (KOBE-521): never `JWT` or `krt2`. */
 export const SERVER_CALL_TOKEN_TYP = "ksc2";
-/** The audience no other Kobe token carries (session and run tokens say `kobe.model-gateway`). */
+/** The audience no other Kaiju token carries (session and run tokens say `kobe.model-gateway`). */
 export const SERVER_CALL_AUDIENCE = "kobe.model-gateway.server-call";
 /**
  * Longest token any verifier reads; larger input is rejected before parsing. 1280 since KOBE-521

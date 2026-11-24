@@ -1,6 +1,6 @@
 # Audit log
 
-Kobe keeps one site-wide, append-only audit log in Postgres (spec D6, D31; KOBE-15). Site
+Kaiju keeps one site-wide, append-only audit log in Postgres (spec D6, D31; KOBE-15). Site
 admins (Owner, Admin) read all of it; team admins read their team's events. Each event records
 metadata only: who did what, to which object, when, and from where. Secrets, tokens, passwords,
 prompts and message text are never recorded.
@@ -196,16 +196,16 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `git.project.conversion_retried` | team | `conversionId`, `projectId`, `step` | The project's owner or a Workspace admin retried a failed Convert to repo; it resumes at `step` |
 | `git.project.converted` | team | `conversionId`, `projectId`, `connectionId?`, `repositoryId`, `hostRepoId`, `commits`, `headSha`, `attempts` | Convert to repo finished (system, on behalf of the requester): the project's commits are on the host's default branch and the project is now a Repo linked to the repository record |
 | `git.pull_request.opened` | team | `connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `number?`, `hostId`, `url?` | An agent opened a pull request with `git_open_pull_request` (KOBE-762). Never the title, text or branch names |
-| `git.repo.commit_attempted` | team | `projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `commitSha` | Kobe is about to push a member's commit to a Repo (written before the push, so a push whose outcome Kobe could not record is still on record by its commit id) (KOBE-767) |
-| `git.repo.commit_failed` | team | `projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `failure` | A commit to a Repo from Kobe's commit flow was refused, by Kobe (a name the host would refuse, storage, a file changed on the host since the member's copy) or by the git host (the default branch moved, a hook or size limit, the repository gone); nothing changed (KOBE-767) |
+| `git.repo.commit_attempted` | team | `projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `commitSha` | Kaiju is about to push a member's commit to a Repo (written before the push, so a push whose outcome Kaiju could not record is still on record by its commit id) (KOBE-767) |
+| `git.repo.commit_failed` | team | `projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `failure` | A commit to a Repo from Kaiju's commit flow was refused, by Kaiju (a name the host would refuse, storage, a file changed on the host since the member's copy) or by the git host (the default branch moved, a hook or size limit, the repository gone); nothing changed (KOBE-767) |
 | `git.repo.committed` | team | `projectId`, `repositoryId`, `connectionId`, `hostRepoId`, `mode` (`pull_request`, `direct`), `commitSha`, `number?`, `url?`, `opened?`, `fallback`, `kobeCommitId?` | A member's commit to a Repo (Commit dialog, or an agent's `commit_project` with run and tool call in `viaAgent`) became a git commit on the host: a branch with a pull request opened or added to, or straight to the default branch where the connection allows it (`fallback`: the host protected it, so a pull request was opened) (KOBE-767). Never the message, paths or branch name |
-| `git.repo.detached` | team | `repositoryId`, `projectId`, `commitId` | A Workspace admin turned a Repo back into an ordinary project: one commit of the mirrored files starts its Kobe history again; the repository stays on the host (KOBE-766) |
+| `git.repo.detached` | team | `repositoryId`, `projectId`, `commitId` | A Workspace admin turned a Repo back into an ordinary project: one commit of the mirrored files starts its Kaiju history again; the repository stays on the host (KOBE-766) |
 | `git.repo.host_state_changed` | team | `repositoryId`, `projectId`, `hostRepoId`, `from`, `to` (`active`, `archived`, `deleted`, `unreachable`) | A Repo mirror refresh (system) saw the repository archived on the host, or deleted (several "not found" answers in a row: also when the credential no longer sees it), or its connection removed: the Repo is read-only from its last mirror; `active` again lifts it (KOBE-766) |
 | `git.repo.mirror_updated` | team | `repositoryId`, `projectId`, `commitId`, `headSha`, `added`, `modified`, `deleted`, `fileCount`, `skipped`, `prunedCommitId?`, `sweptCommits?` | A Repo mirror refresh (system) wrote the host's new files on the default branch into the Repo as one commit; `skipped` counts symlinks and submodules left out; `prunedCommitId` is the previous mirror commit it dropped (KOBE-766); `sweptCommits` counts older commits written since the conversion that no working copy needed any more (KOBE-767). Never paths or messages |
 | `git.repo.relinked` | team | `repositoryId`, `projectId`, `previousRepositoryId`, `connectionId`, `hostRepoId` | A Workspace admin linked a Repo to another repository of a connected organization (or the same one again, after a reconnect); the next refresh mirrors it (KOBE-766) |
-| `git.repository.created` | team | `connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`, `public` if the host made it so), `url?` | An agent created a repository with `git_create_repository` (KOBE-762); Kobe also records it among the Workspace's repositories |
-| `git.settings.updated` | team | `setting` (`commit_email`), `value`, `previous` (`member` or `noreply`) | A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kobe email or the no-reply form (KOBE-761) |
-| `git.write.attempted` | team | `connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool` | Kobe is about to send a git host tool write (KOBE-762); committed first, so a repeat of the same call that finds no completion reports the outcome unknown instead of acting again |
+| `git.repository.created` | team | `connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`, `public` if the host made it so), `url?` | An agent created a repository with `git_create_repository` (KOBE-762); Kaiju also records it among the Workspace's repositories |
+| `git.settings.updated` | team | `setting` (`commit_email`), `value`, `previous` (`member` or `noreply`) | A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kaiju email or the no-reply form (KOBE-761) |
+| `git.write.attempted` | team | `connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool` | Kaiju is about to send a git host tool write (KOBE-762); committed first, so a repeat of the same call that finds no completion reports the outcome unknown instead of acting again |
 | `git.write.failed` | team | `connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool`, `failure` | The git host refused a git host tool write for certain, so nothing was created; `failure` is the error code (KOBE-762) |
 | `governance.break_glass.approved` | team | as requested, but `expiresAt`, `selfApproved` and `teamAdmins` (0 = no team admin could be told) instead of `durationMinutes` | A second site admin approved (or a single-admin site self-approved, flagged) |
 | `governance.break_glass.denied` | team | `grantId`, `recipients` | Another site admin denied the request |
@@ -241,7 +241,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `identity.invitation.created` | site | `invitationId` | Site invitation sent |
 | `identity.invitation.resent` | site | `invitationId` | Re-sent (new token) |
 | `identity.invitation.revoked` | site | `invitationId` | Revoked |
-| `identity.member.added` | team | `userId`, `role`, `via` (skill_reviewer_grant, idp, site_admin), `providerId?` | Kobe added a Skill reviewer to the Registry team (KOBE-331, SK22), or an identity provider's access mapping granted the membership (KOBE-625), or a site admin added an existing user from the Site console (`site_admin`, KOBE-638; actor = the site admin) |
+| `identity.member.added` | team | `userId`, `role`, `via` (skill_reviewer_grant, idp, site_admin), `providerId?` | Kaiju added a Skill reviewer to the Registry team (KOBE-331, SK22), or an identity provider's access mapping granted the membership (KOBE-625), or a site admin added an existing user from the Site console (`site_admin`, KOBE-638; actor = the site admin) |
 | `identity.member.removed` | team | `userId`, `role`, `via?` (skill_reviewer_grant, idp, site_admin), `providerId?` | Member removed |
 | `identity.member.role_changed` | team | `userId`, `from`, `to`, `via?` (idp, site_admin), `providerId?` | Team role changed |
 | `identity.member.taken_over` | team | `userId`, `providerId`, `via?` (site_admin) | A team admin (or a site admin, `via: site_admin`) took over a membership the identity provider managed; it is manual from now on (KOBE-625, SSO10) |
@@ -262,7 +262,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `identity.site_grant.revoked` | site | `userId`, `grant` (skill_reviewer, memory_steward) | The Owner or a Site admin took a site grant (KOBE-331, SK22) |
 | `identity.site_role.granted` | site | `userId`, `role` (admin) | Admin granted |
 | `identity.site_role.revoked` | site | `userId`, `role` (admin) | Admin revoked |
-| `identity.sso.link.created` | site | `providerId`, `userId`, `method` (jit, local_proof, admin_expected, scim) | A Kobe user was linked to an identity at the provider |
+| `identity.sso.link.created` | site | `providerId`, `userId`, `method` (jit, local_proof, admin_expected, scim) | A Kaiju user was linked to an identity at the provider |
 | `identity.sso.link.removed` | site | `providerId`, `userId`, `by` (user, admin, scim), `sessionsEnded`? | Link removed; the provider's sessions of that user end |
 | `identity.sso.link_expectation.withdrawn` | site | `providerId`, `userId` | An admin withdrew an expected link before it was used |
 | `identity.sso.link_expected` | site | `providerId`, `userId` | An admin expects the user's next sign-in from the provider to link |
@@ -288,7 +288,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `mcp.app_card_dropped` | team | `connectorId`, `userId`, `threadId`, `tool`, `reason` (no_access, expired, too_many_cards, invalid) | A rail-launched app card that waited for a run was dropped at insertion instead of inserted (KOBE-440) |
 | `mcp.connector.drift` | site | `connectorId`, `name`, `changed`, `added`, `removed` (tool names only), `templates` (`changed`, `added`, `removed` URIs; `invalid` URI and reason, KOBE-433) | The periodic refresh found live tools differing from the pins (KOBE-102): changed and new tools are disabled until re-approved, removed ones are no longer offered. System actor |
 | `mcp.connector.drift_notified` | site | `connectorId`, `driftSeq`, `recipientId`, `emailed`, `kind?` (drift, skipped; KOBE-431) | A recipient was handled for one drift event (KOBE-103); `emailed` is false when the per-connector, per-recipient rate limit suppressed the email. Dedupe and rate-limit record. System actor |
-| `mcp.connector.pinned` | site | `connectorId`, `name`, `tools`, `hash`, `templates` (ui:// URI and SHA-256, KOBE-433) | Kobe probed a connector's `tools/list` and pinned every tool (SHA-256 over name, description, input schema; KOBE-101) |
+| `mcp.connector.pinned` | site | `connectorId`, `name`, `tools`, `hash`, `templates` (ui:// URI and SHA-256, KOBE-433) | Kaiju probed a connector's `tools/list` and pinned every tool (SHA-256 over name, description, input schema; KOBE-101) |
 | `mcp.connector.probe_credential` | site | `connectorId`, `name`, `purpose` (pin, refresh), `credential` (site_key, admin_key, admin_oauth, none), `adminId?` | Which credential probed a connector's `tools/list` (KOBE-431): its site-wide key, the own key of site admin `adminId`, that admin's own OAuth access token (`admin_oauth`, KOBE-784), or none; never a member's key, never the value. Every pin by an admin; the periodic refresh only when its choice changes |
 | `mcp.connector.reapproved` | site | `connectorId`, `name`, `tools`, `templates` (URI and SHA-256, KOBE-434) | A site admin re-approved drifted tools (KOBE-102) |
 | `mcp.connector.refresh_skipped` | site | `connectorId`, `name`, `reason` (auth_required) | The periodic refresh began skipping a connector that asks for credentials with no usable site key or admin key (KOBE-431); site admins are emailed and see it on the connector page. System actor |
@@ -306,7 +306,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `mcp.grant.refused` | team | `connectorId`, `name`, `reason` | A stored OAuth token was not served because it was issued for a different server than the connector's current URL (KOBE-109), or the user is deactivated or no longer a member (`user_inactive`, KOBE-110). Never records the token |
 | `mcp.grant.removed` | team | `connectorId`, `name`, `userId`?, `reason`? (member_removed, deactivated, deprovisioned, reactivated) | A user's grant for a connector was removed: by the user (KOBE-108), or dropped by a URL/mode change or the connector's removal (KOBE-454), or because the member left (KOBE-696: removed from the team, deactivated, or deprovisioned by the identity provider; also the offboarding sweep's cleanup, actor system; `reactivated`: keys a failed deactivation step left, deleted on reactivation) |
 | `mcp.grant.replaced` | team | `connectorId`, `name` | A user replaced their API key for a connector (KOBE-108) |
-| `mcp.kobe.team_level_changed` | team | `from`, `to` (docs, read, read_write) | A team admin changed the team's level of the built-in Kobe connector in Team console › Connectors (KOBE-623); no event when nothing changed |
+| `mcp.kobe.team_level_changed` | team | `from`, `to` (docs, read, read_write) | A team admin changed the team's level of the built-in Kaiju connector in Team console › Connectors (KOBE-623); no event when nothing changed |
 | `mcp.list_refused` | team | `sandboxId`, `userId`, `connectorId`, `reason` | The MCP proxy asked to list the tools of a connector the team has not enabled; nothing is offered (KOBE-106), throttled per sandbox |
 | `mcp.tool_call` | team | `sandboxId`, `userId`, `connectorId`, `tool`, `runId?`, `threadId?`, `toolCallId?`, `decision` (allowed, denied), `reason`, `risk?`, `approvalId?`, `approvalFailure?`, `ruleId?`, `credential?` (none, member, site; allowed calls) | The server decided an MCP `tools/call` for the MCP proxy (actor: the sandbox's user); every allowed call before it is forwarded, denials throttled per sandbox |
 | `mcp.web_search.configured` | site | `provider`, `enabled`, `keyChanged` | A site admin set the web search provider, its switch, or replaced its key (KOBE-113). The key and its hint are never recorded. Retired by KOBE-606 (built-in web search removed): no longer written; older rows stay |
@@ -484,7 +484,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `skill.default.restored` | team | `skillId`, `name`, `semver` | A Team admin reinstalled a removed default, clearing the team's opt-out (KOBE-314, SK7) |
 | `skill.default.sync_failed` | site | `skillId`, `name`, `kind`, `attempts`, `error` (code) | A Default sync job failed on every retry and was parked as failed; the queue moved on (KOBE-314) |
 | `skill.default.synced` | site | `skillId`, `name`, `kind` (add, remove, move_major), `teams`, `masked`, `installed?`, `kept?`, `optedOut?`, `blocked?`, `nameConflicts?`, `converted?`, `optoutsCleared?`, `moved?` | A Default sync job finished across every team (system actor; counts only, left out when a team count among them is 1 or 2, SK26) |
-| `skill.detached` | site | `skillId`, `name`, `fromSemver` | A Site admin's first edit of a Kobe-shipped catalog skill detached it: the Kobe seed stops publishing it and only records the shipped version (KOBE-495) |
+| `skill.detached` | site | `skillId`, `name`, `fromSemver` | A Site admin's first edit of a Kaiju-shipped catalog skill detached it: the Kaiju seed stops publishing it and only records the shipped version (KOBE-495) |
 | `skill.draft.created` | team | `draftId`, `name`, `startedFrom` (blank, template, thread, fork, upload, git), `parent?`, `fromThreadId?`, `via?` (tool), `runId?`, `toolCallId?`, `origin?` (kind, url, commit?, path?, fetchedSha256) | A member started a Workbench draft in the team, private to them until shared (KOBE-320, SK10) |
 | `skill.draft.deleted` | team | `draftId` | A draft's author deleted it; its saved versions stay (KOBE-320) |
 | `skill.draft.personalized` | team | `draftId`, `skillId`, `slug`, `semver`, `fromConversation`, `coEdited` | A draft was saved as its author's personal skill (every personal save, in the draft's team); the flags say what the author confirmed (KOBE-320, SK11) |
@@ -494,23 +494,23 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `skill.eval_cap.changed` | team | `cap` (`{usd}`, `{tokens}` or null) | A Team admin set or removed the team's monthly eval cap (KOBE-327) |
 | `skill.eval_judge.changed` | team | `alias` (null: the team default) | A Team admin chose the team's eval judge, one of its enabled models; used when the Site's judge isn't enabled in the team (KOBE-326) |
 | `skill.exported` | any | `scope` (team, personal, catalog), `skillId`, `registryVersionId?`, `name`, `semver`, `format` (portable, portable_evals, package), `sha256` | A version was downloaded as an export: a portable zip (with or without `evals/`) or a catalog version's full package; `sha256` names the exact bytes; team versions in the team view (KOBE-345, SK30) |
-| `skill.kobe.published` | site | `skillId`, `name`, `semver`, `runtimeHash`, `created` | Kobe published a version of one of its own catalog skills (the former built-ins) from the package set the server ships, at a server start (system actor, KOBE-317); `created`: new to this Site and tagged Default |
+| `skill.kobe.published` | site | `skillId`, `name`, `semver`, `runtimeHash`, `created` | Kaiju published a version of one of its own catalog skills (the former built-ins) from the package set the server ships, at a server start (system actor, KOBE-317); `created`: new to this Site and tagged Default |
 | `skill.maintainer.added` | site | `skillId`, `userId` | A maintainer or Site admin added a catalog skill maintainer (KOBE-332, SK24) |
 | `skill.maintainer.removed` | site | `skillId`, `userId` | A maintainer or Site admin removed a maintainer; never the last (KOBE-332) |
 | `skill.maintainers.reassigned` | site | `skillId`, `userIds` | A Site admin reassigned the maintainers (KOBE-332, SK24) |
-| `skill.manifest.generated` | team | `draftId`, `skillId?`, `scope?`, `version?`, `semver?`, `model`, `from` (model, seed) | Kobe drafted a kobe.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564) |
+| `skill.manifest.generated` | team | `draftId`, `skillId?`, `scope?`, `version?`, `semver?`, `model`, `from` (model, seed) | Kaiju drafted a kobe.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564) |
 | `skill.member_add.added` | team | `skillId`, `name`, `semver`, `pinMode` | A member added a catalog skill for themselves in the team: it loads only in their runs there (KOBE-338, SK25) |
 | `skill.member_add.changed` | team | `skillId`, `name`, `semver`, `pinMode`, `previous` (`semver`, `pinMode`) | A member changed the version or pin mode of their own add (KOBE-338) |
 | `skill.member_add.removed` | team | `skillId`, `name` | A member removed their own add (KOBE-338); adds a block removes are counted on `skill.catalog.blocked` |
 | `skill.offer.changed` | team | `skillId`, `slug`, `offerToAll` | A team admin turned a team skill's "Offer to all agents" on or off (KOBE-297) |
 | `skill.personal_switch.changed` | team | `disabled` | A team admin turned the team's personal skills off or on (KOBE-80) |
 | `skill.promoted` | team | `skillId`, `scope`, `version`, `semver`, `registryVersionId`, `files`, `fixtures`, `fromConversation`, `requestId?` | A version left the team for the Site Registry (KOBE-333, SK19) |
-| `skill.promotion.confirmed` | team | `requestId`, `registryVersionId` | A Team admin confirmed a Builder's promotion; Kobe submitted it (KOBE-333) |
+| `skill.promotion.confirmed` | team | `requestId`, `registryVersionId` | A Team admin confirmed a Builder's promotion; Kaiju submitted it (KOBE-333) |
 | `skill.promotion.declined` | team | `requestId` | A Team admin declined a Builder's promotion (KOBE-333) |
 | `skill.promotion.requested` | team | `requestId`, `skillId`, `version`, `semver` | A Builder asked to promote a team version; it waits for a Team admin (KOBE-333, SK19) |
 | `skill.registry.settings_updated` | site | `changed` (registryTeamId, judgeAlias, submissionRules, evalLimits, importAllowlist, scanner, mirror), `registryTeamId?`, `judgeAlias?` | A Site admin changed the Registry settings (KOBE-330, SK20, SK21); never URLs or rule values |
 | `skill.rescan.suspended` | any | `skillId`, `slug`, `version`, `scope` (team, personal), `ruleSetVersion`, `reason`? | A rescan on a scanner rule-set change turned a version Block and suspended it pending review (KOBE-313, SK32); `reason: rescan_incomplete` when the rescan kept not finishing past the configured period (KOBE-781) |
-| `skill.reset_to_kobe` | site | `skillId`, `name`, `fromSemver`, `shippedSemver` | A Site admin re-attached a detached Kobe skill; the seed publishes the shipped version, which must be above every Site version (KOBE-495) |
+| `skill.reset_to_kobe` | site | `skillId`, `name`, `fromSemver`, `shippedSemver` | A Site admin re-attached a detached Kaiju skill; the seed publishes the shipped version, which must be above every Site version (KOBE-495) |
 | `skill.reviewed` | team | `skillId`, `slug`, `version`, `decision` (approved, rejected), `previous`, `flagged`, `verdict?` (pass, caution, block; KOBE-312), `acknowledged?` | A team admin decided a team skill version (KOBE-80); approving a Caution or Block scan needs its findings acknowledged |
 | `skill.scan.override` | team | `skillId`, `slug`, `version`, `bundleHash`, `findings` (blocking count) | A Site admin approved a version the scan blocks (KOBE-312, SK32); the reason is the review note |
 | `skill.tag.created` | site | `tagId`, `name` | A Site admin added a topic tag to the catalog vocabulary (KOBE-314, SK5) |
@@ -888,7 +888,7 @@ admin, as for break-glass. The `governance.legal_hold.*` events above record eve
 
 The chain is unkeyed: whoever can rewrite rows (a superuser, or the owner after disabling the
 triggers) can recompute every hash after them. What they can't change is a head already copied
-somewhere else, so Kobe makes copies:
+somewhere else, so Kaiju makes copies:
 
 - **Server log.** Every server replica logs `audit chain head` with `auditHead: { seq, hash, at,
 mac }` at startup and every 5 minutes (all replicas; the lines are the same apart from `at`).
@@ -905,7 +905,7 @@ mac }` at startup and every 5 minutes (all replicas; the lines are the same apar
 
 **Decision: no keyed hash in the database.** Making each row's hash an HMAC would mean the key
 enters the database session on every insert (where the owner role and statement logs can see it),
-or a SECURITY DEFINER path, which Kobe doesn't allow. Attesting heads in the server, with a key the
+or a SECURITY DEFINER path, which Kaiju doesn't allow. Attesting heads in the server, with a key the
 database never sees, gives the same protection for anchored heads at no per-row cost.
 
 ## Operations
@@ -924,7 +924,7 @@ chain verification failed`. `GET /v1/site/audit/integrity` runs a full check on 
   OS user) and the restored head, and the CLI prints the final head: record it. The append-only
   triggers and grants are the release's own (restore never touches schema or grants).
 - **Restore into a new site:** a restore refuses a database that already has audit rows.
-  Before first-run setup, Kobe records only failed sign-ins (for example a scanner trying
+  Before first-run setup, Kaiju records only failed sign-ins (for example a scanner trying
   `/api/auth/sign-in/email`). If the restore reports `audit_log` as non-empty, reinstall the target
   database and scale the server down before anyone can reach it.
 - **Retention:** v1 keeps the audit rows forever; only their IP address and user agent are erased

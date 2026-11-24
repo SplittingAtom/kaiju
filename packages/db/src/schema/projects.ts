@@ -85,7 +85,7 @@ export const projects = pgTable(
     defaultAgentId: uuid(),
     /**
      * `project`, or `repo` (Workspace git G15, KOBE-757): a project whose record is a repository on
-     * a connected git host (`git_repositories.project_id`); Kobe keeps a mirror of its default
+     * a connected git host (`git_repositories.project_id`); Kaiju keeps a mirror of its default
      * branch (G17). Set once by the conversion (G16); never back.
      */
     kind: text().$type<ProjectKind>().notNull().default("project"),

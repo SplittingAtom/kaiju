@@ -16,7 +16,7 @@ import { chargedOutput } from "./usage/charge.js";
 import type { CallContext, CallGate, GateDecision } from "./seams.js";
 
 /**
- * Kobe's own enforcement of budgets and per-user rate limits (KOBE-42, D30), at the identities the
+ * Kaiju's own enforcement of budgets and per-user rate limits (KOBE-42, D30), at the identities the
  * session token proves: site, team and user (never the advisory run id, KOBE-41). A call is
  * refused **before** it reaches Bifrost; a call already forwarded is never cut, so the step in
  * flight finishes. The server's budget monitor then ends the runs (`stopForBudget`).

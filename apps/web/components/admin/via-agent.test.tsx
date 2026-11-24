@@ -6,7 +6,7 @@ import { SiteAuditPage } from "./site/audit-page";
 import { TeamAuditPage } from "./team/audit-page";
 import { forbidNativeConfirm, ME, renderSite, renderTeam, stubApi, TEAM } from "./testing";
 
-/** Audit rows written through a Kobe MCP admin tool say "via agent" (KOBE-623, spec §7). */
+/** Audit rows written through a Kaiju MCP admin tool say "via agent" (KOBE-623, spec §7). */
 
 beforeEach(forbidNativeConfirm);
 afterEach(() => {

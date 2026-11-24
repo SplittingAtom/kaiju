@@ -2,7 +2,7 @@
 
 Member guide: [Agents](guide/agents/agents.md). This page is the reference for rosters, rights and the API.
 
-Kobe separates who **owns** an agent from who may **run** it. An agent is created and edited in
+Kaiju separates who **owns** an agent from who may **run** it. An agent is created and edited in
 one place; a **roster** lends it to a team or to the whole site by reference, without copying it.
 This page describes the shipped behaviour (KOBE-565..572, spec `docs/specs/agents-roster.md`).
 Published versions, archive and erasure are in [agent-versions.md](agent-versions.md); the audit

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates a local k3d cluster that meets Kobe's prerequisites: gVisor (RuntimeClass "gvisor",
+# Creates a local k3d cluster that meets Kaiju's prerequisites: gVisor (RuntimeClass "gvisor",
 # handler runsc) and the agent-sandbox controller. Used by the dev loop and CI e2e.
 # Works with a local or remote Docker engine (DOCKER_HOST=ssh://...): binaries are copied into the
 # node containers rather than bind-mounted.

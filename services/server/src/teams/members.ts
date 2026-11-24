@@ -30,7 +30,7 @@ export interface TeamMember {
   readonly role: TeamRole;
   readonly joinedAt: string;
   /**
-   * Kobe added them for the Skill reviewer grant (KOBE-331); taking the grant removes them.
+   * Kaiju added them for the Skill reviewer grant (KOBE-331); taking the grant removes them.
    * `idp`: an identity provider's access mappings manage the row (KOBE-627, SSO10): see `managedBy`.
    * `site_admin`: a Site admin added them from the Site console (KOBE-638). Null: they joined by
    * invitation, or were the team's first admin.
@@ -81,7 +81,7 @@ export type MemberChangeOrigin = typeof SITE_ADMIN_VIA;
 const originAudit = (origin: MemberChangeOrigin | undefined) =>
   origin === undefined ? {} : { via: origin };
 
-/** Why Kobe itself changes a row: the Skill reviewer grant, or a provider's mappings. */
+/** Why Kaiju itself changes a row: the Skill reviewer grant, or a provider's mappings. */
 export type MemberChangeVia = "skill_reviewer_grant" | { readonly idp: string };
 
 const auditVia = (via: MemberChangeVia | undefined) =>
@@ -311,7 +311,7 @@ export async function removeMember(
 
 /**
  * {@link removeMember} inside the caller's team transaction (KOBE-331 review: taking the Skill
- * reviewer grant removes the membership it made, with the same side effects). `via` names Kobe's
+ * reviewer grant removes the membership it made, with the same side effects). `via` names Kaiju's
  * reason in the audit event; a provider's mappings (`via.idp`) remove only their own rows, and
  * nothing else removes a provider-managed row (SSO10).
  */

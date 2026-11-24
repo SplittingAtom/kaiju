@@ -102,7 +102,7 @@ export class MockOidcProvider {
   }
 
   /**
-   * The person signs in at the IdP: checks the authorization request Kobe sent and returns the
+   * The person signs in at the IdP: checks the authorization request Kaiju sent and returns the
    * callback URL (redirect URI + `code` + `state`) the browser would be sent to.
    */
   authorize(authorizationUrl: string, user: Readonly<Record<string, unknown>>): URL {

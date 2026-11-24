@@ -5,7 +5,7 @@ import { agentMemorySettingSchema, type AgentMemorySetting } from "@kobe/protoco
  * What memory a run gets from its agent version's memory setting (KOBE-646, v1.3 SM23, Chris
  * Q3). Always the **runner's** memory (the run's user), never the agent owner's: agents are not a
  * memory scope. The one place run assembly asks; KOBE-382/383/399 read `semantic` for the "What
- * Kobe knows" block and item recall.
+ * Kaiju knows" block and item recall.
  *
  * - `all` → Notes (`run.start.memory`, `remember`/`recall`) and semantic memory.
  * - `notes_only` → Notes and Site Policy only.

@@ -37,7 +37,7 @@ This holds wherever the file lives: My files, a project, or a file you attached 
 
 ## The PDF viewer
 
-PDFs open in a viewer inside Kobe; nothing is sent anywhere else and the file's own scripts never
+PDFs open in a viewer inside Kaiju; nothing is sent anywhere else and the file's own scripts never
 run. The toolbar above the pages has:
 
 - **Previous page** and **Next page**, a **Page number** box (type a number and press Enter) and
@@ -84,7 +84,7 @@ The editor fills the artifact column, and one toolbar at the top holds its contr
 - **Save** saves your changes. Each save names the version it started from, so it never overwrites
   someone else's change by accident.
 - **Save As** saves the editor's text, unsaved changes included, to a new path you type (by default
-  `<name>-copy` beside the file). If a file is already there, Kobe asks "already exists. Replace
+  `<name>-copy` beside the file). If a file is already there, Kaiju asks "already exists. Replace
   it?" first. The tab then moves to the copy. Read-only files (a project file you cannot commit, a
   thread upload) offer Save As but not Save; the copy goes into My files.
 - The **Rendered/Raw** switch shows Markdown and similar files rendered, or as raw text to edit.
@@ -97,7 +97,7 @@ The editor fills the artifact column, and one toolbar at the top holds its contr
 
 Under the text, a small bar shows the cursor's line and column ("Ln 3, Col 5") and a **Wrap**
 button for long lines. Wrap is on by default; turning it off makes long lines scroll sideways, and
-Kobe remembers your choice on every device. In the raw text, **Mod+S** saves, and **Find**
+Kaiju remembers your choice on every device. In the raw text, **Mod+S** saves, and **Find**
 (Mod+F), **Find next**, **Replace** and **Go to line** work with the keyboard; see [Keyboard
 shortcuts](../reference/keyboard-shortcuts.md).
 
@@ -162,7 +162,7 @@ propose again. Proposals stay available for 7 days after their run.
   writing; it is not allowed to write the viewed file directly with its file tools. This guard does
   not cover shell commands or Python.
 - **Let the agent write directly** for new files, generated output and bulk changes.
-- Unsaved drafts live in this browser tab: a full page reload loses them (Kobe warns first).
+- Unsaved drafts live in this browser tab: a full page reload loses them (Kaiju warns first).
 
 ## Read-only places
 

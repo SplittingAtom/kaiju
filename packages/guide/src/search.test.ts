@@ -10,7 +10,7 @@ const fm = (title: string, summary: string, section = "Memory") =>
 const PAGES = buildGuide([
   {
     path: "memory.md",
-    content: `${fm("Memory", "What Kobe remembers about you.")}\n## Turn memory off\n\nText.\n\n\`\`\`md\n## Not a heading\n\`\`\`\n\n### Forget one item\n`,
+    content: `${fm("Memory", "What Kaiju remembers about you.")}\n## Turn memory off\n\nText.\n\n\`\`\`md\n## Not a heading\n\`\`\`\n\n### Forget one item\n`,
   },
   {
     path: "admin/team-members.md",

@@ -24,9 +24,9 @@ import { TOOL_INPUT_MAX_BYTES, TOOL_PREVIEW_MAX_CHARS } from "./constants.js";
 export type RunFailureCode = ModelRunErrorCode | "model_output_limit";
 
 /**
- * What one bridged Pi event means for Kobe (contract: `parseTranslatedPiEvent`, pi-events.ts).
+ * What one bridged Pi event means for Kaiju (contract: `parseTranslatedPiEvent`, pi-events.ts).
  *
- * | Pi event                                     | Kobe effect                                         |
+ * | Pi event                                     | Kaiju effect                                         |
  * | -------------------------------------------- | --------------------------------------------------- |
  * | `message_start` (assistant)                  | opens stream-local `message_id` = `m<wire seq>`     |
  * | `message_update` `text_delta`/`thinking_delta` | `text.delta` / `reasoning.delta` (batched)        |

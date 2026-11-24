@@ -27,7 +27,7 @@ export type ToolSource = z.infer<typeof toolSourceSchema>;
 /**
  * Where a tool's effects land. `sandbox`: the user's own sandbox (/workspace, /tmp), bounded by
  * gVisor and the egress proxy — D29: "shell and file tools are bounded by the sandbox and egress
- * policy". `kobe`: Kobe-owned, team-scoped storage (artifacts, shared files, memory). `external`:
+ * policy". `kobe`: Kaiju-owned, team-scoped storage (artifacts, shared files, memory). `external`:
  * a third-party system via the MCP proxy. SPECULATIVE reading for KOBE-35: in `ask-on-write`,
  * `sandbox`/`kobe` tools are not prompted for by risk class alone (deny/ask rules and `ask-all`
  * still apply); `external` tools follow the risk class.
@@ -210,7 +210,7 @@ export function builtinToolDescriptor(name: string): ToolDescriptor | undefined 
 /**
  * Connector names (site registry, D27) and Pi's MCP tool names. Pi 1.0.0 (verified, docs/mcp.md)
  * names a tool `mcp__<server>__<tool>`, replacing every character other than letters, digits and
- * `_` with `_`, and treats server names differing only in `-`/`_` as the same server. Kobe connector
+ * `_` with `_`, and treats server names differing only in `-`/`_` as the same server. Kaiju connector
  * names are lowercase `[a-z0-9]` runs joined by single `-` or `_` — no `__`, no leading/trailing
  * separator — so the server segment never contains `__` or ends in `_`, and the first `__` after
  * `mcp__` always separates server from tool (tool names may contain `__`). KOBE-59 enforces this

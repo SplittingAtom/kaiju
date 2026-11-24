@@ -1,6 +1,6 @@
 # Skill evals contract
 
-The eval suite a skill package carries and the scorecard an eval run produces (KOBE-324; spec Kobe
+The eval suite a skill package carries and the scorecard an eval run produces (KOBE-324; spec Kaiju
 v1.2 Skills System, SK15–SK18). The code is the contract: `packages/protocol/src/skill-evals/`
 (`cases.ts` format and limits, `parse.ts` located issues, `plan.ts` executions and expected checks,
 `outputs.ts` what a glob matches, `judge.ts` judge isolation, `scorecard.ts` the team scorecard,
@@ -31,7 +31,7 @@ Text rules as `kobe.skill.yaml`: UTF-8, at most 64 KiB, one YAML 1.2 (core schem
 root is a mapping; duplicate keys, aliases and explicit tags (`!foo`, `!!timestamp`) are refused,
 and nesting is at most 16 levels (checked on the lexer's tokens before the tree is built, flow brackets
 and block levels, compact `- - -` included, so no engine overflows its stack; an overflow is still
-refused as `too_deep`). **Unknown keys are refused at every level**, so a check Kobe does not
+refused as `too_deep`). **Unknown keys are refused at every level**, so a check Kaiju does not
 know is never skipped (skipping would pass a case silently). Nothing in the file grants anything:
 no key pre-approves a tool, widens egress or adds a connector, and eval runs use auto mode.
 
@@ -57,7 +57,7 @@ cases: # 1 to 25
 | `prompt`                 | 1–8000 characters, trimmed; no control characters but tab and line breaks                                                            |
 | `files`                  | `fixtures/<path>`, a valid package path below `evals/fixtures/` that exists in the package; copied to `/workspace/<path>`            |
 | `expect.triggers`        | `true` / `false`: whether the skill was read, from the run's recorded skill uses (`runs.skills_used`, KOBE-297); with the skill only |
-| `expect.outputs`         | 1–10 globs (Kobe glob grammar, `*` crosses `/`) relative to `/workspace`; each matches a file the run produced (below)               |
+| `expect.outputs`         | 1–10 globs (Kaiju glob grammar, `*` crosses `/`) relative to `/workspace`; each matches a file the run produced (below)              |
 | `expect.contains`        | a text or 1–10 texts (≤ 500 characters each, never trimmed), all in the final answer, case-sensitive                                 |
 | `expect.matches`         | a pattern or 1–10 of them; a pattern is a string or `{pattern, flags}` (flags from `i m s`; `u` always on), ≤ 256 characters         |
 | `expect.judge`           | a rubric of 1–2000 characters for the judge model (SK17), trimmed                                                                    |
@@ -86,7 +86,7 @@ files only, and never descends into a `skills` or hidden segment at any depth (s
 where Pi keeps session files; so `outputs/skills/x.md` never counts either). It hashes **only
 fixture paths**: any other path is produced because it is new, so a large output is never hashed;
 a fixture counts only when its bytes changed. Globs are matched as strings against produced paths
-only, so no wildcard (`*`, `?kobe/*`) reaches Kobe's state or leaves `/workspace`. The check fails
+only, so no wildcard (`*`, `?kobe/*`) reaches Kaiju's state or leaves `/workspace`. The check fails
 with a reason when a glob matches nothing (`not_produced`), its walk was truncated, or it matches
 more than 100 files or 50 MiB (`over_cap`). Reading a matched file for the judge opens it with
 `O_NOFOLLOW`, refuses it unless `fstat` shows a regular file of the walked size, and reads at most
@@ -103,8 +103,8 @@ at the value, not as `[0]`. `{maxCases}` takes the Site's lower limit, so lint a
 runner.
 
 **Versioning.** `apiVersion` is optional because skills written for other tools have none. A new
-expectation is a contract change; a format older Kobe must refuse gets a new `apiVersion` (older
-Kobe then refuses the file instead of skipping a check). The scorecard has its own `format: 1`: an
+expectation is a contract change; a format older Kaiju must refuse gets a new `apiVersion` (older
+Kaiju then refuses the file instead of skipping a check). The scorecard has its own `format: 1`: an
 added optional field keeps it, a removed or changed one bumps it, and readers of stored cards parse
 a union by `format`. API responses are strict, so the web client ships with, never before, the
 server that adds a field.

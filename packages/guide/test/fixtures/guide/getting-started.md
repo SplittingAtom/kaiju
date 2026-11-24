@@ -9,7 +9,7 @@ order: 1
 
 # Getting started
 
-Read [the glossary](glossary.md#thread) and [using Kobe](agents/use.md).
+Read [the glossary](glossary.md#thread) and [using Kaiju](agents/use.md).
 
 Settings live at [/settings](/settings); outside links stay as they are: [site](https://example.com).
 

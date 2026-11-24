@@ -6,7 +6,7 @@ import path from "node:path";
  * The two files in Pi's config dir that decide which model catalog and defaults Pi loads
  * (KOBE-169, closing KOBE-165): `models.json` (a `providers.kobe.models[]` entry with its own
  * `baseUrl` redirects the next `set_model`, and with it the session and run tokens) and
- * `settings.json`. Pi 1.0.0 never writes either under Kobe's launch flags (it writes only
+ * `settings.json`. Pi 1.0.0 never writes either under Kaiju's launch flags (it writes only
  * `auth.json`, `models-store.json` and their locks, see PI_OWN_FILES), so the agent writes both
  * itself, near-empty, read-only, before Pi starts:
  *

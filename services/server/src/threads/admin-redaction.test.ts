@@ -23,7 +23,7 @@ const result = (toolName: string, text = "secret rows") => ({
   },
 });
 
-describe("shared-thread redaction of Kobe admin results (KOBE-623, KA6)", () => {
+describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () => {
   it("hides an admin tool's output from a reader without its permission", () => {
     expect(member.hides("mcp__kobe__team_members_list")).toBe(true);
     expect(member.hides("mcp__kobe__team_members_set_role")).toBe(true);
@@ -39,7 +39,7 @@ describe("shared-thread redaction of Kobe admin results (KOBE-623, KA6)", () => 
     expect(member.hides("bash")).toBe(false);
   });
 
-  it("hides a Kobe tool the catalog does not know (fail closed)", () => {
+  it("hides a Kaiju tool the catalog does not know (fail closed)", () => {
     expect(teamAdmin.hides("mcp__kobe__team_future_tool")).toBe(true);
   });
 

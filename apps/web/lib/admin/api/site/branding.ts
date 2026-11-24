@@ -86,7 +86,7 @@ export function removeBrandingAsset(kind: BrandingAssetKind): Promise<ApiResult<
   return apiRequest(`${BASE}/assets/${kind}`, { method: "DELETE" });
 }
 
-/** The name, the files and the style back to Kobe's, in one step (TH12). */
+/** The name, the files and the style back to Kaiju's, in one step (TH12). */
 export function resetBranding(): Promise<ApiResult<SiteBranding>> {
   return apiRequest(`${BASE}/reset`, { method: "POST" });
 }

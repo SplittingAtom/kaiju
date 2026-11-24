@@ -31,7 +31,7 @@ import { RequestError, parseRequest } from "./requests.js";
 
 /**
  * The executor's request loop (KOBE-167): reads JSONL requests from `input`, performs them as the
- * uid it runs under (the Pi identity's partner uid in a Kobe pod), writes JSONL replies to
+ * uid it runs under (the Pi identity's partner uid in a Kaiju pod), writes JSONL replies to
  * `output`. Knows nothing about Pi. The commands it starts get `commandEnv` (an allow-list the
  * agent built: no Pi variable, no secret but the egress wiring the tools are meant to have) plus
  * the few session variables a request may name.

@@ -48,7 +48,7 @@ export const invitations = pgTable(
  * Team table (KOBE-13). A team admin's invitation of an email address into the team with a role.
  * The person joins only by accepting it while signed in as that (verified) address, so team admins
  * can't add anyone without consent; the invite is answered the same way whether or not the address
- * belongs to a Kobe user. Rows are deleted when accepted, declined or revoked.
+ * belongs to a Kaiju user. Rows are deleted when accepted, declined or revoked.
  */
 export const teamInvitations = pgTable(
   "team_invitations",

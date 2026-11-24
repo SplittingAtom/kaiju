@@ -203,7 +203,7 @@ async function refreshHolding(
     tokens = await refreshAccessToken(support.io, bundle, now);
   } catch (error) {
     if (error instanceof OauthError && error.code === "refresh_rejected") {
-      // Nobody else spent this refresh token through Kobe: we hold the lease.
+      // Nobody else spent this refresh token through Kaiju: we hold the lease.
       return dropIfUnchanged(db, envelope, subject, now, stale, "rejected", owner);
     }
     // Release the lease only after a definite answer (an error status, or a URL refused before

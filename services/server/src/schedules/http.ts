@@ -32,7 +32,7 @@ export const PAUSED_BY_ADMIN: Answer = {
   },
 };
 
-/** KOBE-621: the schedule is not in the state a Kobe MCP pause or resume was approved against. */
+/** KOBE-621: the schedule is not in the state a Kaiju MCP pause or resume was approved against. */
 export const CHANGED_SINCE_APPROVAL: Answer = {
   status: 409,
   json: {

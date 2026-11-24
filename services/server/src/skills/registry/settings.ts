@@ -29,7 +29,7 @@ import { joinRegistryTeamInTx, reviewerIds } from "./grants.js";
  * Registry settings (KOBE-330, SK20, SK21): the one `site_skill_settings` row, read with every
  * document's defaults filled in, and written by Site admins with validation and one audit event
  * naming the settings whose values changed. The Registry team is not a setting: it is always a
- * dedicated team Kobe creates (`teams.registry`, coordinator decision, review H1), so the Skill
+ * dedicated team Kaiju creates (`teams.registry`, coordinator decision, review H1), so the Skill
  * reviewer grant can never add anyone to an ordinary team; the database refuses naming any other.
  */
 

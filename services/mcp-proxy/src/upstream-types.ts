@@ -30,7 +30,7 @@ export type UpstreamResult =
     };
 
 /**
- * Which Kobe path an upstream session serves, for its span (KOBE-527/528): a sandbox's MCP call,
+ * Which Kaiju path an upstream session serves, for its span (KOBE-527/528): a sandbox's MCP call,
  * the server's pinning probe, or an MCP App's own call. Default: `mcp` for a call, `probe` for a
  * list.
  */

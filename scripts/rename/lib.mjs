@@ -31,6 +31,17 @@ export const PERMANENT = "permanent";
 export const PROVISIONAL = "provisional";
 export const isKept = (step) => step === PERMANENT || step === PROVISIONAL;
 
+/**
+ * Which steps are done (no allowlist group left; README step 4 deletes them) and which of those
+ * are done out of order: a done step after one that is not (steps run strictly in order).
+ */
+export function stepProgress(groups) {
+  const done = STEPS.filter((step) => !groups.some((g) => g.step === step));
+  const firstOpen = STEPS.findIndex((step) => !done.includes(step));
+  const outOfOrder = firstOpen < 0 ? [] : done.filter((step) => STEPS.indexOf(step) > firstOpen);
+  return { done, outOfOrder };
+}
+
 /** Kobe -> Kaiju, kobe -> kaiju, KOBE -> KAIJU (spec RN6: "Kaiju" in text, `kaiju` in code). */
 export function swapCase(word) {
   if (word === word.toUpperCase()) return "KAIJU";

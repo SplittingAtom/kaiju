@@ -412,9 +412,9 @@ export async function relinkRepo(
 
 /**
  * `POST /v1/projects/{id}/repo/detach` (G20): a Workspace admin turns the Repo back into an
- * ordinary project. One Kobe commit of the mirrored files starts its own history again (Kobe's
+ * ordinary project. One Kaiju commit of the mirrored files starts its own history again (Kaiju's
  * history cap and retention apply from then on); the repository stays on the host and its record
- * stays in the Git section, unlinked. Kobe changes nothing on the host.
+ * stays in the Git section, unlinked. Kaiju changes nothing on the host.
  */
 export async function detachRepo(
   deps: MirrorDeps,

@@ -40,7 +40,7 @@ const SITES: Readonly<Record<string, { readonly how: Disposition; readonly why: 
   },
   "core/exec.js": {
     how: "unreachable",
-    why: "pi.exec() for extensions: only Kobe's root-owned extensions load (--no-extensions) and none calls it",
+    why: "pi.exec() for extensions: only Kaiju's root-owned extensions load (--no-extensions) and none calls it",
   },
   "core/footer-data-provider.js": {
     how: "unreachable",
@@ -113,12 +113,12 @@ describe.skipIf(!PI_AVAILABLE)("Pi 1.0.0's process-spawning modules (KOBE-167 in
     expect(scan(DIST)).toEqual(Object.keys(SITES).sort());
   });
 
-  it("leave only the guarded-config `!command` site that can run in a Kobe launch, in Pi's uid", () => {
+  it("leave only the guarded-config `!command` site that can run in a Kaiju launch, in Pi's uid", () => {
     const reachable = Object.entries(SITES).filter(([, site]) => site.how === "pi-config");
     expect(reachable.map(([file]) => file)).toEqual(["core/resolve-config-value.js"]);
   });
 
-  it("the MCP extension starts stdio servers only from mcp.json, which Kobe does not write", () => {
+  it("the MCP extension starts stdio servers only from mcp.json, which Kaiju does not write", () => {
     const runtime = readFileSync(path.join(DIST, "extensions/mcp/runtime.js"), "utf8");
     expect(runtime).toContain("StdioTransport");
     // The servers come from the config object, not from tool input.

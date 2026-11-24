@@ -5,7 +5,7 @@ import { DateTime } from "../parts";
 /**
  * Site console › Users (KOBE-812): accounts whose sign-in is slowed down after repeated failed
  * attempts (10 in 15 minutes, then one a minute), and requests that arrived without a client
- * address Kobe can trust (per-address limits are then shared by everyone).
+ * address Kaiju can trust (per-address limits are then shared by everyone).
  */
 export function SignInProtectionNotices({
   protection,
@@ -22,9 +22,9 @@ export function SignInProtectionNotices({
       {protection.unknownClientIp && (
         <Notice tone="warn">
           Since <DateTime value={protection.unknownClientIp.since} />, some sign-in or SCIM requests
-          arrived without a client address Kobe can trust, so limits per address are shared by
+          arrived without a client address Kaiju can trust, so limits per address are shared by
           everyone who signs in. Check the trusted proxies setting (<code>auth.trustedProxies</code>{" "}
-          in the Helm values) against the proxies in front of Kobe.
+          in the Helm values) against the proxies in front of Kaiju.
         </Notice>
       )}
       {names.length > 0 && (

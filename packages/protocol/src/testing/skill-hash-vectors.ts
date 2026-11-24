@@ -9,7 +9,7 @@ const utf8 = (text: string): Uint8Array => new TextEncoder().encode(text);
 export interface SkillHashVector {
   readonly name: string;
   readonly files: ReadonlyMap<string, Uint8Array>;
-  /** Hash options: a package Kobe assembled may carry its own `provenance.json`. */
+  /** Hash options: a package Kaiju assembled may carry its own `provenance.json`. */
   readonly options?: { readonly kobeProvenance: true };
   readonly runtimeHash: string;
   readonly packageHash: string;

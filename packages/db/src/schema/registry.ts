@@ -34,7 +34,7 @@ const SUMMARY_MAX = 280;
 /** The code-defined system tags (SK5); mirrors `SYSTEM_TAGS` (@kobe/protocol, a test ties them). */
 export const SYSTEM_TAG_NAMES = ["default"] as const;
 /**
- * The catalog names Kobe publishes (KOBE-317, SK4, SK24): reserved for publisher `kobe`. Mirrors
+ * The catalog names Kaiju publishes (KOBE-317, SK4, SK24): reserved for publisher `kobe`. Mirrors
  * `KOBE_SKILL_NAMES` (@kobe/protocol, a server test ties them).
  */
 export const KOBE_SKILL_NAMES = [
@@ -48,9 +48,9 @@ export const KOBE_SKILL_NAMES = [
   "kobe-guide",
 ] as const;
 /**
- * Kobe names added after Sites could already hold them (KOBE-620): a non-Kobe catalog skill that
+ * Kaiju names added after Sites could already hold them (KOBE-620): a non-Kaiju catalog skill that
  * took one before the upgrade keeps it (the check below lets it, so the migration never fails),
- * the server refuses new ones (`isKobeSkillName`), and the Kobe seed skips that skill there
+ * the server refuses new ones (`isKobeSkillName`), and the Kaiju seed skips that skill there
  * (logged) instead of publishing it. Every name here is also in `KOBE_SKILL_NAMES`.
  */
 export const KOBE_SKILL_NAMES_ADDED_LATER = ["kobe-guide"] as const;
@@ -120,9 +120,9 @@ export const registrySkills = pgTable(
     replacementId: uuid(),
     /**
      * Detached by a Site admin (KOBE-495, as KOBE-494's gallery agents): the first site edit of a
-     * Kobe-shipped skill stops the Kobe seed publishing it. `detachedFromVersion` is the newest
-     * Kobe version when it was detached; the seed records the newest shipped one it skipped in
-     * `kobeShippedVersion`, so the console can say a newer Kobe version is available. Reset to Kobe
+     * Kaiju-shipped skill stops the Kaiju seed publishing it. `detachedFromVersion` is the newest
+     * Kaiju version when it was detached; the seed records the newest shipped one it skipped in
+     * `kobeShippedVersion`, so the console can say a newer Kaiju version is available. Reset to Kaiju
      * clears all four. Users are deactivated, never deleted (NO ACTION).
      */
     detachedAt: ts(),
@@ -147,14 +147,14 @@ export const registrySkills = pgTable(
       sql`char_length(${t.summary}) BETWEEN 1 AND ${sql.raw(String(SUMMARY_MAX))}`,
     ),
     check("registry_skills_replacement_not_self", sql`${t.replacementId} <> ${t.id}`),
-    // Built-in names stay Kobe's and Kobe publishes only them (SK4, SK24, review-317 S2): no
+    // Built-in names stay Kaiju's and Kaiju publishes only them (SK4, SK24, review-317 S2): no
     // maintainer skill takes one, and `kobe` (approved without a reviewer) can't carry any other
     // name or be renamed away from one.
     check(
       "registry_skills_kobe_names",
       sql`(${t.publisher} = 'kobe') = (${t.name} IN (${quoted(KOBE_SKILL_NAMES)})) OR (${t.publisher} <> 'kobe' AND ${t.name} IN (${quoted(KOBE_SKILL_NAMES_ADDED_LATER)}))`,
     ),
-    // All or nothing, and only on a Kobe skill (KOBE-495).
+    // All or nothing, and only on a Kaiju skill (KOBE-495).
     check(
       "registry_skills_detached",
       sql`(${t.detachedAt} IS NULL AND ${t.detachedBy} IS NULL AND ${t.detachedFromVersion} IS NULL AND ${t.kobeShippedVersion} IS NULL)
@@ -212,7 +212,7 @@ export const registryVersions = pgTable(
       .notNull()
       .references(() => registrySkills.id),
     /**
-     * `kobe`: published by Kobe itself (KOBE-317, SK4), from the package set the server ships:
+     * `kobe`: published by Kaiju itself (KOBE-317, SK4), from the package set the server ships:
      * no submitter and no reviewer (no person submits or approves it, and no stand-in user is
      * recorded). `site`: made and published by a Site admin in the Site Console (KOBE-495), on any
      * catalog skill, without review: the admin is the submitter, nobody reviews it.
@@ -227,7 +227,7 @@ export const registryVersions = pgTable(
     /**
      * Where the version's bytes are (KOBE-317): the runtime zip (what sandboxes fetch, with its
      * size) and the package zip when it differs. Null for a version whose package is not stored
-     * yet (maintainer submissions until KOBE-333); a Kobe version always has its runtime zip.
+     * yet (maintainer submissions until KOBE-333); a Kaiju version always has its runtime zip.
      */
     runtimeStorageKey: text(),
     runtimeSizeBytes: integer(),
@@ -241,7 +241,7 @@ export const registryVersions = pgTable(
     scorecard: jsonb().$type<Record<string, unknown>>(),
     /** The Registry team's re-run with the Site judge (SK23): the catalog's scorecard. */
     authoritativeScorecard: jsonb().$type<Record<string, unknown>>(),
-    /** Null exactly for a Kobe-published version (registry_versions_kobe_publisher). */
+    /** Null exactly for a Kaiju-published version (registry_versions_kobe_publisher). */
     submittedBy: uuid().references(() => users.id),
     submittedAt: ts().notNull().defaultNow(),
     /** The reviewer holding the item (SK23); null when unclaimed. */
@@ -271,7 +271,7 @@ export const registryVersions = pgTable(
     index("registry_versions_state_idx").on(t.state, t.submittedAt),
     index("registry_versions_runtime_idx").on(t.runtimeHash),
     index("registry_versions_package_idx").on(t.packageHash),
-    // Kobe publishes without a person (KOBE-317): no submitter, reviewer or claim, never flagged.
+    // Kaiju publishes without a person (KOBE-317): no submitter, reviewer or claim, never flagged.
     check(
       "registry_versions_kobe_publisher",
       sql`(${t.publisher} = 'kobe') = (${t.submittedBy} IS NULL)
@@ -320,7 +320,7 @@ export const registryVersions = pgTable(
       "registry_versions_self_approval",
       sql`NOT ${t.selfApproved} OR ${t.approvedAt} IS NOT NULL`,
     ),
-    // A version that was ever published carries its approval (a reviewer's, or Kobe's or a Site
+    // A version that was ever published carries its approval (a reviewer's, or Kaiju's or a Site
     // admin's own publication); one that wasn't, none.
     check(
       "registry_versions_approval",
@@ -395,7 +395,7 @@ export const registrySkillTags = pgTable(
     tagId: uuid()
       .notNull()
       .references(() => registryTags.id),
-    /** Null exactly when Kobe added it (`by_kobe`, KOBE-317: the seed's Default tag). */
+    /** Null exactly when Kaiju added it (`by_kobe`, KOBE-317: the seed's Default tag). */
     addedBy: uuid().references(() => users.id),
     byKobe: boolean().notNull().default(false),
     addedAt: ts().notNull().defaultNow(),

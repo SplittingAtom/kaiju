@@ -14,7 +14,7 @@ import { SSE_HEADERS, nodeResponseDestroyer } from "../http/sse.js";
 const uuid = z.uuid();
 
 /**
- * Kobe Event Stream (spec §6.1 `GET /v1/runs/{id}/events`, §6.2, D16). Scoped to the active team
+ * Kaiju Event Stream (spec §6.1 `GET /v1/runs/{id}/events`, §6.2, D16). Scoped to the active team
  * (D9); a run is visible to whoever may read its thread. Unknown runs, other teams' runs and
  * teammates' private runs all answer the same 404, so the endpoint is no existence oracle.
  */
@@ -106,7 +106,7 @@ export function runEventsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariabl
       );
     }
 
-    // KOBE-623 (KA6): a reader of a shared thread gets no Kobe admin output they lack the
+    // KOBE-623 (KA6): a reader of a shared thread gets no Kaiju admin output they lack the
     // permission for (read at open and again at every revalidation, so a role change applies).
     const loadGate = () =>
       run.ownerUserId === user.id

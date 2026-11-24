@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { attachHostBridge, type HostBridgeHandlers } from "./host-bridge";
 
 /**
- * KOBE-437 review LOW-5: the real ext-apps `App` (2.0.3, a devDependency only) against Kobe's
+ * KOBE-437 review LOW-5: the real ext-apps `App` (2.0.3, a devDependency only) against Kaiju's
  * host bridge, in one window: the app's messages arrive with the frame's stand-in as `source`
  * and an opaque origin, and the bridge's replies come back with the host's stand-in as `source`.
  */
@@ -40,9 +40,9 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-describe("ext-apps App against Kobe's bridge (review LOW-5)", () => {
+describe("ext-apps App against Kaiju's bridge (review LOW-5)", () => {
   it("initializes, calls tools, sends a message and context, and is refused open-link", async () => {
-    // The App and its transport log every message (one reason Kobe has its own bridge).
+    // The App and its transport log every message (one reason Kaiju has its own bridge).
     vi.spyOn(console, "debug").mockImplementation(() => undefined);
     const { host, frame } = wire();
     const h = handlers();
@@ -63,7 +63,7 @@ describe("ext-apps App against Kobe's bridge (review LOW-5)", () => {
     await app.connect(new PostMessageTransport(host, host));
     cleanup.push(() => app.close());
 
-    // Kobe's ui/initialize answer passes the App's own schema.
+    // Kaiju's ui/initialize answer passes the App's own schema.
     expect(app.getHostVersion()).toEqual({ name: "kobe", version: "1" });
     expect(app.getHostContext()).toMatchObject({ theme: "dark", displayMode: "inline" });
     expect(app.getHostCapabilities()?.openLinks).toBeUndefined();
@@ -82,7 +82,7 @@ describe("ext-apps App against Kobe's bridge (review LOW-5)", () => {
     });
     await expect(app.openLink({ url: "https://example.com" })).rejects.toThrow();
     await expect(app.readServerResource({ uri: "ui://x" })).rejects.toThrow();
-    // A teardown request from Kobe is answered by the App.
+    // A teardown request from Kaiju is answered by the App.
     await expect(bridge.teardown(2_000)).resolves.toBe(true);
     expect(tornDown).toBe(true);
   });

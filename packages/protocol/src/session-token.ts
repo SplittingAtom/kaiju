@@ -3,7 +3,7 @@ import { uuidSchema } from "./common.js";
 
 /**
  * Sandbox session tokens (D13, D27, D28, D30). The server mints them per sandbox; they are the only
- * credentials inside a sandbox and grant nothing outside Kobe's own services.
+ * credentials inside a sandbox and grant nothing outside Kaiju's own services.
  *
  * Audience binding is mandatory: the server issues **one token per audience**, and every service
  * rejects a token whose `aud` is not exactly its own (so a token lifted from the model gateway's

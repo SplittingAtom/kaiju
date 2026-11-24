@@ -62,7 +62,7 @@ describe("site health notices (KOBE-811)", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("says when Kobe cannot tell, and how to declare an edge limit", async () => {
+  it("says when Kaiju cannot tell, and how to declare an edge limit", async () => {
     stubApi({ [HEALTH]: health({ level: "info", state: "unknown", docs: DOCS }) });
     renderSite(<ConsoleOverview kind="site" />);
     const notice = await screen.findByRole("status", { name: /Ingress rate limit unknown/ });

@@ -4,7 +4,7 @@ import { svgDocument } from "./serve.js";
 /**
  * The documents of the artifact and workspace frames (KOBE-690, applying the KOBE-437 decision of
  * the MCP App frames): agent-written HTML starts with the WebRTC guard, for browsers that ignore
- * the CSP's `webrtc 'block'`, and loads only as an iframe of Kobe's own page.
+ * the CSP's `webrtc 'block'`, and loads only as an iframe of Kaiju's own page.
  */
 
 /** An html artifact, or an svg wrapped in a document, with the WebRTC guard first. */
@@ -18,7 +18,7 @@ export function workspaceFrameDocument(bytes: Buffer): string {
 }
 
 /**
- * Whether a request may load an artifact or workspace frame: from Kobe's own page and, when the
+ * Whether a request may load an artifact or workspace frame: from Kaiju's own page and, when the
  * browser says what it loads, only as an iframe. A top-level copy would leave the page's
  * `frame-src` and could navigate itself anywhere; downloads use the attachment routes instead.
  */

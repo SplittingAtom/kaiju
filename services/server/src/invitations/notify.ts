@@ -31,7 +31,7 @@ export async function mailSiteInvite(
 
 /**
  * Tells an existing, active user about a team invitation. Runs off the request path, so the team
- * admin's response (and its timing) doesn't reveal whether the address belongs to a Kobe user.
+ * admin's response (and its timing) doesn't reveal whether the address belongs to a Kaiju user.
  */
 export function notifyTeamInvite(
   deps: ServerDeps,

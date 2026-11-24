@@ -17,7 +17,7 @@ const DRAFT = "7a1e2b3c-4d5e-4f60-8a71-92b3c4d5e6f7";
 const file = (path: string) => ({ path, rev: 3, sha256: SHA, size: 10 });
 
 describe("save_skill_draft contract (KOBE-442)", () => {
-  it("is a Kobe write tool on Kobe-owned storage, deniable like every tool", () => {
+  it("is a Kaiju write tool on Kaiju-owned storage, deniable like every tool", () => {
     expect(BUILTIN_TOOLS[SAVE_SKILL_DRAFT_TOOL]).toEqual({
       source: "kobe",
       risk: "write",

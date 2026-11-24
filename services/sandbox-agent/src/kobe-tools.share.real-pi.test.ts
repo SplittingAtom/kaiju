@@ -17,7 +17,7 @@ import { WorkspaceSync } from "./workspace/sync.js";
 
 /**
  * KOBE-149 against the REAL pinned Pi with the real kobe-policy and kobe-tools, through
- * kobe-sandbox-agent, a fake Kobe server (wire) and a fake workspace-sync server (HTTP): Pi lists
+ * kobe-sandbox-agent, a fake Kaiju server (wire) and a fake workspace-sync server (HTTP): Pi lists
  * `share_file`, kobe-policy decides first, the agent pushes the file and only then sends
  * `file.share`, and the server's `file.share_result` is the tool result.
  */

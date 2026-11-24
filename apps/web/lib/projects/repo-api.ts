@@ -21,7 +21,7 @@ export type RepoWorkingCopy = Camelized<WireWorkingCopy>;
 
 export interface AbandonedConversion {
   readonly conversion: RepoConversion;
-  /** A repository the host created for the attempt, which Kobe leaves there. */
+  /** A repository the host created for the attempt, which Kaiju leaves there. */
   readonly leftOnHost: { readonly fullName: string; readonly baseUrl: string } | null;
 }
 

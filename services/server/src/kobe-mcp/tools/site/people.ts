@@ -31,9 +31,9 @@ const userOut = z.strictObject({
 
 export const siteUsersList = kobeTool({
   name: "site_users_list",
-  title: "List Kobe users",
+  title: "List Kaiju users",
   description:
-    "Lists every Kobe account on the site with its site role, two-factor status and whether it is " +
+    "Lists every Kaiju account on the site with its site role, two-factor status and whether it is " +
     "deactivated (Site console › Users). Optional `query` filters by name or email; `state` " +
     "filters active or deactivated accounts. Paged: pass next_cursor back as cursor.",
   scope: "site",
@@ -114,13 +114,13 @@ function activationResult(body: unknown) {
   };
 }
 
-const NO_USER = missing("user_not_found", "No Kobe user with that id.");
+const NO_USER = missing("user_not_found", "No Kaiju user with that id.");
 
 export const siteUsersDeactivate = kobeTool({
   name: "site_users_deactivate",
   title: "Deactivate a user",
   description:
-    "Deactivates a Kobe account (Site console › Users): it can no longer sign in, every session " +
+    "Deactivates a Kaiju account (Site console › Users): it can no longer sign in, every session " +
     "ends at once, and its team memberships are kept for a later reactivation. Give the user_id " +
     "and from_state `active` (from site_users_list). Only the Owner may deactivate an Admin; the " +
     "Owner cannot be deactivated. The person is always asked to approve; never retry a refused " +
@@ -150,7 +150,7 @@ export const siteUsersReactivate = kobeTool({
   name: "site_users_reactivate",
   title: "Reactivate a user",
   description:
-    "Reactivates a deactivated Kobe account (Site console › Users); it signs in again with its " +
+    "Reactivates a deactivated Kaiju account (Site console › Users); it signs in again with its " +
     "existing credentials and gets its teams back. Give the user_id and from_state `deactivated` " +
     "(from site_users_list). The person is always asked to approve; never retry a refused or " +
     "denied call.",
@@ -280,7 +280,7 @@ export const siteInvitesList = kobeTool({
   name: "site_invites_list",
   title: "List site invitations",
   description:
-    "Lists the open invitations to create a Kobe account (Site console › Users › Invitations), " +
+    "Lists the open invitations to create a Kaiju account (Site console › Users › Invitations), " +
     "pending or expired. Paged: pass next_cursor back as cursor.",
   scope: "site",
   permission: "site.users.manage",
@@ -318,9 +318,9 @@ export const siteInvitesList = kobeTool({
 
 export const siteInvitesCreate = kobeTool({
   name: "site_invites_create",
-  title: "Invite someone to Kobe",
+  title: "Invite someone to Kaiju",
   description:
-    "Invites an email address to create a Kobe account (Site console › Users › Invite); Kobe " +
+    "Invites an email address to create a Kaiju account (Site console › Users › Invite); Kaiju " +
     "emails the invitation. Joining a team is separate: a team invitation from that team's admin, " +
     "or site_team_members_add once the account exists. " +
     "Refused when the address already has an account. The person is always asked to approve; " +
@@ -353,14 +353,14 @@ export const siteInvitesCreate = kobeTool({
   },
   // A new invitation has no before-state; the route refuses an address with an account.
   before: () => Promise.resolve("same"),
-  summary: (input) => `Invite ${input.email} to create a Kobe account (sends an email)`,
+  summary: (input) => `Invite ${input.email} to create a Kaiju account (sends an email)`,
 });
 
 export const siteInvitesRevoke = kobeTool({
   name: "site_invites_revoke",
   title: "Revoke a site invitation",
   description:
-    "Revokes an open invitation to create a Kobe account (Site console › Users › Invitations): " +
+    "Revokes an open invitation to create a Kaiju account (Site console › Users › Invitations): " +
     "its link stops working. Give the invitation_id and its email (from site_invites_list). The " +
     "person is always asked to approve; never retry a refused or denied call.",
   scope: "site",

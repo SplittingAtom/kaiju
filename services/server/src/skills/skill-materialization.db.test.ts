@@ -121,7 +121,7 @@ describe("run.start lists only effective skills", () => {
 });
 
 describe("former built-in names (KOBE-317)", () => {
-  it("never resolve to a team skill of that name: without Kobe's catalog skill they are omitted", async () => {
+  it("never resolve to a team skill of that name: without Kaiju's catalog skill they are omitted", async () => {
     const w = await f.world();
     const team = `team-${unique()}`;
     const s = await upload(w.owner, "team", team);

@@ -2,7 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import type { KobeDb } from "./client.js";
 
 /**
- * Kobe's durable rate limiters (KOBE-809; shared by the server and the model gateway since
+ * Kaiju's durable rate limiters (KOBE-809; shared by the server and the model gateway since
  * KOBE-810). All state lives in `kobe_rate_limits` (keys start with "kobe:"), so every replica of
  * every service that connects as the app role sees the same counters. This module is the only
  * place with their SQL. Two shapes, each one atomic statement per hit:

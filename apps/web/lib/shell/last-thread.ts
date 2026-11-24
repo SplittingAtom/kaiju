@@ -1,6 +1,6 @@
 /**
  * The way back from full-page routes (CE4, KOBE-197): the consoles and the agent and skill builders
- * leave the chat, and their "Kobe" link returns to the thread that was open. Kept per tab
+ * leave the chat, and their "Kaiju" link returns to the thread that was open. Kept per tab
  * (sessionStorage), like the chat's resume points, with the team it belongs to: a thread of another
  * team than the active one is never offered. Storage may be blocked, then the link goes to "/".
  */

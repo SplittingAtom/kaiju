@@ -30,8 +30,8 @@ export interface Learn {
 
 const found = (n: number) =>
   n === 0
-    ? "Kobe found nothing new to remember in this chat."
-    : `Kobe found ${n === 1 ? "1 thing" : `${n} things`} to review. Open To review to save or dismiss.`;
+    ? "Kaiju found nothing new to remember in this chat."
+    : `Kaiju found ${n === 1 ? "1 thing" : `${n} things`} to review. Open To review to save or dismiss.`;
 
 /**
  * Learn from this chat (KOBE-395) for the thread on screen: its state (read when the thread
@@ -140,8 +140,8 @@ export function useLearn(threadId: string | null, threadRunning: boolean): Learn
       );
       say(
         res.data.input.partial
-          ? "Kobe is learning from this chat. Some earlier messages were compacted and left out."
-          : "Kobe is learning from this chat.",
+          ? "Kaiju is learning from this chat. Some earlier messages were compacted and left out."
+          : "Kaiju is learning from this chat.",
       );
     },
     [state, threadId, session.teamId, say, refresh],

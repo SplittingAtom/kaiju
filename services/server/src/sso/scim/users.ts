@@ -31,8 +31,8 @@ import {
 
 /**
  * SCIM Users of one provider (KOBE-631, spec sso-oidc-scim §10, SSO8/SSO9/SSO10). A SCIM User is a
- * Kobe user linked to the provider in `sso_identities` (`subject` = `externalId` = the Entra
- * object id); the SCIM `id` is the Kobe user id. A provider sees only its own linked users. Kobe
+ * Kaiju user linked to the provider in `sso_identities` (`subject` = `externalId` = the Entra
+ * object id); the SCIM `id` is the Kaiju user id. A provider sees only its own linked users. Kaiju
  * never deletes users and never links on email: a create for an address that belongs to someone
  * else is `409 uniqueness`. SCIM-created users have no local credential (SSO9). Deactivation goes
  * through `users/deactivation.ts` (the Site console's path), and never touches the Owner, a site
@@ -96,25 +96,25 @@ const failure = (
 const NOT_FOUND = failure(404, "No such User for this provider.");
 const PROTECTED = failure(
   403,
-  "Kobe never deactivates the Owner, a site Admin or the setup Owner through SCIM. A site admin decides in the Kobe Site console (People → Users).",
+  "Kaiju never deactivates the Owner, a site Admin or the setup Owner through SCIM. A site admin decides in the Kaiju Site console (People → Users).",
 );
 const EMAIL_TAKEN = failure(
   409,
-  "A Kobe account with this address already exists and is not linked to this provider. Kobe never links accounts on email: a site admin can expect an SSO link for it (Site console → Users), or remove the user from provisioning.",
+  "A Kaiju account with this address already exists and is not linked to this provider. Kaiju never links accounts on email: a site admin can expect an SSO link for it (Site console → Users), or remove the user from provisioning.",
   "uniqueness",
 );
 const EXTERNAL_ID_IMMUTABLE = failure(
   400,
-  "externalId can't change once set: it is the identity Kobe signs this person in as. Remove the user from provisioning and add the new identity instead.",
+  "externalId can't change once set: it is the identity Kaiju signs this person in as. Remove the user from provisioning and add the new identity instead.",
   "mutability",
 );
 const REACTIVATION_REFUSED = failure(
   403,
-  "This user was deactivated by a site admin in Kobe, so SCIM can't reactivate them. A site admin reactivates them in the Kobe Site console (People → Users).",
+  "This user was deactivated by a site admin in Kaiju, so SCIM can't reactivate them. A site admin reactivates them in the Kaiju Site console (People → Users).",
 );
 const NO_ADDRESS = failure(
   400,
-  "Kobe needs an email address: give userName as an address (the UPN) or a work email.",
+  "Kaiju needs an email address: give userName as an address (the UPN) or a work email.",
   "invalidValue",
 );
 
@@ -129,7 +129,7 @@ const COLUMNS = {
   userName: sql<string>`coalesce(${ssoIdentities.scimUserName}, ${users.email})`,
 };
 
-/** A Kobe user id; anything else names no user (and would not cast to `uuid`, KOBE-775). */
+/** A Kaiju user id; anything else names no user (and would not cast to `uuid`, KOBE-775). */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const userNameOf = sql`lower(coalesce(${ssoIdentities.scimUserName}, ${users.email}))`;
@@ -215,7 +215,7 @@ function uniquenessOf(err: unknown): ScimFailure | undefined {
   }
 }
 
-/** Entra object ids are GUIDs; Kobe keys the identity on them (lowercase). */
+/** Entra object ids are GUIDs; Kaiju keys the identity on them (lowercase). */
 function externalIdFor(provider: ScimProvider, raw: string | undefined): ScimOutcome<string> {
   if (raw === undefined) {
     return failure(
@@ -235,7 +235,7 @@ function externalIdFor(provider: ScimProvider, raw: string | undefined): ScimOut
 }
 
 /**
- * Creates a User (POST): a Kobe user with no credential account (SSO9), linked to the provider
+ * Creates a User (POST): a Kaiju user with no credential account (SSO9), linked to the provider
  * (`linked_via: scim`). It has no team access until a mapping gives it some (SSO-8 or sign-in).
  */
 export async function createScimUser(
@@ -395,7 +395,7 @@ export async function updateScimUser(
     const outcome = await ctx.db.transaction(async (tx) => {
       const row = await readUser(tx, ctx.provider.id, userId, true);
       if (!row) return NOT_FOUND;
-      // externalId is the identity's key (the subject Kobe signs this person in as): set at
+      // externalId is the identity's key (the subject Kaiju signs this person in as): set at
       // creation, never moved to another directory object (review finding 2).
       if (changes.externalId !== undefined) {
         const next = externalIdFor(ctx.provider, changes.externalId);
@@ -470,7 +470,7 @@ export async function updateScimUser(
 }
 
 /**
- * DELETE (§10): Kobe never deletes users. The user is deactivated (as `active: false`) and the
+ * DELETE (§10): Kaiju never deletes users. The user is deactivated (as `active: false`) and the
  * identity unlinked, so the provider no longer sees it (a later GET is 404). Refused for protected
  * users.
  */

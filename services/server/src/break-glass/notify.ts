@@ -56,7 +56,7 @@ export function grantMessage(
       ? `A break-glass request for the ${team} team was withdrawn`
       : SUBJECTS[event].replace("{team}", team);
   const lines = [
-    `${requester} asked for read-only break-glass access to the ${team} team on Kobe.`,
+    `${requester} asked for read-only break-glass access to the ${team} team on Kaiju.`,
     scopeLine(detail, teamSide),
   ];
   if (event === "requested") {

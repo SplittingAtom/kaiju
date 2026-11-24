@@ -29,7 +29,7 @@ export const DEFAULT_POLICY_SETTINGS: PolicySettings = { promptSandboxWrites: fa
 /** `site_settings.key` for {@link PolicySettings.promptSandboxWrites}. */
 export const PROMPT_SANDBOX_WRITES_KEY = "policy.ask_on_write.prompt_sandbox_writes";
 
-/** Kobe tools that never prompt by risk class in `ask-on-write` (rules and `ask-all` still apply). */
+/** Kaiju tools that never prompt by risk class in `ask-on-write` (rules and `ask-all` still apply). */
 export const PROMPT_EXEMPT_KOBE_TOOLS: ReadonlySet<string> = new Set([
   "create_artifact",
   "update_artifact",
@@ -43,7 +43,7 @@ export const PROMPT_EXEMPT_KOBE_TOOLS: ReadonlySet<string> = new Set([
  * - personal `remember` (D24: "personal writes via remember need no approval"), recognised by
  *   `scope: "user"` in its input (the memory contract, KOBE-153; anything else prompts);
  * - artifacts ({@link PROMPT_EXEMPT_KOBE_TOOLS}; Chris, 2026-10-06): they only write versioned,
- *   Kobe-owned content into the user's own thread, shown in a sandboxed frame with no network;
+ *   Kaiju-owned content into the user's own thread, shown in a sandboxed frame with no network;
  * - `save_skill_draft` (KOBE-442; Chris, 2026-10-19): it only writes the member's own private
  *   Workbench draft; saving a version, review and evals stay the member's actions there.
  * - `git_create_branch` of the built-in git connector (KOBE-762, spec workspace-git G9): a branch is

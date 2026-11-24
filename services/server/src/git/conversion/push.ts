@@ -133,7 +133,7 @@ export async function pushHistory(input: {
 /**
  * The host's short reason for a refused push (receive-pack's `unpack`/`ng` status, e.g.
  * "pre-receive hook declined" or an fsck message), kept as one printable line of at most 200
- * characters so the requester sees why (review M1). It never carries Kobe's credential: the host
+ * characters so the requester sees why (review M1). It never carries Kaiju's credential: the host
  * answers about the pack, and the credential travels only in a request header.
  */
 export function hostReason(raw: unknown): string | null {

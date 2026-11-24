@@ -40,7 +40,7 @@ export interface SiteMemorySettings extends MemorySwitches {
   readonly portableEnabled: boolean;
   readonly learnEnabled: boolean;
   readonly siteProposalsEnabled: boolean;
-  /** KOBE-410: the + button's dot pulses once when Kobe could learn from a conversation. */
+  /** KOBE-410: the + button's dot pulses once when Kaiju could learn from a conversation. */
   readonly learnNudgeEnabled: boolean;
   readonly settings: SiteMemorySettingsDoc;
   /**

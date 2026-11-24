@@ -54,7 +54,7 @@ const TARGET_HELP = `Send provider (github, gitea, forgejo), base_url (needed fo
  * member reads which organizations the Workspace is connected to (§7: their agents can reach
  * them), without credential details or health internals; Workspace admins (`team.git.manage`)
  * see the whole record and test, connect, change, replace the credential, check and disconnect.
- * Connecting and credential changes are console-only: the Kobe admin MCP offers the reads alone
+ * Connecting and credential changes are console-only: the Kaiju admin MCP offers the reads alone
  * (§7). The credential is accepted on create and replace, sealed, and never answered, logged or
  * audited (G8).
  */
@@ -189,7 +189,7 @@ export function teamGitRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables
   });
 
   // The Workspace's git settings (KOBE-761): the author email of sandbox commits (G13, GQ10).
-  // Console-only, like connecting: the Kobe admin MCP has no tool for it.
+  // Console-only, like connecting: the Kaiju admin MCP has no tool for it.
   const settingsAnswer = (c: Context<{ Variables: TeamVariables }>, mode: string) => {
     const user = c.get("user");
     // Read per request (as run starts do), so a deps without a valid public URL still mounts.

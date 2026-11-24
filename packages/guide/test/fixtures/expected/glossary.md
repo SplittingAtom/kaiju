@@ -1,6 +1,6 @@
 # Glossary
 
-> Words Kobe uses.
+> Words Kaiju uses.
 
 ## Thread
 

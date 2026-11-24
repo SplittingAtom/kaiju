@@ -167,7 +167,7 @@ describe("the CE7 table, per band (ac-1)", () => {
     await waitFor(() => expect(header().getAttribute("data-bar-layout")).toBe("single"));
     const one = within(row(1));
     expect(one.getByRole("button", { name: "Show the workspace" })).toBeTruthy();
-    expect(one.getByRole("heading", { name: "Kobe" })).toBeTruthy();
+    expect(one.getByRole("heading", { name: "Kaiju" })).toBeTruthy();
     // Folded: the search and the icons are hidden behind the Menu.
     const menuButton = one.getByRole("button", { name: "Menu" });
     expect(menuButton.getAttribute("aria-expanded")).toBe("false");

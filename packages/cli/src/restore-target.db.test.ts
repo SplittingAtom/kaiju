@@ -93,7 +93,7 @@ describe("kobe restore's target check on a started site (KOBE-422)", () => {
       site_agent_versions: 0,
       audit_log: 0,
       site_settings: 0,
-      // Kobe's catalog skills and the jobs they start (KOBE-317): none in this fixture.
+      // Kaiju's catalog skills and the jobs they start (KOBE-317): none in this fixture.
       registry_skills: 0,
       registry_versions: 0,
       registry_skill_tags: 0,
@@ -174,7 +174,7 @@ describe("kobe restore's target check on a started site (KOBE-422)", () => {
          ('user', '00000000-0000-4000-8000-0000000000c2', 'site.branding.updated',
           '{"setting":"app_name","value":"Admin Choice"}'),
          ('user', '00000000-0000-4000-8000-0000000000c2', 'site.branding.updated',
-          '{"setting":"app_name","value":"Kobe"}'),
+          '{"setting":"app_name","value":"Kaiju"}'),
          ('system', NULL, 'site.branding.updated', '{"setting":"app_name","value":"Acme Assist"}')`,
     );
     await expect(prelude(db)).rejects.toThrow(
@@ -206,7 +206,7 @@ describe("kobe restore's target check on a started site (KOBE-422)", () => {
     ],
     ["site_settings", "INSERT INTO site_settings (key, value) VALUES ('require_2fa', 'true')"],
     [
-      // The Default sync's system event for a skill that is not Kobe's (a site admin's job).
+      // The Default sync's system event for a skill that is not Kaiju's (a site admin's job).
       "audit_log",
       `INSERT INTO audit_log (actor_kind, action, target)
          VALUES ('system', 'skill.default.synced', '{"skillId":"00000000-0000-4000-8000-0000000000b1"}')`,

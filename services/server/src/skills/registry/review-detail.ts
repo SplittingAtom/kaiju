@@ -49,7 +49,7 @@ export interface ReviewFinding {
   readonly severity: string;
   readonly category: string | null;
   readonly acknowledged: Acknowledgement | null;
-  /** `kobe` (Kobe's own scanner) or `external` (the optional external scanner, KOBE-341). */
+  /** `kobe` (Kaiju's own scanner) or `external` (the optional external scanner, KOBE-341). */
   readonly source: "kobe" | "external";
   /** External findings: the scanner's title and own severity ("info" ones need no acknowledgement). */
   readonly title?: string;

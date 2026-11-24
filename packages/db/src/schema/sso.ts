@@ -20,7 +20,7 @@ import { teams } from "./teams.js";
 
 // Single sign-on (OIDC) and SCIM provisioning (KOBE-625, spec docs/specs/sso-oidc-scim.md §4–§10).
 // All site-wide (identity domain): site configuration and identity links, no team content. Only
-// `sso_access_mappings` names teams (a `teamReferencing` entry). Kobe stores no IdP access,
+// `sso_access_mappings` names teams (a `teamReferencing` entry). Kaiju stores no IdP access,
 // refresh or ID token anywhere.
 
 export const SSO_PROVIDER_KINDS = ["entra", "oidc"] as const;
@@ -131,7 +131,7 @@ export const ssoProviders = pgTable(
 );
 
 /**
- * A Kobe user linked to an IdP identity (§6): key (`provider_id`, `subject` = the value of the
+ * A Kaiju user linked to an IdP identity (§6): key (`provider_id`, `subject` = the value of the
  * provider's `subject_claim`), never email. Kept apart from Better Auth's `accounts`, so its
  * account endpoints never see these links and no IdP token is stored. One identity per user and
  * provider. Unlinking deletes the row.

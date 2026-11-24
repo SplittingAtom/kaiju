@@ -468,7 +468,7 @@ describe("member app frame and tools/list (KOBE-437, MA-5)", () => {
     expect(frame.headers.get("cache-control")).toMatch(/no-store/);
     expect(frame.headers.get("x-content-type-options")).toBe("nosniff");
 
-    // Only into a frame of Kobe's own page, for the team the page names, for the bytes it names.
+    // Only into a frame of Kaiju's own page, for the team the page names, for the bytes it names.
     const status = async (who: TestBrowser, q: Record<string, string>, hdr = {}) =>
       (await who.get(frameUrl(appId, q), hdr)).status;
     expect(await status(alice, ok, { "sec-fetch-dest": "document" })).toBe(403);

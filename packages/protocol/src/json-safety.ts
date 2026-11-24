@@ -1,7 +1,7 @@
 import { MAX_CANONICAL_DEPTH } from "./canonical-json.js";
 
 /**
- * Boundary rules for JSON that Kobe stores (Postgres `jsonb`) or signs (approvals).
+ * Boundary rules for JSON that Kaiju stores (Postgres `jsonb`) or signs (approvals).
  *
  * - **U+0000** in any string or key is rejected: `jsonb` cannot store it. Where: the server's
  *   sandbox-wire decoder (`decodeSandboxFrame`, every inbound frame), every tool-input schema, and

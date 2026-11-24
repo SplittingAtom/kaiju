@@ -23,14 +23,14 @@ import { callQueue, roughlyTooLarge, windowCounter } from "./bridge-limits";
 import { appItemsOf, type LinkedItem } from "./app-items";
 
 /**
- * Kobe's host bridge for MCP Apps (KOBE-437, spec MA2, T4, T5, §7 and §8). Kobe's own, not the
+ * Kaiju's host bridge for MCP Apps (KOBE-437, spec MA2, T4, T5, §7 and §8). Kaiju's own, not the
  * ext-apps `AppBridge` (spike in docs/ledger/KOBE-437.md).
  *
  * - A message is handled only when `event.source` is the frame's own `contentWindow` and
  *   `event.origin` is `"null"` (the frame's opaque origin); everything else is ignored.
  * - Each method's params are parsed with zod; malformed requests get `-32602`, junk is dropped.
  * - The §7 table: `ui/initialize`, `tools/call` and `tools/list` (only through `handlers`, i.e.
- *   Kobe's MA-4 endpoints), `ui/message` (composer text, never sent), `ui/update-model-context`
+ *   Kaiju's MA-4 endpoints), `ui/message` (composer text, never sent), `ui/update-model-context`
  *   (a chip), `ui/request-display-mode` (inline or fullscreen), size-changed, and logging
  *   (dropped, counted). Everything else, `ui/open-link`, `ui/download-file`, `resources/*`,
  *   `sampling/*` and `elicitation/*` included, is denied with `-32601`
@@ -41,7 +41,7 @@ import { appItemsOf, type LinkedItem } from "./app-items";
  *   `initialized` honoured once.
  * - The bridge binds to the first window `frame()` names; if that changes (a re-used iframe
  *   navigated to another app), or once detached, it neither answers nor posts (review MEDIUM-1).
- * - Kobe's pointer-drag extension (KOBE-553, DRAG-CONTRACT.md): `kobe/notifications/drag-start`
+ * - Kaiju's pointer-drag extension (KOBE-553, DRAG-CONTRACT.md): `kobe/notifications/drag-start`
  *   (an item of at most {@link DRAG_ITEM_MAX} and a frame-relative point), `drag-move`, `drag-end`
  *   and `drag-cancel` go to `handlers.drag`; a move, end or cancel without a live start is
  *   ignored, any start (valid or not) cancels the live one first, and detaching cancels a live
@@ -156,7 +156,7 @@ type Reply = { result: unknown } | { error: { code: number; message: string; dat
 const failure = (code: number, message: string, reason?: string): Reply => ({
   error: { code, message, ...(reason ? { data: { reason } } : {}) },
 });
-const DENIED = failure(-32601, "Kobe does not offer this to apps.", NOT_ALLOWED);
+const DENIED = failure(-32601, "Kaiju does not offer this to apps.", NOT_ALLOWED);
 const INVALID = failure(-32602, "Invalid params.");
 
 /** Serialized size in UTF-8 bytes, or undefined when it cannot be serialized. */

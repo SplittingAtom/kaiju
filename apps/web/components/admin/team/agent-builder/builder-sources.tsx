@@ -20,7 +20,7 @@ import { ConsoleAccessContext } from "../../console-context";
 export interface BuilderSources {
   readonly models: () => Promise<ApiResult<TeamModels>>;
   readonly connectors: () => Promise<ApiResult<readonly TeamConnector[]>>;
-  /** The built-in Kobe connector (KOBE-623); absent where it does not apply (gallery agents). */
+  /** The built-in Kaiju connector (KOBE-623); absent where it does not apply (gallery agents). */
   readonly kobe?: () => Promise<ApiResult<KobeTeamConnector>>;
   readonly skills: () => Promise<ApiResult<SkillChoices>>;
   /** Whether the Dangerous approval mode is offered (AC1); the server enforces it. */

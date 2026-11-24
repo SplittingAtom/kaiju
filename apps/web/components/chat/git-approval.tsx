@@ -8,7 +8,7 @@ import styles from "./chat.module.css";
 /**
  * A git host write's card header (KOBE-762, spec workspace-git G9, G10, G13): what will happen, on
  * which host, organization and repository, built by the server from the approved input. Titles
- * and bodies are shown as plain text exactly as they will be posted (Kobe's last line naming the
+ * and bodies are shown as plain text exactly as they will be posted (Kaiju's last line naming the
  * member and the conversation included), hidden characters as visible escapes, never as HTML or
  * Markdown; a long body is cut with a "Show all" control. The exact input is still shown below.
  */
@@ -92,7 +92,7 @@ export function GitChange({ git }: { readonly git: GitApproval }) {
       </table>
       {git.body !== undefined && <Body text={git.body} />}
       <p className={styles.hint}>
-        This sends Workspace content to the git host, where Kobe cannot take it back.
+        This sends Workspace content to the git host, where Kaiju cannot take it back.
       </p>
     </div>
   );

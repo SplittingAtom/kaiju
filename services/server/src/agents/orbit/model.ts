@@ -9,7 +9,7 @@ import {
 import type { KobeDb, ModelProviderKind } from "@kobe/db";
 
 /**
- * The provider model id an Orbit export carries (KOBE-91): Kobe's catalog aliases mean nothing to
+ * The provider model id an Orbit export carries (KOBE-91): Kaiju's catalog aliases mean nothing to
  * Orbit/Inspect, so the pinned alias (or the team default) is resolved against the team's enabled
  * models. Unresolvable is an error for the caller (409), never a silent drop.
  */

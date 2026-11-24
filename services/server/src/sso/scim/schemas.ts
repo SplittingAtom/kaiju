@@ -1,5 +1,5 @@
 /**
- * SCIM 2.0 constants (RFC 7643/7644) for Kobe's provisioning endpoint (KOBE-631, spec
+ * SCIM 2.0 constants (RFC 7643/7644) for Kaiju's provisioning endpoint (KOBE-631, spec
  * sso-oidc-scim §10).
  */
 export const SCIM_CONTENT_TYPE = "application/scim+json";
@@ -24,12 +24,12 @@ export const SCIM_AUTH_FAILURES_PER_MINUTE = 30;
 export const SCIM_MAX_BODY_BYTES = 64 * 1024;
 /** At most this many PATCH operations in one request. */
 export const SCIM_MAX_OPERATIONS = 100;
-/** Bound on any single string Kobe reads from a SCIM request. */
+/** Bound on any single string Kaiju reads from a SCIM request. */
 export const SCIM_STRING_MAX = 256;
 /** Bound on an email address. */
 export const EMAIL_MAX = 320;
 
-/** RFC 7644 §3.12 `scimType` values Kobe answers with. */
+/** RFC 7644 §3.12 `scimType` values Kaiju answers with. */
 export type ScimType =
   | "invalidFilter"
   | "invalidValue"

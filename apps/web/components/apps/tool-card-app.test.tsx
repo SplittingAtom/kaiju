@@ -223,7 +223,7 @@ describe("apps in tool cards (KOBE-438)", () => {
 
   it("finds the card after a reload when system and custom entries precede the prompt (KOBE-445)", async () => {
     // The gate's shape: Pi's settings entries, its system message, the prompt, the app call, an
-    // answer, Kobe's branch entry, then a second prompt and its answer.
+    // answer, Kaiju's branch entry, then a second prompt and its answer.
     const t = fake.addThread("Gate shape");
     const model = fake.addSystemEntry(t, null, "model_change", { modelId: "m", provider: "kobe" });
     const level = fake.addSystemEntry(t, model, "thinking_level_change", { thinkingLevel: "off" });

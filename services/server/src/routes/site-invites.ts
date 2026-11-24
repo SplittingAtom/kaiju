@@ -61,7 +61,7 @@ export function siteInvitesRoutes(deps: ServerDeps): Hono<{ Variables: AuthVaria
     const invite = await issueInvite(db, { email: body.email, invitedBy: me.id });
     if (invite === "user_exists") {
       return c.json(
-        { code: "user_exists", message: "That address already has a Kobe account." },
+        { code: "user_exists", message: "That address already has a Kaiju account." },
         409,
       );
     }

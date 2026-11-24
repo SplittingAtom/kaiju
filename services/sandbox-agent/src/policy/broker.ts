@@ -10,7 +10,7 @@ import { localDeny, type PolicyChannelCheck, type PolicyChannelReply } from "./c
  */
 export const MAX_PENDING_POLICY_CHECKS = 512;
 /**
- * The Kobe server closes the whole sandbox connection on a `policy.check` frame over 1 MiB
+ * The Kaiju server closes the whole sandbox connection on a `policy.check` frame over 1 MiB
  * (KOBE-24 `frameMaxBytes.policyCheck`); a larger one is denied here instead, without sending.
  */
 export const MAX_POLICY_CHECK_FRAME_BYTES = 1024 * 1024;
@@ -86,7 +86,7 @@ export class PolicyBroker {
     });
     if (!this.#deps.send(frame)) {
       this.#pending.delete(requestId);
-      reply(localDeny(check.request_id, "Kobe server not reachable"));
+      reply(localDeny(check.request_id, "Kaiju server not reachable"));
     }
   }
 

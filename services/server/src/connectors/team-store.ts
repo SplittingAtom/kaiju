@@ -152,7 +152,7 @@ export async function listTeamConnectors(db: KobeDb, teamId: string): Promise<Te
       tx
         .select()
         .from(connectors)
-        // The built-in Kobe connector (KOBE-619) has its own team level, not an enablement row.
+        // The built-in Kaiju connector (KOBE-619) has its own team level, not an enablement row.
         .where(and(isNull(connectors.deletedAt), isNull(connectors.builtin)))
         .orderBy(asc(connectors.name)),
       tx.select().from(teamConnectors).where(eq(teamConnectors.teamId, teamId)),

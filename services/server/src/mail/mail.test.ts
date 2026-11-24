@@ -34,8 +34,8 @@ describe("smtpTransportOptions", () => {
 
 describe("parseFrom", () => {
   it("parses a display name and lower-cases the address", () => {
-    expect(parseFrom("Kobe Mail <Kobe@Example.com>")).toEqual({
-      name: "Kobe Mail",
+    expect(parseFrom("Kaiju Mail <Kobe@Example.com>")).toEqual({
+      name: "Kaiju Mail",
       address: "kobe@example.com",
     });
   });
@@ -46,7 +46,7 @@ describe("messages", () => {
     expect(oneLine("Eve\r\nBcc: victim@example.com")).toBe("Eve Bcc: victim@example.com");
     expect(oneLine("x".repeat(300)).length).toBe(100);
     const m = teamInviteMessage({
-      appName: "Kobe",
+      appName: "Kaiju",
       to: "a@b.test",
       inviterName: "Eve\nX-Evil: 1",
       teamName: "Fin\rance",
@@ -59,7 +59,7 @@ describe("messages", () => {
 
   it("puts tokens in the link only", () => {
     const invite = siteInviteMessage({
-      appName: "Kobe",
+      appName: "Kaiju",
       to: "a@b.test",
       inviterName: "Owner",
       link: "https://kobe.test/invite#token=abc",
@@ -68,7 +68,7 @@ describe("messages", () => {
     expect(invite.subject).not.toContain("abc");
     expect(invite.text).toContain("https://kobe.test/invite#token=abc");
     const reset = passwordResetMessage({
-      appName: "Kobe",
+      appName: "Kaiju",
       to: "a@b.test",
       link: "https://kobe.test/reset-password#token=xyz",
       expiresInMinutes: 30,
@@ -106,6 +106,6 @@ describe("messages", () => {
     });
     expect(reset.subject).toBe("Reset your Acme password");
     expect(reset.text).toContain("your Acme account");
-    for (const m of [invite, team, reset]) expect(`${m.subject}\n${m.text}`).not.toContain("Kobe");
+    for (const m of [invite, team, reset]) expect(`${m.subject}\n${m.text}`).not.toContain("Kaiju");
   });
 });

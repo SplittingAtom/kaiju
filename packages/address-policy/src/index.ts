@@ -1,7 +1,7 @@
 import { BlockList, isIP } from "node:net";
 
 /**
- * Where Kobe's proxies may connect (spec D27, D28; SSRF and DNS-rebinding protection), shared by the
+ * Where Kaiju's proxies may connect (spec D27, D28; SSRF and DNS-rebinding protection), shared by the
  * egress proxy (KOBE-38) and the MCP proxy (KOBE-58) so the two lists cannot drift. A proxy
  * resolves a host itself, checks **every** address the name resolves to, and connects only to an
  * address it checked, so a name that later re-resolves elsewhere never reaches anything new.

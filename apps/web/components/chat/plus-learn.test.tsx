@@ -138,7 +138,7 @@ describe("the + button's Learn state (ac-1)", { timeout: 30_000 }, () => {
     const t = answered();
     learnable(t, { running: { pass_id: PASS, started_at: "2026-11-15T10:00:00.000Z" } });
     openApp(fake, t);
-    const button = await plusSaying("Kobe is learning from this chat");
+    const button = await plusSaying("Kaiju is learning from this chat");
     expect(mark(button)).toBe("spinner");
     const { sub } = await openMemory();
     const item = within(sub).getByRole("menuitem", { name: /^Learn from this chat/ });
@@ -195,8 +195,8 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     const { user, sub } = await openMemory();
     await user.click(within(sub).getByRole("menuitem", { name: /^Learn from this chat/ }));
     await waitFor(() => expect(starts()).toEqual(["new"]));
-    await plusSaying("Kobe is learning from this chat");
-    expect(notice()).toBe("Kobe is learning from this chat.");
+    await plusSaying("Kaiju is learning from this chat");
+    expect(notice()).toBe("Kaiju is learning from this chat.");
   });
 
   it("Rescan the whole chat starts an all pass and shows its estimate", async () => {
@@ -227,10 +227,10 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     await plusSaying("New messages to learn from");
     const { user, sub } = await openMemory();
     await user.click(within(sub).getByRole("menuitem", { name: /^Learn from this chat/ }));
-    await plusSaying("Kobe is learning from this chat");
+    await plusSaying("Kaiju is learning from this chat");
     // The pass ends on the server: the next check (every 2 s) sees it.
     fake.learnState.set(t, { new_messages: false, running: null, candidates: 2 });
-    await waitFor(() => expect(notice()).toMatch(/Kobe found 2 things to review/), {
+    await waitFor(() => expect(notice()).toMatch(/Kaiju found 2 things to review/), {
       timeout: 8_000,
     });
     // KOBE-396: the finished pass is announced, so To review can open by itself.
@@ -246,7 +246,7 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     await plusSaying("New messages to learn from");
     const { user, sub } = await openMemory();
     await user.click(within(sub).getByRole("menuitem", { name: /^Learn from this chat/ }));
-    await plusSaying("Kobe is learning from this chat");
+    await plusSaying("Kaiju is learning from this chat");
     // The server keeps saying it runs; the clock passes the limit before the next check.
     const now = Date.now();
     vi.spyOn(Date, "now").mockReturnValue(now + LEARN_SPIN_MAX_MS + 1_000);
@@ -260,7 +260,7 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     const t = answered();
     learnable(t, { running: { pass_id: PASS, started_at: "2026-11-15T10:00:00.000Z" } });
     openApp(fake, t);
-    await plusSaying("Kobe is learning from this chat");
+    await plusSaying("Kaiju is learning from this chat");
     fake.learnState.set(t, { new_messages: false, running: null, candidates: 1 });
     const reads = () =>
       fake.requests.filter((r) => r.method === "GET" && r.path.endsWith("/learn"));
@@ -276,7 +276,7 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     fake.learnRefusal = {
       status: 429,
       code: "learn_rate_limited",
-      message: "You can teach Kobe 20 times a day in this workspace. Try again later.",
+      message: "You can teach Kaiju 20 times a day in this workspace. Try again later.",
     };
     openApp(fake, t);
     await plusSaying("New messages to learn from");

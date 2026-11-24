@@ -21,7 +21,7 @@ const ERRORS = {
   connector_not_working: [409, "That connector isn't working right now, so it can't be changed."],
   connector_always_on: [
     409,
-    "Kobe's docs tools are on in every conversation; its admin tools follow the team's and site's switches.",
+    "Kaiju's docs tools are on in every conversation; its admin tools follow the team's and site's switches.",
   ],
 } as const satisfies Record<ToggleError, readonly [number, string]>;
 

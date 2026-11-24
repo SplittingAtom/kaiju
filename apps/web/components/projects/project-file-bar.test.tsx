@@ -103,7 +103,7 @@ describe("a file in a checked-out project (CM8)", () => {
           {
             code: "repo_moved",
             message:
-              "main moved on the git host since Kobe's copy. Kobe refreshes its copy; Update, then commit again.",
+              "main moved on the git host since Kaiju's copy. Kaiju refreshes its copy; Update, then commit again.",
           },
         ],
         [

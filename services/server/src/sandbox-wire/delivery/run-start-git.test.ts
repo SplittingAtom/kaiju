@@ -22,7 +22,7 @@ const THREAD = randomUUID();
 const RUN = randomUUID();
 const GIT: RunGitContext = {
   author: { name: "Ada", email: "ada@acme.test" },
-  committer: { name: "Ada via Kobe", email: "ada@acme.test" },
+  committer: { name: "Ada via Kaiju", email: "ada@acme.test" },
   remotes: [{ base_url: "https://github.com", organization: "acme" }],
 };
 const warnings: unknown[] = [];

@@ -389,7 +389,7 @@ describe("an update whose target changed since the pass (KOBE-779, P2-46)", () =
     expect(edited.status).toBe(200);
     const refused = await save(as.member, upd);
     expect(codeOf(refused)).toEqual([409, "memory_version_conflict"]);
-    expect((refused.json as { message: string }).message).toMatch(/changed since Kobe suggested/);
+    expect((refused.json as { message: string }).message).toMatch(/changed since Kaiju suggested/);
     expect((await stateOf(upd))?.state).toBe("open");
     expect((await as.member.get(`${ITEMS}/user/${target}`)).json).toMatchObject({ version: 2 });
     expect(await card()).toMatchObject({ target: { version: 2 }, target_changed: true });

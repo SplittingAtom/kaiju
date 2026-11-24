@@ -1,6 +1,6 @@
 # Tracing (OpenTelemetry)
 
-Kobe's server, scheduler, MCP proxy, egress proxy and model gateway export traces over OTLP/HTTP.
+Kaiju's server, scheduler, MCP proxy, egress proxy and model gateway export traces over OTLP/HTTP.
 Tracing is off unless an endpoint is set, and then registers nothing, so it costs nothing.
 
 ```yaml

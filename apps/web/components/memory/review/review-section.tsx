@@ -159,7 +159,7 @@ export function ReviewSection({
         {count === 1 ? "1 memory to review" : `${count} memories to review`}
       </h3>
       <p className="m-0 mb-3 text-console-muted">
-        Kobe found these in this conversation. Nothing is saved until you choose. Candidates you
+        Kaiju found these in this conversation. Nothing is saved until you choose. Candidates you
         leave expire after 14 days.
       </p>
       <ReviewNotices

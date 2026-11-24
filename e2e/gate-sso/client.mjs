@@ -1,10 +1,10 @@
 // The single sign-on gate (KOBE-633, spec docs/specs/sso-oidc-scim.md §17 SSO-9), client side.
-// e2e/gate-sso.sh runs this inside a Kobe server pod (`node --input-type=module -e`) after the
+// e2e/gate-sso.sh runs this inside a Kaiju server pod (`node --input-type=module -e`) after the
 // Gate 1 client's helpers (everything above `const MODES` in e2e/gate1/client.mjs: config, BASE,
 // client(), db(), fixtures()) and e2e/sso/scim-client.mjs. It plays the browser of an SSO sign-in
 // against the mock Entra (e2e/sso/mock-entra.mjs, reached as https://login.microsoftonline.com
 // through the gate's CoreDNS rewrite and trusted through the chart's server.extraCaBundle) and
-// Entra's provisioning service against Kobe's SCIM endpoints. Every step prints `key=value` lines;
+// Entra's provisioning service against Kaiju's SCIM endpoints. Every step prints `key=value` lines;
 // the database is read for evidence only (identities, session MFA records, user counts).
 
 const PUBLIC = new URL(process.env.KOBE_PUBLIC_URL).origin;
@@ -72,8 +72,8 @@ function sessionToken(jar) {
 }
 
 /**
- * One SSO sign-in as a browser does it: Kobe's start → the IdP's authorize (with the gate's
- * `mock_user` / `mock_mode`) → Kobe's callback → where Kobe sends the browser.
+ * One SSO sign-in as a browser does it: Kaiju's start → the IdP's authorize (with the gate's
+ * `mock_user` / `mock_mode`) → Kaiju's callback → where Kaiju sends the browser.
  */
 async function ssoSignin() {
   const ip = config.ip;
@@ -94,7 +94,7 @@ async function ssoSignin() {
     Buffer.from(JSON.stringify(config.user)).toString("base64url"),
   );
   if (config.mockMode) authorize.searchParams.set("mock_mode", config.mockMode);
-  // The browser at the IdP: no Kobe cookies go there.
+  // The browser at the IdP: no Kaiju cookies go there.
   const idp = await fetch(authorize, { redirect: "manual" });
   await idp.text();
   out("idp", idp.status);
@@ -225,7 +225,7 @@ async function scimRevoke() {
   out("revoke", r.status);
 }
 
-/** Entra's provisioning requests against Kobe (e2e/sso/scim-client.mjs). */
+/** Entra's provisioning requests against Kaiju (e2e/sso/scim-client.mjs). */
 async function scimStep() {
   const scim = scimClient({
     base: `${BASE}/v1/scim/v2/${config.slug}`,

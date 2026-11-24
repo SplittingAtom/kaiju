@@ -19,10 +19,10 @@ import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 import type { AuthResult, SandboxAuthenticator } from "../workspace-sync/auth.js";
 
 /**
- * KOBE-317 (SK4, U38): the built-ins become Kobe-published Default catalog skills. A site that
+ * KOBE-317 (SK4, U38): the built-ins become Kaiju-published Default catalog skills. A site that
  * ran them from the sandbox image upgrades: the seed publishes them at every start (approved,
  * no person, tagged Default, bytes in the object store), the Default sync installs them in every
- * team (On by default, Track within major, by Kobe, no notices), and a run that named a built-in
+ * team (On by default, Track within major, by Kaiju, no notices), and a run that named a built-in
  * keeps getting the same content as a bundle, also before the sync reaches its team.
  */
 const objects = new MemoryObjects();
@@ -112,7 +112,7 @@ afterAll(async () => {
 });
 
 describe("the seed (ac-1)", () => {
-  it("publishes every Kobe skill (kobe-guide too, KOBE-620) as approved Kobe catalog versions with no person, tagged Default", async () => {
+  it("publishes every Kaiju skill (kobe-guide too, KOBE-620) as approved Kaiju catalog versions with no person, tagged Default", async () => {
     const results = await seed();
     expect(results.map((r) => [r.name, r.action])).toEqual(
       KOBE_SKILL_NAMES.map((n) => [n, "created"]),
@@ -216,7 +216,7 @@ describe("the seed (ac-1)", () => {
     expect(counts.rows[0]).toEqual({ versions: n, jobs: n, audits: n });
   });
 
-  it("re-writes a Kobe object that went missing", async () => {
+  it("re-writes a Kaiju object that went missing", async () => {
     const hashes = await runtimeHashes();
     const key = catalogObjectKey("kobe/", hashes.xlsx as string);
     objects.objects.delete(key);
@@ -226,7 +226,7 @@ describe("the seed (ac-1)", () => {
 });
 
 describe("the Default sync installs them in every team (ac-1)", () => {
-  it("every team gets all of them (kobe-guide too, KOBE-620), On by default, Track within major, by Kobe, and no notice", async () => {
+  it("every team gets all of them (kobe-guide too, KOBE-620), On by default, Track within major, by Kaiju, and no notice", async () => {
     // A team opts out of pdf before the sync reaches it: the opt-out is kept.
     await f.fx.admin.query(
       `INSERT INTO team_skill_optouts (team_id, skill_id, opted_out_by)
@@ -287,7 +287,7 @@ describe("runs after the upgrade (ac-3)", () => {
     expect(only.config.skills).toEqual(["docx"]);
   });
 
-  it("a named pdf is Kobe's even where the team has its own pdf; an opted-out team is told", async () => {
+  it("a named pdf is Kaiju's even where the team has its own pdf; an opted-out team is told", async () => {
     const hashes = await runtimeHashes();
     const own = await startOf(ownPdf, await pinnedThread(ownPdf.owner, ["pdf"]));
     expect(own.config.skill_bundles?.find((b) => b.name === "pdf")?.sha256).toBe(hashes.pdf);
@@ -300,7 +300,7 @@ describe("runs after the upgrade (ac-3)", () => {
 });
 
 describe("reserved names in teams (review-317 S4)", () => {
-  it("no new team or personal skill takes a Kobe name; one made before keeps its versions", async () => {
+  it("no new team or personal skill takes a Kaiju name; one made before keeps its versions", async () => {
     const w = await f.world();
     for (const scope of ["team", "personal"]) {
       const res = await f.on(0, w.owner).post(`/v1/skills?scope=${scope}`, zipNamed("xlsx"));
@@ -311,7 +311,7 @@ describe("reserved names in teams (review-317 S4)", () => {
     expect(next.status, JSON.stringify(next.json)).toBe(201);
   });
 
-  it("a team's own Required pdf wins over Kobe's, with a notice to an agent naming pdf", async () => {
+  it("a team's own Required pdf wins over Kaiju's, with a notice to an agent naming pdf", async () => {
     const hashes = await runtimeHashes();
     const { run, config } = await startOf(
       requiredPdf,
@@ -357,7 +357,7 @@ describe("a run.start queued before the upgrade (review-317 S1)", () => {
       error: {
         code: "queued_before_upgrade",
         message:
-          "This message was queued while Kobe was being upgraded and couldn't start. Send it again.",
+          "This message was queued while Kaiju was being upgraded and couldn't start. Send it again.",
       },
     });
     expect(ws.starts().map((x) => x.run_id)).not.toContain(run);

@@ -25,7 +25,7 @@ export const S3_IDLE_TIMEOUT_MS = 60_000;
 
 /**
  * S3-compatible object storage from the chart's `s3` values (spec D4: an external endpoint; the
- * chart bundles none — MinIO is AGPL). The server is the only Kobe component holding these
+ * chart bundles none — MinIO is AGPL). The server is the only Kaiju component holding these
  * credentials; sandboxes never see them (KOBE-27).
  */
 const settingsSchema = z

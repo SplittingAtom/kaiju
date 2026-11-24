@@ -20,7 +20,7 @@ import {
  *     manifest only freezes connector names, so the caller passes the names from the connectors'
  *     pinned snapshots (D27); a name from a connector the version does not list is refused.
  *   - Orbit validates names but does not resolve them: the eval Job binds implementations.
- *   - Kobe model aliases (`fast`, `smart`) mean nothing to Orbit; only provider ids
+ *   - Kaiju model aliases (`fast`, `smart`) mean nothing to Orbit; only provider ids
  *     (`provider/model`) are carried over, an alias is dropped with a warning.
  */
 
@@ -44,7 +44,7 @@ function mapModel(model: string | undefined, warnings: string[]): { model?: stri
   if (model === undefined) return {};
   if (model.includes("/")) return { model };
   warnings.push(
-    `model "${model}" is a Kobe catalog alias, not a provider model id; Orbit uses its task model`,
+    `model "${model}" is a Kaiju catalog alias, not a provider model id; Orbit uses its task model`,
   );
   return {};
 }

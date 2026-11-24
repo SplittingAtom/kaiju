@@ -33,7 +33,7 @@ export const THREAD_COMPACT_WIRE_ERROR_CODES = [
 
 /**
  * Sandbox -> server: the one answer to `thread.compact` (instead of `command.result`), for the same
- * `command_id`. Success carries Pi's `compact` response data in Kobe casing (Pi's `usage` and
+ * `command_id`. Success carries Pi's `compact` response data in Kaiju casing (Pi's `usage` and
  * `details` are dropped: the gateway meters the calls, the mirrored entry keeps `details`). Has its
  * own size entry (`SANDBOX_FRAME_MAX_BYTES_BY_TYPE`); a summary over the cap is left out.
  */
@@ -132,7 +132,7 @@ export const threadCompactFrameSchema = frame("thread.compact", {
 });
 
 /**
- * Summarise the branch being left (KOBE-542, CT11, CT20): Pi, through Kobe's Pi extension,
+ * Summarise the branch being left (KOBE-542, CT11, CT20): Pi, through Kaiju's Pi extension,
  * summarises the entries between the common ancestor and `from_leaf_entry_id` and appends a
  * `branch_summary` entry whose parent is `to_entry_id`. A run of kind `branch_summary`, created and
  * delivered under the run lock exactly as `thread.compact`, so it carries the same run context.

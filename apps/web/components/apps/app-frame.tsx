@@ -23,11 +23,11 @@ import {
 import { buildHostContext, type Placement } from "../../lib/apps/host-context";
 
 /**
- * An MCP App in a sandboxed frame (KOBE-437, spec T2, T9, MA3, MA10): Kobe's member frame route
+ * An MCP App in a sandboxed frame (KOBE-437, spec T2, T9, MA3, MA10): Kaiju's member frame route
  * (header CSP `sandbox allow-scripts`, no network), `sandbox="allow-scripts"`, no `allow`
  * permissions, no referrer, in a bordered card the app cannot cover (the host header line "App
  * from _connector_" was removed at Chris's request on 2026-11-06, T9 amended; the card's border
- * and the region's accessible name still say it is an app). Kobe's host bridge answers only this
+ * and the region's accessible name still say it is an app). Kaiju's host bridge answers only this
  * frame. MA-9 and MA-6 place it in tool cards
  * and app cards (and call `AppFrameHandle.teardown` before they remove a frame); MA-7 wires
  * `onMessage` and `onModelContext` to the composer. KOBE-460 places one picker in the rail
@@ -67,7 +67,7 @@ export interface AppFrameProps {
    * is not off there. Read when the call is made.
    */
   readonly threadId?: string | null | undefined;
-  /** Each `tools/call`'s answer from Kobe, with the thread that call was sent for. */
+  /** Each `tools/call`'s answer from Kaiju, with the thread that call was sent for. */
   readonly onCall?: ((answer: ToolCallAnswer, threadId: string | null) => void) | undefined;
   /** Sent as `ui/notifications/tool-input` and `tool-result` once the app has initialized. */
   readonly toolInput?: Record<string, unknown> | undefined;
@@ -114,7 +114,7 @@ function railFrameHeight(report: number, room: number): number | null {
   return room > 0 && report > room + 1 ? report : null;
 }
 
-/** Set on the iframe while Kobe's host bridge listens for it. */
+/** Set on the iframe while Kaiju's host bridge listens for it. */
 export const BRIDGE_ATTACHED_ATTR = "data-kobe-app-bridge";
 
 /** What an owner may do with a live frame (review LOW-4, coordinator decision 2). */

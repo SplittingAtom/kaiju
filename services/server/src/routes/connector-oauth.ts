@@ -13,9 +13,9 @@ export const OAUTH_START_RATE: RateLimitRule = { windowMs: 10 * 60_000, max: 30 
 
 const idSchema = z.uuid();
 const MESSAGES = {
-  oauth_unsupported: "This connector's authorization server cannot be used safely with Kobe.",
+  oauth_unsupported: "This connector's authorization server cannot be used safely with Kaiju.",
   oauth_unreachable: "Could not reach the connector's authorization server.",
-  registration_failed: "The authorization server did not accept Kobe as a client.",
+  registration_failed: "The authorization server did not accept Kaiju as a client.",
 } as const;
 
 function flowDeps(deps: ServerDeps): OauthFlowDeps | undefined {

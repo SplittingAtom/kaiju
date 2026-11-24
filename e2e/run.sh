@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kobe k3d end-to-end suite (KOBE-7). Expects a cluster from scripts/dev-cluster.sh and the Kobe
+# Kaiju k3d end-to-end suite (KOBE-7). Expects a cluster from scripts/dev-cluster.sh and the Kaiju
 # images available to it under ghcr.io/splittingatom/kobe-*:${KOBE_IMAGE_TAG} (e.g. via
 # `k3d image import`). Starts from clean state each run (dev Postgres, release, namespaces), installs
 # the chart with dev/values.yaml, then checks platform invariants. Later tickets add their stories.

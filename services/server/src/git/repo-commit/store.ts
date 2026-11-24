@@ -23,7 +23,7 @@ export interface RepoRow {
   readonly defaultBranch: string;
   readonly hostState: string;
   readonly mirrorHeadSha: string | null;
-  /** The Kobe commit that is the copy of `mirrorHeadSha` (set by conversion, mirror, direct commits). */
+  /** The Kaiju commit that is the copy of `mirrorHeadSha` (set by conversion, mirror, direct commits). */
   readonly mirrorCommitId: string | null;
 }
 
@@ -52,7 +52,7 @@ export interface RepoCommitFacts {
 
 /**
  * Read in the same transaction as the commit's plan (review H1), with the repository row locked
- * `FOR SHARE`, so the mirror head and Kobe's head are one consistent snapshot.
+ * `FOR SHARE`, so the mirror head and Kaiju's head are one consistent snapshot.
  */
 export async function loadRepoCommitFacts(
   tx: KobeTx,

@@ -34,7 +34,7 @@ export function CandidateLabels({ candidate }: { readonly candidate: Candidate }
   );
 }
 
-/** Why Kobe suggests it, and the quotes it rests on (each scrolls to its message). */
+/** Why Kaiju suggests it, and the quotes it rests on (each scrolls to its message). */
 export function CandidateWhy({
   candidate,
   threadId,
@@ -93,7 +93,7 @@ export function CandidateContext({
           </p>
           {candidate.targetChanged && (
             <p className="m-0 mb-1 text-sm text-console-muted">
-              This memory was changed since Kobe suggested this: the comparison shows it as it is
+              This memory was changed since Kaiju suggested this: the comparison shows it as it is
               now. Check it before you save.
             </p>
           )}

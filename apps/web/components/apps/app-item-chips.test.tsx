@@ -202,7 +202,9 @@ describe("app item chips (KOBE-490)", () => {
     openApp(fake, thread());
     const app = await appWindow();
     await message(app, 1, [{ ...link("cat", "ns", "x", "table"), uri: "data:text/html,x" }]);
-    expect(await screen.findByText("Lakehouse Picker sent items Kobe could not use.")).toBeTruthy();
+    expect(
+      await screen.findByText("Lakehouse Picker sent items Kaiju could not use."),
+    ).toBeTruthy();
     await waitFor(() =>
       expect(app.replies()).toContainEqual(
         expect.objectContaining({ id: 1, error: expect.objectContaining({ code: -32602 }) }),

@@ -67,7 +67,7 @@ describe("site invitations (ac-1)", () => {
     });
     expect(JSON.stringify(res.json)).not.toMatch(/token/i);
     const [mail] = h.mailer.to("nina@inv.test");
-    expect(mail?.subject).toBe("admin invited you to Kobe");
+    expect(mail?.subject).toBe("admin invited you to Kaiju");
     expect(mail?.text).toMatch(/http:\/\/kobe\.test\/invite#token=[A-Za-z0-9_-]{43}\n/);
     const token = h.mailer.lastToken("nina@inv.test");
     const { rows } = await h.admin.query(`SELECT * FROM invitations WHERE email = 'nina@inv.test'`);
@@ -247,7 +247,7 @@ describe("site invitations (ac-1)", () => {
 });
 
 describe("team invitations (ac-2)", () => {
-  it("answer the same whether or not the address belongs to a Kobe user", async () => {
+  it("answer the same whether or not the address belongs to a Kaiju user", async () => {
     await h.createUser("bob@inv.test");
     const known = await alice.post("/v1/team/invites", { email: "bob@inv.test", role: "member" });
     const unknown = await alice.post("/v1/team/invites", {
@@ -263,7 +263,7 @@ describe("team invitations (ac-2)", () => {
     await h.mailer.settle();
     // Existing users hear about it; nobody mails strangers on a team admin's word.
     expect(h.mailer.to("bob@inv.test").at(-1)?.subject).toBe(
-      "alice invited you to the Finance team on Kobe",
+      "alice invited you to the Finance team on Kaiju",
     );
     expect(h.mailer.to("stranger@inv.test")).toEqual([]);
   });

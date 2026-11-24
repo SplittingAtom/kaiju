@@ -33,7 +33,7 @@ export const VARIABLES_EMPTY =
 export const NOT_RUNNING =
   "The kernel is not running, so there are no variables. Run the file or Start the kernel.";
 export const TOO_OLD =
-  "Variables are not available yet: your sandbox runs an older Kobe agent. They appear once it is updated.";
+  "Variables are not available yet: your sandbox runs an older Kaiju agent. They appear once it is updated.";
 export const READER_NOTE = "Only the conversation's owner can see the kernel's variables.";
 export const STALE_NOTE =
   "Code is running: these values are from before it. They refresh when it ends.";

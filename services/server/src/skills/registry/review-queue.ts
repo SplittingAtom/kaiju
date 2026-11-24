@@ -212,7 +212,7 @@ export interface QueueItem {
   readonly selfApproved: boolean;
 }
 
-/** The queue, oldest submission first; maintainer submissions only (Kobe publishes unreviewed). */
+/** The queue, oldest submission first; maintainer submissions only (Kaiju publishes unreviewed). */
 export async function listQueue(
   db: KobeDb,
   blobs: BlobStore,

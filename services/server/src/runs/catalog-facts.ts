@@ -24,7 +24,7 @@ import { readCatalogSwitches } from "../skills/settings.js";
  *   left from before it counts as the member's "on" choice at the install's pin (KOBE-338 review
  *   M3). An add that doesn't load is ignored as if it weren't there.
  *
- * Kobe's own skills (KOBE-317, the former built-ins) never pause on an upgrade: an agent naming one
+ * Kaiju's own skills (KOBE-317, the former built-ins) never pause on an upgrade: an agent naming one
  * in a team the Default sync has not reached yet (or that it skipped for a name conflict) gets it
  * as the Default install will be, On by default at Track within major, provided the skill is
  * still Default and the team neither opted out nor blocked it. That is what the built-in gave the
@@ -105,7 +105,7 @@ async function versionsOf(
 }
 
 /**
- * Named Kobe skills the team has no install of yet, as their Default install would be (see the
+ * Named Kaiju skills the team has no install of yet, as their Default install would be (see the
  * header): skill id and the Default's major, for those still tagged Default and neither opted out
  * nor blocked in this team.
  */

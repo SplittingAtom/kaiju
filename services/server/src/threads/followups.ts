@@ -52,7 +52,7 @@ const SETTINGS_OBJECT = sql`CASE WHEN jsonb_typeof(settings) = 'object' THEN set
 
 /**
  * Turns the team's follow-ups on or off, audited (`models.followups.changed`) when it changed. A
- * `teams.settings` that is not an object (never written by Kobe, but not constrained) is replaced
+ * `teams.settings` that is not an object (never written by Kaiju, but not constrained) is replaced
  * by one holding the switch instead of failing.
  */
 export async function setFollowupsEnabled(

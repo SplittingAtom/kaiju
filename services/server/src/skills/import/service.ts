@@ -24,7 +24,7 @@ import { guardPacks } from "./pack-guard.js";
  * owners; default none), fetched once by the server through the egress proxy, re-hashed, checked
  * like an upload (package path rules, git-reserved names, SKILL.md, the draft's 5 MiB and 200
  * files) and turned into a private Workbench draft whose `origin` records the URL, the commit,
- * Kobe's own hash and the importer. Never a catalog entry: evals, a version and review follow as
+ * Kaiju's own hash and the importer. Never a catalog entry: evals, a version and review follow as
  * for any draft. Nothing is fetched later, at run time or otherwise.
  */
 

@@ -210,8 +210,8 @@ export async function recordSuccess(
     readonly headSha: string;
     readonly commitId?: string | null;
     /**
-     * KOBE-767: the mirror head the refresh started from. When Kobe's commit flow moved the head
-     * meanwhile (a direct commit written into Kobe's copy), the head and commit are left as they
+     * KOBE-767: the mirror head the refresh started from. When Kaiju's commit flow moved the head
+     * meanwhile (a direct commit written into Kaiju's copy), the head and commit are left as they
      * are: this refresh read an older state and must not put it back.
      */
     readonly fromHead?: string | null;
@@ -334,23 +334,23 @@ export const MIRROR_FAILURE_MESSAGES: Readonly<Record<GitMirrorFailure, string>>
     "The git host refused the Workspace's credential; a Workspace admin should check the connection.",
   credential_forbidden: "The Workspace's git credential may not read this repository.",
   connection_budget:
-    "The connection's hourly budget for git reads is used up (it is shared with agents' git tools); Kobe tries again later.",
-  host_rate_limited: "The git host is rate limiting Kobe; Kobe tries again after its reset time.",
-  host_unreachable: "The git host could not be reached; Kobe tries again later.",
+    "The connection's hourly budget for git reads is used up (it is shared with agents' git tools); Kaiju tries again later.",
+  host_rate_limited: "The git host is rate limiting Kaiju; Kaiju tries again after its reset time.",
+  host_unreachable: "The git host could not be reached; Kaiju tries again later.",
   branch_missing: "The repository's default branch is not on the host.",
-  too_many_files: `The repository is too large to mirror: it has more than ${GIT_REPO_MAX_FILES} files. Kobe keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
-  file_too_large: `The repository is too large to mirror: it holds a file over ${mib(GIT_REPO_MAX_FILE_BYTES)}. Kobe keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
-  repository_too_large: `The repository is too large to mirror: its files, or its recent history, are more than a mirror can hold (${mib(GIT_REPO_MAX_CONTENT_BYTES)} of files). Kobe keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
-  unsupported_path: "The repository holds a file whose path Kobe's projects cannot hold.",
-  fetch_failed: "Kobe could not read the repository from the host; it tries again later.",
-  server_capacity: "The server has no room to read the repository now; Kobe tries again later.",
+  too_many_files: `The repository is too large to mirror: it has more than ${GIT_REPO_MAX_FILES} files. Kaiju keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
+  file_too_large: `The repository is too large to mirror: it holds a file over ${mib(GIT_REPO_MAX_FILE_BYTES)}. Kaiju keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
+  repository_too_large: `The repository is too large to mirror: its files, or its recent history, are more than a mirror can hold (${mib(GIT_REPO_MAX_CONTENT_BYTES)} of files). Kaiju keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
+  unsupported_path: "The repository holds a file whose path Kaiju's projects cannot hold.",
+  fetch_failed: "Kaiju could not read the repository from the host; it tries again later.",
+  server_capacity: "The server has no room to read the repository now; Kaiju tries again later.",
   legal_hold:
     "A legal hold covers this Workspace and the change would remove files, so the mirror waits.",
   git_unavailable: "Git is not available on this server.",
   repository_not_found:
-    "The host does not show this repository to the Workspace's credential (deleted, moved out of the organization, or access narrowed); Kobe checks again before marking it deleted.",
-  interrupted: "The last refresh stopped before it finished; Kobe tries again later.",
-  internal_error: "The mirror could not be refreshed; Kobe tries again later.",
+    "The host does not show this repository to the Workspace's credential (deleted, moved out of the organization, or access narrowed); Kaiju checks again before marking it deleted.",
+  interrupted: "The last refresh stopped before it finished; Kaiju tries again later.",
+  internal_error: "The mirror could not be refreshed; Kaiju tries again later.",
 };
 
 export function failureView(

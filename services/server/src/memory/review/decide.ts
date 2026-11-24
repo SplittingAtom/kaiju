@@ -57,7 +57,7 @@ export const saveCandidateSchema = z.strictObject({
   overrides: semanticMemoryOverridesSchema.optional(),
   /**
    * The version of the memory the candidate changes that the person reviewed on the card
-   * (KOBE-779): sent once the card said the memory changed since Kobe suggested this.
+   * (KOBE-779): sent once the card said the memory changed since Kaiju suggested this.
    */
   target_version: z.number().int().positive().optional(),
 });
@@ -219,7 +219,7 @@ async function targetVersion(
 }
 
 export const TARGET_MOVED_MESSAGE =
-  "The memory this candidate changes was changed since Kobe suggested this. Look at the changes again, then save or dismiss.";
+  "The memory this candidate changes was changed since Kaiju suggested this. Look at the changes again, then save or dismiss.";
 
 export function saveCandidate(
   db: KobeDb,

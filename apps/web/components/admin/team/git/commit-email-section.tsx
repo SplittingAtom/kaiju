@@ -13,7 +13,7 @@ import { ResourceView } from "../../parts";
 import { useMutation, useResource } from "../../use-resource";
 
 /**
- * Commit author email (spec G13, GQ10; KOBE-764 writes it into sandbox commits): the member's Kobe
+ * Commit author email (spec G13, GQ10; KOBE-764 writes it into sandbox commits): the member's Kaiju
  * email (default) or a no-reply address under the Site's host. `/v1/team/git/settings`.
  */
 export function CommitEmailSection({ teamId }: { readonly teamId: string }) {
@@ -50,7 +50,7 @@ function CommitEmailForm({
       (saved) =>
         saved.commitEmail === "noreply"
           ? "New commits in sandboxes now use each member's no-reply address."
-          : "New commits in sandboxes now use each member's Kobe email.",
+          : "New commits in sandboxes now use each member's Kaiju email.",
     );
     if (done) onSaved();
   }
@@ -60,8 +60,8 @@ function CommitEmailForm({
       <ChoiceGroup legend="Author email on sandbox commits" stacked>
         <Radio
           name={`${ids}-email`}
-          label="Member's Kobe email"
-          hint="Each commit shows the member's name and the email they sign in to Kobe with; anyone who can read the repository on the host sees it."
+          label="Member's Kaiju email"
+          hint="Each commit shows the member's name and the email they sign in to Kaiju with; anyone who can read the repository on the host sees it."
           checked={choice === "member"}
           onChange={() => setChoice("member")}
         />

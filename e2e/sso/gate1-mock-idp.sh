@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploys the mock identity provider for the browser SSO spec (KOBE-634,
-# e2e/browser/tests/sso.spec.ts) next to a running Kobe release, as its own generic OIDC provider.
+# e2e/browser/tests/sso.spec.ts) next to a running Kaiju release, as its own generic OIDC provider.
 # It never touches DNS, kube-system or a real provider: the mock's issuer is its in-cluster name.
 #
 #   KUBECTL="sudo k3s kubectl" KOBE_NS=<release namespace> e2e/sso/gate1-mock-idp.sh
@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 KUBECTL="${KUBECTL:-kubectl}"
-KOBE_NS="${KOBE_NS:?KOBE_NS (the Kobe release namespace) is required}"
+KOBE_NS="${KOBE_NS:?KOBE_NS (the Kaiju release namespace) is required}"
 RELEASE="${KOBE_RELEASE:-kobe}"
 NS=kobe-sso-mock
 HOST="mock-idp.$NS.svc.cluster.local"
@@ -35,7 +35,7 @@ if k -n "$NS" get secret mock-idp-ca >/dev/null 2>&1; then
   k -n "$NS" get secret mock-idp-ca -o jsonpath='{.data.tls\.crt}' | base64 -d >"$WORK/ca.crt"
   k -n "$NS" get secret mock-idp-ca -o jsonpath='{.data.tls\.key}' | base64 -d >"$WORK/ca.key"
 else
-  openssl req -x509 -newkey rsa:2048 -nodes -days 365 -subj "/CN=Kobe e2e mock IdP CA" \
+  openssl req -x509 -newkey rsa:2048 -nodes -days 365 -subj "/CN=Kaiju e2e mock IdP CA" \
     -keyout "$WORK/ca.key" -out "$WORK/ca.crt" \
     -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" 2>/dev/null
   k -n "$NS" create secret tls mock-idp-ca --cert="$WORK/ca.crt" --key="$WORK/ca.key" >/dev/null

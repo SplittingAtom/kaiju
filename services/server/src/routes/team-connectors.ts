@@ -20,7 +20,7 @@ export const bodySchema = z
     enabled_tools: z.array(z.string().max(256)).max(1000).optional(),
     /**
      * KOBE-621: the team's exposure as the caller saw it (`off`: not enabled); another one is a 409
-     * `changed_since_approval` (a Kobe MCP write's approved before-state).
+     * `changed_since_approval` (a Kaiju MCP write's approved before-state).
      */
     expected_exposure: z.enum(["off", "read_only", "all", "custom"]).optional(),
   })
@@ -60,7 +60,7 @@ export function teamConnectorsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
   );
 
   /**
-   * The built-in Kobe connector (KOBE-623, spec kobe-admin-mcp §6, KA5): the site switch and the
+   * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp §6, KA5): the site switch and the
    * team's level (`docs` default, `read`, `read_write`). Registered before `/:id`.
    */
   app.get("/kobe", requireTeamPermission("team.read"), async (c) => {
@@ -77,7 +77,7 @@ export function teamConnectorsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     const set = await setKobeTeamLevel(db, teamId, body.level, body.expected_level);
     if (!set.ok) {
       return c.json(
-        { code: "changed_since_approval", message: "The team's Kobe level changed meanwhile." },
+        { code: "changed_since_approval", message: "The team's Kaiju level changed meanwhile." },
         409,
       );
     }

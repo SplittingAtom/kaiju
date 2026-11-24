@@ -2,7 +2,7 @@ import { sign, verify } from "node:crypto";
 import { KID_PATTERN, type SessionSigningKey, type SessionVerifyKeys } from "./keys.js";
 
 /**
- * The compact JWS every Kobe session token uses (KOBE-513): **EdDSA (Ed25519) only**, header
+ * The compact JWS every Kaiju session token uses (KOBE-513): **EdDSA (Ed25519) only**, header
  * exactly {"alg":"EdDSA","typ":"<typ>","kid":"<key id>"} with the verifier's expected `typ`. `none`, every other algorithm (HS256
  * included) and extra fields such as jku, x5u, jwk or crit are refused; the algorithm is never
  * read from the token, and `kid` only selects among the verifier's own public keys (an unknown

@@ -90,7 +90,7 @@ describe("app name (§4.1)", () => {
     expect(appNameSchema.parse("a")).toBe("a");
     expect(appNameSchema.parse("x".repeat(APP_NAME_MAX_LENGTH))).toHaveLength(40);
     expect(appNameSchema.parse(` ${"x".repeat(40)} `)).toHaveLength(40);
-    expect(DEFAULT_APP_NAME).toBe("Kobe");
+    expect(DEFAULT_APP_NAME).toBe("Kaiju");
   });
 
   it("counts characters, not UTF-16 units", () => {
@@ -152,7 +152,7 @@ describe("public branding (GET /v1/site/branding)", () => {
   it("accepts the defaults and a fully branded site", () => {
     expect(
       siteBrandingSchema.parse({
-        appName: "Kobe",
+        appName: "Kaiju",
         showName: true,
         logo: null,
         favicon: null,
@@ -171,7 +171,13 @@ describe("public branding (GET /v1/site/branding)", () => {
   });
 
   it("refuses an invalid theme, name or extra keys", () => {
-    const ok = { appName: "Kobe", showName: true, logo: null, favicon: null, theme: DEFAULT_THEME };
+    const ok = {
+      appName: "Kaiju",
+      showName: true,
+      logo: null,
+      favicon: null,
+      theme: DEFAULT_THEME,
+    };
     expect(siteBrandingSchema.safeParse({ ...ok, theme: { preset: "kobe" } }).success).toBe(false);
     expect(siteBrandingSchema.safeParse({ ...ok, appName: "" }).success).toBe(false);
     expect(siteBrandingSchema.safeParse({ ...ok, css: "x" }).success).toBe(false);
@@ -180,7 +186,13 @@ describe("public branding (GET /v1/site/branding)", () => {
   });
 
   it("carries the logo theme colour setting (KOBE-562), off when a server leaves it out", () => {
-    const ok = { appName: "Kobe", showName: true, logo: null, favicon: null, theme: DEFAULT_THEME };
+    const ok = {
+      appName: "Kaiju",
+      showName: true,
+      logo: null,
+      favicon: null,
+      theme: DEFAULT_THEME,
+    };
     expect(siteBrandingSchema.parse(ok).logoThemeColor).toBe(false);
     expect(siteBrandingSchema.parse({ ...ok, logoThemeColor: true }).logoThemeColor).toBe(true);
     expect(siteBrandingSchema.safeParse({ ...ok, logoThemeColor: "on" }).success).toBe(false);

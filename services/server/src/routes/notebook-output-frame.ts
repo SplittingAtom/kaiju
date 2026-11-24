@@ -10,7 +10,7 @@ import { uuidSchema } from "../threads/schemas.js";
 export const NOTEBOOK_OUTPUT_FRAME_MESSAGE = "kobe.notebook.html";
 
 /**
- * The frame's whole document. It writes the HTML its parent (Kobe's page) posts, once, and then
+ * The frame's whole document. It writes the HTML its parent (Kaiju's page) posts, once, and then
  * is that document: the header CSP (`sandbox` without `allow-same-origin`, `connect-src 'none'`)
  * and the WebRTC guard stay in force, since `document.open` keeps the window and its policy.
  */
@@ -31,7 +31,7 @@ const querySchema = z.strictObject({ team: uuidSchema });
  * notebook's HTML output (and only that) is shown in. The page never puts kernel HTML into its
  * own DOM and never uses `srcdoc` (a `srcdoc` document inherits the page's CSP and origin rules):
  * it loads this fixed shell with the artifact frame's headers, so an opaque origin with no
- * cookies and no network, and posts the HTML to it. Only for frame loads from Kobe's own page and
+ * cookies and no network, and posts the HTML to it. Only for frame loads from Kaiju's own page and
  * the active team the page names, like the workspace frame.
  */
 export function registerNotebookOutputFrame(

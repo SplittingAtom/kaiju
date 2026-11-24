@@ -17,7 +17,7 @@ import { executeFind, executeGrep, type SearchHelpers } from "./search.js";
  * name replaces it (agent-session.js `_refreshToolRegistry`: extension tools win), so every call
  * goes through kobe-policy's `tool_call` check as before and then to {@link ExecTransport}.
  * bash, read, write, edit and ls are Pi's own tool definitions (same schema, description, prompt
- * text, renderers, truncation and result details) with Kobe operations; grep and find keep Pi's
+ * text, renderers, truncation and result details) with Kaiju operations; grep and find keep Pi's
  * definition and swap `execute` (see search.ts for why).
  */
 export const TOOL_NAMES = ["bash", "read", "write", "edit", "ls", "grep", "find"] as const;

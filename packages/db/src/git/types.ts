@@ -7,7 +7,7 @@
  */
 
 /**
- * Git hosts Kobe connects to (G1). GitHub Enterprise Server is `github` with its own base URL
+ * Git hosts Kaiju connects to (G1). GitHub Enterprise Server is `github` with its own base URL
  * (GQ6: the same adapter); Forgejo is a fork of Gitea and shares its adapter, but is recorded so
  * labels, links and documentation are right (G7).
  */
@@ -31,7 +31,7 @@ export const GIT_CREDENTIAL_KINDS_BY_PROVIDER: Readonly<
   forgejo: ["access_token"],
 };
 
-/** Access level of a connection (G1): the same three steps as the Kobe admin connector. */
+/** Access level of a connection (G1): the same three steps as the Kaiju admin connector. */
 export const GIT_ACCESS_LEVEL_VALUES = ["off", "read", "read_write"] as const;
 export type GitAccessLevel = (typeof GIT_ACCESS_LEVEL_VALUES)[number];
 
@@ -44,7 +44,7 @@ export const GIT_REPOSITORY_ORIGIN_VALUES = ["tool", "conversion", "link"] as co
 export type GitRepositoryOrigin = (typeof GIT_REPOSITORY_ORIGIN_VALUES)[number];
 
 /**
- * The repository on the host as Kobe last saw it (G20): `active`; `archived` or `deleted` on the
+ * The repository on the host as Kaiju last saw it (G20): `active`; `archived` or `deleted` on the
  * host (a Repo becomes read-only from its mirror); `unreachable`: the connection was removed or
  * cannot reach it.
  */
@@ -56,7 +56,7 @@ export const GIT_REPOSITORY_HOST_STATE_VALUES = [
 ] as const;
 export type GitRepositoryHostState = (typeof GIT_REPOSITORY_HOST_STATE_VALUES)[number];
 
-/** A project's kind (G15, §8): an ordinary Kobe project, or a Repo whose record is on the host. */
+/** A project's kind (G15, §8): an ordinary Kaiju project, or a Repo whose record is on the host. */
 export const PROJECT_KIND_VALUES = ["project", "repo"] as const;
 export type ProjectKind = (typeof PROJECT_KIND_VALUES)[number];
 
@@ -115,7 +115,7 @@ export interface GitCapabilities {
   readonly read: GitCapability;
   /** Push and open pull requests, issues and comments. */
   readonly write: GitCapability;
-  /** Administer repositories or the organization (more than Kobe needs). */
+  /** Administer repositories or the organization (more than Kaiju needs). */
   readonly admin: GitCapability;
 }
 
@@ -154,7 +154,7 @@ export interface GitConnectionRecord {
   readonly repoNamePrefix: string;
   readonly defaultBranch: string;
   readonly pushLimitBytes: number;
-  /** G18, GQ11: commits from Kobe's flow may go straight to the default branch. */
+  /** G18, GQ11: commits from Kaiju's flow may go straight to the default branch. */
   readonly directCommits: boolean;
   /** GQ8: the agents that may use it; null = every agent in the Workspace. */
   readonly agentIds: readonly string[] | null;
@@ -182,7 +182,7 @@ export interface GitRepositoryRecord {
   readonly connectionId: string | null;
   /** The host's base URL (as the connection's): with `hostRepoId`, the repository's identity. */
   readonly baseUrl: string;
-  /** The host's own id (G20: Kobe follows it through renames and transfers). */
+  /** The host's own id (G20: Kaiju follows it through renames and transfers). */
   readonly hostRepoId: string;
   /** `organization/repository` as last seen on the host. */
   readonly fullName: string;
@@ -197,7 +197,7 @@ export interface GitRepositoryRecord {
   /** G17: the mirrored head of the default branch and when it was last refreshed. */
   readonly mirrorHeadSha: string | null;
   readonly mirrorRefreshedAt: Date | null;
-  /** KOBE-766: the Kobe commit the mirror last wrote (null while the head is Kobe's own). */
+  /** KOBE-766: the Kaiju commit the mirror last wrote (null while the head is Kaiju's own). */
   readonly mirrorCommitId: string | null;
   /** KOBE-766: the last refresh attempt, its failure code, failures in a row and the backoff. */
   readonly mirrorAttemptedAt: Date | null;
@@ -227,7 +227,7 @@ export const GIT_MIRROR_ERROR_MAX = 64;
  * to be resumed after a restart); `failed` after a step failed, until a person retries or
  * abandons it; `completed` once the project is a Repo; `abandoned` when a person gave up on a
  * failed attempt (the project stays an ordinary project). While a conversion is `running` or
- * `failed` the project takes no Kobe commits, and it has at most one such conversion.
+ * `failed` the project takes no Kaiju commits, and it has at most one such conversion.
  */
 export const GIT_CONVERSION_STATUS_VALUES = [
   "running",
@@ -236,7 +236,7 @@ export const GIT_CONVERSION_STATUS_VALUES = [
   "abandoned",
 ] as const;
 export type GitConversionStatus = (typeof GIT_CONVERSION_STATUS_VALUES)[number];
-/** The statuses that hold the project (one per project; Kobe commits refused). */
+/** The statuses that hold the project (one per project; Kaiju commits refused). */
 export const GIT_CONVERSION_ACTIVE_STATUSES = ["running", "failed"] as const;
 
 /**

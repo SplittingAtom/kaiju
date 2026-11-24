@@ -84,7 +84,7 @@ describe("a backup taken before the site rename (KOBE-256)", () => {
         pgBinDir,
       }),
     ).rejects.toThrow(
-      /schema does not match the backup[\s\S]*Install the Kobe version the backup was taken with/,
+      /schema does not match the backup[\s\S]*Install the Kaiju version the backup was taken with/,
     );
     expect(await rowsOf(dst.adminUrl, "users")).toEqual([]);
     expect(await rowsOf(dst.adminUrl, "site_roles")).toEqual([]);

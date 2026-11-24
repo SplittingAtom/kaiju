@@ -533,7 +533,7 @@ export async function siteEvalLimits(db: KobeDb): Promise<SkillEvalLimits> {
   return parsed.success ? parsed.data : skillEvalLimitsSchema.parse({});
 }
 
-/** The Kobe gallery agent's pin, as Workbench test chats use it (the new-thread default). */
+/** The Kaiju gallery agent's pin, as Workbench test chats use it (the new-thread default). */
 export function kobePin(tx: KobeTx, teamId: string, userId: string): Promise<AgentPin | null> {
   return defaultNewThreadPin(tx, { teamId, userId });
 }

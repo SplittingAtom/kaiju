@@ -29,7 +29,7 @@ import {
 } from "./team-skills.js";
 
 /**
- * Every Kobe MCP admin tool: the Team console list of spec §5 (KOBE-621, KA-4) on the KOBE-619
+ * Every Kaiju MCP admin tool: the Team console list of spec §5 (KOBE-621, KA-4) on the KOBE-619
  * framework; KA-5 adds the Site console list. The contract test (`kobe-mcp-team.db.test.ts`) runs each
  * one as a person without the tool's permission and as one holding it.
  */

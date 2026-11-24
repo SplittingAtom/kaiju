@@ -54,7 +54,7 @@ export function EgressCeilingPage() {
     <>
       <PageHeader
         title="Egress ceiling"
-        description="Sandboxes reach the internet only through Kobe's egress proxy, over HTTPS, and only to domains their team enabled. The ceiling is what teams may enable: a new site reaches nothing, and package registries sit in the ceiling but are off for every team until a team admin enables them. Sandboxes have no DNS of their own; the proxy resolves names and never connects to internal addresses, except for a domain marked internal (same cluster), and then only to the cluster ingress."
+        description="Sandboxes reach the internet only through Kaiju's egress proxy, over HTTPS, and only to domains their team enabled. The ceiling is what teams may enable: a new site reaches nothing, and package registries sit in the ceiling but are off for every team until a team admin enables them. Sandboxes have no DNS of their own; the proxy resolves names and never connects to internal addresses, except for a domain marked internal (same cluster), and then only to the cluster ingress."
       />
       <AddDomainForm mutation={mutation} onAdded={reload} />
       <MutationStatus error={mutation.error} notice={mutation.notice} />

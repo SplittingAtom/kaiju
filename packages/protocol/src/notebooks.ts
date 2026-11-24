@@ -40,7 +40,7 @@ export const NOTEBOOK_TOOL_TEXT_MAX_BYTES = 16 * 1024;
 export const NOTEBOOK_TIMEOUT_DEFAULT_S = 600;
 export const NOTEBOOK_TIMEOUT_MAX_S = 3600;
 /** The truncation marker's text starts with this (a `stream` output on `stderr`). */
-export const NOTEBOOK_TRUNCATED_PREFIX = "[Kobe: output truncated";
+export const NOTEBOOK_TRUNCATED_PREFIX = "[Kaiju: output truncated";
 
 /** nbformat 4.5 cell id. */
 export const notebookCellIdSchema = z
@@ -113,7 +113,7 @@ export const notebookErrorOutputSchema = z.strictObject({
   traceback: z.array(text).max(1000),
 });
 
-/** One nbformat 4 output as Kobe stores, streams and saves it (at most NOTEBOOK_OUTPUT_MAX_BYTES). */
+/** One nbformat 4 output as Kaiju stores, streams and saves it (at most NOTEBOOK_OUTPUT_MAX_BYTES). */
 export const notebookOutputSchema = z
   .discriminatedUnion("output_type", [
     notebookStreamOutputSchema,

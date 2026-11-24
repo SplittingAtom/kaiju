@@ -5,13 +5,13 @@ import {
   type KobePromptParts,
   type RawSection,
 } from "./system-prompt.js";
-import { PICKS_HEADER } from "../memory/semantic-context.js";
+import { PICKS_HEADER, headerForms } from "../memory/semantic-context.js";
 import { VIEWING_HEADER } from "../memory/viewing-context.js";
 import { CONFLICTS_HEADER } from "../memory/conflict-context.js";
 
 /** kobe-tools' picks note (KOBE-658, kobe-tools/memory-hooks.ts `MEMORY_PICKS_TYPE`). */
 const PICKS_NOTE_TYPE = "kobe-memory-picks";
-const PICKS_LABEL = "What Kobe knows for this message";
+const PICKS_LABEL = "What Kaiju knows for this message";
 
 /**
  * A model call's context as ordered sections (KOBE-470, CV3). Takes what kobe-models captured
@@ -95,7 +95,9 @@ function systemSections(message: Rec, leading: boolean, parts?: KobePromptParts)
 
 /** kobe-tools' per-message note (KOBE-658): labelled by the part it starts with. */
 function noteSection(text: string): RawSection | undefined {
-  if (text.startsWith(`${PICKS_HEADER}\n`)) return { kind: "memory", label: PICKS_LABEL, text };
+  if (headerForms(PICKS_HEADER).some((h) => text.startsWith(`${h}\n`))) {
+    return { kind: "memory", label: PICKS_LABEL, text };
+  }
   if (text.startsWith(`${VIEWING_HEADER}\n`))
     return { kind: "viewing_file", label: "Viewed file", text };
   if (text.startsWith(`${CONFLICTS_HEADER}\n`)) {

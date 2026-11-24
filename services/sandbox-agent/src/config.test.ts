@@ -43,7 +43,7 @@ describe("sandbox-agent loadConfig", () => {
     expect(() => loadConfig({ ...env, KOBE_EXEC_EXTENSION: "relative.js" })).toThrow();
   });
 
-  it("switches the tool executor with KOBE_TOOL_EXECUTOR: on unless told otherwise, off in Kobe's pods unless asked", () => {
+  it("switches the tool executor with KOBE_TOOL_EXECUTOR: on unless told otherwise, off in Kaiju's pods unless asked", () => {
     const env = { ...base, KOBE_SERVER_URL: "wss://kobe" };
     expect(loadConfig(env).toolExecutor).toBe(true);
     const pod = { KOBE_SERVER_URL: "wss://kobe", KOBE_BOOTSTRAP_TOKEN_FILE: "/run/t" };
@@ -81,7 +81,7 @@ describe("sandbox-agent loadConfig", () => {
     );
   });
 
-  it("in bootstrap mode (Kobe's pods) takes the sandbox id from the server instead", () => {
+  it("in bootstrap mode (Kaiju's pods) takes the sandbox id from the server instead", () => {
     const config = loadConfig({
       KOBE_SERVER_URL: "ws://server.kobe.internal:8081",
       KOBE_BOOTSTRAP_TOKEN_FILE: "/var/run/secrets/kobe/bootstrap-token",

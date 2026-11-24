@@ -57,7 +57,7 @@ export const skillDefaultSyncs = pgTable(
     /** The version new Default installs get (`add`) or moved installs move to (`move_major`). */
     versionId: uuid(),
     status: text().$type<DefaultSyncStatus>().notNull().default("queued"),
-    /** Null exactly when Kobe queued it (`by_kobe`, KOBE-317: the built-in seed). */
+    /** Null exactly when Kaiju queued it (`by_kobe`, KOBE-317: the built-in seed). */
     requestedBy: uuid().references(() => users.id),
     byKobe: boolean().notNull().default(false),
     createdAt: ts().notNull().defaultNow(),

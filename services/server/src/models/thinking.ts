@@ -33,7 +33,7 @@ export const thinkingPolicySchema = z.strictObject({
   max: thinkingLevelSchema.nullable(),
   /**
    * The lowest level the model accepts (review S2): `low` when it cannot turn thinking off.
-   * Absent: what Kobe knows of the model's family, else `off` (`low` for `anthropic_effort`).
+   * Absent: what Kaiju knows of the model's family, else `off` (`low` for `anthropic_effort`).
    */
   lowest: thinkingLowestSchema.optional(),
 });

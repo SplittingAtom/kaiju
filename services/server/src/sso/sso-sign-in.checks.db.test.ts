@@ -94,7 +94,7 @@ describe("SSO-made users get no local credential (SSO9, review finding 3)", () =
     const verify = await browser.post("/api/auth/passkey/verify-registration", {
       response: authenticator.register({
         challenge: "AAAA",
-        rp: { id: "kobe.test", name: "Kobe" },
+        rp: { id: "kobe.test", name: "Kaiju" },
         user: { id: "AAAA", name: "x" },
       }),
     });

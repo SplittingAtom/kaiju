@@ -38,7 +38,7 @@ export const helloFrameSchema = frame("hello", {
     .optional(),
 });
 
-/** One raw Pi session event, bridged unchanged (the server translates to Kobe events). */
+/** One raw Pi session event, bridged unchanged (the server translates to Kaiju events). */
 export const piEventFrameSchema = frame("pi.event", {
   run_id: uuidSchema,
   thread_id: uuidSchema,

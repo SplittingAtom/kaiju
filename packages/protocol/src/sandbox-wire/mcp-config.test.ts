@@ -13,7 +13,7 @@ const server = {
 };
 
 describe("run.start mcp (KOBE-111)", () => {
-  it("accepts effective servers with Kobe-normalized tool names", () => {
+  it("accepts effective servers with Kaiju-normalized tool names", () => {
     expect(runMcpContextSchema.safeParse({ servers: [server] }).success).toBe(true);
     expect(runMcpContextSchema.safeParse({ servers: [] }).success).toBe(true);
   });

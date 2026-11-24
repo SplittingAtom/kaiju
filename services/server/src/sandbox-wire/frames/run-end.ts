@@ -20,7 +20,7 @@ export async function failOversizedRun(
     const { ended } = await withAppendTx(ctx.db, target.teamId, (tx) =>
       endRunInTx(tx, target.teamId, runId, {
         status: "failed",
-        error: { code, message: "The run produced more output than Kobe stores for one run." },
+        error: { code, message: "The run produced more output than Kaiju stores for one run." },
       }),
     );
     if (ended) ctx.runEnded({ teamId: target.teamId, runId, threadId, status: "failed" });

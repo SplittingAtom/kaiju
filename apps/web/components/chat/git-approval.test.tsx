@@ -21,7 +21,7 @@ const PR: GitApproval = {
   connection_name: "Acme on Forgejo",
   repository: "docs",
   title: "<img src=x onerror=alert(1)> Fix",
-  body: "Fixes it.\n\n---\nOpened by Ana Lee via Kobe, from conversation https://kobe.test/?thread=t",
+  body: "Fixes it.\n\n---\nOpened by Ana Lee via Kaiju, from conversation https://kobe.test/?thread=t",
   head: "feature",
   base: "main",
   draft: false,

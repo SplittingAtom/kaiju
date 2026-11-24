@@ -95,7 +95,7 @@ export function scimRoutes(deps: ServerDeps): Hono<ScimEnv> {
       return scimError(
         c,
         403,
-        "This provider is turned off in Kobe (Site console → Single sign-on).",
+        "This provider is turned off in Kaiju (Site console → Single sign-on).",
       );
     }
     const allowed = await hitRateLimit(db, `scim:${caller.credentialId}`, {

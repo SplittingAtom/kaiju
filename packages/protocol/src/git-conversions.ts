@@ -28,16 +28,16 @@ export const GIT_CONVERSION_FAILURES = [
   "repository_gone",
   /**
    * The repository is public (or internal where the connection allows only private), checked
-   * before every push: Kobe never writes a project into one (G10). Nothing more is pushed.
+   * before every push: Kaiju never writes a project into one (G10). Nothing more is pushed.
    */
   "repository_public",
-  /** The chosen existing repository carries another Kobe conversion's mark (it may be another Workspace's Repo). */
+  /** The chosen existing repository carries another Kaiju conversion's mark (it may be another Workspace's Repo). */
   "repository_in_use",
   /** Someone pushed something else to the repository's default branch meanwhile. */
   "repository_changed",
-  /** The host's default branch is not the one Kobe pushed. */
+  /** The host's default branch is not the one Kaiju pushed. */
   "default_branch_mismatch",
-  /** A saved file of the project could not be read from Kobe's storage. */
+  /** A saved file of the project could not be read from Kaiju's storage. */
   "content_missing",
   /** A file the host's fsck refuses (found while building, before anything was created). */
   "file_rejected_by_host",
@@ -82,7 +82,7 @@ export const GIT_CONVERSION_REFUSALS = [
   "file_too_large",
   /**
    * KOBE-766 review R3-M1: the project's current files are more than a Repo's mirror can hold
-   * (500 files, 50 MiB each, 256 MiB in all), so Kobe could never show the host's changes.
+   * (500 files, 50 MiB each, 256 MiB in all), so Kaiju could never show the host's changes.
    */
   "too_large_to_mirror",
   "git_unavailable",
@@ -155,7 +155,7 @@ export const gitConversionStartedSchema = z.strictObject({ conversion: gitConver
 
 /**
  * Abandon: the attempt and, when the host created a repository for it, that repository, which
- * Kobe leaves on the host for a Workspace admin to delete or reuse (it is listed in the Git
+ * Kaiju leaves on the host for a Workspace admin to delete or reuse (it is listed in the Git
  * section's repositories).
  */
 export const gitConversionAbandonedSchema = z.strictObject({

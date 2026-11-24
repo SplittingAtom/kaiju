@@ -40,7 +40,7 @@ import { exposedToApps } from "./decide.js";
 import { persistAppResult, type AppResultStoreDeps } from "./results-store.js";
 
 /**
- * Rail launches (KOBE-440, spec MA11): the member clicks an app in the Workspace Rail and Kobe
+ * Rail launches (KOBE-440, spec MA11): the member clicks an app in the Workspace Rail and Kaiju
  * calls its opening tool through the MA-4 path (`callApp`: MA8, read-only, policy at
  * `app_bridge`, audited `mcp.app_call`, the member's own credential), stores the full result
  * (MA10, keyed by the card's entry id) and appends an **app card** entry. No run, no

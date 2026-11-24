@@ -100,7 +100,7 @@ describe.skipIf(!PI_AVAILABLE)("real Pi 1.0.0 in RPC mode (no model credentials)
     expect(existsSync(marker("home"))).toBe(false);
     expect(existsSync(marker("project"))).toBe(false);
 
-    // Control: the same Pi without Kobe's launch options does load the HOME extension.
+    // Control: the same Pi without Kaiju's launch options does load the HOME extension.
     const child = spawn(PI_BIN, ["--mode", "rpc", "--no-session"], {
       cwd: h.workspace,
       env: { PATH: process.env.PATH ?? "", HOME: home, PI_OFFLINE: "1" },

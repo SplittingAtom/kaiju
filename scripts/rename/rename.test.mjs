@@ -16,6 +16,7 @@ import {
   audit,
   selects,
   splitValues,
+  stepProgress,
   swapUnit,
   globToRegExp,
   loadAllowlist,
@@ -324,10 +325,23 @@ test("a path rename whose references belong to a later step is refused (review H
   assert.equal(status(dir), "");
 });
 
+test("step progress: a step with no allowlist groups is done, and done steps come first", () => {
+  const groups = (...steps) => steps.map((step) => ({ step, reason: "r" }));
+  const open = STEPS.slice(1);
+  assert.deepEqual(stepProgress(groups("permanent", ...STEPS)), { done: [], outOfOrder: [] });
+  assert.deepEqual(stepProgress(groups("permanent", ...open)), { done: ["RN-2"], outOfOrder: [] });
+  assert.deepEqual(stepProgress(groups("permanent")).outOfOrder, []);
+  // RN-3 done while RN-2 still has groups: out of order.
+  const skipped = stepProgress(groups("RN-2", ...STEPS.slice(2)));
+  assert.deepEqual(skipped, { done: ["RN-3"], outOfOrder: ["RN-3"] });
+});
+
 test("the repository's lists parse, each step file holds only its own step", () => {
   const allowlist = loadAllowlist(REPO);
   assert.ok(allowlist.groups.every((g) => g.reason.length > 10));
-  for (const step of STEPS) {
+  const { done, outOfOrder } = stepProgress(allowlist.groups);
+  assert.deepEqual(outOfOrder, [], "done steps form a prefix of the step order");
+  for (const step of STEPS.filter((s) => !done.includes(s))) {
     const list = loadStep(REPO, step);
     assert.ok(list.groups.every((g) => g.step === step));
     for (const g of list.groups) {
@@ -356,6 +370,74 @@ function realOwner(path, line, token) {
   );
   return hit?.owner?.step ?? "unowned";
 }
+
+/** Like realOwner, as `step: group reason`. */
+function realGroup(path, line, token) {
+  const { found } = audit(REPO, loadAllowlist(REPO), [
+    { path, read: () => ({ binary: false, text: line }) },
+  ]);
+  const at = line.indexOf(token);
+  assert.ok(at >= 0, `${token} in ${line}`);
+  const hit = found.find((o) => o.start >= at && o.start < at + token.length);
+  return hit?.owner ? `${hit.owner.step}: ${hit.owner.group.reason}` : "unowned";
+}
+
+test("real allowlist: RN-3's file-name entries claim repository files only (KOBE-746 review)", () => {
+  const fileNames = /^RN-3: File and directory names/;
+  const theirs = [
+    ["services/server/src/x.ts", 'import { a } from "../kobe-mcp/access.js";', "kobe-mcp"],
+    ["apps/web/x.test.tsx", 'import { FakeKobe } from "../../lib/chat/testing/fake-kobe";', "kobe"],
+    ["services/server/src/x.ts", 'import { KOBE_FILE } from "./agents/kobe.js";', "kobe"],
+    ["docs/x.md", "see `apps/web/components/chat/kobe-runtime.tsx`", "kobe-runtime"],
+  ];
+  for (const [path, line, token] of theirs) {
+    assert.match(realGroup(path, line, token), fileNames, `${line} ${token}`);
+  }
+  const notTheirs = [
+    // A wire route between the model gateway and the eval image, and paths inside pods: RN-6.
+    [
+      "services/model-gateway/src/gateway.ts",
+      'const CASES = "/kobe/eval-cases";',
+      "kobe",
+      /^RN-6: Image names/,
+    ],
+    [
+      "services/sandbox-agent/src/config.ts",
+      '"/var/run/secrets/kobe/bootstrap-token"',
+      "kobe",
+      /^RN-6: Image names/,
+    ],
+    ["services/Dockerfile", "COPY ca.pem /etc/kobe/extra-ca/", "kobe", /^RN-6: Image names/],
+    // Test URLs, a database name, a runtime file and regex literals in tests are not files.
+    [
+      "apps/web/x.test.ts",
+      'fetch("http://kobe.test/v1/me")',
+      "kobe",
+      /^RN-3: Triage: Test fixture/,
+    ],
+    [
+      "packages/cli/src/x.test.ts",
+      '"postgres://u:p@db:5432/kobe?sslmode=disable"',
+      "kobe",
+      /^RN-3: Triage: Test fixture/,
+    ],
+    [
+      "services/sandbox-agent/src/x.ts",
+      'join(dir, "agent/kobe-context.json")',
+      "kobe",
+      /^RN-3: Triage: Lower-case names in application code/,
+    ],
+    [
+      "apps/web/x.test.tsx",
+      "expect(text).toMatch(/kobe found/);",
+      "kobe",
+      /^RN-3: Triage: Test fixture/,
+    ],
+  ];
+  for (const [path, line, token, group] of notTheirs) {
+    assert.match(realGroup(path, line, token), group, `${line} ${token}`);
+  }
+});
 
 test("real allowlist: owners of the cases from review round 1", () => {
   const cases = [
@@ -524,7 +606,8 @@ const DISTINCT_VALUES = {
   "kobe.example.com": "unrelated example hosts in app tests (RN-3) and chart tests (RN-6)",
   "kobe-server.kobe-system.svc":
     "one example URL in a config test; both halves change, in RN-3 and RN-6",
-  kobe_: "test database prefix (RN-3) vs a prefix in docs/perf queries (RN-2)",
+  kobe_:
+    "test database prefix (RN-3) vs column aliases in docs/perf queries (RN-5, with the span attributes they read)",
 };
 
 test("real allowlist: no paired value is split across steps, apart from the listed distinct ones", () => {

@@ -9,7 +9,7 @@ import { useThreadApps } from "./thread-apps";
 import { AppPlaceholder, LiveApp } from "./tool-card-app";
 
 /**
- * A rail-launched app card in the conversation (KOBE-440, spec MA3, MA11): a header Kobe draws
+ * A rail-launched app card in the conversation (KOBE-440, spec MA3, MA11): a header Kaiju draws
  * ("You opened _app_ from _connector_"), then the app rendered from the stored result of its
  * opening tool, acting as the viewer (T12), with Expand, lazy loading and the thread's 3 live
  * frames like a tool card's app; or the text card's one-line reason. The model sees only the

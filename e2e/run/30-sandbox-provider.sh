@@ -50,7 +50,7 @@ contains "eval NetworkPolicy allows egress to the model gateway only" '^model-ga
   "$($KUBECTL -n "$TEAM_NS" get networkpolicy kobe-orbit-eval-isolation -o jsonpath='{.spec.egress[*].to[*].podSelector.matchLabels.app\.kubernetes\.io/component}')"
 contains "team NetworkPolicy governs ingress and egress" '^\["Ingress","Egress"\]$' "$(np_spec '{.spec.policyTypes}')"
 contains "team NetworkPolicy allows no ingress at all" '^(\[\])?$' "$(np_spec '{.spec.ingress}')"
-contains "team namespace has only Kobe's three NetworkPolicies (controller policy unmanaged)" '^kobe-orbit-eval-isolation kobe-sandbox-isolation kobe-skill-scan $' \
+contains "team namespace has only Kaiju's three NetworkPolicies (controller policy unmanaged)" '^kobe-orbit-eval-isolation kobe-sandbox-isolation kobe-skill-scan $' \
   "$($KUBECTL -n "$TEAM_NS" get networkpolicy -o name | sed 's|.*/||' | sort | tr '\n' ' ')"
 # The team quota is the members' share plus the eval share (KOBE-325); members are held to theirs.
 contains "team ResourceQuota is in place (members' 20 CPU plus the eval share)" '^20[0-9]{3}m$' \
@@ -97,7 +97,7 @@ contains "admission refuses a team pod mounting a Secret" 'must not mount Secret
 contains "admission refuses a team pod with a Kubernetes API token" 'must not mount a Kubernetes API token' \
   "$(admission "{\"spec\":{\"runtimeClassName\":\"gvisor\",$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",$SEC_CTR}]}}")"
 # KOBE-71: the namespace is Pod Security "baseline" so sandboxes can add SETUID/SETGID for their
-# Pi identities; Kobe's own policy keeps the rest of "restricted".
+# Pi identities; Kaiju's own policy keeps the rest of "restricted".
 contains "admission refuses a team container adding any other capability (KOBE-71)" "only the sandbox container 'agent'" \
   "$(admission "{\"spec\":{\"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",\"securityContext\":{\"capabilities\":{\"drop\":[\"ALL\"],\"add\":[\"SETUID\",\"CHOWN\"]}}}]}}")"
 contains "admission refuses a team pod running as root (KOBE-71)" 'must run as non-root' \
@@ -113,7 +113,7 @@ contains "the server's ServiceAccount cannot read Secrets in team namespaces" 'f
   "$($KUBECTL -n "$TEAM_NS" get secrets --as="$server_sa" 2>&1 || true)"
 contains "the server's ServiceAccount cannot create pods in team namespaces" 'forbidden' \
   "$($KUBECTL -n "$TEAM_NS" run x --image=busybox:1.37 --as="$server_sa" --dry-run=server 2>&1 || true)"
-contains "nobody else may add NetworkPolicies to a team namespace" 'only the Kobe server manages NetworkPolicies' \
+contains "nobody else may add NetworkPolicies to a team namespace" 'only the Kaiju server manages NetworkPolicies' \
   "$(printf 'apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata: {name: allow-all, namespace: %s}\nspec: {podSelector: {}, egress: [{}], policyTypes: [Egress]}\n' "$TEAM_NS" \
     | $KUBECTL apply --dry-run=server -f - 2>&1 || true)"
 
@@ -214,7 +214,7 @@ contains "sandboxes cannot reach the web pod directly" '^web-pod=BLOCKED$' "$egr
 contains "sandboxes cannot reach the server's user API port" '^user-api=BLOCKED$' "$egress"
 contains "sandboxes reach the model-gateway shim (KOBE-40)" '^model-gateway=REACHED$' "$egress"
 contains "sandboxes cannot reach Bifrost directly (only through the token-verifying shim)" '^bifrost=BLOCKED$' "$egress"
-contains "sandboxes cannot reach other Kobe services (web)" '^web=BLOCKED$' "$egress"
+contains "sandboxes cannot reach other Kaiju services (web)" '^web=BLOCKED$' "$egress"
 contains "sandboxes cannot reach another team's pods" '^other-team=BLOCKED$' "$egress"
 contains "sandboxes cannot reach the Kubernetes API Service" '^api=BLOCKED$' "$egress"
 contains "sandboxes cannot reach the API server on the node" '^apiserver=BLOCKED$' "$egress"

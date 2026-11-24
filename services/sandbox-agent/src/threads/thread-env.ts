@@ -81,7 +81,7 @@ export interface ThreadEnv {
   readonly runtimeDir: string;
   /** Model gateway wiring; absent when this sandbox has no model access. */
   readonly models?: ModelWiring | undefined;
-  /** Egress for Pi's tools (KOBE-39): token file + BASH_ENV; absent outside Kobe's pods. */
+  /** Egress for Pi's tools (KOBE-39): token file + BASH_ENV; absent outside Kaiju's pods. */
   readonly egress?: EgressWiring | undefined;
   /**
    * The root-owned BASH_ENV script (KOBE-235) for Pi's tools when there is no egress wiring: it

@@ -248,7 +248,7 @@ describe("CRUD (ac-1)", () => {
     expect((await as.carol.get("/v1/schedules/not-a-uuid")).status).toBe(400);
   });
 
-  it("refuses a prompt imitating Kobe's skill line (KOBE-451 review LOW-7)", async () => {
+  it("refuses a prompt imitating Kaiju's skill line (KOBE-451 review LOW-7)", async () => {
     const line = withSkillRequest("pdf-report", "Summarise.");
     const res = await create("carol", financeAgent, { prompt: line });
     expect(res.status).toBe(400);

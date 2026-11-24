@@ -172,7 +172,7 @@ function SettingsForm({
         </Field>
         <Checkbox
           label="Allow commits straight to the default branch"
-          hint={`Kobe's Commit dialog and an agent's commit_project on a Repo push to the default branch instead of opening a pull request, where the host allows it (a protected branch still gets a pull request). Off by default. Pushes from a sandbox follow the host's own branch rules either way.`}
+          hint={`Kaiju's Commit dialog and an agent's commit_project on a Repo push to the default branch instead of opening a pull request, where the host allows it (a protected branch still gets a pull request). Off by default. Pushes from a sandbox follow the host's own branch rules either way.`}
           checked={direct}
           onChange={(e) => setDirect(e.target.checked)}
         />

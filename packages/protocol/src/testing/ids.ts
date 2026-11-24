@@ -1,4 +1,4 @@
-/** Fixed lowercase UUIDs for fixtures (Kobe-minted ids are Postgres uuids). */
+/** Fixed lowercase UUIDs for fixtures (Kaiju-minted ids are Postgres uuids). */
 export const EXAMPLE_IDS = {
   team: "0b6f1c2e-6d1a-4c56-9a43-1f0e2d3c4b5a",
   otherTeam: "9e8d7c6b-5a49-4382-b170-6f5e4d3c2b1a",

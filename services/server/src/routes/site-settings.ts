@@ -33,11 +33,11 @@ export const settingsSchema = z
     requireTwoFactor: z.boolean().optional(),
     /** Hours audit rows keep their client IP and user agent (KOBE-17): 1-8760, default 12. */
     auditPiiRetentionHours: auditPiiRetentionHoursSchema.optional(),
-    /** The Kobe MCP site switch (KOBE-623, KA5): `off`, `docs` (default) or `admin`. */
+    /** The Kaiju MCP site switch (KOBE-623, KA5): `off`, `docs` (default) or `admin`. */
     kobeMcpMode: z.enum(KOBE_MCP_MODES).optional(),
-    /** Per-person Kobe admin reads per minute (KOBE-814): 1-10000, default 60. */
+    /** Per-person Kaiju admin reads per minute (KOBE-814): 1-10000, default 60. */
     kobeReadsPerMinute: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
-    /** Per-person Kobe admin writes per hour (KOBE-814): 1-10000, default 30. */
+    /** Per-person Kaiju admin writes per hour (KOBE-814): 1-10000, default 30. */
     kobeWritesPerHour: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
     /** Workspace git (KOBE-757, G3): Git connections allowed on this Site (default true). */
     gitConnectionsEnabled: z.boolean().optional(),

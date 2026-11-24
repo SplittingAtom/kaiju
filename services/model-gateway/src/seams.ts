@@ -8,7 +8,7 @@ import type { UsageReading } from "./usage/meter.js";
  *
  * - {@link CallGate} (KOBE-42 budgets/rate limits): consulted before a call is forwarded. Bifrost
  *   enforces the dollar budgets and rate limits on its own hierarchy (customer/team/virtual key);
- *   a gate lets Kobe refuse new calls itself (e.g. a run already `budget_stopped`). Calls already
+ *   a gate lets Kaiju refuse new calls itself (e.g. a run already `budget_stopped`). Calls already
  *   in flight are never cut, so the current model step always finishes (D30).
  * - {@link UsageSink} (KOBE-43 run_usage reconciliation): one record per call, attributed to
  *   (team, user, sandbox, run). The authoritative usage comes from Pi over the wire (D30); this is
