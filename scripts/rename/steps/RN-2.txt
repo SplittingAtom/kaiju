@@ -1,0 +1,13 @@
+# RN-2 (KOBE-746): user-facing text and assets, no identifiers (spec §4 step 2). The product
+# name in prose wherever a member, admin, operator or in-sandbox agent reads it: web UI strings,
+# emails, prompts, the guide (/docs, /llms.txt), operator docs, README, NOTICE; comments come along.
+# Hand work: browser specs that assert on the text; the built-in agent's seeded name (Q15);
+# docs/releases gets the one-line rename note in RN-9.
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-2: The product name in prose: UI strings, emails, prompts, the guide, operator docs, comments
+** /\bKobe\b(?!@)/

@@ -1,0 +1,50 @@
+# RN-3 (KOBE-747): packages, binaries, file paths, identifiers, log fields (spec §4 step 3).
+# Hand work: regenerate pnpm-lock.yaml (pnpm install), THIRD_PARTY_LICENSES.md and NOTICE
+# (pnpm licenses:update), tools/license-check/inventory.yaml; tsconfig/eslint path names.
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-3: Paired values: fake-model markers and test values the e2e harness and the code or its tests share (renamed together)
+** /\bkobe-(?:e2e|faux|learn|long-answer|slow-start|tool-step)\b/
+** /\bkobe\.e2e\.member\b/
+** /\bdata-kobe[\w-]*/
+** /\bfetch_kobe\b/
+** /\bcm-kobe-[\w-]+/
+** /\bkobe\.acme\.test\b/
+** /\bkobe\d+[\w-]*/
+** /[\w.+-]*kobe[\w.+-]*@[\w-]+(?:\.[\w-]+)+/i
+** /\bkobe_live_value\b/
+
+== RN-3: Workspace packages and their imports; binaries (`kobe` operator CLI, `kobe-migrate`, `kobe-db-wait`)
+** /@kobe\/[\w./-]*/
+** /\bkobe-(?:migrate|db-wait)\b/
+** /\bkobe (?=backup|restore|projects|sso|command-line|CLI)/
+packages/cli/package.json /"kobe": "/
+
+== RN-3: Constants named KOBE_* that are not environment variables
+** /\bKOBE_(?:WRITES_PER_HOUR_KEY|WRITES_PER_HOUR_DEFAULT|TOOLS_TIMEOUT_MS|TOOL|TEAM_SAMPLES|SKILL_NAMES_ADDED_LATER|SKILL_NAMES|SKILL_IDS|SITE_TOOLS|SITE_SAMPLES|SEED_RETRY|SECTIONS|RESULT_MAX_BYTES|READS_PER_MINUTE_KEY|READS_PER_MINUTE_DEFAULT|PROVIDER_ID|PROVIDER|PAGE_MAX|PACKAGES_DIR|MODEL_ERROR_PREFIX|MEMORY_ITEM_TOOLS|MCP_TEAM_SETTING|MCP_TEAM_LEVELS|MCP_TEAM_LEVEL_DEFAULT|MCP_MODES|MCP_MODE_LABELS|MCP_MODE_KEY|MCP_MODE_DEFAULT|MCP_HINTS|LIMITS|LIMIT_MIN|LIMIT_MAX|LEVEL_LABELS|GALLERY_KEY|FILE|EVENT_TYPES|EVENT_DROPPED_TYPE|ENDPOINTS|DOCS_TOOLS|DIR|BUILTIN_NAMES|BUILTIN_CONNECTOR_URL|BUILTIN_CONNECTOR_ID|AGENT_KEY|ADMIN_WRITE_REASON|ADMIN_TOOLS|ADMIN_TEXT|ADMIN_SUMMARY_MAX|ADMIN_RESULT_HIDDEN|ADMIN_NOT_REMEMBERED|ADMIN_NOT_ALLOWED_REASON)\b/
+
+== RN-3: Identifiers and types (KobeEvent, FakeKobe, kobeTool, useKobeExtras, ...)
+** /\b\w*Kobe(?=[A-Z_\d]|\w*[a-z_])\w*|\b\w*[a-z\d_]Kobe\b/
+** /\bkobe(?=[A-Z])\w*/
+** /\b\w*[a-z\d]KOBE\w*|\b\w*_KOBE\w*/
+** /(?<=-D)KOBE_\w+/
+**/*.{ts,tsx,mts,cts,js,mjs,cjs,py,sh} /\bKOBE\b(?!-)/
+** /\bKOBE(?=\.[A-Za-z]\w*(?!\.yaml))|\bKOBE-(?=[A-Z]{2})[A-Z-]+/
+
+== RN-3: DOM data attributes, CSS custom properties and classes
+** /--kobe-[\w-]+/
+** /\bkobe-(?:panel|rail-[\w-]+|composer[\w-]*|chat-main|artifact-column|thread-title|offloaded|skipped|marker|workbench-editor|threads-file-[\w-]+|search|problem|preview|files-confirm|edit-message|budget|bar-menu|app-card|workspace-rail|prompt-tokens|runtime-)\b/
+
+== RN-3: File and directory names, and the imports and references that name them
+path ** /kobe/i
+** /(?:\.{1,2}\/|\/)(?:[\w.-]+\/)*[\w.-]*kobe[\w.-]*/i
+** /\b[\w-]*kobe[\w.*-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
+** /\b[\w-]*kobe[\w-]*\/(?:[\w.*-]+\/)*[\w.*-]+\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|css)\b/
+** /\bkobe-mcp(?=: )/
+
+== RN-3: Server modules named after the product (admin MCP, its guard, the seed)
+** /\bkobe-(?:admin-mcp|admin-guard|seed)\b/

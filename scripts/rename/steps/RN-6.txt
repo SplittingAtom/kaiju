@@ -1,0 +1,43 @@
+# RN-6 (KOBE-750): chart charts/kaiju (name `kaiju`), images ghcr.io/splittingatom/kaiju-*,
+# in-sandbox paths and binaries (with their source files, so the image builds in this PR), Pi
+# extension names, release-namespace object names, publish and e2e workflows (spec §3 changes 4).
+# By hand: ghcr package visibility, Dependabot paths, chart version bump, refresh
+# images/*/third-party-licenses.json and `pnpm licenses:update`. Objects inside team namespaces
+# are RN-7's (configured with the prefix); the Bifrost customer names stay (external state).
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-6: Paired values: names the chart, images or e2e harness and the code or its tests must agree on, renamed together (Services, Secrets, file and path names, the skill mirror's commit author and e-mail domain, dev host)
+** /\bkobe-(?:bifrost|skills|sso-gate\.override|isolation-preflight|mcp-proxy-internal|model-keys|bot)\b/
+** /\bkobe\.(?:image|invalid|localtest\.me)\b/
+** /\bkobe_(?:static|gate4_backup)\b/
+
+== RN-6: Chart directory, chart name and Helm template helpers
+** /\bcharts\/kobe\b/
+path charts/kobe/** /charts\/kobe/
+charts/** /\bkobe\.[a-zA-Z]\w*/
+charts/**/Chart.yaml /^name: kobe$/
+
+== RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries
+** /\bghcr\.io\/splittingatom\/kobe-[\w-]+/
+** /(?<![\w.-])kobe-(?:server|web|sandbox|sandbox-agent|mcp-proxy|egress-proxy|model-gateway|orbit-eval|skill-scan|bifrost)(?::[\w.${}-]+)?(?![\w-])/
+** /\/opt\/kobe\b/
+** /\/run\/kobe-[\w-]*/
+** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
+path images/** /kobe/i
+
+== RN-6: Pi extensions installed in the sandbox image (`/opt/kobe/pi-extensions/kobe-*`), with their source directories, so the image and its references move in one step
+** /\bkobe-(?:policy|tools|models|exec)\b/
+path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
+
+== RN-6: Python packages inside the eval and skill-scan images
+** /\bkobe_(?:orbit_eval|skill_scan)\b/
+
+== RN-6: Kubernetes object names in the release namespace and the e2e clusters (Services, Secrets, Deployments ...)
+** /\bkobe-sandbox-(?!token\b)[\w-]+/
+** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|theme|default)(?![\w-])/
+** /\bdeploy\/kobe\b/
+** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/

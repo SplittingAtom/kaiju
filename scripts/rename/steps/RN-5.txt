@@ -1,0 +1,27 @@
+# RN-5 (KOBE-749): HTTP headers, cookies, browser storage keys, telemetry names (spec §3
+# changes 6 and 8). By hand: the server keeps accepting `x-kobe-team` for one release (RN-10
+# removes it), and the server and egress proxy accept both `kobe-sandbox-token` and the new name
+# for one release (rolling pods disagree for minutes); release note that members are signed out
+# once and that span/attribute names changed. Lock keys and audit action names are permanent.
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-5: Paired values: telemetry names the e2e harness asserts and the code emits (renamed together)
+** /\bkobe\.(?:run|command\.kind)\b(?![\w-])/
+
+== RN-5: HTTP headers (`x-kobe-team` accepted for one release)
+** /\bx-kobe-[\w-]+/i
+** /\bKobe-Thread-Id\b/i
+** /\bkobe-sandbox-token\b/
+
+== RN-5: Cookies and browser storage keys (members are signed out once)
+** /__Host-kobe[\w-]*/
+** /(?<=["'`])kobe\.(?:last\w*|scroll|agents\.tab|fileEditor\.\w+|chat\.\w+|workbench\.\w+|web\.\w+|retentionNotice\.\w+|lastTeamId)\b/
+** /\bkobe-(?:invitation|threads)\b/
+
+== RN-5: Telemetry attribute and span names, logger names, OTLP audit attributes
+** /(?<=["'`])kobe\.(?:tool|run|turn|upstream|memory|workspace|sandbox|session|agent|audit|model|research|embeddings|ingress|egress|sso|setup_ms|retention|published|sync|pod|node|container|stop_reason|outcome|wake|thread_id|run_id|run_token|sandbox_id|web_vital|team_level_changed|frontmatter)(?![\w-])(?:[.:][\w.-]*)?/
+** /(?<=["'`])kobe\.(?:sandbox-relay|server|skill-eval)\b/

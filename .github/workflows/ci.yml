@@ -52,6 +52,8 @@ jobs:
         run: scripts/check-public-hygiene.sh
       - name: Nothing people read calls the scope "install" (KOBE-257)
         run: scripts/check-site-wording.mjs
+      - name: Every remaining use of the old product name is allowlisted (KOBE-745)
+        run: node scripts/rename/guard.mjs && node --test scripts/rename/rename.test.mjs
       - run: pnpm format:check
       - run: pnpm build
       # Saved right after the build, so the entry holds build output only (typecheck and lint

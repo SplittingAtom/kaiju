@@ -1,0 +1,10 @@
+# RN-9 (KOBE-753): fresh test install under the new name with a restore from backup, full browser
+# suite, the one-line rename note at the top of docs/releases (spec §4 step 8, §5).
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
+# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+
+== RN-9: Test install names, replaced by the fresh install under the new name
+** /\bkobe-gate1(?:-deps)?\b/
