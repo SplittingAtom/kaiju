@@ -451,8 +451,16 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
 
 test("real allowlist: owners of the cases from review round 1", () => {
   const cases = [
-    ["apps/web/lib/api.ts", 'headers: { "x-kobe-team": id }', "x-kobe-team", "RN-5"],
-    ["apps/web/lib/api.ts", 'headers: { "X-Kobe-Team": id }', "X-Kobe-Team", "RN-5"],
+    // RN-5 is done: an old header name is a miss, except where a receiver reads it for one
+    // release (KOBE-749).
+    ["apps/web/lib/api.ts", 'headers: { "x-kobe-team": id }', "x-kobe-team", "unowned"],
+    ["apps/web/lib/api.ts", 'headers: { "X-Kobe-Team": id }', "X-Kobe-Team", "unowned"],
+    [
+      "services/server/src/authz/middleware.ts",
+      "the pre-rename `x-kobe-team` that API clients",
+      "x-kobe-team",
+      "permanent",
+    ],
     ["scripts/hadron.sh", 'echo "KOBE-${BASH_REMATCH[2]}"', "KOBE-", "permanent"],
     ["apps/web/lib/admin/nav/types.ts", "type TicketId = `KOBE-${number}`;", "KOBE-", "permanent"],
     ["packages/db/drizzle/0137_kobe_published_skills.sql", "", "kobe", "permanent"],
@@ -511,7 +519,13 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "services/server/src/routes/internal.ts",
       '"kobe-sandbox-token"',
       "kobe-sandbox-token",
-      "RN-5",
+      "unowned",
+    ],
+    [
+      "services/server/src/mcp/principal.ts",
+      "else the pre-rename `kobe-sandbox-token` a proxy pod",
+      "kobe-sandbox-token",
+      "permanent",
     ],
     // RN-4 is done: an old variable name is a miss, except in the one-release fallback (KOBE-748).
     ["services/mcp-proxy/src/config.ts", "env.KOBE_MCP_SERVER_URL", "KOBE_MCP", "unowned"],
@@ -560,7 +574,15 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "kobe_egress",
       "permanent",
     ],
-    ["services/server/src/x.ts", '"kobe.tool.name"', "kobe.tool", "RN-5"],
+    ["services/server/src/x.ts", '"kobe.tool.name"', "kobe.tool", "unowned"],
+    // The setting stays; the span attribute of the same spelling was renamed (KOBE-749).
+    [
+      "services/server/src/x.ts",
+      "set_config('kobe.team_id', $1, true)",
+      "kobe.team_id",
+      "permanent",
+    ],
+    ["packages/telemetry/src/spans.ts", '  teamId: "kobe.team_id",', "kobe.team_id", "unowned"],
     // A test variable named kobe is not a telemetry name.
     [
       "apps/web/x.test.tsx",

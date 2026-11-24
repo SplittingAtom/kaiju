@@ -37,6 +37,7 @@ describe("delegation", () => {
         headers: {
           "kaiju-delegation": claim,
           "kobe-delegation": claim,
+          "x-kaiju-delegation": claim,
           "x-kobe-delegation": claim,
         },
         body: claim,

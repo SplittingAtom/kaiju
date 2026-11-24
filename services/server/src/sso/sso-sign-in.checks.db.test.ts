@@ -135,7 +135,7 @@ describe("state, nonce and ID token checks (ac-1)", () => {
     const flow = await startAt(entra, "corp", entraUser());
     const raw = Buffer.from(flow.flowCookie, "base64url");
     raw[raw.length - 2] = (raw[raw.length - 2] ?? 0) ^ 1;
-    flow.browser.cookies.set("kobe-sso", raw.toString("base64url"));
+    flow.browser.cookies.set("kaiju-sso", raw.toString("base64url"));
     expect(errorOf((await finish(flow)).location)).toBe("state_invalid");
   });
 
@@ -150,7 +150,7 @@ describe("state, nonce and ID token checks (ac-1)", () => {
     const flow = await startAt(entra, "corp", entraUser());
     expect(errorOf((await finish(flow)).location)).toBeNull();
     const replay = h.browser();
-    replay.cookies.set("kobe-sso", flow.flowCookie);
+    replay.cookies.set("kaiju-sso", flow.flowCookie);
     const res = await replay.get(`${flow.callback.pathname}${flow.callback.search}`);
     expect(errorOf(res.headers.get("location") ?? "")).toBe("state_invalid");
     expect((await replay.get("/v1/me")).status).toBe(401);

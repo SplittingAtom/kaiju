@@ -123,7 +123,7 @@ const grantFor = async (team: string, user: string, connectorId: string, withKey
     method: "POST",
     headers: {
       ...(withKey ? { authorization: `Bearer ${INTERNAL_KEY}` } : {}),
-      "kobe-sandbox-token": token,
+      "kaiju-sandbox-token": token,
     },
   });
   return { status: res.status, text: await res.text() };
@@ -304,7 +304,7 @@ describe("nothing else carries the key", () => {
     });
     const res = await internal.request(`/internal/v1/mcp/connectors/${apiKeyConnector}/tools`, {
       method: "POST",
-      headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kobe-sandbox-token": token },
+      headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kaiju-sandbox-token": token },
     });
     expect(res.status).toBe(200);
     expect(await res.text()).not.toContain(KEY);

@@ -123,7 +123,7 @@ const grantFor = async (team: string, user: string, connectorId: string) => {
   });
   const res = await internal.request(`/internal/v1/mcp/connectors/${connectorId}/grant`, {
     method: "POST",
-    headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kobe-sandbox-token": token },
+    headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kaiju-sandbox-token": token },
   });
   return { status: res.status, body: JSON.parse(await res.text()) as Record<string, string> };
 };
@@ -410,7 +410,7 @@ describe("review follow-ups", () => {
     );
     const res = await internal.request(`/internal/v1/mcp/connectors/${id}/grant`, {
       method: "POST",
-      headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kobe-sandbox-token": token },
+      headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kaiju-sandbox-token": token },
     });
     expect(res.status).toBe(404);
     const body = await res.text();
@@ -438,7 +438,7 @@ describe("review follow-ups", () => {
       method: "POST",
       headers: {
         authorization: `Bearer ${INTERNAL_KEY}`,
-        "kobe-sandbox-token": token,
+        "kaiju-sandbox-token": token,
         "content-type": "application/json",
       },
       body: JSON.stringify({ tool: "lookup", arguments: {}, thread_id: threadId }),
@@ -446,7 +446,7 @@ describe("review follow-ups", () => {
     expect(await res.json()).toMatchObject({ decision: "allow" });
     const grant = await internal.request(`/internal/v1/mcp/connectors/${id}/grant`, {
       method: "POST",
-      headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kobe-sandbox-token": token },
+      headers: { authorization: `Bearer ${INTERNAL_KEY}`, "kaiju-sandbox-token": token },
     });
     expect(await grant.json()).toEqual({ kind: "api_key", api_key: SITE_KEY, source: "site" });
     const audited = await h.admin.query(

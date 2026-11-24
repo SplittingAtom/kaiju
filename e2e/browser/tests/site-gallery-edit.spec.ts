@@ -15,7 +15,7 @@ import { panelOf } from "./support/panel.js";
 const GALLERY = "/agents?tab=site";
 const EDITOR = "/admin/site/gallery";
 const AGENT = process.env["KAIJU_GALLERY_AGENT"] ?? "Kobe";
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 async function openGallery(page: Page): Promise<void> {
   await page.goto(GALLERY);
@@ -32,7 +32,7 @@ async function forkAgent(page: Page, id: string): Promise<{ id: string; prompt: 
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-kobe-team": window.localStorage.getItem(teamKey) ?? "",
+          "x-kaiju-team": window.localStorage.getItem(teamKey) ?? "",
         },
         body: JSON.stringify({ scope: "personal" }),
       });
@@ -48,7 +48,7 @@ async function deleteAgent(page: Page, id: string): Promise<void> {
     async ({ id, teamKey }) => {
       await fetch(`/v1/agents/${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: { "x-kobe-team": window.localStorage.getItem(teamKey) ?? "" },
+        headers: { "x-kaiju-team": window.localStorage.getItem(teamKey) ?? "" },
       });
     },
     { id, teamKey: TEAM_KEY },

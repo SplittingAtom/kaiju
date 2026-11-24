@@ -7,9 +7,9 @@ import { pageApi, toolTurn } from "./support/gate5.js";
 /** A file of the member's own workspace as text, read from the page (session and team). */
 async function readFile(page: Page, path: string): Promise<{ status: number; text: string }> {
   return page.evaluate(async (path) => {
-    const team = window.localStorage.getItem("kobe.lastTeamId");
+    const team = window.localStorage.getItem("kaiju.lastTeamId");
     const res = await fetch(`/v1/workspace/file?path=${encodeURIComponent(path)}`, {
-      headers: team ? { "x-kobe-team": team } : {},
+      headers: team ? { "x-kaiju-team": team } : {},
     });
     return { status: res.status, text: await res.text() };
   }, path);

@@ -139,7 +139,7 @@ export function auditPlugin({
   }
 
   return {
-    id: "kobe-audit",
+    id: "kaiju-audit",
     hooks: {
       before: [
         {

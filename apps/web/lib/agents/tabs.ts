@@ -12,7 +12,7 @@ export const AGENT_TABS = AGENT_ROSTER_TABS;
 export type AgentTab = AgentRosterTab;
 
 export const DEFAULT_AGENT_TAB: AgentTab = "personal";
-export const AGENT_TAB_KEY = "kobe.agents.tab";
+export const AGENT_TAB_KEY = "kaiju.agents.tab";
 
 const isAgentTab = (v: unknown): v is AgentTab =>
   typeof v === "string" && (AGENT_TABS as readonly string[]).includes(v);

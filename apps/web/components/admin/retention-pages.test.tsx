@@ -63,7 +63,7 @@ describe("Team retention (KOBE-18)", () => {
     await screen.findByText(/Scheduled: from .* keeps conversations for 90 days/);
     const put = must(calls.find((c) => c.method === "PUT"));
     expect(JSON.parse(String(put.body))).toEqual({ period: "90d" });
-    expect(put.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(put.headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 
   it("sends nothing when the confirmation is cancelled, and shows the server's refusal", async () => {
@@ -149,6 +149,6 @@ describe("Pending team change (7-day grace, KOBE-18)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancel change" }));
     await screen.findByText("Cancelled: the team keeps conversations forever.");
     const del = must(calls.find((c) => c.method === "DELETE"));
-    expect(del.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(del.headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 });

@@ -36,7 +36,7 @@ const uuid = (name: string) => ({
 const ID = uuid("id");
 const CASE_ID = uuid("caseId");
 const TEAM_HEADER = {
-  name: "X-Kobe-Team",
+  name: "X-Kaiju-Team",
   in: "header",
   required: false,
   description: "The team the client believes is active; must match when sent.",

@@ -277,7 +277,7 @@ describe("team policy routes (D8: team admins manage, members read)", () => {
 
   it("needs a team: site admins outside the team get nothing", async () => {
     expect(status(await as.siteAdmin.get(path))).toBe(409); // no active team
-    const forced = await as.siteAdmin.get(path, { "x-kobe-team": finance });
+    const forced = await as.siteAdmin.get(path, { "x-kaiju-team": finance });
     expect(forced.status).toBe(409);
   });
 
@@ -327,7 +327,7 @@ describe("team policy routes (D8: team admins manage, members read)", () => {
     expect(status(await as.alice.delete(`${path}/${broad.json.rule.id}`))).toBe(204);
   });
 
-  it("requires the X-Kobe-Team header on changes", async () => {
+  it("requires the X-Kaiju-Team header on changes", async () => {
     const b = await signIn("alice");
     await b.put("/v1/me/teams/active", { teamId: finance });
     expect(status(await b.post(path, { effect: "deny", tool_glob: "bash" }))).toBe(400);
@@ -344,7 +344,7 @@ describe("team policy routes (D8: team admins manage, members read)", () => {
     expect((await decide("dave", marketing, "powershell", { command: "x" })).effect).toBe("allow");
     // A finance admin can't reach marketing by naming it in the header.
     expect(
-      (await as.alice.request("DELETE", `${path}/${id}`, undefined, { "x-kobe-team": marketing }))
+      (await as.alice.request("DELETE", `${path}/${id}`, undefined, { "x-kaiju-team": marketing }))
         .status,
     ).toBe(409);
     expect(status(await as.alice.delete(`${path}/${id}`))).toBe(204);

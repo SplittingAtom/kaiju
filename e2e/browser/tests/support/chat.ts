@@ -25,8 +25,8 @@ const THREAD_PARAM = "thread";
 /** The workspace rail's element id (apps/web rail-resize.tsx). */
 const RAIL_ID = "kaiju-workspace-rail";
 /** The active team, recorded by the chat in local storage; the API wants it as a header. */
-const TEAM_KEY = "kobe.lastTeamId";
-const TEAM_HEADER = "x-kobe-team";
+const TEAM_KEY = "kaiju.lastTeamId";
+const TEAM_HEADER = "x-kaiju-team";
 /** How long clean-up waits for a busy thread (its run or title call) to settle before Trash. */
 const TRASH_SETTLE_MS = 60_000;
 const TRASH_RETRY_MS = 2_000;

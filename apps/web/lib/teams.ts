@@ -21,13 +21,13 @@ export interface MyTeams {
 }
 
 /** Sent on team-scoped requests; the server refuses it if another tab switched teams meanwhile. */
-export const TEAM_HEADER = "x-kobe-team";
+export const TEAM_HEADER = "x-kaiju-team";
 
 /** Window event fired after the switcher activates a team on load (consoles re-check access). */
 export const ACTIVE_TEAM_EVENT = "kaiju:active-team";
 
 /** Remembers this browser's last team so a new sign-in lands there (a convenience only). */
-export const LAST_TEAM_KEY = "kobe.lastTeamId";
+export const LAST_TEAM_KEY = "kaiju.lastTeamId";
 
 const ROLE_LABELS: Readonly<Record<TeamRole, string>> = {
   team_admin: "Team admin",

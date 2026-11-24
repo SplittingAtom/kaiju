@@ -8,12 +8,12 @@ import type { AuditSink } from "./types.js";
 /** Facility 13 (log audit) and severity 6 (informational): PRI = 13 * 8 + 6. */
 export const SYSLOG_PRI = 110;
 /**
- * Structured-data ID `kobe@<enterprise number>`. The default, 32473, is the number RFC 5612 reserves
+ * Structured-data ID `kaiju@<enterprise number>`. The default, 32473, is the number RFC 5612 reserves
  * for documentation; an operator with a registered IANA PEN configures theirs (KOBE-182). SIEM rules
- * should match the APP-NAME `kobe-audit` and the MSGID (the action), not the SD-ID.
+ * should match the APP-NAME `kaiju-audit` and the MSGID (the action), not the SD-ID.
  */
 export function syslogSdId(enterpriseNumber: string = DEFAULT_ENTERPRISE_NUMBER): string {
-  return `kobe@${enterpriseNumber}`;
+  return `kaiju@${enterpriseNumber}`;
 }
 const SEND_TIMEOUT_MS = 10_000;
 
@@ -66,7 +66,7 @@ export function formatSyslogMessage(entry: AuditEntry, options: SyslogFormatOpti
     `<${SYSLOG_PRI}>1`,
     entry.at.toISOString(),
     header(options.hostname ?? osHostname(), 255),
-    "kobe-audit",
+    "kaiju-audit",
     header(String(options.procId ?? process.pid), 128),
     header(entry.action, 32),
     `${sd} ${body}`,

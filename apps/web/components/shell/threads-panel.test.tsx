@@ -130,7 +130,10 @@ describe("the Threads panel (ac-1, ac-5)", () => {
 
   it("a link or a reload at /threads opens it over the last thread", async () => {
     const a = fake.addThread("Alpha");
-    sessionStorage.setItem("kobe.lastThread", JSON.stringify({ teamId: fake.teamId, threadId: a }));
+    sessionStorage.setItem(
+      "kaiju.lastThread",
+      JSON.stringify({ teamId: fake.teamId, threadId: a }),
+    );
     openApp(fake, undefined, undefined, "");
     act(() => {
       window.history.replaceState(null, "", "/threads");

@@ -134,7 +134,7 @@ const runSpan = (parent: string, over: Record<string, unknown> = {}) => ({
   start_ms: T() - 50,
   end_ms: T(),
   status: "ok",
-  attributes: { "kobe.run.outcome": "completed" },
+  attributes: { "kaiju.run.outcome": "completed" },
   ...over,
 });
 
@@ -210,10 +210,10 @@ describe("trace.spans over the wire (KOBE-274)", () => {
     expect(span?.spanContext().spanId).toBe(mapSandboxSpanId(KEY, w.runId, "1111111111111111"));
     expect(span?.parentSpanContext?.spanId).toBe(tp?.parentSpanId);
     expect(span?.attributes).toMatchObject({
-      "kobe.team_id": w.team,
-      "kobe.thread_id": w.threadId,
-      "kobe.run_id": w.runId,
-      "kobe.sandbox_id": w.sandboxId,
+      "kaiju.team_id": w.team,
+      "kaiju.thread_id": w.threadId,
+      "kaiju.run_id": w.runId,
+      "kaiju.sandbox_id": w.sandboxId,
       "session.id": w.threadId,
       "user.id": w.owner.id,
     });
@@ -369,7 +369,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
       runSpan(parent, {
         span_id: "2222222222222222",
         name: "sandbox.turn",
-        attributes: { "kobe.turn.index": 0 },
+        attributes: { "kaiju.turn.index": 0 },
       }),
     ]);
     // Both spans of the frame handled: the new one relayed, the reused one dropped.
@@ -458,9 +458,9 @@ describe("run latency spans (KOBE-525)", () => {
       .toEqual([...names].sort());
     const tool = latency().find((s) => s.name === "run.tool_call");
     expect(tool?.attributes).toEqual({
-      "kobe.run.kind": "run",
-      "kobe.tool.name": "read",
-      "kobe.tool.error": false,
+      "kaiju.run.kind": "run",
+      "kaiju.tool.name": "read",
+      "kaiju.tool.error": false,
     });
     expect(tool?.parentSpanContext?.spanId).toBe(runRootSpanId(w.runId));
   });

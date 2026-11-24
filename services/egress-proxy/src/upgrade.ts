@@ -53,7 +53,7 @@ export const UPGRADE_METHODS: ReadonlySet<string> = new Set([
   "DELETE",
   "OPTIONS",
 ]);
-const REALM = 'Basic realm="kobe-egress"';
+const REALM = 'Basic realm="kaiju-egress"';
 
 type TargetResult =
   | { readonly ok: true; readonly target: PlainTarget }

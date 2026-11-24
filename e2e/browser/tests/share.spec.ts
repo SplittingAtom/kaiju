@@ -10,7 +10,7 @@ import { expect, test } from "./support/chat.js";
  */
 const SECOND_USER = process.env["KAIJU_USER2"];
 const SECOND_PW = process.env["KAIJU_PW2"];
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** A group of the Threads panel (KOBE-453). */
 const group = (page: Page, kind: string) =>
@@ -52,7 +52,7 @@ async function trash(page: Page, id: string): Promise<void> {
       const team = window.localStorage.getItem(teamKey) ?? "";
       await fetch(`/v1/threads/${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: { "x-kobe-team": team },
+        headers: { "x-kaiju-team": team },
       });
     },
     { id, teamKey: TEAM_KEY },

@@ -685,9 +685,9 @@ API. At most 6 exports a minute per admin. Every export is recorded as `audit.ex
 number of rows sent.
 
 **Forwarding (KOBE-19).** Off by default; Helm values `auditForwarding.syslog` (RFC 5424 over TCP
-or TLS, octet-counted frames, APP-NAME `kobe-audit`, MSGID the action, structured data
-`[kobe@<PEN> seq id team actorKind actor hash]`, body the event as JSON) and `auditForwarding.otlp` (OTLP/HTTP logs, JSON
-encoding; the action is the log body, fields are `kobe.audit.*` attributes; auth headers from a
+or TLS, octet-counted frames, APP-NAME `kaiju-audit`, MSGID the action, structured data
+`[kaiju@<PEN> seq id team actorKind actor hash]`, body the event as JSON) and `auditForwarding.otlp` (OTLP/HTTP logs, JSON
+encoding; the action is the log body, fields are `kaiju.audit.*` attributes; auth headers from a
 Secret). Both carry the same fields as the site export, including the chain hashes.
 
 - **What is forwarded (KOBE-676, SM20).** Every event, in the Site view: a Workspace event
@@ -724,11 +724,11 @@ Secret). Both carry the same fields as the site export, including the chain hash
 - **Admin console (KOBE-182).** Site console → System → _Audit forwarding_ shows the same per
   destination: status, events behind, events delivered, last delivery, next attempt and the last
   error.
-- **Enterprise number (KOBE-182).** The SD-ID is `kobe@<PEN>`, the PEN from
+- **Enterprise number (KOBE-182).** The SD-ID is `kaiju@<PEN>`, the PEN from
   `auditForwarding.syslog.enterpriseNumber` (env `KAIJU_AUDIT_SYSLOG_ENTERPRISE_NUMBER`; digits, no
   leading zero, at most 10; anything else fails at install and at startup). The default, `32473`, is
   the number RFC 5612 reserves for documentation: an organisation with its own registered IANA
-  Private Enterprise Number should set it. Match SIEM rules on the APP-NAME `kobe-audit` and the
+  Private Enterprise Number should set it. Match SIEM rules on the APP-NAME `kaiju-audit` and the
   MSGID, not on the SD-ID, so changing the number does not break them.
 - **TLS and a private CA (KOBE-182).** The collector's certificate is verified against the server's
   trust store: the public CAs, plus a private CA from `server.extraCaBundle`. Name one Secret

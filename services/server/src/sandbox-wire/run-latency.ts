@@ -79,7 +79,7 @@ export class RunLatency {
       if (this.#sawToken) return;
       this.#sawToken = true;
       this.#emit("run.first_token", this.#o.startMs, nowMs, {
-        "kobe.token.kind": event.type === "text.delta" ? "text" : "reasoning",
+        "kaiju.token.kind": event.type === "text.delta" ? "text" : "reasoning",
       });
       return;
     }
@@ -93,8 +93,8 @@ export class RunLatency {
       if (!open) return;
       this.#open.delete(id);
       this.#emit("run.tool_call", open.startMs, nowMs, {
-        "kobe.tool.name": open.tool,
-        "kobe.tool.error": field(event.payload, "is_error") === true,
+        "kaiju.tool.name": open.tool,
+        "kaiju.tool.error": field(event.payload, "is_error") === true,
       });
     }
   }
@@ -109,7 +109,7 @@ export class RunLatency {
       name,
       startMs,
       endMs: Math.max(startMs, endMs),
-      attributes: { "kobe.run.kind": this.#kind, ...extra },
+      attributes: { "kaiju.run.kind": this.#kind, ...extra },
     });
   }
 }

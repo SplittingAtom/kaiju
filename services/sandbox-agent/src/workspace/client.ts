@@ -13,6 +13,7 @@ import {
   type WorkspaceEntry,
   type WorkspaceRestoreReport,
 } from "@kaiju/protocol/sandbox-wire";
+import { readRenamedHeader } from "@kaiju/protocol";
 import type { z } from "zod";
 
 /**
@@ -139,7 +140,10 @@ export class SyncClient {
       return undefined;
     }
     await this.#check(res);
-    const entry = decodeWorkspaceEntryHeader(res.headers.get(WORKSPACE_ENTRY_HEADER));
+    // A server pod from before the rename (during the upgrade) sends only the old name (KOBE-749).
+    const entry = decodeWorkspaceEntryHeader(
+      readRenamedHeader((name) => res.headers.get(name), WORKSPACE_ENTRY_HEADER),
+    );
     if (!entry || entry.path !== path || entry.sha256 === undefined || !res.body) {
       await res.body?.cancel();
       throw new SyncHttpError(502, "bad_response", "file response without a valid entry");

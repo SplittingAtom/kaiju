@@ -62,7 +62,7 @@ const span = (over: Record<string, unknown> = {}) => ({
   start_ms: T0 + 10,
   end_ms: T0 + 500,
   status: "ok",
-  attributes: { "kobe.run.outcome": "completed" },
+  attributes: { "kaiju.run.outcome": "completed" },
   ...over,
 });
 const tool = (over: Record<string, unknown> = {}) =>
@@ -71,10 +71,10 @@ const tool = (over: Record<string, unknown> = {}) =>
     parent_span_id: "1111111111111111",
     name: "sandbox.tool",
     attributes: {
-      "kobe.tool.call_id": "call_1",
-      "kobe.tool.outcome": "ok",
-      "kobe.tool.input": "SECRET INPUT",
-      "kobe.tool.output": "SECRET OUTPUT",
+      "kaiju.tool.call_id": "call_1",
+      "kaiju.tool.outcome": "ok",
+      "kaiju.tool.input": "SECRET INPUT",
+      "kaiju.tool.output": "SECRET OUTPUT",
     },
     ...over,
   });
@@ -101,18 +101,18 @@ describe("TraceIntake (KOBE-274)", () => {
       parentSpanId: COMMAND,
     });
     expect(run?.attributes).toMatchObject({
-      "kobe.team_id": TEAM,
-      "kobe.user_id": USER,
-      "kobe.thread_id": THREAD,
-      "kobe.run_id": RUN,
-      "kobe.sandbox_id": SANDBOX,
+      "kaiju.team_id": TEAM,
+      "kaiju.user_id": USER,
+      "kaiju.thread_id": THREAD,
+      "kaiju.run_id": RUN,
+      "kaiju.sandbox_id": SANDBOX,
       "session.id": THREAD,
       "user.id": USER,
     });
     expect(call?.parentSpanId).toBe(map("1111111111111111"));
     expect(call?.attributes).toMatchObject({
-      "kobe.tool.name": "bash",
-      "kobe.tool.call_id": "call_1",
+      "kaiju.tool.name": "bash",
+      "kaiju.tool.call_id": "call_1",
     });
   });
 
@@ -122,14 +122,14 @@ describe("TraceIntake (KOBE-274)", () => {
     expect(JSON.stringify(off.exported)).not.toMatch(/SECRET/);
     const on = setup({ captureContent: true });
     on.intake.accept(frame([tool()]), OWNER);
-    expect(on.exported[0]?.attributes["kobe.tool.input"]).toBe("SECRET INPUT");
+    expect(on.exported[0]?.attributes["kaiju.tool.input"]).toBe("SECRET INPUT");
   });
 
   it("names a tool only from the server's decision; an unknown call id is dropped", () => {
     const { intake, exported } = setup();
     intake.accept(frame([tool()]), OWNER);
-    expect(exported[0]?.attributes["kobe.tool.name"]).toBe("unknown");
-    expect(exported[0]?.attributes).not.toHaveProperty("kobe.tool.call_id");
+    expect(exported[0]?.attributes["kaiju.tool.name"]).toBe("unknown");
+    expect(exported[0]?.attributes).not.toHaveProperty("kaiju.tool.call_id");
   });
 
   it("drops invalid spans one by one, duplicates across frames, and counts them", () => {
@@ -141,7 +141,7 @@ describe("TraceIntake (KOBE-274)", () => {
     intake.ended(RUN);
     advance(31_000);
     intake.close();
-    expect(roots[0]?.attributes["kobe.trace.sandbox_spans_dropped"]).toBe(7);
+    expect(roots[0]?.attributes["kaiju.trace.sandbox_spans_dropped"]).toBe(7);
   });
 
   it("refuses spans that would close a cycle and reparents a misparented run span", () => {
@@ -152,13 +152,13 @@ describe("TraceIntake (KOBE-274)", () => {
           span_id: "aaaaaaaaaaaaaaaa",
           parent_span_id: "bbbbbbbbbbbbbbbb",
           name: "sandbox.turn",
-          attributes: { "kobe.turn.index": 0 },
+          attributes: { "kaiju.turn.index": 0 },
         }),
         span({
           span_id: "bbbbbbbbbbbbbbbb",
           parent_span_id: "aaaaaaaaaaaaaaaa",
           name: "sandbox.turn",
-          attributes: { "kobe.turn.index": 1 },
+          attributes: { "kaiju.turn.index": 1 },
         }),
         span({ span_id: "1111111111111111", parent_span_id: "9999999999999999" }),
       ]),
@@ -230,7 +230,7 @@ describe("TraceIntake (KOBE-274)", () => {
     expect(roots[0]).toMatchObject({
       runId: RUN,
       startMs: T0,
-      attributes: { "session.id": THREAD, "user.id": USER, "kobe.run_id": RUN },
+      attributes: { "session.id": THREAD, "user.id": USER, "kaiju.run_id": RUN },
     });
     expect(intake.recentlyEnded(RUN, THREAD, OWNER)).toBe(false);
     expect(runRootSpanId(RUN)).toHaveLength(16);
@@ -262,7 +262,7 @@ describe("TraceIntake per replica (KOBE-274 review SF3, N1, N4)", () => {
     intake.accept(frame([span({ span_id: "6666666666666666" })], { dropped: 1_000_000 }), OWNER);
     intake.ended(RUN);
     intake.close();
-    expect(roots[0]?.attributes["kobe.trace.sandbox_spans_dropped"]).toBe(100_000);
+    expect(roots[0]?.attributes["kaiju.trace.sandbox_spans_dropped"]).toBe(100_000);
   });
 
   it("exports a decided call id only when it is a plain id", () => {
@@ -270,11 +270,11 @@ describe("TraceIntake per replica (KOBE-274 review SF3, N1, N4)", () => {
     const odd = "call with spaces: the secret plan";
     intake.noteToolCall(RUN, odd, "bash");
     intake.accept(
-      frame([tool({ attributes: { "kobe.tool.call_id": odd, "kobe.tool.outcome": "ok" } })]),
+      frame([tool({ attributes: { "kaiju.tool.call_id": odd, "kaiju.tool.outcome": "ok" } })]),
       OWNER,
     );
-    expect(exported[0]?.attributes["kobe.tool.name"]).toBe("bash");
-    expect(exported[0]?.attributes).not.toHaveProperty("kobe.tool.call_id");
+    expect(exported[0]?.attributes["kaiju.tool.name"]).toBe("bash");
+    expect(exported[0]?.attributes).not.toHaveProperty("kaiju.tool.call_id");
   });
 });
 

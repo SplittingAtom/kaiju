@@ -48,7 +48,7 @@ describe("app results client (KOBE-438)", () => {
       result,
     });
     const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
-    expect(new Headers(init.headers).get("x-kobe-team")).toBe(T);
+    expect(new Headers(init.headers).get("x-kaiju-team")).toBe(T);
     expect(await readAppResult(T, "r", T, async () => json(409, { code: "text_only" }))).toEqual({
       ok: false,
       code: "text_only",

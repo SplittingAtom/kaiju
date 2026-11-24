@@ -43,7 +43,7 @@ export function compactOpenApiPaths(): Record<string, Record<string, unknown>> {
         parameters: [
           { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
           {
-            name: "X-Kobe-Team",
+            name: "X-Kaiju-Team",
             in: "header",
             required: false,
             description: "The team the client believes is active; must match when sent.",

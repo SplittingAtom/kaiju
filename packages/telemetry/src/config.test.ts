@@ -4,7 +4,7 @@ import { loadTelemetryConfig } from "./config.js";
 describe("loadTelemetryConfig", () => {
   it("is disabled without an endpoint", () => {
     const c = loadTelemetryConfig({}, "server");
-    expect(c).toMatchObject({ enabled: false, captureContent: false, serviceName: "kobe-server" });
+    expect(c).toMatchObject({ enabled: false, captureContent: false, serviceName: "kaiju-server" });
   });
 
   it("parses endpoint, headers and the capture switch", () => {

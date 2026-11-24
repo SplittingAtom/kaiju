@@ -109,8 +109,8 @@ describe.skipIf(!PI_AVAILABLE)("thread.compact in real Pi (KOBE-213)", () => {
     const calls = (tap as Listener).requests.slice(before);
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) {
-      expect(call.headers["x-kobe-run-id"]).toBe(RUN_2);
-      expect(call.headers["x-kobe-run-token"]).toBe(COMPACT_TOKEN.token);
+      expect(call.headers["x-kaiju-run-id"]).toBe(RUN_2);
+      expect(call.headers["x-kaiju-run-token"]).toBe(COMPACT_TOKEN.token);
     }
     expect(gateway.calls.at(-1)).toMatchObject({ model: ANTHROPIC.gateway_model, runId: RUN_2 });
   }, 180_000);

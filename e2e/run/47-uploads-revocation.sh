@@ -17,7 +17,7 @@ const jar = new Map();
 const call = async (method, path, body, extra = {}) => {
   const res = await fetch(base + path, {
     method,
-    headers: { origin, "x-kobe-team": team, ...extra, cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") },
+    headers: { origin, "x-kaiju-team": team, ...extra, cookie: [...jar].map(([k, v]) => k + "=" + v).join("; ") },
     body,
   });
   for (const c of res.headers.getSetCookie()) { const [pair] = c.split(";"); const at = pair.indexOf("="); jar.set(pair.slice(0, at), pair.slice(at + 1)); }

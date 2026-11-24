@@ -9,7 +9,7 @@ import { expect, test } from "./support/chat.js";
  * Light and dark screenshots of the menu are attached. Spends up to three short model turns.
  */
 const PROMPT = "No tools. Reply with the single word ALPHA.";
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 async function shoot(page: Page, name: string, target: Locator): Promise<void> {
   for (const theme of ["light", "dark"] as const) {
@@ -43,7 +43,7 @@ async function serverConnectors(page: Page, threadId: string) {
     async ({ id, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
       const res = await fetch(`/v1/threads/${encodeURIComponent(id)}/connectors`, {
-        headers: team ? { "x-kobe-team": team } : {},
+        headers: team ? { "x-kaiju-team": team } : {},
       });
       return ((await res.json()) as { connectors: { connector_id: string; enabled: boolean }[] })
         .connectors;

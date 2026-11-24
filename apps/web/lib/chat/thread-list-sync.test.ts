@@ -35,7 +35,7 @@ describe("browserThreadListSync", () => {
     const there = sync("team-c");
     const heard = vi.fn();
     there.subscribe(heard);
-    const raw = new BroadcastChannel("kobe-threads:team-c");
+    const raw = new BroadcastChannel("kaiju-threads:team-c");
     raw.postMessage({ threadId: 42 });
     raw.postMessage("t-2");
     raw.postMessage({ origin: "x", threadId: "t-3" });

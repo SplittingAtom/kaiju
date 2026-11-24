@@ -27,7 +27,7 @@
   as_owner() {
     $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
       const base = 'http://127.0.0.1:8080', origin = process.env.KAIJU_PUBLIC_URL;
-      const h = { origin, 'content-type': 'application/json', 'x-kobe-team': '$E2E_TEAM_ID' };
+      const h = { origin, 'content-type': 'application/json', 'x-kaiju-team': '$E2E_TEAM_ID' };
       // Sign-in is rate limited (3 per 10 s per address): wait out a 429 instead of failing.
       let login;
       for (let i = 0; i < 4; i++) {

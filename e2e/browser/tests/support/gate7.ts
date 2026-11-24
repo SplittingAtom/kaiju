@@ -6,7 +6,7 @@ import type { Page } from "@playwright/test";
  * `tool: <name> <json>` makes the agent call a tool.
  */
 export const FAKE_MODEL = process.env["KAIJU_FAKE_MODEL"] === "1";
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** The signed-in person's active memories of `scope` whose statement contains `text`. */
 export async function memoriesWith(page: Page, scope: string, text: string): Promise<number> {
@@ -15,7 +15,7 @@ export async function memoriesWith(page: Page, scope: string, text: string): Pro
       const team = window.localStorage.getItem(teamKey) ?? "";
       const res = await fetch(
         `/v1/memory/semantic/items?scope=${scope}&status=active&limit=100&q=${encodeURIComponent(text)}`,
-        { headers: { "x-kobe-team": team } },
+        { headers: { "x-kaiju-team": team } },
       );
       if (!res.ok) return -1;
       const body = (await res.json()) as { items: { statement: string }[] };
@@ -31,7 +31,7 @@ export async function memoriesInContext(page: Page, threadId: string): Promise<s
     async ({ threadId, teamKey }) => {
       const team = window.localStorage.getItem(teamKey) ?? "";
       const res = await fetch(`/v1/threads/${threadId}/context/memories`, {
-        headers: { "x-kobe-team": team },
+        headers: { "x-kaiju-team": team },
       });
       if (!res.ok) return [`status ${res.status}`];
       // `latest: false`: a newer run was given no memories (the route answers an earlier one).

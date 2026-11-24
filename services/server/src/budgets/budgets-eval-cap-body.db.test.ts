@@ -33,7 +33,7 @@ afterAll(async () => {
   await h?.close();
 });
 
-const put = (body: unknown) => admin.put(PATH, body, { "x-kobe-team": team });
+const put = (body: unknown) => admin.put(PATH, body, { "x-kaiju-team": team });
 
 describe("PUT /v1/team/budgets/eval-cap body validation (KOBE-703)", () => {
   it.each([

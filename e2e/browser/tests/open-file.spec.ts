@@ -9,7 +9,7 @@ import { FAKE_MODEL } from "./support/gate5.js";
  * "Opened notes.md" card with Open again. Uploads `kobe-484-*\/notes.md` through the files API and
  * deletes the folder at the end. One short model turn.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 async function workspace(
   page: Page,
@@ -20,7 +20,7 @@ async function workspace(
   return page.evaluate(
     async ({ op, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (op === "delete") {
         const q = encodeURIComponent(path);
         const res = await fetch(`/v1/workspace/files?path=${q}`, { method: "DELETE", headers });

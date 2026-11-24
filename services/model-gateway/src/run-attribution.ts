@@ -6,13 +6,13 @@ import type { GatewayOptions } from "./gateway/options.js";
 /**
  * Which run a model call belongs to (KOBE-118, contract in KOBE-117). Order:
  *
- * 1. `x-kobe-run-token` present: it must verify (Ed25519 signature, shape, time; else 401, never a fallback to
+ * 1. `x-kaiju-run-token` present: it must verify (Ed25519 signature, shape, time; else 401, never a fallback to
  *    the advisory header), name this very team and sandbox (the session token's), still be active
  *    in the server's record (not revoked at run end, run active on this sandbox), and an
- *    `x-kobe-run-id` that disagrees is refused. The run id is then the token's, so a per-run stop
+ *    `x-kaiju-run-id` that disagrees is refused. The run id is then the token's, so a per-run stop
  *    (the run ends, its tokens are revoked) cannot be evaded by naming another run;
  * 2. no token and enforcement on: 401 (a run's own tools can't drop the header to dodge a stop);
- * 3. no token, enforcement off (rollout): the legacy advisory `x-kobe-run-id`, which must be an
+ * 3. no token, enforcement off (rollout): the legacy advisory `x-kaiju-run-id`, which must be an
  *    active run leased to this sandbox.
  */
 export type RunAttribution =
@@ -44,11 +44,11 @@ export async function resolveRunAttribution(
   identity: CallerIdentity,
   nowSeconds: number = Math.floor(Date.now() / 1000),
 ): Promise<RunAttribution> {
-  const advisory = headers["x-kobe-run-id"];
+  const advisory = headers["x-kaiju-run-id"];
   let advisoryId: string | undefined;
   if (advisory !== undefined) {
     if (typeof advisory !== "string" || !UUID.test(advisory)) {
-      return refuse(400, "invalid_run_id", "x-kobe-run-id must be a run id.");
+      return refuse(400, "invalid_run_id", "x-kaiju-run-id must be a run id.");
     }
     advisoryId = advisory.toLowerCase();
   }
@@ -72,7 +72,7 @@ export async function resolveRunAttribution(
     return refuse(403, "run_token_mismatch", "That run token belongs to another sandbox.");
   }
   if (advisoryId !== undefined && advisoryId !== claims.run_id) {
-    return refuse(403, "run_id_mismatch", "x-kobe-run-id does not match the run token.");
+    return refuse(403, "run_id_mismatch", "x-kaiju-run-id does not match the run token.");
   }
   const active = await runTokens.isActive({
     teamId: claims.team_id,

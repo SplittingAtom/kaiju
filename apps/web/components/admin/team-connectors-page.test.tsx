@@ -235,7 +235,7 @@ describe("Team connectors (KOBE-105)", () => {
     expect(await screen.findByText(/Enabled jira/)).toBeTruthy();
     const put = calls.find((c) => c.method === "PUT");
     expect(JSON.parse(String(put?.body))).toEqual({ exposure: "read_only" });
-    expect(put?.headers.get("X-Kobe-Team")).toBe("t-1");
+    expect(put?.headers.get("X-Kaiju-Team")).toBe("t-1");
   });
 
   it("custom exposure sends the ticked pinned tools, never drifted ones", async () => {

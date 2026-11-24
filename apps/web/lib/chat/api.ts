@@ -1,6 +1,6 @@
 /**
  * Chat resources over the shared API client (`lib/api/client.ts`). Every call is team-scoped and
- * sends `X-Kobe-Team`, reads included, so a tab left on another team gets `team_mismatch` instead of
+ * sends `X-Kaiju-Team`, reads included, so a tab left on another team gets `team_mismatch` instead of
  * acting on the wrong team. Request bodies use the routes' snake_case (spec §6.1).
  */
 import type { appContextBody } from "../apps/app-context";
@@ -392,7 +392,7 @@ export interface ForkOptions {
   readonly title?: string;
 }
 
-/** The chat API for one team; `teamId` goes in `X-Kobe-Team` on every request. */
+/** The chat API for one team; `teamId` goes in `X-Kaiju-Team` on every request. */
 export function createChatApi(teamId: string, fetchFn?: typeof fetch): ChatApi {
   const get = <T>(path: string) => apiRequest<T>(path, { teamId, fetchFn });
   const memory = createMemoryApi(teamId, fetchFn);
@@ -634,7 +634,7 @@ export function createChatApi(teamId: string, fetchFn?: typeof fetch): ChatApi {
 
 /**
  * The download URL of the user's export of their threads in `teamId` (D18, KOBE-18): a zip of Pi
- * JSONL sessions and Markdown transcripts. A link can't send `X-Kobe-Team`, so the team goes in
+ * JSONL sessions and Markdown transcripts. A link can't send `X-Kaiju-Team`, so the team goes in
  * the query and the server checks it against the session's active team.
  */
 export function threadExportUrl(teamId: string): string {

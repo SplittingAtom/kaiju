@@ -24,7 +24,7 @@ export interface UpstreamTransport {
 export interface Session {
   id?: string;
   version?: string;
-  /** HTTP requests sent in this session (its span's `kobe.upstream.requests`). */
+  /** HTTP requests sent in this session (its span's `kaiju.upstream.requests`). */
   requests: number;
 }
 
@@ -128,14 +128,14 @@ export function inSession(
     "mcp.upstream",
     {
       kind: SpanKind.CLIENT,
-      attributes: { "kobe.upstream.kind": kind, "kobe.upstream.method": method },
+      attributes: { "kaiju.upstream.kind": kind, "kaiju.upstream.method": method },
     },
     async (span) => {
       const result = await sessionResult(t, call, session, run);
       span.setAttributes({
-        "kobe.upstream.outcome": result.ok ? "ok" : result.failure,
-        "kobe.upstream.error": !result.ok,
-        "kobe.upstream.requests": session.requests,
+        "kaiju.upstream.outcome": result.ok ? "ok" : result.failure,
+        "kaiju.upstream.error": !result.ok,
+        "kaiju.upstream.requests": session.requests,
       });
       if (!result.ok) span.setStatus({ code: SpanStatusCode.ERROR });
       return result;

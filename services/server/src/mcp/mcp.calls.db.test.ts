@@ -48,7 +48,7 @@ describe("internal listener authentication", () => {
 
   it("refuses requests without the proxy's internal key", async () => {
     expect((await post(`/connectors/${w.connector.id}/tools`, undefined, {})).status).toBe(401);
-    const wrong = { authorization: `Bearer ${"x".repeat(40)}`, "kobe-sandbox-token": w.token };
+    const wrong = { authorization: `Bearer ${"x".repeat(40)}`, "kaiju-sandbox-token": w.token };
     expect((await post(`/connectors/${w.connector.id}/tools`, undefined, wrong)).status).toBe(401);
   });
 
@@ -73,6 +73,16 @@ describe("internal listener authentication", () => {
       expect(res.status, token).toBe(401);
       expect(res.json.code).toBe("sandbox_unauthorized");
     }
+  });
+
+  it("reads the token under its pre-rename header from a proxy built before the rename (KOBE-749)", async () => {
+    const legacy = { authorization: auth(w.token).authorization, "kobe-sandbox-token": w.token };
+    expect((await post(`/connectors/${w.connector.id}/tools`, undefined, legacy)).status).toBe(200);
+    const forged = { ...legacy, "kobe-sandbox-token": "forged.token.value" };
+    expect((await post(`/connectors/${w.connector.id}/tools`, undefined, forged)).status).toBe(401);
+    // The new name wins when both are sent.
+    const both = { ...auth("forged.token.value"), "kobe-sandbox-token": w.token };
+    expect((await post(`/connectors/${w.connector.id}/tools`, undefined, both)).status).toBe(401);
   });
 
   it("refuses a validly signed token for a sandbox that is no longer live", async () => {

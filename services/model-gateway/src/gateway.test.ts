@@ -346,18 +346,18 @@ describe("calls", () => {
   it("attributes a run only when it is leased to this sandbox", async () => {
     const runId = randomUUID();
     expect(
-      (await call("/v1/chat/completions", { headers: { ...bearer(), "x-kobe-run-id": runId } }))
+      (await call("/v1/chat/completions", { headers: { ...bearer(), "x-kaiju-run-id": runId } }))
         .status,
     ).toBe(403);
     leased.add(runId);
     expect(
-      (await call("/v1/chat/completions", { headers: { ...bearer(), "x-kobe-run-id": runId } }))
+      (await call("/v1/chat/completions", { headers: { ...bearer(), "x-kaiju-run-id": runId } }))
         .status,
     ).toBe(200);
-    expect(hits[0]?.headers["x-kobe-run-id"]).toBeUndefined();
+    expect(hits[0]?.headers["x-kaiju-run-id"]).toBeUndefined();
     expect(records.at(-1)?.runId).toBe(runId);
     expect(
-      (await call("/v1/chat/completions", { headers: { ...bearer(), "x-kobe-run-id": "nope" } }))
+      (await call("/v1/chat/completions", { headers: { ...bearer(), "x-kaiju-run-id": "nope" } }))
         .status,
     ).toBe(400);
   });

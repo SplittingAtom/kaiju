@@ -79,7 +79,7 @@ export function createEmbeddingClient(options: EmbeddingClientOptions): Embeddin
               runId: input.run?.runId,
               threadId: input.run?.threadId,
             }),
-            "kobe.usage_kind": "memory_embed",
+            "kaiju.usage_kind": "memory_embed",
           },
         },
         async () => {

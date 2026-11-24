@@ -140,7 +140,7 @@ describe("projects list and create (KOBE-164, ac-1)", () => {
       instructions: "Answer in French.",
       default_agent_id: "a-team",
     });
-    expect(post.headers.get("x-kobe-team")).toBe("t-1");
+    expect(post.headers.get("x-kaiju-team")).toBe("t-1");
   });
 
   it("explains a taken web name", async () => {

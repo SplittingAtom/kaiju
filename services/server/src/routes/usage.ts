@@ -122,7 +122,7 @@ async function visible(c: Context, fn: () => Promise<Response>): Promise<Respons
 /**
  * Usage of one run (`GET /v1/runs/:id/usage`, chat run details) and of a thread
  * (`GET /v1/threads/:id/usage`, per run, and the newest call's prompt size): whoever may read the run or thread (its owner, project
- * readers). Attribution to a run relies on the sandbox's advisory `x-kobe-run-id` (KOBE-41).
+ * readers). Attribution to a run relies on the sandbox's advisory `x-kaiju-run-id` (KOBE-41).
  */
 export function runUsageRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();

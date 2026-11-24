@@ -123,6 +123,6 @@ describe("setActiveTeam", () => {
   });
 
   it("exposes the header that pins requests to the active team", () => {
-    expect(TEAM_HEADER).toBe("x-kobe-team");
+    expect(TEAM_HEADER).toBe("x-kaiju-team");
   });
 });

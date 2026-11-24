@@ -74,7 +74,7 @@ export async function startAt(
   const start = await browser.get(`/api/auth/sso/start/${slug}${qs}`);
   expect(start.status, start.text).toBe(302);
   const startLocation = start.headers.get("location") ?? "";
-  const flowCookie = browser.cookies.get("kobe-sso") ?? "";
+  const flowCookie = browser.cookies.get("kaiju-sso") ?? "";
   expect(flowCookie).not.toBe("");
   return { browser, startLocation, callback: mock.authorize(startLocation, user), flowCookie };
 }
@@ -103,7 +103,7 @@ export const entraUser = (over: Record<string, unknown> = {}) => {
     sub: `pairwise-${id}`,
     name: "Ada Lovelace",
     preferred_username: `ada-${id}@contoso.com`,
-    roles: ["kobe.research.member"],
+    roles: ["kaiju.research.member"],
     amr: ["pwd", "mfa"],
     acr: "1",
     auth_time: Math.floor(Date.now() / 1000) - 5,
@@ -165,7 +165,7 @@ export function useSsoSignInHarness(): void {
     corpId = rows.find((r) => r.slug === "corp")?.id ?? "";
     kcId = rows.find((r) => r.slug === "kc")?.id ?? "";
     for (const [providerId, claimValue, role] of [
-      [corpId, "kobe.research.member", "member"],
+      [corpId, "kaiju.research.member", "member"],
       [kcId, "g-research", "contributor"],
     ] as const) {
       const res = await owner.post(`/v1/site/sso/providers/${providerId}/mappings`, {

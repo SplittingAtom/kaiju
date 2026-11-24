@@ -639,18 +639,18 @@ describe("tracing (KOBE-527)", () => {
     await traced(async (exporter) => {
       expect((await appCall(alice, appId, "preview_table")).status).toBe(200);
       expect(childOfRoute(exporter, "app_call.decide")?.attributes).toEqual({
-        "kobe.app_call.outcome": "allowed",
+        "kaiju.app_call.outcome": "allowed",
       });
       expect(childOfRoute(exporter, "app_call.credential")?.attributes).toEqual({
-        "kobe.app_call.outcome": "ok",
-        "kobe.app_call.error": false,
+        "kaiju.app_call.outcome": "ok",
+        "kaiju.app_call.error": false,
       });
       expect(childOfRoute(exporter, "app_call.audit")?.attributes).toEqual({});
       const proxy = childOfRoute(exporter, "app_call.proxy");
       expect(proxy?.kind).toBe(SpanKind.CLIENT);
       expect(proxy?.attributes).toEqual({
-        "kobe.app_call.outcome": "ok",
-        "kobe.app_call.error": false,
+        "kaiju.app_call.outcome": "ok",
+        "kaiju.app_call.error": false,
       });
       // Low-cardinality only: no connector, app, member, tool, key or URL on any of them.
       const text = JSON.stringify(
@@ -671,7 +671,7 @@ describe("tracing (KOBE-527)", () => {
     await traced(async (exporter) => {
       expect((await appCall(alice, appId, "drop_table")).status).toBe(403);
       expect(childOfRoute(exporter, "app_call.decide")?.attributes).toEqual({
-        "kobe.app_call.outcome": "tool_not_read_only",
+        "kaiju.app_call.outcome": "tool_not_read_only",
       });
       expect(named(exporter, "app_call.proxy")).toHaveLength(0);
     });
@@ -685,8 +685,8 @@ describe("tracing (KOBE-527)", () => {
       expect((await appCall(alice, appId, "preview_table")).status).toBe(502);
       const proxy = childOfRoute(exporter, "app_call.proxy");
       expect(proxy?.attributes).toEqual({
-        "kobe.app_call.outcome": "timeout",
-        "kobe.app_call.error": true,
+        "kaiju.app_call.outcome": "timeout",
+        "kaiju.app_call.error": true,
       });
       expect(proxy?.status.code).toBe(SpanStatusCode.ERROR);
     });

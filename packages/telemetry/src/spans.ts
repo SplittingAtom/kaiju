@@ -12,7 +12,7 @@ import {
 import { MAX_CAPTURED_CHARS } from "./content.js";
 import { telemetryState } from "./state.js";
 
-const TRACER_NAME = "kobe";
+const TRACER_NAME = "kaiju";
 
 /** Opaque ids only (never names, emails or content). */
 export interface SpanIds {
@@ -25,12 +25,12 @@ export interface SpanIds {
 }
 
 const ID_KEYS: Readonly<Record<keyof SpanIds, string>> = {
-  teamId: "kobe.team_id",
-  userId: "kobe.user_id",
-  threadId: "kobe.thread_id",
-  agentId: "kobe.agent_id",
-  runId: "kobe.run_id",
-  sandboxId: "kobe.sandbox_id",
+  teamId: "kaiju.team_id",
+  userId: "kaiju.user_id",
+  threadId: "kaiju.thread_id",
+  agentId: "kaiju.agent_id",
+  runId: "kaiju.run_id",
+  sandboxId: "kaiju.sandbox_id",
 };
 
 export function idAttributes(ids: SpanIds): Attributes {

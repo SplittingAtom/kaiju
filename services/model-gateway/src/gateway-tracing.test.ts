@@ -52,9 +52,9 @@ describe("tracing (KOBE-10)", () => {
     await new Promise((r) => setTimeout(r, 20));
     const span = exporter.getFinishedSpans().find((s) => s.name === "model_gateway.request");
     expect(span?.attributes).toMatchObject({
-      "kobe.team_id": team,
-      "kobe.user_id": user,
-      "kobe.sandbox_id": sandbox,
+      "kaiju.team_id": team,
+      "kaiju.user_id": user,
+      "kaiju.sandbox_id": sandbox,
       "gen_ai.request.model": "openai/m",
       "http.response.status_code": 200,
     });
@@ -85,7 +85,7 @@ describe("tracing (KOBE-10)", () => {
     const exporter = trace(false);
     leased.add(RUN);
     await call("/v1/chat/completions", {
-      headers: { ...bearer(), "x-kobe-run-id": RUN, traceparent: tp(RUN) },
+      headers: { ...bearer(), "x-kaiju-run-id": RUN, traceparent: tp(RUN) },
     });
     await new Promise((r) => setTimeout(r, 20));
     const span = gatewaySpan(exporter);
@@ -96,8 +96,8 @@ describe("tracing (KOBE-10)", () => {
     expect(span?.attributes).toMatchObject({
       "session.id": SESSION_THREAD,
       "user.id": user,
-      "kobe.thread_id": SESSION_THREAD,
-      "kobe.run_id": RUN,
+      "kaiju.thread_id": SESSION_THREAD,
+      "kaiju.run_id": RUN,
     });
     expect(String(hits[0]?.headers.traceparent)).toContain(runTraceId(RUN));
   });
@@ -106,7 +106,7 @@ describe("tracing (KOBE-10)", () => {
     const exporter = trace(false);
     leased.add(RUN);
     await call("/v1/chat/completions", {
-      headers: { ...bearer(), "x-kobe-run-id": RUN, traceparent: tp(OTHER_RUN) },
+      headers: { ...bearer(), "x-kaiju-run-id": RUN, traceparent: tp(OTHER_RUN) },
     });
     const span = gatewaySpan(exporter);
     expect(span?.spanContext().traceId).toBe(runTraceId(RUN));

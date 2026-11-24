@@ -175,7 +175,7 @@ describe("policy server grant client", () => {
     ).fetchGrant("tok", "c1");
     expect(out).toEqual({ ok: true, value: { kind: "api_key", apiKey: KEY, source: "site" } });
     expect(seen.at(-1)?.path).toBe("/internal/v1/mcp/connectors/c1/grant");
-    expect(seen.at(-1)?.headers.get("kobe-sandbox-token")).toBe("tok");
+    expect(seen.at(-1)?.headers.get("kaiju-sandbox-token")).toBe("tok");
     expect(seen.at(-1)?.headers.get("authorization")).toBe(`Bearer ${"i".repeat(40)}`);
   });
 

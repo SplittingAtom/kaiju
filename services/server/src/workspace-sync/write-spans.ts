@@ -29,10 +29,10 @@ export type WriteTxSpanName =
   typeof WRITE_SPAN.reserveTx | typeof WRITE_SPAN.blobTx | typeof WRITE_SPAN.manifestTx;
 
 export const WRITE_ATTR = {
-  kind: "kobe.workspace.write",
-  s3Op: "kobe.workspace.s3_op",
-  lock: "kobe.workspace.lock",
-  outcome: "kobe.workspace.outcome",
+  kind: "kaiju.workspace.write",
+  s3Op: "kaiju.workspace.s3_op",
+  lock: "kaiju.workspace.lock",
+  outcome: "kaiju.workspace.outcome",
 } as const;
 
 /** Which write: a browser upload, a rail drop, an artifact copy, an editor save, a sandbox blob. */

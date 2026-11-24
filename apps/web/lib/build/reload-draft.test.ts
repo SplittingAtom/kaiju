@@ -53,18 +53,35 @@ describe("reload drafts", () => {
 
   it("reads a stash kept before chips were kept, and drops non-string paths", () => {
     const drafts = { t1: "plain", t2: { text: "x", mentions: ["a.csv", 3, null] } };
-    sessionStorage.setItem("kobe.reload-drafts", JSON.stringify({ savedAt: Date.now(), drafts }));
+    sessionStorage.setItem("kaiju.reload-drafts", JSON.stringify({ savedAt: Date.now(), drafts }));
     expect(takeReloadDraft("t1")).toEqual({ text: "plain", mentions: [] });
     expect(takeReloadDraft("t2")).toEqual({ text: "x", mentions: ["a.csv"] });
   });
 
-  it("ignores a garbled stash", () => {
-    sessionStorage.setItem("kobe.reload-drafts", "{not json");
+  it("takes the stash of a build from before the rename once (KOBE-749, one release)", () => {
+    const drafts = { t1: { text: "carried", mentions: [] } };
+    sessionStorage.setItem("kobe.reload-drafts", JSON.stringify({ savedAt: Date.now(), drafts }));
+    expect(takeReloadDraft("t1")).toEqual({ text: "carried", mentions: [] });
+    expect(sessionStorage.getItem("kobe.reload-drafts")).toBeNull();
     expect(takeReloadDraft("t1")).toBeUndefined();
-    sessionStorage.setItem("kobe.reload-drafts", JSON.stringify({ t1: "old shape" }));
+  });
+
+  it("drops the pre-rename stash on sign-out too", () => {
+    sessionStorage.setItem(
+      "kobe.reload-drafts",
+      JSON.stringify({ savedAt: Date.now(), drafts: {} }),
+    );
+    forgetReloadDrafts();
+    expect(sessionStorage.getItem("kobe.reload-drafts")).toBeNull();
+  });
+
+  it("ignores a garbled stash", () => {
+    sessionStorage.setItem("kaiju.reload-drafts", "{not json");
+    expect(takeReloadDraft("t1")).toBeUndefined();
+    sessionStorage.setItem("kaiju.reload-drafts", JSON.stringify({ t1: "old shape" }));
     expect(takeReloadDraft("t1")).toBeUndefined();
     const drafts = { t1: 5 };
-    sessionStorage.setItem("kobe.reload-drafts", JSON.stringify({ savedAt: Date.now(), drafts }));
+    sessionStorage.setItem("kaiju.reload-drafts", JSON.stringify({ savedAt: Date.now(), drafts }));
     expect(takeReloadDraft("t1")).toBeUndefined();
   });
 
@@ -74,7 +91,7 @@ describe("reload drafts", () => {
     stashDraftForReload("t1", "mine");
     vi.advanceTimersByTime(RELOAD_DRAFT_TTL_MS + 1);
     expect(takeReloadDraft("t1")).toBeUndefined();
-    expect(sessionStorage.getItem("kobe.reload-drafts")).toBeNull();
+    expect(sessionStorage.getItem("kaiju.reload-drafts")).toBeNull();
   });
 
   it("is still there within the ten minutes", () => {

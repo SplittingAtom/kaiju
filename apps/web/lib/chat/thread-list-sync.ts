@@ -28,7 +28,7 @@ function isMessage(data: unknown): data is Message {
 }
 
 /** The channel's name: one per team, so a tab on another team never reloads for it. */
-export const syncChannelName = (teamId: string): string => `kobe-threads:${teamId}`;
+export const syncChannelName = (teamId: string): string => `kaiju-threads:${teamId}`;
 
 /** The browser's channel for `teamId`, or undefined where `BroadcastChannel` is missing. */
 export function browserThreadListSync(teamId: string): ThreadListSync | undefined {

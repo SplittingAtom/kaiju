@@ -9,7 +9,7 @@ afterEach(() => localStorage.clear());
 
 describe("useArtifactTabs (KOBE-200)", () => {
   it("applies every update queued in one tick: an auto-open and a close", () => {
-    const { result } = renderHook(() => useArtifactTabs("kobe.artifactTabs:t:x"));
+    const { result } = renderHook(() => useArtifactTabs("kaiju.artifactTabs:t:x"));
     act(() => {
       result.current.openArtifact(id(1));
       result.current.openArtifact(id(2));

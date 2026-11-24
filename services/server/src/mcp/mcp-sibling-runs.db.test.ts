@@ -132,7 +132,7 @@ async function proxy(w: World, tool: string, input: Record<string, unknown>, too
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${INTERNAL_KEY}`,
-      "kobe-sandbox-token": w.token,
+      "kaiju-sandbox-token": w.token,
     },
     body: JSON.stringify({
       tool,

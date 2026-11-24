@@ -261,6 +261,13 @@ async function post(path: string, headers: Record<string, string>, body: unknown
 const asServer = (t = serverToken()) => ({ [SERVER_CALL_TOKEN_HEADER]: t });
 
 describe("server calls: accepted (KOBE-234)", () => {
+  it("takes a server built before the rename's x-kobe-server-call (KOBE-749, one release)", async () => {
+    const r = await post("/v1/chat/completions", { "x-kobe-server-call": serverToken() });
+    expect(r.status).toBe(200);
+    expect(hits[0]?.headers["x-kobe-server-call"]).toBeUndefined();
+    expect(hits[0]?.headers["x-bf-vk"]).toBe(vk);
+  });
+
   it("forwards a title call with the member's virtual key; keys and token stay gateway-side", async () => {
     const r = await post("/v1/chat/completions", asServer());
     expect(r.status).toBe(200);
@@ -771,7 +778,7 @@ describe("server calls: refused (KOBE-234 ac-2)", () => {
       { authorization: `Bearer ${sessionToken()}` },
       { "x-goog-api-key": "k" },
       { [RUN_TOKEN_HEADER]: runToken() },
-      { "x-kobe-run-id": run },
+      { "x-kaiju-run-id": run },
     ]) {
       const r = await post("/v1/chat/completions", { ...asServer(), ...extra });
       expect([r.status, r.code]).toEqual([400, "ambiguous_credentials"]);

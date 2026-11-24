@@ -6,7 +6,7 @@ export const skillsAreas: readonly CatalogArea[] = [
   {
     tag: "Skills",
     description:
-      "Team and personal skills, Workbench drafts, skill evals, the Site catalog as members see it, and Promote to Site. Team-scoped: send X-Kobe-Team on changes.",
+      "Team and personal skills, Workbench drafts, skill evals, the Site catalog as members see it, and Promote to Site. Team-scoped: send X-Kaiju-Team on changes.",
     detailed: true,
     teamScoped: true,
     details: skillsDetails,

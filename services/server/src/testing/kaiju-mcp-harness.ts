@@ -217,7 +217,7 @@ export class KaijuMcpHarness {
         authorization: `Bearer ${s.token}`,
         "content-type": "application/json",
         accept: "application/json, text/event-stream",
-        "kobe-thread-id": s.threadId,
+        "kaiju-thread-id": s.threadId,
       },
       body: JSON.stringify({
         jsonrpc: "2.0",

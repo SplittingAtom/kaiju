@@ -96,7 +96,7 @@ describe("site: models and providers", () => {
       "ollama/kimi-k2.7-code",
     );
     expect(screen.getByText("In sync: the gateway has every change.")).toBeTruthy();
-    expect(calls.every((c) => !c.headers.has("x-kobe-team"))).toBe(true);
+    expect(calls.every((c) => !c.headers.has("x-kaiju-team"))).toBe(true);
   });
 
   it("shows a failing gateway sync with its last error", async () => {
@@ -701,7 +701,7 @@ describe("team: models", () => {
       enabled: true,
       is_default: true,
     });
-    expect(calls.every((c) => c.headers.get("x-kobe-team") === TEAM.id)).toBe(true);
+    expect(calls.every((c) => c.headers.get("x-kaiju-team") === TEAM.id)).toBe(true);
     // A disabled model can't be the default.
     const gptRow = screen.getByRole("row", { name: /gpt/ });
     expect(within(gptRow).queryByRole("button", { name: /Make default/ })).toBeNull();

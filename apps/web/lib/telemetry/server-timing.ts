@@ -18,9 +18,9 @@ import { performance } from "node:perf_hooks";
  * headers are written. Values are durations only, never data.
  */
 
-export const TIMING_ID_HEADER = "x-kobe-timing-id";
-const REGISTRY = Symbol.for("kobe.web.serverTiming");
-const ENABLED = Symbol.for("kobe.web.serverTimingEnabled");
+export const TIMING_ID_HEADER = "x-kaiju-timing-id";
+const REGISTRY = Symbol.for("kaiju.web.serverTiming");
+const ENABLED = Symbol.for("kaiju.web.serverTimingEnabled");
 const CHANNEL = "http.server.request.start";
 
 /** The parts of Node's IncomingMessage / ServerResponse this uses (tests pass fakes). */

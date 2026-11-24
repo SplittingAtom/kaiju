@@ -22,7 +22,7 @@ export async function pinTeam(page: Page): Promise<void> {
       body: JSON.stringify({ teamId: id }),
     });
     if (!put.ok) return null;
-    window.localStorage.setItem("kobe.lastTeamId", id);
+    window.localStorage.setItem("kaiju.lastTeamId", id);
     return id;
   }, slug);
   if (!teamId) throw new Error(`KAIJU_TEAM=${slug}: not one of your teams`);
@@ -38,7 +38,7 @@ export async function pinTeam(page: Page): Promise<void> {
     )
     .toBe(teamId);
   await expect
-    .poll(() => page.evaluate(() => window.localStorage.getItem("kobe.lastTeamId")), {
+    .poll(() => page.evaluate(() => window.localStorage.getItem("kaiju.lastTeamId")), {
       timeout: SHELL_TIMEOUT_MS,
     })
     .toBe(teamId);

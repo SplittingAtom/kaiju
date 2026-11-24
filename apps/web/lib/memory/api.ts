@@ -1,7 +1,7 @@
 /**
  * Memory over the shared API client (`/v1/memory`, KOBE-155). Responses arrive camelized; request
  * bodies use the routes' snake_case. Personal memory is always the caller's own; project memory
- * needs `projectId`. Every call sends `X-Kobe-Team`.
+ * needs `projectId`. Every call sends `X-Kaiju-Team`.
  */
 import { apiRequest, type ApiResult } from "../api/client";
 

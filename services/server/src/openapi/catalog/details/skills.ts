@@ -218,7 +218,7 @@ const formatQuery = {
   },
 };
 const ZIP_EXPORT =
-  "A deterministic zip attachment; its SHA-256 is in the `X-Kobe-Sha256` header (pin it on import).";
+  "A deterministic zip attachment; its SHA-256 is in the `X-Kaiju-Sha256` header (pin it on import).";
 
 const meDetails: Readonly<Record<string, CatalogDetail>> = {
   "get /v1/me/skill-submissions": {

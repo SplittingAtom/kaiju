@@ -20,7 +20,7 @@ describe("notebook api (KOBE-465)", () => {
     const call = must(calls[0]);
     expect(call.url).toBe("/v1/threads/th%2F1/notebook/run");
     expect(call.init.method).toBe("POST");
-    expect(new Headers(call.init.headers).get("x-kobe-team")).toBe("t1");
+    expect(new Headers(call.init.headers).get("x-kaiju-team")).toBe("t1");
     expect(JSON.parse(String(call.init.body))).toEqual({ path: "a.ipynb", cell_id: "c1" });
   });
 
@@ -99,7 +99,7 @@ describe("notebook api (KOBE-465)", () => {
     const api = createNotebookApi("t1", list.fetchFn);
     expect(await api.history("th", "a b.py")).toMatchObject({ ok: true, data: [entry] });
     expect(must(list.calls[0]).url).toBe("/v1/threads/th/notebook/executions?path=a+b.py");
-    expect(new Headers(must(list.calls[0]).init.headers).get("x-kobe-team")).toBe("t1");
+    expect(new Headers(must(list.calls[0]).init.headers).get("x-kaiju-team")).toBe("t1");
     const out = stub(200, { outputs: [{ output_type: "stream", name: "stdout", text: "x" }] });
     expect(await createNotebookApi("t1", out.fetchFn).outputs("th", exec)).toMatchObject({
       ok: true,

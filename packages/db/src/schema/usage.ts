@@ -19,7 +19,7 @@ import { teams } from "./teams.js";
 // model-gateway shim forwarded to Bifrost, written by the shim from the upstream response (never
 // from the sandbox): tokens, model, latency and the cost at the catalog's prices of that moment.
 // Attributed to the team, user and sandbox the session token proves; the run (and its thread and
-// agent) only when the sandbox named an active run leased to it (`x-kobe-run-id`, advisory: a
+// agent) only when the sandbox named an active run leased to it (`x-kaiju-run-id`, advisory: a
 // same-uid process may name a sibling run of the same sandbox, KOBE-41). No foreign key to runs or
 // threads: the ledger outlives a purged thread (budgets count spend, not content).
 

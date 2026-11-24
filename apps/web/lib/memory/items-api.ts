@@ -1,7 +1,7 @@
 /**
  * Semantic memory items over the shared API client (`/v1/memory/semantic/items`, KOBE-378;
  * contract KOBE-377 in `@kaiju/protocol` semantic-memory/items.ts). Responses arrive camelized;
- * request bodies use the routes' snake_case. Every call sends `X-Kobe-Team` and keeps a refusal's
+ * request bodies use the routes' snake_case. Every call sends `X-Kaiju-Team` and keeps a refusal's
  * check results (`warnings`, `duplicates`, `policy_conflicts`, `current_version`, `capacity`) in
  * `error.details`, read with {@link checksOf}.
  */
@@ -142,7 +142,7 @@ export interface MemoryItemsApi {
 }
 
 /**
- * `teamId`: the active Workspace (sent as `X-Kobe-Team`). The Site console sends the session's
+ * `teamId`: the active Workspace (sent as `X-Kaiju-Team`). The Site console sends the session's
  * active Workspace too when there is one (writes need the header then); undefined when none.
  */
 export function createMemoryItemsApi(

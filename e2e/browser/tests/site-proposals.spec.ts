@@ -31,7 +31,7 @@ const SECOND_PW = process.env["KAIJU_PW2"];
  */
 const THIRD_USER = process.env["KAIJU_USER3"];
 const THIRD_PW = process.env["KAIJU_PW3"];
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 const PASS_TIMEOUT_MS = 180_000;
 /** The parts of member2's question that are not the fact: never shown to the Site. */
 const CONVERSATION_ONLY = ["No tools", "Reply with the single word"];
@@ -176,7 +176,7 @@ async function siteItemId(page: Page, word: string): Promise<string | null> {
       const team = window.localStorage.getItem(teamKey) ?? "";
       const res = await fetch(
         "/v1/memory/semantic/items?scope=site&status=active&pinned=false&limit=100",
-        { headers: { "x-kobe-team": team } },
+        { headers: { "x-kaiju-team": team } },
       );
       if (!res.ok) return null;
       const body = (await res.json()) as { items: { id: string; statement: string }[] };

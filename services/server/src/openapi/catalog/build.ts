@@ -8,7 +8,7 @@ import { z } from "zod";
  *
  * An area marked `detailed` gives every entry a `CatalogDetail` (request body, query, response,
  * status, extra errors), built from the zod schemas the routes validate with and the response
- * schemas in `@kaiju/protocol`. An entry without detail carries `x-kobe-detail: "summary"`: its
+ * schemas in `@kaiju/protocol`. An entry without detail carries `x-kaiju-detail: "summary"`: its
  * summary, path parameters and the error envelope are documented, its bodies are not (yet).
  */
 
@@ -30,7 +30,7 @@ type JsonSchema = Record<string, unknown>;
 /**
  * A schema published as `#/components/schemas/<name>`: the route's own zod schema (request bodies
  * as input, responses as output), or, for a response the route builds without a schema, a JSON
- * Schema of the fields the handler sends, marked `x-kobe-untyped` (listed in the KOBE-771 ledger).
+ * Schema of the fields the handler sends, marked `x-kaiju-untyped` (listed in the KOBE-771 ledger).
  */
 export interface NamedSchema {
   readonly name: string;
@@ -44,7 +44,7 @@ export const named = (name: string, zod: z.ZodType): NamedSchema => ({ name, zod
 /** A component for a response with no schema in code: the fields the handler sends, as is. */
 export const untyped = (name: string, json: JsonSchema): NamedSchema => ({
   name,
-  json: { ...json, "x-kobe-untyped": true },
+  json: { ...json, "x-kaiju-untyped": true },
 });
 
 /** Shared error responses (`#/components/responses/<name>`), all with the `Error` envelope. */
@@ -132,7 +132,7 @@ export interface CatalogArea {
   readonly detailed?: boolean;
   /** Request and response descriptions by `"<method> <path>"`. */
   readonly details?: Readonly<Record<string, CatalogDetail>>;
-  /** Routes act on the active team: add the X-Kobe-Team header (required on changes). */
+  /** Routes act on the active team: add the X-Kaiju-Team header (required on changes). */
   readonly teamScoped?: boolean;
   /** Error statuses every detailed operation of the area can answer (default 400, 401, 403). */
   readonly defaultErrors?: readonly ErrorStatus[];
@@ -167,7 +167,7 @@ function pathParameters(path: string) {
     required: true,
     schema: { type: "string" },
     ...(name === "path"
-      ? { description: "The rest of the path (may contain slashes).", "x-kobe-wildcard": true }
+      ? { description: "The rest of the path (may contain slashes).", "x-kaiju-wildcard": true }
       : {}),
   }));
 }
@@ -211,7 +211,7 @@ function queryParameters(detail: CatalogDetail): JsonSchema[] {
 }
 
 const teamHeader = (required: boolean) => ({
-  name: "X-Kobe-Team",
+  name: "X-Kaiju-Team",
   in: "header",
   required,
   description: "The team the client believes is active. Required on changes; must match.",
@@ -316,7 +316,7 @@ function operation(area: CatalogArea, entry: CatalogEntry): Record<string, unkno
         content: { "application/json": { schema: schemaRef("Error") } },
       },
     },
-    "x-kobe-detail": "summary",
+    "x-kaiju-detail": "summary",
   };
 }
 

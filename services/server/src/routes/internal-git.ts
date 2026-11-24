@@ -4,7 +4,7 @@ import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { logger } from "../logger.js";
 import { decideGitTransport, type GitTransportDeps } from "../git/transport.js";
-import { authenticateSandbox, type McpAuthDeps } from "../mcp/principal.js";
+import { authenticateSandbox, sandboxTokenOf, type McpAuthDeps } from "../mcp/principal.js";
 import { createRateLimiter, type RateLimiter } from "../sandbox/rate-limit.js";
 import { invalidRequest, notFound, readJson } from "../http/request.js";
 
@@ -13,7 +13,7 @@ import { invalidRequest, notFound, readJson } from "../http/request.js";
  * workspace-git G11/G12). Only the egress proxy's pods reach the port (NetworkPolicy) and every
  * request carries the egress proxy's own internal key (a different key from the MCP proxy's, so
  * neither proxy can call the other's routes). The caller is the sandbox's own `kobe.egress-proxy`
- * session token (`Kobe-Sandbox-Token`), verified here with liveness and membership: the proxy
+ * session token (`Kaiju-Sandbox-Token`), verified here with liveness and membership: the proxy
  * cannot ask for a sandbox whose token it has not seen.
  *
  * POST /internal/v1/git/transport `{host, prefix, owner, repository, service}`
@@ -91,7 +91,7 @@ export function createInternalGitRoutes(deps: InternalGitDeps): Hono {
   git.post("/transport", async (c) => {
     const body = bodySchema.safeParse(await readJson(c, null));
     if (!body.success) return invalidRequest(c, "Invalid git request.");
-    const auth = await authenticateSandbox(deps.auth, c.req.header("kobe-sandbox-token"));
+    const auth = await authenticateSandbox(deps.auth, sandboxTokenOf(c));
     if (!auth.ok) {
       logger.info({ code: auth.code }, "git transport: sandbox token refused");
       return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);

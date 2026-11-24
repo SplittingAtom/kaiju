@@ -105,6 +105,8 @@ export function exportResponse(e: Exported): Response {
       "content-length": String(e.zip.length),
       "content-disposition": `attachment; filename="${e.filename}"`,
       // Pin it on import (KOBE-344): the same version always exports to these bytes.
+      "x-kaiju-sha256": e.sha256,
+      // The pre-rename name, for API clients that read it, for one release (KOBE-749; KOBE-754).
       "x-kobe-sha256": e.sha256,
       "x-content-type-options": "nosniff",
       "cache-control": "private, no-store",

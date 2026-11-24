@@ -13,7 +13,7 @@ function stubApi(reply: unknown, status = 200) {
       calls.push({
         url,
         method: init.method ?? "GET",
-        team: new Headers(init.headers).get("x-kobe-team"),
+        team: new Headers(init.headers).get("x-kaiju-team"),
         body: typeof init.body === "string" ? JSON.parse(init.body) : undefined,
       });
       return new Response(status === 204 ? null : JSON.stringify(reply), { status });

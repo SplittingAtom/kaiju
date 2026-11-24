@@ -86,9 +86,9 @@ describe("scroll memory per thread (sessionStorage)", () => {
   });
 
   it("ignores values it did not write", () => {
-    sessionStorage.setItem("kobe.scroll:t1", "-5");
-    sessionStorage.setItem("kobe.scroll:t2", "not a number");
-    sessionStorage.setItem("kobe.scroll:t3", "Infinity");
+    sessionStorage.setItem("kaiju.scroll:t1", "-5");
+    sessionStorage.setItem("kaiju.scroll:t2", "not a number");
+    sessionStorage.setItem("kaiju.scroll:t3", "Infinity");
     expect(loadScroll("t1")).toBeNull();
     expect(loadScroll("t2")).toBeNull();
     expect(loadScroll("t3")).toBeNull();

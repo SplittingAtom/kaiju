@@ -59,7 +59,7 @@ const BODY = {
 
 describe("server-call token", () => {
   it("names its header and an audience no other token carries", () => {
-    expect(SERVER_CALL_TOKEN_HEADER).toBe("x-kobe-server-call");
+    expect(SERVER_CALL_TOKEN_HEADER).toBe("x-kaiju-server-call");
     expect(SERVER_CALL_AUDIENCE).not.toBe("kobe.model-gateway");
     expect(SERVER_CALL_TOKEN_TYP).toBe("ksc2");
   });

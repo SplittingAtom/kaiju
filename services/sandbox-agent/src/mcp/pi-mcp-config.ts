@@ -52,7 +52,7 @@ export function buildPiMcpConfig(input: {
   readonly tokenFile: string;
   /**
    * The Pi process's thread (fixed for the process, from the agent, never from tools): sent as
-   * `Kobe-Thread-Id`, which mcp-proxy requires to bind each call to the thread's active run.
+   * `Kaiju-Thread-Id`, which mcp-proxy requires to bind each call to the thread's active run.
    */
   readonly threadId: string;
   readonly mcp: RunMcpContext;
@@ -67,7 +67,7 @@ export function buildPiMcpConfig(input: {
         url: `${origin}${PROXY_PATH}/${server.connector_id}`,
         headers: {
           Authorization: `!cat '${input.tokenFile}'`,
-          "Kobe-Thread-Id": input.threadId,
+          "Kaiju-Thread-Id": input.threadId,
         },
         exposure: "hidden",
         toolExposure: Object.fromEntries(server.tools.map((t) => [t.name, "direct"])),

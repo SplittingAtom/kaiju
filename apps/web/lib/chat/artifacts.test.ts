@@ -12,7 +12,7 @@ import {
 const ID = "00000000-0000-4000-8000-000700000001";
 
 describe("artifact URLs", () => {
-  it("puts the team in the query of the download and frame URLs (links can't send X-Kobe-Team)", () => {
+  it("puts the team in the query of the download and frame URLs (links can't send X-Kaiju-Team)", () => {
     expect(artifactContentUrl(ID, 2, "t 1")).toBe(
       `/v1/artifacts/${ID}/versions/2/content?team=t%201`,
     );

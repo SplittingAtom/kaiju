@@ -237,7 +237,7 @@ describe("drag a workspace file into the composer (KOBE-374 ac-4)", () => {
     await composer();
     const dt = transfer();
     dt.setData(
-      "application/x-kobe-unmounted-project-file",
+      "application/x-kaiju-unmounted-project-file",
       "Start a conversation in Ops to mention its files",
     );
     fireEvent.dragOver(panel(), { dataTransfer: dt });

@@ -65,6 +65,17 @@ describe("run-bound tokens (KOBE-118)", () => {
     expect(leaseChecks).toBe(0);
   });
 
+  it("reads a run token under its pre-rename header and never forwards it (KOBE-749, one release)", async () => {
+    const runId = randomUUID();
+    const r = await call("/v1/chat/completions", {
+      headers: { ...bearer(), "x-kobe-run-token": runToken(runId) },
+    });
+    expect(r.status).toBe(200);
+    expect(records.at(-1)?.runId).toBe(runId);
+    expect(hits[0]?.headers["x-kobe-run-token"]).toBeUndefined();
+    expect(hits[0]?.headers[RUN_TOKEN_HEADER]).toBeUndefined();
+  });
+
   it("ac-1: refuses a token of an ended (revoked) run", async () => {
     const runId = randomUUID();
     const t = runToken(runId);
@@ -83,14 +94,14 @@ describe("run-bound tokens (KOBE-118)", () => {
     const other = [
       withRun(runToken(a, { sandbox_id: randomUUID() })),
       withRun(runToken(a, { team_id: randomUUID() })),
-      withRun(tokenA, { "x-kobe-run-id": b }),
+      withRun(tokenA, { "x-kaiju-run-id": b }),
     ];
     for (const init of other) {
       const r = await call("/v1/chat/completions", init);
       expect(r.status).toBe(403);
     }
     expect(
-      errorCode(await call("/v1/chat/completions", withRun(tokenA, { "x-kobe-run-id": b }))),
+      errorCode(await call("/v1/chat/completions", withRun(tokenA, { "x-kaiju-run-id": b }))),
     ).toBe("run_id_mismatch");
     // A token never verified as ours (forged, expired, malformed, or minted under another key).
     const now = Math.floor(Date.now() / 1000);
@@ -139,6 +150,16 @@ describe("run-bound tokens (KOBE-118)", () => {
     const runId = randomUUID();
     leased.add(runId);
     const r = await call("/v1/chat/completions", {
+      headers: { ...bearer(), "x-kaiju-run-id": runId },
+    });
+    expect(r.status).toBe(200);
+    expect(records.at(-1)?.runId).toBe(runId);
+  });
+
+  it("reads the pre-rename x-kobe-run-id of an older sandbox image (KOBE-749, one release)", async () => {
+    const runId = randomUUID();
+    leased.add(runId);
+    const r = await call("/v1/chat/completions", {
       headers: { ...bearer(), "x-kobe-run-id": runId },
     });
     expect(r.status).toBe(200);
@@ -156,9 +177,9 @@ describe("run-bound tokens (KOBE-118)", () => {
 
     const attempts: Record<string, { headers: Record<string, string> }> = {
       "no token": { headers: bearer() },
-      "forged run id": { headers: { ...bearer(), "x-kobe-run-id": stopped } },
+      "forged run id": { headers: { ...bearer(), "x-kaiju-run-id": stopped } },
       "its own revoked token": withRun(stoppedToken),
-      "another run's token claiming its id": withRun(otherToken, { "x-kobe-run-id": stopped }),
+      "another run's token claiming its id": withRun(otherToken, { "x-kaiju-run-id": stopped }),
     };
     for (const [name, init] of Object.entries(attempts)) {
       const r = await call("/v1/chat/completions", init);
@@ -272,7 +293,7 @@ describe("review hardening (KOBE-40)", () => {
     const statuses: number[] = [];
     for (let i = 0; i < 10; i++) {
       const r = await call("/v1/chat/completions", {
-        headers: { ...bearer(), "x-kobe-run-id": randomUUID() },
+        headers: { ...bearer(), "x-kaiju-run-id": randomUUID() },
       });
       statuses.push(r.status);
     }

@@ -14,7 +14,7 @@ import {
 export function artifactRoute(k: FakeCore, method: string, url: URL, headers: Headers): Response {
   const [, , id, , n, leaf] = url.pathname.split("/").filter(Boolean); // v1 artifacts id versions n leaf
   const isFrame = leaf === "frame";
-  const team = isFrame ? url.searchParams.get("team") : headers.get("x-kobe-team");
+  const team = isFrame ? url.searchParams.get("team") : headers.get("x-kaiju-team");
   // Downloads (content with ?team=) also carry the team in the query.
   const teamOk = team === k.teamId || url.searchParams.get("team") === k.teamId;
   if (!teamOk) return error(409, "team_mismatch");

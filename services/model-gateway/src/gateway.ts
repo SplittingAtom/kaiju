@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import type { ServerCallClaims } from "@kaiju/protocol";
+import { withRenamedHeaders, type ServerCallClaims } from "@kaiju/protocol";
 import { telemetryState, traceNodeRequest, type RequestSpan } from "@kaiju/telemetry";
 import type { Resolution } from "./principals.js";
 import { resolveRunAttribution } from "./run-attribution.js";
@@ -55,6 +55,10 @@ export function createModelGateway(options: GatewayOptions): Server {
   const gateway: Gateway = { options, upstream };
 
   const server = createServer((req, res) => {
+    // Old header names (`x-kobe-run-id`, `x-kobe-run-token`, `x-kobe-server-call`) from sandboxes
+    // and servers built before the rename count as the new ones for one release (KOBE-749; removed
+    // in KOBE-754), so every check below reads only the new names.
+    req.headers = withRenamedHeaders(req.headers);
     traceNodeRequest("model_gateway.request", req, res, (span) =>
       handle(gateway, req, res, span),
     ).catch((err: unknown) => {

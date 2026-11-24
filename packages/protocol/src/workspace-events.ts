@@ -18,7 +18,7 @@ import { uuidSchema } from "./common.js";
  * any server write, a project file reaching a mounted folder) or the workspace's projects or the
  * caller's checkouts change. `data` is one {@link workspaceEventSchema} JSON of opaque versions:
  * no paths, no names, nothing of another member. The owner comes from the session; `team` is
- * required because EventSource cannot send `X-Kobe-Team` (another active team answers 409
+ * required because EventSource cannot send `X-Kaiju-Team` (another active team answers 409
  * `team_mismatch`). Keep-alives and `retry:` as for run streams.
  */
 export const WORKSPACE_SYNC_WAIT_MS = 10_000;

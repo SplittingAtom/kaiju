@@ -6,6 +6,7 @@ import {
   GIT_BUILTIN_CONNECTOR_ID,
   KAIJU_BUILTIN_CONNECTOR_ID,
   canonicalJson,
+  readRenamedHeader,
   toolInputSchema,
   uuidSchema,
 } from "@kaiju/protocol";
@@ -31,14 +32,14 @@ import type { UpstreamClient, UpstreamFailure } from "./upstream.js";
  * - Every `tools/call` is decided by the server first (policy re-check, signed approval for calls
  *   that need one, audit). Only an `allow` for exactly this connector, tool and input is forwarded,
  *   and what is forwarded is `JSON.parse(canonicalJson(arguments))` — the bytes that were decided.
- * - Per-call context: `Kobe-Thread-Id` header (the Pi process's thread; KOBE-62 sets it per
+ * - Per-call context: `Kaiju-Thread-Id` header (the Pi process's thread; KOBE-62 sets it per
  *   session) and optional `params._meta["kobe.dev/tool_call_id"]`. Both are claims the server checks.
  */
 
 /** Versions the proxy answers to Pi (`pi-mcp` speaks 2025-11-25), newest first. */
 export const SUPPORTED_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
 export const SERVER_INFO = { name: "kobe-mcp-proxy", version: "1.0.0" } as const;
-export const THREAD_HEADER = "kobe-thread-id";
+export const THREAD_HEADER = "kaiju-thread-id";
 export const TOOL_CALL_ID_META_KEY = "kobe.dev/tool_call_id";
 
 export interface McpRouteDeps {
@@ -167,7 +168,9 @@ async function handlePost(deps: McpRouteDeps, c: Context): Promise<Response> {
     teamId: claims.team_id,
     userId: claims.user_id,
     sandboxId: claims.sub,
-    threadHeader: c.req.header(THREAD_HEADER),
+    // The pre-rename `Kobe-Thread-Id` from a sandbox image built before the rename counts for one
+    // release (KOBE-749; removed in KOBE-754).
+    threadHeader: readRenamedHeader((name) => c.req.header(name), THREAD_HEADER),
   };
   switch (message.method) {
     case "initialize":
@@ -287,9 +290,9 @@ async function callTool(ctx: CallContext, id: JsonRpcId, params: unknown): Promi
     {
       attributes: {
         ...idAttributes({ teamId: ctx.teamId, sandboxId: ctx.sandboxId }),
-        "kobe.connector_id": ctx.connectorId,
-        "kobe.tool.name": "unknown",
-        ...contentAttributes({ "kobe.tool.input": canonical }),
+        "kaiju.connector_id": ctx.connectorId,
+        "kaiju.tool.name": "unknown",
+        ...contentAttributes({ "kaiju.tool.input": canonical }),
       },
     },
     () =>
@@ -378,7 +381,7 @@ async function decideAndForward(
   const log = (fields: Record<string, unknown>) => {
     annotate(
       {},
-      { "kobe.outcome": String(fields.outcome), "kobe.duration_ms": Date.now() - started },
+      { "kaiju.outcome": String(fields.outcome), "kaiju.duration_ms": Date.now() - started },
     );
     deps.log.info(
       {
@@ -426,7 +429,7 @@ async function decideAndForward(
       return [toolError(id, "Kaiju could not check this call, so it was not run.")];
     }
     // The server's own record of the tool: now the name is metadata, not model text.
-    annotate({}, { "kobe.tool.name": decision.tool.name });
+    annotate({}, { "kaiju.tool.name": decision.tool.name });
     const credentials = await deps.credentials.headersFor(
       {
         token: ctx.token,
@@ -490,7 +493,7 @@ async function decideAndForward(
       }
     }
     if (result.ok) {
-      annotate({}, contentAttributes({ "kobe.tool.output": JSON.stringify(result.result) }));
+      annotate({}, contentAttributes({ "kaiju.tool.output": JSON.stringify(result.result) }));
       // MCP Apps (KOBE-438, spec T11): the full result comes from here, never the sandbox, and is
       // stored before Pi sees it, so the run's tool.result can claim it.
       const reported =

@@ -53,7 +53,7 @@ describe("run spans over the wire (KOBE-274)", () => {
     expect(spans.every((s) => s !== undefined)).toBe(true);
     const run = spans.find((s) => s?.name === "sandbox.run");
     expect(run?.parent_span_id).toBe(COMMAND_SPAN);
-    expect(run?.attributes).toMatchObject({ "kobe.run.outcome": "completed" });
+    expect(run?.attributes).toMatchObject({ "kaiju.run.outcome": "completed" });
     expect(JSON.stringify(frame)).not.toMatch(/Hello/);
   });
 

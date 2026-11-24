@@ -8,7 +8,7 @@
  * kept per tab in sessionStorage so a reload of the panel still finds it. Without the Navigation
  * API (or storage), `stepsBackToWorkspace` answers null and Close replaces.
  */
-const KEY = "kobe.panelOrigin";
+const KEY = "kaiju.panelOrigin";
 
 interface NavEntry {
   readonly key: string;

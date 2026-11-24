@@ -245,7 +245,7 @@ describe("model gateway with its Postgres principal store", () => {
           headers: {
             authorization: `Bearer ${token()}`,
             "content-type": "application/json",
-            ...(run ? { "x-kobe-run-id": run } : {}),
+            ...(run ? { "x-kaiju-run-id": run } : {}),
           },
           body: JSON.stringify({ model: "openai/gpt-x", messages: [], ...extra }),
         });
@@ -368,7 +368,7 @@ describe("run tokens against the real record (KOBE-118)", () => {
     requireRunToken = true;
     try {
       expect(await call({})).toBe(401);
-      expect(await call({ "x-kobe-run-id": runId })).toBe(401);
+      expect(await call({ "x-kaiju-run-id": runId })).toBe(401);
     } finally {
       requireRunToken = false;
     }

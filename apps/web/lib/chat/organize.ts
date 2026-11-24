@@ -55,7 +55,7 @@ export const NOT_ORGANIZED: Readonly<Record<OrganizeChange["action"], string>> =
 };
 
 /** A thread row being dragged onto a project header (CE19): carries the thread id only. */
-export const THREAD_DRAG_TYPE = "application/x-kobe-thread";
+export const THREAD_DRAG_TYPE = "application/x-kaiju-thread";
 
 /** Whether a drag carries a thread row (types are readable during dragover; data only on drop). */
 export function carriesThread(data: DataTransfer | null): boolean {
@@ -66,7 +66,7 @@ export function carriesThread(data: DataTransfer | null): boolean {
  * Also set on a dragged row shared with the member (KOBE-536, TF8): it may be dropped on a folder
  * in the Threads panel's tree, never on a project header (only the owner moves it).
  */
-export const SHARED_THREAD_DRAG_TYPE = "application/x-kobe-shared-thread";
+export const SHARED_THREAD_DRAG_TYPE = "application/x-kaiju-shared-thread";
 
 export function carriesSharedThread(data: DataTransfer | null): boolean {
   return data !== null && Array.from(data.types).includes(SHARED_THREAD_DRAG_TYPE);

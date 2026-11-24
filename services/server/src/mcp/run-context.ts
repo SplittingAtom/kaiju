@@ -7,7 +7,7 @@ import type { McpPrincipal } from "./decide-types.js";
 
 /**
  * The runs an MCP call might belong to (KOBE-58 review M1). Pi's MCP client cannot say which tool
- * call (or run) a `tools/call` comes from, and the `Kobe-Thread-Id` header is the sandbox's claim:
+ * call (or run) a `tools/call` comes from, and the `Kaiju-Thread-Id` header is the sandbox's claim:
  * a prompt-injected thread could name a sibling thread whose run has a laxer policy (a scheduled
  * run in `auto`, a broader agent allow list). So the server loads **every** active run of the
  * token's user that is leased to the token's sandbox, each with its own policy context exactly as

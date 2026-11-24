@@ -13,7 +13,7 @@ import { panelOf } from "./support/panel.js";
 const STAMP = Date.now().toString(36);
 const PROMOTED = `e2e-manifest-${STAMP}`;
 const DRAFTED = `e2e-manifest-draft-${STAMP}`;
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 const skillMd = (name: string) =>
   [
@@ -71,7 +71,7 @@ test("Promote to Site: a version without a manifest gets one from the team model
         method: "POST",
         headers: {
           "content-type": "text/markdown",
-          "x-kobe-team": window.localStorage.getItem(teamKey) ?? "",
+          "x-kaiju-team": window.localStorage.getItem(teamKey) ?? "",
         },
         body: md,
       });

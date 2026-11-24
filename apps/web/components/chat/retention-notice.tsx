@@ -14,7 +14,7 @@ const LABELS: Readonly<Record<string, string>> = {
 };
 
 /** Browser storage key of the last notice this viewer closed (a per-viewer convenience only). */
-const DISMISSED_KEY = "kobe.retentionNotice.dismissed";
+const DISMISSED_KEY = "kaiju.retentionNotice.dismissed";
 
 /** Identifies one notice, so a new period or date shows again after an earlier one was closed. */
 const noticeId = (teamId: string, upcoming: NonNullable<TeamRetentionNotice["upcoming"]>) =>

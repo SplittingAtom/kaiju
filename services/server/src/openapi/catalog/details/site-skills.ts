@@ -266,7 +266,7 @@ const baseDetails: Readonly<Record<string, CatalogDetail>> = {
       },
     },
     produces: "application/zip",
-    responseDescription: "The zip as an attachment; `X-Kobe-Sha256` carries its hash.",
+    responseDescription: "The zip as an attachment; `X-Kaiju-Sha256` carries its hash.",
     errors: ["404", "413", "422", "429", "503"],
   },
   "get /v1/site/skills/tags": {

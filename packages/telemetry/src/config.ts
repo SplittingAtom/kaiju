@@ -62,6 +62,6 @@ export function loadTelemetryConfig(
     ...(endpoint === undefined ? {} : { endpoint }),
     headers,
     captureContent: d.KAIJU_OTEL_CAPTURE_CONTENT === "true",
-    serviceName: `kobe-${service}`,
+    serviceName: `kaiju-${service}`,
   };
 }

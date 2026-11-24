@@ -232,7 +232,7 @@ async function appsForged() {
     "forged_token",
     await send({
       authorization: `Bearer ${process.env.KAIJU_MCP_PROXY_INTERNAL_KEY ?? ""}`,
-      "kobe-sandbox-token": "forged.sandbox.token",
+      "kaiju-sandbox-token": "forged.sandbox.token",
     }),
   );
 }
@@ -286,7 +286,7 @@ async function binarySession(user) {
         origin: ORIGIN,
         "content-type": "application/json",
         "x-forwarded-for": ip,
-        "x-kobe-team": user.teamId,
+        "x-kaiju-team": user.teamId,
         cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),

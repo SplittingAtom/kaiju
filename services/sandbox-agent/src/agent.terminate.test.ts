@@ -113,6 +113,6 @@ describe("SIGTERM: active runs are reported lost (KOBE-444)", () => {
       .flatMap((f: Extract<SandboxToServerFrame, { type: "trace.spans" }>) => f.spans)
       .map((sp) => parseSandboxSpan(sp));
     const run = spans.find((sp) => sp?.name === "sandbox.run");
-    expect(run?.attributes).toMatchObject({ "kobe.run.outcome": "failed" });
+    expect(run?.attributes).toMatchObject({ "kaiju.run.outcome": "failed" });
   });
 });

@@ -111,7 +111,7 @@ describe("Inventory: skills and connectors (KOBE-291)", () => {
     );
     expect(connectors.textContent).not.toContain("Off");
 
-    expect(calls.every((c) => c.headers.get("x-kobe-team") === TEAM.id)).toBe(true);
+    expect(calls.every((c) => c.headers.get("x-kaiju-team") === TEAM.id)).toBe(true);
     expect(summary(calls).sort()).toEqual([SKILLS, CONNECTORS].sort());
   });
 

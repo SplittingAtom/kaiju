@@ -32,7 +32,7 @@ import type { Learn } from "./use-learn";
 export const NOT_STARTED_LEARN =
   "Kaiju learns from a conversation once a reply has finished. Send a message first.";
 /** The one-time "New" hint on Memory (per browser), until the member opens it once. */
-export const LEARN_HINT_KEY = "kobe.learn-hint.v1";
+export const LEARN_HINT_KEY = "kaiju.learn-hint.v1";
 
 function hintSeen(): boolean {
   try {

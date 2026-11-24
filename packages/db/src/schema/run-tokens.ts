@@ -14,7 +14,7 @@ import { teams } from "./teams.js";
 
 // Run-bound model-gateway tokens (KOBE-118, part of KOBE-73). One row per minted token: the
 // server inserts it with the run's `run.start` lease and revokes it when the run ends; the
-// model-gateway checks it on every call carrying `x-kobe-run-token` (the MAC proves the server
+// model-gateway checks it on every call carrying `x-kaiju-run-token` (the MAC proves the server
 // minted the token, this row proves it is still wanted). The token itself is never stored, only
 // its `jti`. Several rows may exist per run (a re-delivered `run.start` mints a new one).
 export const runTokens = pgTable(

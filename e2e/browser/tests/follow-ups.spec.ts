@@ -13,7 +13,7 @@ import { panelOf } from "./support/panel.js";
 const PROMPT = "No tools. Reply with the single word ALPHA.";
 /** The follow-up call runs after the run (up to 20 s), and the event follows within the window. */
 const FOLLOWUPS_TIMEOUT_MS = 45_000;
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** Turns the team switch on or off in the Team console, as a team admin would. */
 async function setSwitch(page: Page, on: boolean): Promise<void> {
@@ -32,7 +32,7 @@ async function setSwitch(page: Page, on: boolean): Promise<void> {
 async function switchState(page: Page): Promise<boolean | null> {
   return page.evaluate(async (teamKey) => {
     const team = window.localStorage.getItem(teamKey);
-    const res = await fetch("/v1/team/settings", { headers: team ? { "x-kobe-team": team } : {} });
+    const res = await fetch("/v1/team/settings", { headers: team ? { "x-kaiju-team": team } : {} });
     return res.ok ? ((await res.json()) as { followups_enabled: boolean }).followups_enabled : null;
   }, TEAM_KEY);
 }

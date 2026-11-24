@@ -250,10 +250,10 @@ async function complete(
     // To review's bell notice and reminder (KOBE-396): last, it holds the digest lock to commit.
     await noticeCandidatesReady(tx, pass, counts.stored);
     span.setAttributes({
-      "kobe.memory.candidates": counts.stored,
-      "kobe.memory.dropped": dropped,
-      "kobe.memory.replied": counts.replied,
-      "kobe.memory.skill_hints": counts.skill_hints,
+      "kaiju.memory.candidates": counts.stored,
+      "kaiju.memory.dropped": dropped,
+      "kaiju.memory.replied": counts.replied,
+      "kaiju.memory.skill_hints": counts.skill_hints,
     });
   });
 }
@@ -311,14 +311,14 @@ export async function executePass(
     {
       kind: SpanKind.INTERNAL,
       attributes: {
-        "kobe.team_id": pass.teamId,
-        "kobe.thread_id": pass.threadId,
-        "kobe.run_id": pass.runId,
-        "kobe.memory.pass_id": pass.passId,
-        "kobe.memory.model_alias": pass.modelAlias,
-        "kobe.memory.prompt_version": pass.promptVersion,
-        "kobe.memory.entries": input.prompt.transcript.length,
-        "kobe.memory.partial": input.partial,
+        "kaiju.team_id": pass.teamId,
+        "kaiju.thread_id": pass.threadId,
+        "kaiju.run_id": pass.runId,
+        "kaiju.memory.pass_id": pass.passId,
+        "kaiju.memory.model_alias": pass.modelAlias,
+        "kaiju.memory.prompt_version": pass.promptVersion,
+        "kaiju.memory.entries": input.prompt.transcript.length,
+        "kaiju.memory.partial": input.partial,
       },
     },
     async (span) => {
@@ -333,7 +333,7 @@ export async function executePass(
         const extracted = await extract(ctx, pass, input, target, usage);
         await progress(ctx, pass, "checking");
         await finish(ctx, pass, input, extracted, usage, span);
-        span.setAttribute("kobe.memory.outcome", "completed");
+        span.setAttribute("kaiju.memory.outcome", "completed");
       } catch (err) {
         const failure =
           err instanceof PassFailure ? err : new PassFailure("model_error", "internal");
@@ -345,8 +345,8 @@ export async function executePass(
             "learning pass failed",
           );
         span.setAttributes({
-          "kobe.memory.outcome": "failed",
-          "kobe.memory.failure": failure.code,
+          "kaiju.memory.outcome": "failed",
+          "kaiju.memory.failure": failure.code,
         });
         await fail(ctx, pass, failure.code, usage, failure.detail);
       }

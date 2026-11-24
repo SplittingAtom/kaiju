@@ -132,7 +132,7 @@ export class TraceRecorder {
       parentSpanId: parsed.parentSpanId,
       name: compaction ? "sandbox.compaction" : "sandbox.run",
       startMs: this.#now(),
-      attributes: compaction ? { "kobe.compaction.trigger": "command" } : {},
+      attributes: compaction ? { "kaiju.compaction.trigger": "command" } : {},
     };
     this.#runs.set(runId, {
       threadId,
@@ -219,9 +219,9 @@ export class TraceRecorder {
         name: "sandbox.workspace_sync",
         startMs: sync.startMs,
         attributes: {
-          "kobe.sync.direction": sync.direction,
-          ...(sync.files === undefined ? {} : { "kobe.sync.files": sync.files }),
-          ...(sync.bytes === undefined ? {} : { "kobe.sync.bytes": sync.bytes }),
+          "kaiju.sync.direction": sync.direction,
+          ...(sync.files === undefined ? {} : { "kaiju.sync.files": sync.files }),
+          ...(sync.bytes === undefined ? {} : { "kaiju.sync.bytes": sync.bytes }),
         },
       },
       sync.ok ? undefined : "sync_failed",
@@ -242,7 +242,7 @@ export class TraceRecorder {
     for (const open of run.tools.values()) {
       this.#end(
         run,
-        { ...open, attributes: { ...open.attributes, "kobe.tool.outcome": "aborted" } },
+        { ...open, attributes: { ...open.attributes, "kaiju.tool.outcome": "aborted" } },
         error ?? "aborted",
       );
     }
@@ -255,7 +255,7 @@ export class TraceRecorder {
       run,
       run.compaction
         ? run.root
-        : { ...run.root, attributes: { "kobe.run.outcome": outcome, "kobe.turns": run.turns } },
+        : { ...run.root, attributes: { "kaiju.run.outcome": outcome, "kaiju.turns": run.turns } },
       run.exited ? "pi_exited" : undefined,
     );
     run.endedAtMs = this.#now();
@@ -325,7 +325,7 @@ export class TraceRecorder {
       parentSpanId: run.root.spanId,
       name: "sandbox.turn",
       startMs: this.#now(),
-      attributes: { "kobe.turn.index": run.turns },
+      attributes: { "kaiju.turn.index": run.turns },
     };
     run.turns += 1;
     run.turnToolCalls = 0;
@@ -336,14 +336,14 @@ export class TraceRecorder {
     const message = event.message as { role?: unknown; stopReason?: unknown } | undefined;
     if (!run.turn || message?.role !== "assistant") return;
     const reason = STOP_REASONS[str(message.stopReason) ?? ""] ?? "other";
-    run.turn = { ...run.turn, attributes: { ...run.turn.attributes, "kobe.stop_reason": reason } };
+    run.turn = { ...run.turn, attributes: { ...run.turn.attributes, "kaiju.stop_reason": reason } };
   }
 
   #turnEnd(runId: string, run: RunTrace): void {
     if (!run.turn) return;
     this.#closeTurn(
       run,
-      run.turn.attributes["kobe.stop_reason"] === "error" ? "model_error" : undefined,
+      run.turn.attributes["kaiju.stop_reason"] === "error" ? "model_error" : undefined,
     );
     this.#modelParent(runId, run.root.spanId);
   }
@@ -354,7 +354,7 @@ export class TraceRecorder {
     run.turn = undefined;
     this.#end(
       run,
-      { ...turn, attributes: { ...turn.attributes, "kobe.tool_calls": run.turnToolCalls } },
+      { ...turn, attributes: { ...turn.attributes, "kaiju.tool_calls": run.turnToolCalls } },
       error,
     );
   }
@@ -374,8 +374,8 @@ export class TraceRecorder {
       name: "sandbox.tool",
       startMs: this.#now(),
       attributes: {
-        "kobe.tool.call_id": callId,
-        ...(run.capture ? { "kobe.tool.input": contentOf(event.args) } : {}),
+        "kaiju.tool.call_id": callId,
+        ...(run.capture ? { "kaiju.tool.input": contentOf(event.args) } : {}),
       },
     });
   }
@@ -394,8 +394,8 @@ export class TraceRecorder {
         ...open,
         attributes: {
           ...open.attributes,
-          "kobe.tool.outcome": outcome,
-          ...(run.capture ? { "kobe.tool.output": contentOf(event.result) } : {}),
+          "kaiju.tool.outcome": outcome,
+          ...(run.capture ? { "kaiju.tool.output": contentOf(event.result) } : {}),
         },
       },
       blocked ? "blocked" : failed ? "tool_error" : undefined,
@@ -411,7 +411,7 @@ export class TraceRecorder {
       name: "sandbox.compaction",
       startMs: this.#now(),
       attributes: {
-        "kobe.compaction.trigger":
+        "kaiju.compaction.trigger":
           reason === "threshold" || reason === "overflow" ? reason : "command",
       },
     };
@@ -422,7 +422,7 @@ export class TraceRecorder {
     const before = result?.tokensBefore;
     const tokens =
       typeof before === "number" && Number.isSafeInteger(before) && before >= 0
-        ? { "kobe.compaction.tokens_before": before }
+        ? { "kaiju.compaction.tokens_before": before }
         : {};
     const failed = event.aborted === true || typeof event.errorMessage === "string";
     if (run.compaction) {

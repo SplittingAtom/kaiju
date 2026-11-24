@@ -226,7 +226,7 @@ function runPrompt(message) {
       out({ type: "kaiju_test_run_token_answer", answer });
       settle();
     });
-    out({ type: "extension_ui_request", id: "tok-1", method: "input", title: "kobe.run_token" });
+    out({ type: "extension_ui_request", id: "tok-1", method: "input", title: "kaiju.run_token" });
   } else if (message === "dialog") {
     start();
     dialogs.set("ui-1", (answer) => {
@@ -334,7 +334,7 @@ function compact(cmd) {
         type: "extension_ui_request",
         id: "tok-late",
         method: "input",
-        title: "kobe.run_token",
+        title: "kaiju.run_token",
       });
     }, 50);
     return;
@@ -371,7 +371,7 @@ function compact(cmd) {
   };
   if (focus === "token") {
     dialogs.set("tok-c", (answer) => finish(`token:${answer.value ?? "none"}`));
-    out({ type: "extension_ui_request", id: "tok-c", method: "input", title: "kobe.run_token" });
+    out({ type: "extension_ui_request", id: "tok-c", method: "input", title: "kaiju.run_token" });
     return;
   }
   finish(focus === undefined ? "Summary." : `Summary. focus=${focus}`);

@@ -10,8 +10,8 @@ import { expect, test, filesSection } from "./support/chat.js";
  * The width is a per-user preference on the server (CE8): the spec puts back the member's
  * width as it found it. Uploads one small file and deletes it at the end. No model tokens.
  */
-const TEAM_KEY = "kobe.lastTeamId";
-const THEME_COOKIE = "kobe-theme";
+const TEAM_KEY = "kaiju.lastTeamId";
+const THEME_COOKIE = "kaiju-theme";
 /** CSS px are whole at 1280 × 800; allow a pixel for borders and rounding. */
 const SLACK_PX = 1;
 
@@ -20,7 +20,7 @@ async function api(page: Page, method: "POST" | "DELETE", path: string): Promise
   return page.evaluate(
     async ({ method, path, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (method === "DELETE") {
         const q = encodeURIComponent(path);
         return (await fetch(`/v1/workspace/files?path=${q}`, { method, headers })).status;

@@ -21,7 +21,7 @@ export const teamAreas: readonly CatalogArea[] = [
     },
     description:
       "The active team: members, invitations, policy, connectors, egress, budgets, retention, audit " +
-      "and settings. Team-scoped: send X-Kobe-Team; changes need the named team permission.",
+      "and settings. Team-scoped: send X-Kaiju-Team; changes need the named team permission.",
     entries: [
       ["get", "/v1/team", "Get the active team, the caller's role and permissions"],
       ["get", "/v1/team/apps", "List the member's live MCP Apps", "Team members (`team.chat`)."],

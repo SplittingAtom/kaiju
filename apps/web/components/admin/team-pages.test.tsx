@@ -76,7 +76,7 @@ describe("Members and roles", () => {
     await screen.findByText("Bob is now Contributor.");
     const patch = must(calls.find((c) => c.method === "PATCH"));
     expect(JSON.parse(String(patch.body))).toEqual({ role: "contributor" });
-    expect(calls.every((c) => c.headers.get("x-kobe-team") === TEAM.id)).toBe(true);
+    expect(calls.every((c) => c.headers.get("x-kaiju-team") === TEAM.id)).toBe(true);
     await waitFor(() =>
       expect(summary(calls).filter((c) => c === "GET /v1/team/members")).toHaveLength(2),
     );
@@ -191,7 +191,7 @@ describe("Team invitations", () => {
     expect(notice.textContent).not.toMatch(/account/);
     const post = must(calls.find((c) => c.method === "POST"));
     expect(JSON.parse(String(post.body))).toEqual({ email: "c@x.io", role: "contributor" });
-    expect(post.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(post.headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 
   it("revokes", async () => {

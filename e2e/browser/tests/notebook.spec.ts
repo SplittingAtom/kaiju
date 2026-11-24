@@ -12,7 +12,7 @@ import { styleViolations, watchStyleViolations } from "./support/csp.js";
  * and the kernel restarted; after a reload the saved notebook still holds the outputs. CodeMirror
  * and the outputs raise no style-src CSP violation. One short model turn creates the thread.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 const code = (id: string, source: string) => ({
   cell_type: "code",
@@ -46,7 +46,7 @@ async function workspace(
   return page.evaluate(
     async ({ op, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       const q = encodeURIComponent(path);
       if (op === "delete") {
         const res = await fetch(`/v1/workspace/files?path=${q}`, { method: "DELETE", headers });

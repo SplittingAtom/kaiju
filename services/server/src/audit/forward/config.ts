@@ -6,7 +6,7 @@ export interface AuditForwardingConfig {
     readonly host: string;
     readonly port: number;
     readonly tls: boolean;
-    /** IANA private enterprise number in the RFC 5424 SD-ID (`kobe@<n>`); default 32473. */
+    /** IANA private enterprise number in the RFC 5424 SD-ID (`kaiju@<n>`); default 32473. */
     readonly enterpriseNumber?: string;
   };
   readonly otlp?: { readonly url: string; readonly headers: Readonly<Record<string, string>> };

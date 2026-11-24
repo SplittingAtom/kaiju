@@ -14,14 +14,14 @@ import { panelOf } from "./support/panel.js";
  * Spends a few short model turns.
  */
 const FILE = "/workspace/e2e-remember.txt";
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** The caller's live remembered approvals in the active team, read from the page. */
 async function myRules(page: Page): Promise<{ id: string; tool_glob: string }[]> {
   return page.evaluate(async (teamKey) => {
     const team = window.localStorage.getItem(teamKey);
     const res = await fetch("/v1/team/policy/my-rules", {
-      headers: team ? { "x-kobe-team": team } : {},
+      headers: team ? { "x-kaiju-team": team } : {},
     });
     return res.ok
       ? ((await res.json()) as { rules: { id: string; tool_glob: string }[] }).rules
@@ -38,7 +38,7 @@ async function revokeAll(page: Page): Promise<void> {
       for (const id of ids) {
         await fetch(`/v1/team/policy/my-rules/${encodeURIComponent(id)}`, {
           method: "DELETE",
-          headers: team ? { "x-kobe-team": team } : {},
+          headers: team ? { "x-kaiju-team": team } : {},
         });
       }
     },

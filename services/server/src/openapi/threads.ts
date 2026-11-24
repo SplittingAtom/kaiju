@@ -82,7 +82,7 @@ const idParameter = {
 } as const;
 
 const teamHeader = {
-  name: "X-Kobe-Team",
+  name: "X-Kaiju-Team",
   in: "header",
   required: false,
   description: "The team the client believes is active. Required on changes; must match.",

@@ -1,7 +1,7 @@
 /* The one theme source (KOBE-282), loaded by the root layout on every page. Tokens live on :root,
    so content portalled anywhere (dialogs, menus, tooltips) resolves them too.
 
-   - `<html data-theme="light|dark">`: the member's saved choice (cookie `kobe-theme`, read on the
+   - `<html data-theme="light|dark">`: the member's saved choice (cookie `kaiju-theme`, read on the
      server by app/layout.tsx; the bar's toggle sets both).
    - No data-theme: follow the OS (prefers-color-scheme).
 

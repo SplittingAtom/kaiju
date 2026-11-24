@@ -53,12 +53,12 @@ export function openApiDocument(): Record<string, unknown> {
       title: "Kaiju API",
       version: "0.0.0",
       description:
-        "Team-scoped routes act on the session's active team (spec D9); send X-Kobe-Team on " +
+        "Team-scoped routes act on the session's active team (spec D9); send X-Kaiju-Team on " +
         "changes. Errors are `{code, message}`. Authentication is the Better Auth session cookie.\n\n" +
         "Coverage: every route of the member and admin API is listed. Operations marked " +
-        "`x-kobe-detail: summary` (tagged by area) document their summary and path parameters " +
+        "`x-kaiju-detail: summary` (tagged by area) document their summary and path parameters " +
         "only; their request and response bodies are not described yet. The rest are fully " +
-        "described; a response schema marked `x-kobe-untyped` lists the fields the route sends " +
+        "described; a response schema marked `x-kaiju-untyped` lists the fields the route sends " +
         "without a schema in code. Not listed on purpose: health probes, Better Auth's own " +
         "`/api/auth/*` handler, SCIM provisioning (`/v1/scim/v2`, see the SCIM specification), " +
         "OAuth redirect and client-metadata endpoints, the web app's telemetry beacon, and the " +

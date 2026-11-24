@@ -68,7 +68,7 @@ test("artifact and workspace HTML frames: no WebRTC, no top-level load (KOBE-690
 }) => {
   const stem = `kobe-690-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   await chat.open();
-  const team = await page.evaluate(() => window.localStorage.getItem("kobe.lastTeamId"));
+  const team = await page.evaluate(() => window.localStorage.getItem("kaiju.lastTeamId"));
   expect(team).toBeTruthy();
 
   // The workspace HTML frame: no model turn needed.

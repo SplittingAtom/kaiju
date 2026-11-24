@@ -1,5 +1,6 @@
 import { verifySessionToken, type SessionVerifyKeys } from "@kaiju/session-token";
 import { eq, getMembership, users, type KaijuDb } from "@kaiju/db";
+import { readRenamedHeader } from "@kaiju/protocol";
 import type { SandboxLiveness } from "../sandbox-wire/types.js";
 import type { McpPrincipal } from "./decide.js";
 
@@ -24,6 +25,15 @@ export interface McpAuthDeps {
    * egress proxy's git decisions (KOBE-763), with that audience's keys.
    */
   readonly audience?: "kobe.mcp-proxy" | "kobe.egress-proxy";
+}
+
+/**
+ * The sandbox's session token as the mcp-proxy and egress-proxy forward it: `kaiju-sandbox-token`,
+ * else the pre-rename `kobe-sandbox-token` a proxy pod built before the rename still sends during
+ * a rolling upgrade (accepted for one release, KOBE-749; removed in KOBE-754).
+ */
+export function sandboxTokenOf(c: { req: { header(name: string): string | undefined } }) {
+  return readRenamedHeader((name) => c.req.header(name), "kaiju-sandbox-token");
 }
 
 export async function authenticateSandbox(

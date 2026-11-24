@@ -112,9 +112,9 @@ describe("Run for .py files (KOBE-615 ac-7, ac-8)", () => {
     expect(divider.getAttribute("aria-valuenow")).toBe("50");
     act(() => divider.focus());
     await user.keyboard("{ArrowDown}");
-    expect(localStorage.getItem("kobe.fileEditor.split")).toBe("55");
+    expect(localStorage.getItem("kaiju.fileEditor.split")).toBe("55");
     await user.keyboard("{Enter}");
-    expect(localStorage.getItem("kobe.fileEditor.split")).toBeNull();
+    expect(localStorage.getItem("kaiju.fileEditor.split")).toBeNull();
   });
 
   it("has no Run or kernel controls for a shared reader", async () => {

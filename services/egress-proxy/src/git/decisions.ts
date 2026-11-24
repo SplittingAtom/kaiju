@@ -10,7 +10,7 @@ import type { GitRequest } from "./grammar.js";
  *
  * POST <server internal>/internal/v1/git/transport
  *   Authorization: Bearer <egress proxy internal key>
- *   Kobe-Sandbox-Token: <the sandbox's own kobe.egress-proxy token>
+ *   Kaiju-Sandbox-Token: <the sandbox's own kobe.egress-proxy token>
  *   {host, prefix, owner, repository, service}
  */
 
@@ -103,7 +103,7 @@ export function serverDecider(options: ServerDeciderOptions): GitDecider {
         method: "POST",
         headers: {
           authorization: `Bearer ${options.internalKey}`,
-          "kobe-sandbox-token": query.token,
+          "kaiju-sandbox-token": query.token,
           "content-type": "application/json",
         },
         body: JSON.stringify({

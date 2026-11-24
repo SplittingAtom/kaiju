@@ -30,7 +30,7 @@ import {
 /**
  * The `kobe` Pi provider (KOBE-41): one model, the run's, served by the Kaiju model gateway through
  * Pi's own API adapters. Per request it reads the model file for the current session token (the
- * API key) and the active run (`x-kobe-run-id`), so a rotated token is picked up by the next
+ * API key) and the active run (`x-kaiju-run-id`), so a rotated token is picked up by the next
  * request without restarting Pi or cutting a stream.
  *
  * Gateway refusals are handled here, where the HTTP status and Retry-After are visible:
@@ -43,7 +43,7 @@ import {
 export const RETRY_BUDGET_MS = 60_000;
 export const RETRY_BASE_MS = 1_000;
 const MAX_ATTEMPTS = 8;
-const RUN_ID_HEADER = "x-kobe-run-id";
+const RUN_ID_HEADER = "x-kaiju-run-id";
 const ABORTED_MESSAGE = "Request was aborted";
 const NO_FAILURE: Failure = { status: undefined, code: undefined, retryAfterMs: undefined };
 

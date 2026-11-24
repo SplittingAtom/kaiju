@@ -103,13 +103,13 @@ export function webVitalsRoutes(
           startTime: end - ms,
           endTime: end,
           attributes: {
-            "kobe.web_vital.name": report.name,
-            "kobe.web_vital.value": report.value,
+            "kaiju.web_vital.name": report.name,
+            "kaiju.web_vital.value": report.value,
             "http.route": route,
-            ...(report.rating === undefined ? {} : { "kobe.web_vital.rating": report.rating }),
+            ...(report.rating === undefined ? {} : { "kaiju.web_vital.rating": report.rating }),
             ...(report.navigation_type === undefined
               ? {}
-              : { "kobe.web_vital.navigation_type": report.navigation_type }),
+              : { "kaiju.web_vital.navigation_type": report.navigation_type }),
           },
         });
       }

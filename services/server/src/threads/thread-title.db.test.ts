@@ -247,7 +247,7 @@ describe("auto-titles (KOBE-219)", () => {
     const body = serverCallRequestSchema.parse(call?.body);
     expect(body.stream).toBe(false);
     expect(JSON.stringify(body.messages)).toContain("What drives our Q3 revenue?");
-    for (const h of ["authorization", "x-api-key", "x-goog-api-key", "api-key", "x-kobe-run-id"]) {
+    for (const h of ["authorization", "x-api-key", "x-goog-api-key", "api-key", "x-kaiju-run-id"]) {
       expect(call?.headers[h]).toBeUndefined();
     }
     expect(call?.headers[RUN_TOKEN_HEADER]).toBeUndefined();

@@ -21,7 +21,7 @@ const ENTRA = `https://login.microsoftonline.com/${TENANT}/v2.0`;
 const KC = "https://kc-link.example.com/realms/kobe";
 const CORP_SECRET = "Corp~Secret.Value-0123456789abcdef";
 const KC_SECRET = "Kc~Secret.Value-0123456789abcdefgh";
-const LINK_COOKIE = "kobe-sso-link";
+const LINK_COOKIE = "kaiju-sso-link";
 
 let h: Harness;
 let entra: MockOidcProvider;
@@ -87,7 +87,7 @@ beforeAll(async () => {
   corpId = rows.find((r) => r.slug === "corp")?.id ?? "";
   kcId = rows.find((r) => r.slug === "kc")?.id ?? "";
   for (const [providerId, claimValue] of [
-    [corpId, "kobe.research.member"],
+    [corpId, "kaiju.research.member"],
     [kcId, "g-research"],
   ] as const) {
     const res = await owner.post(`/v1/site/sso/providers/${providerId}/mappings`, {
@@ -107,7 +107,7 @@ const entraUser = (upn: string, over: Record<string, unknown> = {}) => ({
   oid: oid(),
   name: "Grace Hopper",
   upn,
-  roles: ["kobe.research.member"],
+  roles: ["kaiju.research.member"],
   amr: ["pwd", "mfa"],
   auth_time: Math.floor(Date.now() / 1000) - 5,
   ...over,

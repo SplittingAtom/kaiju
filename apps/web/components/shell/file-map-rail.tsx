@@ -101,7 +101,7 @@ export function FileMapRail({
       <FileTreeView
         tree={tree}
         label="Workspace files"
-        idPrefix="kobe-threads-file-row"
+        idPrefix="kaiju-threads-file-row"
         dragRows={false}
         actions={actions}
         focusRequest={null}

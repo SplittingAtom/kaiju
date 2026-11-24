@@ -44,7 +44,7 @@ type FakeArea = (k: FakeCore, req: FakeRequest) => FakeAnswer;
 
 /** Areas outside a team's scope, asked in this order (each answers only its own paths). */
 const OPEN_AREAS: readonly FakeArea[] = [accountArea, artifactsArea, workspaceArea, memoryArea];
-/** Team-scoped areas: asked once `X-Kobe-Team` names the fake's team. */
+/** Team-scoped areas: asked once `X-Kaiju-Team` names the fake's team. */
 const TEAM_AREAS: readonly FakeArea[] = [
   teamAccountArea,
   threadsArea,
@@ -317,7 +317,7 @@ export class FakeKaiju extends FakeCore {
     this.requests.push({
       method,
       path: `${url.pathname}${url.search}`,
-      team: headers.get("x-kobe-team"),
+      team: headers.get("x-kaiju-team"),
       idempotencyKey: headers.get("idempotency-key"),
       body,
     });
@@ -340,7 +340,7 @@ export class FakeKaiju extends FakeCore {
       if (answer !== undefined) return answer;
     }
     if (!teamScoped(url.pathname)) return error(404, "not_found");
-    if (headers.get("x-kobe-team") !== this.teamId) return error(409, "team_mismatch");
+    if (headers.get("x-kaiju-team") !== this.teamId) return error(409, "team_mismatch");
     for (const area of TEAM_AREAS) {
       const answer = area(this, req);
       if (answer !== undefined) return answer;

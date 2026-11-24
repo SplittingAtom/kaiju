@@ -20,7 +20,7 @@
     art_fetch() { # path → status, then the headers and body (JSON lines) of an owner-authenticated GET
       $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
         const base = 'http://127.0.0.1:8080', origin = process.env.KAIJU_PUBLIC_URL;
-        const h = { origin, 'content-type': 'application/json', 'x-kobe-team': '$E2E_TEAM_ID' };
+        const h = { origin, 'content-type': 'application/json', 'x-kaiju-team': '$E2E_TEAM_ID' };
         let login;
         for (let i = 0; i < 4; i++) { // sign-in is rate limited (3 per 10 s): wait out a 429
           login = await fetch(base + '/api/auth/sign-in/email', { method: 'POST', headers: h,
@@ -71,7 +71,7 @@
     file_fetch() { # email path [method] → status, then the headers and body (JSON lines) of that user's request
       $KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "
         const base = 'http://127.0.0.1:8080', origin = process.env.KAIJU_PUBLIC_URL;
-        const h = { origin, 'content-type': 'application/json', 'x-kobe-team': '$E2E_TEAM_ID' };
+        const h = { origin, 'content-type': 'application/json', 'x-kaiju-team': '$E2E_TEAM_ID' };
         let login;
         for (let i = 0; i < 4; i++) { // sign-in is rate limited (3 per 10 s): wait out a 429
           login = await fetch(base + '/api/auth/sign-in/email', { method: 'POST', headers: h,

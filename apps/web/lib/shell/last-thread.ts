@@ -4,7 +4,7 @@
  * (sessionStorage), like the chat's resume points, with the team it belongs to: a thread of another
  * team than the active one is never offered. Storage may be blocked, then the link goes to "/".
  */
-const KEY = "kobe.lastThread";
+const KEY = "kaiju.lastThread";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Records the thread on screen in `teamId`; `undefined` (a new conversation) forgets it. */

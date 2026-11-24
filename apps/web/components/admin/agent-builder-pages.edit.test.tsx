@@ -49,7 +49,7 @@ describe("Agent builder: create", () => {
       frontmatter: { name: "Triage", skills: ["sql"] },
       prompt: "Be helpful.",
     });
-    expect(post.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(post.headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 });
 

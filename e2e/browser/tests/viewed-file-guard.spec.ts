@@ -11,7 +11,7 @@ import { FAKE_MODEL } from "./support/gate5.js";
  * both are accepted; the file must never change by itself. Uploads `kobe-493-*\/notes.md` and
  * deletes the folder at the end. One short model turn.
  */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 const BASE = "alpha\nbeta\ngamma\n";
 const WANTED = "alpha\nBETA\ngamma\n";
 
@@ -24,7 +24,7 @@ async function workspace(
   return page.evaluate(
     async ({ op, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       const q = encodeURIComponent(path);
       if (op === "delete") {
         const res = await fetch(`/v1/workspace/files?path=${q}`, { method: "DELETE", headers });

@@ -225,7 +225,7 @@ describe("authentication", () => {
     ]) {
       const { head } = await openConnect("allowed.example.com:443", credentials);
       expect(status(head)).toBe("HTTP/1.1 407 Proxy Authentication Required");
-      expect(head).toContain('Proxy-Authenticate: Basic realm="kobe-egress"');
+      expect(head).toContain('Proxy-Authenticate: Basic realm="kaiju-egress"');
     }
     expect(audit).toEqual([]);
     expect(resolveCalls).toEqual([]);
@@ -806,15 +806,15 @@ describe("tracing (KOBE-10)", () => {
       await openConnect("pypi.org:443", basic(THREAD, token()));
       const span = exporter.getFinishedSpans().find((s) => s.name === "egress.connection");
       expect(span?.attributes).toMatchObject({
-        "kobe.team_id": TEAM,
-        "kobe.sandbox_id": SANDBOX,
+        "kaiju.team_id": TEAM,
+        "kaiju.sandbox_id": SANDBOX,
         "server.address": "pypi.org",
         "server.port": 443,
-        "kobe.outcome": "blocked",
-        "kobe.reason": "not_enabled",
+        "kaiju.outcome": "blocked",
+        "kaiju.reason": "not_enabled",
         "http.route": "CONNECT",
       });
-      expect(span?.attributes["kobe.setup_ms"]).toBeUndefined();
+      expect(span?.attributes["kaiju.setup_ms"]).toBeUndefined();
       expect(JSON.stringify(span?.attributes)).not.toMatch(/authorization|token/i);
     } finally {
       await telemetry.shutdown();
@@ -846,10 +846,10 @@ describe("tracing (KOBE-525)", () => {
       await settle();
       const span = exporter.getFinishedSpans().find((s) => s.name === "egress.connection");
       expect(span?.attributes).toMatchObject({
-        "kobe.outcome": "allowed",
+        "kaiju.outcome": "allowed",
         "http.route": "CONNECT",
       });
-      expect(span?.attributes["kobe.setup_ms"]).toEqual(expect.any(Number));
+      expect(span?.attributes["kaiju.setup_ms"]).toEqual(expect.any(Number));
     } finally {
       await telemetry.shutdown();
     }

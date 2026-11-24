@@ -342,7 +342,7 @@ describe("leasing and the compromised-sandbox suite", () => {
       headers: {
         cookie: [...w.owner.browser.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
         origin: "http://kaiju.test",
-        "x-kobe-team": w.team,
+        "x-kaiju-team": w.team,
         "x-forwarded-for": w.owner.browser.ip,
       },
     });

@@ -31,7 +31,7 @@ export interface InitOptions {
 }
 
 /** `service.name` of spans the server relays for sandbox agents (KOBE-274). */
-export const RELAY_SERVICE_NAME = "kobe-sandbox-agent";
+export const RELAY_SERVICE_NAME = "kaiju-sandbox-agent";
 
 let relay: SpanRelay | undefined;
 

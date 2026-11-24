@@ -228,8 +228,8 @@ describe("server-call gateway client (KOBE-219 ac-4, ac-8)", () => {
       "x-api-key",
       "x-goog-api-key",
       "api-key",
-      "x-kobe-run-token",
-      "x-kobe-run-id",
+      "x-kaiju-run-token",
+      "x-kaiju-run-id",
     ]) {
       expect(req?.headers[credential]).toBeUndefined();
     }

@@ -417,7 +417,7 @@ describe("the gateway enforces the clamp on every sandbox call (KOBE-260 ac-2, a
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${g.mintToken()}`,
-        ...(runId ? { "x-kobe-run-id": runId } : {}),
+        ...(runId ? { "x-kaiju-run-id": runId } : {}),
         ...headers,
       },
       body: JSON.stringify({

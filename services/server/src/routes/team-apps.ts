@@ -14,7 +14,7 @@ import { invalidRequest, parseBody } from "../http/request.js";
 
 /**
  * MCP Apps for members (KOBE-436, spec §6), under the browser principal: the signed-in member
- * and the active team (`X-Kobe-Team` must match, re-verified on every request, so removal and
+ * and the active team (`X-Kaiju-Team` must match, re-verified on every request, so removal and
  * deactivation take effect at once), with `team.chat`. No thread, no run, no approvals.
  *
  * - `GET /v1/team/apps`: the member's live apps (MA8), never bytes or credentials.
@@ -27,7 +27,7 @@ import { invalidRequest, parseBody } from "../http/request.js";
  *   document of the app's iframe, the only `text/html` here, with `APP_FRAME_HEADERS` (CSP
  *   `sandbox allow-scripts`: an opaque origin even top-level, no network). Only pinned and
  *   approved bytes (`servedTemplate`), only the bytes the page names, only into a frame of
- *   Kaiju's own page, only for the team the page names (a frame cannot send `X-Kobe-Team`).
+ *   Kaiju's own page, only for the team the page names (a frame cannot send `X-Kaiju-Team`).
  *   Separate from the admin preview route, which may show unapproved bytes.
  * - `GET /v1/team/apps/:appId/tools`: the bridge's `tools/list` (spec §7): the tools of the
  *   app's connector that pass `checkAppTool`, in MCP's shape, under the calls' rate limit.

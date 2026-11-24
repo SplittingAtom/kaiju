@@ -49,7 +49,7 @@ const body = (name: string) => ({
 const id = { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } };
 const seq = { name: "seq", in: "path", required: true, schema: { type: "integer", minimum: 1 } };
 const team = {
-  name: "X-Kobe-Team",
+  name: "X-Kaiju-Team",
   in: "header",
   required: false,
   description: "The team the client believes is active; must match when sent.",

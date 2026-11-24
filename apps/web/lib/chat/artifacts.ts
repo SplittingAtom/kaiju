@@ -38,7 +38,7 @@ export function isFrameKind(kind: ArtifactKind): boolean {
 }
 
 /**
- * The download URL of one version (D-6). A link can't send `X-Kobe-Team`, so the team goes in the
+ * The download URL of one version (D-6). A link can't send `X-Kaiju-Team`, so the team goes in the
  * query, like `threadExportUrl`.
  */
 export function artifactContentUrl(artifactId: string, version: number, teamId: string): string {

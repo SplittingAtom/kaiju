@@ -43,9 +43,9 @@ export type ModelRunErrorCode = (typeof MODEL_RUN_ERROR_CODES)[number];
  * The extension asks for it over Pi's own RPC channel (an `input` dialog with this title, which
  * the agent answers from memory and never relays), once per run, and keeps it in memory.
  */
-export const RUN_TOKEN_UI_TITLE = "kobe.run_token";
+export const RUN_TOKEN_UI_TITLE = "kaiju.run_token";
 /** Request header carrying it (mirrors `RUN_TOKEN_HEADER` in packages/protocol; a test pins it). */
-export const RUN_TOKEN_HEADER = "x-kobe-run-token";
+export const RUN_TOKEN_HEADER = "x-kaiju-run-token";
 
 export interface ModelFileModel {
   /** `<gateway provider>/<model>` (the catalog's `gateway_model`). */
@@ -70,7 +70,7 @@ export interface ModelFileState {
   readonly model: ModelFileModel | null;
   /** The current `kobe.model-gateway` session token. */
   readonly token: string;
-  /** The active run on this Pi (sent as `x-kobe-run-id`), or null between runs. */
+  /** The active run on this Pi (sent as `x-kaiju-run-id`), or null between runs. */
   readonly run_id: string | null;
   /**
    * The run's current span as a W3C `traceparent` (KOBE-274), sent with the run's model calls;

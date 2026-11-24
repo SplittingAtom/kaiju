@@ -28,10 +28,10 @@ describe("theme choice", () => {
 
   it("writes a year-long, site-wide, SameSite=Lax cookie, Secure over https", () => {
     expect(themeCookie("dark", false)).toBe(
-      "kobe-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax",
+      "kaiju-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax",
     );
     expect(themeCookie("light", true)).toBe(
-      "kobe-theme=light; Path=/; Max-Age=31536000; SameSite=Lax; Secure",
+      "kaiju-theme=light; Path=/; Max-Age=31536000; SameSite=Lax; Secure",
     );
   });
 

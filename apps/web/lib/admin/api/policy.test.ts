@@ -86,7 +86,7 @@ describe("team policy API", () => {
     ]) {
       const fetchFn = stub(200, { rules: [], rule: RULE });
       await call();
-      expect(new Headers(must(fetchFn.mock.calls[0])[1]?.headers).get("x-kobe-team")).toBe("t-1");
+      expect(new Headers(must(fetchFn.mock.calls[0])[1]?.headers).get("x-kaiju-team")).toBe("t-1");
     }
   });
 });

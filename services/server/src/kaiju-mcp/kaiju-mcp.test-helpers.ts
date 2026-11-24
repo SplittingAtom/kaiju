@@ -116,7 +116,7 @@ export async function rpc(
       authorization: `Bearer ${s.token}`,
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
-      "kobe-thread-id": s.threadId,
+      "kaiju-thread-id": s.threadId,
       ...headers,
     },
     body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, ...(params ? { params } : {}) }),

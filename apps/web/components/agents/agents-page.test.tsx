@@ -302,7 +302,7 @@ describe("Agents page flows (ac-2)", () => {
     await waitFor(() =>
       expect(calls.filter((c) => c.url === "/v1/agents/roster?tab=personal")).toHaveLength(3),
     );
-    expect(calls.every((c) => c.headers.get("x-kobe-team") === TEAM.id)).toBe(true);
+    expect(calls.every((c) => c.headers.get("x-kaiju-team") === TEAM.id)).toBe(true);
   });
 
   it("shows the server's refusal (422 agent_bound_to_team)", async () => {
@@ -539,7 +539,7 @@ describe("Agents page flows (ac-2)", () => {
 
 describe("Agents page tab memory (ac-3)", () => {
   it("opens the last tab used in this browser and keeps the open tab in the address", async () => {
-    localStorage.setItem("kobe.agents.tab", "site");
+    localStorage.setItem("kaiju.agents.tab", "site");
     const calls = stubApi({
       [ROSTER("site")]: [200, page("site", [GALLERY])],
       [ROSTER("team")]: [200, page("team", [])],
@@ -549,13 +549,13 @@ describe("Agents page tab memory (ac-3)", () => {
     await rowOf("Kobe");
     await userEvent.click(screen.getByRole("tab", { name: "Team" }));
     expect(await screen.findByText("Nothing is on this team's roster yet.")).toBeTruthy();
-    expect(localStorage.getItem("kobe.agents.tab")).toBe("team");
+    expect(localStorage.getItem("kaiju.agents.tab")).toBe("team");
     expect(window.location.search).toBe("?tab=team");
     expect(calls.map((c) => c.url)).not.toContain("/v1/agents/roster?tab=personal");
   });
 
   it("lets ?tab= win over the remembered tab", async () => {
-    localStorage.setItem("kobe.agents.tab", "site");
+    localStorage.setItem("kaiju.agents.tab", "site");
     stubApi({ [ROSTER("personal")]: [200, page("personal", [])] });
     renderTeam(<Page search="tab=personal" />, MEMBER);
     expect(screen.getByRole("tab", { name: "Personal" }).getAttribute("aria-selected")).toBe(
@@ -565,7 +565,7 @@ describe("Agents page tab memory (ac-3)", () => {
   });
 
   it("puts the remembered tab in the address on opening, so a copied link opens it", async () => {
-    localStorage.setItem("kobe.agents.tab", "site");
+    localStorage.setItem("kaiju.agents.tab", "site");
     stubApi({ [ROSTER("site")]: [200, page("site", [])] });
     renderTeam(<Page />, MEMBER);
     await waitFor(() => expect(window.location.search).toBe("?tab=site"));
@@ -589,7 +589,7 @@ describe("Agents page tab memory (ac-3)", () => {
     );
     act(() => goTo("tab=site"));
     expect(screen.getByRole("tab", { name: "Site" }).getAttribute("aria-selected")).toBe("true");
-    expect(localStorage.getItem("kobe.agents.tab")).toBe("site");
+    expect(localStorage.getItem("kaiju.agents.tab")).toBe("site");
   });
 
   it("keeps a tab loaded, with its notice, across a look at another tab", async () => {

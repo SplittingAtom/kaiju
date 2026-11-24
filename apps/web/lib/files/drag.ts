@@ -6,9 +6,9 @@
  */
 
 /** The dragged row's workspace path (relative to `/workspace`). */
-export const TREE_DRAG_TYPE = "application/x-kobe-workspace-path";
+export const TREE_DRAG_TYPE = "application/x-kaiju-workspace-path";
 /** Present when the dragged row is a folder (folders move, but can't be mentioned). */
-export const TREE_DRAG_FOLDER_TYPE = "application/x-kobe-workspace-folder";
+export const TREE_DRAG_FOLDER_TYPE = "application/x-kaiju-workspace-folder";
 
 export interface DraggedRow {
   readonly path: string;
@@ -40,7 +40,7 @@ export const droppedRowPath = (dt: DataTransfer): string => dt.getData(TREE_DRAG
  * this type instead of {@link TREE_DRAG_TYPE}: the composer takes the drop only to say why it is
  * refused (the file is not in the sandbox). The data is the refusal's message.
  */
-export const UNMOUNTED_DRAG_TYPE = "application/x-kobe-unmounted-project-file";
+export const UNMOUNTED_DRAG_TYPE = "application/x-kaiju-unmounted-project-file";
 
 export function startUnmountedDrag(dt: DataTransfer, message: string): void {
   dt.setData(UNMOUNTED_DRAG_TYPE, message);

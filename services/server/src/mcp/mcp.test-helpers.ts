@@ -90,7 +90,7 @@ export async function post(
 
 export const auth = (token: string) => ({
   authorization: `Bearer ${INTERNAL_KEY}`,
-  "kobe-sandbox-token": token,
+  "kaiju-sandbox-token": token,
 });
 export const listTools = (w: World, token = w.token, target = app) =>
   post(`/connectors/${w.connector.id}/tools`, undefined, auth(token), target);

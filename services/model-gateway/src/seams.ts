@@ -21,7 +21,7 @@ export interface CallContext {
   readonly sandboxId: string | undefined;
   /**
    * The run the call is attributed to: a sandbox call's verified run (run token or leased
-   * `x-kobe-run-id`; undefined when none), a server call's triggering run.
+   * `x-kaiju-run-id`; undefined when none), a server call's triggering run.
    */
   readonly runId: string | undefined;
   /** Set on a server call (KOBE-234): what it is for; its usage row's `kind`. */

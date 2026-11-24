@@ -8,7 +8,7 @@ import { expectThemed, paintOf, type Theme } from "./support/colours.js";
  * button its focus back), painted in light and dark. The conversation header renames the thread
  * in place and the rail follows. Copy puts the conversation on the clipboard as Markdown.
  */
-const THEME_COOKIE = "kobe-theme";
+const THEME_COOKIE = "kaiju-theme";
 // KOBE-220 added Pin, Move to project and Archive; KOBE-221 added Share.
 const THREAD_ITEMS = [
   "Copy",

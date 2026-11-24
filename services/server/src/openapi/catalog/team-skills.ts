@@ -9,7 +9,7 @@ export const teamSkillsAreas: readonly CatalogArea[] = [
     teamScoped: true,
     details: teamSkillsDetails,
     description:
-      "A team's skill review queue and settings, catalog installs and blocks, and Promote to Site requests. Team-scoped: send X-Kobe-Team on changes.",
+      "A team's skill review queue and settings, catalog installs and blocks, and Promote to Site requests. Team-scoped: send X-Kaiju-Team on changes.",
     entries: [
       [
         "get",

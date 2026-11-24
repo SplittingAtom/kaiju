@@ -8,8 +8,8 @@ import { expect, test, filesSection } from "./support/chat.js";
  * renames a file with F2, moves it by drag and drop and with Move to…, and deletes the folder at
  * the end. No model tokens.
  */
-const TEAM_KEY = "kobe.lastTeamId";
-const THEME_COOKIE = "kobe-theme";
+const TEAM_KEY = "kaiju.lastTeamId";
+const THEME_COOKIE = "kaiju-theme";
 
 /** The member's own workspace API, called from the page (session cookie, CSRF Origin). */
 async function api(
@@ -21,7 +21,7 @@ async function api(
   return page.evaluate(
     async ({ method, path, content, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (method === "DELETE") {
         const q = encodeURIComponent(path);
         return (await fetch(`/v1/workspace/files?path=${q}`, { method, headers })).status;

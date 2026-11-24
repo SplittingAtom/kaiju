@@ -23,7 +23,7 @@ const POLICY_ROLES: ReadonlySet<string> = new Set(["owner", "admin"]);
  * merge, reject or send back; `?site_proposal=<id>` (the bell) opens it there. Only Site admins make an item Policy or change one (the `site.memory.policy`
  * guard; the server refuses anyone else). The memory switches stay in Settings.
  *
- * Requests carry the session's active Workspace when there is one (`X-Kobe-Team`, which the
+ * Requests carry the session's active Workspace when there is one (`X-Kaiju-Team`, which the
  * server needs on writes then); its switches don't limit curation (they govern what reaches its
  * runs).
  */

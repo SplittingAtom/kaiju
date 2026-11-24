@@ -18,7 +18,7 @@ describe("app API (KOBE-437)", () => {
     expect(path).toBe(`/v1/team/apps/${APP}/calls`);
     expect(init.method).toBe("POST");
     expect(init.credentials).toBe("same-origin");
-    expect(new Headers(init.headers).get("x-kobe-team")).toBe(TEAM);
+    expect(new Headers(init.headers).get("x-kaiju-team")).toBe(TEAM);
     expect(JSON.parse(init.body as string)).toEqual({
       tool: "preview_table",
       arguments: { table: "t" },

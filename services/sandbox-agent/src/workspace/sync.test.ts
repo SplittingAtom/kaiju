@@ -57,6 +57,7 @@ afterEach(async () => {
   server.flushAnswers.length = 0;
   server.failWith = undefined;
   server.failDownloads = 0;
+  server.legacyEntryHeader = false;
   server.horizon = 0;
   server.moves.length = 0;
 });
@@ -193,6 +194,28 @@ describe("workspace sync (agent)", () => {
     await started(second);
     expect(await text(second, "repos/notes.md")).toBe("mine v3, from the sandbox");
     expect(await exists(second, ".kobe/repos")).toBe(false);
+  });
+
+  it("downloads from a server pod from before the rename (old entry header, KOBE-749)", async () => {
+    const content = "carried over";
+    const sha256 = createHash("sha256").update(content).digest("hex");
+    server.blobs.set(sha256, Buffer.from(content));
+    server.rows.set("notes.md", {
+      path: "notes.md",
+      rev: 1,
+      deleted: false,
+      sha256,
+      size: content.length,
+      mtime_ms: 1,
+      executable: false,
+      origin: "server",
+      updated_ms: 1,
+    });
+    server.legacyEntryHeader = true;
+    const client = new SyncClient({ serverUrl, readToken: () => Promise.resolve(server.token) });
+    const got = await client.download("notes.md");
+    expect(got?.entry).toMatchObject({ path: "notes.md", sha256 });
+    got?.body.resume();
   });
 
   it("wakes on a kept volume without downloading anything", async () => {

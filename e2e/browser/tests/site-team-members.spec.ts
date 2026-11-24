@@ -43,7 +43,7 @@ async function memberNotices(page: Page, teamId: string): Promise<string[]> {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ teamId }),
     });
-    const res = await fetch("/v1/notifications", { headers: { "x-kobe-team": teamId } });
+    const res = await fetch("/v1/notifications", { headers: { "x-kaiju-team": teamId } });
     const body = (await res.json()) as { notifications?: { kind: string }[] };
     return (body.notifications ?? []).map((n) => n.kind);
   }, teamId);

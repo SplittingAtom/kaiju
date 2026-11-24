@@ -16,7 +16,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
     teamScoped: true,
     details: threadsDetails,
     description:
-      "Conversations beyond the core thread API: app cards and results, connectors, export, learning, notebooks, skills and sync conflicts. Team-scoped: send X-Kobe-Team.",
+      "Conversations beyond the core thread API: app cards and results, connectors, export, learning, notebooks, skills and sync conflicts. Team-scoped: send X-Kaiju-Team.",
     entries: [
       [
         "post",
@@ -167,7 +167,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
     detailed: true,
     teamScoped: true,
     details: runsDetails,
-    description: "Agent runs: the event stream and usage. Team-scoped: send X-Kobe-Team.",
+    description: "Agent runs: the event stream and usage. Team-scoped: send X-Kaiju-Team.",
     entries: [
       [
         "get",
@@ -189,7 +189,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
     teamScoped: true,
     details: artifactsDetails,
     description:
-      "Artifacts an agent produced in a conversation, by version. Team-scoped: send X-Kobe-Team.",
+      "Artifacts an agent produced in a conversation, by version. Team-scoped: send X-Kaiju-Team.",
     entries: [
       ["get", "/v1/artifacts", "List a conversation's artifacts", "Needs `thread_id`."],
       ["get", "/v1/artifacts/{id}", "Read one artifact with its versions"],
@@ -218,7 +218,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
     detailed: true,
     teamScoped: true,
     details: { ...workspaceDetails, ...workspaceRebuildDetails },
-    description: "The member's synced workspace files. Team-scoped: send X-Kobe-Team.",
+    description: "The member's synced workspace files. Team-scoped: send X-Kaiju-Team.",
     entries: [
       [
         "get",
@@ -252,7 +252,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
     teamScoped: true,
     details: schedulesDetails,
     description:
-      "Scheduled runs: a member's own, plus the team's inventory for admins. Team-scoped: send X-Kobe-Team.",
+      "Scheduled runs: a member's own, plus the team's inventory for admins. Team-scoped: send X-Kaiju-Team.",
     entries: [
       [
         "get",

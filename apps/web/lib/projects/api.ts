@@ -1,7 +1,7 @@
 /**
  * Projects over the shared API client (`/v1/projects`, KOBE-161/162; share and fork on
  * `/v1/threads`, KOBE-163). Responses arrive camelized; request bodies use the routes' snake_case.
- * Every call sends `X-Kobe-Team`. The server decides who may do what: the UI only hides controls.
+ * Every call sends `X-Kaiju-Team`. The server decides who may do what: the UI only hides controls.
  */
 import { apiDownload, apiRequest, type ApiResult } from "../api/client";
 import type { ThreadPage } from "../chat/types";

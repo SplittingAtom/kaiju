@@ -38,7 +38,7 @@ describe("readThreadContextMemories", () => {
     expect(await readThreadContextMemories("t 1", "team-1", fetchFn as typeof fetch)).toEqual(body);
     const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/v1/threads/t%201/context/memories");
-    expect((init.headers as Record<string, string>)["x-kobe-team"]).toBe("team-1");
+    expect((init.headers as Record<string, string>)["x-kaiju-team"]).toBe("team-1");
   });
 
   it("answers null for a reader's 403 and for a malformed body", async () => {

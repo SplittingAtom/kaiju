@@ -40,7 +40,7 @@ export function shareTurn(path: string, description: string): string {
 }
 
 /** The team the chat recorded, for API calls made from the page. */
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 /** A JSON API call from the page (session cookie, CSRF Origin, the active team). */
 export async function pageApi<T = Record<string, unknown>>(
@@ -52,7 +52,7 @@ export async function pageApi<T = Record<string, unknown>>(
   return page.evaluate(
     async ({ method, path, body, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       if (body !== undefined) headers["content-type"] = "application/json";
       const res = await fetch(path, {
         method,
@@ -92,7 +92,7 @@ export async function workspaceFile(page: Page, path: string, text: string): Pro
   return page.evaluate(
     async ({ path, text, teamKey }) => {
       const team = window.localStorage.getItem(teamKey);
-      const headers: Record<string, string> = team ? { "x-kobe-team": team } : {};
+      const headers: Record<string, string> = team ? { "x-kaiju-team": team } : {};
       const slash = path.lastIndexOf("/");
       const form = new FormData();
       form.set("path", slash < 0 ? "" : path.slice(0, slash));

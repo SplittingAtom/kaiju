@@ -20,7 +20,7 @@ import { telemetryState } from "./state.js";
 
 /**
  * Run traces (KOBE-274, `@kaiju/protocol` tracing.ts): one run is one trace whose id is the run
- * id's hex digits, under a root span `kobe.run` with a fixed id, so every replica and the model
+ * id's hex digits, under a root span `kaiju.run` with a fixed id, so every replica and the model
  * gateway place spans in it without a lookup.
  */
 
@@ -58,7 +58,7 @@ export function setRunIdGenerator(next: RunIdGenerator | undefined): void {
 
 /**
  * The context to start a span of run `runId` under: its trace, parent = `parentSpanId` (default:
- * the root span `kobe.run`). Returns the active context unchanged when tracing is off.
+ * the root span `kaiju.run`). Returns the active context unchanged when tracing is off.
  */
 export function runParentContext(runId: string, parentSpanId?: string): Context {
   if (!telemetryState().enabled) return ROOT_CONTEXT;
@@ -78,12 +78,12 @@ export interface RunRootSpan {
   readonly error?: boolean;
 }
 
-/** Records a run's root span `kobe.run` (fixed ids) once the run is over. */
+/** Records a run's root span `kaiju.run` (fixed ids) once the run is over. */
 export function recordRunRootSpan(root: RunRootSpan): void {
   if (!telemetryState().enabled || generator === undefined) return;
   const ids = { traceId: runTraceId(root.runId), spanId: runRootSpanId(root.runId) };
   const span = generator.withIds(ids, () =>
-    trace.getTracer("kobe").startSpan(
+    trace.getTracer("kaiju").startSpan(
       RUN_ROOT_SPAN_NAME,
       {
         kind: SpanKind.INTERNAL,

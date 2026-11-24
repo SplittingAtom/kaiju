@@ -1,7 +1,7 @@
 /**
  * The caller's notifications: scheduled runs, skill, team, memory and git notices (`/v1/notifications`, KOBE-179; contract KOBE-176).
  * Responses arrive camelized; request bodies use the route's snake_case. Every call sends
- * `X-Kobe-Team`: notifications belong to the active team.
+ * `X-Kaiju-Team`: notifications belong to the active team.
  */
 import type { NotificationKind, SchedulePausedBy } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../api/client";

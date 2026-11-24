@@ -193,7 +193,7 @@ describe("Team policy", () => {
     await userEvent.type(within(form).getByLabelText(/^Tool pattern/), "*");
     await userEvent.click(within(form).getByRole("button", { name: "Add rule" }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/allow rule must name one/);
-    expect(calls.every((c) => c.headers.get("x-kobe-team") === TEAM.id)).toBe(true);
+    expect(calls.every((c) => c.headers.get("x-kaiju-team") === TEAM.id)).toBe(true);
     expect(screen.getByRole("table", { name: /Team rules/ }).textContent).toMatch(/Allow.*read/);
   });
 });
@@ -236,7 +236,7 @@ describe("Members' remembered approvals and remember limits (KOBE-289)", () => {
     await answerConfirm(/of Bob for mcp__jira__create_issue/, "Revoke");
     await screen.findByText(/Revoked: mcp__jira__create_issue/);
     const del = must(calls.find((c) => c.method === "DELETE"));
-    expect(del.headers.get("x-kobe-team")).toBe(TEAM.id);
+    expect(del.headers.get("x-kaiju-team")).toBe(TEAM.id);
   });
 
   it("never shows a member's private thread or argument values to an admin (D18)", async () => {

@@ -73,7 +73,7 @@ describe("Workbench test pane", () => {
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText("Message"), "Hello{Enter}");
     await waitFor(() => expect(fake.threads.size).toBe(1));
-    const listed = await fake.fetch(`/v1/threads`, { headers: { "x-kobe-team": fake.teamId } });
+    const listed = await fake.fetch(`/v1/threads`, { headers: { "x-kaiju-team": fake.teamId } });
     const body = (await listed.json()) as { threads: Record<string, unknown>[] };
     const thread = must(body.threads[0]);
     expect(thread).toMatchObject({ skill_test: true, skill_draft_id: DRAFT });

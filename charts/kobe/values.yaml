@@ -592,7 +592,7 @@ modelGateway:
   # deactivated user or a destroyed sandbox loses model access within it.
   cacheTtlSeconds: 5
   # Refuse model calls that carry no run-bound token (KOBE-118). Turn on once every sandbox agent
-  # image supports run tokens; until then calls without one keep the advisory x-kobe-run-id.
+  # image supports run tokens; until then calls without one keep the advisory x-kaiju-run-id.
   # WARNING: when true, every call without a run token is refused with 401, including calls that
   # belong to no run (Orbit eval sandboxes) and runs whose token fetch timed out. Keep it false
   # until those are covered.
@@ -880,7 +880,7 @@ auditForwarding:
     host: ""
     port: 6514
     tls: true
-    # IANA private enterprise number in the RFC 5424 structured-data ID (kobe@<number>). 32473
+    # IANA private enterprise number in the RFC 5424 structured-data ID (kaiju@<number>). 32473
     # is the number RFC 5612 reserves for documentation; set your organisation's registered PEN
     # if it has one. Digits only.
     enterpriseNumber: 32473

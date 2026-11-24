@@ -16,7 +16,7 @@ import { panelOf } from "./support/panel.js";
  */
 const TAGS = "/admin/site/skill-tags";
 const API = "/v1/site/skills";
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 interface CatalogRow {
   readonly id: string;
@@ -40,7 +40,7 @@ async function teamLatest(page: Page, skillId: string): Promise<string | null> {
   return page.evaluate(
     async ({ skillId, teamKey }) => {
       const res = await fetch(`/v1/skills/catalog/${encodeURIComponent(skillId)}`, {
-        headers: { "x-kobe-team": window.localStorage.getItem(teamKey) ?? "" },
+        headers: { "x-kaiju-team": window.localStorage.getItem(teamKey) ?? "" },
       });
       if (!res.ok) return null;
       const body = (await res.json()) as { versions?: { semver: string }[] };

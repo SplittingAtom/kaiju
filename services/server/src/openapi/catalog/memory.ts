@@ -9,7 +9,7 @@ export const memoryAreas: readonly CatalogArea[] = [
     teamScoped: true,
     details: memoryDetails,
     description:
-      "Memory docs, settings, learning review, proposals and quality signals in the active Workspace. Team-scoped: send X-Kobe-Team.",
+      "Memory docs, settings, learning review, proposals and quality signals in the active Workspace. Team-scoped: send X-Kaiju-Team.",
     entries: [
       ["get", "/v1/memory", "List memory docs of a scope", "`scope=user` or `project`."],
       ["put", "/v1/memory", "Write a memory doc", "Project writes need editor rights."],

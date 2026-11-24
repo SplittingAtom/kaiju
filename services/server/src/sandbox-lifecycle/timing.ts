@@ -32,8 +32,8 @@ export function wakeSpans(t: WakeTimings): TimingSpan[] {
   const claimed = Math.max(t.startMs, t.claimedMs);
   const ready = Math.max(claimed, t.readyMs);
   const attributes = {
-    "kobe.wake.reason": t.reason ?? "reconnect",
-    "kobe.wake.resumed": t.resumed,
+    "kaiju.wake.reason": t.reason ?? "reconnect",
+    "kaiju.wake.resumed": t.resumed,
   };
   return [
     { name: "sandbox.wake", startMs: t.startMs, endMs: ready, attributes },

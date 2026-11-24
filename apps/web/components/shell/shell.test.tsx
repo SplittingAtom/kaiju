@@ -248,9 +248,12 @@ describe("return to the last thread (CE4)", () => {
   });
 
   it("ignores a stored value that is not a thread id", () => {
-    sessionStorage.setItem("kobe.lastThread", JSON.stringify({ teamId: "team-a", threadId: "/x" }));
+    sessionStorage.setItem(
+      "kaiju.lastThread",
+      JSON.stringify({ teamId: "team-a", threadId: "/x" }),
+    );
     expect(lastThreadHref("team-a")).toBe("/");
-    sessionStorage.setItem("kobe.lastThread", "not json");
+    sessionStorage.setItem("kaiju.lastThread", "not json");
     expect(lastThreadHref("team-a")).toBe("/");
   });
 });

@@ -67,23 +67,23 @@ describe("run token in kobe-models", () => {
     await fire(ctx);
     await fire(ctx); // steer / second prompt of the same run: no second request
     expect(asked).toEqual([RUN_TOKEN_UI_TITLE]);
-    expect(await headers()).toMatchObject({ "x-kobe-run-token": `krt1.${RUN}.mac` });
+    expect(await headers()).toMatchObject({ "x-kaiju-run-token": `krt1.${RUN}.mac` });
     current = state(RUN_B);
     await fire(ctx);
     expect(asked).toHaveLength(2);
-    expect(await headers()).toMatchObject({ "x-kobe-run-token": `krt1.${RUN_B}.mac` });
+    expect(await headers()).toMatchObject({ "x-kaiju-run-token": `krt1.${RUN_B}.mac` });
     current = state(null);
     await fire(ctx);
-    expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+    expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
   });
 
   it("sends no token when Pi cannot ask, the agent cancels, or the dialog fails", async () => {
     const current = state(RUN);
     const { fire, headers } = await setup(() => current);
     await fire({});
-    expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+    expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
     await fire({ ui: { input: async () => undefined } });
-    expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+    expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
     await fire({
       ui: {
         input: async () => {
@@ -91,7 +91,7 @@ describe("run token in kobe-models", () => {
         },
       },
     });
-    expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+    expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
   });
 
   it("fetches a compaction run's token when Pi starts compacting (no input fires, KOBE-213)", async () => {
@@ -109,21 +109,21 @@ describe("run token in kobe-models", () => {
     await fire(ctx);
     // The compaction is a new run: the previous run's token is never reused for it.
     current = state(RUN_B);
-    expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+    expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
     await compact(ctx);
     expect(asked).toEqual([RUN_TOKEN_UI_TITLE, RUN_TOKEN_UI_TITLE]);
-    expect(await headers()).toMatchObject({ "x-kobe-run-token": `krt1.${RUN_B}.mac` });
+    expect(await headers()).toMatchObject({ "x-kaiju-run-token": `krt1.${RUN_B}.mac` });
     // Once it ended (run_id null), no token is sent, and none is fetched.
     current = state(null);
     await compact(ctx);
     expect(asked).toHaveLength(2);
-    expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+    expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
   });
 
   it("compacts without a token when the agent cancels the request", async () => {
     const { compact, headers } = await setup(() => state(RUN));
     await compact({ ui: { input: async () => undefined } });
-    expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+    expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
   });
 
   it("does not hold the prompt on an agent that never answers", async () => {
@@ -133,7 +133,7 @@ describe("run token in kobe-models", () => {
       const fired = fire({ ui: { input: () => new Promise<string | undefined>(() => undefined) } });
       await vi.advanceTimersByTimeAsync(5_000);
       await fired;
-      expect(await headers()).not.toHaveProperty("x-kobe-run-token");
+      expect(await headers()).not.toHaveProperty("x-kaiju-run-token");
     } finally {
       vi.useRealTimers();
     }

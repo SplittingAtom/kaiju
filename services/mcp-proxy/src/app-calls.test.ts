@@ -139,10 +139,10 @@ describe("upstream span (KOBE-527)", () => {
       const span = spanNamed(exporter, "mcp.upstream");
       expect(isChildOf(span, route)).toBe(true);
       expect(span?.attributes).toMatchObject({
-        "kobe.upstream.kind": "app",
-        "kobe.upstream.method": "tools/call",
-        "kobe.upstream.outcome": "ok",
-        "kobe.upstream.error": false,
+        "kaiju.upstream.kind": "app",
+        "kaiju.upstream.method": "tools/call",
+        "kaiju.upstream.outcome": "ok",
+        "kaiju.upstream.error": false,
       });
       const text = JSON.stringify(span?.attributes);
       expect(text).not.toContain(CONNECTOR);
@@ -156,8 +156,8 @@ describe("upstream span (KOBE-527)", () => {
     await traced(async (exporter) => {
       await postTraced(call());
       const span = spanNamed(exporter, "mcp.upstream");
-      expect(span?.attributes["kobe.upstream.outcome"]).toBe("rpc_error");
-      expect(span?.attributes["kobe.upstream.error"]).toBe(true);
+      expect(span?.attributes["kaiju.upstream.outcome"]).toBe("rpc_error");
+      expect(span?.attributes["kaiju.upstream.error"]).toBe(true);
       expect(span?.status.code).toBe(SpanStatusCode.ERROR);
     });
   });

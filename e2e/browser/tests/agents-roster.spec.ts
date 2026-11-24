@@ -14,7 +14,7 @@ import { panelOf } from "./support/panel.js";
  */
 const USER2 = process.env["KAIJU_USER2"];
 const PW2 = process.env["KAIJU_PW2"];
-const TEAM_KEY = "kobe.lastTeamId";
+const TEAM_KEY = "kaiju.lastTeamId";
 
 interface Agent {
   readonly id: string;
@@ -40,7 +40,7 @@ async function call<T = Record<string, unknown>>(
     async ({ method, path, body, ifMatch, teamKey }) => {
       const headers: Record<string, string> = {};
       const team = window.localStorage.getItem(teamKey);
-      if (team) headers["x-kobe-team"] = team;
+      if (team) headers["x-kaiju-team"] = team;
       if (ifMatch) headers["if-match"] = ifMatch;
       if (body !== undefined) headers["content-type"] = "application/json";
       const res = await fetch(path, {

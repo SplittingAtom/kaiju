@@ -115,7 +115,7 @@ export function authenticateServerCall(
     CREDENTIAL_HEADERS.some((h) => headers[h] !== undefined) ||
     search.has("key") ||
     headers[RUN_TOKEN_HEADER] !== undefined ||
-    headers["x-kobe-run-id"] !== undefined;
+    headers["x-kaiju-run-id"] !== undefined;
   if (sandboxCredential) {
     return refuse(
       400,

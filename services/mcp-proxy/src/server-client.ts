@@ -169,7 +169,7 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
         method: "POST",
         headers: injectTraceHeaders({
           authorization: `Bearer ${options.internalKey}`,
-          "kobe-sandbox-token": token,
+          "kaiju-sandbox-token": token,
           "content-type": "application/json",
         }),
         body: body === undefined ? null : JSON.stringify(body),
@@ -214,7 +214,7 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
           method: "POST",
           headers: injectTraceHeaders({
             authorization: `Bearer ${options.internalKey}`,
-            "kobe-sandbox-token": token,
+            "kaiju-sandbox-token": token,
             ...(force ? { "content-type": "application/json" } : {}),
           }),
           ...(force ? { body: JSON.stringify({ refresh: "force" }) } : {}),
@@ -266,7 +266,7 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
           method: "POST",
           headers: injectTraceHeaders({
             authorization: `Bearer ${options.internalKey}`,
-            "kobe-sandbox-token": token,
+            "kaiju-sandbox-token": token,
             "content-type": "application/json",
           }),
           body: JSON.stringify({ ticket, input, result }),

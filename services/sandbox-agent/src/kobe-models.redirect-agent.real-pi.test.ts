@@ -167,7 +167,7 @@ describe.skipIf(!PI_AVAILABLE)(
       expect(listener.requests.map((r) => r.headers)).toEqual([]);
       expect(listener.connections()).toBe(0);
       const legit = tap as Listener;
-      expect(legit.requests.at(-1)?.headers["x-kobe-run-token"]).toBe(runToken(2));
+      expect(legit.requests.at(-1)?.headers["x-kaiju-run-token"]).toBe(runToken(2));
     }
 
     it.each(LEAKING)(
@@ -193,7 +193,7 @@ describe.skipIf(!PI_AVAILABLE)(
       await run(harness, 2, OPENAI, "two");
       await until(() => (tap as Listener).requests.length >= 2);
       expect((evil as Listener).requests).toEqual([]);
-      expect((tap as Listener).requests.at(-1)?.headers["x-kobe-run-token"]).toBe(runToken(2));
+      expect((tap as Listener).requests.at(-1)?.headers["x-kaiju-run-token"]).toBe(runToken(2));
     }, 120_000);
   },
 );

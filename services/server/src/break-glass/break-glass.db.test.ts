@@ -502,7 +502,7 @@ describe("reading under a grant", () => {
       403,
     );
     expect(
-      (await as.investigator.get(`/v1/threads/${aliceThread}`, { "x-kobe-team": finance })).status,
+      (await as.investigator.get(`/v1/threads/${aliceThread}`, { "x-kaiju-team": finance })).status,
     ).toBe(409);
     expect((await as.investigator.get("/v1/team/audit")).status).toBe(409);
   });

@@ -45,7 +45,7 @@ describe("ClosableNotice (KOBE-468)", () => {
   });
 
   it("renders shown first, so server and first client render match, then hides a closed one", async () => {
-    localStorage.setItem("kobe.chat.closedNotices", JSON.stringify(["run-1:3"]));
+    localStorage.setItem("kaiju.chat.closedNotices", JSON.stringify(["run-1:3"]));
     expect(renderToString(notice("run-1:3"))).toContain("Steered");
     render(notice("run-1:3"));
     await waitFor(() => expect(screen.queryByText("Steered")).toBeNull());

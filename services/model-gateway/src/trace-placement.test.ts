@@ -54,7 +54,7 @@ describe("placeRequestSpan (KOBE-274)", () => {
       spanId: runRootSpanId(RUN),
     });
     expect(placed.attributes).toEqual({
-      "kobe.thread_id": THREAD,
+      "kaiju.thread_id": THREAD,
       "session.id": THREAD,
       "user.id": USER,
     });

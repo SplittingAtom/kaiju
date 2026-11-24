@@ -71,7 +71,7 @@ describe("team egress API", () => {
     });
     const res = await team.listTeamEgress("t-1");
     expect(res).toMatchObject({ ok: true, data: [{ domain: "pypi.org", inCeiling: true }] });
-    expect(new Headers(must(fetchFn.mock.calls[0])[1]?.headers).get("x-kobe-team")).toBe("t-1");
+    expect(new Headers(must(fetchFn.mock.calls[0])[1]?.headers).get("x-kaiju-team")).toBe("t-1");
 
     fetchFn = stub(201, { domain: "pypi.org", enabled: true });
     await team.enableTeamDomain("t-1", "pypi.org");

@@ -14,7 +14,7 @@ export interface ResumeStore {
   remove(key: string): void;
 }
 
-const PREFIX = "kobe.chat.resume.";
+const PREFIX = "kaiju.chat.resume.";
 const MAX_BYTES = 200_000;
 const MAX_PREVIEW = 2_000;
 

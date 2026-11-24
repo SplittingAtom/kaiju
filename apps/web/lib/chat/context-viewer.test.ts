@@ -31,7 +31,7 @@ describe("readThreadContext", () => {
     };
     const read = await readThreadContext(THREAD, "team-1", fetchFn);
     expect(read).toEqual({ kind: "ready", context: ctx });
-    expect(seen?.get("x-kobe-team")).toBe("team-1");
+    expect(seen?.get("x-kaiju-team")).toBe("team-1");
   });
 
   it("reports a 202 as waking", async () => {
