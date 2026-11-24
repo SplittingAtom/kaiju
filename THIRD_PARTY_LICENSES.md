@@ -27,7 +27,7 @@ Chris (`pnpm license:gate` fails while it is not empty):
 
 Every package in pnpm-lock.yaml (production and development, all platforms). "linked, bundled" packages are in the production dependencies of a deployable and ship in its image (the services via `pnpm deploy --prod`, web via the Next.js standalone output, kobe-sandbox-agent in the sandbox image); "dev-only" packages build, lint and test Kobe and are never shipped. Checked by `pnpm license:check` (CI `checks`).
 
-934 packages, 636 of them shipped in an image.
+937 packages, 637 of them shipped in an image.
 
 | Component | Version | License (SPDX) | How used | Where | License text |
 | --- | --- | --- | --- | --- | --- |
@@ -37,24 +37,24 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @assistant-ui/react | 0.15.26 | MIT | linked, bundled | web | [license](https://unpkg.com/@assistant-ui/react@0.15.26/LICENSE) |
 | @assistant-ui/store | 0.3.18 | MIT | linked, bundled | web | [license](https://unpkg.com/@assistant-ui/store@0.3.18/LICENSE) |
 | @assistant-ui/tap | 0.9.22 | MIT | linked, bundled | web | [license](https://unpkg.com/@assistant-ui/tap@0.9.22/LICENSE) |
-| @aws-sdk/checksums | 3.1002.3 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/checksums@3.1002.3/LICENSE) |
-| @aws-sdk/client-s3 | 3.1164.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/client-s3@3.1164.0/LICENSE) |
-| @aws-sdk/core | 3.980.1 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/core@3.980.1/LICENSE) |
-| @aws-sdk/credential-provider-env | 3.972.82 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-env@3.972.82/LICENSE) |
-| @aws-sdk/credential-provider-http | 3.972.84 | Apache-2.0 | linked, bundled | server | [license](https://www.npmjs.com/package/@aws-sdk/credential-provider-http/v/3.972.84) |
-| @aws-sdk/credential-provider-ini | 3.973.27 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-ini@3.973.27/LICENSE) |
-| @aws-sdk/credential-provider-login | 3.972.89 | Apache-2.0 | linked, bundled | server | [license](https://www.npmjs.com/package/@aws-sdk/credential-provider-login/v/3.972.89) |
-| @aws-sdk/credential-provider-node | 3.972.94 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-node@3.972.94/LICENSE) |
-| @aws-sdk/credential-provider-process | 3.972.82 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-process@3.972.82/LICENSE) |
-| @aws-sdk/credential-provider-sso | 3.973.26 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-sso@3.973.26/LICENSE) |
-| @aws-sdk/credential-provider-web-identity | 3.972.88 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-web-identity@3.972.88/LICENSE) |
-| @aws-sdk/lib-storage | 3.1164.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/lib-storage@3.1164.0/LICENSE) |
-| @aws-sdk/middleware-sdk-s3 | 3.972.87 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/middleware-sdk-s3@3.972.87/LICENSE) |
-| @aws-sdk/nested-clients | 3.998.1 | Apache-2.0 | linked, bundled | server | [license](https://www.npmjs.com/package/@aws-sdk/nested-clients/v/3.998.1) |
-| @aws-sdk/signature-v4-multi-region | 3.996.51 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/signature-v4-multi-region@3.996.51/LICENSE) |
-| @aws-sdk/token-providers | 3.1164.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/token-providers@3.1164.0/LICENSE) |
-| @aws-sdk/types | 3.975.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/types@3.975.0/LICENSE) |
-| @aws-sdk/xml-builder | 3.972.42 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/xml-builder@3.972.42/LICENSE) |
+| @aws-sdk/checksums | 3.1002.6 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/checksums@3.1002.6/LICENSE) |
+| @aws-sdk/client-s3 | 3.1175.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/client-s3@3.1175.0/LICENSE) |
+| @aws-sdk/core | 3.981.1 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/core@3.981.1/LICENSE) |
+| @aws-sdk/credential-provider-env | 3.972.85 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-env@3.972.85/LICENSE) |
+| @aws-sdk/credential-provider-http | 3.972.87 | Apache-2.0 | linked, bundled | server | [license](https://www.npmjs.com/package/@aws-sdk/credential-provider-http/v/3.972.87) |
+| @aws-sdk/credential-provider-ini | 3.973.31 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-ini@3.973.31/LICENSE) |
+| @aws-sdk/credential-provider-login | 3.972.93 | Apache-2.0 | linked, bundled | server | [license](https://www.npmjs.com/package/@aws-sdk/credential-provider-login/v/3.972.93) |
+| @aws-sdk/credential-provider-node | 3.972.98 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-node@3.972.98/LICENSE) |
+| @aws-sdk/credential-provider-process | 3.972.85 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-process@3.972.85/LICENSE) |
+| @aws-sdk/credential-provider-sso | 3.973.29 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-sso@3.973.29/LICENSE) |
+| @aws-sdk/credential-provider-web-identity | 3.972.91 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/credential-provider-web-identity@3.972.91/LICENSE) |
+| @aws-sdk/lib-storage | 3.1175.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/lib-storage@3.1175.0/LICENSE) |
+| @aws-sdk/middleware-sdk-s3 | 3.972.91 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/middleware-sdk-s3@3.972.91/LICENSE) |
+| @aws-sdk/nested-clients | 3.998.4 | Apache-2.0 | linked, bundled | server | [license](https://www.npmjs.com/package/@aws-sdk/nested-clients/v/3.998.4) |
+| @aws-sdk/signature-v4-multi-region | 3.996.52 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/signature-v4-multi-region@3.996.52/LICENSE) |
+| @aws-sdk/token-providers | 3.1175.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/token-providers@3.1175.0/LICENSE) |
+| @aws-sdk/types | 3.975.1 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/types@3.975.1/LICENSE) |
+| @aws-sdk/xml-builder | 3.972.43 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws-sdk/xml-builder@3.972.43/LICENSE) |
 | @aws/lambda-invoke-store | 0.3.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@aws/lambda-invoke-store@0.3.0/LICENSE) |
 | @babel/code-frame | 7.29.7 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@babel/code-frame@7.29.7/LICENSE) |
 | @babel/helper-validator-identifier | 7.29.7 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@babel/helper-validator-identifier@7.29.7/LICENSE) |
@@ -191,6 +191,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @humanwhocodes/retry | 0.4.3 | Apache-2.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/@humanwhocodes/retry@0.4.3/LICENSE) |
 | @iconify/types | 2.0.0 | MIT | linked, bundled | web | [license](https://unpkg.com/@iconify/types@2.0.0/license.txt) |
 | @iconify/utils | 3.1.7 | MIT | linked, bundled | web | [license](https://unpkg.com/@iconify/utils@3.1.7/license.txt) |
+| @isaacs/nonrecursive-glob-match | 1.1.0 | BlueOak-1.0.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/@isaacs/nonrecursive-glob-match@1.1.0/LICENSE.md) |
 | @jridgewell/gen-mapping | 0.3.13 | MIT | linked, bundled | web | [license](https://unpkg.com/@jridgewell/gen-mapping@0.3.13/LICENSE) |
 | @jridgewell/remapping | 2.3.5 | MIT | linked, bundled | web | [license](https://unpkg.com/@jridgewell/remapping@2.3.5/LICENSE) |
 | @jridgewell/resolve-uri | 3.1.2 | MIT | linked, bundled | web | [license](https://unpkg.com/@jridgewell/resolve-uri@3.1.2/LICENSE) |
@@ -361,11 +362,11 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @simplewebauthn/server | 13.3.3 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@simplewebauthn/server@13.3.3/LICENSE.md) |
 | @simplewebauthn/server | 14.0.3 | MIT | linked, bundled | server | [license](https://unpkg.com/@simplewebauthn/server@14.0.3/LICENSE.md) |
 | @smithy/core | 3.39.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/core@3.39.0/LICENSE) |
+| @smithy/core | 3.41.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/core@3.41.0/LICENSE) |
 | @smithy/credential-provider-imds | 4.5.2 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/credential-provider-imds@4.5.2/LICENSE) |
-| @smithy/fetch-http-handler | 5.8.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/fetch-http-handler@5.8.0/LICENSE) |
+| @smithy/fetch-http-handler | 5.8.1 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/fetch-http-handler@5.8.1/LICENSE) |
 | @smithy/node-http-handler | 4.14.2 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/node-http-handler@4.14.2/LICENSE) |
 | @smithy/signature-v4 | 5.7.5 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/signature-v4@5.7.5/LICENSE) |
-| @smithy/types | 4.19.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/types@4.19.0/LICENSE) |
 | @smithy/types | 4.20.0 | Apache-2.0 | linked, bundled | server | [license](https://unpkg.com/@smithy/types@4.20.0/LICENSE) |
 | @standard-schema/spec | 1.1.0 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@standard-schema/spec@1.1.0/LICENSE) |
 | @swc/helpers | 0.5.23 | Apache-2.0 | linked, bundled | web | [license](https://unpkg.com/@swc/helpers@0.5.23/LICENSE) |
@@ -451,16 +452,16 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @types/unist | 3.0.3 | MIT | linked, bundled | web | [license](https://unpkg.com/@types/unist@3.0.3/LICENSE) |
 | @types/whatwg-mimetype | 3.0.2 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@types/whatwg-mimetype@3.0.2/LICENSE) |
 | @types/ws | 8.18.2 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@types/ws@8.18.2/LICENSE) |
-| @typescript-eslint/eslint-plugin | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/eslint-plugin@8.72.1/LICENSE) |
-| @typescript-eslint/parser | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/parser@8.72.1/LICENSE) |
-| @typescript-eslint/project-service | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/project-service@8.72.1/LICENSE) |
-| @typescript-eslint/scope-manager | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/scope-manager@8.72.1/LICENSE) |
-| @typescript-eslint/tsconfig-utils | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/tsconfig-utils@8.72.1/LICENSE) |
-| @typescript-eslint/type-utils | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/type-utils@8.72.1/LICENSE) |
-| @typescript-eslint/types | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/types@8.72.1/LICENSE) |
-| @typescript-eslint/typescript-estree | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/typescript-estree@8.72.1/LICENSE) |
-| @typescript-eslint/utils | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/utils@8.72.1/LICENSE) |
-| @typescript-eslint/visitor-keys | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/visitor-keys@8.72.1/LICENSE) |
+| @typescript-eslint/eslint-plugin | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/eslint-plugin@8.73.0/LICENSE) |
+| @typescript-eslint/parser | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/parser@8.73.0/LICENSE) |
+| @typescript-eslint/project-service | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/project-service@8.73.0/LICENSE) |
+| @typescript-eslint/scope-manager | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/scope-manager@8.73.0/LICENSE) |
+| @typescript-eslint/tsconfig-utils | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/tsconfig-utils@8.73.0/LICENSE) |
+| @typescript-eslint/type-utils | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/type-utils@8.73.0/LICENSE) |
+| @typescript-eslint/types | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/types@8.73.0/LICENSE) |
+| @typescript-eslint/typescript-estree | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/typescript-estree@8.73.0/LICENSE) |
+| @typescript-eslint/utils | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/utils@8.73.0/LICENSE) |
+| @typescript-eslint/visitor-keys | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@typescript-eslint/visitor-keys@8.73.0/LICENSE) |
 | @ungap/structured-clone | 1.4.0 | ISC | linked, bundled | web | [license](https://unpkg.com/@ungap/structured-clone@1.4.0/LICENSE) |
 | @upsetjs/venn.js | 2.0.0 | MIT | linked, bundled | web | [license](https://unpkg.com/@upsetjs/venn.js@2.0.0/LICENSE) |
 | @vitest/mocker | 5.0.3 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@vitest/mocker@5.0.3/LICENSE) |
@@ -779,6 +780,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | mime-types | 2.1.35 | MIT | linked, bundled | server | [license](https://unpkg.com/mime-types@2.1.35/LICENSE) |
 | mimic-response | 3.1.0 | MIT | linked, bundled | server | [license](https://unpkg.com/mimic-response@3.1.0/license) |
 | minimatch | 10.2.6 | BlueOak-1.0.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/minimatch@10.2.6/LICENSE.md) |
+| minimatch | 11.0.9 | BlueOak-1.0.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/minimatch@11.0.9/LICENSE.md) |
 | minimist | 1.2.8 | MIT | linked, bundled | server | [license](https://unpkg.com/minimist@1.2.8/LICENSE) |
 | minimisted | 2.0.1 | MIT | linked, bundled | server | [license](https://www.npmjs.com/package/minimisted/v/2.0.1) |
 | ms | 2.1.3 | MIT | linked, bundled | server, web | [license](https://unpkg.com/ms@2.1.3/license.md) |
@@ -904,6 +906,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | stylis | 4.4.0 | MIT | linked, bundled | web | [license](https://unpkg.com/stylis@4.4.0/LICENSE) |
 | tailwind-merge | 3.7.0 | MIT | linked, bundled | web | [license](https://unpkg.com/tailwind-merge@3.7.0/LICENSE.md) |
 | tailwindcss | 4.3.3 | MIT | linked, bundled | web | [license](https://unpkg.com/tailwindcss@4.3.3/LICENSE) |
+| tailwindcss | 4.3.5 | MIT | linked, bundled | web | [license](https://unpkg.com/tailwindcss@4.3.5/LICENSE) |
 | tapable | 2.3.3 | MIT | linked, bundled | web | [license](https://unpkg.com/tapable@2.3.3/LICENSE) |
 | tar-fs | 3.1.3 | MIT | linked, bundled | server | [license](https://unpkg.com/tar-fs@3.1.3/LICENSE) |
 | tar-stream | 3.2.1 | MIT | linked, bundled | server | [license](https://unpkg.com/tar-stream@3.2.1/LICENSE) |
@@ -928,7 +931,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | tw-animate-css | 1.4.0 | MIT | linked, bundled | web | [license](https://unpkg.com/tw-animate-css@1.4.0/LICENSE) |
 | type-check | 0.4.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/type-check@0.4.0/LICENSE) |
 | typed-array-buffer | 1.0.3 | MIT | linked, bundled | server | [license](https://unpkg.com/typed-array-buffer@1.0.3/LICENSE) |
-| typescript-eslint | 8.72.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/typescript-eslint@8.72.1/LICENSE) |
+| typescript-eslint | 8.73.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/typescript-eslint@8.73.0/LICENSE) |
 | typescript | 6.0.3 | Apache-2.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/typescript@6.0.3/LICENSE.txt) |
 | undici-types | 7.24.6 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/undici-types@7.24.6/LICENSE) |
 | undici-types | 8.9.0 | MIT | linked, bundled | server | [license](https://unpkg.com/undici-types@8.9.0/LICENSE) |
@@ -1195,14 +1198,14 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | npm-registry-fetch | 20.0.1 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/npm-registry-fetch/v/20.0.1) |
 | npm-user-validate | 5.0.0 | BSD-2-Clause | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/npm-user-validate/v/5.0.0) |
 | npm | 12.2.2 | Artistic-2.0 (exception) | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/npm/v/12.2.2) |
-| numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/numpy/2.5.4/) |
+| numpy | 2.5.5 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/numpy/2.5.5/) |
 | openai | 7.19.0 | Apache-2.0 | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/openai/v/7.19.0) |
 | openpyxl | 3.1.5 | MIT | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/openpyxl/3.1.5/) |
 | p-map | 7.0.5 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/p-map/v/7.0.5) |
 | p-retry | 4.6.2 | MIT | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/p-retry/v/4.6.2) |
 | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/packaging/26.3/) |
 | pacote | 22.0.1 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/pacote/v/22.0.1) |
-| pandas | 3.1.0 | BSD-3-Clause | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/pandas/3.1.0/) |
+| pandas | 3.1.1 | BSD-3-Clause | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/pandas/3.1.1/) |
 | parse-conflict-json | 6.0.0 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/parse-conflict-json/v/6.0.0) |
 | parso | 0.8.7 | MIT | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/parso/0.8.7/) |
 | partial-json | 0.1.7 | MIT | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/partial-json/v/0.1.7) |
