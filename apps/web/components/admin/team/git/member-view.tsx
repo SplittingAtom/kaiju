@@ -68,7 +68,7 @@ export function GitConnectionsReadOnly({ data }: { readonly data: GitConnections
   );
 }
 
-/** The members' section on My connector keys (spec §7), loading the list itself. */
+/** The members' section on My connectors (spec §7), loading the list itself. */
 export function MyGitConnections({ teamId }: { readonly teamId: string }) {
   const { state } = useResource(() => listGitConnections(teamId));
   return (

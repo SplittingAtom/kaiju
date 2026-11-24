@@ -145,7 +145,7 @@ test("Git section: connect a GitHub organization with a token (fake host)", asyn
   expect(values.some((v) => v.includes(FAKE_TOKEN))).toBe(false);
 });
 
-test("My connector keys: members see the Workspace's git organizations (fake host)", async ({
+test("My connectors: members see the Workspace's git organizations (fake host)", async ({
   page,
 }) => {
   await page.route(BASE, (route) =>

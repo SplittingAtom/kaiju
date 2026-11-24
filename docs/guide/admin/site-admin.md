@@ -105,17 +105,35 @@ read a person's portable preferences either; reading them needs its own break-gl
   checked it for changes, which teams enabled it and with what exposure, its app templates
   (`ui://`) with their approval and where each opens, and every tool under **Read only** or
   **Write** with its description, risk hints (destructive, idempotent, open world), inputs, whether
-  it is pinned or awaiting approval, and an **MCP-UI** badge when it opens an app. The details are
-  read-only; **Review**, **Re-probe**, **Enable**/**Disable** and **Site key** stay in the row.
-  Escape or **Close** returns to the list.
+  it is pinned or awaiting approval, and an **MCP-UI** badge when it opens an app. From 12 tools
+  on, a **Filter tools** field narrows the list by name or description ("12 of 140 tools") and
+  each column scrolls on its own. The details are read-only, apart from **Your account** for an
+  OAuth connector (below); **Review**, **Re-probe**, **Enable**/**Disable** and **Site key** stay
+  in the row. Escape or **Close** returns to the list.
+- **Adding a connector that uses OAuth.** Kobe lists an OAuth server's tools with a site admin's
+  own connected account, so a new one has **No tools yet: connect an account** in the list until
+  someone connects. The server is reached through Kobe's connector policy like any other.
+  1. Register it with **Authentication** set to **OAuth**.
+  2. Have a team enable it (Team console → **Connectors**). Kobe keeps your sign-in in your
+     active workspace, so that workspace must be one that enabled it; otherwise **Your account**
+     says so and **Connect your account** is off.
+  3. Press **Connect your account** in the row (or open its details), sign in at the service, and
+     you come back to the registry with the connector's details open and "Connected your account
+     to _connector_.".
+  4. Press **Re-probe** under **Your account**: Kobe lists the server's tools with your sign-in and
+     pins them ("Pinned 120 tools.").
+     Members then connect their own accounts at **Profile → My connectors**. A team admin who picks
+     **Chosen tools** for a long list can filter it and use **Choose all shown** and **Clear all
+     shown**.
 - **How Kobe checks a connector's tools.** Pinning, **Re-probe** and the periodic check for
   changed tools ask the server for its tool list with a credential when the server wants one:
   the site-wide key if the connector has one, else your own key (when you pin or re-probe) or the
   key of the site admin who last pinned or approved its tools (the periodic check); never a
   member's. A connector that uses **OAuth** is checked the same way with a site admin's own
   connected account: before you can pin one whose server asks for sign-in, connect your own
-  account for it at **Profile → My connectors** in a team that enabled it, then pin it again
-  (the pin otherwise fails with "connect your own account for this connector first"). Kobe uses
+  account for it (**Connect your account** in its details, or **Profile → My connectors**, in a
+  workspace that enabled it), then **Re-probe** (the pin otherwise fails with "connect your own
+  account first"). Kobe uses
   that sign-in only to list the server's tools and app templates, never to run a tool or in a
   sandbox, and renews it when it runs out. The **Audit** shows which was used
   (`mcp.connector.probe_credential`: `site_key`, `admin_key`, `admin_oauth` or `none`).

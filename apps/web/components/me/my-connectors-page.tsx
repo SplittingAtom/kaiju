@@ -13,6 +13,7 @@ import { listTeamConnectors, type TeamConnector } from "../../lib/admin/api/team
 import { useTeamAccess } from "../admin/console-context";
 import { MyGitConnections } from "../admin/team/git/member-view";
 import { MutationStatus } from "../admin/error-notice";
+import { OauthReturnNotice, useOauthReturn } from "../admin/oauth-return";
 import { DateTime, ResourceView } from "../admin/parts";
 import { useMutation, useResource, type Mutation } from "../admin/use-resource";
 import {
@@ -26,6 +27,7 @@ import {
   eventTrigger,
   useConfirm,
 } from "../ui/console";
+import { OauthConnectorCard } from "./oauth-connector-card";
 
 interface Loaded {
   readonly connectors: readonly TeamConnector[];
@@ -33,9 +35,11 @@ interface Loaded {
 }
 
 /**
- * A member's own API keys for the team's enabled connectors (spec D27: no shared team
- * credentials; `/v1/connector-grants`, KOBE-108). The key is sent once and never shown again:
- * only a masked hint comes back.
+ * A member's own credentials for the team's enabled connectors (spec D27: no shared team
+ * credentials; `/v1/connector-grants`): API keys (KOBE-108; sent once and never shown again, only
+ * a masked hint comes back) and OAuth sign-ins (KOBE-835: Connect, Reconnect, Disconnect; the
+ * callback's result is shown once). OAuth connectors are listed even before they have tools, so a
+ * member (or a site admin) can connect first.
  */
 export function MyConnectorsPage() {
   const teamId = useTeamAccess().team.id;
@@ -49,26 +53,55 @@ export function MyConnectorsPage() {
     return { ...connectors, data: { connectors: connectors.data, grants: grants.data } };
   });
   const mutation = useMutation();
+  const returned = useOauthReturn();
 
   return (
     <>
       <PageHeader
-        title="My connector keys"
-        description="Some connectors need your own API key. It is stored encrypted, used only for your runs, and never shown again after you save it."
+        title="My connectors"
+        description="Some connectors act as you: connect your own account (OAuth) or add your own API key. Kobe stores it encrypted, uses it only for your runs, and never shows it again."
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
+      {returned !== null && state.status !== "ready" ? (
+        <OauthReturnNotice result={returned} name={undefined} />
+      ) : null}
       <ResourceView state={state} label="connectors">
         {(data: Loaded) => {
-          const needKey = data.connectors.filter(
-            (c) => c.enabled && c.status === "active" && c.authKind === "api_key",
+          const needYou = data.connectors.filter(
+            (c) =>
+              c.enabled &&
+              c.status === "active" &&
+              (c.authKind === "api_key" || c.authKind === "oauth"),
           );
-          if (needKey.length === 0) {
-            return <EmptyState title="No connector in this team needs your own key." />;
+          const notice =
+            returned === null ? null : (
+              <OauthReturnNotice
+                result={returned}
+                name={data.connectors.find((c) => c.id === returned.connectorId)?.name}
+              />
+            );
+          if (needYou.length === 0) {
+            return (
+              <>
+                {notice}
+                <EmptyState title="No connector in this workspace needs your own account or key." />
+              </>
+            );
           }
           return (
             <div className="flex flex-col gap-3">
-              {needKey.map((c) =>
-                c.credentialSource === "site" ? (
+              {notice}
+              {needYou.map((c) =>
+                c.authKind === "oauth" ? (
+                  <OauthConnectorCard
+                    key={c.id}
+                    teamId={teamId}
+                    connector={c}
+                    grant={data.grants.find((g) => g.connectorId === c.id) ?? null}
+                    mutation={mutation}
+                    onChanged={reload}
+                  />
+                ) : c.credentialSource === "site" ? (
                   <ProvidedCard key={c.id} connector={c} />
                 ) : (
                   <KeyCard

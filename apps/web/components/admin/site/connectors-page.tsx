@@ -39,6 +39,7 @@ import { MutationStatus } from "../error-notice";
 import { DateTime, ResourceView } from "../parts";
 import { useFocusAfterRemoval } from "../use-focus-after-removal";
 import { useMutation, useResource, type Mutation } from "../use-resource";
+import { OauthReturnNotice, useOauthReturn } from "../oauth-return";
 import { ConnectorDetailPanel } from "./connector-detail-panel";
 import { SiteKeyPanel } from "./connector-site-key";
 import { RefreshSkipped } from "./connector-refresh-skipped";
@@ -64,11 +65,13 @@ const EMPTY: ConnectorInput = {
 export function ConnectorsPage() {
   const { state, reload } = useResource(() => listConnectors());
   const mutation = useMutation();
+  // Back from connecting the admin's own account (KOBE-835): reopen that connector's details.
+  const returned = useOauthReturn();
   const [editing, setEditing] = useState<Connector | null>(null);
   const [reviewing, setReviewing] = useState<Connector | null>(null);
   const [keyFor, setKeyFor] = useState<string | null>(null);
   // The connector whose detail panel is open (KOBE-641) and the name that opened it.
-  const [detailFor, setDetailFor] = useState<string | null>(null);
+  const [detailFor, setDetailFor] = useState<string | null>(returned?.connectorId ?? null);
   const detailOpener = useRef<HTMLElement | null>(null);
   const detailConnector =
     detailFor !== null && state.status === "ready"
@@ -99,6 +102,12 @@ export function ConnectorsPage() {
         onCancel={() => setEditing(null)}
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
+      {returned !== null && state.status === "ready" && detailConnector === undefined ? (
+        <OauthReturnNotice
+          result={returned}
+          name={state.data.find((c) => c.id === returned.connectorId)?.name}
+        />
+      ) : null}
       <Section id={HEADING} title="Registered connectors">
         <ResourceView state={state} label="connectors">
           {(connectors) => (
@@ -137,6 +146,11 @@ export function ConnectorsPage() {
           connector={detailConnector}
           onClose={() => setDetailFor(null)}
           returnFocus={() => detailOpener.current}
+          returned={returned?.connectorId === detailConnector.id ? returned : null}
+          onReprobed={() => {
+            reload();
+            setReviewRound((n) => n + 1);
+          }}
         />
       ) : null}
       {keyConnector ? (
@@ -424,6 +438,18 @@ function ConnectorTable({
                   <Button size="sm" className="ms-1" onClick={() => onReview(c)}>
                     Apps<span className="sr-only"> of {c.name}</span>
                   </Button>
+                ) : null}
+                {c.authKind === "oauth" && c.toolCount === 0 && c.driftedCount === 0 ? (
+                  <span className="ms-1 inline-flex flex-wrap items-center gap-1.5">
+                    <Badge tone="attention">No tools yet: connect an account</Badge>
+                    <Button
+                      size="sm"
+                      aria-haspopup="dialog"
+                      onClick={(e) => onDetails(c, e.currentTarget)}
+                    >
+                      Connect your account<span className="sr-only"> to {c.name}</span>
+                    </Button>
+                  </span>
                 ) : null}
                 <RefreshSkipped connector={c} />
               </TableCell>

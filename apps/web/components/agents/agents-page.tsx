@@ -77,7 +77,7 @@ export function AgentsPage() {
         actions={
           <>
             <Button asChild>
-              <Link href="/me/connectors">My connector keys</Link>
+              <Link href="/me/connectors">My connectors</Link>
             </Button>
             {tab === "team" && canBuild && (
               <Button asChild>

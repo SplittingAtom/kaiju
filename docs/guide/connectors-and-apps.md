@@ -1,6 +1,6 @@
 ---
 title: Connectors and apps
-summary: How MCP connectors give the agent tools, how to add your own key for a connector, turn connectors on or off per conversation, and use app cards in answers.
+summary: How MCP connectors give the agent tools, how to connect your own account (OAuth) or add your own key for a connector, turn connectors on or off per conversation, and use app cards in answers.
 section: Connectors and apps
 order: 1
 audience: member
@@ -33,10 +33,37 @@ permissions, and every change asks you first with an **Admin change** card. In t
 the agent creator you can name **kobe** among an agent's connectors to give it the admin tools.
 See [Admin from a conversation](admin/admin-from-a-conversation.md).
 
-## Add your own key
+## Connect your account or add your own key
 
-Some connectors act as you, with your own account. Open **Profile → My connectors** (**My
-connector keys**, `/me/connectors`):
+Some connectors act as you, with your own account. Open **Profile → My connectors**
+(`/me/connectors`). It lists every connector your workspace enabled that needs something from
+you, even one that has no tools yet.
+
+### Connectors that use OAuth
+
+A connector that uses OAuth asks you to sign in at the service with your own account; there is no
+key to copy. Its card shows **Not connected**, **Connected** (since when) or **Sign-in expired**.
+
+1. Press **Connect**. Kobe sends you to the service's own sign-in page.
+2. Sign in there and allow access.
+3. The service sends you back to **My connectors**, which says "Connected your account to
+   _connector_." If it did not work, it says why ("The sign-in was cancelled or refused at the
+   service.", "Could not reach the connector's authorization server. Try again later.", ...).
+   Press **Connect** to try again.
+
+**Reconnect** signs in again (for example with another account). **Disconnect** deletes your
+sign-in for that connector in this workspace (audited as `mcp.grant.removed`); your runs can't use
+the connector until you connect again. Disconnecting does not sign you out at the service itself:
+to revoke Kobe's access there too, use the service's own account settings.
+
+Kobe keeps the sign-in on the server, encrypted, and uses it only for your runs: the browser and
+your agent never see it. It renews the sign-in by itself when it runs out, and also when the
+connector's server turns it down before then (the call is then tried once more). **Sign-in
+expired** only means the last one ran out; you need to reconnect only if the connector still
+fails, because the provider ended the sign-in. Starting a connection is limited to 30 tries in 10
+minutes per person ("Too many connection attempts. Try again in a few minutes.").
+
+### Connectors that need an API key
 
 - A connector that needs your key shows **No key added**; press **Add key**, paste your **API
   key** and save. Kobe stores it encrypted, uses it only for your runs and never shows it again.
@@ -46,10 +73,7 @@ connector keys**, `/me/connectors`):
 Until you add a key, your runs cannot use that connector ("Your runs can't use it until you add
 one."). An app that is missing only your key shows **Add your key**, linking to this page.
 
-A connector that uses OAuth asks you to sign in with your account instead of a key. Kobe renews
-that sign-in by itself when it runs out, and also when the connector's server turns it down
-before then (the call is then tried once more). You only need to sign in again when the
-provider has ended the sign-in.
+### Who keeps your sign-ins and keys
 
 Your keys (and sign-ins for connectors that use OAuth) belong to one workspace. When you are
 removed from a workspace, your account is deactivated, or your identity provider removes your
@@ -84,7 +108,10 @@ first; see [Git changes](internet-and-approvals/approvals.md#git-changes). The f
 In the composer, **+** → **Connectors** lists your connectors in this workspace. Each working one
 has a checkbox for this conversation only (on by default). In a conversation not started yet, the
 choice applies once you send the first message. A connector that is not working shows a red cross
-and the reason, with a link to fix it where there is one.
+and the reason, with a link to fix it where there is one: "Connect your account to this server."
+and "Your sign-in to this server expired. Connect again." link to **My connectors**. A connector
+that has no tools your workspace may use yet is not listed there at all (there is nothing to turn
+on); connect it from **My connectors** in the meantime.
 
 ## Connector tool calls and approvals
 
