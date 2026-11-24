@@ -33,6 +33,7 @@ spec:
       # No serviceAccountName: as a pre-install hook it runs before release ServiceAccounts exist,
       # and it needs no API access (token not mounted).
       automountServiceAccountToken: false
+      enableServiceLinks: false
       {{- include "kaiju.podSecurityContext" $root | nindent 6 }}
       containers:
         - name: migrate
