@@ -67,7 +67,8 @@ export async function startListener(
 
 /**
  * The legitimate gateway as Pi sees it: records every request's headers, then forwards it to the
- * real (local) gateway minus the run token header, which the local gateway has no record of.
+ * real (local) gateway minus the run token header (under both names: the extension also sends the
+ * pre-rename one for a release, KOBE-749), which the local gateway has no record of.
  */
 export async function startTap(upstream: string): Promise<Listener> {
   return startListener((req, res) => {
@@ -76,6 +77,7 @@ export async function startTap(upstream: string): Promise<Listener> {
     req.on("end", () => {
       const headers = { ...req.headers, host: new URL(upstream).host };
       Reflect.deleteProperty(headers, "x-kaiju-run-token");
+      Reflect.deleteProperty(headers, "x-kobe-run-token");
       const out = http.request(
         upstream + (req.url ?? "/"),
         { method: req.method, headers },

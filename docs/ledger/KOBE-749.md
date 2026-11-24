@@ -148,3 +148,12 @@ format:check, guard (40,936 allowed, 219 entries; later recount includes this le
 23/23 ok. Unit: protocol 1,389; egress-proxy 182; mcp-proxy 174; model-gateway 266;
 sandbox-agent 1,294 (196 skipped); server 4,571 (8 skipped); web 4,313. `@kaiju/server test:db`
 3,751 passed, 0 failed.
+
+CI round (PR #720, run 45447906077): the real-Pi tests (skipped locally until then) failed because
+their tap in `testing/real-pi-rpc.ts` removed only `x-kaiju-run-token` before forwarding to the
+local gateway; the extension's dual-sent `x-kobe-run-token` reached it, was normalised to the new
+name and failed verification (401, so compaction, branch summary and the redirect plants failed).
+The tap now removes both names. Reproduced locally with the pinned Pi (`npm ci --prefix
+images/sandbox/pi`): 11 failures before, the four files 15 passed / 7 skipped (paired-executor
+cases needing test identities) after; whole `@kaiju/sandbox-agent` suite with Pi 1,432 passed,
+58 skipped.
