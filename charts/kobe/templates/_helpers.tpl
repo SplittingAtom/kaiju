@@ -49,8 +49,15 @@ checksum/db-app: {{ include "kobe.cnpgAppPassword" . | sha256sum }}
 {{- end -}}
 {{- end -}}
 
+{{/*
+Value of the app.kubernetes.io/name label. It stays `kobe` after the rename to Kaiju (KOBE-750):
+Deployment and StatefulSet selectors are immutable, so an existing release could not upgrade in
+place with a new value, and the server's team NetworkPolicies select the chart's pods by it.
+*/}}
+{{- define "kobe.appName" -}}kobe{{- end -}}
+
 {{- define "kobe.labels" -}}
-app.kubernetes.io/name: kobe
+app.kubernetes.io/name: {{ include "kobe.appName" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -58,7 +65,7 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
 {{- end -}}
 
 {{- define "kobe.selectorLabels" -}}
-app.kubernetes.io/name: kobe
+app.kubernetes.io/name: {{ include "kobe.appName" .root }}
 app.kubernetes.io/instance: {{ .root.Release.Name }}
 app.kubernetes.io/component: {{ .component }}
 {{- end -}}

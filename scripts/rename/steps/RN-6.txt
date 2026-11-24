@@ -1,17 +1,18 @@
-# RN-6 (KOBE-750): chart charts/kaiju (name `kaiju`), images ghcr.io/splittingatom/kaiju-*,
-# in-sandbox paths and binaries (with their source files, so the image builds in this PR), Pi
-# extension names, release-namespace object names, publish and e2e workflows (spec §3 changes 4).
-# By hand: ghcr package visibility, Dependabot paths, chart version bump, refresh
-# images/*/third-party-licenses.json and `pnpm licenses:update`. Objects inside team namespaces
-# are RN-7's (configured with the prefix); the Bifrost customer names stay (external state).
-# Also by hand (KOBE-746 review): the model gateway's /kobe/eval-cases route and the in-pod paths
-# (/var/run/secrets/kobe, /var/run/kobe, /etc/kobe, /usr/share/doc/kobe): a Job or sandbox that
-# runs across the upgrade still uses the old path, so serve or mount both for one release.
+# RN-6 (KOBE-750): chart charts/kaiju (name `kaiju`), helper defines, images
+# ghcr.io/splittingatom/kaiju-*, the in-sandbox paths and binaries (with their source files, so
+# the image builds in this PR), Pi extension names, the e2e, dev and CI release and namespace
+# names, publish and e2e workflows (spec §3 changes 4). The groups below repeat every RN-6
+# allowlist group, so nothing is "left for hand edits" apart from the generated inventories.
+# By hand (docs/ledger/KOBE-750.md): `pnpm licenses:update` and the images'
+# third-party-licenses.json refresh, the chart version bump, the selector label value (stays
+# `kobe`, permanent), the model gateway serving the old eval-cases route for one release, the
+# judge accepting the old eval pack id for one release, and ghcr package visibility (coordinator).
+# Objects inside team namespaces are RN-7's (configured with the prefix); the Bifrost customer
+# names and the Postgres database name stay (external and persisted state).
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
-# dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
+# covers it.
 
 == RN-6: Paired values: names the chart, images or e2e harness and the code or its tests must agree on, renamed together (Services, Secrets, file and path names, the skill mirror's commit author and e-mail domain, dev host)
 ** /\bkobe-(?:bifrost|skills|sso-gate\.override|isolation-preflight|mcp-proxy-internal|model-keys|bot)\b/
@@ -25,11 +26,18 @@ charts/** /\bkobe\.[a-zA-Z]\w*/
 charts/**/Chart.yaml /^name: kobe$/
 
 == RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries
+** /\/kobe\/eval-cases\b|\/var\/run\/secrets\/kobe\b|\/var\/run\/kobe\b|\/etc\/kobe\b|\/usr\/share\/doc\/kobe\b/
 ** /\bghcr\.io\/splittingatom\/kobe-[\w-]+/
 ** /(?<![\w.-])kobe-(?:server|web|sandbox|sandbox-agent|mcp-proxy|egress-proxy|model-gateway|orbit-eval|skill-scan|bifrost)(?::[\w.${}-]+)?(?![\w-])/
 ** /\/opt\/kobe\b/
 ** /\/run\/kobe-[\w-]*/
 ** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
+# The runas helper's compile-time macros and their -D flags: not environment variables (RN-4 leaves them).
+services/sandbox-agent/scripts/test-identities.sh /(?<=-D)KOBE_(?:AGENT_UID|WORKSPACE_GID)\b/
+images/sandbox/runas/kobe-runas.c /\bKOBE_[A-Z0-9_]+\b/
+** /\/tmp\/kobe-pi\b[\w-]*|(?<=PI_PRIVATE_PREFIX = )"kobe-pi-"/
+scripts/check-images.sh /(?:ghcr\.io\/splittingatom\/|:-)kobe-/
+services/sandbox-agent/src/egress/egress-wiring.test.ts /(?<=")kobe(?=: the sandbox's egress token)/
 path images/** /kobe/i
 
 == RN-6: Pi extensions installed in the sandbox image (`/opt/kobe/pi-extensions/kobe-*`), with their source directories, so the image and its references move in one step
@@ -41,6 +49,13 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 
 == RN-6: Kubernetes object names in the release namespace and the e2e clusters (Services, Secrets, Deployments ...)
 ** /\bkobe-sandbox-(?!token\b)[\w-]+/
-** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|theme|default)(?![\w-])/
+** /\bkobe-(?:scheduler|deps|s3|pg|db|site|install|dev|reclaim|clamav|embeddings|default)(?![\w-])/
 ** /\bdeploy\/kobe\b/
 ** /\b(?:server|egress-proxy|model-gateway|mcp-proxy)\.kobe\.internal\b/
+charts/** Tiltfile /\bkobe-migrate(?:-initial)?\b/
+scripts/dev-cluster.sh /(?<=KAIJU_CLUSTER:-)kobe\b/
+scripts/site-identifiers.mjs /(?<=helm install )kobe\b/
+
+== RN-6: Triage: Lower-case names in the chart, e2e harness, CI workflows and images (release name `kobe`, resource names)
+charts/** e2e/** .github/** images/** dev/** ci/** Tiltfile /[\w.@$:-]*kobe[\w.@$:-]*/
+docs/** **/*.md /(?:-n |namespace `|release `|cluster (?:delete )?"?|-d |datname = '|bucket[ =]|svc\/|deploy\/|install |upgrade |create namespace |BUCKET=)kobe\b[\w$-]*|\bkobe-[\w$-]*(?:restored|keys|auth|smtp|s3|db|pg[\w-]*|skill-mirror|sso-contoso|\$s)\b|\bkobe-dev-|\bkobe\.bifrostConfig\b|\bkobe\.example\.com\b|\bkobe:(?=\$KAIJU_BIFROST)|\bkobe-erasure\b|`kobe\/`|charts\/kobe\b/

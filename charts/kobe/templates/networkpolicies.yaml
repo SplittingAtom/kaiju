@@ -87,7 +87,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: kobe
+      app.kubernetes.io/name: {{ include "kobe.appName" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
     matchExpressions:
       - key: app.kubernetes.io/component
@@ -209,7 +209,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: kobe
+              app.kubernetes.io/name: {{ include "kobe.appName" . }}
               app.kubernetes.io/instance: {{ .Release.Name }}
             matchExpressions:
               - key: app.kubernetes.io/component

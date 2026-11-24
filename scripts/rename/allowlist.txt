@@ -50,7 +50,7 @@ packages/db/src/team-setters.test.ts packages/db/src/run-usage-retention-setting
 
 == permanent: Signed and persisted identifiers: approval domain, schema ids, key-derivation labels, session-token audiences and issuer, the projected-token audience, the trace-span key label, SSO cookie encryption labels, signed tool names, issued SCIM token prefix, backup format (spec §1 "signed strings", §3 stays 3 and 5)
 ** /\bkobe\.approval\.v1\b/
-** /\bkobe\.dev\/[\w./-]*/
+** /\bkobe\\?\.dev\\?\/[\w./-]*/
 ** /\bkobe\.[\w.-]+\.v\d+\b/
 ** /\bkobe-backup\/[\w./-]*/
 ** /\bkobe\.\$\{purpose\}/
@@ -94,10 +94,23 @@ services/server/src/k{obe,aiju}-mcp/** /(?<="(?:x-)?)kobe-delegation(?=": claim)
 ** /\bkobe-(?=' \|\| p\.id|\$\{id\}|<id>|<provider>-<fingerprint>|vk-)/
 services/server/src/models/config.ts /(?<=\.default\()"kobe"(?=\))/
 ** /(?<=adminUsername: )"kobe"|\bkobe-embed-stub\b/
+charts/k{obe,aiju}/templates/bifrost.yaml charts/k{obe,aiju}/templates/_models.tpl /(?<=^\s*value: )kobe$/
+e2e/run/40-model-gateway-setup.sh docs/install.md /(?<=KAIJU_BIFROST_ADMIN_USERNAME \|\| )'kobe'|\bkobe(?=:\$KAIJU_BIFROST_ADMIN_PASSWORD)/
 ** /\bkobe-(?=\$\{(?:provider|PROVIDER|providerId)\}\/|unpriced\/)/
 ** /\bkobe-usage\//
 ** /\bkobe-conversion:/
 services/server/src/models/** docs/guide/memory.md apps/web/components/admin/memory-switches.test.tsx /\bkobe-(?:mac-mini|ollama[\w-]*)\b/
+
+== permanent: Kubernetes label keys `kobe.splittingatom.io/*` (owner decision 2026-11-24, KOBE-750, was Q9): selectors and network policies on objects in existing team namespaces use them
+** /\bkobe\\?\.splittingatom\\?\.io\b(?:\/[\w-]*)?/
+
+== permanent: The chart's selector label value `app.kubernetes.io/name: kobe` (KOBE-750): Deployment and StatefulSet selectors are immutable, so an in-place `helm upgrade` of an existing release needs the same value; the server's team NetworkPolicies select the chart's pods by these labels too (charts/kaiju/tests/upgrade-selectors.test.ts)
+charts/k{obe,aiju}/templates/_helpers.tpl /(?<=define "k(?:obe|aiju)\.appName" -}})kobe(?={{)|(?<=It stays `)kobe(?=` after the rename)/
+charts/k{obe,aiju}/tests/** /(?<="app\.kubernetes\.io\/name": ")kobe(?=")/
+.github/workflows/e2e.yml /(?<=-l app\.kubernetes\.io\/name=)kobe\b/
+
+== permanent: The Postgres database name `kobe` (KOBE-750): the CloudNativePG cluster's bootstrap database of existing installs and the URLs the chart builds for it, like the `kobe_app` role (spec §3 stays 2); the dev and e2e databases and the operator docs use the same name
+charts/** dev/** e2e/** docs/** /(?<=:5432\/)kobe\b(?![\w-])|(?<=\bdatabase: )kobe\b|(?<=CREATE DATABASE )kobe\b|(?<=IN DATABASE )kobe\b|(?<=datname = ')kobe(?=')|(?<=psql (?:-U postgres )?-d )kobe\b|(?<=-- -d )kobe\b|(?<=(?:SRC|TGT)_DB=)kobe\b|(?<=the new )kobe(?= database)/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations
 ** /\bkobe:(?:hand-written|no-transaction)\b/
@@ -165,6 +178,7 @@ docs/** **/*.md /\*\*kobe\*\*|\bkobe connector|the-kobe-connector|\bmcp__kobe_(?
 ** /`kobe-\$\{decided\.run_id\}`/
 packages/db/src/kobe-builtin-upgrade.db.test.ts /(?<=named `)kobe(?=`)|(?<=\[ids\.k(?:obe|aiju), )"kobe"|(?<=name: )"kobe"(?=, builtin)/
 services/server/src/k{obe,aiju}-mcp/k{obe,aiju}-mcp-web.db.test.ts /(?<=json\.)kobe\b|(?<=name: )"kobe"/
+e2e/browser/tests/kaiju-admin-mcp.spec.ts /\bmcp__kobe(?=\(|\[)|(?<=\{ )kobe(?=\?:)|(?<=json\.)kobe\b|(?<=the `)kobe(?=` connector)/
 ** /(?<=PinnedTools?\()"kobe(?:_builtin)?"|\bmcp__kobe_(?:builtin|git)__\w*|(?<=segments: \[)"kobe(?:_builtin)?"|(?<=took the name `)kobe(?=`)/
 apps/web/components/admin/team-connectors-page.test.tsx apps/web/components/admin/team/agent-builder/agent-creator.test.tsx /(?<![@\w\/-])kobe(?![\w\/-])|(?<=name: \/)kobe(?=\/)/
 packages/db/src/connectors/builtin.ts packages/db/src/schema/connectors.ts services/server/src/k{obe,aiju}-mcp/** services/server/src/threads/admin-redaction.ts services/server/src/git-tools/catalog.ts apps/web/lib/admin/api/team/connectors.ts /`kobe`|"kobe" in hex/
@@ -196,6 +210,8 @@ apps/web/components/chat/markers.test.tsx /\bkobe(?=\/(?:fast|deep)\b)/
 ** /(?<![\/\w-])kobe-(?:agent|pi|tool)(?:-(?:\$\w+|\$\{\w+\}|\d+|\[0-9\]\+|<n>))?(?![\w-])|(?<=\^)kobe-(?:pi|tool)-/
 images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
 services/server/src/sandbox/constants.ts /(?<=the `)kobe(?=` user)/
+images/sandbox/Dockerfile /\bkobe:kobe\b|(?<=`)kobe(?=` \(1000\))|(?<=group `)kobe(?=` \(1000\))/
+e2e/run/42-model-gateway-run.sh /(?<=dir=)kobe(?=:kobe-pi-)/
 
 == provisional: (Q8) Value `kobe` in persisted enums and rows: registry publisher, memory/file source and scope, theme preset, built-in agent slug and connector name
 ** /\b(?:publisher|previousPublisher|source|scope|preset|slug|agentId|galleryId|gallery_key|galleryKey|builtin)\b["']?\s*(?:[:=!]{1,3}|<>)\s*["'`]kobe["'`]/
@@ -217,14 +233,11 @@ packages/db/src/schema/registry.ts /`kobe`/
 apps/web/components/admin/site/catalog-k{obe,aiju}-panel.tsx apps/web/components/admin/site/catalog-skill-page.tsx /(?<![@\w-])kobe(?![\w\/-])/
 ** /\bkobe(?=: (?:KobeState|KaijuState|kobeState|kaijuState|nullable\())|(?<=\bskill\.)kobe\b|(?<=\bkobe=\{skill\.)kobe\b|(?<=^\s*)kobe(?=: "Kaiju",)/
 
-== provisional: (Q9) Kubernetes label keys `kobe.splittingatom.io/*` on objects in existing team namespaces (selectors, network policies)
-** /\bkobe\.splittingatom\.io\b(?:\/[\w-]*)?/
-
 == provisional: (Q10) Workspace git branch prefix `kobe/<member>/...` pushed to members' repositories
 ** /\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")|(?<=")kobe(?=\/(?:probe|x|one|feature)")|(?<=\/\^)kobe(?=\\\/\[a-z0-9-\]\+\\\/)/
 
 == provisional: (Q11) Agent file (orbit) export section `kobe:`, read back from files outside the database
-services/server/src/agents/orbit/** /^\s*kobe:/
+services/server/src/agents/orbit/** images/orbit-eval/testing/fixtures/** /^\s*kobe:/
 services/server/src/agents/orbit/** /`kobe-\$\{slug\}-v\$\{version\}`/
 services/server/src/agents/orbit/** /(?<=^name: |toBe\(")kobe(?=-sales-analyst-v\d)|(?<=metadata\.)kobe\b/
 
@@ -237,6 +250,7 @@ services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
 services/server/src/gallery/** services/server/src/apps/app-launch-agent.db.test.ts e2e/browser/tests/site-gallery-edit.spec.ts /\bKobe\b/
 ** /(?<!older )\bKobe agent\b|\bagent,? Kobe\b|site default \(Kobe\)|\bgallery Kobe\b/
 docs/install.md /\(key `kobe`\)/
+e2e/** /"key":"kobe"|(?<=gallery_(?:run|id) )kobe\b(?![\w-])|(?<=\(key )kobe(?=\))|(?<=\^)kobe(?=\$')|(?<=gallery )kobe(?=: %s)|(?<=printf '     )kobe(?= (?:data|documents|code): )/
 ** /(?<=gallery\/agents\/|\.\/agents\/)kobe(?=\.(?:js|ts)\b)|\bgallery-kobe\b/
 ** /(?<=K(?:OBE|AIJU)_(?:GALLERY|AGENT)_KEY = )"kobe"|\(e\.g\. "kobe"\)|\bkobe-ops\b/
 services/server/src/gallery/agents/** /\bkobe connector\b/
@@ -272,7 +286,7 @@ packages/db/src/test-support/lane.ts packages/db/src/test-support/lane.test.ts /
 docs/agent-prompt.md docs/parallel-work.md /\bkobe-(?=<N>-<slug>)|leading `kobe`|`Kobe` → `kobe`/
 
 == RN-8: CI: runner scale set, its GitHub App, the runner variable and the shared setup action
-** /\bkobe-(?:k3s|ci-runners|arc-runners)\b/
+** /\bkobe-(?:k3s|ci-runners|arc-runners|arc-github-app)\b|\b90-kobe-ci-inotify\b/
 ** /\bKOBE_(?:BUILD_)?RUNNER\b/
 ** /\bsetup-kobe\b/
 path .github/actions/setup-kobe/** /kobe/
@@ -333,7 +347,6 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 charts/** Tiltfile /\bkobe-migrate(?:-initial)?\b/
 scripts/dev-cluster.sh /(?<=KAIJU_CLUSTER:-)kobe\b/
 scripts/site-identifiers.mjs /(?<=helm install )kobe\b/
-docs/install.md /(?<=IN DATABASE )kobe\b/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
