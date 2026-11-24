@@ -290,7 +290,7 @@ StorageClass has `allowVolumeExpansion: true` (the chart's strict-local class ha
 raise each claim (expansion only: Kubernetes refuses to shrink a claim):
 
 ```bash
-kubectl -n kobe-team-<slug> get pvc -l app.kubernetes.io/managed-by=kaiju-server
+kubectl -n kobe-team-<slug> get pvc -l app.kubernetes.io/managed-by=kobe-server
 kubectl -n kobe-team-<slug> patch pvc workspace-u-<user-id> \
   -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
 ```
@@ -1790,12 +1790,14 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   (`/opt/kaiju`, `/run/kaiju-agent`, `/run/kaiju-pi`, `/run/kaiju-skills`, the `kaiju-runas` helper
   and the `kaiju-*` Pi extensions, `/usr/share/doc/kaiju`, `/etc/kaiju/extra-ca` for
   `server.extraCaBundle`): the server writes them into a team's SandboxTemplate together with the
-  new sandbox image at its next team reconcile (every 300 s), so a sandbox started from the old
-  template keeps the old image and the old paths until it restarts and nothing mixes. An agent
+  new sandbox image at its next team reconcile (every 300 s). A sandbox that was running before the
+  upgrade keeps the old image and the old paths until it stops, and a hibernated one wakes on the
+  new image with the new paths, so nothing mixes. An agent
   in a conversation that started before the upgrade may still see the old paths in earlier
   messages; the next run uses the new ones. For this release the model gateway also serves an
   Orbit eval Job of the old image (`/kobe/eval-cases`) and the server accepts its result
-  (pack `kobe-default`); evals report pack `kaiju-default` from now on.
+  (pack `kobe-default`); evals report pack `kaiju-default` from now on. With several server replicas, an eval that finishes while the servers
+  roll can be judged by an old replica and end as errored; run it again.
 - **Environment variables are `KAIJU_*` (Kaiju rename, KOBE-748).** The chart sets the new
   names; the old `KOBE_*` names still work for this release, with a startup warning that names
   them. Rename any you set yourself ([Environment variable names](#environment-variable-names-kaiju_)).

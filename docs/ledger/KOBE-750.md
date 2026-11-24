@@ -62,7 +62,9 @@
   selectors), plus a check that every label selector in the render uses `name=kobe` and that pods
   match their workload's selector; it fails (6 cases) when `kaiju.appName` is set to `kaiju`.
   The e2e upgrade shard (`54-chart-upgrade.sh`) upgrades within one chart version, so it does
-  not cover this; the fixture test is the equivalent.
+  not cover this; the fixture test is the offline equivalent. **The live proof of ac-1 is the
+  gate1 deploy:** `helm upgrade kobe charts/kaiju -n kobe-gate1 -f v.yaml --reset-values` on the
+  existing release (review LOW-4).
 
 ## Mixed rollout: sandboxes, Jobs and in-pod paths
 
@@ -70,21 +72,34 @@
   paths (`/run/kaiju-agent/bootstrap`, `/run/kaiju-pi`, `/run/kaiju-skills`), the helper path
   (`KAIJU_PI_RUNAS=/opt/kaiju/bin/kaiju-runas`) and the `*.kaiju.internal` hostAliases into the
   same SandboxTemplate at the team reconcile (300 s). A template the old server wrote keeps the old
-  image with the old paths; running and hibernated sandboxes resume from what they have; a sandbox
-  picks up the new image and paths only together, when it restarts from the new template. Same
-  reasoning as RN-4's env names. Nothing the server sends over the sandbox wire names an image path
+  image with the old paths. A running sandbox and a warm-pool pod created from the old template
+  keep the old image and paths until they stop. A hibernated sandbox wakes on the new image with
+  the new paths: `resume()` (`sandbox/provider/claims.ts`) replaces its pod template with the
+  current `sandboxPodSpec` (corrected after review LOW-3). Either way image and paths move
+  together. Same reasoning as RN-4's env names. Nothing the server sends over the sandbox wire names an image path
   (checked), the proxies and gateway do not check the `*.internal` host names, and Pi's agent dir,
   git config and MCP config are rewritten per launch on tmpfs, so no persisted file holds them.
+  One server-side reading of an in-sandbox path exists: skill-use detection matches the SKILL.md a
+  run reads against the store root (`skills/detect.ts`). For one release it accepts both
+  `/run/kaiju-skills` and `/run/kobe-skills` (review MEDIUM-1), so runs in sandboxes still on the
+  old image keep their skill badge and usage counts.
 - **Agent-visible history:** a conversation started before the upgrade may mention
   `/run/kobe-skills/...` in earlier messages; the next run's prompt names the new paths. Accepted.
 - **Eval Jobs** (separate image, started per eval): an old-image Job running across the upgrade
   calls `/kobe/eval-cases` and reports pack `kobe-default`. For one release the gateway serves both
   routes, the new image falls back to the old route on a 404 (old gateway pod mid-rollout), and
   the judge accepts both pack ids (permanent group "Pre-rename names served or accepted for one
-  release", removed with KOBE-754). Skill-scan Jobs: result marker already dual (RN-4).
+  release", removed with KOBE-754). Skill-scan Jobs: result marker already dual (RN-4). Not covered:
+  an old server replica collecting a new-image eval result (pack `kaiju-default`) while a
+  multi-replica server rolls judges it invalid; transient, the eval can be rerun (review LOW-6).
 - **Unchanged on purpose:** team-namespace object names and their `app.kubernetes.io/name`
-  values (`kobe-sandbox`, `kobe-skill-scan`; RN-7), Bifrost customer and admin names, the eval
-  Job pod label is renamed (`kaiju-orbit-eval`; nothing selects it).
+  values (`kobe-sandbox`, `kobe-skill-scan`, and the eval Job pods' `kobe-orbit-eval`, reverted
+  after review LOW-5 so all of them follow the RN-7 prefix rule), the team objects'
+  `app.kubernetes.io/managed-by: kobe-server` (the PVC command in `docs/install.md` uses it again,
+  review MEDIUM-2), Bifrost customer and admin names.
+- **Removed in KOBE-754** (one-release fallbacks of this step): the gateway's `/kobe/eval-cases`
+  route and the eval image's fallback to it, `LEGACY_PACK_IDS` (`kobe-default`) in the judge,
+  `LEGACY_SKILLS_DIR` (`/run/kobe-skills`) in skill-use detection.
 
 ## Outside the repo (coordinator)
 
@@ -94,9 +109,11 @@
   `publish.yml` (unchanged).
 - **gate1 deploy script** (`~/.kobe-coord/deploy-gate1.sh`): image names `kaiju-<svc>:local-<sha12>`,
   chart path `charts/kaiju`, release unchanged (`helm upgrade kobe charts/kaiju ... --reset-values`;
-  same values file). Import and **pin** the new `kaiju-*` refs on every node; unpin and remove the
-  old `kobe-*` tags only after the team reconcile has moved every SandboxTemplate (else hibernated
-  sandboxes still on old templates hit ImagePullBackOff).
+  same values file). Import and **pin** the new `kaiju-*` refs on every node. Hibernated sandboxes
+  wake on the new image, so they do not need the old one; keep the old `kobe-*` tags pinned only
+  while sandboxes that were running before the upgrade, or warm-pool pods from old templates,
+  still exist (they would hit ImagePullBackOff on a restart onto another node after the old image
+  is gone); remove them once the reconcile has moved every template and those pods are gone.
 - Local dev clusters named `kobe` keep working with `KAIJU_CLUSTER=kobe` (docs/development.md).
 - Playwright runner or scripts that use `kubectl -n kobe-dev`, `svc/kobe-server` etc. follow
   their release name (gate1's release stays `kobe` until RN-9).
@@ -130,3 +147,8 @@ One command at a time, TMPDIR on disk:
   `kaiju-runas` capabilities and macros, the `kaiju-*` extensions, `kaiju-reclaim`, kernel bridge);
   test image removed afterwards. orbit-eval and skill-scan images not built here (CI).
 - Not run here: browser suite, e2e gate scripts (CI and e2e per step).
+
+Review round 1 rerun (after merging `origin/group-123-rename-5-wire` and the fixes): build,
+typecheck, lint, format:check, guard, self-test 23/23 ok. Unit: chart 408; server 4,573 (8
+skipped); sandbox-agent 1,294 (196 skipped); model-gateway 267; protocol 1,389; egress-proxy 182;
+mcp-proxy 174; license-check 86; web 4,313.

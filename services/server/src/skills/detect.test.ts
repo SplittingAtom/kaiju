@@ -25,6 +25,12 @@ describe("matchSkillRead (KOBE-297)", () => {
     expect(read(`/run/kaiju-skills/store/sk-${C}/SKILL.md`)).toEqual(refs[2]);
   });
 
+  it("also matches the pre-rename store of a sandbox still on the old image, for one release (KOBE-750)", () => {
+    expect(read(`/run/kobe-skills/store/sk-${A}/SKILL.md`)).toEqual(refs[0]);
+    expect(read(`/run/kobe-skills/store/sk-${B}/reference.md`)).toBeUndefined();
+    expect(read(`/run/kobe-skill/store/sk-${A}/SKILL.md`)).toBeUndefined();
+  });
+
   it("normalizes the path the tool reads (doubled slashes, dot segments)", () => {
     expect(read(`/run/kaiju-skills//store/./sk-x/../sk-${A}/SKILL.md`)).toEqual(refs[0]);
   });
