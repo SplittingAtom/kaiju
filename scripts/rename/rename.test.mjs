@@ -15,6 +15,7 @@ import {
   STEPS,
   audit,
   selects,
+  splitValues,
   swapUnit,
   globToRegExp,
   loadAllowlist,
@@ -421,6 +422,38 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "RN-5",
     ],
     ["package.json", 'test -z "$KOBE_TEST_DATABASE_URL"', "KOBE_TEST", "RN-4"],
+    // Round 2: both sides of a paired value stay together.
+    [
+      "packages/session-token/src/site.ts",
+      'if (c.iss !== "kobe-server" || c.aud !== A) return null;',
+      "kobe-server",
+      "permanent",
+    ],
+    [
+      "services/server/src/models/reconcile.test.ts",
+      "`customer.update kobe-install ${SITE_CUSTOMER}`",
+      "kobe-install",
+      "permanent",
+    ],
+    ["e2e/run/40-model-gateway-setup.sh", 'grep -q "kobe-site"', "kobe-site", "permanent"],
+    [
+      "services/server/src/sandbox/kube.ts",
+      'export const FIELD_MANAGER = "kobe-server";',
+      "kobe-server",
+      "RN-7",
+    ],
+    [
+      "services/server/src/sandbox/constants.ts",
+      'export const MANAGED_BY = "kobe-server";',
+      "kobe-server",
+      "RN-7",
+    ],
+    [
+      "packages/db/src/egress/store.ts",
+      'export const EGRESS_CHANGES_CHANNEL = "kobe_egress";',
+      "kobe_egress",
+      "permanent",
+    ],
     ["services/server/src/x.ts", '"kobe.tool.name"', "kobe.tool", "RN-5"],
     // A test variable named kobe is not a telemetry name.
     ["apps/web/x.test.tsx", 'act(() => kobe.agent.delta(runId, "m1", "Here", 1));', "kobe", "RN-3"],
@@ -453,4 +486,52 @@ test("real step files: RN-7 leaves the chart's admission policy and the object n
   const example = "e2e/x.sh";
   const ns = 'NS="kobe-team-finance"';
   assert.equal(swapUnit(ns, "RN-7", pick(rn7, example), pick(allowlist, example)).changed, 1);
+});
+
+test("paired-value rule: a value owned by two steps is reported", () => {
+  const list = parseList(
+    '== permanent: issuer\n** /\\biss\\b[^\\n]*?"kobe-server"/\n' +
+      "== RN-6: image names\n** /\\bkobe-server\\b/\n== RN-3: fake markers\n** /\\bkobe-faux\\b/\n",
+  );
+  const file = (path, text) => ({ path, read: () => ({ binary: false, text }) });
+  const files = [
+    file("a.ts", 'const t = { iss: "kobe-server" };\nif (c.iss !== "kobe-server") fail();'),
+    file("b.ts", 'const svc = "kobe-server"; const m = "kobe-faux";'),
+    file("c.sh", "grep kobe-faux"),
+  ];
+  const { found } = audit(root, list, files);
+  const split = splitValues(found);
+  assert.deepEqual(
+    split.map((x) => x.value),
+    ["kobe-server"],
+  );
+  assert.deepEqual(Object.keys(split[0].owners).sort(), ["RN-6", "kept"]);
+});
+
+/**
+ * Values the real allowlist splits on purpose: the same letters name different things, each
+ * side consistent within its own meaning. Anything else split fails (review round 2).
+ */
+const DISTINCT_VALUES = {
+  "kobe-server":
+    "image/Service name (RN-6), signed issuer and connector URL host (kept), in-namespace RoleBinding/managed-by/field manager (RN-7)",
+  "kobe-sandbox":
+    "image name (RN-6) vs the ServiceAccount/template/warm pool in team namespaces (RN-7)",
+  "kobe-skill-scan": "image name (RN-6) vs the NetworkPolicy in team namespaces (RN-7)",
+  "kobe-pi":
+    "runtime directories /run/kobe-pi, /tmp/kobe-pi-* (RN-6, RN-3) vs the Unix user names (kept, Q7)",
+  "kobe-agent": "runtime directory /run/kobe-agent (RN-6) vs the Unix user (kept, Q7)",
+  "kobe.example.com": "unrelated example hosts in app tests (RN-3) and chart tests (RN-6)",
+  "kobe-server.kobe-system.svc":
+    "one example URL in a config test; both halves change, in RN-3 and RN-6",
+  kobe_: "test database prefix (RN-3) vs a prefix in docs/perf queries (RN-2)",
+};
+
+test("real allowlist: no paired value is split across steps, apart from the listed distinct ones", () => {
+  const { found } = audit(REPO, loadAllowlist(REPO));
+  const split = splitValues(found).filter((x) => !Object.hasOwn(DISTINCT_VALUES, x.value));
+  assert.deepEqual(
+    split.map((x) => `${x.value} ${JSON.stringify(x.owners)}`),
+    [],
+  );
 });

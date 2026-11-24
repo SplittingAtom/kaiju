@@ -25,8 +25,8 @@ scripts/rename/** docs/specs/rename-kaiju.md /kobe/i
 == permanent: Postgres settings and advisory-lock keys (spec §3 stays 2, RN3)
 ** /\bkobe\.(?:team_id|break_glass_grant|break_glass_actor|run_usage_retention|restore(?:\.\w+)?|legal_hold|audit\.pii_sweep)\b/
 
-== permanent: Postgres roles, functions, tables, columns, policies and the NOTIFY channel (spec §3 stays 2, §5 no migration)
-** /\bkobe_(?:app|owner|rate_limits\w*|run_events|grants_applied|reserve_budget|settle_budget|extend_budget|count_model_spend|shipped_version|ensure_memory_vectors|spend_guard|run_usage_append_only|install_limits_guard|site_limits_guard|budget_email_guard|budget_alert_verify|budget_alert_emails|refuse_deactivated_session|entry_search_text|cap_sso_session_expiry)\b/
+== permanent: Postgres roles, functions, tables, columns, policies and the LISTEN/NOTIFY channels (spec §3 stays 2, §5 no migration)
+** /\bkobe_(?:app|owner|rate_limits\w*|run_events|egress(?:_blocked)?|memory_settings|models|sandbox|skill_eval|grants_applied|reserve_budget|settle_budget|extend_budget|count_model_spend|shipped_version|ensure_memory_vectors|spend_guard|run_usage_append_only|install_limits_guard|site_limits_guard|budget_email_guard|budget_alert_verify|budget_alert_emails|refuse_deactivated_session|entry_search_text|cap_sso_session_expiry)\b/
 ** /\b\w*by_kobe\w*/
 ** /\bregistry_(?:skills_kobe_names|versions_kobe_publisher)\b/
 
@@ -37,7 +37,7 @@ scripts/rename/** docs/specs/rename-kaiju.md /kobe/i
 ** /\bkobe-backup\/[\w./-]*/
 ** /\bkobe\.\$\{purpose\}/
 ** /\bkobe\.(?:sandbox-wire|model-gateway|mcp-proxy|egress-proxy|sandbox-bootstrap|budget-reservations)\b/
-** /\biss["']?\s*:\s*(?:z\.literal\()?["']kobe-server["']/
+** /\biss\b[^\n]*?["'`]kobe-server["'`]/
 
 == permanent: Advisory-lock names and derived-hash labels: old and new pods must lock the same key during a rolling upgrade (spec §3 stays 2)
 ** /\bkobe\.(?:agents\.(?:gallery|personal|team)|audit-forwarding|audit\.(?:runtime_tampered|seal)(?![\w-])|audit_log|break_glass\.requests|connector-refresh|egress-request\.(?:user|pattern)|eval_cases|git_connections|git-health|git-mirror|git-tools|memory-[\w-]+|offboarding-sweep|retention(?![.\w-])|schedules|site_branding|site_break_glass\.requests|site_tool_rules|skill_blocklist|skill_drafts|skill-eval(?=:)|skill-eval\.reaper|skill-mirror|skill_offer|skills\.[\w-]+|sso\.(?:helm_seed|required)|storage(?=:)|team-namespace-reconcile|thread_folders|tool_rules\.(?:team|user))\b/
@@ -53,8 +53,7 @@ scripts/rename/** docs/specs/rename-kaiju.md /kobe/i
 
 == permanent: Values held outside the database that existing installs read back: git-mirror commit trailers in members' repositories, the Bifrost customer names
 ** /\bKobe-(?:Registry-Version|Runtime-Hash|Package-Hash)\b/
-** /["'`]kobe-(?:site|install)["'`]/
-** /\bcustomer\.add kobe-site\b/
+** /\bkobe-(?:site|install)(?![\w-])/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations
 ** /\bkobe:(?:hand-written|no-transaction)\b/
@@ -91,8 +90,10 @@ docs/specs/** /kobe/i
 ** /\bkobe\/notifications\/[\w${}-]*/
 ** /\bname: "kobe", version\b/
 
-== provisional: (Q7) The sandbox user's home folder; Pi sessions and workspace files hold absolute paths under it
+== provisional: (Q7) The sandbox Unix users (`kobe`, `kobe-agent`, `kobe-pi`, `kobe-tool`) and their home folder; Pi sessions and workspace files hold absolute paths under it, and the image and the sandbox agent must agree on the names
 ** /\/home\/kobe\b/
+** /(?<![\/\w-])kobe-(?:agent|pi|tool)(?:-(?:\$\w+|\$\{\w+\}|\d+|\[0-9\]\+|<n>))?(?![\w-])|(?<=\^)kobe-(?:pi|tool)-/
+images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
 
 == provisional: (Q8) Value `kobe` in persisted enums and rows: registry publisher, memory/file source and scope, theme preset, built-in agent slug and connector name
 ** /\b(?:publisher|previousPublisher|source|scope|preset|slug|agentId|galleryId|gallery_key|galleryKey|builtin)\b["']?\s*(?:[:=!]{1,3}|<>)\s*["'`]kobe["'`]/
@@ -101,7 +102,7 @@ docs/specs/** /kobe/i
 ** /\b(?:z\.enum|oneOfStrings)\(\[[^\]]*["'`]kobe["'`]/
 
 == provisional: (Q9) Kubernetes label keys `kobe.splittingatom.io/*` on objects in existing team namespaces (selectors, network policies)
-** /\bkobe\.splittingatom\.io\/[\w-]*/
+** /\bkobe\.splittingatom\.io\b(?:\/[\w-]*)?/
 
 == provisional: (Q10) Workspace git branch prefix `kobe/<member>/...` pushed to members' repositories
 ** /\bkobe\/(?=[a-z]+\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<)/
@@ -122,6 +123,22 @@ THIRD_PARTY_LICENSES.md NOTICE /\bKobe\b/
 
 == RN-6: Generated: image paths and binaries in the licence inventories; `pnpm licenses:update` and the images' third-party-licenses.json refresh rewrite them (not in the step's pattern list)
 THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b|\bkobe-(?:sandbox-agent|runas|reclaim)\b/
+
+== RN-6: Paired values: names the chart, images or e2e harness and the code or its tests must agree on, renamed together (Services, Secrets, file and path names, the skill mirror's commit author and e-mail domain, dev host)
+** /\bkobe-(?:bifrost|skills|sso-gate\.override|isolation-preflight|mcp-proxy-internal|model-keys|bot)\b/
+** /\bkobe\.(?:image|invalid|localtest\.me)\b/
+** /\bkobe_(?:static|gate4_backup)\b/
+
+== RN-5: Paired values: telemetry names the e2e harness asserts and the code emits (renamed together)
+** /\bkobe\.(?:run|command\.kind)\b(?![\w-])/
+
+== RN-3: Paired values: fake-model markers and test values the e2e harness and the code or its tests share (renamed together)
+** /\bkobe-(?:e2e|faux|learn|long-answer|slow-start|tool-step)\b/
+** /\bkobe\.e2e\.member\b/
+** /\bdata-kobe[\w-]*/
+** /\bfetch_kobe\b/
+** /\bcm-kobe-[\w-]+/
+** /\bkobe_live_value\b/
 
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
@@ -147,9 +164,10 @@ package.json /"name": "kobe"/
 ** /(?<!x-)\bkobe-team-(?!quota\b|member-quota\b|samples\b)/
 ** /(?<!x-)\bkobe-team\b(?!-)/
 
-== RN-7: Object names inside team namespaces (ServiceAccount, SandboxTemplate, warm pool, NetworkPolicies, quotas, LimitRange, RoleBinding): existing installs keep theirs, so they are configured or detected with the prefix (spec §5, §3 changes 7). Hand work (not in the step list)
-services/server/src/sandbox/constants.ts /(?<=(?:ACCOUNT|TEMPLATE|POOL|POLICY|QUOTA|RANGE|BINDING|CLASS) = ")kobe-[\w-]+/
-** /(?<![/\w.-])kobe-(?:sandbox(?:-isolation|-defaults)?|orbit-eval-isolation|skill-scan|team-(?:member-)?quota|skill-eval(?:-quota)?)(?![\w:-])/
+== RN-7: Object names inside team namespaces (ServiceAccount, SandboxTemplate, warm pool, NetworkPolicies, quotas, LimitRange, RoleBinding, bootstrap volume, the managed-by label and server-side-apply field manager): existing installs keep theirs, so they are configured or detected with the prefix (spec §5, §3 changes 7). Hand work (not in the step list)
+services/server/src/sandbox/constants.ts services/server/src/sandbox/kube.ts /(?<=(?:ACCOUNT|TEMPLATE|POOL|POLICY|QUOTA|RANGE|BINDING|CLASS|MANAGED_BY|FIELD_MANAGER) = ")kobe-[\w-]+/
+** /\bmanaged-by["']?:\s*["']kobe-server["']/
+** /(?<![\w.-])(?<!splittingatom\/)kobe-(?:sandbox(?:-isolation|-defaults)?|orbit-eval-isolation|skill-scan|team-(?:member-)?quota|skill-eval(?:-quota)?|bootstrap)(?![\w-]|:[\w$])/
 
 == RN-6: Chart directory, chart name and Helm template helpers
 ** /\bcharts\/kobe\b/
@@ -157,13 +175,12 @@ path charts/kobe/** /charts\/kobe/
 charts/** /\bkobe\.[a-zA-Z]\w*/
 charts/**/Chart.yaml /^name: kobe$/
 
-== RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries, the images' Unix user `kobe`
+== RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries
 ** /\bghcr\.io\/splittingatom\/kobe-[\w-]+/
 ** /(?<![\w.-])kobe-(?:server|web|sandbox|sandbox-agent|mcp-proxy|egress-proxy|model-gateway|orbit-eval|skill-scan|bifrost)(?::[\w.${}-]+)?(?![\w-])/
 ** /\/opt\/kobe\b/
 ** /\/run\/kobe-[\w-]*/
 ** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
-images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
 path images/** /kobe/i
 
 == RN-6: Pi extensions installed in the sandbox image (`/opt/kobe/pi-extensions/kobe-*`), with their source directories, so the image and its references move in one step
@@ -214,7 +231,6 @@ packages/cli/package.json /"kobe": "/
 ** /\bKOBE(?=\.[A-Za-z]\w*(?!\.yaml))|\bKOBE-(?=[A-Z]{2})[A-Z-]+/
 
 == RN-3: DOM data attributes, CSS custom properties and classes
-** /\bdata-kobe-[\w-]+/
 ** /--kobe-[\w-]+/
 ** /\bkobe-(?:panel|rail-[\w-]+|composer[\w-]*|chat-main|artifact-column|thread-title|offloaded|skipped|marker|workbench-editor|threads-file-[\w-]+|search|problem|preview|files-confirm|edit-message|budget|bar-menu|app-card|workspace-rail|prompt-tokens|runtime-)\b/
 
@@ -238,7 +254,7 @@ path ** /kobe/i
 # ---------------------------------------------------------------------------------------------
 
 == RN-3: Triage: Test fixture names: databases, temp dirs, users, domains, claim values (test code only)
-**/*.test.* **/*.spec.* **/testing/** **/test-support/** **/test/** **/fixtures/** /[\w.@$:-]*kobe[\w.@$:-]*/
+**/*.test.* **/*.spec.* **/testing/** **/test-support/** **/test/** **/fixtures/** !charts/** !e2e/** !images/** /[\w.@$:-]*kobe[\w.@$:-]*/
 
 == RN-6: Triage: Lower-case names in the chart, e2e harness, CI workflows and images (release name `kobe`, resource names)
 charts/** e2e/** .github/** images/** dev/** ci/** Tiltfile /[\w.@$:-]*kobe[\w.@$:-]*/

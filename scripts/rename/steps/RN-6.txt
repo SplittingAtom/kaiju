@@ -10,19 +10,23 @@
 # covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
 # dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
 
+== RN-6: Paired values: names the chart, images or e2e harness and the code or its tests must agree on, renamed together (Services, Secrets, file and path names, the skill mirror's commit author and e-mail domain, dev host)
+** /\bkobe-(?:bifrost|skills|sso-gate\.override|isolation-preflight|mcp-proxy-internal|model-keys|bot)\b/
+** /\bkobe\.(?:image|invalid|localtest\.me)\b/
+** /\bkobe_(?:static|gate4_backup)\b/
+
 == RN-6: Chart directory, chart name and Helm template helpers
 ** /\bcharts\/kobe\b/
 path charts/kobe/** /charts\/kobe/
 charts/** /\bkobe\.[a-zA-Z]\w*/
 charts/**/Chart.yaml /^name: kobe$/
 
-== RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries, the images' Unix user `kobe`
+== RN-6: Image names (ghcr and local tags), the in-sandbox paths and binaries
 ** /\bghcr\.io\/splittingatom\/kobe-[\w-]+/
 ** /(?<![\w.-])kobe-(?:server|web|sandbox|sandbox-agent|mcp-proxy|egress-proxy|model-gateway|orbit-eval|skill-scan|bifrost)(?::[\w.${}-]+)?(?![\w-])/
 ** /\/opt\/kobe\b/
 ** /\/run\/kobe-[\w-]*/
 ** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
-images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
 path images/** /kobe/i
 
 == RN-6: Pi extensions installed in the sandbox image (`/opt/kobe/pi-extensions/kobe-*`), with their source directories, so the image and its references move in one step

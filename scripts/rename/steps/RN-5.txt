@@ -9,6 +9,9 @@
 # covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
 # dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
 
+== RN-5: Paired values: telemetry names the e2e harness asserts and the code emits (renamed together)
+** /\bkobe\.(?:run|command\.kind)\b(?![\w-])/
+
 == RN-5: HTTP headers (`x-kobe-team` accepted for one release)
 ** /\bx-kobe-[\w-]+/i
 ** /\bKobe-Thread-Id\b/i

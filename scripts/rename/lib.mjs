@@ -439,3 +439,40 @@ export function referenceConflicts(plan, step, lines) {
   }
   return conflicts;
 }
+
+/** History and tooling whose mentions are not one side of a live pair. */
+const PAIR_SKIP =
+  /^(?:docs\/(?:ledger|gates|releases|specs)\/|packages\/db\/drizzle\/|scripts\/rename\/)|\.md$/;
+
+/**
+ * Paired-value rule: a value two sides must agree on (an issuer and its check, a customer name and
+ * the test that expects it, a header in the server and in a script) has every occurrence owned by
+ * the same step, or all kept. Returns the values (whole `[\w.-]` words containing the old name,
+ * ticket ids and the bare name left out) whose occurrences in code and config are owned by more
+ * than one owner (kept counts as one), with their owners and a few places each.
+ */
+export function splitValues(found) {
+  const by = new Map();
+  for (const o of found) {
+    if (o.kind !== "content" || !o.owner || PAIR_SKIP.test(o.path)) continue;
+    const t = o.unit.text;
+    let a = o.start;
+    let b = o.start + 4;
+    while (a > 0 && /[\w.-]/.test(t[a - 1])) a -= 1;
+    while (b < t.length && /[\w.-]/.test(t[b])) b += 1;
+    const value = t.slice(a, b).replace(/^[.-]+|[.-]+$/g, "");
+    if (/^kobe$/i.test(value) || /^KOBE-\d/.test(value)) continue;
+    const owner = isKept(o.owner.step) ? "kept" : o.owner.step;
+    const owners = by.get(value) ?? new Map();
+    const at = owners.get(owner) ?? [];
+    at.push(`${o.path}:${o.line}`);
+    owners.set(owner, at);
+    by.set(value, owners);
+  }
+  return [...by]
+    .filter(([, owners]) => owners.size > 1)
+    .map(([value, owners]) => ({
+      value,
+      owners: Object.fromEntries([...owners].map(([k, at]) => [k, at.slice(0, 3)])),
+    }));
+}

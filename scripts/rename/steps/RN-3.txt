@@ -7,6 +7,14 @@
 # covers it. Generated files and the allowlist's "Triage:" groups are left out on purpose: the
 # dry run lists them as left for hand edits until this step's ticket narrows them into patterns.
 
+== RN-3: Paired values: fake-model markers and test values the e2e harness and the code or its tests share (renamed together)
+** /\bkobe-(?:e2e|faux|learn|long-answer|slow-start|tool-step)\b/
+** /\bkobe\.e2e\.member\b/
+** /\bdata-kobe[\w-]*/
+** /\bfetch_kobe\b/
+** /\bcm-kobe-[\w-]+/
+** /\bkobe_live_value\b/
+
 == RN-3: Workspace packages and their imports; binaries (`kobe` operator CLI, `kobe-migrate`, `kobe-db-wait`)
 ** /@kobe\/[\w./-]*/
 ** /\bkobe-(?:migrate|db-wait)\b/
@@ -25,7 +33,6 @@ packages/cli/package.json /"kobe": "/
 ** /\bKOBE(?=\.[A-Za-z]\w*(?!\.yaml))|\bKOBE-(?=[A-Z]{2})[A-Z-]+/
 
 == RN-3: DOM data attributes, CSS custom properties and classes
-** /\bdata-kobe-[\w-]+/
 ** /--kobe-[\w-]+/
 ** /\bkobe-(?:panel|rail-[\w-]+|composer[\w-]*|chat-main|artifact-column|thread-title|offloaded|skipped|marker|workbench-editor|threads-file-[\w-]+|search|problem|preview|files-confirm|edit-message|budget|bar-menu|app-card|workspace-rail|prompt-tokens|runtime-)\b/
 

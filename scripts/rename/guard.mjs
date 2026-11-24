@@ -7,11 +7,22 @@
 //
 //   node scripts/rename/guard.mjs             check; exit 1 on an unowned occurrence or stale entry
 //   node scripts/rename/guard.mjs --report    also print totals per step and per group
+//   node scripts/rename/guard.mjs --pairs     list values whose occurrences are owned by more than one
+//                                             step (paired-value rule; see splitValues in lib.mjs)
 //   node scripts/rename/guard.mjs --final     also fail while any group is not permanent (the
 //                                             definition of done, spec §8.2: no step, no question)
 //   node scripts/rename/guard.mjs --tokens    print unowned occurrences grouped by area and word
 import { fileURLToPath } from "node:url";
-import { ALLOWLIST, PERMANENT, PROVISIONAL, STEPS, audit, loadAllowlist, tokenAt } from "./lib.mjs";
+import {
+  ALLOWLIST,
+  PERMANENT,
+  PROVISIONAL,
+  STEPS,
+  audit,
+  loadAllowlist,
+  splitValues,
+  tokenAt,
+} from "./lib.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -53,6 +64,10 @@ function main(args) {
       words.set(key, (words.get(key) ?? 0) + 1);
     }
     for (const [k, n] of [...words].sort((a, b) => b[1] - a[1])) console.log(`${n}\t${k}`);
+    return 0;
+  }
+  if (args.includes("--pairs")) {
+    for (const s of splitValues(found)) console.log(`${s.value}\t${JSON.stringify(s.owners)}`);
     return 0;
   }
   if (args.includes("--report")) {
