@@ -501,7 +501,7 @@ test("real allowlist: owners of the cases from review round 1", () => {
     ["scripts/hadron.sh", 'echo "KOBE-${BASH_REMATCH[2]}"', "KOBE-", "permanent"],
     ["apps/web/lib/admin/nav/types.ts", "type TicketId = `KOBE-${number}`;", "KOBE-", "permanent"],
     ["packages/db/drizzle/0137_kobe_published_skills.sql", "", "kobe", "permanent"],
-    ["services/server/builtin-skills/pdf/kobe.skill.yaml", "", "kobe", "RN-12"],
+    ["services/server/builtin-skills/pdf/kobe.skill.yaml", "", "kobe", "RN-20"],
     ["services/server/builtin-skills/kobe-guide/SKILL.md", "", "kobe", "permanent"],
     ["packages/db/src/schema/registry.ts", '  "kobe-guide",', "kobe-guide", "permanent"],
     ["packages/db/src/schema/registry.ts", "    kobeShippedVersion: text(),", "kobe", "permanent"],

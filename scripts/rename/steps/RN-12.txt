@@ -2,9 +2,16 @@
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
-# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
-# permanent group with their reason. Until then the dry run lists every occurrence as left for
-# hand edits.
+# covers it.
+#
+# Hand work after the apply (docs/ledger/KOBE-825.md): `LEGACY_MANIFEST_PATH` and the
+# `compatibility.kobe` key back in the protocol, every reader through `manifestPathIn` /
+# `readManifestIn`, the both-manifests refusal, the tests that read the old names, and the guide.
+# The built-in packages' own `kobe.skill.yaml` files move to RN-20 (KOBE-833): renaming one
+# changes its package hash, so it is a new version, which RN-20 publishes under the new name.
 
 == RN-12 (KOBE-825): Skill package manifest file name and its `compatibility.kobe` field, inside packages that already exist outside the database (like kobe.dev/skill/v1): the new names written, both accepted (owner decision 2026-11-24, was Q2)
+** /\bkobe\\?\.skill\\?\.yaml\b/i
+docs/skill-package.md /\bcompatibility\.kobe\b/
+packages/protocol/src/skill-package/manifest.ts /^\s*kobe(?=: z\.)/
+** /(?<=compatibility: \{ )kobe(?=: ")/

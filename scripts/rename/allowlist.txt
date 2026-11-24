@@ -187,6 +187,7 @@ services/server/builtin-skills/** /kobe/i
 services/server/src/memory/learn/prompt/v*/prompt.ts services/server/src/memory/learn/prompt/v*/fixtures/** /^(?!\s*(?:import|export)\b[^\n]*\bfrom\b)[^\n]*kobe[^\n]*$/i
 services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
 path services/server/builtin-skills/skill-creator/scripts/kobe_rules.py /kobe/
+path services/server/builtin-skills/** /\bkobe(?=\.skill\.yaml$)/
 
 == RN-19 (KOBE-832): Agent file (orbit) export section `kobe:`, read back from files outside the database: written as `kaiju:`, both read (owner decision 2026-11-24, was Q11)
 services/server/src/agents/orbit/** images/orbit-eval/testing/fixtures/** /^\s*kobe:/
@@ -296,7 +297,6 @@ path packages/db/src/** /(?<=^packages\/db\/src\/)kobe(?=-builtin-(?:connector|u
 docs/skill-package.md /\bcompatibility\.kobe\b/
 packages/protocol/src/skill-package/manifest.ts /^\s*kobe(?=: z\.)/
 ** /(?<=compatibility: \{ )kobe(?=: ")/
-path services/server/builtin-skills/** /\bkobe(?=\.skill\.yaml$)/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
