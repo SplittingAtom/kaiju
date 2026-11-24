@@ -118,8 +118,8 @@ charts/k{obe,aiju}/tests/fixtures/pre-rename-upgrade.json charts/k{obe,aiju}/tes
 charts/** dev/** e2e/** docs/** /(?<=:5432\/)kobe\b(?![\w-])|(?<=\bdatabase: "?)kobe\b|(?<=CREATE DATABASE )kobe\b|(?<=IN DATABASE )kobe\b|(?<=datname = ')kobe(?=')|(?<=psql (?:-U postgres )?-d )kobe\b|(?<=-- -d )kobe\b|(?<=(?:SRC|TGT)_DB=)kobe\b|(?<=the new )kobe(?= database)/
 
 == permanent: The pre-rename team namespace prefix `kobe-team-` and its naming generation (`kobe-sandbox`, `kobe-server`, `kobe-team-quota`, ...): an install created before the rename keeps its team namespaces and the objects in them (nothing recreated); `sandbox.teamNamespacePrefix` is set or detected per install, exactly one prefix is in force, and the server refuses to start when namespaces exist under the other one (KOBE-751, spec §5)
-services/server/src/sandbox/constants.ts services/server/src/sandbox/namespace-prefix.ts charts/k{obe,aiju}/templates/_sandbox.tpl charts/k{obe,aiju}/templates/sandbox-admission.yaml charts/k{obe,aiju}/templates/skill-eval-priorityclass.yaml charts/k{obe,aiju}/values.yaml charts/k{obe,aiju}/values.schema.json /\bkobe-team-|\bkobe-\*|(?<=or ")kobe(?=" with)/
-charts/k{obe,aiju}/templates/skill-eval-priorityclass.yaml /\bkobe-skill-eval\b/
+services/server/src/sandbox/constants.ts services/server/src/sandbox/namespace-prefix.ts charts/k{obe,aiju}/templates/_sandbox.tpl charts/k{obe,aiju}/templates/sandbox-admission.yaml charts/k{obe,aiju}/templates/skill-eval-priorityclass.yaml charts/k{obe,aiju}/values.yaml charts/k{obe,aiju}/values.schema.json /(?<=["`])kobe-team-(?=["`])|(?<=\\")kobe-team-(?=\\")|(?<=, or )kobe-team-(?= on an install)|(?<=keeps )kobe-team-(?=, KOBE-751)|(?<=teamNamespacePrefix )kobe-team-(?=\))|(?<=prefix )kobe-team-(?= \(KOBE-751\))|(?<=the )kobe-\*(?= object names)|(?<=; )kobe-\*(?= with)|(?<=or ")kobe(?=" with)/
+charts/k{obe,aiju}/templates/skill-eval-priorityclass.yaml /(?<=; )kobe-skill-eval(?= on an install)/
 charts/k{obe,aiju}/tests/team-namespace-prefix.test.ts services/server/src/sandbox/namespace-prefix.test.ts services/server/src/sandbox/provider-prefix.test.ts /\bkobe-[\w*-]*/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations
@@ -307,16 +307,6 @@ package.json /"name": "kobe"/
 == RN-8: Test databases and roles on the shared dev Postgres (lane maintenance databases, throwaway names the sweeper matches) and the dev machine's test group: named after the repository, renamed with the lanes and worktree paths so concurrent worktrees keep sharing one scheme (KOBE-747)
 packages/db/src/test-support/** packages/db/src/audit-upgrade.db.test.ts docs/parallel-work.md /(?<![@\w])kobe(?=_|\\\\_|"|\b(?![\/-]))/
 services/sandbox-agent/scripts/test-identities.sh /\bkobe-test-agent\b/
-
-== RN-7: Team namespace prefix (configuration: new default `kaiju-team-`, detected on existing installs)
-** /(?<!x-)\bkobe-team-(?!quota\b|member-quota\b|samples\b)/
-** /(?<!x-)\bkobe-team\b(?!-)/
-
-== RN-7: Object names inside team namespaces (ServiceAccount, SandboxTemplate, warm pool, NetworkPolicies, quotas, LimitRange, RoleBinding, bootstrap volume, the managed-by label and server-side-apply field manager): existing installs keep theirs, so they follow the configured prefix (spec §5, §3 changes 7)
-** /\bmanaged-by["']?:\s*["']kobe-server["']/
-docs/install.md /(?<=managed-by=)kobe-server\b/
-** /(?<![\w.-])(?<!splittingatom\/)kobe-(?:sandbox(?:-isolation|-defaults)?|orbit-eval-isolation|skill-scan|team-(?:member-)?quota|skill-eval(?:-quota)?|bootstrap)(?![\w-]|:[\w$])/
-** /\bkobe-admission-probe\b/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
