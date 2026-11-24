@@ -382,17 +382,21 @@ function realGroup(path, line, token) {
   return hit?.owner ? `${hit.owner.step}: ${hit.owner.group.reason}` : "unowned";
 }
 
-test("real allowlist: RN-3's file-name entries claim repository files only (KOBE-746 review)", () => {
-  const fileNames = /^RN-3: File and directory names/;
-  const theirs = [
+test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and test values are no longer allowed", () => {
+  const gone = [
     ["services/server/src/x.ts", 'import { a } from "../kobe-mcp/access.js";', "kobe-mcp"],
     ["apps/web/x.test.tsx", 'import { FakeKobe } from "../../lib/chat/testing/fake-kobe";', "kobe"],
+    ["services/server/src/x.ts", 'import { db } from "@kobe/db";', "kobe"],
     ["docs/x.md", "see `apps/web/components/chat/kobe-runtime.tsx`", "kobe-runtime"],
+    ["apps/web/x.test.ts", 'fetch("http://kobe.test/v1/me")', "kobe"],
+    ["packages/cli/src/x.test.ts", '"postgres://u:p@db:5432/kobe?sslmode=disable"', "kobe"],
+    ["apps/web/x.test.tsx", "expect(text).toMatch(/kobe found/);", "kobe"],
+    ["services/server/src/x.ts", "export type KobeTx = Tx;", "Kobe"],
   ];
-  for (const [path, line, token] of theirs) {
-    assert.match(realGroup(path, line, token), fileNames, `${line} ${token}`);
+  for (const [path, line, token] of gone) {
+    assert.equal(realGroup(path, line, token), "unowned", `${line} ${token}`);
   }
-  const notTheirs = [
+  const kept = [
     // A wire route between the model gateway and the eval image, and paths inside pods: RN-6.
     [
       "services/model-gateway/src/gateway.ts",
@@ -414,33 +418,33 @@ test("real allowlist: RN-3's file-name entries claim repository files only (KOBE
       "kobe",
       /^provisional: \(Q13\)/,
     ],
-    // Test URLs, a database name, a runtime file and regex literals in tests are not files.
-    [
-      "apps/web/x.test.ts",
-      'fetch("http://kobe.test/v1/me")',
-      "kobe",
-      /^RN-3: Triage: Test fixture/,
-    ],
-    [
-      "packages/cli/src/x.test.ts",
-      '"postgres://u:p@db:5432/kobe?sslmode=disable"',
-      "kobe",
-      /^RN-3: Triage: Test fixture/,
-    ],
     [
       "services/sandbox-agent/src/x.ts",
       'join(dir, "agent/kobe-context.json")',
       "kobe",
       /^provisional: \(Q4\)/,
     ],
+    // Escaped forms in regex literals belong to the value they spell (KOBE-747).
     [
-      "apps/web/x.test.tsx",
-      "expect(text).toMatch(/kobe found/);",
+      "packages/db/src/team-setters.test.ts",
+      "  /\\bSET\\s+[\"']?kobe\\.team_id\\b/i,",
       "kobe",
-      /^RN-3: Triage: Test fixture/,
+      /^permanent: Postgres settings/,
+    ],
+    [
+      "services/sandbox-agent/src/x.test.ts",
+      "expect(m).toMatch(/^kobe\\.model_error:x/);",
+      "kobe",
+      /^provisional: \(Q4\)/,
+    ],
+    [
+      "services/server/src/auth/x.ts",
+      "VALUES (${`kobe:${slotKey(account)}`}, 1)",
+      "kobe",
+      /^permanent: Rate-limit keys/,
     ],
   ];
-  for (const [path, line, token, group] of notTheirs) {
+  for (const [path, line, token, group] of kept) {
     assert.match(realGroup(path, line, token), group, `${line} ${token}`);
   }
 });
@@ -544,8 +548,13 @@ test("real allowlist: owners of the cases from review round 1", () => {
     ],
     ["services/server/src/x.ts", '"kobe.tool.name"', "kobe.tool", "RN-5"],
     // A test variable named kobe is not a telemetry name.
-    ["apps/web/x.test.tsx", 'act(() => kobe.agent.delta(runId, "m1", "Here", 1));', "kobe", "RN-3"],
-    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', "kobeName", "RN-3"],
+    [
+      "apps/web/x.test.tsx",
+      'act(() => kobe.agent.delta(runId, "m1", "Here", 1));',
+      "kobe",
+      "unowned",
+    ],
+    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', "kobeName", "unowned"],
     ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', '"kobe"', "provisional"],
   ];
   for (const [path, line, token, step] of cases) {
@@ -607,18 +616,10 @@ const DISTINCT_VALUES = {
     "image name (RN-6) vs the ServiceAccount/template/warm pool in team namespaces (RN-7)",
   "kobe-skill-scan": "image name (RN-6) vs the NetworkPolicy in team namespaces (RN-7)",
   "kobe-pi":
-    "runtime directories /run/kobe-pi, /tmp/kobe-pi-* (RN-6, RN-3) vs the Unix user names (kept, Q7)",
+    "runtime directories /run/kobe-pi, /tmp/kobe-pi-* (RN-6) vs the Unix user names (kept, Q7)",
   "kobe-agent": "runtime directory /run/kobe-agent (RN-6) vs the Unix user (kept, Q7)",
-  "kobe.example.com": "unrelated example hosts in app tests (RN-3) and chart tests (RN-6)",
-  "kobe-server.kobe-system.svc":
-    "one example URL in a config test; both halves change, in RN-3 and RN-6",
   kobe_:
     "test database prefix (RN-8) vs column aliases in docs/perf queries (RN-5, with the span attributes they read)",
-  "kobe-migrate":
-    "binary, log service and connection application name (RN-3) vs the chart's migrate Job, named after the release (RN-6)",
-  "kobe-audit":
-    "audit export file name (RN-3) vs the syslog APP-NAME and the Better Auth plugin id (RN-5)",
-  "kobe-egress": "a test's temp directory (RN-3) vs the egress proxy's Basic auth realm (RN-5)",
   "kobe-sign-in-throttle":
     "the Better Auth plugin id (RN-5) vs the derived-hash label of the throttle key (kept)",
 };

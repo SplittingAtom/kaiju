@@ -34,6 +34,7 @@ scripts/check-site-wording.mjs /\(\?:k\(\?:obe\|aiju\) \)|this Kobe install/
 services/server/src/memory/checks/lint.ts /(?<=\|)kobe(?=\|(?:kaiju\|)?claude)/
 
 == permanent: Postgres settings and advisory-lock keys (spec §3 stays 2, RN3)
+packages/db/src/team-setters.test.ts packages/db/src/run-usage-retention-setting.test.ts /(?<![@\w])kobe(?=\\?\.)/
 ** /\bkobe\.(?:team_id|break_glass_grant|break_glass_actor|run_usage_retention|restore(?:\.\w+)?|legal_hold|audit\.pii_sweep)\b/
 
 == permanent: Postgres roles, functions, tables, columns, policies and the LISTEN/NOTIFY channels (spec §3 stays 2, §5 no migration)
@@ -82,6 +83,7 @@ services/server/src/models/sync.ts /\("kobe" \+ 40\)/
 ** /\bkobe-vllm\b/
 ** /\bkobe-(?=' \|\| p\.id|\$\{id\}|<id>|<provider>-<fingerprint>|vk-)/
 services/server/src/models/config.ts /(?<=\.default\()"kobe"(?=\))/
+** /(?<=adminUsername: )"kobe"|\bkobe-embed-stub\b/
 ** /\bkobe-conversion:/
 services/server/src/models/** docs/guide/memory.md /\bkobe-(?:mac-mini|ollama[\w-]*)\b/
 
@@ -101,12 +103,13 @@ services/sandbox-agent/src/memory/semantic-context.ts services/sandbox-agent/src
 
 == provisional: (Q1) Specs of earlier lanes are design records like the gate documents
 docs/specs/** /kobe/i
+** /(?<=spec |specs\/|\* )kobe-admin-mcp(?= §| KA|\.md)/
 
 == provisional: (Q2) Skill package manifest file name, inside packages that already exist outside the database (like kobe.dev/skill/v1)
-** /\bkobe\.skill\.yaml\b/i
+** /\bkobe\\?\.skill\\?\.yaml\b/i
 docs/skill-package.md /\bcompatibility\.kobe\b/
-apps/web/lib/skills/lint.ts /kobe\\\.skill\\\.yaml/
 packages/protocol/src/skill-package/manifest.ts /^\s*kobe(?=: z\.)/
+** /(?<=compatibility: \{ )kobe(?=: ")/
 
 == provisional: (Q3) Built-in connector: id `kobe`, its MCP tool names, API routes (`/v1/team/connectors/kobe`, a catalog skill's `/kobe/compare` and `/kobe/reset`, server and web client together) and the site settings keys stored in the database
 ** /\bmcp__kobe__\w*/
@@ -122,22 +125,29 @@ docs/** **/*.md /\*\*kobe\*\*|\bkobe connector|the-kobe-connector|\bmcp__kobe_(?
 ** /\bmcp__<kobe>__/
 ** /(?<=\b(?:builtin\}?|kind|BuiltinServer|kind \?\?)\s{0,3}(?:=|:|===|!==)?\s{0,3}(?:\{ kind: )?)["'`]kobe["'`]/
 ** /(?<=\[)"kobe"(?=, (?:"kobe-builtin"|deps\.))/
+** /(?<="(?:list|call):)kobe(?=")|(?<=CONNECTOR_ID, name: )"kobe"/
+** /(?<=builtin, )"kobe"|(?<=builtin: "kobe" \| "git" = )"kobe"/
 ** /(?<='member', )'kobe'/
 ** /(?<=\? |\?\? |name \?\? )"kobe"/
 ** /(?<=named )kobe\b(?!-)/
 ** /\bkobe(?=: (?:await withTeam|obj\(\{))|(?<=\{ )kobe(?=: K(?:obe|aiju)TeamConnector \})|(?<=res\.data\.)kobe\b|(?<=BUILTIN_CONNECTORS = \[)"kobe"|(?<=POST )\/kobe(?=\/(?:compare|reset))/
 ** /`kobe-\$\{decided\.run_id\}`/
+packages/db/src/kobe-builtin-upgrade.db.test.ts /(?<=named `)kobe(?=`)|(?<=\[ids\.k(?:obe|aiju), )"kobe"|(?<=name: )"kobe"(?=, builtin)/
+** /(?<=PinnedTools?\()"kobe(?:_builtin)?"|\bmcp__kobe_(?:builtin|git)__\w*|(?<=segments: \[)"kobe(?:_builtin)?"|(?<=took the name `)kobe(?=`)/
+apps/web/components/admin/team-connectors-page.test.tsx apps/web/components/admin/team/agent-builder/agent-creator.test.tsx /(?<![@\w\/-])kobe(?![\w\/-])|(?<=name: \/)kobe(?=\/)/
 packages/db/src/connectors/builtin.ts packages/db/src/schema/connectors.ts services/server/src/k{obe,aiju}-mcp/** services/server/src/threads/admin-redaction.ts services/server/src/git-tools/catalog.ts apps/web/lib/admin/api/team/connectors.ts /`kobe`|"kobe" in hex/
 
 == provisional: (Q4) Names persisted in workspace volumes and Pi session files: the `.kobe/` folder, custom entry types, the Pi provider id
 ** /(?<![\w-])\.kobe\b(?!-)/
-** /\bkobe\.(?:branch|app_card|skipped_actions|event_dropped|model_error|app_call|compaction|turn|reload-drafts|notebook\.html)\b/
+** /\bkobe\\?\.(?:branch|app_card|skipped_actions|event_dropped|model_error|app_call|compaction|turn|reload-drafts|notebook\.html)\b/
 ** /\bprovider["']?\s*:\s*["']kobe["']/
 ** /["']providers?["']\s*:\s*\{\s*["']kobe["']/
-docs/skill-evals.md /\?kobe\/\*/
+docs/skill-evals.md packages/protocol/src/skill-evals/outputs.test.ts /\?kobe\/\*/
+packages/protocol/src/sandbox-wire/workspace-sync.test.ts /(?<=")\.kobex(?=")/
 docs/design/paired-tool-uid.md /`kobe` provider/
 ** /\bkobe-moved\b|\/?kobe-branch-summary\b|\bkobe\.branch_summary(?:_result)?\b|\bkobe-context(?:\\?\.json)?\b|\bkobe-(?:memory-picks|sync-conflict)\b|\.kobe-sync-|`kobe\.` prefix/
-** /(?<=KOBE_PROVIDER(?:_ID)? = )"kobe"|(?<=`)kobe(?=` (?:Pi )?provider)|(?<=the )kobe(?= (?:Pi )?provider)|\bproviders\.kobe\.models\b|\bkobe (?=model(?: of| a tool))|(?<=only the )kobe(?= provider)/
+** /(?<=["'])kobe(?=\/openai\/gpt-fake")|(?<='\{")kobe(?=":\{"models")|(?<=provider !== )"kobe"|(?<=defaultProvider: )"kobe"|(?<=models\.json"\), "utf8"\)\)\.toContain\()"kobe"/
+** /(?<=K(?:OBE|AIJU)_PROVIDER(?:_ID)? = )"kobe"|(?<=`)kobe(?=` (?:Pi )?provider)|(?<=the )kobe(?= (?:Pi )?provider)|\bproviders\.kobe\.models\b|\bkobe (?=model(?: of| a tool))|(?<=only the )kobe(?= provider)/
 
 == provisional: (Q5) Model ids `kobe-local/...` stored in model catalogs (like the spec's gateway names)
 ** /\bkobe-local(?:\/[\w.:-]*)?/
@@ -161,9 +171,11 @@ services/server/src/sandbox/constants.ts /(?<=the `)kobe(?=` user)/
 ** /\b(?:z\.enum|oneOfStrings)\(\[[^\]]*["'`]kobe["'`]/
 docs/file-editing.md /(?<=scope `)kobe(?=`)/
 ** /(?<=\bpublisher\}?(?:::text)?\s{0,2}(?:=|<>|!==|===)\s{0,2})['"]kobe['"]|(?<=registry_publisher", \[|REGISTRY_PUBLISHERS = \[|::text IN \(|oneOfStrings\()["']kobe["']|(?<=\bpublisher )`kobe`|(?<=VALUES \([^\n]*)'kobe'/
-** /\bnot_kobe\b|\bkobe_skill\b|\bkobe-skill-scanner\b/
+** /\bnot_kobe\b|\bkobe_skill\b|\bkobe-skill-scanner\b|(?<=skillRow\("\w+", )"kobe"/
 ** /(?<=source: "pi" \| )"kobe"|(?<=`pi` = Pi built-ins; )`kobe`|(?<=\. )`kobe`(?=: Kaiju-owned)|`sandbox`\/`kobe`|(?<=\* )`kobe` \(Kaiju's own scanner\)/
 services/server/src/policy/settings.ts /^\s*kobe(?=: \{ read)|`kobe`-scoped/
+apps/web/components/admin/site/catalog-skill.test.tsx /^\s*kobe(?=: (?:ATTACHED|\{))/
+** /(?<=^\s*)'kobe'(?=\$\{values\})/
 packages/db/src/schema/registry.ts /`kobe`/
 ** /(?<=and )kobe(?= tools)/
 apps/web/components/admin/site/catalog-k{obe,aiju}-panel.tsx apps/web/components/admin/site/catalog-skill-page.tsx /(?<![@\w-])kobe(?![\w\/-])/
@@ -173,11 +185,12 @@ apps/web/components/admin/site/catalog-k{obe,aiju}-panel.tsx apps/web/components
 ** /\bkobe\.splittingatom\.io\b(?:\/[\w-]*)?/
 
 == provisional: (Q10) Workspace git branch prefix `kobe/<member>/...` pushed to members' repositories
-** /\bkobe\/(?=[a-z-]+\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)/
+** /\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")/
 
 == provisional: (Q11) Agent file (orbit) export section `kobe:`, read back from files outside the database
 services/server/src/agents/orbit/** /^\s*kobe:/
 services/server/src/agents/orbit/** /`kobe-\$\{slug\}-v\$\{version\}`/
+services/server/src/agents/orbit/** /(?<=^name: |toBe\(")kobe(?=-sales-analyst-v\d)|(?<=metadata\.)kobe\b/
 
 == provisional: (Q12) Built-in skill packages and versioned model prompts: their bytes are pinned (published package hashes, prompt fixtures), so any rename in them needs a new skill or prompt version with new recordings; the owner decides whether they change
 services/server/builtin-skills/** /kobe/i
@@ -189,19 +202,20 @@ services/server/src/gallery/** services/server/src/apps/app-launch-agent.db.test
 ** /(?<!older )\bKobe agent\b|\bagent,? Kobe\b|site default \(Kobe\)|\bgallery Kobe\b/
 docs/install.md /\(key `kobe`\)/
 ** /(?<=gallery\/agents\/|\.\/agents\/)kobe(?=\.(?:js|ts)\b)|\bgallery-kobe\b/
-** /(?<=KOBE_(?:GALLERY|AGENT)_KEY = )"kobe"|\(e\.g\. "kobe"\)|\bkobe-ops\b/
+** /(?<=K(?:OBE|AIJU)_(?:GALLERY|AGENT)_KEY = )"kobe"|\(e\.g\. "kobe"\)|\bkobe-ops\b/
 services/server/src/gallery/agents/** /\bkobe connector\b/
-services/server/src/agents/default-agent.ts services/server/src/skills/drafts/test-chat.ts apps/web/lib/skills/from-conversation.ts /\bkobe\b/
+services/server/src/gallery/definitions.test.ts /(?<=toBe\()"kobe"/
+** /(?<=key: )"kobe"(?=,| action)|(?<=galleryId\()"kobe"|(?<='slug', )'kobe'|(?<=the gallery agent `)kobe(?=`)|(?<=^\s*\[)"kobe"(?=, 1, null\])/
+apps/web/components/agents/agents-admin.test.tsx /(?<=key: )"kobe"|(?<=download: ")kobe(?=\.md")/
+apps/web/components/chat/agent-picker.test.tsx /(?<=")Kobe(?=Team|Personal"|Built-in")|(?<="KobeTeam)kobe(?=-ops")/
+services/server/src/agents/default-agent.ts services/server/src/skills/drafts/test-chat.ts apps/web/lib/skills/from-conversation.ts /(?<![@\w-])kobe(?![\w\/-])/
 apps/web/components/admin/site/gallery-agent-editor.test.tsx apps/web/components/admin/skill-reach.test.tsx apps/web/components/admin/team-default-agent-page.test.tsx apps/web/components/agents/agents-admin.test.tsx apps/web/components/agents/agents-fork-lineage.test.tsx apps/web/components/agents/agents-page.test.tsx apps/web/components/chat/agent-picker.test.tsx apps/web/components/chat/default-agent.test.tsx apps/web/components/chat/plus-menu.test.tsx apps/web/components/chat/suggestions.test.tsx apps/web/components/chat/thread-agent.test.tsx apps/web/components/skills/test-pane.test.tsx apps/web/lib/chat/agent-origin.ts apps/web/lib/chat/testing/pi-sequences.ts apps/web/lib/skills/from-conversation.test.ts e2e/browser/tests/my-shared-cases.spec.ts e2e/browser/tests/skill-creator-workbench.spec.ts packages/cli/src/testing/fixtures.ts packages/protocol/src/team-default-agent.test.ts services/server/src/agents/agent-roster-views.db.test.ts /\bKobe\b/
 
 
 # ---------------------------------------------------------------------------------------------
-# To rename. Specific steps sit above the generic ones (the RN-3 tails last), so the
+# To rename. Specific steps sit above the generic ones (the Triage tails last), so the
 # order of work reads bottom-up.
 # ---------------------------------------------------------------------------------------------
-
-== RN-3: Generated: pnpm-lock.yaml package names; `pnpm install` rewrites them after the step (not in the step's pattern list)
-pnpm-lock.yaml /@kobe\/[\w.-]*/
 
 == RN-6: Generated: image paths and binaries in the licence inventories; `pnpm licenses:update` and the images' third-party-licenses.json refresh rewrite them (not in the step's pattern list)
 THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b|\bkobe-(?:sandbox-agent|runas|reclaim)\b/
@@ -213,17 +227,6 @@ THIRD_PARTY_LICENSES.md NOTICE images/*/third-party-licenses.json /\/opt\/kobe\b
 
 == RN-5: Paired values: telemetry names the e2e harness asserts and the code emits (renamed together)
 ** /\bkobe\.(?:run|command\.kind)\b(?![\w-])/
-
-== RN-3: Paired values: fake-model markers and test values the e2e harness and the code or its tests share (renamed together)
-** /\bkobe-(?:e2e|faux|learn|long-answer|slow-start|tool-step)\b/
-** /\bkobe\.e2e\.member\b/
-** /\bdata-kobe[\w-]*/
-** /\bfetch_kobe\b/
-** /\bcm-kobe-[\w-]+/
-** /\bkobe\.acme\.test\b/
-** /\bkobe\d+[\w-]*/
-** /[\w.+-]*kobe[\w.+-]*@[\w-]+(?:\.[\w-]+)+/i
-** /\bkobe_live_value\b/
 
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
@@ -276,6 +279,7 @@ charts/**/Chart.yaml /^name: kobe$/
 ** /\bkobe-(?:runas|reclaim|kernel-bridge)\b/
 ** /\/tmp\/kobe-pi\b[\w-]*|(?<=PI_PRIVATE_PREFIX = )"kobe-pi-"/
 scripts/check-images.sh /(?:ghcr\.io\/splittingatom\/|:-)kobe-/
+services/sandbox-agent/src/egress/egress-wiring.test.ts /(?<=")kobe(?=: the sandbox's egress token)/
 path images/** /kobe/i
 
 == RN-6: Pi extensions installed in the sandbox image (`/opt/kobe/pi-extensions/kobe-*`), with their source directories, so the image and its references move in one step
@@ -293,6 +297,7 @@ path services/sandbox-agent/** /\bkobe-(?:policy|tools|models|exec)\b/
 charts/** Tiltfile /\bkobe-migrate(?:-initial)?\b/
 scripts/dev-cluster.sh /(?<=KOBE_CLUSTER:-)kobe\b/
 scripts/site-identifiers.mjs /(?<=helm install )kobe\b/
+docs/install.md /(?<=IN DATABASE )kobe\b/
 
 == RN-5: HTTP headers (`x-kobe-team` accepted for one release)
 ** /\bx-kobe-[\w-]+/i
@@ -320,51 +325,11 @@ docs/perf/latency-queries.sql /\bkobe_(?:side_p95_ms|share_p50|p50|p95)\b|`kobe_
 == RN-4: Environment variables (KAIJU_* with a one-release KOBE_* fallback)
 ** /\bKOBE_(?!(?:WRITES_PER_HOUR_KEY|WRITES_PER_HOUR_DEFAULT|TOOLS_TIMEOUT_MS|TOOL|TEAM_SAMPLES|SKILL_NAMES_ADDED_LATER|SKILL_NAMES|SKILL_IDS|SITE_TOOLS|SITE_SAMPLES|SEED_RETRY|SECTIONS|RESULT_MAX_BYTES|READS_PER_MINUTE_KEY|READS_PER_MINUTE_DEFAULT|PROVIDER_ID|PROVIDER|PAGE_MAX|PACKAGES_DIR|MODEL_ERROR_PREFIX|MEMORY_ITEM_TOOLS|MCP_TEAM_SETTING|MCP_TEAM_LEVELS|MCP_TEAM_LEVEL_DEFAULT|MCP_MODES|MCP_MODE_LABELS|MCP_MODE_KEY|MCP_MODE_DEFAULT|MCP_HINTS|LIMITS|LIMIT_MIN|LIMIT_MAX|LEVEL_LABELS|GALLERY_KEY|FILE|EVENT_TYPES|EVENT_DROPPED_TYPE|ENDPOINTS|DOCS_TOOLS|DIR|BUILTIN_NAMES|BUILTIN_CONNECTOR_URL|BUILTIN_CONNECTOR_ID|AGENT_KEY|ADMIN_WRITE_REASON|ADMIN_TOOLS|ADMIN_TEXT|ADMIN_SUMMARY_MAX|ADMIN_RESULT_HIDDEN|ADMIN_NOT_REMEMBERED|ADMIN_NOT_ALLOWED_REASON)\b)[A-Z0-9_]*/
 
-== RN-3: Workspace packages and their imports; binaries (`kobe` operator CLI, `kobe-migrate`, `kobe-db-wait`)
-** /@kobe\/[\w./-]*/
-** /\bkobe-(?:migrate|db-wait)\b/
-** /\bkobe (?=backup|restore|projects|sso|command-line|CLI)/
-packages/cli/package.json /"kobe": "/
-
-== RN-3: Constants named KOBE_* that are not environment variables
-** /\bKOBE_(?:WRITES_PER_HOUR_KEY|WRITES_PER_HOUR_DEFAULT|TOOLS_TIMEOUT_MS|TOOL|TEAM_SAMPLES|SKILL_NAMES_ADDED_LATER|SKILL_NAMES|SKILL_IDS|SITE_TOOLS|SITE_SAMPLES|SEED_RETRY|SECTIONS|RESULT_MAX_BYTES|READS_PER_MINUTE_KEY|READS_PER_MINUTE_DEFAULT|PROVIDER_ID|PROVIDER|PAGE_MAX|PACKAGES_DIR|MODEL_ERROR_PREFIX|MEMORY_ITEM_TOOLS|MCP_TEAM_SETTING|MCP_TEAM_LEVELS|MCP_TEAM_LEVEL_DEFAULT|MCP_MODES|MCP_MODE_LABELS|MCP_MODE_KEY|MCP_MODE_DEFAULT|MCP_HINTS|LIMITS|LIMIT_MIN|LIMIT_MAX|LEVEL_LABELS|GALLERY_KEY|FILE|EVENT_TYPES|EVENT_DROPPED_TYPE|ENDPOINTS|DOCS_TOOLS|DIR|BUILTIN_NAMES|BUILTIN_CONNECTOR_URL|BUILTIN_CONNECTOR_ID|AGENT_KEY|ADMIN_WRITE_REASON|ADMIN_TOOLS|ADMIN_TEXT|ADMIN_SUMMARY_MAX|ADMIN_RESULT_HIDDEN|ADMIN_NOT_REMEMBERED|ADMIN_NOT_ALLOWED_REASON)\b/
-
-== RN-3: Identifiers and types (KobeEvent, FakeKobe, kobeTool, useKobeExtras, ...)
-** /\b\w*Kobe(?=[A-Z_\d]|\w*[a-z_])\w*|\b\w*[a-z\d_]Kobe\b/
-** /\bkobe(?=[A-Z])\w*/
-** /\b\w*[a-z\d]KOBE\w*|\b\w*_KOBE\w*/
-** /(?<=-D)KOBE_\w+/
-**/*.{ts,tsx,mts,cts,js,mjs,cjs,py,sh} /\bKOBE\b(?!-)/
-** /\bKOBE(?=\.[A-Za-z]\w*(?!\.yaml))|\bKOBE-(?=[A-Z]{2})[A-Z-]+/
-
-== RN-3: DOM data attributes, CSS custom properties and classes
-** /--kobe-[\w-]+/
-** /\bkobe-(?:panel|rail-[\w-]+|composer[\w-]*|chat-main|artifact-column|thread-title|offloaded|skipped|marker|workbench-editor|threads-file-[\w-]+|search|problem|preview|files-confirm|edit-message|budget|bar-menu|app-card|workspace-rail|prompt-tokens|runtime-)\b/
-
-== RN-3: File and directory names, and the imports and references that name them
-path ** /kobe/i
-** /(?:\.{1,2}\/|\/)(?:[\w.-]+\/)*(?:kobe-(?:admin-guard|admin-mcp|builtin-connector|builtin-upgrade|connector-card|detach|exec|guide-seed|guide-skill-upgrade|kernel-bridge|mcp|models|packages|policy|published-skills|rate-limits|reclaim|runas|runtime|seed|site-samples|skills|team-samples|tools)|(?:catalog|fake|gallery)-kobe|kobe_rules|kobe(?=\.(?:ts|js)\b))(?![\w])[\w.-]*/
-** /\b(?:kobe-(?:admin-guard|admin-mcp|builtin-connector|builtin-upgrade|connector-card|detach|exec|guide-seed|guide-skill-upgrade|kernel-bridge|mcp|models|packages|policy|published-skills|rate-limits|reclaim|runas|runtime|seed|site-samples|skills|team-samples|tools)|(?:catalog|fake|gallery)-kobe|kobe_rules|kobe(?=\.(?:ts|js)\b))(?![\w])[\w.*-]*\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|md|css|snap)\b/
-** /\b(?:kobe-(?:admin-guard|admin-mcp|builtin-connector|builtin-upgrade|connector-card|detach|exec|guide-seed|guide-skill-upgrade|kernel-bridge|mcp|models|packages|policy|published-skills|rate-limits|reclaim|runas|runtime|seed|site-samples|skills|team-samples|tools)|(?:catalog|fake|gallery)-kobe|kobe_rules|kobe(?=\.(?:ts|js)\b))(?![\w])\/(?:[\w.*-]+\/)*[\w.*-]+\.(?:ts|tsx|js|mjs|cjs|py|sh|json|yaml|yml|css)\b/
-** /\bkobe-mcp(?=: )/
-
-== RN-3: Server modules named after the product (admin MCP, its guard, the seed)
-** /\bkobe-(?:admin-mcp|admin-guard|seed)\b/
-
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
 # triages them: narrows the pattern, renames, or moves an entry to another group.
 # ---------------------------------------------------------------------------------------------
 
-== RN-3: Triage: Test fixture names: databases, temp dirs, users, domains, claim values (test code only)
-**/*.test.* **/*.spec.* **/testing/** **/test-support/** **/test/** **/fixtures/** !charts/** !e2e/** !images/** /[\w.@$:-]*kobe[\w.@$:-]*/
-
 == RN-6: Triage: Lower-case names in the chart, e2e harness, CI workflows and images (release name `kobe`, resource names)
 charts/** e2e/** .github/** images/** dev/** ci/** Tiltfile /[\w.@$:-]*kobe[\w.@$:-]*/
 docs/** **/*.md /(?:-n |namespace `|release `|cluster (?:delete )?"?|-d |datname = '|bucket[ =]|svc\/|deploy\/|install |upgrade |create namespace |BUCKET=)kobe\b[\w$-]*|\bkobe-[\w$-]*(?:restored|keys|auth|smtp|s3|db|pg[\w-]*|skill-mirror|sso-contoso|\$s)\b|\bkobe-dev-|\bkobe\.bifrostConfig\b|\bkobe\.example\.com\b|\bkobe:(?=\$KOBE_BIFROST)|\bkobe-erasure\b|`kobe\/`|charts\/kobe\b/
-
-== RN-3: Triage: Lower-case names in documentation that name code values (the `kobe` CLI, backup role, connection application names, test database and temp-dir names, CSS names, message prefixes, labels); each moves with the step that renames the code it names (KOBE-746 sorted the rest out)
-docs/** **/*.md /[\w.@$:-]*kobe[\w.@$:-]*/
-
-== RN-3: Triage: Lower-case names in application code (event names, CSS keyframes, ids, labels)
-apps/** services/** packages/** tools/** scripts/** /[\w.@$:-]*kobe[\w.@$:-]*/
