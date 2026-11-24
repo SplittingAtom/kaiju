@@ -25,7 +25,32 @@ export function loadAllowlist(root) {
 
 /** The old name, any case. Every occurrence of these four letters is accounted for. */
 export const OLD = /kobe/gi;
-export const STEPS = ["RN-2", "RN-3", "RN-4", "RN-5", "RN-6", "RN-7", "RN-8", "RN-9"];
+/**
+ * The steps in the order they run (README "How a step uses it"; the guard and `--apply` enforce it).
+ * RN-12..RN-20 (KOBE-825..833) carry out the owner's answers of 2026-11-24 (KOBE-824) and run
+ * before RN-9, the fresh test install, which checks them all. RN-10 (the next release's removal of
+ * the fallbacks, KOBE-754) and RN-11 (KOBE-824, spec only) own no allowlist groups and are not
+ * listed: a listed step without groups counts as done, so RN-10 would be done out of order.
+ */
+export const STEPS = [
+  "RN-2",
+  "RN-3",
+  "RN-4",
+  "RN-5",
+  "RN-6",
+  "RN-7",
+  "RN-8",
+  "RN-12",
+  "RN-13",
+  "RN-14",
+  "RN-15",
+  "RN-16",
+  "RN-17",
+  "RN-18",
+  "RN-19",
+  "RN-20",
+  "RN-9",
+];
 export const PERMANENT = "permanent";
 /** Held like permanent until the owner answers the group's question; not done at the end. */
 export const PROVISIONAL = "provisional";
@@ -80,11 +105,16 @@ export function globToRegExp(glob) {
 /**
  * Parses an allowlist or step file. Format, one item per line:
  *   `# comment` and blank lines are ignored;
- *   `== <step>: <reason>` starts a group (<step> is `permanent`, `provisional` or RN-2..RN-9);
+ *   `== <step>: <reason>` starts a group (<step> is `permanent`, `provisional` or one of STEPS,
+ *   optionally followed by its ticket: `== RN-13 (KOBE-826): <reason>`);
  *   `[path] <glob>... /<regex>/[i]` is an entry of the current group: globs (a leading `!`
  *   excludes) select files, the regex is matched line by line against the file's contents (or
  *   against the whole path with the `path` keyword).
  */
+const HEADER = new RegExp(
+  `^==\\s*(${[PERMANENT, PROVISIONAL, ...STEPS].join("|")})(?:\\s+\\(KOBE-\\d+\\))?\\s*:\\s*(\\S.*)$`,
+);
+
 export function parseList(text, source = "list") {
   const groups = [];
   const entries = [];
@@ -92,7 +122,7 @@ export function parseList(text, source = "list") {
     const line = raw.trim();
     const where = `${source}:${index + 1}`;
     if (line === "" || line.startsWith("#")) return;
-    const header = /^==\s*(permanent|provisional|RN-[2-9])\s*:\s*(\S.*)$/.exec(line);
+    const header = HEADER.exec(line);
     if (header) {
       groups.push({ step: header[1], reason: header[2], line: index + 1, entries: [] });
       return;

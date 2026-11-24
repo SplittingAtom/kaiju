@@ -1,0 +1,12 @@
+# RN-18 (KOBE-831): stored enum values and rows renamed with a data migration; the gallery agent renamed where unchanged (owner answers of 2026-11-24, docs/specs/rename-kaiju.md §11).
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
+# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
+# permanent group with their reason. Until then the dry run lists every occurrence as left for
+# hand edits.
+
+== RN-18 (KOBE-831): The gallery agent's name "Kobe": its definition (name and prompt) is pinned by its generation, and raising the generation re-publishes the agent on every existing install; renamed where an install has not changed it, together with the tests that read the seeded name and the text that names the agent (owner decision 2026-11-24, was Q13)
+
+== RN-18 (KOBE-831): Value `kobe` in persisted enums and rows (registry publisher, memory/file source and scope, theme preset, built-in agent slug and connector name): renamed with a data migration (owner decision 2026-11-24, was Q8)

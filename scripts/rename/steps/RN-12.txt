@@ -1,0 +1,10 @@
+# RN-12 (KOBE-825): skill manifest file name and `compatibility` field: write the new names, accept both (owner answers of 2026-11-24, docs/specs/rename-kaiju.md §11).
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
+# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
+# permanent group with their reason. Until then the dry run lists every occurrence as left for
+# hand edits.
+
+== RN-12 (KOBE-825): Skill package manifest file name and its `compatibility.kobe` field, inside packages that already exist outside the database (like kobe.dev/skill/v1): the new names written, both accepted (owner decision 2026-11-24, was Q2)

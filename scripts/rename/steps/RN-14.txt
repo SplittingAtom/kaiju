@@ -1,0 +1,10 @@
+# RN-14 (KOBE-827): `.kobe/` sandbox folder, Pi entry types and provider id, renamed with a migration including workspace volumes (owner answers of 2026-11-24, docs/specs/rename-kaiju.md §11).
+#
+# Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
+# where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
+# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
+# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
+# permanent group with their reason. Until then the dry run lists every occurrence as left for
+# hand edits.
+
+== RN-14 (KOBE-827): Names persisted in workspace volumes and Pi session files (the `.kobe/` folder, custom entry types, the Pi provider id): renamed with a migration, workspace volumes included (owner decision 2026-11-24, was Q4)
