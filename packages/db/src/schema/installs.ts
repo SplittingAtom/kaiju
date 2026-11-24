@@ -48,7 +48,7 @@ export const teamSkillInstalls = pgTable(
     // Users are deactivated, never deleted (NO ACTION); a Default install names who tagged it,
     // or no one when Kaiju's own Default sync made it (`by_kobe`, KOBE-317).
     installedBy: uuid().references(() => users.id),
-    byKaiju: boolean().notNull().default(false),
+    byKobe: boolean().notNull().default(false),
     /**
      * When the team last changed the install's pin mode, access or origin (KOBE-314): set, the
      * install is "touched" and a Site admin's move of Default installs to a new major skips it;
@@ -67,7 +67,7 @@ export const teamSkillInstalls = pgTable(
       foreignColumns: [registryVersions.id, registryVersions.skillId],
     }),
     index("team_skill_installs_skill_idx").on(t.skillId),
-    check("team_skill_installs_by_kobe", sql`${t.byKaiju} = (${t.installedBy} IS NULL)`),
+    check("team_skill_installs_by_kobe", sql`${t.byKobe} = (${t.installedBy} IS NULL)`),
   ],
 );
 

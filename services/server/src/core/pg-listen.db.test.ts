@@ -57,7 +57,7 @@ describe("shared LISTEN connection (KOBE-704)", () => {
       const listed = await h.admin.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM pg_stat_activity
           WHERE datname = current_database() AND application_name LIKE 'kaiju-%'
-            AND application_name NOT IN ('kobe-server', 'kaiju-server-listen', 'kaiju-event-stream')`,
+            AND application_name NOT IN ('kaiju-server', 'kaiju-server-listen', 'kaiju-event-stream')`,
       );
       // No other dedicated LISTEN session (the pre-KOBE-704 kaiju-event-hub, kobe-sandbox-bus).
       expect(listed.rows[0]?.n).toBe(0);
@@ -75,9 +75,9 @@ describe("shared LISTEN connection (KOBE-704)", () => {
         WHERE datname = current_database() AND usename <> current_user AND backend_type = 'client backend'`,
     );
     const names = rows.map((r) => r.name);
-    expect(names).toContain("kobe-server");
+    expect(names).toContain("kaiju-server");
     for (const name of names) {
-      expect(["kobe-server", "kaiju-server-listen", "kaiju-event-stream"]).toContain(name);
+      expect(["kaiju-server", "kaiju-server-listen", "kaiju-event-stream"]).toContain(name);
     }
   });
 });

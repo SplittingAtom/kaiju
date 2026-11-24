@@ -82,7 +82,7 @@ describe("converting a project with history (ac-1, ac-3)", () => {
     );
     expect(log[1]).toMatch(
       new RegExp(
-        `^${memberRow.name}\\|[0-9a-f]{10}\\+[a-z0-9-]+@users\\.noreply\\.kobe\\.test\\|${memberRow.name} via Kaiju\\|Add a script$`,
+        `^${memberRow.name}\\|[0-9a-f]{10}\\+[a-z0-9-]+@users\\.noreply\\.kaiju\\.test\\|${memberRow.name} via Kaiju\\|Add a script$`,
       ),
     );
     expect(log[1]).not.toContain(memberRow.email);

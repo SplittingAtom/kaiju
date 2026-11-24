@@ -58,7 +58,7 @@ const usage = (f: Fixture, who: string, kind: UsageKind): ModelUsageRecord => ({
   kind,
   at: new Date(),
   route: "openai",
-  model: "kaiju-unpriced/m",
+  model: "kobe-unpriced/m",
   status: 200,
   inputTokens: CALL,
   outputTokens: 0,

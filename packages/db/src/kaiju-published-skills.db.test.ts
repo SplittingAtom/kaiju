@@ -199,7 +199,7 @@ describe("Kaiju-published rows carry no person", () => {
       await expect(insert(kaijuSkill, "maintainer", ids.user, "2.0.0")).rejects.toMatchObject({
         constraint: "registry_versions_publisher_fk",
       });
-      await expect(insert(ids.skill, "kaiju", null, "2.0.0")).rejects.toMatchObject({
+      await expect(insert(ids.skill, "kobe", null, "2.0.0")).rejects.toMatchObject({
         constraint: "registry_versions_publisher_fk",
       });
     });
@@ -257,11 +257,11 @@ describe("Kaiju-published rows carry no person", () => {
       );
     });
     await inTeam(async (c) => {
-      const install = (byKaiju: boolean) =>
+      const install = (byKobe: boolean) =>
         c.query(
           `INSERT INTO team_skill_installs (team_id, skill_id, version_id, pin_mode, access, origin, by_kobe)
            VALUES ($1, $2, $3, 'within_major', 'default_on', 'default_tag', $4)`,
-          [ids.team, kaijuSkill, kaijuVersion, byKaiju],
+          [ids.team, kaijuSkill, kaijuVersion, byKobe],
         );
       await c.query("SAVEPOINT attempt");
       await expect(install(false)).rejects.toMatchObject({

@@ -170,7 +170,7 @@ const write = (ctx: CallContext) =>
       runId: undefined,
       at: new Date(),
       route: "openai",
-      model: "kaiju-unpriced/m",
+      model: "kobe-unpriced/m",
       status: 200,
       inputTokens: CALL - 20,
       outputTokens: 20,

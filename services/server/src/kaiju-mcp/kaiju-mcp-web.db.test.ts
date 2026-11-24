@@ -104,9 +104,9 @@ describe("Team console › Connectors: the Kaiju level", () => {
     const w = await h.world(null);
     const got = await w.admin.browser.get("/v1/team/connectors/kobe");
     expect(got.status).toBe(200);
-    expect(got.json.kaiju).toMatchObject({ name: "kaiju", mode: "admin", level: "docs" });
-    expect(got.json.kaiju.docs_tools).toContain(h.pi("docs_index"));
-    expect(got.json.kaiju.admin_tools).toContainEqual({
+    expect(got.json.kobe).toMatchObject({ name: "kobe", mode: "admin", level: "docs" });
+    expect(got.json.kobe.docs_tools).toContain(h.pi("docs_index"));
+    expect(got.json.kobe.admin_tools).toContainEqual({
       pi_name: h.pi("team_members_set_role"),
       title: expect.any(String),
       scope: "team",
@@ -118,8 +118,8 @@ describe("Team console › Connectors: the Kaiju level", () => {
       expected_level: "docs",
     });
     expect(set.status, JSON.stringify(set.json)).toBe(200);
-    expect(set.json.kaiju.level).toBe("read");
-    expect((await w.admin.browser.get("/v1/team/connectors/kobe")).json.kaiju.level).toBe("read");
+    expect(set.json.kobe.level).toBe("read");
+    expect((await w.admin.browser.get("/v1/team/connectors/kobe")).json.kobe.level).toBe("read");
     // The member's listing now has the admin reads the switches allow (none for a member's role).
     const stale = await w.admin.browser.put("/v1/team/connectors/kobe", {
       level: "read_write",
@@ -153,7 +153,7 @@ describe("Site console › Settings: the Kaiju MCP switch", () => {
     const off = await w.admin.browser.put("/v1/site/settings", { kobeMcpMode: "off" });
     expect(off.status, JSON.stringify(off.json)).toBe(200);
     expect(off.json.kobeMcpMode).toBe("off");
-    expect((await w.admin.browser.get("/v1/team/connectors/kobe")).json.kaiju.mode).toBe("off");
+    expect((await w.admin.browser.get("/v1/team/connectors/kobe")).json.kobe.mode).toBe("off");
     expect((await w.admin.browser.put("/v1/site/settings", { kobeMcpMode: "all" })).status).toBe(
       400,
     );
@@ -427,7 +427,7 @@ describe("the composer's Connectors list the built-in Kaiju connector", () => {
         (await p.browser.get("/v1/threads/connectors")).json.connectors as Record<string, unknown>[]
       ).find((c) => c.builtin !== undefined);
     expect(await kaijuRow(w.admin)).toMatchObject({
-      name: "kaiju",
+      name: "kobe",
       enabled: true,
       problem: null,
       builtin: { kind: "kobe", admin: "read" },

@@ -157,7 +157,7 @@ describe("a commit from the Commit dialog on a Repo (ac-1)", () => {
       fallback: false,
     });
     const branch = first.json.branch as string;
-    expect(branch).toMatch(/^kaiju\/[a-z0-9-]+\/explain-more-[0-9a-f]{7}$/);
+    expect(branch).toMatch(/^kobe\/[a-z0-9-]+\/explain-more-[0-9a-f]{7}$/);
     // main is untouched; the branch holds a commit on top of it, authored as the owner.
     expect(bare(r.full, ["rev-parse", "main"]).trim()).toBe(main);
     expect(bare(r.full, ["rev-parse", branch]).trim()).toBe(first.json.commit_sha);

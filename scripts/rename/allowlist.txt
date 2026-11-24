@@ -22,6 +22,7 @@ docs/guide/whats-new.md /^## Kobe is now Kaiju$/
 packages/db/drizzle/** /kobe/i
 packages/db/src/schema/** /\bkobe[A-Z]\w*(?=\s*:)/
 ** /\bkobeShippedVersion\b/
+** /\bbyKobe\b/
 docs/install.md /(?<=\(`)kobe(?=: … |: dropped team approval floor)/
 
 == permanent: The rename tooling and its spec name the old name on purpose
@@ -84,8 +85,10 @@ services/server/src/models/sync.ts /\("kobe" \+ 40\)/
 ** /\bkobe-(?=' \|\| p\.id|\$\{id\}|<id>|<provider>-<fingerprint>|vk-)/
 services/server/src/models/config.ts /(?<=\.default\()"kobe"(?=\))/
 ** /(?<=adminUsername: )"kobe"|\bkobe-embed-stub\b/
+** /\bkobe-(?=\$\{(?:provider|PROVIDER|providerId)\}\/|unpriced\/)/
+** /\bkobe-usage\//
 ** /\bkobe-conversion:/
-services/server/src/models/** docs/guide/memory.md /\bkobe-(?:mac-mini|ollama[\w-]*)\b/
+services/server/src/models/** docs/guide/memory.md apps/web/components/admin/memory-switches.test.tsx /\bkobe-(?:mac-mini|ollama[\w-]*)\b/
 
 == permanent: Migration file markers, read by the migrate runner in applied migrations
 ** /\bkobe:(?:hand-written|no-transaction)\b/
@@ -133,6 +136,7 @@ docs/** **/*.md /\*\*kobe\*\*|\bkobe connector|the-kobe-connector|\bmcp__kobe_(?
 ** /\bkobe(?=: (?:await withTeam|obj\(\{))|(?<=\{ )kobe(?=: K(?:obe|aiju)TeamConnector \})|(?<=res\.data\.)kobe\b|(?<=BUILTIN_CONNECTORS = \[)"kobe"|(?<=POST )\/kobe(?=\/(?:compare|reset))/
 ** /`kobe-\$\{decided\.run_id\}`/
 packages/db/src/kobe-builtin-upgrade.db.test.ts /(?<=named `)kobe(?=`)|(?<=\[ids\.k(?:obe|aiju), )"kobe"|(?<=name: )"kobe"(?=, builtin)/
+services/server/src/k{obe,aiju}-mcp/k{obe,aiju}-mcp-web.db.test.ts /(?<=json\.)kobe\b|(?<=name: )"kobe"/
 ** /(?<=PinnedTools?\()"kobe(?:_builtin)?"|\bmcp__kobe_(?:builtin|git)__\w*|(?<=segments: \[)"kobe(?:_builtin)?"|(?<=took the name `)kobe(?=`)/
 apps/web/components/admin/team-connectors-page.test.tsx apps/web/components/admin/team/agent-builder/agent-creator.test.tsx /(?<![@\w\/-])kobe(?![\w\/-])|(?<=name: \/)kobe(?=\/)/
 packages/db/src/connectors/builtin.ts packages/db/src/schema/connectors.ts services/server/src/k{obe,aiju}-mcp/** services/server/src/threads/admin-redaction.ts services/server/src/git-tools/catalog.ts apps/web/lib/admin/api/team/connectors.ts /`kobe`|"kobe" in hex/
@@ -176,6 +180,9 @@ docs/file-editing.md /(?<=scope `)kobe(?=`)/
 services/server/src/policy/settings.ts /^\s*kobe(?=: \{ read)|`kobe`-scoped/
 apps/web/components/admin/site/catalog-skill.test.tsx /^\s*kobe(?=: (?:ATTACHED|\{))/
 ** /(?<=^\s*)'kobe'(?=\$\{values\})/
+** /(?<=insert\(ids\.\w+, )"kobe"/
+services/server/src/skills/k{obe,aiju}-skills.db.test.ts /(?<=\b(?:sp|vp|prov): )"kobe"/
+services/server/src/skills/site-edit/site-catalog-edit.db.test.ts /(?<=json\.|after\.)kobe\b|(?<="maintainer", )kobe(?=: null)/
 packages/db/src/schema/registry.ts /`kobe`/
 ** /(?<=and )kobe(?= tools)/
 apps/web/components/admin/site/catalog-k{obe,aiju}-panel.tsx apps/web/components/admin/site/catalog-skill-page.tsx /(?<![@\w-])kobe(?![\w\/-])/
@@ -185,7 +192,7 @@ apps/web/components/admin/site/catalog-k{obe,aiju}-panel.tsx apps/web/components
 ** /\bkobe\.splittingatom\.io\b(?:\/[\w-]*)?/
 
 == provisional: (Q10) Workspace git branch prefix `kobe/<member>/...` pushed to members' repositories
-** /\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")/
+** /\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")|(?<=\/\^)kobe(?=\\\/\[a-z0-9-\]\+\\\/)/
 
 == provisional: (Q11) Agent file (orbit) export section `kobe:`, read back from files outside the database
 services/server/src/agents/orbit/** /^\s*kobe:/
@@ -204,7 +211,7 @@ docs/install.md /\(key `kobe`\)/
 ** /(?<=gallery\/agents\/|\.\/agents\/)kobe(?=\.(?:js|ts)\b)|\bgallery-kobe\b/
 ** /(?<=K(?:OBE|AIJU)_(?:GALLERY|AGENT)_KEY = )"kobe"|\(e\.g\. "kobe"\)|\bkobe-ops\b/
 services/server/src/gallery/agents/** /\bkobe connector\b/
-services/server/src/gallery/definitions.test.ts /(?<=toBe\()"kobe"/
+services/server/src/gallery/definitions.test.ts services/server/src/gallery/gallery-kobe.db.test.ts /(?<=toBe\(|toEqual\(\[)"kobe"/
 ** /(?<=key: )"kobe"(?=,| action)|(?<=galleryId\()"kobe"|(?<='slug', )'kobe'|(?<=the gallery agent `)kobe(?=`)|(?<=^\s*\[)"kobe"(?=, 1, null\])/
 apps/web/components/agents/agents-admin.test.tsx /(?<=key: )"kobe"|(?<=download: ")kobe(?=\.md")/
 apps/web/components/chat/agent-picker.test.tsx /(?<=")Kobe(?=Team|Personal"|Built-in")|(?<="KobeTeam)kobe(?=-ops")/

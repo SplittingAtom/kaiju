@@ -64,7 +64,7 @@ export async function queueDefaultSync(tx: KaijuTx, job: QueueDefaultSync): Prom
       major: job.kind === "remove" ? null : (job.target?.major ?? null),
       versionId: job.kind === "remove" ? null : (job.target?.id ?? null),
       requestedBy: job.requestedBy,
-      byKaiju: job.requestedBy === null,
+      byKobe: job.requestedBy === null,
     })
     .returning({ id: skillDefaultSyncs.id });
   if (!row) throw new Error("skills: Default sync insert returned no row");

@@ -70,7 +70,7 @@ describe("Workspace git settings (KOBE-761)", () => {
     expect(body.noreply_example).toBe(
       gitNoReplyEmail({ id: w.admin.id, name: name ?? "" }, "kaiju.test"),
     );
-    expect(body.noreply_example).toMatch(/^[0-9a-f]{10}\+[a-z0-9-]+@users\.noreply\.kobe\.test$/);
+    expect(body.noreply_example).toMatch(/^[0-9a-f]{10}\+[a-z0-9-]+@users\.noreply\.kaiju\.test$/);
     expect(body.noreply_example).not.toContain(w.admin.id);
   });
 

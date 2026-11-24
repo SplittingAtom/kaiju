@@ -54,7 +54,7 @@ const usage = (who: string, tokens: number, kind: UsageKind): ModelUsageRecord =
   kind,
   at: new Date(),
   route: "openai",
-  model: "kaiju-unpriced/m",
+  model: "kobe-unpriced/m",
   status: 200,
   inputTokens: tokens,
   outputTokens: 0,

@@ -31,7 +31,7 @@ const teamB = randomUUID();
 const alice = randomUUID();
 const bob = randomUUID();
 const provider = `b-${teamA.slice(0, 8)}`;
-const model = `kaiju-${provider}/m`;
+const model = `kobe-${provider}/m`;
 const now = new Date("2026-10-15T12:00:00Z");
 
 const usage = (over: Partial<ModelUsageRecord>): ModelUsageRecord => ({
@@ -187,7 +187,7 @@ describe("budget state", () => {
     await recordModelUsage(app.db, [
       usage({
         teamId: team,
-        model: "kaiju-unpriced/m",
+        model: "kobe-unpriced/m",
         inputTokens: 500,
         outputTokens: 400,
         cacheReadTokens: 500,

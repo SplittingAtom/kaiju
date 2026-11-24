@@ -74,7 +74,7 @@ describe("the one gallery agent (KOBE-254)", () => {
     expect(rows.map((r) => [r.gallery_key, r.current_version, r.archived_at])).toEqual([
       ["kobe", 1, null],
     ]);
-    expect(await listedSlugs()).toEqual(["kaiju"]);
+    expect(await listedSlugs()).toEqual(["kobe"]);
     const kaijuId = rows[0]?.id ?? "";
     const one = await carol.get(`/v1/agents/${kaijuId}`);
     expect(one.json.agent).toMatchObject({ scope: "gallery", name: "Kobe", currentVersion: 1 });
@@ -112,9 +112,7 @@ describe("the one gallery agent (KOBE-254)", () => {
 
     // The upgrade, then two more restarts: same outcome each time.
     for (let restart = 0; restart < 3; restart += 1) {
-      expect(await seed()).toEqual([
-        expect.objectContaining({ key: "kobe", action: "unchanged" }),
-      ]);
+      expect(await seed()).toEqual([expect.objectContaining({ key: "kobe", action: "unchanged" })]);
       const rows = await galleryRows();
       expect(rows).toHaveLength(7);
       for (const r of rows.filter((x) => x.gallery_key !== "kobe")) {
@@ -122,7 +120,7 @@ describe("the one gallery agent (KOBE-254)", () => {
         expect(r.archived_by, r.gallery_key).toBe("seed");
       }
       expect(rows.find((r) => r.gallery_key === "kobe")?.archived_at).toBeNull();
-      expect(await listedSlugs()).toEqual(["kaiju"]);
+      expect(await listedSlugs()).toEqual(["kobe"]);
     }
     for (const r of [...old, { id: draftId }]) {
       expect(await auditCount("agent.archived", r.id)).toEqual([

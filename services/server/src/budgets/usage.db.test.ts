@@ -31,7 +31,7 @@ const asUser = <T>(userId: string, fn: () => Promise<T>) =>
   runWithAuditContext({ actor: { kind: "user", id: userId }, ip: null, userAgent: null }, fn);
 
 const MODELS = "/v1/site/models";
-const GW = "kaiju-usage/m1";
+const GW = "kobe-usage/m1";
 
 const usage = (over: Partial<ModelUsageRecord>): ModelUsageRecord => ({
   id: randomUUID(),
@@ -172,7 +172,7 @@ describe("dashboards", () => {
     await recordModelUsage(db, [
       usage({ runId: bobRun }),
       usage({ runId: bobRun, usageSource: "estimated", inputTokens: 10, outputTokens: 10 }),
-      usage({ userId: ids.alice, model: "kaiju-usage/unpriced" }),
+      usage({ userId: ids.alice, model: "kobe-usage/unpriced" }),
       usage({ teamId: marketing, userId: ids.dave }),
     ]);
   });
@@ -190,7 +190,7 @@ describe("dashboards", () => {
     ]);
     expect(r.json.by_model.map((m: { model: string }) => m.model).sort()).toEqual([
       GW,
-      "kaiju-usage/unpriced",
+      "kobe-usage/unpriced",
     ]);
     expect(r.json.series).toHaveLength(1);
     expect(r.json.by_agent).toEqual([expect.objectContaining({ agent_id: null, calls: 3 })]);
@@ -248,7 +248,7 @@ describe("site breakdowns across teams (KOBE-43 review)", () => {
         usage({
           teamId,
           userId,
-          model: `kaiju-usage/${prefix}-${i}`,
+          model: `kobe-usage/${prefix}-${i}`,
           inputTokens: 1_000,
           outputTokens: 0,
         }),
@@ -257,7 +257,7 @@ describe("site breakdowns across teams (KOBE-43 review)", () => {
       usage({
         teamId,
         userId,
-        model: "kaiju-usage/shared",
+        model: "kobe-usage/shared",
         inputTokens: 600,
         outputTokens: 0,
       });
@@ -270,8 +270,8 @@ describe("site breakdowns across teams (KOBE-43 review)", () => {
     const r = await as.siteAdmin.get("/v1/site/usage");
     expect(r.status).toBe(200);
     expect(r.json.by_model).toHaveLength(50);
-    const top = r.json.by_model.find((m: { model: string }) => m.model === "kaiju-usage/shared");
-    expect(top).toMatchObject({ model: "kaiju-usage/shared", calls: 2, input_tokens: 1_200 });
+    const top = r.json.by_model.find((m: { model: string }) => m.model === "kobe-usage/shared");
+    expect(top).toMatchObject({ model: "kobe-usage/shared", calls: 2, input_tokens: 1_200 });
     expect(typeof top.cost_usd_exact).toBe("string");
   });
 
@@ -315,7 +315,7 @@ describe("the thread's latest model call (KOBE-211, the context gauge)", () => {
       usage({
         runId,
         at: new Date(t0 + 20_000),
-        model: "kaiju-usage/m2",
+        model: "kobe-usage/m2",
         inputTokens: 0,
         cacheReadTokens: 0,
         cacheWriteTokens: 150_000,
@@ -328,7 +328,7 @@ describe("the thread's latest model call (KOBE-211, the context gauge)", () => {
     expect(r.json.latest_call).toEqual({
       run_id: runId,
       at: new Date(t0 + 20_000).toISOString(),
-      model: "kaiju-usage/m2",
+      model: "kobe-usage/m2",
       input_tokens: 0,
       cache_read_tokens: 0,
       cache_write_tokens: 150_000,

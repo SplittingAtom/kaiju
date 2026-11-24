@@ -397,13 +397,13 @@ export const registrySkillTags = pgTable(
       .references(() => registryTags.id),
     /** Null exactly when Kaiju added it (`by_kobe`, KOBE-317: the seed's Default tag). */
     addedBy: uuid().references(() => users.id),
-    byKaiju: boolean().notNull().default(false),
+    byKobe: boolean().notNull().default(false),
     addedAt: ts().notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.skillId, t.tagId] }),
     index("registry_skill_tags_tag_idx").on(t.tagId),
-    check("registry_skill_tags_by_kobe", sql`${t.byKaiju} = (${t.addedBy} IS NULL)`),
+    check("registry_skill_tags_by_kobe", sql`${t.byKobe} = (${t.addedBy} IS NULL)`),
   ],
 );
 

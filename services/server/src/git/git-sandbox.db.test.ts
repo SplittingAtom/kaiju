@@ -106,7 +106,7 @@ describe("loadRunGitContext (KOBE-764)", () => {
       { id: member, name: email.split("@")[0] as string },
       "kaiju.test",
     );
-    expect(noReply).toMatch(/^[0-9a-f]{10}\+ada-[0-9a-f]{6}@users\.noreply\.kobe\.test$/);
+    expect(noReply).toMatch(/^[0-9a-f]{10}\+ada-[0-9a-f]{6}@users\.noreply\.kaiju\.test$/);
     expect(git.author.email).toBe(noReply);
     expect(git.committer.email).toBe(noReply);
     expect(JSON.stringify(git)).not.toContain(member);

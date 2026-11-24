@@ -13,7 +13,7 @@ import { RunFixture, type FakeWorkspace } from "../testing/run-fixture.js";
  */
 const f = new RunFixture();
 const PROVIDER = `bud-${randomUUID().slice(0, 6)}`;
-const MODEL = `kaiju-${PROVIDER}/m`;
+const MODEL = `kobe-${PROVIDER}/m`;
 
 beforeAll(async () => {
   await f.setup();

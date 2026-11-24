@@ -455,11 +455,11 @@ describe("Site console › Settings › Memory: search by meaning (KOBE-409)", (
       screen.getByText(/every run message \(up to 4,000 characters\) and every saved memory/),
     ).toBeTruthy();
     expect(screen.getByText(/memories of every workspace/)).toBeTruthy();
-    await userEvent.type(field, "kaiju-mac-mini/qwen3-embedding:0.6b");
+    await userEvent.type(field, "kobe-mac-mini/qwen3-embedding:0.6b");
     await userEvent.click(screen.getByRole("button", { name: "Save site memory settings" }));
     await screen.findByText("Site memory settings saved.");
     expect(putBody(calls, SITE)).toEqual({
-      settings: { ...SETTINGS, embedding_model: "kaiju-mac-mini/qwen3-embedding:0.6b" },
+      settings: { ...SETTINGS, embedding_model: "kobe-mac-mini/qwen3-embedding:0.6b" },
     });
   });
 });
