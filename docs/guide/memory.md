@@ -180,11 +180,13 @@ suggestion in **To review** on My memory.
 
 The **+** button shows where Learn is:
 
-| On the + button | Meaning                                                                     |
-| --------------- | --------------------------------------------------------------------------- |
-| A dot           | New messages since Kaiju last learned from this conversation                |
-| A spinner       | Kaiju is learning from it now; you can keep chatting                        |
-| A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
+| On the + button | Meaning                                                                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A red dot       | New messages since Kaiju last learned from this conversation, once the conversation uses more than 30% of its context window (the gauge under the composer) |
+| A spinner       | Kaiju is learning from it now; you can keep chatting                                                                                                        |
+| A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review                                                                                 |
+
+Below 30% the dot stays away, but **+** › **Memory** › **Learn from this chat** works the same.
 
 **The nudge.** The dot pulses once, as a reminder, after about 10 of your messages since Kaiju last
 learned from this conversation (or since it started), or after you correct the agent: a thumbs

@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { TeamModel, TeamModels } from "../admin/api/team/models";
-import { aliasName, modelChoices, teamDefaultLabel } from "./model-choices";
+import {
+  FOLLOW_DEFAULT,
+  aliasName,
+  modelChoices,
+  pickedModel,
+  pickerOptions,
+  pickerValue,
+  shownModelName,
+  teamDefaultLabel,
+} from "./model-choices";
 
 const model = (alias: string, label: string | null, enabled: boolean): TeamModel =>
   ({ alias, label, enabled, isDefault: false }) as unknown as TeamModel;
@@ -30,5 +39,37 @@ describe("modelChoices (KOBE-44, KOBE-217)", () => {
     const noDefault = modelChoices({ ...data, default: "gpt" }, null, null);
     expect(noDefault.defaultModel).toBeUndefined();
     expect(teamDefaultLabel(noDefault)).toBe("Team default");
+  });
+});
+
+describe("the picker shows the team default as itself (KOBE-840)", () => {
+  it("lists the enabled models only, with the default selected while the conversation follows it", () => {
+    const c = modelChoices(data, null, null);
+    expect(pickerOptions(c)).toEqual([
+      { value: "kimi", label: "Kimi" },
+      { value: "glm", label: "GLM" },
+    ]);
+    expect(
+      pickerOptions(c)
+        .map((o) => o.label)
+        .join(" "),
+    ).not.toMatch(/Team default/);
+    expect(pickerValue(c)).toBe("kimi");
+    expect(pickerValue(modelChoices(data, "glm", null))).toBe("glm");
+    expect(shownModelName(data, c)).toBe("Kimi");
+  });
+
+  it("picking the default's own entry follows the team default; another model is chosen", () => {
+    const c = modelChoices(data, "glm", null);
+    expect(pickedModel(c, "kimi")).toBeNull();
+    expect(pickedModel(c, "glm")).toBe("glm");
+    expect(pickedModel(c, FOLLOW_DEFAULT)).toBeNull();
+  });
+
+  it("a default that isn't enabled keeps a plain 'Default model' entry", () => {
+    const c = modelChoices({ ...data, default: "gpt" }, null, null);
+    expect(pickerOptions(c)[0]).toEqual({ value: FOLLOW_DEFAULT, label: "Default model" });
+    expect(pickerValue(c)).toBe(FOLLOW_DEFAULT);
+    expect(shownModelName({ ...data, default: "gpt" }, c)).toBe("Default model");
   });
 });

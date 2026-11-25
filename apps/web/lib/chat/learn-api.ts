@@ -76,6 +76,18 @@ export function tokensLabel(tokens: number): string {
   return `~${k < 10 ? k.toFixed(1).replace(/\.0$/, "") : Math.round(k)}k tokens`;
 }
 
+/**
+ * The + button's red dot for new messages to learn from shows only once the conversation's context
+ * window is more than this share full (KOBE-840, Chris 2026-11-25): the context gauge's own figure.
+ * Below it the dot stays away; Memory in the + menu still offers Learn from this chat.
+ */
+export const MEMORY_DOT_MIN_CONTEXT_PERCENT = 30;
+
+/** Whether the context use (the gauge's percent; null: unknown) is enough for the memory dot. */
+export function memoryDotAllowed(contextPercent: number | null): boolean {
+  return contextPercent !== null && contextPercent > MEMORY_DOT_MIN_CONTEXT_PERCENT;
+}
+
 /** What the + button shows: a pass running, candidates waiting, new messages, or nothing. */
 export type LearnIndicator =
   | { readonly kind: "running" }

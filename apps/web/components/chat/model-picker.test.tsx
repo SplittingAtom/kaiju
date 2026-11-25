@@ -54,15 +54,14 @@ const optionNames = (select: HTMLSelectElement) =>
     .map((o) => o.textContent);
 
 describe("model picker", () => {
-  it("offers the team default and the enabled models only, on the team's header", async () => {
+  it("offers the enabled models only, the team default selected as itself, on the team's header", async () => {
     openApp(fake);
     const select = await picker();
-    expect(optionNames(select)).toEqual([
-      "Team default (Kimi K2.7 Code)",
-      "Kimi K2.7 Code",
-      "GLM 5.3",
-    ]);
-    expect(select.value).toBe("");
+    // KOBE-840 ac-1: no "Team default" entry; the default is simply the selected model.
+    expect(optionNames(select)).toEqual(["Kimi K2.7 Code", "GLM 5.3"]);
+    expect(select.value).toBe("kimi");
+    expect(select.selectedOptions[0]?.textContent).toBe("Kimi K2.7 Code");
+    expect(document.body.textContent).not.toMatch(/Team default/);
     const read = fake.requests.find((r) => r.path === "/v1/team/models");
     expect(read?.team).toBe(fake.teamId);
   });
@@ -95,7 +94,8 @@ describe("model picker", () => {
       body: { model: "glm" },
       team: fake.teamId,
     });
-    await user.selectOptions(await openPicker(), "");
+    // The default's own entry follows the team default again (KOBE-840).
+    await user.selectOptions(await openPicker(), "kimi");
     await waitFor(() => expect(fake.threads.get(t)?.model).toBeNull());
     expect(chatRequests(fake, "PATCH").at(-1)?.body).toEqual({ model: null });
   });
@@ -111,9 +111,9 @@ describe("model picker", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /gpt isn't enabled for your team any more.*Pick another model/,
     );
-    await userEvent.setup().selectOptions(select, "kimi");
+    await userEvent.setup().selectOptions(select, "glm");
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
-    expect(fake.threads.get(t)?.model).toBe("kimi");
+    expect(fake.threads.get(t)?.model).toBe("glm");
   });
 
   it("re-reads the team's models when a run fails because its model was disabled", async () => {
@@ -163,6 +163,14 @@ describe("model picker", () => {
     expect(optionNames(select)).toEqual(["Kimi K2.7 Code"]);
     expect(screen.getByText("This agent always uses Kimi K2.7 Code.")).toBeTruthy();
     expect(chatRequests(fake, "PATCH")).toHaveLength(0);
+  });
+
+  it("a team default that isn't enabled keeps a plain 'Default model' entry (KOBE-840)", async () => {
+    must(fake.teamModels[0]).enabled = false;
+    openApp(fake);
+    const select = await picker();
+    expect(optionNames(select)).toEqual(["Default model", "GLM 5.3"]);
+    expect(select.value).toBe("");
   });
 
   it("stays out of the way when the team's models can't be read", async () => {

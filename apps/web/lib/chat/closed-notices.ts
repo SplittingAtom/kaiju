@@ -25,6 +25,19 @@ function readClosed(): readonly string[] {
   }
 }
 
+const listeners = new Set<(id: string) => void>();
+
+/**
+ * Called with the id of each notice closed in this page (the edge glow follows its notice,
+ * KOBE-840), whether or not storage kept it.
+ */
+export function subscribeClosedNotices(listener: (id: string) => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 export function isNoticeClosed(id: string): boolean {
   return readClosed().includes(id);
 }
@@ -36,4 +49,5 @@ export function closeNotice(id: string): void {
   } catch {
     // Storage blocked or full: the notice stays closed for this page only.
   }
+  for (const listener of listeners) listener(id);
 }

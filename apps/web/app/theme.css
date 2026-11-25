@@ -114,6 +114,13 @@
      Decoration only (the bubble's text keeps the card's colours); fixed like the tool badge. */
   --kaiju-glow-gold: rgb(212 160 23 / 55%);
   --kaiju-glow-gold-border: #b8860b;
+  /* The chat window's edge glow (KOBE-840, components/chat/edge-glow.tsx): gold while the run waits
+     for the member, red after a run failed. Decoration beside a text cue that always stays; fixed
+     like the gold glow above, in light and both dark blocks. */
+  --kaiju-glow-waiting: rgb(212 160 23 / 50%);
+  --kaiju-glow-waiting-border: #b8860b;
+  --kaiju-glow-error: rgb(185 28 28 / 40%);
+  --kaiju-glow-error-border: #b91c1c;
 
   /* The composer panel's focus outline (KOBE-374, components/chat/composer.module.css): 3:1 or more
      (WCAG 1.4.11) on the page, the muted panel and cards in both themes. Today's neutral, not
@@ -285,6 +292,10 @@
   --kaiju-tool-badge-border: #c9a227;
   --kaiju-glow-gold: rgb(245 205 91 / 45%);
   --kaiju-glow-gold-border: #c9a227;
+  --kaiju-glow-waiting: rgb(245 205 91 / 45%);
+  --kaiju-glow-waiting-border: #c9a227;
+  --kaiju-glow-error: rgb(248 113 113 / 40%);
+  --kaiju-glow-error-border: #f87171;
   --kaiju-composer-focus: #a1a1aa;
   --kaiju-lane-2: #cea608;
   --kaiju-lane-3: #f67fa5;
@@ -356,6 +367,10 @@
     --kaiju-tool-badge-border: #c9a227;
     --kaiju-glow-gold: rgb(245 205 91 / 45%);
     --kaiju-glow-gold-border: #c9a227;
+    --kaiju-glow-waiting: rgb(245 205 91 / 45%);
+    --kaiju-glow-waiting-border: #c9a227;
+    --kaiju-glow-error: rgb(248 113 113 / 40%);
+    --kaiju-glow-error-border: #f87171;
     --kaiju-composer-focus: #a1a1aa;
     --kaiju-lane-2: #cea608;
     --kaiju-lane-3: #f67fa5;
