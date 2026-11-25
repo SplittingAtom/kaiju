@@ -241,7 +241,9 @@ describe("embedding helpers (KOBE-409)", () => {
 
   it("stores vectors under the document scheme, so a scheme change re-embeds", () => {
     // nomic's documents lost their prefix (scheme 2): vectors stored by scheme 1 no longer match.
-    expect(storedVectorModel("kaiju-local/nomic-embed-text")).toBe("kaiju-local/nomic-embed-text#d2");
+    expect(storedVectorModel("kaiju-local/nomic-embed-text")).toBe(
+      "kaiju-local/nomic-embed-text#d2",
+    );
     expect(storedVectorModel("mac/qwen3-embedding:0.6b")).toBe("mac/qwen3-embedding:0.6b");
     expect(storedVectorModel("openai/text-embedding-3-small")).toBe(
       "openai/text-embedding-3-small",

@@ -8,6 +8,8 @@ import {
   type GatewayPrincipal,
 } from "@kaiju/db";
 import {
+  LOCAL_GATEWAY_PROVIDER,
+  PRE_RENAME_LOCAL_GATEWAY_PROVIDER,
   RUN_TOKEN_HEADER,
   SERVER_CALL_AUDIENCE,
   SERVER_CALL_LIMITS,
@@ -920,5 +922,50 @@ describe("server calls: their own limits (review L4)", () => {
     );
     expect((await sandboxCall).status).toBe(200);
     expect((await Promise.all(slow)).map((r) => r.status)).toEqual([200, 200]);
+  });
+});
+
+describe("pre-rename model ids during the upgrade (KOBE-828)", () => {
+  // A server, gateway or sandbox of the previous release names the in-cluster models by their old
+  // provider name; the gateway checks, prices and records the model it names now, and forwards
+  // the body as sent (the sync keeps the old provider name in Bifrost for one release).
+  const OLD_EMBED = `${PRE_RENAME_LOCAL_GATEWAY_PROVIDER}/nomic-embed-text`;
+  const NEW_EMBED = `${LOCAL_GATEWAY_PROVIDER}/nomic-embed-text`;
+  const OLD_CHAT = `${PRE_RENAME_LOCAL_GATEWAY_PROVIDER}/qwen3`;
+  const NEW_CHAT = `${LOCAL_GATEWAY_PROVIDER}/qwen3`;
+  const sandboxCall = (model: string) =>
+    post("/v1/chat/completions", { authorization: `Bearer ${sessionToken()}` }, { ...BODY, model });
+
+  it("takes an old server's embedding call and records it under the current id", async () => {
+    const token = serverToken({
+      purpose: "memory_embed",
+      thread_id: undefined,
+      run_id: undefined,
+      model: OLD_EMBED,
+      max_output_tokens: 1,
+    });
+    const r = await post("/v1/embeddings", asServer(token), { model: OLD_EMBED, input: "x" });
+    expect(r.status).toBe(200);
+    expect((JSON.parse(hits[0]?.body ?? "{}") as { model?: string }).model).toBe(OLD_EMBED);
+    expect(admitted[0]).toMatchObject({ model: NEW_EMBED });
+    await expect.poll(() => records.length).toBe(1);
+    expect(records[0]).toMatchObject({ model: NEW_EMBED, purpose: "memory_embed" });
+  });
+
+  it("lets a sandbox call an enabled model by its old id, checked and recorded as the current one", async () => {
+    principal = { ...principal, enabledModels: [MODEL, NEW_CHAT] };
+    const r = await sandboxCall(OLD_CHAT);
+    expect(r.status).toBe(200);
+    expect(admitted[0]).toMatchObject({ model: NEW_CHAT });
+    await expect.poll(() => records.length).toBe(1);
+    expect(records[0]).toMatchObject({ model: NEW_CHAT });
+  });
+
+  it("refuses the old id of a model the team did not enable, as it refuses the new one", async () => {
+    for (const model of [OLD_CHAT, NEW_CHAT]) {
+      const r = await sandboxCall(model);
+      expect([r.status, r.code]).toEqual([403, "model_not_enabled"]);
+    }
+    expect(hits).toEqual([]);
   });
 });

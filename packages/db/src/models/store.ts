@@ -14,7 +14,6 @@ import {
   teamModels,
   threads,
   users,
-  type ModelProviderKind,
   type ThinkingControlValue,
   type ThinkingLevelValue,
   type ThinkingLowestValue,

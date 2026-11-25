@@ -46,6 +46,12 @@ admin sees it in the server's log; see
 [Working with git](for-agents/working-with-git.md). Files that the sandbox moves out of a
 read-only area now go to `kaiju-moved/` (earlier ones stay in `kobe-moved/`, as ordinary files).
 
+The in-cluster embedding model is now `kaiju-local/nomic-embed-text`
+(it was `kobe-local/nomic-embed-text`), and so is any model of a provider named `local`. The
+upgrade changed the Site's embedding model setting and kept every memory's vector: nothing is
+embedded again, search by meaning works as before and nothing needs changing. **Usage and spend**
+shows calls from before the upgrade under the new name, together with the newer ones.
+
 ## v1.4: git organizations
 
 A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub

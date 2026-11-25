@@ -615,7 +615,9 @@ answer), search uses word matching alone and nothing else changes.
 
 - **Choosing the model.** Type the model as the gateway names it, `provider/model`. A standard
   install runs a small one inside your cluster, on CPU: **nomic-embed-text**, offered as
-  `kaiju-local/nomic-embed-text`. You can name an embedding model of any provider under
+  `kaiju-local/nomic-embed-text` (it was `kobe-local/nomic-embed-text` before the rename to
+  Kaiju: the upgrade changed the setting and kept the vectors, so nothing is embedded again).
+  You can name an embedding model of any provider under
   **Models and providers** instead, such as an Ollama server on your network
   (`kobe-mac-mini/qwen3-embedding:0.6b`, for example) or a hosted provider with a site key. The
   embedding model is not added to the models list, so it never shows in a model picker (nor in

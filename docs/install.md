@@ -1869,6 +1869,20 @@ path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   `kobe.app_card` and `kobe.skipped_actions` keep working. Before the upgrade, run the same
   query to check that no member stored files under a top-level `.kaiju/` folder (from then on it
   is internal): such files stay in object storage but no longer show or restore.
+- **The in-cluster models are `kaiju-local/...` (Kaiju rename, KOBE-828, migration
+  `0261_kaiju_local_models`).** The gateway provider of the chart's in-cluster model service (and
+  of a Site console provider with the id `local`) is `kaiju-local` (it was `kobe-local`), so the
+  embedding model is `kaiju-local/nomic-embed-text`. The migration rewrites the stored ids: the
+  Site embedding model, the `embedding_model` of every memory vector (the vectors are kept, so
+  nothing is embedded again and **Search by meaning** keeps its count) and Orbit evals that have
+  not run yet. Catalog entries, team defaults, agents and budgets name aliases and provider ids,
+  so they need nothing. The usage ledger is append-only and keeps the ids it was written with;
+  usage reports, run details and the eval estimate count both ids as one model, and budgets never
+  depended on the model. During the rolling `helm upgrade`, pods and sandboxes of the previous
+  release still send the old id: the model gateway checks, prices and records it as the new one,
+  and the gateway sync keeps the old provider name in Bifrost next to the new one, with the same
+  models, for this release only. The rewrite cannot be undone by going back a release: restore
+  the `kaiju backup` taken before the upgrade.
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
   namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces

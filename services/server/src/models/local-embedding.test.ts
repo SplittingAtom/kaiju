@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PRE_RENAME_LOCAL_GATEWAY_PROVIDER } from "@kaiju/protocol";
 import { buildDesiredState, type ProviderInput } from "./desired.js";
 import { addProviderSchema } from "./schemas.js";
 import {
@@ -97,9 +98,11 @@ describe("the Site embedding model on every member's key (KOBE-409)", () => {
       },
       "f".repeat(32),
     );
+    // KOBE-828: the pre-rename provider name allows the same model, for one release.
+    const old = PRE_RENAME_LOCAL_GATEWAY_PROVIDER;
     expect(desired.virtualKeys.map((k) => k.models)).toEqual([
-      { "kaiju-local": ["nomic-embed-text"], ollama: ["qwen3.5:9b"] },
-      { "kaiju-local": ["nomic-embed-text"] },
+      { "kaiju-local": ["nomic-embed-text"], [old]: ["nomic-embed-text"], ollama: ["qwen3.5:9b"] },
+      { "kaiju-local": ["nomic-embed-text"], [old]: ["nomic-embed-text"] },
     ]);
   });
 });
