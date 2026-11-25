@@ -167,6 +167,45 @@ export function gaugeSize(
   );
 }
 
+/** What the open thread's gauge reads: its size, the scale's window and who counted. */
+export interface ThreadContextReading {
+  readonly size: ContextSize;
+  readonly window: number | null;
+  readonly alias: string | null;
+  readonly scale: TeamModel | undefined;
+  readonly models: readonly TeamModel[];
+}
+
+/**
+ * The open thread's context reading, as its gauge shows it (below); null when the gauge shows
+ * nothing (no thread, still loading, no call yet or compacted since).
+ */
+export function useThreadContextReading(): ThreadContextReading | null {
+  const extras = useKaijuExtras();
+  const state = extras?.state ?? DRAFT;
+  const loaded = useThreadTeamModels();
+  const read = useThreadUsageRead();
+  if (!extras || state.threadId === null || state.phase !== "ready") return null;
+  const size = gaugeSize(state, read);
+  if (size === null) return null;
+  const models = loaded.status === "ready" ? loaded.data.models : [];
+  const { alias, scale } = threadScale(loaded, {
+    agentModel: state.agentModel,
+    model: state.summary?.model,
+  });
+  return { size, window: scale?.contextWindow ?? null, alias, scale, models };
+}
+
+/**
+ * The share of the open thread's context window in use, the gauge's own figure (KOBE-840: the +
+ * button's memory dot reads it); null without a reading or a window.
+ */
+export function useThreadContextPercent(): number | null {
+  const reading = useThreadContextReading();
+  if (reading === null || reading.window === null) return null;
+  return contextPercent(reading.size.tokens, reading.window);
+}
+
 /**
  * The open thread's gauge, at the end of the row under the composer (KOBE-418). The value is the
  * newest model call's prompt: run_usage on load and after each run, each streamed assistant
@@ -179,22 +218,13 @@ export function ThreadContextGauge({
   onCompact,
   compactBlocker,
 }: Pick<ContextGaugeProps, "onCompact" | "compactBlocker"> = {}) {
+  const reading = useThreadContextReading();
   const extras = useKaijuExtras();
-  const state = extras?.state ?? DRAFT;
-  const loaded = useThreadTeamModels();
-  const read = useThreadUsageRead();
   const openViewer = useOpenContextViewer();
-  if (!extras || state.threadId === null || state.phase !== "ready") return null;
-  const size = gaugeSize(state, read);
-  const models = loaded.status === "ready" ? loaded.data.models : [];
-  const { alias, scale } = threadScale(loaded, {
-    agentModel: state.agentModel,
-    model: state.summary?.model,
-  });
-  const window = scale?.contextWindow ?? null;
-  if (size === null) return null;
+  if (reading === null) return null;
+  const { size, window, alias, scale, models } = reading;
   // Owner only (CV2, KOBE-471): a shared reader's gauge offers nothing.
-  const owner = openViewer !== null && mayOpenContext(state.summary);
+  const owner = openViewer !== null && mayOpenContext(extras?.state.summary);
   const counter = counterOf(models, size);
   const counterIsScale =
     counter === null || (typeof counter === "string" ? counter === alias : counter === scale);

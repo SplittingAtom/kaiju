@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { learnBlocker, learnIndicator, tokensLabel, type LearnState } from "./learn-api";
+import {
+  MEMORY_DOT_MIN_CONTEXT_PERCENT,
+  learnBlocker,
+  learnIndicator,
+  memoryDotAllowed,
+  tokensLabel,
+  type LearnState,
+} from "./learn-api";
 
 const base: LearnState = {
   threadId: "11111111-1111-4111-8111-111111111111",
@@ -49,5 +56,15 @@ describe("tokens label", () => {
     expect(tokensLabel(1_000)).toBe("~1k tokens");
     expect(tokensLabel(1_250)).toBe("~1.3k tokens");
     expect(tokensLabel(18_400)).toBe("~18k tokens");
+  });
+});
+
+describe("the memory dot's context threshold (KOBE-840)", () => {
+  it("shows only above 30% of the context window, the gauge's own figure", () => {
+    expect(MEMORY_DOT_MIN_CONTEXT_PERCENT).toBe(30);
+    expect(memoryDotAllowed(29)).toBe(false);
+    expect(memoryDotAllowed(30)).toBe(false);
+    expect(memoryDotAllowed(31)).toBe(true);
+    expect(memoryDotAllowed(null)).toBe(false);
   });
 });

@@ -7,12 +7,13 @@ import { cn } from "../../lib/utils";
 import { IconAction } from "../shell/icon-action";
 import { Skeleton } from "../ui/skeleton";
 import { StatusBadge, type StatusTone } from "../ui/status";
-import { isThreadRunning, type ThreadState } from "../../lib/chat/thread-state";
+import { initialThreadState, isThreadRunning, type ThreadState } from "../../lib/chat/thread-state";
 import { ErrorNotice } from "../admin/error-notice";
 import { ThreadContextGauge } from "../shell/context-gauge";
 import { AgentVersionBadge } from "./agent-version";
 import { ArtifactList } from "./artifact-list";
 import { CompactNowProvider, useCompactNow } from "./compact-now";
+import { useEdgeGlow } from "./edge-glow";
 import { Composer } from "./composer";
 import { ComposerDictationProvider } from "./composer-steer";
 import { DraftProjectControl } from "./draft-project-control";
@@ -58,6 +59,7 @@ export function statusLabel(state: ThreadState): ThreadStatusCue | undefined {
  * the rail and an artifact column (the grid's 400 px floor, KOBE-305).
  */
 export const THREAD_MAX_WIDTH = "80rem";
+const DRAFT_STATE = initialThreadState(null);
 const COMPOSER_VARS = { "--thread-max-width": THREAD_MAX_WIDTH } as React.CSSProperties;
 
 /** The gauge at the end of the row under the composer (KOBE-418), with its red Compact. */
@@ -249,7 +251,11 @@ function MessagesAndComposer({
             {/* The overlay sheet at 768–820 px ends above this box (KOBE-269, chat-global.css). */}
             <div className="flex flex-col" data-kaiju-composer-box>
               <SteeringPanel extras={extras} />
-              <Composer extras={extras} footer={inShell ? <ComposerGauge /> : undefined} />
+              <Composer
+                extras={extras}
+                footer={inShell ? <ComposerGauge /> : undefined}
+                autoFocus={inShell}
+              />
             </div>
           </ComposerDictationProvider>
           <AuiIf condition={(s) => s.thread.messages.length === 0 && s.composer.isEmpty}>
@@ -292,6 +298,7 @@ function ThreadViewBody({
 }) {
   const extras = useKaijuExtras();
   const isEmpty = useAuiState((s) => s.thread.messages.length === 0);
+  const glow = useEdgeGlow(extras?.state ?? DRAFT_STATE);
   if (!extras) return null;
   const { state } = extras;
   const label = statusLabel(state);
@@ -300,7 +307,8 @@ function ThreadViewBody({
   return (
     <ThreadPrimitive.Root
       data-kaiju-thread-root
-      className="bg-card @container flex min-h-0 flex-1 flex-col overflow-hidden"
+      data-kaiju-edge-glow={glow ?? undefined}
+      className="bg-card @container relative flex min-h-0 flex-1 flex-col overflow-hidden"
       style={COMPOSER_VARS}
     >
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-3 pb-2">

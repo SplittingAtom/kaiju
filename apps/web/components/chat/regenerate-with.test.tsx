@@ -187,7 +187,8 @@ describe("Regenerate with another model (KOBE-217)", () => {
     await chooseModel("Team default (Kimi K2.7 Code)");
     await waitFor(() => expect(messagePosts()).toHaveLength(1));
     expect(chatRequests(fake, "PATCH").map((r) => r.body)).toEqual([{ model: null }]);
-    await waitFor(async () => expect((await picker()).value).toBe(""));
+    // The picker shows the team default as itself (KOBE-840).
+    await waitFor(async () => expect((await picker()).value).toBe("kimi"));
   });
 
   it("a regenerate that can't be sent puts the model back and shows why", async () => {
@@ -210,7 +211,7 @@ describe("Regenerate with another model (KOBE-217)", () => {
       ]),
     );
     expect(fake.threads.get(t)?.model).toBeNull();
-    await waitFor(async () => expect((await picker()).value).toBe(""));
+    await waitFor(async () => expect((await picker()).value).toBe("kimi"));
   });
 
   it("is disabled like Regenerate for a thread in Trash, and changes nothing", async () => {

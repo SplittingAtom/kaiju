@@ -61,6 +61,9 @@ thread with cannot.
 - An approval waits up to one hour, then expires and the run stops.
 - Stopping the run expires its waiting approvals.
 - After deciding, the card says "Denied. The tool did not run." or shows the result.
+- While an approval waits, "Waiting for your approval" shows above the composer and the edge of
+  the conversation glows gold until you decide. See
+  [Writing messages](../chat/composer.md#when-the-conversation-waits-for-you).
 
 When several calls of one run wait, **Approve all waiting (N)** allows them together after a
 confirmation (**Allow all N**). It is not offered when any of them could delete or overwrite,

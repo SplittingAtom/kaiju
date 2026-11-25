@@ -2,11 +2,14 @@
 
 import type { ThinkingLevel } from "@kaiju/protocol";
 import { useId, useState, useSyncExternalStore } from "react";
-import { modelName, type TeamModels } from "../../lib/admin/api/team/models";
+import type { TeamModels } from "../../lib/admin/api/team/models";
 import {
+  FOLLOW_DEFAULT,
   aliasName,
   modelChoices,
-  teamDefaultLabel,
+  pickedModel,
+  pickerOptions,
+  pickerValue,
   type ModelChoices,
 } from "../../lib/chat/model-choices";
 import type { ThreadController } from "../../lib/chat/thread-controller";
@@ -24,9 +27,6 @@ import {
 import { useThreadTeamModels } from "./use-team-models";
 import styles from "./chat.module.css";
 
-/** The `<select>` value of "use the team's default" (an alias is never empty). */
-const DEFAULT = "";
-
 /**
  * `/model` (KOBE-224): the picker's own choices and `choose`, or why it can't change now.
  */
@@ -43,12 +43,16 @@ function modelBinding(
   if (enabled.length === 0 && chosen === null) {
     return { choices: [], blocker: "No models are enabled for your team yet." };
   }
+  // KOBE-840: the picker's own options, the team default named as itself.
+  const shown = pickerValue(choices);
   return {
     blocker,
-    choices: [
-      { key: DEFAULT, label: teamDefaultLabel(choices), current: chosen === null },
-      ...enabled.map((m) => ({ key: m.alias, label: modelName(m), current: m.alias === chosen })),
-    ].map((c) => ({ ...c, onSelect: () => choose(c.key) })),
+    choices: pickerOptions(choices).map((o) => ({
+      key: o.value,
+      label: o.label,
+      current: o.value === shown,
+      onSelect: () => choose(o.value),
+    })),
   };
 }
 
@@ -96,9 +100,9 @@ export interface ModelPickerData {
 
 /**
  * The conversation's model (D30; KOBE-41's open question): one of the team's enabled models, or
- * the team default, and its thinking level (KOBE-260). On a new conversation the choice is kept
- * until the first message creates the thread; on an existing one it is saved on the thread and
- * used by its next runs. A choice the team has since disabled stays selected, marked unavailable,
+ * the team default (shown as that model, KOBE-840), and its thinking level (KOBE-260). On a new
+ * conversation the choice is kept until the first message creates the thread; on an existing one
+ * it is saved on the thread and used by its next runs. A choice the team has since disabled stays selected, marked unavailable,
  * with the way out. Publishes `/model`; null until the team's models are read, and never on a
  * conversation that can't run (`active` false: shared read-only, in Trash).
  */
@@ -128,8 +132,16 @@ export function useModelPicker({
   const disabled =
     state.summary?.deletedAt != null || isBusy(state, "model") || (!isNew && !controller);
 
+  // The agent's pinned model wins over the conversation's choice (user decision, KOBE-44): the
+  // picker shows it, locked. The pin comes from the server's agent resolver (KOBE-47 seam).
+  const agentModel = isNew ? (draftAgent?.model ?? null) : (state.agentModel ?? null);
+  const all =
+    active && loaded.status === "ready"
+      ? modelChoices(loaded.data, isNew ? draft : (state.summary?.model ?? null), agentModel)
+      : undefined;
   const choose = (value: string) => {
-    const model = value === DEFAULT ? null : value;
+    // The team default's own entry follows the team default (KOBE-840: no "Team default" entry).
+    const model = all ? pickedModel(all, value) : value === FOLLOW_DEFAULT ? null : value;
     if (isNew) {
       setDraft(model);
       session.setDraftModel(model);
@@ -149,13 +161,6 @@ export function useModelPicker({
   const thinkingChosen = isNew ? draftThinking : (state.summary?.thinkingLevel ?? null);
   const thinkingDisabled =
     state.summary?.deletedAt != null || isBusy(state, "thinking") || (!isNew && !controller);
-  // The agent's pinned model wins over the conversation's choice (user decision, KOBE-44): the
-  // picker shows it, locked. The pin comes from the server's agent resolver (KOBE-47 seam).
-  const agentModel = isNew ? (draftAgent?.model ?? null) : (state.agentModel ?? null);
-  const all =
-    active && loaded.status === "ready"
-      ? modelChoices(loaded.data, isNew ? draft : (state.summary?.model ?? null), agentModel)
-      : undefined;
   useBindCommands(
     loaded.status === "ready" && all
       ? {
@@ -246,16 +251,15 @@ export function ModelSelects({
       <label className={pill}>
         <span className={styles.visuallyHidden}>Model for this conversation</span>
         <select
-          value={chosen ?? DEFAULT}
+          value={pickerValue(choices)}
           disabled={disabled}
           aria-invalid={unavailable || undefined}
           aria-describedby={unavailable ? `${id}-unavailable` : undefined}
           onChange={(e) => picker.choose(e.target.value)}
         >
-          <option value={DEFAULT}>{teamDefaultLabel(choices)}</option>
-          {enabled.map((m) => (
-            <option key={m.alias} value={m.alias}>
-              {modelName(m)}
+          {pickerOptions(choices).map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
           {unavailable && chosen !== null && (

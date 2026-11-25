@@ -200,6 +200,60 @@ body:has([data-kaiju-chat]) {
   }
 }
 
+/* The chat window's edge glow (KOBE-840, components/chat/edge-glow.tsx): an inset ring and halo
+   inside the conversation's own edge, on a layer over it that takes no pointer, so the floating
+   column's border, hover halo and rounded corners (KOBE-554) and the layout around it stay as they
+   are. Gold breathes slowly while the run waits for the member; red after a failed run stays
+   still. Under reduced motion the gold is still too; forced colours get a plain system outline. */
+[data-kaiju-chat] [data-kaiju-edge-glow]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: var(--kaiju-radius-lg);
+}
+
+[data-kaiju-chat] [data-kaiju-edge-glow="waiting"]::after {
+  box-shadow:
+    inset 0 0 0 2px var(--kaiju-glow-waiting-border),
+    inset 0 0 18px 2px var(--kaiju-glow-waiting);
+  animation: kaiju-edge-glow 2.4s ease-in-out infinite alternate;
+}
+
+[data-kaiju-chat] [data-kaiju-edge-glow="error"]::after {
+  box-shadow:
+    inset 0 0 0 2px var(--kaiju-glow-error-border),
+    inset 0 0 18px 2px var(--kaiju-glow-error);
+}
+
+@keyframes kaiju-edge-glow {
+  from {
+    box-shadow:
+      inset 0 0 0 2px var(--kaiju-glow-waiting-border),
+      inset 0 0 8px 0 var(--kaiju-glow-waiting);
+  }
+  to {
+    box-shadow:
+      inset 0 0 0 2px var(--kaiju-glow-waiting-border),
+      inset 0 0 24px 4px var(--kaiju-glow-waiting);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-kaiju-chat] [data-kaiju-edge-glow="waiting"]::after {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-kaiju-chat] [data-kaiju-edge-glow]::after {
+    box-shadow: none;
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
 /* The file editor's Proposed edit bubble (KOBE-615): a gold border and halo (app/theme.css
    `--kaiju-glow-gold`, fixed for every preset in both schemes) that breathes slowly; still for
    people who asked for less motion, and a plain system border under forced colours. */
