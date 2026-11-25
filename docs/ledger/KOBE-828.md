@@ -97,3 +97,9 @@ agents never see the embedding model id (no "For agents" change). `/llms.txt` an
   `pre-rename-local.test.ts` (3), model-gateway `server-call.test.ts` (+3, old ids during the roll).
 - Whole DB suites (pgvector dev server, pg_dump 17): db 2202, server 3765, cli 53 passed.
 - `check-public-hygiene.sh`, `check-site-wording.mjs`, `rename/guard.mjs`, rename self-test (24): ok.
+
+## Review (2026-11-25, review-g133)
+
+- F1 (fixed by the coordinator): a test value `kobe-lan/m` was not covered by the allowlist and failed the guard; now `kobe-vllm/m`, already covered.
+- F2 (accepted): a Site provider `local` with an API key fails its first Bifrost sync after the upgrade (key name collision); it fails closed and recovers on the next sync.
+- F3 (accepted): an admin saving memory settings through an old server pod during the rolling update can trigger a re-embed of every vector; the window is the few minutes of the roll. Operators are told in docs/install.md to avoid Site setting changes during an upgrade.

@@ -19,7 +19,7 @@ describe("the in-cluster provider's model ids", () => {
     expect(currentModelId("kobe-local/nomic-embed-text")).toBe("kaiju-local/nomic-embed-text");
     expect(currentModelId("kaiju-local/nomic-embed-text")).toBe("kaiju-local/nomic-embed-text");
     expect(currentModelId("kobe-local-2/m")).toBe("kobe-local-2/m");
-    expect(currentModelId("kobe-lan/m")).toBe("kobe-lan/m");
+    expect(currentModelId("kobe-vllm/m")).toBe("kobe-vllm/m");
     expect(currentModelId("openai/gpt-5")).toBe("openai/gpt-5");
     expect(currentModelId("kobe-local")).toBe("kobe-local");
   });
