@@ -48,7 +48,7 @@
   v2 with "Kobe" → "Kaiju" in the system message's first two lines; rules, reply format and
   instructions identical (diff is those two lines). Pinned hash `4918a281…`. The transcript
   message's speaker line in shared `build.ts` says Kaiju too (all versions; only v3 is sent by
-  this release). v1/v2 and their fixtures untouched.
+  this release). v1/v2 system and instruction texts and their fixtures are unchanged; the transcript speaker line is shared (`build.ts`), so replaying v1 or v2 from this release sends "Kaiju" in the transcript message (only v3 is sent in production; a before/after eval takes "before" from the base checkout).
 
 ## Decisions
 
@@ -93,11 +93,11 @@ in the repo; the key stays in the shell. Use the Site's learning model on the te
 
 ```bash
 # 1. Extractor before (v2) and after (v3), from two checkouts.
-git worktree add ../kaiju-eval-before group-137-rename-19-branches   # v2 is current there
+git worktree add --detach ../kaiju-eval-before origin/group-137-rename-19-branches   # v2 is current there
 for dir in ../kaiju-eval-before ../Kobe-g138; do (cd "$dir" && pnpm install --frozen-lockfile &&
   KAIJU_EXTRACTOR_URL=https://<provider>/v1 KAIJU_EVAL_MODEL=glm-5.3-flash \
   KAIJU_EXTRACTOR_LABEL=glm-5.3-flash KAIJU_EXTRACTOR_REASONING=1 \
-  KAIJU_EXTRACTOR_MAX_OUTPUT_TOKENS=131072 KAIJU_EXTRACTOR_API_KEY_FILE=<key file> \
+  KAIJU_EXTRACTOR_MAX_OUTPUT_TOKENS=131072 KAIJU_EXTRACTOR_API_KEY_FILE=<absolute path to the key file> \
   KAIJU_EVAL_OUT_DIR=$HOME/tmp/kobe-833-eval KAIJU_EXTRACTOR_GATE_DOC=none \
   e2e/memory-eval.sh extractor); done
 # Writes extractor-memory-extractor-v2-glm-5.3-flash.{json,md} and ...-v3-... side by side.
@@ -179,3 +179,9 @@ package, init_skill`).
   `version: 1.0.0`, site-edit semvers above 1.0.0, gallery generation 5), fixed and the five files
   rerun: 32 passed (incl. new `kaiju-guide-rename.db.test.ts`, 4, and `kaiju-guide-seed`); cli 55.
 - `check-public-hygiene.sh`, `check-site-wording.mjs`, `guard.mjs`: ok; self-test 24 passed.
+
+## Review (review-g138, verdict merge)
+
+- L1: a pre-upgrade team or personal skill named `kaiju-guide` now loses to Kaiju's guide and shows as shadowed; announced in What's new (no widening, KOBE-620 precedent).
+- L2 (accepted): on a Site where a maintainer already held `kaiju-guide` (so 0263 kept Kaiju's `kobe-guide`), gallery generation 6 resolves `kaiju-guide` to the maintainer's skill in teams that installed it; very unlikely, follows a team admin's own install, no widening.
+- L3 and Info 4: runbook commands and the v1/v2 note corrected.

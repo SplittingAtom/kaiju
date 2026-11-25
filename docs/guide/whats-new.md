@@ -73,7 +73,9 @@ The upgrade renamed it in place: every team keeps its install, with the same set
 earlier version stays in the skill's history. Installs set to **Track within major** or
 **Latest** move to the new versions by themselves; an install a team admin pinned to a version
 stays on it and shows **Update available**. Agents that list `kobe-guide` get `kaiju-guide` with no
-change needed; new agents should list `kaiju-guide`. Memory suggestions come from a new version
+change needed; new agents should list `kaiju-guide`. The name `kaiju-guide` is now reserved for
+Kaiju's skill: if your team or you made a skill with that name before the upgrade, agents that list
+it now get Kaiju's guide, and your skill shows as **shadowed** until you rename it. Memory suggestions come from a new version
 of the extractor prompt that only changes the product name.
 
 Commits to a Repo from **Commit…** or an agent's `commit_project` now go to branches named
