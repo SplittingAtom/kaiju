@@ -67,6 +67,14 @@ own catalog skills now show the publisher `kaiju` in the API and in skill proven
 `kobe`); the audit log keeps the old value in events from before the upgrade and shows today's
 next to it.
 
+Commits to a Repo from **Commit…** or an agent's `commit_project` now go to branches named
+`kaiju/<member>/...` (it was `kobe/<member>/...`). Pull requests Kaiju opened before the upgrade
+stay on their `kobe/` branches and keep taking your commits until they are merged or closed; you
+still get only one open pull request per Repo. Agents exported to Orbit now have a `kaiju:`
+section in their `metadata` (it was `kobe:`); files you downloaded earlier keep working, and a file
+with both is refused. See [Git organizations](admin/git-organizations.md) and
+[Agents](agents/agents.md).
+
 For developers of MCP Apps: Kaiju's own names for apps are now `io.kaiju/item-kind` and
 `kaiju/notifications/drag-*`, and `ui/initialize` names the host `kaiju`. Apps that use the old
 names keep working with no change; they will stop being accepted in a later release. See

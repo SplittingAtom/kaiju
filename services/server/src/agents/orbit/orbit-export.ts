@@ -3,6 +3,7 @@ import { slugFromName, type AgentDefinition } from "@kaiju/agent-file";
 import { stringify } from "yaml";
 import type { ToolManifest } from "../manifest.js";
 import {
+  ORBIT_METADATA_KEY,
   ORBIT_TOOL_NAME,
   orbitExperimentSchema,
   type OrbitAgentSpec,
@@ -95,7 +96,8 @@ export function mapAgentVersionToOrbit(input: OrbitExportInput): OrbitExport {
     ...(frontmatter.description === undefined ? {} : { description: frontmatter.description }),
     setup: { agents: [agent], edges: [] },
     metadata: {
-      kaiju: {
+      // Written `kaiju:`; files exported before the rename say `kobe:` (orbitKaijuSection).
+      [ORBIT_METADATA_KEY]: {
         agent_version: version,
         approval_mode: toolManifest.approval_mode.effective,
         connectors: toolManifest.connectors === "all" ? "all" : [...toolManifest.connectors],

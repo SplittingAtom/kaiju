@@ -4,7 +4,11 @@ import { parse } from "yaml";
 import type { AgentDefinition } from "@kaiju/agent-file";
 import { computeToolManifest, type PublishFloor, type ToolManifest } from "../manifest.js";
 import { mapAgentVersionToOrbit, orbitExportToYaml } from "./orbit-export.js";
-import { orbitExperimentSchema } from "./orbit-schema.js";
+import {
+  BOTH_METADATA_SECTIONS_MESSAGE,
+  orbitExperimentSchema,
+  orbitKaijuSection,
+} from "./orbit-schema.js";
 
 const NOW = new Date("2026-10-02T12:00:00Z");
 const FLOOR: PublishFloor = { scope: "team", site: [], team: [], approvalFloor: "auto" };
@@ -177,5 +181,54 @@ describe("mapAgentVersionToOrbit (KOBE-90)", () => {
       if (process.env.KAIJU_UPDATE_FIXTURES === "1") writeFileSync(file, orbitExportToYaml(result));
       expect(readFileSync(file, "utf8"), name).toBe(orbitExportToYaml(result));
     }
+  });
+});
+
+/** KOBE-832 (spec rename-kaiju §11 A11): written `kaiju:`, both names read, both refused. */
+describe("Kaiju's metadata section, before and after the rename", () => {
+  const provenance = { agent_version: 1, manifest_format: 1 };
+  const file = (metadata: string) =>
+    parse(
+      `name: kaiju-a-v1\nsetup:\n  agents:\n    - name: a\n      role: r\n      system_prompt: p\n      tools: [read]\n  edges: []\nmetadata:\n${metadata}`,
+    ) as unknown;
+
+  it("the export writes `kaiju:` and never the old name", () => {
+    const yaml = orbitExportToYaml(exportOf(definition()));
+    expect(yaml).toMatch(/^metadata:\n {2}kaiju:\n/m);
+    expect(yaml).not.toMatch(/^\s*kobe:/m);
+  });
+
+  it("reads a file exported before the rename (`kobe:`) and a current one (`kaiju:`)", () => {
+    const old = orbitExperimentSchema.parse(
+      file("  kobe:\n    agent_version: 1\n    manifest_format: 1\n"),
+    );
+    expect(orbitKaijuSection(old.metadata)).toEqual({ ok: true, key: "kobe", section: provenance });
+    const current = orbitExperimentSchema.parse(
+      file("  kaiju:\n    agent_version: 1\n    manifest_format: 1\n"),
+    );
+    expect(orbitKaijuSection(current.metadata)).toEqual({
+      ok: true,
+      key: "kaiju",
+      section: provenance,
+    });
+    expect(orbitKaijuSection({ other: 1 })).toEqual({
+      ok: true,
+      key: undefined,
+      section: undefined,
+    });
+  });
+
+  it("refuses a file with both sections, saying which to keep", () => {
+    const both = file("  kaiju:\n    agent_version: 1\n  kobe:\n    agent_version: 1\n");
+    const checked = orbitExperimentSchema.safeParse(both);
+    expect(checked.success).toBe(false);
+    expect(checked.error?.issues.map((i) => [i.path.join("."), i.message])).toEqual([
+      ["metadata", BOTH_METADATA_SECTIONS_MESSAGE],
+    ]);
+    expect(BOTH_METADATA_SECTIONS_MESSAGE).toMatch(/Keep `kaiju:` only/);
+    expect(orbitKaijuSection({ kaiju: {}, kobe: {} })).toEqual({
+      ok: false,
+      message: BOTH_METADATA_SECTIONS_MESSAGE,
+    });
   });
 });

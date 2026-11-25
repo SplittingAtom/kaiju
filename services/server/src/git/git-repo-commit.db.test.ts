@@ -232,6 +232,69 @@ describe("a commit from the Commit dialog on a Repo (ac-1)", () => {
   });
 });
 
+/**
+ * KOBE-832 (spec rename-kaiju §11 A10): new branches are `kaiju/<member>/...`; a pull request
+ * Kaiju opened before the rename stays on its `kobe/` branch, recorded as it was, and keeps
+ * taking the member's commits until it is merged or closed. The member's one open pull request
+ * per Repo is the stored row, whatever its prefix, so the rename never opens a second one.
+ */
+describe("pull requests opened before the rename (KOBE-832)", () => {
+  it("a stored kobe/ branch takes the next commits until merged; the next one is kaiju/", async () => {
+    const w = await world();
+    const r = await repo(w);
+    const b = as(w.owner, w.team);
+    expect(
+      (await save(b, `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# One\n")).status,
+    ).toBe(200);
+    const first = await commit(b, r.id, "One");
+    const made = first.json.branch as string;
+    expect(made).toMatch(/^kaiju\/[a-z0-9-]+\/one-[0-9a-f]{7}$/);
+    // What an install upgraded from the release before holds: the branch and its row say kobe/.
+    const old = made.replace(/^kaiju\//, "kobe/");
+    bare(r.full, ["update-ref", `refs/heads/${old}`, first.json.commit_sha as string]);
+    bare(r.full, ["update-ref", "-d", `refs/heads/${made}`]);
+    await fx.admin.query(
+      `UPDATE git_commit_branches SET branch = $1 WHERE team_id = $2 AND user_id = $3`,
+      [old, w.team, w.owner.id],
+    );
+    const before = await b.request("GET", `/v1/projects/${r.id}/repo-status`);
+    expect(repoCommitInfoSchema.parse(before.json)).toMatchObject({
+      repo: { pull_request: { branch: old, number: 1 } },
+    });
+
+    expect(
+      (await save(b, `${r.dir}/README.md`, sha(Buffer.from("# One\n")), "# Two\n")).status,
+    ).toBe(200);
+    const second = await commit(b, r.id, "Two");
+    expect(second.json).toMatchObject({
+      status: "pull_request",
+      number: 1,
+      opened: false,
+      branch: old,
+    });
+    expect(bare(r.full, ["rev-parse", old]).trim()).toBe(second.json.commit_sha);
+    expect(bare(r.full, ["log", "-1", "--format=%P", old]).trim()).toBe(first.json.commit_sha);
+    // Still one open pull request for the member: no second one under the new prefix.
+    expect(forgejo.pullRequests(r.slug)).toHaveLength(1);
+    expect(bare(r.full, ["branch", "--list", "kaiju/*"]).trim()).toBe("");
+
+    // Merged on the host: tracking ends, and the next commit opens a kaiju/ branch.
+    forgejo.closedPulls.add(1);
+    expect(
+      (await save(b, `${r.dir}/README.md`, sha(Buffer.from("# Two\n")), "# Three\n")).status,
+    ).toBe(200);
+    const third = await commit(b, r.id, "Three");
+    expect(third.json).toMatchObject({ status: "pull_request", number: 2, opened: true });
+    expect(third.json.branch).toMatch(/^kaiju\/[a-z0-9-]+\/three-[0-9a-f]{7}$/);
+    // The old branch is left as it was: Kaiju never deletes branches on the host.
+    expect(bare(r.full, ["rev-parse", old]).trim()).toBe(second.json.commit_sha);
+    const after = await b.request("GET", `/v1/projects/${r.id}/repo-status`);
+    expect(repoCommitInfoSchema.parse(after.json)).toMatchObject({
+      repo: { pull_request: { branch: third.json.branch, number: 2 } },
+    });
+  });
+});
+
 describe("direct commits and conflicts (ac-2)", () => {
   it("commits straight to the default branch when the connection allows it; Kaiju's copy follows", async () => {
     const w = await world();

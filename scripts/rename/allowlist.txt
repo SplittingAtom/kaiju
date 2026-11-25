@@ -81,6 +81,15 @@ services/server/src/models/sync.ts /\("kobe" \+ 40\)/
 == permanent: Forgery tests send the pre-rename header spelling on purpose, next to the current one (KOBE-747 review)
 services/server/src/k{obe,aiju}-mcp/** /(?<="(?:x-)?)kobe-delegation(?=": claim)/
 
+== permanent: Names in members' git repositories and in downloaded agent files from before the rename, read for good next to the new ones (owner decision 2026-11-24, spec §11 A10 and A11, KOBE-832): commit branches Kaiju made as `kobe/<member>/...` stay on the git host (a branch under an open pull request cannot be renamed) and in `git_commit_branches` rows, whose open pull request keeps taking the member's commits until merged or closed; Orbit exports downloaded before the rename carry `metadata.kobe`, which the server's export schema and the eval image's loader read like `metadata.kaiju` (a file with both is refused); the reader constants and messages, the tests and fixtures that build the pre-rename state, and the guide and upgrade pages that explain it
+services/server/src/agents/orbit/orbit-schema.ts images/orbit-eval/kaiju_orbit_eval/cli.py /(?<=PRE_RENAME(?:_ORBIT)?_METADATA_KEY = ")kobe(?=")|(?<=and a )`kobe:`(?= section)|(?<=only: )`kobe:`(?= is the name)|(?<=rename say `)kobe(?=`)/
+services/server/src/agents/orbit/orbit-export.test.ts /(?<=\\s\*)kobe(?=:\/m)|(?<=exported before the rename \(`)kobe(?=:`\))|(?<=file\(" {2})kobe(?=:)|(?<=key: ")kobe(?=")|(?<=\\n {2})kobe(?=:)|(?<=kaiju: \{\}, )kobe(?=: \{\})/
+images/orbit-eval/test-image.sh /(?<=metadata )kobe(?=:, KOBE-832)|(?<=kaiju: and )kobe(?=: metadata)|(?<=and a `)kobe(?=:` section)/
+images/orbit-eval/testing/fixtures/agent-pre-rename.yaml images/orbit-eval/testing/fixtures/agent-both-sections.yaml /^\s*kobe(?=:$)|(?<=^name: )kobe(?=-fixture-agent-v1$)/
+services/server/src/git/git-repo-commit.db.test.ts /(?<=on its `)kobe(?=\/` branch)|(?<=a stored )kobe(?=\/ branch)|(?<=row say )kobe(?=\/\.)|(?<=\/\^kaiju\\\/\/, ")kobe(?=\/")/
+docs/guide/admin/git-organizations.md docs/guide/files/workspaces-and-projects.md docs/guide/for-agents/working-with-git.md docs/guide/whats-new.md docs/install.md /`kobe\/(?:<(?:member|you)>\/\.\.\.)?`|(?<=was `)kobe(?=:`\))|(?<=\(was `metadata\.)kobe(?=`\))/
+docs/guide/agents/agents.md /(?<=rename have a `)kobe(?=:` section instead)/
+
 == permanent: Rate-limit keys in `kobe_rate_limits` start with `kobe:`; old and new pods count in the same rows during a rolling upgrade, like the lock names (KOBE-747)
 ** /\bkobe:(?=\$\{|["'`]|unknown-client-ip\b)/
 
@@ -263,13 +272,5 @@ services/server/src/memory/learn/prompt/v*/prompt.ts services/server/src/memory/
 services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
 path services/server/builtin-skills/skill-creator/scripts/kobe_rules.py /kobe/
 path services/server/builtin-skills/** /\bkobe(?=\.skill\.yaml$)/
-
-== RN-19 (KOBE-832): Agent file (orbit) export section `kobe:`, read back from files outside the database: written as `kaiju:`, both read (owner decision 2026-11-24, was Q11)
-services/server/src/agents/orbit/** images/orbit-eval/testing/fixtures/** /^\s*kobe:/
-services/server/src/agents/orbit/** /`kobe-\$\{slug\}-v\$\{version\}`/
-services/server/src/agents/orbit/** /(?<=^name: |toBe\(")kobe(?=-sales-analyst-v\d)|(?<=metadata\.)kobe\b/
-
-== RN-19 (KOBE-832): Workspace git branch prefix `kobe/<member>/...` in members' repositories: new branches get `kaiju/`, existing branches stay (owner decision 2026-11-24, was Q10)
-** /(?<!\.)\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")|(?<=")kobe(?=\/(?:probe|x|one|feature)")|(?<=\/\^)kobe(?=\\\/\[a-z0-9-\]\+\\\/)/
 
 # ---------------------------------------------------------------------------------------------

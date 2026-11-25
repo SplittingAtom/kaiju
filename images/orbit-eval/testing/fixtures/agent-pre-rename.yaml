@@ -1,0 +1,15 @@
+name: kobe-fixture-agent-v1
+description: Exported before the rename (KOBE-832) with the old metadata section, still accepted
+setup:
+  agents:
+    - name: fixture-agent
+      role: Assistant
+      model: openai/gpt-4o
+      system_prompt: You are a careful assistant.
+      tools:
+        - read
+  edges: []
+metadata:
+  kobe:
+    agent_version: 1
+    manifest_format: 1

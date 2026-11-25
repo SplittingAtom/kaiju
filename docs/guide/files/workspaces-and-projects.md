@@ -80,9 +80,10 @@ A Repo is a project converted to a repository on a connected git host (GitHub, G
 Forgejo); its record is the repository's default branch, and Kaiju keeps a copy of it. On a Repo,
 **Commit…** says where your commit goes before you commit:
 
-- usually to a new branch on the host with a **pull request** into the default branch. The result
-  names the branch and links the pull request (**Open pull request #N**). Commit again from the
-  same working copy and your commit is added to that pull request while it is open;
+- usually to a new branch on the host (`kaiju/<you>/...`) with a **pull request** into the
+  default branch. The result names the branch and links the pull request (**Open pull request
+  #N**). Commit again from the same working copy and your commit is added to that pull request
+  while it is open, also when Kaiju opened it before the rename on a `kobe/<you>/...` branch;
 - straight to the default branch, if a Workspace admin allowed that for the connection and the
   host does not protect the branch (otherwise you get a pull request and are told why).
 

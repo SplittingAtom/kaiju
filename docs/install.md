@@ -1886,6 +1886,16 @@ path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   provider with the id `local` and an API key may fail its first gateway sync after the upgrade;
   the next sync succeeds. The rewrite cannot be undone by going back a release: restore the
   `kaiju backup` taken before the upgrade.
+- **Commit branches `kaiju/<member>/...` and the Orbit export's `kaiju:` section (Kaiju rename,
+  KOBE-832).** No migration. New pull request branches of Kaiju's commit flow are named
+  `kaiju/<member>/<message>-<commit>`. Branches made before the upgrade keep their `kobe/` names
+  on the git host and in `git_commit_branches` (a branch under an open pull request can't be
+  renamed, and the row is the member's one open pull request per Repo whatever its prefix), so
+  their pull requests keep taking that member's commits until merged or closed; Kaiju never
+  deletes branches on the host. The Orbit export writes `metadata.kaiju` (was `metadata.kobe`);
+  the eval runner and the server's export schema accept either for good (files people downloaded
+  keep the old name) and refuse a file with both. Pods of the previous release keep naming new
+  branches `kobe/` while the servers roll; both are handled the same way.
 - **Stored `kobe` values are `kaiju`, and the gallery agent is Kaiju (Kaiju rename, KOBE-831,
   migration `0262_kaiju_stored_values`).** The migration renames the registry publisher value
   (`ALTER TYPE registry_publisher RENAME VALUE 'kobe' TO 'kaiju'`: every catalog skill and version

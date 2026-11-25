@@ -43,6 +43,29 @@ export const orbitAgentSpecSchema = z.strictObject({
   tools: z.array(orbitToolNameSchema).refine((t) => new Set(t).size === t.length, "duplicate tool"),
 });
 
+/**
+ * The `metadata` section Kaiju writes into an export (KOBE-832, spec rename-kaiju §11 A11), and
+ * the name files exported before the rename use. Downloaded files keep the old name for good, so
+ * a reader takes either; a file with both is refused, since nothing says which one is right.
+ */
+export const ORBIT_METADATA_KEY = "kaiju";
+export const PRE_RENAME_ORBIT_METADATA_KEY = "kobe";
+export const BOTH_METADATA_SECTIONS_MESSAGE =
+  "This agent file has both a `kaiju:` and a `kobe:` section under `metadata`. Keep `kaiju:` only: `kobe:` is the name files exported before the rename use.";
+
+export type OrbitKaijuSection =
+  | { readonly ok: true; readonly key: string | undefined; readonly section: unknown }
+  | { readonly ok: false; readonly message: string };
+
+/** Kaiju's section of an export's `metadata`, under its current or its pre-rename name. */
+export function orbitKaijuSection(metadata: Readonly<Record<string, unknown>>): OrbitKaijuSection {
+  const current = Object.hasOwn(metadata, ORBIT_METADATA_KEY);
+  const old = Object.hasOwn(metadata, PRE_RENAME_ORBIT_METADATA_KEY);
+  if (current && old) return { ok: false, message: BOTH_METADATA_SECTIONS_MESSAGE };
+  const key = current ? ORBIT_METADATA_KEY : old ? PRE_RENAME_ORBIT_METADATA_KEY : undefined;
+  return { ok: true, key, section: key === undefined ? undefined : metadata[key] };
+}
+
 /** `ExperimentConfig` (experiment.py) restricted to what the export writes. */
 export const orbitExperimentSchema = z.strictObject({
   name: z.string().min(1),
@@ -51,7 +74,10 @@ export const orbitExperimentSchema = z.strictObject({
     agents: z.array(orbitAgentSpecSchema).min(1),
     edges: z.array(z.never()),
   }),
-  metadata: z.record(z.string(), z.unknown()),
+  metadata: z.record(z.string(), z.unknown()).superRefine((metadata, ctx) => {
+    const read = orbitKaijuSection(metadata);
+    if (!read.ok) ctx.addIssue({ code: "custom", message: read.message });
+  }),
 });
 
 export type OrbitAgentSpec = z.infer<typeof orbitAgentSpecSchema>;
