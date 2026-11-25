@@ -72,7 +72,7 @@ export function ContextStack({
               data-context-legend={s.kind}
               data-selected={selected === s.kind || undefined}
               aria-pressed={selected === s.kind}
-              aria-label={`${GAUGE_LABELS[s.kind]}: ${tokensOf(s, memoryUnknown)}, ${formatShare(s.ofWindow)}. Show only this in the text`}
+              aria-label={`${GAUGE_LABELS[s.kind]}: ${tokensOf(s, memoryUnknown)}, ${formatShare(s.ofWindow)}. ${selected === s.kind ? "Show every section" : "Show only this in the text"}`}
               onClick={() => onPick(s.kind)}
             >
               <span className={styles.swatch} data-kind={s.kind} />

@@ -257,12 +257,14 @@ export interface RowOptions {
   readonly filter?: GaugeKind | null;
   /** The Formatted view's lines of a section (cached by the caller); absent: the raw text. */
   readonly format?: (section: number) => readonly FormattedLine[];
+  /** With `format`: only these sections are formatted (the rest raw until shown); absent: all. */
+  readonly formatted?: ReadonlySet<number>;
 }
 
 /** The text as rows: a label row per section, then its lines unless collapsed, long lines wrapped. */
 export function buildRows(
   sections: readonly ContextSection[],
-  { collapsed, filter = null, format }: RowOptions = {},
+  { collapsed, filter = null, format, formatted }: RowOptions = {},
 ): {
   readonly rows: readonly TextRow[];
   /** Each shown section's label row (undefined for a section filtered out). */
@@ -278,7 +280,7 @@ export function buildRows(
     firstRow.push(rows.length);
     rows.push({ type: "label", section });
     if (collapsed?.has(section) === true) return;
-    if (format !== undefined) {
+    if (format !== undefined && (formatted === undefined || formatted.has(section))) {
       for (const line of format(section)) {
         for (const piece of wrapLine(line, WRAP_COLUMNS)) {
           rows.push({ type: "line", section, text: lineText(piece), tokens: piece });
@@ -433,6 +435,15 @@ const stamp = (d: Date) =>
     .replace(/:/g, "")
     .replace("T", "-");
 
+/** 16 random hex characters for the download's section headings. */
+function randomBoundary(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return `kaiju-${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+}
+
+const occursIn = (context: ThreadContext, boundary: string) =>
+  context.sections.some((s) => s.text.includes(boundary) || s.label.includes(boundary));
+
 /**
  * The Download (KOBE-841): the context as the panel holds it, every section's heading (kind,
  * label, exact token count) and its raw text as sent, nothing else. Built from the route's answer
@@ -441,7 +452,13 @@ const stamp = (d: Date) =>
 export function contextDownload(
   context: ThreadContext,
   now: Date,
+  makeBoundary: () => string = randomBoundary,
 ): { readonly filename: string; readonly text: string } {
+  // Section text is untrusted and could contain a heading line of its own: each real heading
+  // carries a random boundary that occurs nowhere in the content.
+  let boundary = makeBoundary();
+  for (let n = 0; n < 8 && occursIn(context, boundary); n++) boundary = makeBoundary();
+  if (occursIn(context, boundary)) throw new Error("no unused download boundary");
   const head = [
     `Kaiju context of conversation ${context.thread_id}`,
     `Model: ${context.model ?? "unknown"}`,
@@ -449,6 +466,9 @@ export function contextDownload(
     `Tokens: ${context.total_tokens}${context.context_window === null ? "" : ` of ${context.context_window}`} (${context.tokens_basis === "usage" ? "reported by the model" : "estimated"})`,
     `Source: ${context.source}${context.exact ? "" : ` (approximate; may lack: ${context.missing.join(", ") || "nothing listed"})`}`,
   ];
+  head.push(
+    `Sections: ${context.sections.length}, each starting with a line "===== ${boundary} <n>. …"; that boundary appears nowhere else in this file.`,
+  );
   if (context.truncated) {
     head.push(
       `Shortened to fit${context.omitted_sections > 0 ? `; ${context.omitted_sections} sections left out of the middle` : ""}.`,
@@ -456,7 +476,7 @@ export function contextDownload(
   }
   const body = context.sections.map(
     (s, i) =>
-      `===== ${i + 1}. ${SECTION_LABELS[s.kind]}${s.label === "" ? "" : ` · ${s.label}`} · ${s.tokens} tokens${s.truncated ? " · shortened" : ""} =====\n${s.text}`,
+      `===== ${boundary} ${i + 1}. ${SECTION_LABELS[s.kind]}${s.label === "" ? "" : ` · ${s.label}`} · ${s.tokens} tokens${s.truncated ? " · shortened" : ""} =====\n${s.text}`,
   );
   return {
     filename: `kaiju-context-${context.thread_id}-${stamp(now)}.txt`,

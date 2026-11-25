@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { formatJson, formatYaml } from "./data";
-import { FORMAT_MAX_CHARS, formatText, lineText, segmentText, wrapLine } from "./index";
-import { formatMarkup, markupModeOf, parseMarkup } from "./markup";
+import { YAML_MAX_CHARS, formatJson, formatYaml, jsonDepth } from "./data";
+import { FORMAT_MAX_CHARS, formatText, lineText, parseFence, segmentText, wrapLine } from "./index";
+import { MAX_NODES, formatMarkup, markupModeOf, parseMarkup } from "./markup";
 import type { FormattedLine } from "./tokens";
 
 /** KOBE-841: the context viewer's readable formatting; untrusted text only ever becomes tokens. */
@@ -182,5 +182,142 @@ describe("helpers", () => {
     );
     expect(texts(wrapped)).toEqual(["abc", "def", "gh"]);
     expect(wrapped[1]?.map((t) => t.kind)).toEqual(["key", "string"]);
+  });
+});
+
+/** Elapsed milliseconds of `fn`. */
+function timed(fn: () => unknown): number {
+  const t0 = performance.now();
+  fn();
+  return performance.now() - t0;
+}
+
+describe("hostile input never breaks or stalls the panel", () => {
+  it("deeply nested JSON falls back to plain text instead of overflowing the stack", () => {
+    const deep = `${"[".repeat(10_000)}${"]".repeat(10_000)}`;
+    expect(jsonDepth(deep)).toBe(10_000);
+    expect(formatJson(deep)).toBeNull();
+    expect(texts(formatText(deep))).toEqual([deep]);
+    const fenced = `Look:\n\`\`\`json\n${'{"a":'.repeat(5_000)}1${"}".repeat(5_000)}\n\`\`\``;
+    expect(() => formatText(fenced)).not.toThrow();
+    expect(jsonDepth('{"a": "[[[[", "b": [1]}')).toBe(2); // brackets in strings do not count
+  });
+
+  it("caps the node count", () => {
+    const many = `<r>${"<a/>".repeat(MAX_NODES + 1)}</r>`;
+    expect(parseMarkup(many, "xml")).toBeNull();
+    expect(parseMarkup(`<r>${"<a/>".repeat(100)}</r>`, "xml")).not.toBeNull();
+  });
+
+  it("prints a billion-laughs YAML as references, quickly", () => {
+    const lines = ['a: &a ["lol","lol","lol","lol","lol","lol","lol","lol","lol"]'];
+    for (const [k, prev] of [
+      ["b", "a"],
+      ["c", "b"],
+      ["d", "c"],
+      ["e", "d"],
+      ["f", "e"],
+      ["g", "f"],
+      ["h", "g"],
+      ["i", "h"],
+    ]) {
+      lines.push(`${k}: &${k} [${Array(9).fill(`*${prev}`).join(",")}]`);
+    }
+    let out: FormattedLine[] | null = null;
+    expect(timed(() => (out = formatYaml(lines.join("\n"))))).toBeLessThan(200);
+    const printed = texts(out ?? []).join("\n");
+    expect(printed).toContain("*h");
+    expect(printed.length).toBeLessThan(5_000);
+  });
+
+  it("reads hostile fence lines in linear time (no regex backtracking)", () => {
+    for (const line of [
+      `\`\`\`${" ".repeat(65_000)}!`,
+      `\`\`\`${"\t".repeat(65_000)}-!`,
+      `~~~${" ".repeat(30_000)}a${" ".repeat(30_000)}!`,
+    ]) {
+      expect(parseFence(line)).toBeNull();
+      expect(timed(() => segmentText(`intro\n${line}\nend`))).toBeLessThan(50);
+    }
+    expect(parseFence("  ```yaml  ")).toEqual({ marker: "```", lang: "yaml" });
+  });
+
+  it("finds blocks in linear time when openers never close", () => {
+    const tags = Array(16_000).fill("<a>").join("\n");
+    expect(timed(() => segmentText(tags))).toBeLessThan(100);
+    const fences = Array(8_000).fill("```yaml").join("\n");
+    expect(timed(() => segmentText(fences))).toBeLessThan(100);
+  });
+
+  it("lexes unclosed quotes, close tags and many raw-text elements quickly", () => {
+    const cap = FORMAT_MAX_CHARS - 16;
+    for (const body of [
+      '<a b="'.repeat(cap / 6),
+      "</a ".repeat(cap / 4),
+      "<script></script>".repeat(cap / 17),
+      "<".repeat(cap),
+    ]) {
+      expect(timed(() => formatText(`<p>${body}</p>`))).toBeLessThan(100);
+    }
+  });
+
+  it("never throws and stays fast on random markup-ish input", () => {
+    const parts = [
+      "<",
+      ">",
+      "</",
+      "/>",
+      "[",
+      "]",
+      "{",
+      "}",
+      '"',
+      "'",
+      "```",
+      "~~~",
+      "---",
+      "\n",
+      " ",
+      "\t",
+      "a",
+      "x:",
+      "- ",
+      "&",
+      "<!--",
+      "-->",
+      "<![CDATA[",
+      "<!DOCTYPE",
+      "<?",
+      "?>",
+      "=",
+      "*a",
+      "&a ",
+    ];
+    let seed = 841;
+    const next = () => {
+      seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+      return seed;
+    };
+    for (let n = 0; n < 300; n++) {
+      const text = Array.from(
+        { length: 1 + (next() % 400) },
+        () => parts[next() % parts.length],
+      ).join("");
+      let ms = 0;
+      expect(() => (ms = timed(() => formatText(text)))).not.toThrow();
+      expect(ms).toBeLessThan(100);
+    }
+  });
+
+  it("formats a full 64 KiB section well within a frame budget; long YAML stays plain", () => {
+    const xml = `<root>${'<item id="1"><name>kaiju</name><v>2</v></item>\n'.repeat(1_200)}</root>`;
+    expect(xml.length).toBeLessThan(FORMAT_MAX_CHARS);
+    expect(timed(() => formatText(xml))).toBeLessThan(100);
+    const yaml = "key: value\nlist:\n  - 1\n  - two\n".repeat(1_400);
+    const small = yaml.slice(0, YAML_MAX_CHARS - 1);
+    expect(timed(() => formatText(small))).toBeLessThan(100);
+    const big = yaml.slice(0, FORMAT_MAX_CHARS - 1);
+    expect(formatYaml(big)).toBeNull();
+    expect(timed(() => formatText(big))).toBeLessThan(50);
   });
 });

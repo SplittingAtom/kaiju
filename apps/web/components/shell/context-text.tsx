@@ -1,8 +1,15 @@
 "use client";
 
 import type { ContextSection } from "@kaiju/protocol";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { formatText, type FormattedLine } from "../../lib/chat/context-format";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import {
   GAUGE_LABELS,
   buildRows,
@@ -15,33 +22,15 @@ import {
   type ContextView,
   type GaugeKind,
 } from "../../lib/chat/context-viewer";
-import { highlighted, TokenLine } from "./context-line";
+import { highlighted, LineBoundary, TokenLine } from "./context-line";
 import { ContextTextControls } from "./context-text-controls";
+import { useLazyFormat } from "./use-lazy-format";
 import styles from "./context-viewer.module.css";
 
 /** One row's height in px: `.row` in context-viewer.module.css sets the same. */
 const ROW_PX = 20;
 /** The viewport assumed before it is measured (and where nothing is laid out). */
 const FALLBACK_VIEWPORT = 800;
-
-/**
- * Each section's formatted lines, made the first time the section is shown expanded in the
- * Formatted view and kept until the sections change (a Refresh): a large context formats only
- * what is opened.
- */
-function useFormatCache(sections: readonly ContextSection[]) {
-  return useMemo(() => {
-    const cache = new Map<number, readonly FormattedLine[]>();
-    return (section: number): readonly FormattedLine[] => {
-      let lines = cache.get(section);
-      if (lines === undefined) {
-        lines = formatText(sections[section]?.text ?? "");
-        cache.set(section, lines);
-      }
-      return lines;
-    };
-  }, [sections]);
-}
 
 /** The collapsed sections, cleared when the sections change (a Refresh). */
 const NONE: ReadonlySet<number> = new Set();
@@ -89,16 +78,16 @@ export function ContextText({
   readonly onClearFilter: () => void;
 }) {
   const [view, setView] = useState<ContextView>(readContextView);
-  const format = useFormatCache(sections);
+  const { format, formatted, reveal } = useLazyFormat(sections);
   const { collapsed, toggle, expandAll, collapseAll } = useCollapsed(sections);
-  const { rows } = useMemo(
+  const { rows, firstRow } = useMemo(
     () =>
       buildRows(sections, {
         collapsed,
         filter,
-        ...(view === "formatted" ? { format } : {}),
+        ...(view === "formatted" ? { format, formatted } : {}),
       }),
-    [sections, collapsed, filter, view, format],
+    [sections, collapsed, filter, view, format, formatted],
   );
   const shownCount = useMemo(
     () =>
@@ -116,10 +105,11 @@ export function ContextText({
   // Each step bumps it, so stepping to the same match (the only one) scrolls to it again.
   const [stepSeq, setStepSeq] = useState(0);
   const matches = useMemo(() => findMatches(rows, query), [rows, query]);
-  // New matches (another query, or a Refresh's text) start again at the first.
-  const [seenMatches, setSeenMatches] = useState(matches);
-  if (seenMatches !== matches) {
-    setSeenMatches(matches);
+  // Another query, or a Refresh's text, starts again at the first match (sections formatted as
+  // they scroll into view change the rows, not the place in the matches).
+  const [seen, setSeen] = useState({ query, sections });
+  if (seen.query !== query || seen.sections !== sections) {
+    setSeen({ query, sections });
     setCurrent(0);
   }
   const at = matches.length === 0 ? 0 : Math.min(current, matches.length - 1);
@@ -180,6 +170,45 @@ export function ContextText({
   };
 
   const [start, end] = visibleRange({ scrollTop, viewport, rowPx: ROW_PX, count: rows.length });
+
+  // Sections near the viewport, expanded and not yet formatted, are formatted now; the section at
+  // the top of the viewport keeps its place while rows above or inside it change length.
+  const anchor = useRef<{ section: number; offset: number } | null>(null);
+  useLayoutEffect(() => {
+    if (view !== "formatted") return;
+    const ids = new Set<number>();
+    for (let i = start; i < end; i++) {
+      const row = rows[i];
+      if (row !== undefined && !formatted.has(row.section) && !collapsed.has(row.section)) {
+        ids.add(row.section);
+      }
+    }
+    if (ids.size === 0) return;
+    const top = rows[Math.floor(scrollTop / ROW_PX)];
+    const at = top === undefined ? undefined : firstRow[top.section];
+    if (top !== undefined && at !== undefined) {
+      anchor.current = { section: top.section, offset: Math.floor(scrollTop / ROW_PX) - at };
+    }
+    reveal([...ids]);
+  }, [view, rows, firstRow, start, end, formatted, collapsed, scrollTop, reveal]);
+  useLayoutEffect(() => {
+    const held = anchor.current;
+    if (held === null) return;
+    anchor.current = null;
+    const at = firstRow[held.section];
+    if (at === undefined) return;
+    const row = Math.min(at + held.offset, Math.max(rows.length - 1, 0));
+    if (row !== Math.floor(scrollTop / ROW_PX)) scrollToRow(row, 0);
+  }, [rows, firstRow, scrollTop, scrollToRow]);
+
+  // A focused heading stays rendered when it scrolls out of the window, so focus is never lost.
+  const [focused, setFocused] = useState<number | null>(null);
+  const focusedRow = focused === null ? undefined : firstRow[focused];
+  const shownRows = Array.from({ length: Math.max(end - start, 0) }, (_, k) => start + k);
+  if (focusedRow !== undefined && (focusedRow < start || focusedRow >= end)) {
+    shownRows.push(focusedRow);
+  }
+
   const q = query.trim();
   return (
     <div className={styles.textColumn}>
@@ -190,7 +219,11 @@ export function ContextText({
         onCollapseAll={collapseAll}
         filter={filter}
         filterCount={shownCount}
-        onClearFilter={onClearFilter}
+        onClearFilter={() => {
+          onClearFilter();
+          // The Clear filter button goes away with the filter: focus moves to the text.
+          pane.current?.focus();
+        }}
         announcement={announcement}
       />
       <div className={styles.search} role="search">
@@ -247,15 +280,16 @@ export function ContextText({
           </p>
         )}
         <div className={styles.spacer} style={{ height: rows.length * ROW_PX }}>
-          {rows.slice(start, end).map((row, k) => {
-            const i = start + k;
+          {shownRows.map((i) => {
+            const row = rows[i];
+            if (row === undefined) return null;
             const s = sections[row.section];
             if (s === undefined) return null;
             if (row.type === "label") {
               const open = !collapsed.has(row.section);
               return (
                 <div
-                  key={i}
+                  key={`s${row.section}`}
                   className={`${styles.row} ${styles.label}`}
                   data-kind={s.kind}
                   data-active={active === row.section || undefined}
@@ -266,6 +300,8 @@ export function ContextText({
                     className={styles.labelButton}
                     aria-expanded={open}
                     data-context-section={row.section}
+                    onFocus={() => setFocused(row.section)}
+                    onBlur={() => setFocused(null)}
                     onClick={() => toggle(row.section)}
                   >
                     {sectionHeading(s)}
@@ -283,7 +319,9 @@ export function ContextText({
                 {row.tokens === undefined ? (
                   highlighted(row.text, query)
                 ) : (
-                  <TokenLine tokens={row.tokens} query={query} />
+                  <LineBoundary text={row.text}>
+                    <TokenLine tokens={row.tokens} query={query} />
+                  </LineBoundary>
                 )}
               </div>
             );

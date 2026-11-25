@@ -28,6 +28,7 @@ import {
 import { saveBytes } from "../../lib/files/save";
 import type { Panel } from "../../lib/shell/panels";
 import { useKaijuExtras } from "../chat/kaiju-runtime";
+import { ContextBoundary } from "./context-boundary";
 import { ContextStack } from "./context-stack";
 import { ContextText } from "./context-text";
 import { IconAction } from "./icon-action";
@@ -296,19 +297,21 @@ export function ContextViewer({
         {context !== null && <Notices context={context} />}
         {memories !== null && <ContextMemoriesList memories={memories} />}
         {context !== null && model !== null && (
-          <div className={styles.columns}>
-            <ContextText
-              sections={context.sections}
-              filter={shownFilter}
-              onClearFilter={() => setFilter(null)}
-            />
-            <ContextStack
-              model={model}
-              selected={shownFilter}
-              memoryUnknown={context.missing.includes("memory")}
-              onPick={pick}
-            />
-          </div>
+          <ContextBoundary>
+            <div className={styles.columns}>
+              <ContextText
+                sections={context.sections}
+                filter={shownFilter}
+                onClearFilter={() => setFilter(null)}
+              />
+              <ContextStack
+                model={model}
+                selected={shownFilter}
+                memoryUnknown={context.missing.includes("memory")}
+                onPick={pick}
+              />
+            </div>
+          </ContextBoundary>
         )}
       </div>
     </WorkspacePanel>

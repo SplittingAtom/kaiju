@@ -54,12 +54,72 @@ function wholeKind(text: string): SegmentKind | null {
 }
 
 const TAG_START = /^\s*<([A-Za-z_][\w:.-]*)[\s>/]/;
+const TAG_NAME = /^[A-Za-z_][\w:.-]*$/;
+const LANG = /^[\w-]*$/;
 
-/** The text cut into plain text and blocks of a known format. */
+/**
+ * A code fence line (```` ```yaml ````, `~~~`), read by hand so a hostile line costs one pass (a
+ * regex with adjacent optional whitespace backtracks quadratically on long blank runs).
+ */
+export function parseFence(
+  line: string,
+): { readonly marker: string; readonly lang: string } | null {
+  const t = line.trim();
+  const c = t.charAt(0);
+  if (c !== "`" && c !== "~") return null;
+  let n = 0;
+  while (t.charAt(n) === c) n++;
+  if (n < 3) return null;
+  const lang = t.slice(n).trimStart();
+  return LANG.test(lang) ? { marker: t.slice(0, n), lang } : null;
+}
+
+/** The name of the closing tag a line ends with (`… </rules>`), if any. */
+function closingTagOf(line: string): string | null {
+  const t = line.trimEnd();
+  if (!t.endsWith(">")) return null;
+  const at = t.lastIndexOf("</");
+  if (at < 0 || t.length - at > 260) return null;
+  const name = t.slice(at + 2, -1);
+  return TAG_NAME.test(name) ? name : null;
+}
+
+/** Line numbers by what they close (a fence marker, a tag), built in one pass. */
+function indexClosers(lines: readonly string[]): Map<string, number[]> {
+  const closers = new Map<string, number[]>();
+  const add = (key: string, i: number) => {
+    const list = closers.get(key);
+    if (list === undefined) closers.set(key, [i]);
+    else list.push(i);
+  };
+  lines.forEach((line, i) => {
+    const fence = parseFence(line);
+    if (fence !== null && fence.lang === "") add(`f${fence.marker}`, i);
+    const tag = closingTagOf(line);
+    if (tag !== null) add(`t${tag}`, i);
+  });
+  return closers;
+}
+
+/** The first entry of an ascending list above `i` (binary search); -1 when none. */
+function nextAfter(list: readonly number[] | undefined, i: number): number {
+  if (list === undefined) return -1;
+  let lo = 0;
+  let hi = list.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((list[mid] ?? -1) > i) hi = mid;
+    else lo = mid + 1;
+  }
+  return list[lo] ?? -1;
+}
+
+/** The text cut into plain text and blocks of a known format. Linear in the text's length. */
 export function segmentText(text: string): Segment[] {
   const whole = wholeKind(text);
   if (whole !== null) return [{ kind: whole, text }];
   const lines = text.split("\n");
+  const closers = indexClosers(lines);
   const out: Segment[] = [];
   let plain: string[] = [];
   const flush = () => {
@@ -80,26 +140,24 @@ export function segmentText(text: string): Segment[] {
   }
   while (i < lines.length) {
     const line = lines[i] ?? "";
-    const fence = /^\s*(```+|~~~+)\s*([\w-]*)\s*$/.exec(line);
+    const fence = parseFence(line);
     if (fence !== null) {
-      const marker = fence[1] ?? "```";
-      const close = lines.findIndex((l, k) => k > i && l.trim() === marker);
-      const kind = FENCE_LANGS[(fence[2] ?? "").toLowerCase()];
-      if (close > i && kind !== undefined) {
+      const kind = FENCE_LANGS[fence.lang.toLowerCase()];
+      const close = kind === undefined ? -1 : nextAfter(closers.get(`f${fence.marker}`), i);
+      if (kind !== undefined && close > i) {
         flush();
         out.push({
           kind,
           text: lines.slice(i + 1, close).join("\n"),
-          fence: { open: line, close: lines[close] ?? marker },
+          fence: { open: line, close: lines[close] ?? fence.marker },
         });
         i = close + 1;
         continue;
       }
     }
-    const tag = TAG_START.exec(line);
+    const tag = TAG_START.exec(line.slice(0, 300));
     if (tag !== null) {
-      const closing = `</${tag[1] ?? ""}>`;
-      const close = lines.findIndex((l, k) => k > i && l.trimEnd().endsWith(closing));
+      const close = nextAfter(closers.get(`t${tag[1] ?? ""}`), i);
       if (close > i) {
         flush();
         const block = lines.slice(i, close + 1).join("\n");
@@ -131,9 +189,15 @@ function formatSegment(s: Segment): FormattedLine[] {
 
 /**
  * A section's text as formatted lines: each block in its format, everything else as written.
- * Texts over `FORMAT_MAX_CHARS` are returned plain.
+ * Texts over `FORMAT_MAX_CHARS`, and any text a formatter fails on, are returned plain. Never
+ * throws.
  */
 export function formatText(text: string): FormattedLine[] {
   if (text.length > FORMAT_MAX_CHARS) return plainLines(text);
-  return segmentText(text).flatMap(formatSegment);
+  try {
+    return segmentText(text).flatMap(formatSegment);
+  } catch {
+    // Never let a hostile text break the panel: anything unexpected shows as written.
+    return plainLines(text);
+  }
 }

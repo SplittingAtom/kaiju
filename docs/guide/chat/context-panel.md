@@ -29,12 +29,15 @@ asleep) and keeps nothing. **Refresh the context** reads it again after another 
 and coloured, whether a section is entirely one of them or holds one inside it (a fenced code
 block, YAML front matter, or a tagged block such as the system prompt's `<rules>` sections).
 Anything else stays as written. **Raw** shows exactly the text sent to the model, character for
-character. Your browser remembers which one you chose.
+character. Your browser remembers which one you chose. Formatted is a reading aid: it may tidy
+spacing, quotes or stray closing tags, so use **Raw** when the exact text matters, for example to
+spot instructions slipped into a page or file. Sections are formatted as they come into view.
 
 Formatting is for reading only. Context text comes from tools, files and web pages, so the panel
 never runs it: HTML is shown as its tags and text, never as a page; scripts are text; nothing is
 loaded from the internet; entities such as `&amp;` stay as written. A block that does not parse is
-shown as written. Very long sections are shown as written too, to keep the panel fast.
+shown as written. Very long sections (and long YAML) are shown as written too, to keep the panel
+fast. If the panel ever cannot show a context formatted, it says so and offers **Show it raw**.
 
 ## Filter by kind
 

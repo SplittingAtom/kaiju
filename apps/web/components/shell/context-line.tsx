@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 import type { FormattedLine, TokenKind } from "../../lib/chat/context-format";
 import { splitMatches } from "../../lib/chat/context-viewer";
 import styles from "./context-viewer.module.css";
@@ -47,4 +47,23 @@ export function TokenLine({
       </span>
     );
   });
+}
+
+/**
+ * Defence in depth (KOBE-841): if rendering one formatted line ever fails, that line shows its
+ * text as written and the rest of the panel, the Formatted/Raw toggle included, keeps working.
+ */
+export class LineBoundary extends Component<
+  { readonly text: string; readonly children: ReactNode },
+  { readonly failed: boolean }
+> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  override render(): ReactNode {
+    return this.state.failed ? this.props.text : this.props.children;
+  }
 }

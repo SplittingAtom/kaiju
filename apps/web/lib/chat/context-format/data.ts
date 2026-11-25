@@ -73,8 +73,12 @@ export function colourYaml(text: string): FormattedLine[] {
   return out;
 }
 
+/** Longer YAML is shown as written: the parser takes about 2 ms a KiB. */
+export const YAML_MAX_CHARS = 16 * 1024;
+
 /** YAML (a mapping or a sequence) printed with two-space indents and coloured; null otherwise. */
 export function formatYaml(src: string): FormattedLine[] | null {
+  if (src.length > YAML_MAX_CHARS) return null;
   let doc;
   try {
     doc = parseDocument(src, { prettyErrors: false, uniqueKeys: false });
@@ -91,27 +95,47 @@ export function formatYaml(src: string): FormattedLine[] | null {
   return colourYaml(printed);
 }
 
+/** Deeper JSON than this is shown as written (printing it back would overflow the stack). */
+export const MAX_JSON_DEPTH = 64;
+
+/** The deepest bracket nesting of a JSON text, strings skipped; one pass. */
+export function jsonDepth(src: string): number {
+  let depth = 0;
+  let max = 0;
+  let inString = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src.charCodeAt(i);
+    if (inString) {
+      if (c === 92)
+        i++; // backslash: skip the escaped character
+      else if (c === 34) inString = false;
+    } else if (c === 34) inString = true;
+    else if (c === 91 || c === 123) max = Math.max(max, ++depth);
+    else if (c === 93 || c === 125) depth--;
+  }
+  return max;
+}
+
 const JSON_LINE = /^(\s*)(?:("(?:[^"\\]|\\.)*")(: ))?(.*?)(,?)$/;
 
 /** JSON (an object or an array) printed with two-space indents and coloured; null otherwise. */
 export function formatJson(src: string): FormattedLine[] | null {
   const t = src.trim();
   if (!(t.startsWith("{") || t.startsWith("["))) return null;
-  let parsed: unknown;
+  if (jsonDepth(t) > MAX_JSON_DEPTH) return null;
+  let printed: string;
   try {
-    parsed = JSON.parse(t);
+    printed = JSON.stringify(JSON.parse(t), null, 2);
   } catch {
     return null;
   }
-  return JSON.stringify(parsed, null, 2)
-    .split("\n")
-    .map((line) => {
-      const [, lead = "", key, colon, val = "", comma = ""] = JSON_LINE.exec(line) ?? [];
-      const tokens: Token[] = [tok("plain", lead)];
-      if (key !== undefined) tokens.push(tok("key", key), tok("punct", colon ?? ""));
-      if (/^[[\]{}]+$/.test(val)) tokens.push(tok("punct", val));
-      else if (val !== "") tokens.push(scalar(val));
-      tokens.push(tok("punct", comma));
-      return tokens.filter((x) => x.text !== "");
-    });
+  return printed.split("\n").map((line) => {
+    const [, lead = "", key, colon, val = "", comma = ""] = JSON_LINE.exec(line) ?? [];
+    const tokens: Token[] = [tok("plain", lead)];
+    if (key !== undefined) tokens.push(tok("key", key), tok("punct", colon ?? ""));
+    if (/^[[\]{}]+$/.test(val)) tokens.push(tok("punct", val));
+    else if (val !== "") tokens.push(scalar(val));
+    tokens.push(tok("punct", comma));
+    return tokens.filter((x) => x.text !== "");
+  });
 }

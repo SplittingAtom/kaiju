@@ -31,6 +31,8 @@ type Node =
 
 /** Above this many nodes the input is shown as plain text (formatting stays fast). */
 export const MAX_NODES = 20_000;
+/** A quoted attribute value is looked for this far at most. */
+const MAX_ATTR_VALUE = 4096;
 /** Deeper trees than this are shown as plain text. */
 export const MAX_DEPTH = 64;
 /** An element whose only child is a text this short stays on one line. */
@@ -137,8 +139,9 @@ function readTag(src: string, at: number): { attrs: Attr[]; self: boolean; end: 
     while (i < src.length && /\s/.test(src.charAt(i))) i++;
     const q = src.charAt(i);
     if (q === '"' || q === "'") {
-      const close = src.indexOf(q, i + 1);
-      if (close < 0) return null;
+      // Looked for within a bound, so many unclosed quotes cost a pass each, not the whole rest.
+      const close = src.slice(i + 1, i + 1 + MAX_ATTR_VALUE).indexOf(q) + i + 1;
+      if (close <= i) return null;
       attrs.push({ name: name[0], value: src.slice(i, close + 1) });
       i = close + 1;
     } else {
@@ -167,6 +170,8 @@ function lex(src: string, mode: MarkupMode): Lexeme[] | null {
   const out: Lexeme[] = [];
   let i = 0;
   let text = 0;
+  // ASCII-only lower case keeps every offset (full lower-casing can change a string's length).
+  const lower = src.replace(/[A-Z]/g, (c) => c.toLowerCase());
   const flush = (to: number) => {
     if (to > text) out.push({ type: "text", text: src.slice(text, to) });
   };
@@ -192,8 +197,9 @@ function lex(src: string, mode: MarkupMode): Lexeme[] | null {
       lexeme = { type: "meta", text: src.slice(lt, end) };
     } else if (rest.startsWith("</")) {
       const name = NAME.exec(src.slice(lt + 2, lt + 258));
-      const close = name === null ? -1 : src.indexOf(">", lt + 2 + name[0].length);
-      if (name !== null && close >= 0 && src.slice(lt + 2 + name[0].length, close).trim() === "") {
+      let close = name === null ? -1 : lt + 2 + name[0].length;
+      while (close >= 0 && close < src.length && /\s/.test(src.charAt(close))) close++;
+      if (name !== null && src.charAt(close) === ">") {
         end = close + 1;
         lexeme = { type: "close", name: name[0] };
       }
@@ -216,7 +222,7 @@ function lex(src: string, mode: MarkupMode): Lexeme[] | null {
     i = text = end;
     if (lexeme.type === "open" && !lexeme.self && RAW_TEXT.has(lexeme.name.toLowerCase())) {
       // The body up to its closing tag is text: shown, never parsed or run.
-      const close = src.toLowerCase().indexOf(`</${lexeme.name.toLowerCase()}`, end);
+      const close = lower.indexOf(`</${lexeme.name.toLowerCase()}`, end);
       if (close < 0) {
         if (mode === "xml") return null;
         break;

@@ -54,6 +54,23 @@ work on the answer the panel already holds.
   "unknown" when an approximate answer lists `memory` as missing. Memory tool definitions stay in
   Tool definitions (said in the guide).
 
+## Security review fixes (review-g143, verdict "fix first")
+
+- HIGH deep JSON: `jsonDepth` cap (64) before parse, `stringify` in a try, `formatText` and the
+  format cache catch everything and fall back to plain; per-line `LineBoundary` and a panel
+  `ContextBoundary` ("Show it raw") as defence in depth.
+- MEDIUM fence ReDoS: `parseFence` reads fences by hand; closing tags via `lastIndexOf`.
+- MEDIUM quadratic search: closers indexed once per text, binary search per opener. Lexer:
+  ASCII lower-case once, close tags need `>` right after the name, quoted values looked for
+  within 4 KiB. YAML over 16 KiB stays plain (the parser is ~2 ms/KiB).
+- MEDIUM eager formatting: `use-lazy-format.ts` formats only sections near the viewport (anchor
+  kept while rows change length); search position no longer resets when rows change.
+- LOW download: random per-download boundary in every heading, re-drawn if content holds it;
+  header states the section count. Focus: Clear filter focuses the text; headings are keyed by
+  section and a focused heading stays rendered; pressed legend row says "Show every section".
+- Tests: node cap, billion laughs, deep JSON, hostile fences, unclosed openers, lexer worst
+  cases, a seeded fuzz (no throw, < 100 ms), 64 KiB timing, 500 KB open < 200 ms, focus.
+
 ## Docs evaluation
 
 Member-visible change, so the guide is updated in this PR: new page

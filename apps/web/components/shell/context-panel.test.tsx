@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CONTEXT_VIEW_KEY } from "../../lib/chat/context-viewer";
 import { contextOf, section } from "../../lib/chat/testing/context-fixtures";
 import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { openApp } from "../chat/testing";
+import { ContextText } from "./context-text";
 
 /**
  * KOBE-841: the Context panel's Formatted/Raw toggle (remembered), safe formatting of untrusted
@@ -134,7 +135,9 @@ describe("Download", () => {
       .click(within(dialog).getByRole("button", { name: "Download the context" }));
     expect(names).toHaveLength(1);
     expect(names[0]).toMatch(new RegExp(`^kaiju-context-${t}-\\d{4}-\\d{2}-\\d{2}-\\d{6}Z\\.txt$`));
-    const text = await (blobs[0] as Blob).text();
+    const saved = await (blobs[0] as Blob).text();
+    const boundary = /"===== (kaiju-[0-9a-f]{16}) /.exec(saved)?.[1] ?? "missing";
+    const text = saved.replaceAll(`===== ${boundary} `, "===== ");
     expect(text).toContain(
       "===== 1. System prompt · rules · 400 tokens =====\n<rules>\n    Be brief.\n</rules>",
     );
@@ -234,5 +237,60 @@ describe("the Memory row", () => {
     const dialog = await screen.findByRole("dialog", { name: "Context" });
     const legend = await within(dialog).findByRole("list", { name: "Context by kind" });
     expect(within(legend).getByRole("button", { name: /^Memory: unknown/ })).toBeTruthy();
+  });
+});
+
+describe("a large context", () => {
+  it("opens 500 KB of formattable sections well under 200 ms, formatting only what is shown", () => {
+    const xml = `<item id="1">${"<name>kaiju</name>".repeat(80)}</item>`;
+    const json = JSON.stringify({ rows: Array.from({ length: 40 }, (_, i) => ({ i, v: "x" })) });
+    const sections = Array.from({ length: 500 }, (_, i) =>
+      section(i % 2 === 0 ? "tool_result" : "tool_call", 10, i % 2 === 0 ? xml : json, `t${i}`),
+    );
+    const size = sections.reduce((n, s) => n + s.text.length, 0);
+    expect(size).toBeGreaterThan(500_000);
+    const t0 = performance.now();
+    const { container } = render(
+      <ContextText sections={sections} filter={null} onClearFilter={() => undefined} />,
+    );
+    const ms = performance.now() - t0;
+    expect(ms).toBeLessThan(200);
+    // Only the sections near the viewport were formatted: formatted, each XML section is 82 rows;
+    // the rest still hold their raw rows (about 9 each), so the text is far shorter than all-formatted.
+    expect(container.querySelectorAll("[data-token='tag']").length).toBeGreaterThan(0);
+    const spacer = container.querySelector("[role='region'] > div[style]");
+    const height = Number.parseInt((spacer as HTMLElement | null)?.style.height ?? "0", 10);
+    expect(height).toBeGreaterThan(0);
+    expect(height).toBeLessThan(250 * 82 * 20);
+    expect(container.querySelectorAll("[data-context-section]").length).toBeLessThan(500);
+  });
+});
+
+describe("focus", () => {
+  it("moves to the text after Clear filter, and stays on a heading that collapses", async () => {
+    const t = thread();
+    const { dialog, text } = await openViewer(t);
+    const user = userEvent.setup();
+    const legend = within(dialog).getByRole("list", { name: "Context by kind" });
+    await user.click(within(legend).getByRole("button", { name: /^Memory: 50 tokens/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Clear filter" }));
+    expect(document.activeElement).toBe(text);
+
+    const heading = within(text).getByRole("button", { name: /System prompt · rules/ });
+    heading.focus();
+    await user.keyboard("{Enter}");
+    const after = within(text).getByRole("button", { name: /System prompt · rules/ });
+    expect(after.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(after);
+  });
+
+  it("says Show every section on the pressed legend row", async () => {
+    const t = thread();
+    const { dialog } = await openViewer(t);
+    const legend = within(dialog).getByRole("list", { name: "Context by kind" });
+    await userEvent
+      .setup()
+      .click(within(legend).getByRole("button", { name: /^Memory: 50 tokens/ }));
+    expect(within(legend).getByRole("button", { name: /Show every section$/ })).toBeTruthy();
   });
 });
