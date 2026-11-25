@@ -56,6 +56,21 @@ export const STATE_FOLDER_OUTCOMES = [
 ] as const;
 export type StateFolderOutcome = (typeof STATE_FOLDER_OUTCOMES)[number];
 
+/**
+ * KOBE-827 review round 2: a sandbox agent that cannot move the old folder exits with this code and
+ * writes {@link STATE_FOLDER_TERMINATION_PREFIX} and the errno code (`...: EACCES`) to the
+ * container's termination log, before the wire starts (a hello cannot carry it). The server's
+ * stall check maps either to the stall cause `sandbox_start_failed` and a fixed member message;
+ * nothing the sandbox wrote reaches a member (78 = EX_CONFIG).
+ */
+export const STATE_FOLDER_EXIT_CODE = 78;
+export const STATE_FOLDER_TERMINATION_PREFIX = "kaiju-state-folder-move-failed";
+/** The errno code in a termination message the agent wrote; undefined for any other text. */
+export function stateFolderTerminationCode(message: string): string | undefined {
+  const match = /^kaiju-state-folder-move-failed: ([A-Z][A-Z0-9_]{0,31})\s*$/.exec(message);
+  return match?.[1];
+}
+
 /** The Pi provider id Kaiju's models were registered under before the rename (`kobe/<model>`). */
 export const PRE_RENAME_PROVIDER_ID = "kobe";
 

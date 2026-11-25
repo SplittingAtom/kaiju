@@ -123,7 +123,9 @@ upgrade become internal (still in S3, no longer shown or restored); check gate1 
    server warns `needs a person (KOBE-827)` and the next answer in that member's conversation tells
    them (both folders named); both folders untouched.
 7. **Failed move:** e.g. `chmod 0555` the volume root (or leave a `.kaiju` file beside `.kobe/`):
-   the agent exits with the error in the sandbox log, the member's run fails to start; restore the
+   the agent exits 78 with the error in the sandbox log and termination message; after two
+   restarts the member sees the fixed `sandbox_start_failed` message and the audit row has that
+   cause; restore the
    mode and the next restart moves the folder (one `.kaiju`, no `.kobe`).
 8. After the move, `.kaiju/agent` is still agent-owned 0700 (stamps trusted, no full re-hash).
 9. In the dirty-repo case, push the moved unpushed commit from a run (not only `git status`).
@@ -145,6 +147,21 @@ upgrade become internal (still in S3, no longer shown or restored); check gate1 
   removed (`removed_empty`, logged). The run notice tells the agent never to create it.
 - L2: a `.kaiju` file beside a `.kobe` with data is now `failed` (exit), not `conflict`; an
   unreadable `.kaiju` was already `failed`.
+
+## Review round 2 ("merge", one new Medium folded in)
+
+- A failed move now also writes `kaiju-state-folder-move-failed: <errno>` to
+  `/dev/termination-log` (prefix and an errno-shaped code only) and exits with 78. The server's
+  stall check (`classifyStall`) maps that exit code or marker in the container's last state to the
+  new cause `sandbox_start_failed` (definite after 2 restarts; detail built from fixed words and the
+  code), so the member gets the fixed `sandbox_start_failed` message ("Your sandbox could not
+  start: its workspace folder could not be moved to the new name. Nothing was deleted; an admin can
+  see the details.") instead of `workspace_unavailable`, and `sandbox.wake_stalled` carries that
+  cause (audit enum, doc table regenerated) with a remedy. Guide troubleshooting entry added.
+- The notice no longer says "once": it says it repeats until resolved and to bring it up again
+  only when it matters.
+- Not changed: with no readiness probe a poll can still catch the container's brief Running
+  state and count the wake ready (general gap, not KOBE-827's).
 
 ## Docs evaluation
 

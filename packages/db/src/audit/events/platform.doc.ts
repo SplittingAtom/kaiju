@@ -79,7 +79,7 @@ export const PLATFORM_EVENT_DOCS = {
   },
   "sandbox.wake_stalled": {
     fields: "`teamId`, `sandboxId`, `userId`, `cause`, `detail`",
-    when: "A woken sandbox was not Ready (definite stall signal or the wake budget); the run failed `workspace_unavailable` (`sandbox_failed` for cause `pod_failed`, KOBE-636; `workspace_quota_exhausted` for cause `volume_quota`, the team's volume quota is full, KOBE-733; `workspace_volume_lost` for cause `volume_lost`, the workspace volume was lost, and `workspace_volume_unreachable` or `workspace_volume_lost` for cause `volume_node_down`, its only node is down, by the grace period, KOBE-739). `detail` is the cluster reason and names nodes/volumes (site admins only) (KOBE-192)",
+    when: "A woken sandbox was not Ready (definite stall signal or the wake budget); the run failed `workspace_unavailable` (`sandbox_failed` for cause `pod_failed`, KOBE-636; `workspace_quota_exhausted` for cause `volume_quota`, the team's volume quota is full, KOBE-733; `workspace_volume_lost` for cause `volume_lost`, the workspace volume was lost, and `workspace_volume_unreachable` or `workspace_volume_lost` for cause `volume_node_down`, its only node is down, by the grace period, KOBE-739; `sandbox_start_failed` for cause `sandbox_start_failed`, the sandbox agent could not move `/workspace/.kobe` at start, KOBE-827). `detail` is the cluster reason and names nodes/volumes (site admins only) (KOBE-192)",
   },
   "sandbox.woken": {
     fields: "`sandboxId`, `userId`",

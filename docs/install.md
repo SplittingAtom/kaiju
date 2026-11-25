@@ -1840,8 +1840,12 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   an earlier move followed by an older image, or a folder someone made before the upgrade),
   `failed` (the rename failed, with the errno `code`, or `.kaiju` is a file beside a `.kobe/`
   holding data; logged as an error in the sandbox's own log and the agent exits before anything
-  writes `.kaiju`, so the pod restarts with backoff and every restart retries the move on an
-  untouched volume; the member's runs fail to start meanwhile) or `not_a_folder` (`.kobe` is a link
+  writes `.kaiju`, writing `kaiju-state-folder-move-failed: <code>` to its termination log and
+  exiting with code 78, so the pod restarts with backoff and every restart retries the move on an
+  untouched volume; after two failed restarts the wake fails with the member message "Your sandbox
+  could not start: its workspace folder could not be moved to the new name. Nothing was deleted; an
+  admin can see the details." and the audit event `sandbox.wake_stalled` with cause
+  `sandbox_start_failed`) or `not_a_folder` (`.kobe` is a link
   or a file; never followed, and the agent carries on with `.kaiju/`). For `conflict` and
   `not_a_folder` the warning repeats at every start and each run's context tells the in-sandbox
   agent to tell the member (both folders named, nothing deleted). Resolve it: inspect the volume

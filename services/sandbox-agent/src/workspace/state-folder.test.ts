@@ -22,6 +22,7 @@ import {
   moveStateFolder,
   stateFolderAtStart,
   stateFolderNotice,
+  writeStartFailure,
   type StateFolderFs,
 } from "./state-folder.js";
 
@@ -260,13 +261,25 @@ describe("moveStateFolder (KOBE-827)", () => {
     expect(await readFile(path.join(root, ".kaiju"), "utf8")).toBe("a file a tool left");
   });
 
+  it("writes a fixed reason to the termination log for the server's stall check (round 2)", async () => {
+    const dir = await scratch();
+    const file = path.join(dir, "termination-log");
+    await writeStartFailure({ outcome: "failed", code: "EACCES" }, file);
+    expect(await readFile(file, "utf8")).toBe("kaiju-state-folder-move-failed: EACCES\n");
+    // Never anything but the prefix and an errno-shaped code.
+    await writeStartFailure({ outcome: "failed", code: "/workspace/.kobe/repos" }, file);
+    expect(await readFile(file, "utf8")).toBe("kaiju-state-folder-move-failed: UNKNOWN\n");
+    // Outside Kubernetes (no such file's directory) it does not throw.
+    await writeStartFailure({ outcome: "failed" }, path.join(dir, "missing", "log"));
+  });
+
   it("tells every run about a conflict or an odd .kobe, naming both folders (M2)", () => {
     for (const outcome of ["conflict", "not_a_folder"] as const) {
       const notice = stateFolderNotice({ outcome }) ?? "";
       expect(notice).toContain("/workspace/.kobe");
       expect(notice).toContain("/workspace/.kaiju/");
       expect(notice).toContain("deleted nothing");
-      expect(notice).toContain("Tell the user");
+      expect(notice).toContain("repeats this notice with every message");
       // It rides the start-of-run block the run's system prompt carries.
       const content = memoryRunFileContent(
         undefined,

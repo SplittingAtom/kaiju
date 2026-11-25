@@ -1,3 +1,4 @@
+import { STATE_FOLDER_EXIT_CODE, stateFolderTerminationCode } from "@kaiju/protocol";
 import { quantityBytes } from "./config.js";
 import { podTermination } from "./pod-termination.js";
 import { judgeScheduling } from "./scheduling-message.js";
@@ -35,6 +36,12 @@ export type StallCause =
    * come back with it. Lost only once that has lasted the grace period (the lifecycle decides).
    */
   | "volume_node_down"
+  /**
+   * The sandbox agent exits at start because it cannot move the pre-rename folder
+   * `/workspace/.kobe` (KOBE-827; exit code and termination message from `@kaiju/protocol`): the
+   * pod crash-loops with `.kobe` intact until an admin fixes the cause.
+   */
+  | "sandbox_start_failed"
   | "unknown";
 
 export interface StallDiagnosis {
@@ -109,6 +116,37 @@ const clean = (s: string): string =>
     .replace(/ {2,}/g, " ")
     .trim()
     .slice(0, MAX_DETAIL);
+
+/** Restarts after which the agent's start failure is definite (a first retry may still pass). */
+const START_FAILURE_RESTARTS = 2;
+
+/**
+ * KOBE-827 review round 2: the sandbox container last exited because the agent could not move the
+ * old folder (its exit code, or its termination message). The detail is built from fixed words and
+ * the errno code only, never from the message's other text.
+ */
+function startFailure(
+  pod: KubeObject | undefined,
+): { readonly detail: string; readonly restarts: number } | undefined {
+  const status = (pod?.["status"] ?? {}) as Record<string, unknown>;
+  const all = ((status["containerStatuses"] as unknown[]) ?? []) as Record<string, unknown>[];
+  for (const c of all) {
+    const restarts = typeof c["restartCount"] === "number" ? c["restartCount"] : 0;
+    for (const key of ["state", "lastState"]) {
+      const terminated = ((c[key] ?? {}) as Record<string, Record<string, unknown> | undefined>)[
+        "terminated"
+      ];
+      if (terminated === undefined) continue;
+      const code = stateFolderTerminationCode(text(terminated["message"]));
+      if (terminated["exitCode"] !== STATE_FOLDER_EXIT_CODE && code === undefined) continue;
+      return {
+        detail: `sandbox agent exited ${String(terminated["exitCode"])} at start: could not move /workspace/.kobe to /workspace/.kaiju (${code ?? "no code"}), ${restarts} restart(s)`,
+        restarts,
+      };
+    }
+  }
+  return undefined;
+}
 
 const QUOTA_EVENT = /exceeded quota/i;
 const QUOTA_VOLUME = /persistentvolumeclaims|requests\.storage/i;
@@ -199,6 +237,11 @@ export function classifyStall(input: {
   if (ended) {
     const why = [ended.reason, ended.message].filter((p) => p !== "").join(": ");
     return make("pod_failed", `pod ${ended.phase}${why ? `: ${why}` : ""}`, true);
+  }
+  // The agent itself refuses to start (KOBE-827): definite once a restart failed the same way.
+  const refused = startFailure(pod);
+  if (refused) {
+    return make("sandbox_start_failed", refused.detail, refused.restarts >= START_FAILURE_RESTARTS);
   }
   // No workspace volume, and the team's quota has no room for one (KOBE-733): waiting will not
   // help. The quota's own numbers, or a controller's "exceeded quota" event of this wake (it names

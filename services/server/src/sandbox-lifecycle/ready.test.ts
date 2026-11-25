@@ -3,7 +3,9 @@ import { FAILURE_MESSAGES } from "../runs/failure-codes.js";
 import { SandboxWakeError } from "../sandbox-wire/types.js";
 import {
   ensureReady,
+  REMEDY,
   SANDBOX_FAILED_MESSAGE,
+  SANDBOX_START_FAILED_MESSAGE,
   WORKSPACE_QUOTA_MESSAGE,
   WORKSPACE_UNAVAILABLE_MESSAGE,
   WORKSPACE_VOLUME_LOST_MESSAGE,
@@ -65,6 +67,27 @@ describe("ensureReady", () => {
     // The run's card shows the server's own text for the code: the same words.
     expect(FAILURE_MESSAGES["sandbox_failed"]).toBe(SANDBOX_FAILED_MESSAGE);
     expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: ended });
+  });
+
+  it("a sandbox that cannot move its old folder (KOBE-827) fails in fixed words", async () => {
+    const refused = {
+      cause: "sandbox_start_failed",
+      detail:
+        "sandbox agent exited 78 at start: could not move /workspace/.kobe to /workspace/.kaiju (EACCES), 2 restart(s)",
+      definite: true,
+    } as const;
+    const r = run(async () => ({ ready: false, sandboxId: "sb-1", stall: refused }));
+    const err = await r.result.catch((e: unknown) => e);
+    expect(err).toMatchObject({
+      code: "sandbox_start_failed",
+      message: SANDBOX_START_FAILED_MESSAGE,
+    });
+    expect(SANDBOX_START_FAILED_MESSAGE).toBe(
+      "Your sandbox could not start: its workspace folder could not be moved to the new name. Nothing was deleted; an admin can see the details.",
+    );
+    expect(FAILURE_MESSAGES["sandbox_start_failed"]).toBe(SANDBOX_START_FAILED_MESSAGE);
+    expect(REMEDY.sandbox_start_failed).toMatch(/KOBE-827/);
+    expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: refused });
   });
 
   it("a full team volume quota (KOBE-733) fails with its own code and words", async () => {

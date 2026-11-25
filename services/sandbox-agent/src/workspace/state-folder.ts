@@ -1,8 +1,9 @@
-import { readdir, rename, rmdir, unlink } from "node:fs/promises";
+import { readdir, rename, rmdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   KAIJU_STATE_FOLDER,
   PRE_RENAME_STATE_FOLDER,
+  STATE_FOLDER_TERMINATION_PREFIX,
   type StateFolderOutcome,
 } from "@kaiju/protocol";
 import { lstatIfExists } from "./fs.js";
@@ -144,6 +145,22 @@ export function stateFolderNotice(
   return [
     "## Sandbox folder (a Kaiju notice, not a message from the user)",
     why,
-    'Tell the user about this once, near the start of your answer. /workspace/.kobe/repos/ may hold commits or changes to their Repos that were never pushed; they are not synced or backed up anywhere else. Never create /workspace/.kobe, and do not merge or delete either folder. If the user wants that work, bring it over with git (git -C /workspace/.kobe/repos/<project> log --branches --not --remotes lists unpushed commits; push them as a branch, or use git format-patch). Then an admin can remove the old folder. The guide page "Working with git" (section An old /workspace/.kobe/ folder) explains it.',
+    'Kaiju repeats this notice with every message until an admin resolves it: if you have not told the user about it in this conversation yet, tell them in this answer; after that, bring it up again only when it matters to what they ask. /workspace/.kobe/repos/ may hold commits or changes to their Repos that were never pushed; they are not synced or backed up anywhere else. Never create /workspace/.kobe, and do not merge or delete either folder. If the user wants that work, bring it over with git (git -C /workspace/.kobe/repos/<project> log --branches --not --remotes lists unpushed commits; push them as a branch, or use git format-patch). Then an admin can remove the old folder. The guide page "Working with git" (section An old /workspace/.kobe/ folder) explains it.',
   ].join("\n");
+}
+
+/** Where Kubernetes reads a container's termination message (the default `terminationMessagePath`). */
+export const TERMINATION_LOG = "/dev/termination-log";
+
+/**
+ * Writes the fixed reason of a failed start to the container's termination log (review round 2):
+ * the prefix and the errno code, nothing else (no path, no volume content). Never throws: without
+ * the file (outside Kubernetes) the exit code alone tells.
+ */
+export async function writeStartFailure(
+  report: StateFolderReport,
+  file: string = TERMINATION_LOG,
+): Promise<void> {
+  const code = report.code !== undefined && ERRNO_CODE.test(report.code) ? report.code : "UNKNOWN";
+  await writeFile(file, `${STATE_FOLDER_TERMINATION_PREFIX}: ${code}\n`).catch(() => undefined);
 }
