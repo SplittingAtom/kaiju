@@ -1881,8 +1881,11 @@ path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   depended on the model. During the rolling `helm upgrade`, pods and sandboxes of the previous
   release still send the old id: the model gateway checks, prices and records it as the new one,
   and the gateway sync keeps the old provider name in Bifrost next to the new one, with the same
-  models, for this release only. The rewrite cannot be undone by going back a release: restore
-  the `kaiju backup` taken before the upgrade.
+  models, for this release only. Do not change the Site memory settings until every server pod
+  runs the new release: saved through an old pod, they would embed every memory again. A Site
+  provider with the id `local` and an API key may fail its first gateway sync after the upgrade;
+  the next sync succeeds. The rewrite cannot be undone by going back a release: restore the
+  `kaiju backup` taken before the upgrade.
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
   namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces
