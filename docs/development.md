@@ -130,6 +130,19 @@ dispatch); the helpers are in `e2e/lib/run-common.sh` and the sections in `e2e/r
 numeric order (a new section is a new file plus a `source` line in `run.sh`). The required `k3d` check passes only when
 every image build and every shard passed.
 
+**The embeddings model in CI (KOBE-839).** The chart's embeddings init container downloads its
+GGUF from a public URL, which on a fresh cluster per shard was slow enough to exhaust `helm --wait`.
+The `model` job of `e2e.yml` keeps the file in the GitHub Actions cache, keyed by the sha256 pinned
+in `charts/kaiju/values.yaml` (`embeddings.local.model.sha256`), downloading it with retries and a
+sha256 check only on a miss. Each shard restores it and serves it from the runner
+(`scripts/ci-embeddings-model.sh serve`, port 18089 (18080 is the gate scripts' ingress port-forward), exported as `KAIJU_E2E_MODEL_PORT`); the
+installs in `e2e/run/10-deploy.sh` and `e2e/gate4-restore.sh` then set
+`embeddings.local.model.url` to the k3d network's gateway and allow that address in
+`embeddings.local.networkPolicy.extraEgress` (`e2e/lib/embeddings-model.sh`). The init container
+still checks the sha256, and later upgrades keep the URL (`--reuse-values` or the saved values).
+Locally, without `KAIJU_E2E_MODEL_PORT`, the cluster downloads from the public URL as before. A new
+model pin needs nothing here: its sha256 is a new cache key.
+
 ## Migrations
 
 Schema changes go through drizzle (`pnpm --filter @kaiju/db db:generate`; never edit snapshots by
