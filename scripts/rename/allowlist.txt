@@ -98,7 +98,10 @@ docs/guide/agents/agents.md /(?<=rename have a `)kobe(?=:` section instead)/
 ** /\bkobe(?:CommitId)\b/
 
 == permanent: Built-in skill names, pinned by a CHECK constraint (registry_skills_kobe_names); the built-in connectors' URLs moved to `kaiju-server.internal` with KOBE-826 (migration 0260 updated `connectors_builtin_url`)
-** /\bkobe-guide\b/
+** !services/server/builtin-skills/** /\bkobe-guide\b/
+
+== permanent: Extractor prompts v1 and v2, whose bytes are pinned (`fixtures/prompt.sha256`) and recorded with their fixtures: kept for history and for the eval's replay of earlier runs; KOBE-833 (RN-20, owner decision 2026-11-24 A12) made v3 with the new name
+services/server/src/memory/learn/prompt/v1/prompt.ts services/server/src/memory/learn/prompt/v2/prompt.ts /\bKobe\b/
 
 == permanent: Values held outside the database that existing installs read back: git-mirror commit trailers in members' repositories, the Bifrost customer, provider, key and admin user names, the conversion marker in repository descriptions
 ** /\bKobe-(?:Registry-Version|Runtime-Hash|Package-Hash)\b/
@@ -268,9 +271,9 @@ docs/install.md /(?<=\*\*Stored `)kobe(?=` values are)|(?<=RENAME VALUE ')kobe(?
 
 == RN-20 (KOBE-833): Built-in skill packages and versioned model prompts, whose bytes are pinned (published package hashes, prompt fixtures): new skill and prompt versions under the new name, with an eval and new recordings (owner decision 2026-11-24, was Q12)
 services/server/builtin-skills/** /kobe/i
-services/server/src/memory/learn/prompt/v*/prompt.ts services/server/src/memory/learn/prompt/v*/fixtures/** /^(?!\s*(?:import|export)\b[^\n]*\bfrom\b)[^\n]*kobe[^\n]*$/i
 services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
 path services/server/builtin-skills/skill-creator/scripts/kobe_rules.py /kobe/
 path services/server/builtin-skills/** /\bkobe(?=\.skill\.yaml$)/
+path services/server/builtin-skills/** /\bkobe(?=-guide\/)/
 
 # ---------------------------------------------------------------------------------------------

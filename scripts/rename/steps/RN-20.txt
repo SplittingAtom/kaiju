@@ -2,9 +2,18 @@
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
-# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
-# permanent group with their reason. Until then the dry run lists every occurrence as left for
-# hand edits.
+# covers it (the packages' schema id `kobe.dev/skill/v1` stays, spec §3 stays 3).
+#
+# Hand work after the apply (docs/ledger/KOBE-833.md): each built-in package's version raised
+# (minor) with a new changelog and its hashes and scan appended to the pinned tables; the skill
+# name list (`KAIJU_SKILL_NAMES` with `kobe-guide` kept reserved as a pre-rename name), migration
+# 0263 renaming Kaiju's `kobe-guide` catalog skill and its CHECK; agents' `kobe-guide` read as
+# `kaiju-guide`; the gallery agent's next generation; extractor prompt v3 (a copy of v2 with the
+# product name), its fixtures and pinned hash; v1 and v2 kept for history in a permanent group.
 
 == RN-20 (KOBE-833): Built-in skill packages and versioned model prompts, whose bytes are pinned (published package hashes, prompt fixtures): new skill and prompt versions under the new name, with an eval and new recordings (owner decision 2026-11-24, was Q12)
+services/server/builtin-skills/** /kobe/i
+services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
+path services/server/builtin-skills/skill-creator/scripts/kobe_rules.py /kobe/
+path services/server/builtin-skills/** /\bkobe(?=\.skill\.yaml$)/
+path services/server/builtin-skills/** /\bkobe(?=-guide\/)/
