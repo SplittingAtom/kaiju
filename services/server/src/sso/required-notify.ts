@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, siteRoles, users, type KaijuDb } from "@kaiju
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { Mailer, MailMessage } from "../mail/mailer.js";
+import { mailAppName, readMailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 
 /**
@@ -22,8 +23,11 @@ export function ssoRequiredOffMessage(
   publicUrl: string,
   slug: string,
   to: string,
-  reason: SsoRequiredOffReason = "last_provider",
+  reason: SsoRequiredOffReason,
+  /** The Site's app name, ready for mail (`readMailAppName`, KOBE-834). */
+  appName: string,
 ): MailMessage {
+  const app = mailAppName(appName);
   const why =
     reason === "last_provider"
       ? [
@@ -36,7 +40,7 @@ export function ssoRequiredOffMessage(
         ];
   return {
     to,
-    subject: "Kaiju: single sign-on is no longer required",
+    subject: `${app}: single sign-on is no longer required`,
     text: [
       ...why,
       "so Require single sign-on turned itself off: people can sign in with their",
@@ -60,10 +64,12 @@ export async function notifySsoRequiredOff(
       .from(siteRoles)
       .innerJoin(users, eq(users.id, siteRoles.userId))
       .where(and(inArray(siteRoles.role, ["owner", "admin"]), isNull(users.deactivatedAt)));
+    if (admins.length === 0) return 0;
+    const app = await readMailAppName(deps.db);
     let sent = 0;
     for (const { email } of admins) {
       try {
-        await deps.mailer.send(ssoRequiredOffMessage(deps.publicUrl, slug, email, reason));
+        await deps.mailer.send(ssoRequiredOffMessage(deps.publicUrl, slug, email, reason, app));
         sent++;
       } catch (err) {
         logger.warn({ err }, "require single sign-on notice could not be sent");

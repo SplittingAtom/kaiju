@@ -1,6 +1,7 @@
 import type { BreakGlassNotificationEvent } from "@kaiju/db";
 import type { ServerDeps } from "../deps.js";
 import type { MailMessage } from "../mail/mailer.js";
+import { mailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 import { scopeOf, type GrantDetail } from "./store.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
@@ -42,7 +43,12 @@ export function grantMessage(
   detail: GrantDetail,
   event: GrantEvent,
   to: Recipient,
-  options: { isSiteAdmin: boolean; wasActive?: boolean },
+  options: {
+    isSiteAdmin: boolean;
+    wasActive?: boolean;
+    /** The Site's app name (`readMailAppName`, KOBE-834). */
+    appName: string;
+  },
 ): MailMessage {
   const { grant } = detail;
   const team = oneLine(detail.team.name);
@@ -56,7 +62,7 @@ export function grantMessage(
       ? `A break-glass request for the ${team} team was withdrawn`
       : SUBJECTS[event].replace("{team}", team);
   const lines = [
-    `${requester} asked for read-only break-glass access to the ${team} team on Kaiju.`,
+    `${requester} asked for read-only break-glass access to the ${team} team on ${mailAppName(options.appName)}.`,
     scopeLine(detail, teamSide),
   ];
   if (event === "requested") {

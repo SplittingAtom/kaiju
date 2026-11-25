@@ -207,7 +207,8 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 ## System
 
-- **Appearance**: the site name, logo, dark logo, favicon and style preset. See
+- **Appearance**: the site name (also used in email subjects and text), logo, dark logo, favicon
+  and style preset. See
   [Appearance](../appearance.md).
 - **Settings**: site-wide settings such as required two-factor authentication (local accounts
   enrol an authenticator app; a single sign-on sign-in counts only when the identity provider

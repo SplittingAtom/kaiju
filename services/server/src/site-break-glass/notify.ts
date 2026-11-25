@@ -2,6 +2,7 @@ import type { BreakGlassNotificationEvent, BreakGlassRecipientRole } from "@kaij
 import type { ServerDeps } from "../deps.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { MailMessage } from "../mail/mailer.js";
+import { mailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 import type { SiteGrantDetail } from "./store.js";
 
@@ -19,7 +20,12 @@ export function siteGrantMessage(
   detail: SiteGrantDetail,
   event: BreakGlassNotificationEvent,
   to: { readonly name: string; readonly email: string },
-  options: { role: BreakGlassRecipientRole; wasActive?: boolean },
+  options: {
+    role: BreakGlassRecipientRole;
+    wasActive?: boolean;
+    /** The Site's app name (`readMailAppName`, KOBE-834). */
+    appName: string;
+  },
 ): MailMessage {
   const { grant } = detail;
   const isSiteAdmin = options.role === "site_admin" || options.role === "requester";
@@ -45,7 +51,7 @@ export function siteGrantMessage(
   };
   const requester = oneLine(detail.requestedBy.name);
   const lines = [
-    `${requester} asked for read-only break-glass access to ${whose} on Kaiju.`,
+    `${requester} asked for read-only break-glass access to ${whose} on ${mailAppName(options.appName)}.`,
     "Portable memories are the preferences that follow a person into every Workspace.",
   ];
   if (event === "requested") {
