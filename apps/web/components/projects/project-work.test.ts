@@ -16,18 +16,18 @@ describe("commit outcomes and hints on a Repo", () => {
     expect(
       commitNotice("App", {
         status: "pull_request",
-        branch: "kobe/a/b-1",
+        branch: "kaiju/a/b-1",
         commitSha: "a".repeat(40),
         number: 3,
         url: "",
         opened: false,
         fallback: false,
       }),
-    ).toEqual({ text: "Added your commit to pull request #3 (branch kobe/a/b-1)." });
+    ).toEqual({ text: "Added your commit to pull request #3 (branch kaiju/a/b-1)." });
     expect(
       commitNotice("App", {
         status: "pull_request",
-        branch: "kobe/a/b-1",
+        branch: "kaiju/a/b-1",
         commitSha: "a".repeat(40),
         number: 4,
         url: "https://h.test/pr/4",

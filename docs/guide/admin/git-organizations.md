@@ -201,7 +201,7 @@ Kaiju's server makes a git commit authored as the member (with the address chose
 [Commit author email](#commit-author-email), and "_name_ via Kaiju" as committer) and pushes it
 with the connection's credential:
 
-- **By default**, to a new branch named `kobe/<member>/<message>-<commit>`, and opens a pull
+- **By default**, to a new branch named `kaiju/<member>/<message>-<commit>`, and opens a pull
   request into the default branch. Further commits from the same working copy are added to that
   pull request while it is open; after it is merged or closed, the next commit opens a new one.
 - **With "Allow commits straight to the default branch"** (off by default), straight to the

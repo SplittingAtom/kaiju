@@ -116,7 +116,7 @@ export const gitFixtures: Record<(typeof git.team)[number], ProbeFixture> = {
       repositoryId,
       baseCommitId: randomUUID(),
       baseSha: "a".repeat(40),
-      branch: "kobe/probe",
+      branch: "kaiju/probe",
       headSha: "b".repeat(40),
       treeSha: "c".repeat(40),
       pullNumber: 1,

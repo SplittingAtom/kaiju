@@ -91,11 +91,11 @@ export function mapAgentVersionToOrbit(input: OrbitExportInput): OrbitExport {
     tools,
   };
   const config: OrbitExperiment = {
-    name: `kobe-${slug}-v${version}`,
+    name: `kaiju-${slug}-v${version}`,
     ...(frontmatter.description === undefined ? {} : { description: frontmatter.description }),
     setup: { agents: [agent], edges: [] },
     metadata: {
-      kobe: {
+      kaiju: {
         agent_version: version,
         approval_mode: toolManifest.approval_mode.effective,
         connectors: toolManifest.connectors === "all" ? "all" : [...toolManifest.connectors],

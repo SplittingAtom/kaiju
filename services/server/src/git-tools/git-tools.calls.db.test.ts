@@ -162,7 +162,7 @@ describe("writes ask by default and need a signed approval of exactly that input
     const out = await call(s, "git_create_branch", {
       connection: id,
       repository: "docs",
-      name: "kobe/one",
+      name: "kaiju/one",
       from: "main",
     });
     expect(out.isError, out.text).toBeUndefined();

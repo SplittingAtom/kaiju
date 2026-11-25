@@ -84,7 +84,7 @@ describe("default decisions (GQ3, G9)", () => {
     const d = decide("git_create_branch", {
       connection: CONN,
       repository: "docs",
-      name: "kobe/x",
+      name: "kaiju/x",
       from: "main",
     });
     expect(d).toMatchObject({ effect: "allow" });

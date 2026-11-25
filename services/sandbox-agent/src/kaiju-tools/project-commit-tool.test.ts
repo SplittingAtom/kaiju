@@ -133,7 +133,7 @@ describe("commit_project (KOBE-580)", () => {
   it("parses and words the Repo outcomes (KOBE-767), failing closed on bad ones", () => {
     const pr = {
       status: "pull_request",
-      branch: "kobe/ada/fix-aaaaaaa",
+      branch: "kaiju/ada/fix-aaaaaaa",
       number: 12,
       url: "https://github.com/acme/app/pull/12",
       opened: true,
