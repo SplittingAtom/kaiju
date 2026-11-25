@@ -1,6 +1,14 @@
 import { addCosts, costForDisplay, costToUnits } from "./usage-cost.js";
 import { thinkingLevelSchema, type ThinkingLevel } from "@kaiju/protocol";
-import { scanTeams, sql, withTeam, type KaijuDb, type KaijuTx, type UsageKind } from "@kaiju/db";
+import {
+  currentModelSql,
+  scanTeams,
+  sql,
+  withTeam,
+  type KaijuDb,
+  type KaijuTx,
+  type UsageKind,
+} from "@kaiju/db";
 
 /**
  * Usage dashboards and run details (KOBE-43, spec D30): aggregates of the `run_usage` ledger
@@ -120,6 +128,11 @@ const CALL_TOTALS = sql.raw(`count(*)::bigint AS calls,
   count(*) FILTER (WHERE u.cost_usd IS NULL)::bigint AS unpriced_calls,
   count(*) FILTER (WHERE u.usage_source = 'estimated')::bigint AS estimated_calls`);
 /** {@link CALL_TOTALS} and the reasoning tokens (calls without a count add 0). */
+/**
+ * A call's model as it is named now (KOBE-828 ac-2): `run_usage` is append-only, so calls made
+ * before the rename keep `kobe-local/<model>`; every report groups them with `kaiju-local/<model>`.
+ */
+const CURRENT_MODEL = currentModelSql("u.model");
 const TOTALS = sql`${CALL_TOTALS}, COALESCE(sum(u.reasoning_tokens), 0)::bigint AS reasoning_tokens`;
 const ORDER = sql.raw(
   `ORDER BY COALESCE(sum(u.cost_usd), 0) DESC, sum(u.input_tokens + u.output_tokens) DESC`,
@@ -197,8 +210,8 @@ async function teamReport(
       FROM run_usage u LEFT JOIN users us ON us.id = u.user_id
      WHERE ${where} GROUP BY u.user_id ${ORDER} ${LIMIT}`);
   const models = await tx.execute<Row>(sql`
-    SELECT u.model, ${TOTALS} FROM run_usage u WHERE ${where}
-     GROUP BY u.model ${ORDER} ${LIMIT}`);
+    SELECT ${CURRENT_MODEL} AS model, ${TOTALS} FROM run_usage u WHERE ${where}
+     GROUP BY 1 ${ORDER} ${LIMIT}`);
   const agents = await tx.execute<Row>(sql`
     SELECT u.agent_id,
            COALESCE(max(ta.slug), max(ia.slug)) AS slug,
@@ -335,7 +348,7 @@ async function runsUsageIn(tx: KaijuTx, teamId: string, of: UsageOf): Promise<Ru
     "runId" in of ? sql`u.run_id = ${of.runId}::uuid` : sql`u.thread_id = ${of.threadId}::uuid`;
   const res = await tx.execute<Row>(sql`
     SELECT u.run_id, r.user_entry_id, r.thinking_level,
-           array_agg(DISTINCT u.model ORDER BY u.model) AS models, ${CALL_TOTALS},
+           array_agg(DISTINCT ${CURRENT_MODEL} ORDER BY ${CURRENT_MODEL}) AS models, ${CALL_TOTALS},
            sum(u.reasoning_tokens)::bigint AS reasoning_tokens,
            COALESCE(bool_or(u.reasoning_estimated) FILTER (WHERE u.reasoning_tokens IS NOT NULL), false)
              AS run_reasoning_estimated
@@ -396,7 +409,8 @@ async function latestCallIn(
   threadId: string,
 ): Promise<LatestCall | null> {
   const res = await tx.execute<Row>(sql`
-    SELECT u.run_id, u.at, u.model, u.input_tokens, u.cache_read_tokens, u.cache_write_tokens
+    SELECT u.run_id, u.at, ${CURRENT_MODEL} AS model, u.input_tokens, u.cache_read_tokens,
+           u.cache_write_tokens
       FROM run_usage u
      WHERE u.team_id = ${teamId}::uuid AND u.thread_id = ${threadId}::uuid AND u.kind IN ('run', 'eval')
        AND u.input_tokens + u.cache_read_tokens + u.cache_write_tokens > 0

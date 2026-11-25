@@ -1,5 +1,6 @@
-import { sql, type KaijuTx } from "@kaiju/db";
+import { currentModelSql, sql, type KaijuTx } from "@kaiju/db";
 import {
+  currentModelId,
   skillEvalEstimateSchema,
   type SkillEvalEstimate,
   type SkillEvalPlannedExecution,
@@ -84,7 +85,8 @@ async function runHistory(
            avg(extract(epoch FROM (r.ended_at - r.started_at)) * 1000) AS ms
       FROM (SELECT u.run_id, sum(u.cost_usd) AS cost, max(u.at) AS last
               FROM run_usage u
-             WHERE u.team_id = ${teamId} AND u.kind = 'run' AND u.model = ${model}
+             WHERE u.team_id = ${teamId} AND u.kind = 'run'
+               AND ${currentModelSql("u.model")} = ${currentModelId(model)}
                AND u.run_id IS NOT NULL
                AND (${only}::uuid IS NULL OR u.user_id = ${only}::uuid)
                AND u.at > now() - make_interval(days => ${ESTIMATE_HISTORY_DAYS})

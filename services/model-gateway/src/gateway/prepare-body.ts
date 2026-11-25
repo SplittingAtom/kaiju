@@ -1,5 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import {
+  currentModelId,
   SERVER_CALL_EMBEDDINGS_PATH,
   type ServerCallClaims,
   type ThinkingLevel,
@@ -60,14 +61,15 @@ export async function prepareBody(
   const embeddings = route.path === SERVER_CALL_EMBEDDINGS_PATH;
   if (serverCall) {
     // The contract's shape, the token's model and cap (no tools, no streaming).
+    const current = currentModelId(serverCall.model);
     const checked = checkServerCallBody(
       body,
       serverCall,
-      resolution.reasoningModels.has(serverCall.model),
-      resolution.outputCaps.get(serverCall.model),
+      resolution.reasoningModels.has(current),
+      resolution.outputCaps.get(current),
     );
     if (!checked.ok) return refuse(checked.status, checked.code, checked.message);
-    model = serverCall.model;
+    model = current;
     outputAllowance = chargedOutput(checked.maxOutputTokens, 1, embeddings);
   } else if (req.method === "POST") {
     const scanned = topLevelModel(body);
@@ -79,6 +81,10 @@ export async function prepareBody(
       );
     }
     if (!route.pathModel) model = scanned.model;
+    // KOBE-828: a pre-rename id (`kobe-local/<model>`, from a pod or sandbox of the previous
+    // release during the upgrade) is checked, priced and recorded as the model it names now; the
+    // body goes to Bifrost as sent, where the sync keeps the old provider name for one release.
+    if (model !== undefined) model = currentModelId(model);
     outputAllowance = chargedOutput(scanned.maxOutputTokens, scanned.choices, countOnly);
     // KOBE-43: deferred (background) Responses are billed after the call ends, out of the
     // ledger's sight: refused.

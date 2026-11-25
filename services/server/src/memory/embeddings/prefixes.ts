@@ -1,4 +1,4 @@
-import { MEMORY_EMBED_MAX_INPUT_CHARS } from "@kaiju/protocol";
+import { MEMORY_EMBED_MAX_INPUT_CHARS, modelIdsOf } from "@kaiju/protocol";
 
 /**
  * Task prefixes per embedding model family (KOBE-409, KOBE-659 ledger), matched on the model id
@@ -58,3 +58,21 @@ export function storedVectorModel(model: string): string {
   const scheme = DOCUMENT_SCHEME[family(model)];
   return scheme === 1 ? model : `${model}#d${scheme}`;
 }
+
+/**
+ * Every `embedding_model` value a current vector of gateway model `model` may carry: its
+ * {@link storedVectorModel}, and the same under the model's pre-rename id (KOBE-828:
+ * `kobe-local/<model>` is `kaiju-local/<model>` now). Migration `kaiju_local_models` renamed the
+ * stored vectors' model without re-embedding them, and a server of the previous release may store
+ * one more under the old id during the upgrade: both count as current, so the rename never makes
+ * vectors stale (no re-embedding). Permanent.
+ */
+export function storedVectorModels(model: string): string[] {
+  return modelIdsOf(model).map(storedVectorModel);
+}
+
+/** {@link storedVectorModels} as a bound `text[]` parameter value (`= ANY(...)`). */
+export const storedVectorModelsParam = (model: string): string =>
+  `{${storedVectorModels(model)
+    .map((m) => `"${m.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`)
+    .join(",")}}`;

@@ -7,6 +7,7 @@ import {
   type UsageSource,
 } from "../schema/usage.js";
 import { withTeam } from "../with-team.js";
+import { GATEWAY_MODEL_SQL, currentModelSql } from "./gateway-names.js";
 
 /**
  * One forwarded model call as the model-gateway shim measured it (KOBE-43). `runId` is the run the
@@ -46,14 +47,6 @@ export interface ModelUsageRecord {
 const MAX_TOKENS = 2_000_000_000;
 const tokens = (n: number) => Math.min(MAX_TOKENS, Math.max(0, Math.round(n)));
 const millis = (n: number) => Math.min(MAX_TOKENS, Math.max(0, Math.round(n)));
-
-/**
- * The gateway name of a catalog entry's model, as SQL (`gatewayProviderName` + `/` + model): the
- * same mapping the shim enforces.
- */
-const GATEWAY_MODEL_SQL = sql.raw(
-  `(CASE WHEN p.kind = 'openai_compatible' THEN 'kobe-' || p.id ELSE p.kind::text END) || '/' || c.model`,
-);
 
 /**
  * Writes usage rows (idempotent per record id), one transaction per team (RLS), with each call's cost at the catalog's
@@ -119,7 +112,7 @@ export async function recordModelUsage(
                    max(c.cache_read_usd_per_mtok) AS cache_read,
                    max(c.cache_write_usd_per_mtok) AS cache_write
               FROM model_catalog c JOIN model_providers p ON p.id = c.provider_id
-             WHERE ${GATEWAY_MODEL_SQL} = v.model
+             WHERE ${GATEWAY_MODEL_SQL} = ${currentModelSql("v.model")}
           ) price ON true
         ON CONFLICT (team_id, id) DO NOTHING`);
       return res.rowCount ?? 0;

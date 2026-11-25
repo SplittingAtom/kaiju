@@ -6,6 +6,7 @@ import {
   type BudgetScope,
   type BudgetUnit,
 } from "../schema/budgets.js";
+import { GATEWAY_MODEL_SQL } from "./gateway-names.js";
 
 /**
  * Budget state for one member of one team (KOBE-42, D30), read inside that team's transaction:
@@ -322,8 +323,7 @@ export async function loadGatewayPrices(
   db: KaijuDb | KaijuTx,
 ): Promise<ReadonlyMap<string, ModelPrice>> {
   const res = await db.execute<Row>(sql`
-    SELECT (CASE WHEN p.kind = 'openai_compatible' THEN 'kobe-' || p.id ELSE p.kind::text END)
-             || '/' || c.model AS model,
+    SELECT ${GATEWAY_MODEL_SQL} AS model,
            max(c.input_usd_per_mtok) AS input, max(c.output_usd_per_mtok) AS output
       FROM model_catalog c JOIN model_providers p ON p.id = c.provider_id
      WHERE c.input_usd_per_mtok IS NOT NULL AND c.output_usd_per_mtok IS NOT NULL

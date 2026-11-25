@@ -20,6 +20,7 @@ import {
   type ThinkingLowestValue,
 } from "../schema/index.js";
 import { withTeam } from "../with-team.js";
+import { gatewayProviderName } from "./gateway-names.js";
 
 /**
  * Change hints for the model gateway (KOBE-40; CLAUDE.md "No Redis"). Payloads carry ids only (any
@@ -52,15 +53,6 @@ export const providerKeyContext = (providerId: string, revision: number) =>
 /** HKDF purpose of the key-fingerprint secret (derived from the provider-key secret). */
 export const KEY_FINGERPRINT_PURPOSE = "model-key-fingerprint";
 export const virtualKeyContext = (teamId: string, userId: string) => `vk:${teamId}:${userId}`;
-
-/**
- * Bifrost's name for a provider: vendor kinds use Bifrost's own provider (the kind), every
- * OpenAI-compatible endpoint is a custom provider `kobe-<id>` (never colliding with a Bifrost
- * vendor name). Sandboxes name a model to the gateway as `<bifrost provider>/<model>`.
- */
-export function gatewayProviderName(id: string, kind: ModelProviderKind): string {
-  return kind === "openai_compatible" ? `kobe-${id}` : kind;
-}
 
 export async function notifyModels(db: KaijuDb | KaijuTx, hint: string): Promise<void> {
   await db.execute(sql`SELECT pg_notify(${MODELS_CHANNEL}, ${hint})`);

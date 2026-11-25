@@ -11,6 +11,7 @@ import {
   type KaijuTx,
 } from "@kaiju/db";
 import {
+  currentModelId,
   SEMANTIC_MEMORY_PLACEMENT_DEFAULT,
   semanticMemoryPlacementSchema,
   SEMANTIC_MEMORY_BLOCK_DEFAULT_BYTES,
@@ -33,7 +34,7 @@ import { logger } from "../logger.js";
  * rate limits and the learning model by Learn (KOBE-393). The embedding model (KOBE-409) is a
  * gateway model id (`<gateway provider>/<model>`), not a catalog alias: embedding models stay out
  * of the catalog, so they never appear in a chat model picker; its provider must be one the
- * gateway has (a Site provider, or `kobe-local` when the chart runs the in-cluster model).
+ * gateway has (a Site provider, or `kaiju-local` when the chart runs the in-cluster model).
  */
 export const MEMORY_SITE_SETTINGS_KEY = "memory.settings";
 
@@ -130,6 +131,11 @@ export function parseMemorySiteSettings(raw: string | null | undefined): MemoryS
       out[name] = MEMORY_SITE_SETTINGS_DEFAULTS[name];
     }
   }
+  // KOBE-828: migration `kaiju_local_models` renamed a stored `kobe-local/<model>`; a server of the
+  // previous release may still write one during the upgrade. Read as the model it names now.
+  if (typeof out.embedding_model === "string") {
+    out.embedding_model = currentModelId(out.embedding_model);
+  }
   return out as MemorySiteSettings;
 }
 
@@ -147,7 +153,7 @@ const stable = (v: unknown) => JSON.stringify(v);
 export const MEMORY_SITE_MODEL_SETTINGS = ["learning_model_alias", "embedding_model"] as const;
 export type MemorySiteModelSetting = (typeof MEMORY_SITE_MODEL_SETTINGS)[number];
 
-/** The gateway provider of a gateway model id (`kobe-local/nomic-embed-text` → `kobe-local`). */
+/** The gateway provider of a gateway model id (`kaiju-local/nomic-embed-text` → `kaiju-local`). */
 export const gatewayProviderOf = (model: string): string => model.slice(0, model.indexOf("/"));
 
 async function inCatalog(db: KaijuDb | KaijuTx, alias: string): Promise<boolean> {
@@ -221,9 +227,14 @@ export const MEMORY_SETTINGS_CHANNEL = "kobe_memory_settings";
 
 export async function writeMemorySiteSettings(
   tx: KaijuTx,
-  change: { readonly [K in MemorySiteSettingName]?: MemorySiteSettings[K] | undefined },
+  asSent: { readonly [K in MemorySiteSettingName]?: MemorySiteSettings[K] | undefined },
   providers: ReadonlySet<string>,
 ): Promise<SiteSettingsWrite> {
+  // KOBE-828: a pre-rename id (an old console or client) is the model it names now.
+  const change =
+    typeof asSent.embedding_model === "string"
+      ? { ...asSent, embedding_model: currentModelId(asSent.embedding_model) }
+      : asSent;
   const before = await readMemorySiteSettings(tx);
   const learning = change.learning_model_alias;
   if (learning && learning !== before.learning_model_alias && !(await inCatalog(tx, learning))) {

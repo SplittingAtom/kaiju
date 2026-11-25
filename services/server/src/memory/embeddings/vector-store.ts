@@ -1,6 +1,6 @@
 import { scanTeams, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { MEMORY_EMBED_MAX_DIMS } from "@kaiju/protocol";
-import { storedVectorModel } from "./prefixes.js";
+import { storedVectorModel, storedVectorModelsParam } from "./prefixes.js";
 
 /**
  * Raw SQL over the embedding columns of the three memory version tables (KOBE-409; migration
@@ -58,7 +58,8 @@ const uuids = (ids: readonly string[]): SQL => sql`${`{${ids.join(",")}}`}::uuid
 
 /**
  * Current versions of `table` without a vector of `model` (gateway model id; matched as
- * `storedVectorModel(model)`, so a document scheme change makes them pending), at most `limit`, by item id. Workspace
+ * `storedVectorModels(model)`, so a document scheme change makes them pending and the KOBE-828
+ * rename does not), at most `limit`, by item id. Workspace
  * rows need `teamId` (the transaction's team); `itemIds` narrows to the items just saved.
  */
 export async function pendingVersions(
@@ -81,7 +82,8 @@ export async function pendingVersions(
     SELECT i.id AS item_id, v.version, v.statement
       FROM ${t.items} i JOIN ${t.versions} v ON ${t.join} AND v.version = i.current_version
      WHERE i.status IN ('active', 'archived') ${team} ${ids} ${owner}
-       AND v.embedding_model IS DISTINCT FROM ${storedVectorModel(opts.model)}
+       AND (v.embedding_model IS NULL
+            OR NOT v.embedding_model = ANY(${storedVectorModelsParam(opts.model)}::text[]))
      ORDER BY i.id LIMIT ${opts.limit}`);
   return res.rows.map((r) => ({
     itemId: r.item_id,
@@ -129,9 +131,10 @@ async function countTable(
 ): Promise<Coverage> {
   const t = TABLES[table];
   const team = table === "workspace" ? sql`AND i.team_id = ${teamId ?? null}::uuid` : sql``;
-  const stored = model === null ? null : storedVectorModel(model);
+  const stored = model === null ? null : storedVectorModelsParam(model);
   const res = await tx.execute<{ embedded: string | number; total: string | number }>(sql`
-    SELECT count(*) FILTER (WHERE v.embedding_model = ${stored}) AS embedded, count(*) AS total
+    SELECT count(*) FILTER (WHERE v.embedding_model = ANY(${stored}::text[])) AS embedded,
+           count(*) AS total
       FROM ${t.items} i JOIN ${t.versions} v ON ${t.join} AND v.version = i.current_version
      WHERE i.status IN ('active', 'archived') ${team}`);
   return { embedded: Number(res.rows[0]?.embedded ?? 0), total: Number(res.rows[0]?.total ?? 0) };
