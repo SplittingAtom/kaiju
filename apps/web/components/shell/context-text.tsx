@@ -1,25 +1,22 @@
 "use client";
 
 import type { ContextSection } from "@kaiju/protocol";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { formatText, type FormattedLine } from "../../lib/chat/context-format";
 import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-  type Ref,
-} from "react";
-import { formatTokens } from "../../lib/admin/usage-format";
-import {
-  SECTION_LABELS,
+  GAUGE_LABELS,
   buildRows,
   findMatches,
-  splitMatches,
+  gaugeKindOf,
+  readContextView,
+  sectionHeading,
   visibleRange,
+  writeContextView,
+  type ContextView,
+  type GaugeKind,
 } from "../../lib/chat/context-viewer";
+import { highlighted, TokenLine } from "./context-line";
+import { ContextTextControls } from "./context-text-controls";
 import styles from "./context-viewer.module.css";
 
 /** One row's height in px: `.row` in context-viewer.module.css sets the same. */
@@ -27,45 +24,93 @@ const ROW_PX = 20;
 /** The viewport assumed before it is measured (and where nothing is laid out). */
 const FALLBACK_VIEWPORT = 800;
 
-export interface ContextTextHandle {
-  /** Scrolls to a section's label and marks it. */
-  readonly show: (section: number) => void;
+/**
+ * Each section's formatted lines, made the first time the section is shown expanded in the
+ * Formatted view and kept until the sections change (a Refresh): a large context formats only
+ * what is opened.
+ */
+function useFormatCache(sections: readonly ContextSection[]) {
+  return useMemo(() => {
+    const cache = new Map<number, readonly FormattedLine[]>();
+    return (section: number): readonly FormattedLine[] => {
+      let lines = cache.get(section);
+      if (lines === undefined) {
+        lines = formatText(sections[section]?.text ?? "");
+        cache.set(section, lines);
+      }
+      return lines;
+    };
+  }, [sections]);
 }
 
-function labelOf(s: ContextSection): string {
-  const parts = [SECTION_LABELS[s.kind]];
-  if (s.label !== "") parts.push(s.label);
-  parts.push(`${formatTokens(s.tokens)} tokens`);
-  if (s.truncated) parts.push("shortened");
-  return parts.join(" · ");
+/** The collapsed sections, cleared when the sections change (a Refresh). */
+const NONE: ReadonlySet<number> = new Set();
+
+function useCollapsed(sections: readonly ContextSection[]) {
+  const [state, setState] = useState(() => ({ sections, collapsed: NONE }));
+  if (state.sections !== sections) setState({ sections, collapsed: NONE });
+  const collapsed = state.sections === sections ? state.collapsed : NONE;
+  const set = (next: ReadonlySet<number>) => setState({ sections, collapsed: next });
+  return {
+    collapsed,
+    toggle: (i: number) => {
+      const next = new Set(collapsed);
+      if (!next.delete(i)) next.add(i);
+      set(next);
+    },
+    expandAll: () => set(new Set()),
+    collapseAll: () => set(new Set(sections.map((_, i) => i))),
+  };
 }
 
-/** The line with each match of `query` marked; plain text only. */
-function highlighted(text: string, query: string): ReactNode {
-  return splitMatches(text, query).map((part, i) =>
-    part.hit ? <mark key={i}>{part.text}</mark> : part.text,
-  );
+/** What the live region says after the filter changes. */
+function announce(filter: GaugeKind | null, count: number): string {
+  if (filter === null) return "Showing every section.";
+  const n = `${count} ${count === 1 ? "section" : "sections"}`;
+  return `Showing only ${GAUGE_LABELS[filter]}: ${n}.`;
 }
 
 /**
- * The context's raw text (KOBE-471): each section under a label naming its kind and tokens, its
- * text as sent, monospace, as plain text (it is untrusted: never Markdown or HTML). Rows have one
- * height and only those near the viewport are rendered, so a context of thousands of sections
- * scrolls lightly. The search box marks matches and steps through them (Enter, Shift+Enter).
+ * The context's text (KOBE-471, KOBE-841): each section under a heading naming its kind and
+ * tokens (a button that collapses it to the heading), its text in the Formatted view (YAML, XML,
+ * HTML and JSON laid out and coloured, as text nodes only) or the Raw view (exactly as sent),
+ * monospace, never Markdown or live HTML. Rows have one height and only those near the viewport
+ * are rendered, so a context of thousands of sections scrolls lightly. A legend filter shows one
+ * kind only. The search box marks matches and steps through them (Enter, Shift+Enter).
  */
 export function ContextText({
   sections,
-  handle,
+  filter,
+  onClearFilter,
 }: {
   readonly sections: readonly ContextSection[];
-  readonly handle: Ref<ContextTextHandle>;
+  /** Only sections of this kind (the legend's filter); null: all. */
+  readonly filter: GaugeKind | null;
+  readonly onClearFilter: () => void;
 }) {
-  const { rows, firstRow } = useMemo(() => buildRows(sections), [sections]);
+  const [view, setView] = useState<ContextView>(readContextView);
+  const format = useFormatCache(sections);
+  const { collapsed, toggle, expandAll, collapseAll } = useCollapsed(sections);
+  const { rows } = useMemo(
+    () =>
+      buildRows(sections, {
+        collapsed,
+        filter,
+        ...(view === "formatted" ? { format } : {}),
+      }),
+    [sections, collapsed, filter, view, format],
+  );
+  const shownCount = useMemo(
+    () =>
+      filter === null
+        ? sections.length
+        : sections.filter((s) => gaugeKindOf(s.kind) === filter).length,
+    [sections, filter],
+  );
   const pane = useRef<HTMLDivElement>(null);
   const viewportRef = useRef(FALLBACK_VIEWPORT);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewport, setViewport] = useState(FALLBACK_VIEWPORT);
-  const [active, setActive] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [current, setCurrent] = useState(0);
   // Each step bumps it, so stepping to the same match (the only one) scrolls to it again.
@@ -78,6 +123,15 @@ export function ContextText({
     setCurrent(0);
   }
   const at = matches.length === 0 ? 0 : Math.min(current, matches.length - 1);
+
+  // A new filter marks its kind's first section, at the top; the live region says what is shown.
+  const [seenFilter, setSeenFilter] = useState(filter);
+  const [announcement, setAnnouncement] = useState("");
+  const active = filter === null ? null : sections.findIndex((s) => gaugeKindOf(s.kind) === filter);
+  if (seenFilter !== filter) {
+    setSeenFilter(filter);
+    setAnnouncement(announce(filter, shownCount));
+  }
 
   useEffect(() => {
     const el = pane.current;
@@ -99,18 +153,14 @@ export function ContextText({
     setScrollTop(top);
   }, []);
 
-  useImperativeHandle(
-    handle,
-    () => ({
-      show: (section) => {
-        const row = firstRow[section];
-        if (row === undefined) return;
-        setActive(section);
-        scrollToRow(row, 0);
-      },
-    }),
-    [firstRow, scrollToRow],
-  );
+  useEffect(() => {
+    scrollToRow(0, 0);
+  }, [filter, scrollToRow]);
+
+  const onView = (next: ContextView) => {
+    setView(next);
+    writeContextView(next);
+  };
 
   // The current match is brought into view, a third down from the top.
   const currentRow = matches[at];
@@ -133,6 +183,16 @@ export function ContextText({
   const q = query.trim();
   return (
     <div className={styles.textColumn}>
+      <ContextTextControls
+        view={view}
+        onView={onView}
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        filter={filter}
+        filterCount={shownCount}
+        onClearFilter={onClearFilter}
+        announcement={announcement}
+      />
       <div className={styles.search} role="search">
         <input
           type="search"
@@ -176,14 +236,23 @@ export function ContextText({
         aria-label="Context text"
         tabIndex={0}
         className={`${styles.pane} kaiju-panel`}
+        data-context-view={view}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
       >
+        {rows.length === 0 && (
+          <p className={styles.empty} role="note">
+            {filter === null
+              ? "This context is empty."
+              : `No ${GAUGE_LABELS[filter]} in this context.`}
+          </p>
+        )}
         <div className={styles.spacer} style={{ height: rows.length * ROW_PX }}>
           {rows.slice(start, end).map((row, k) => {
             const i = start + k;
             const s = sections[row.section];
             if (s === undefined) return null;
             if (row.type === "label") {
+              const open = !collapsed.has(row.section);
               return (
                 <div
                   key={i}
@@ -192,7 +261,15 @@ export function ContextText({
                   data-active={active === row.section || undefined}
                   style={{ top: i * ROW_PX }}
                 >
-                  {labelOf(s)}
+                  <button
+                    type="button"
+                    className={styles.labelButton}
+                    aria-expanded={open}
+                    data-context-section={row.section}
+                    onClick={() => toggle(row.section)}
+                  >
+                    {sectionHeading(s)}
+                  </button>
                 </div>
               );
             }
@@ -203,7 +280,11 @@ export function ContextText({
                 data-current={i === currentRow || undefined}
                 style={{ top: i * ROW_PX }}
               >
-                {highlighted(row.text, query)}
+                {row.tokens === undefined ? (
+                  highlighted(row.text, query)
+                ) : (
+                  <TokenLine tokens={row.tokens} query={query} />
+                )}
               </div>
             );
           })}

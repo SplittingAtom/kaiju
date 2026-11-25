@@ -104,5 +104,5 @@ cases**, where **Withdraw** deletes the copy.
 
 The context gauge under the composer shows how much of the model's context window the thread
 uses. Click it to see exactly what the model was sent last time, section by section (only you, the
-owner, can see this). When it fills up, Kaiju compacts older turns into a summary; you can also do
+owner, can see this): see [The Context panel](context-panel.md). When it fills up, Kaiju compacts older turns into a summary; you can also do
 it yourself with **Compact now** or `/compact`.

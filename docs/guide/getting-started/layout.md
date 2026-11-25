@@ -58,7 +58,8 @@ slash commands. If the
 thread was forked from another one, a lineage strip above it links back to the original. The
 message box sits at the bottom with its toolbar: the **+** menu, the agent, the model and the
 thinking level. Under it a context gauge shows how full the model's context is; click it to see
-what the model was sent. See [Writing messages](../chat/composer.md).
+what the model was sent (see [The Context panel](../chat/context-panel.md)). See
+[Writing messages](../chat/composer.md).
 
 ## The artifact column
 

@@ -166,6 +166,15 @@
   --kaiju-ctx-compaction: #d55e00;
   --kaiju-ctx-other: #7a7a7a;
 
+  /* The context viewer's Formatted view (KOBE-841): YAML/JSON keys and scalars, XML/HTML tags and
+     attributes, declarations; each at least 4.5:1 on --muted in its scheme. */
+  --kaiju-ctx-syntax-key: #1d4ed8;
+  --kaiju-ctx-syntax-string: #166534;
+  --kaiju-ctx-syntax-number: #9a3412;
+  --kaiju-ctx-syntax-tag: #7e22ce;
+  --kaiju-ctx-syntax-attr: #a16207;
+  --kaiju-ctx-syntax-meta: #57534e;
+
   /* Context viewer patterns (KOBE-471): the stripes and dots laid over a kind's colour. */
   --kaiju-ctx-pattern-stripe: rgb(255 255 255 / 45%);
   --kaiju-ctx-pattern-dot: rgb(255 255 255 / 55%);
@@ -304,6 +313,12 @@
   --kaiju-ctx-tools: #f0b429;
   --kaiju-ctx-compaction: #f07a3a;
   --kaiju-ctx-other: #a3a3a3;
+  --kaiju-ctx-syntax-key: #93c5fd;
+  --kaiju-ctx-syntax-string: #86efac;
+  --kaiju-ctx-syntax-number: #fdba74;
+  --kaiju-ctx-syntax-tag: #d8b4fe;
+  --kaiju-ctx-syntax-attr: #fde047;
+  --kaiju-ctx-syntax-meta: #d6d3d1;
   --kaiju-when-light: none;
   --kaiju-when-dark: block;
 }
@@ -375,6 +390,12 @@
     --kaiju-ctx-tools: #f0b429;
     --kaiju-ctx-compaction: #f07a3a;
     --kaiju-ctx-other: #a3a3a3;
+    --kaiju-ctx-syntax-key: #93c5fd;
+    --kaiju-ctx-syntax-string: #86efac;
+    --kaiju-ctx-syntax-number: #fdba74;
+    --kaiju-ctx-syntax-tag: #d8b4fe;
+    --kaiju-ctx-syntax-attr: #fde047;
+    --kaiju-ctx-syntax-meta: #d6d3d1;
     --kaiju-when-light: none;
     --kaiju-when-dark: block;
   }
