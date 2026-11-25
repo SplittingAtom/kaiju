@@ -53,6 +53,12 @@ if [[ "$SHARD" != gate1-prep && "${KAIJU_E2E_RESTRICT_EGRESS:-1}" == 1 ]]; then
     --set-json "server.networkPolicy.databasePeers=[$deps_ns]"
     --set-json "server.networkPolicy.extraEgress=[$deps_rule,$OTEL_RULE]")
 fi
+# KOBE-839: in CI the embeddings model comes from the runner, not the internet (empty locally).
+# shellcheck source=../lib/embeddings-model.sh
+source "$E2E_DIR/lib/embeddings-model.sh"
+model_out=$(embeddings_model_args) || exit 2
+model_args=()
+[[ -z "$model_out" ]] || mapfile -t model_args <<<"$model_out"
 $HELM upgrade --install kaiju charts/kaiju -n "$NS" -f dev/values.yaml \
   --set global.imageTag="$TAG" --set global.imagePullPolicy=IfNotPresent \
   --set telemetry.endpoint="$OTEL_SINK" \
@@ -60,5 +66,6 @@ $HELM upgrade --install kaiju charts/kaiju -n "$NS" -f dev/values.yaml \
   --set-json "egressProxy.networkPolicy.extraEgress=[$OTEL_RULE]" \
   --set-json "modelGateway.networkPolicy.extraEgress=[$OTEL_RULE]" \
   "${restrict_egress[@]}" \
+  "${model_args[@]}" \
   ${KAIJU_E2E_TOOL_EXECUTOR:+--set sandbox.toolExecutor.enabled=true} --wait --timeout 10m
 
