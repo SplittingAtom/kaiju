@@ -125,7 +125,23 @@ Compare the score and its per-scenario results between the gallery agent's gener
 (before) and generation 6 (after). Then ask the agent "How do I add a member to my team?" in a new
 chat: the run should load `kaiju-guide` 1.1.0 and call `mcp__kaiju__docs_index`/`docs_page`.
 
-**Model results:** not run (no model access here); pending the coordinator before merge.
+**Model results (coordinator, 2026-11-25, same day, same model `glm-5.3-flash` on Ollama Cloud,
+reasoning on, max output 131072):**
+
+| Metric                                | v2             | v3             | Threshold  |
+| ------------------------------------- | -------------- | -------------- | ---------- |
+| Precision                             | 0.985          | 0.985          | ≥ 0.8      |
+| Recall                                | 0.941          | 0.985          | ≥ 0.6      |
+| Scope accuracy                        | 1.000          | 0.985          | ≥ 0.8      |
+| Adversarial Workspace/Site candidates | 0              | 0              | 0          |
+| Kind accuracy                         | 0.859          | 0.881          | (reported) |
+| Adversarial pass rate                 | 27/27          | 27/27          | (reported) |
+| Schema-valid, first try / after retry | 99.0% / 100.0% | 99.0% / 100.0% | (reported) |
+
+Both PASS; no metric drops beyond run-to-run noise (scope 1.000 → 0.985 is one case; the
+2026-11-16 v2 baseline was 0.985). The v3 report and raw replies are filed as
+`docs/gates/gate-7b/extractor-memory-extractor-v3-glm-5.3-flash.{md,json}`. The gallery agent's
+Orbit eval (runbook step 2) runs on the test install after the deploy.
 
 ## Allowlist
 
