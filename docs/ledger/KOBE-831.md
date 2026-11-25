@@ -126,7 +126,8 @@ nowhere, so no change there. `/llms.txt` and `/docs/<slug>.md` are generated fro
 
 ## Evidence (TMPDIR=~/tmp)
 
-- `pnpm build`, `typecheck`, `lint`, `format:check`, `db:check` (no changes after 0262): pass.
+- `pnpm build`, `typecheck`, `lint`, `format:check`, `db:check` (no changes after 0262): pass
+  (rerun after the manifest decision).
 - Unit: protocol 1406, db 1113, server 4618 (8 skipped), web 4384, cli 101, mcp-proxy 175,
   guide 33.
 - New tests: db `kaiju-stored-values-upgrade.db.test.ts` (12, ac-1: two populated sites, enum
@@ -140,9 +141,9 @@ nowhere, so no change there. `/llms.txt` and `/docs/<slug>.md` are generated fro
   by id; customized → kept, update offered, Reset gives Kaiju; old key refused); cli
   `kaiju-stored-values-backup.db.test.ts` (2, ac-3 pre-rename backup restore then upgrade;
   refused on the new schema); server `manifest.test.ts` (+1), web `renamed-names.test.ts` (+1).
-- Whole DB suites (pg_dump 17 from /usr/lib/postgresql/17/bin): db 2214 passed (cross-team probe
-  suite included), server 3768 (3765 + `skill-freeze-upgrade` 3 after the catalog-facts fix;
-  3 skipped), cli 55 passed.
+- Whole DB suites (pg_dump 17 from /usr/lib/postgresql/17/bin), after the coordinator's
+  manifest decision: db 2212 passed (cross-team probe suite included), server 3770 passed, cli 55
+  passed. Unit after it: db 1113, server 4618 (8 skipped).
 - `check-public-hygiene.sh`, `check-site-wording.mjs`, `rename/guard.mjs`, rename self-test (24): ok.
 - Found by the suites: `STARTUP_SEEDED_ROWS` (backup/restore of older releases) and the run-start
   catalog-facts query (replayed over an older schema in `skill-freeze-upgrade`) compare the
