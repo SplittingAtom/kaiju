@@ -43,8 +43,8 @@ COPY images/skill-scan/kaiju_skill_scan /opt/kaiju/skill-scan/kaiju_skill_scan
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd --gid 1000 kobe \
- && useradd --uid 1000 --gid 1000 --no-create-home --home-dir /tmp/home --shell /usr/sbin/nologin kobe \
+ && groupadd --gid 1000 kaiju \
+ && useradd --uid 1000 --gid 1000 --no-create-home --home-dir /tmp/home --shell /usr/sbin/nologin kaiju \
  && mkdir -p /input \
  && chown -R 0:0 /opt/kaiju \
  && chmod -R a-w,a+rX /opt/kaiju \

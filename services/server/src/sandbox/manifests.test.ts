@@ -160,7 +160,7 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
       runAsUser: 1000,
       runAsGroup: 1000,
       fsGroup: 1000,
-      // kobe-agent, the 16 Pi identities' groups (2000-2015), then their partner (tool) groups
+      // kaiju-agent, the 16 Pi identities' groups (2000-2015), then their partner (tool) groups
       // (3000-3015, KOBE-166): Pi identity n pairs with n + 1000.
       supplementalGroups: [
         1001,
@@ -203,6 +203,13 @@ describe("sandbox pod spec (D12, D13; secrets never enter sandboxes)", () => {
       name: "pi-skills",
       mountPath: "/run/kaiju-skills",
     });
+    // KOBE-830: the home volume and $HOME are the renamed user's home; the image keeps
+    // /home/kobe as a root-owned symlink to it.
+    expect(must(spec.containers[0]).volumeMounts).toContainEqual({
+      name: "home",
+      mountPath: "/home/kaiju",
+    });
+    expect(must(spec.containers[0]).env).toContainEqual({ name: "HOME", value: "/home/kaiju" });
   });
 });
 

@@ -174,7 +174,7 @@ spec:
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c", "dmesg | head -1; id -u; pi --version; sleep 600"]
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
-          volumeMounts: [{ name: tmp, mountPath: /tmp }, { name: home, mountPath: /home/kobe }]
+          volumeMounts: [{ name: tmp, mountPath: /tmp }, { name: home, mountPath: /home/kaiju }]
       volumes: [{ name: tmp, emptyDir: {} }, { name: home, emptyDir: {} }]
 EOF
 }

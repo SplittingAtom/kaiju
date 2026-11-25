@@ -231,7 +231,7 @@ SH
     printf '     %s\n' "$privsep"
     contains "the agent runs as uid 1000 with no capabilities" '^agent=1000 caps=0+$' "$privsep"
     contains "Pi runs under a Pi identity, its runtime dir the agent's with Pi's group" \
-      '^pi_uid=20[0-9][0-9] dir=kobe:kobe-pi-[0-9]+ 2750$' "$privsep"
+      '^pi_uid=20[0-9][0-9] dir=kaiju:kaiju-pi-[0-9]+ 2750$' "$privsep"
     contains "another identity cannot plant a file in that Pi's runtime dir (EACCES)" '^plant=1$' "$privsep"
     contains "another identity cannot read that Pi's model file (token, run id)" '^read_model=1$' "$privsep"
     contains "Pi identities cannot read the agent's bootstrap token" '^read_token=1$' "$privsep"

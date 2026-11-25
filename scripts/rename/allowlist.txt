@@ -233,6 +233,10 @@ apps/web/lib/apps/host-bridge.ts /(?<=their old `)kobe\/notifications\/(?=`)|(?<
 apps/web/lib/apps/host-bridge-drag.test.ts /\bkobe\/notifications\//i
 docs/guide/building-mcp-apps.md /`(?:io\.kobe\/item-kind|kobe\/notifications\/drag-(?:start|move|end|cancel)|kobe)`|(?<=was called )Kobe(?= before)/
 
+== permanent: The sandbox's pre-rename home folder `/home/kobe` (owner decision 2026-11-24, spec §11 A7, KOBE-830): the users were renamed with the same numeric ids, and the image keeps `/home/kobe` as a root-owned symlink to `/home/kaiju` (root-owned /home, read-only root filesystem) so absolute paths stored before the rename keep resolving: virtualenvs' shebangs and pyvenv.cfg, tool configs and shell history in /workspace, Pi sessions and thread entries rebuilt from Postgres; the Dockerfile that makes the link and names the old users, the image checks that prove the link, its ownership, that no sandbox uid can repoint it, that an old-style venv runs and that no old user name is left, the manifest test's comment and the guide lines that tell agents and members the old path still works
+images/sandbox/Dockerfile images/sandbox/test-image.sh /\/home\/kobe\b|`kobe(?:-agent|-pi-<n>|-tool-<n>)?`|(?<=\^)kobe(?=")|(?<=home=kaiju,)kobe\b/
+services/server/src/sandbox/manifests.test.ts docs/guide/whats-new.md docs/guide/for-agents/working-in-a-sandbox.md /\/home\/kobe\b/
+
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
 
@@ -286,14 +290,6 @@ packages/db/src/schema/registry.ts /`kobe`/
 ** /(?<=and )kobe(?= tools)/
 apps/web/components/admin/site/catalog-k{obe,aiju}-panel.tsx apps/web/components/admin/site/catalog-skill-page.tsx /(?<![@\w-])kobe(?![\w\/-])/
 ** /\bkobe(?=: (?:KobeState|KaijuState|kobeState|kaijuState|nullable\())|(?<=\bskill\.)kobe\b|(?<=\bkobe=\{skill\.)kobe\b|(?<=^\s*)kobe(?=: "Kaiju",)/
-
-== RN-17 (KOBE-830): The sandbox Unix users (`kobe`, `kobe-agent`, `kobe-pi`, `kobe-tool`) and their home folder, which Pi sessions and workspace files name in absolute paths and the image and the sandbox agent must agree on: renamed with the same numeric ids, `/home/kobe` kept as a symlink (owner decision 2026-11-24, was Q7)
-** /\/home\/kobe\b/
-** /(?<![\/\w-])kobe-(?:agent|pi|tool)(?:-(?:\$\w+|\$\{\w+\}|\d+|\[0-9\]\+|<n>))?(?![\w-])|(?<=\^)kobe-(?:pi|tool)-/
-images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
-services/server/src/sandbox/constants.ts /(?<=the `)kobe(?=` user)/
-images/sandbox/Dockerfile /\bkobe:kobe\b|(?<=`)kobe(?=` \(1000\))|(?<=group `)kobe(?=` \(1000\))/
-e2e/run/42-model-gateway-run.sh /(?<=dir=)kobe(?=:kobe-pi-)/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area

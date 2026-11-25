@@ -57,8 +57,8 @@ describe("the tools' own HOME and TMPDIR (KOBE-228)", () => {
   const show = 'printf "%s|%s" "$HOME" "$TMPDIR"';
 
   it("a bash tool call gets the shared HOME and TMPDIR instead of Pi's private ones", () => {
-    const env = { ...base, KAIJU_TOOL_HOME: "/home/kobe", KAIJU_TOOL_TMPDIR: "/tmp" };
-    expect(toolShell(env, show)).toBe("/home/kobe|/tmp");
+    const env = { ...base, KAIJU_TOOL_HOME: "/home/kaiju", KAIJU_TOOL_TMPDIR: "/tmp" };
+    expect(toolShell(env, show)).toBe("/home/kaiju|/tmp");
   });
 
   it("keeps Pi's values when the variables are absent, relative or carry a newline", () => {

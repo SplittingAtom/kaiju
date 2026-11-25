@@ -102,7 +102,7 @@ describe("mapHome (KOBE-196)", () => {
     };
     return { seen, transport };
   }
-  const homes = { piHome: "/tmp/kaiju-pi-x/home", toolHome: "/home/kobe" };
+  const homes = { piHome: "/tmp/kaiju-pi-x/home", toolHome: "/home/kaiju" };
 
   it("rewrites a path or cwd under Pi's private home to the tools' home, nothing else", async () => {
     const { seen, transport } = recorder();
@@ -117,8 +117,8 @@ describe("mapHome (KOBE-196)", () => {
     await mapped.request({ op: "stat", path: "/tmp/kaiju-pi-x/homework" });
     await mapped.request({ op: "stat", path: "/workspace/a" });
     expect(seen.map((b) => b.path ?? b.cwd)).toEqual([
-      "/home/kobe/.bashrc",
-      "/home/kobe",
+      "/home/kaiju/.bashrc",
+      "/home/kaiju",
       "/tmp/kaiju-pi-x/homework",
       "/workspace/a",
     ]);

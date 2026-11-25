@@ -18,7 +18,7 @@ describe("executorEnv", () => {
     const env = executorEnv(
       {
         PATH: "/usr/bin",
-        HOME: "/home/kobe",
+        HOME: "/home/kaiju",
         TMPDIR: "/tmp",
         LANG: "C",
         PI_CODING_AGENT_DIR: "/run/kaiju-pi/pi-x/agent",
@@ -31,7 +31,7 @@ describe("executorEnv", () => {
     );
     expect(env).toEqual({
       PATH: "/usr/bin",
-      HOME: "/home/kobe",
+      HOME: "/home/kaiju",
       TMPDIR: "/tmp",
       LANG: "C",
       NODE_OPTIONS: "--disable-sigusr1",

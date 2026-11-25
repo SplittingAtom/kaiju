@@ -63,7 +63,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MPLCONFIGDIR=/tmp/matplotlib \
-    HOME=/home/kobe
+    HOME=/home/kaiju
 
 # libpcre2-8-0 is already in the base image; naming it pulls the security fix (KOBE-474).
 # `apt-get upgrade` pulls Debian security fixes for the base image's own packages (apt, zlib1g,
@@ -125,30 +125,36 @@ ENV KAIJU_KERNEL_BRIDGE=/opt/kaiju/kernel/kaiju-kernel-bridge.py
 # server ships them (services/server/builtin-skills) and each run fetches them as skill bundles,
 # so the image carries none. Their helper scripts run on the Python stack above.
 
-# Users (KOBE-71): `kobe` (1000) runs kaiju-sandbox-agent; group `kobe` (1000) is also the shared
-# /workspace group (the pod's fsGroup). `kobe-agent` (1001) is a group only the agent has (pod
-# supplementalGroups): it alone may execute kaiju-runas. `kobe-pi-<n>` (2000+n, own group each) are
+# Users (KOBE-71): `kaiju` (1000) runs kaiju-sandbox-agent; group `kaiju` (1000) is also the shared
+# /workspace group (the pod's fsGroup). `kaiju-agent` (1001) is a group only the agent has (pod
+# supplementalGroups): it alone may execute kaiju-runas. `kaiju-pi-<n>` (2000+n, own group each) are
 # the Pi identities: each Pi process and its tools run as one of them (the pod gives the agent
-# their groups too, so it can hand a Pi its private runtime directory). `kobe-tool-<n>` (3000+n,
+# their groups too, so it can hand a Pi its private runtime directory). `kaiju-tool-<n>` (3000+n,
 # own group each) are their partner (tool) uids (KOBE-166, docs/design/paired-tool-uid.md): n pairs
-# with `kobe-pi-<n>`, shares the workspace group 1000 only, and is in no group of the Pi's.
+# with `kaiju-pi-<n>`, shares the workspace group 1000 only, and is in no group of the Pi's.
 # /workspace is the persistent volume, /opt/kaiju/pi-extensions the root-owned Pi extensions, /run/kaiju-agent the
 # agent-only directory the pod mounts the bootstrap token under, /run/kaiju-pi the mount point of
 # the volume the agent creates each Pi's private runtime directory in (KOBE-41/71).
 # Setuid/setgid bits are stripped so sandbox code has no privilege-escalation helpers; the only
-# privileged file is kaiju-runas (file capabilities setuid+setgid, executable by `kobe-agent` only).
-RUN groupadd --gid 1000 kobe \
- && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/kobe --shell /bin/bash kobe \
- && groupadd --gid 1001 kobe-agent \
+# privileged file is kaiju-runas (file capabilities setuid+setgid, executable by `kaiju-agent` only).
+# KOBE-830: the users were `kobe`, `kobe-agent`, `kobe-pi-<n>` and `kobe-tool-<n>` until the rename,
+# with these same numeric ids (volumes own files by number, so nothing is chowned). `/home/kobe` is
+# a root-owned symlink to `/home/kaiju` in /home (root, 0755) on the read-only root filesystem, so
+# paths that older sessions, virtualenvs and tool configs stored keep resolving; no sandbox uid can
+# repoint or remove it, and it leads only to the home the agent and its tools already share.
+RUN groupadd --gid 1000 kaiju \
+ && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/kaiju --shell /bin/bash kaiju \
+ && ln -s /home/kaiju /home/kobe && chown -h 0:0 /home/kobe && chmod 0755 /home \
+ && groupadd --gid 1001 kaiju-agent \
  && for n in $(seq 0 63); do \
-      groupadd --gid $((2000 + n)) "kobe-pi-$n" \
-      && useradd --uid $((2000 + n)) --gid $((2000 + n)) --no-create-home --home-dir /home/kobe \
-           --shell /bin/bash "kobe-pi-$n" || exit 1; \
+      groupadd --gid $((2000 + n)) "kaiju-pi-$n" \
+      && useradd --uid $((2000 + n)) --gid $((2000 + n)) --no-create-home --home-dir /home/kaiju \
+           --shell /bin/bash "kaiju-pi-$n" || exit 1; \
     done \
  && for n in $(seq 0 63); do \
-      groupadd --gid $((3000 + n)) "kobe-tool-$n" \
-      && useradd --uid $((3000 + n)) --gid $((3000 + n)) --no-create-home --home-dir /home/kobe \
-           --shell /bin/bash "kobe-tool-$n" || exit 1; \
+      groupadd --gid $((3000 + n)) "kaiju-tool-$n" \
+      && useradd --uid $((3000 + n)) --gid $((3000 + n)) --no-create-home --home-dir /home/kaiju \
+           --shell /bin/bash "kaiju-tool-$n" || exit 1; \
     done \
  && git config --system --add safe.directory /workspace \
  && git config --system --add safe.directory '/workspace/*' \
@@ -161,7 +167,7 @@ RUN groupadd --gid 1000 kobe \
  && chown -R 0:0 /opt/kaiju/pi-extensions \
  && chmod 0444 /opt/kaiju/pi-extensions/kaiju-policy/*.js /opt/kaiju/pi-extensions/kaiju-models/*.js /opt/kaiju/pi-extensions/kaiju-tools/*.js /opt/kaiju/pi-extensions/kaiju-exec/*.js \
  && chmod 0555 /opt/kaiju/pi-extensions /opt/kaiju/pi-extensions/kaiju-policy /opt/kaiju/pi-extensions/kaiju-models /opt/kaiju/pi-extensions/kaiju-tools /opt/kaiju/pi-extensions/kaiju-exec \
- && chown kobe:kobe /workspace \
+ && chown kaiju:kaiju /workspace \
  && find / -xdev -perm /6000 -type f -exec chmod a-s {} + \
  && chown 0:1001 /opt/kaiju/bin/kaiju-runas && chmod 0750 /opt/kaiju/bin/kaiju-runas \
  && chown 0:0 /opt/kaiju/bin/kaiju-reclaim && chmod 0555 /opt/kaiju/bin/kaiju-reclaim \

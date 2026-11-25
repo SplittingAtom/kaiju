@@ -52,6 +52,11 @@ upgrade changed the Site's embedding model setting and kept every memory's vecto
 embedded again, search by meaning works as before and nothing needs changing. **Usage and spend**
 shows calls from before the upgrade under the new name, together with the newer ones.
 
+The sandbox's home folder is now `/home/kaiju` (it was `/home/kobe`) and its Unix users are named
+`kaiju`, `kaiju-agent`, `kaiju-pi-<n>` and `kaiju-tool-<n>`, with the same user ids as before, so
+files in `/workspace` keep their owners. `/home/kobe` still leads to the home folder, so paths
+written before the upgrade, such as a virtual environment's or a tool's settings, keep working.
+
 For developers of MCP Apps: Kaiju's own names for apps are now `io.kaiju/item-kind` and
 `kaiju/notifications/drag-*`, and `ui/initialize` names the host `kaiju`. Apps that use the old
 names keep working with no change; they will stop being accepted in a later release. See
