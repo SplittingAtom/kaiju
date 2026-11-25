@@ -9,7 +9,7 @@ import {
 
 /**
  * The conversation's Repo as a real git working copy (KOBE-767, spec workspace-git G18, G19). When
- * `run.start.git.repo` names one, the agent makes sure `/workspace/.kobe/repos/<slug>` is a git working
+ * `run.start.git.repo` names one, the agent makes sure `/workspace/.kaiju/repos/<slug>` is a git working
  * copy of it before the prompt, and reports its branch, ahead/behind and whether it has changes to
  * the server (`repo.status`) then and again when the run ends.
  *
@@ -19,7 +19,7 @@ import {
  * egress proxy exactly as the agent's own `git clone` would, and git never runs as the agent's uid
  * over a repository the tools control (its config, hooks or fsmonitor would execute as the agent).
  *
- * The working copy lives under the workspace's reserved `.kobe/` area (`REPO_WORKING_COPY_DIR`,
+ * The working copy lives under the workspace's reserved `.kaiju/` area (`REPO_WORKING_COPY_DIR`,
  * review M4 and N2): the sync never pushes, pulls, restores or deletes anything there and the
  * server never stores such a path, so a Repo's files never become a copy in the member's own
  * storage (outside the project's read rule, quota, retention and legal hold), and nothing of the
@@ -108,7 +108,7 @@ fi
 printf '${MARK}\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$b" "$h" "$up" "$ahead" "$behind" "$dirty" "$fetched" "$problem"
 `;
 
-/** The working copy's folder for a Repo (`<workspace>/.kobe/repos/<slug>`). */
+/** The working copy's folder for a Repo (`<workspace>/.kaiju/repos/<slug>`). */
 export function workingCopyDir(workspaceDir: string, repo: Pick<RunGitRepo, "slug">): string {
   return path.join(workspaceDir, REPO_WORKING_COPY_DIR, repo.slug);
 }

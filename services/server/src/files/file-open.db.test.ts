@@ -188,7 +188,7 @@ describe("open_file (KOBE-484, ac-1)", () => {
     });
     const cases: [string, string][] = [
       ["missing.md", "not_found"],
-      [".kobe/state.md", "not_found"],
+      [".kaiju/state.md", "not_found"],
       ["/etc/passwd", "invalid_path"],
     ];
     for (const [i, [path, code]] of cases.entries()) {

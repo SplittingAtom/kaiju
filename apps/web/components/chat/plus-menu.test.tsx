@@ -188,7 +188,7 @@ describe("a message sent with a skill (review MEDIUM-2)", { timeout: 30_000 }, (
   function skilled() {
     const t = fake.addThread("Skilled");
     const root = fake.addSystemEntry(t, null, "model_change", {
-      provider: "kobe",
+      provider: "kaiju",
       modelId: "kimi",
     });
     const u = fake.addEntry(t, root, { role: "user", content: `${LINE}Q3 report` });

@@ -207,7 +207,7 @@ describe("event ingest and the durable cursor", () => {
         message: {
           role: "assistant",
           stopReason: "error",
-          errorMessage: "kobe.model_error:model_not_enabled: model_not_enabled after 1 attempt",
+          errorMessage: "kaiju.model_error:model_not_enabled: model_not_enabled after 1 attempt",
         },
       },
       { type: "turn_end", message: { role: "assistant" } },
@@ -320,7 +320,7 @@ describe("event ingest and the durable cursor", () => {
     expect(resend.from_seq).toBe(3);
     sb.event(w.runId, w.threadId, 3, delta("y"));
     sb.event(w.runId, w.threadId, 4, {
-      type: "kobe.event_dropped",
+      type: "kaiju.event_dropped",
       original_type: "x",
       reason: "too_large",
     });

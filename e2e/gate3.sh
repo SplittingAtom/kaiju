@@ -456,7 +456,7 @@ if [[ "$STEPS" == *" data "* ]] && sbx_need "ac-5 (data)"; then
     else fail "$how: a new sandbox pod answered (got ${new_pod:-none}, uid ${new_pod_uid:-none}; before: uid ${old_pod_uid:-none})"; fi
     contains "$how: ...on a new, empty volume" '^[0-9a-f-]{36}$' "$(pvc_uid "$pvc" | grep -vx "$old_pvc" || true)"
     contains "$how: Pi's session file was rebuilt in the new sandbox" '^jsonl=[1-9][0-9]*$' \
-      "$(in_sbx "f=/workspace/.kobe/sessions/$T_DATA.jsonl; if test -s \$f; then echo jsonl=\$(wc -l < \$f); else echo jsonl=missing; fi")"
+      "$(in_sbx "f=/workspace/.kaiju/sessions/$T_DATA.jsonl; if test -s \$f; then echo jsonl=\$(wc -l < \$f); else echo jsonl=missing; fi")"
     contains "$how: ...from Postgres (the server restored the lost session)" '^[1-9]' \
       "$($KUBECTL -n "$NS" logs -l app.kubernetes.io/component=server -c server --since-time="$lost_at" --tail=-1 2>/dev/null \
         | grep -F "\"thread_id\":\"$T_DATA\"" | grep -c 'Pi session lost; restoring from Postgres' || true)"

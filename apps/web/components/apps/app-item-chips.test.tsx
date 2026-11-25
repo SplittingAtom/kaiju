@@ -276,7 +276,7 @@ describe("app item chips (KOBE-490)", () => {
       { name: "cat.ns.recent", kind: "view" as const },
     ];
     const root = fake.addSystemEntry(t, null, "model_change", {
-      provider: "kobe",
+      provider: "kaiju",
       modelId: "kimi",
     });
     const u = fake.addEntry(t, root, {
@@ -305,7 +305,7 @@ describe("app item chips (KOBE-490)", () => {
   it("regenerate sends the same references again", async () => {
     const t = fake.addThread("Regenerate");
     const root = fake.addSystemEntry(t, null, "model_change", {
-      provider: "kobe",
+      provider: "kaiju",
       modelId: "kimi",
     });
     const refs = [{ name: "cat.ns.orders", kind: "table" as const }];

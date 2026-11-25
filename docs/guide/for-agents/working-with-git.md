@@ -120,7 +120,7 @@ Errors carry a code. Do not retry a refusal unless it says when.
 A Repo is a Kaiju project whose record is a repository in a connected organization. In a
 conversation on a Repo:
 
-- **Your working copy is `/workspace/.kobe/repos/<project>`.** Kaiju makes it a git working copy
+- **Your working copy is `/workspace/.kaiju/repos/<project>`.** Kaiju makes it a git working copy
   of the Repo before each message (cloned through Kaiju's egress proxy like any repository; its
   `origin` is the Repo's normal `https://` URL) and fetches it again. Work there: create a branch, commit,
   push it with `git push -u origin <branch>`, then open the pull request with
@@ -138,11 +138,20 @@ conversation on a Repo:
   user to Update the checkout, then commit again. Each such commit asks the user to approve it
   (`commit_repo`, naming the host, repository and branch); no rule allows it without asking.
 - **The working copy is not synced** to the user's files: everything under
-  `/workspace/.kobe/repos/` lives only on the sandbox's disk (the Repo itself is the record).
+  `/workspace/.kaiju/repos/` lives only on the sandbox's disk (the Repo itself is the record).
   Push the branches you want to keep. If the sandbox's disk is ever replaced, Kaiju clones again; uncommitted changes and commits
   you did not push are lost. Files you want the user to see belong in their files (anywhere
-  under `/workspace` outside `.kobe/`), or on the host. Do not copy the user's files into the
+  under `/workspace` outside `.kaiju/`), or on the host. Do not copy the user's files into the
   working copy unless they asked for them to go to the Repo.
+- **An old `/workspace/.kobe/` folder.** Before the rename the working copies lived in
+  `/workspace/.kobe/repos/`. The sandbox moves the whole folder to `/workspace/.kaiju/` when it
+  starts, before you run, so normally there is no `.kobe/`. Never create it. If you do find one
+  next to `.kaiju/`, both held data and the sandbox left both as they were: Kaiju runs on
+  `.kaiju/`, and `.kobe/repos/<project>` may hold commits or changes that were never pushed. Do not
+  merge the folders or delete either. Tell the user, and if they want that work, bring it over
+  with git (for example `git -C /workspace/.kobe/repos/<project> log --branches --not --remotes`
+  to see unpushed commits, then push them as a branch or `git format-patch` them); they are not
+  synced or backed up anywhere else.
 - Kaiju reports the working copy's branch, how many commits it is ahead of and behind the host, and
   whether it has uncommitted changes, so the user sees it in their Files panel (on the Repo's row,
   next to the git icon).

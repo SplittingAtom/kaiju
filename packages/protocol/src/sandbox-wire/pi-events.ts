@@ -109,11 +109,11 @@ export function parseTranslatedPiEvent(event: { readonly type: string }): Transl
  * Placeholder kaiju-sandbox-agent sends **in place of** a Pi event it cannot put on the wire (the
  * frame would exceed the frame cap or fail the server's decoder: too deep, not serialisable). It
  * keeps the event's outbound `seq`, so seqs stay gapless and the server never loops on `resend`
- * for an event that can never arrive. Not a Pi type (the `kobe.` prefix cannot collide with one)
+ * for an event that can never arrive. Not a Pi type (the `kaiju.` prefix cannot collide with one)
  * and not translated: the server accepts it, advances the cursor and produces no Kaiju event.
  * `reason` is the encoder's code (`frame_too_large` | `malformed_frame`).
  */
-export const KAIJU_EVENT_DROPPED_TYPE = "kobe.event_dropped";
+export const KAIJU_EVENT_DROPPED_TYPE = "kaiju.event_dropped";
 export const kaijuEventDroppedSchema = z.strictObject({
   type: z.literal(KAIJU_EVENT_DROPPED_TYPE),
   /** The dropped Pi event's `type`, truncated to 64 chars. */
@@ -140,7 +140,12 @@ export type PiGetEntriesData = z.infer<typeof piGetEntriesDataSchema>;
  * text is untrusted; the server has its own message per code). A run whose last assistant message
  * ended that way fails with that code instead of completing silently.
  */
-export const KAIJU_MODEL_ERROR_PREFIX = "kobe.model_error:";
+export const KAIJU_MODEL_ERROR_PREFIX = "kaiju.model_error:";
+/**
+ * The prefix before the rename (KOBE-827): a sandbox still on the old image during an upgrade
+ * reports with it, so the server reads both for one release (KOBE-754).
+ */
+export const PRE_RENAME_MODEL_ERROR_PREFIX = "kobe.model_error:";
 
 export const MODEL_RUN_ERROR_CODES = [
   /** 403 `model_not_enabled` (the shim or Bifrost): not in the team's enabled models. */
@@ -168,8 +173,9 @@ export const MODEL_RUN_ERROR_CODES = [
 ] as const;
 export type ModelRunErrorCode = (typeof MODEL_RUN_ERROR_CODES)[number];
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const MODEL_ERROR_RE = new RegExp(
-  `^${KAIJU_MODEL_ERROR_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([a-z_]+)(?::|$)`,
+  `^(?:${escapeRe(KAIJU_MODEL_ERROR_PREFIX)}|${escapeRe(PRE_RENAME_MODEL_ERROR_PREFIX)})([a-z_]+)(?::|$)`,
 );
 const MODEL_ERROR_CODE_SET: ReadonlySet<string> = new Set(MODEL_RUN_ERROR_CODES);
 

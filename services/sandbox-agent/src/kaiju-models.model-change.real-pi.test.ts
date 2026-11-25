@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startLocalGateway, type LocalGateway } from "@kaiju/model-gateway/testing";
@@ -12,7 +12,7 @@ import { PI_AVAILABLE, PI_BIN, REAL_POLICY_EXTENSION } from "./testing/real-pi.j
 /**
  * KOBE-279 with the REAL Pi 1.0.0 and kaiju-models: a run whose model differs from the one its
  * branch is on leaves a `model_change` entry right before its prompt (after the agent's
- * `kobe.branch` marker when it branches), so the chat shows "Model changed to …" there (KOBE-209,
+ * `kaiju.branch` marker when it branches), so the chat shows "Model changed to …" there (KOBE-209,
  * KOBE-217); a run on the branch's own model leaves none.
  */
 const PACKAGE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -172,7 +172,7 @@ describe.skipIf(!PI_AVAILABLE)("model_change entries in real Pi (KOBE-279)", () 
     expect(afterSetup(branch(all, lastAssistant(all).id))).toEqual([
       "user one",
       "assistant openai/gpt-fake",
-      "custom kobe.branch",
+      "custom kaiju.branch",
       "model_change anthropic/claude-fake",
       "user two",
       "assistant anthropic/claude-fake",
@@ -186,7 +186,7 @@ describe.skipIf(!PI_AVAILABLE)("model_change entries in real Pi (KOBE-279)", () 
     expect(afterSetup(branch(all, lastAssistant(all).id))).toEqual([
       "user one",
       "assistant openai/gpt-fake",
-      "custom kobe.branch",
+      "custom kaiju.branch",
       "user two",
       "assistant openai/gpt-fake",
     ]);
@@ -216,13 +216,53 @@ describe.skipIf(!PI_AVAILABLE)("model_change entries in real Pi (KOBE-279)", () 
       "model_change openai/gpt-fake",
       "thinking_level_change",
       "system",
-      "custom kobe.branch",
+      "custom kaiju.branch",
       "model_change anthropic/claude-fake",
       "user one",
       "assistant anthropic/claude-fake",
     ]);
     expect(branch(all, lastAssistantOf(all, "one", 0))).toEqual(oldBranch);
   }, 180_000);
+
+  // KOBE-827 ac-2: a session written before the rename records Pi's provider as `kobe` and the
+  // agent's branch markers as `kobe.branch`. On a new image (provider `kaiju`) it resumes: the
+  // next run answers on the same branch and records no model switch (without kaiju-models'
+  // read of the old provider id, Pi would record a same-model `model_change` here).
+  it("resumes a session from before the rename (provider kobe, kobe.branch) without a switch", async () => {
+    const first = await start();
+    await run(first, RUN, "one", OPENAI);
+    const before = await entries(first);
+    await run(first, RUN_2, "two", OPENAI, lastAssistant(before).id);
+    const file = path.join(first.sessions, `${THREAD}.jsonl`);
+    const written = await readFile(file, "utf8");
+    expect(written).toContain('"provider":"kaiju"');
+    expect(written).toContain('"customType":"kaiju.branch"');
+    const old = written
+      .replaceAll('"provider":"kaiju"', '"provider":"kobe"')
+      .replaceAll('"customType":"kaiju.branch"', '"customType":"kobe.branch"');
+    const firstWorkspace = first.workspace;
+    await first.close();
+    await gateway?.close();
+    h = gateway = undefined;
+
+    // The volume wakes on the new image: same session file, a new agent and Pi.
+    const second = await start();
+    await mkdir(second.sessions, { recursive: true });
+    // Pi's header records the workspace it ran in: the same /workspace in a pod.
+    const moved = old.replaceAll(firstWorkspace, second.workspace);
+    await writeFile(path.join(second.sessions, `${THREAD}.jsonl`), moved, { mode: 0o600 });
+    await run(second, RUN_3, "three", OPENAI);
+    const all = await entries(second);
+    expect(afterSetup(branch(all, lastAssistant(all).id))).toEqual([
+      "user one",
+      "assistant openai/gpt-fake",
+      "custom kobe.branch",
+      "user two",
+      "assistant openai/gpt-fake",
+      "user three",
+      "assistant openai/gpt-fake",
+    ]);
+  }, 240_000);
 
   it("a limits re-select on the same model records a same-model model_change (KOBE-259)", async () => {
     const harness = await start();

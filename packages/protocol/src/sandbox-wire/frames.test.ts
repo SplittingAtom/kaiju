@@ -326,7 +326,7 @@ describe("server → sandbox frames", () => {
       "set_model (KOBE-169: model choice goes through run.start; the catalog re-reads agent/ config)",
       {
         ...serverFrames["pi.command"],
-        command: { id: "c4", type: "set_model", provider: "kobe", modelId: "openai/gpt" },
+        command: { id: "c4", type: "set_model", provider: "kaiju", modelId: "openai/gpt" },
       },
     ],
     [
@@ -570,7 +570,7 @@ describe("contracts cleanup (agent-reported gaps)", () => {
     ).toMatchObject({ ok: true });
   });
 
-  it("describes the kobe.event_dropped placeholder, which the translator ignores", () => {
+  it("describes the kaiju.event_dropped placeholder, which the translator ignores", () => {
     const placeholder = {
       type: KAIJU_EVENT_DROPPED_TYPE,
       original_type: "message_update",

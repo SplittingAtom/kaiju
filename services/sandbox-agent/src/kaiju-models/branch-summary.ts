@@ -50,7 +50,7 @@ function thrownOutcome(error: unknown): BranchSummaryOutcome {
 }
 
 /**
- * The `kobe-branch-summary` command (KOBE-548, CT11): Pi summarises the branch it leaves and appends
+ * The `kaiju-branch-summary` command (KOBE-548, CT11): Pi summarises the branch it leaves and appends
  * a `branch_summary` entry at the target (spike KOBE-541). One per arming: the request comes from
  * the agent, never from the prompt, so a member who types the command gets nothing.
  */
@@ -80,7 +80,7 @@ export class BranchSummaryCommand {
   async handle(ctx: BranchSummaryContextLike): Promise<void> {
     const input = ctx.ui?.input;
     if (input === undefined || this.#active) {
-      this.warn("kobe-branch-summary: refused (no agent channel or already running)");
+      this.warn("kaiju-branch-summary: refused (no agent channel or already running)");
       return;
     }
     const request = parseBranchSummaryRequest(
@@ -90,7 +90,7 @@ export class BranchSummaryCommand {
     );
     if (request === undefined) {
       // Not armed by the agent: a member typed the command. Nothing is written.
-      this.warn("kobe-branch-summary: refused (not requested by the sandbox agent)");
+      this.warn("kaiju-branch-summary: refused (not requested by the sandbox agent)");
       return;
     }
     this.#active = true;
@@ -119,7 +119,7 @@ export class BranchSummaryCommand {
     try {
       await ctx.navigateTree(from, {});
     } catch (error) {
-      this.warn(`kobe-branch-summary: could not return to the old leaf: ${String(error)}`);
+      this.warn(`kaiju-branch-summary: could not return to the old leaf: ${String(error)}`);
     }
   }
 

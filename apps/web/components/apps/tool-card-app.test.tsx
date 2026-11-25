@@ -225,7 +225,7 @@ describe("apps in tool cards (KOBE-438)", () => {
     // The gate's shape: Pi's settings entries, its system message, the prompt, the app call, an
     // answer, Kaiju's branch entry, then a second prompt and its answer.
     const t = fake.addThread("Gate shape");
-    const model = fake.addSystemEntry(t, null, "model_change", { modelId: "m", provider: "kobe" });
+    const model = fake.addSystemEntry(t, null, "model_change", { modelId: "m", provider: "kaiju" });
     const level = fake.addSystemEntry(t, model, "thinking_level_change", { thinkingLevel: "off" });
     const system = fake.addEntry(t, level, { role: "system", content: "", sections: {} });
     const prompt = fake.addEntry(t, system, {
@@ -248,7 +248,7 @@ describe("apps in tool cards (KOBE-438)", () => {
       content: [{ type: "text", text: "Opened." }],
     });
     const branch = fake.addSystemEntry(t, answer, "custom", {
-      customType: "kobe.branch",
+      customType: "kaiju.branch",
       data: { run_id: "run-2" },
     });
     const second = fake.addEntry(t, branch, { role: "user", content: "Use the table" });

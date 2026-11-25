@@ -1,3 +1,4 @@
+import { isEntryType, PRE_RENAME_PROVIDER_ID } from "@kaiju/protocol";
 import type { PiSessionEntry } from "@kaiju/protocol/sandbox-wire";
 
 /**
@@ -7,8 +8,8 @@ import type { PiSessionEntry } from "@kaiju/protocol/sandbox-wire";
  * entry on the way must have exactly the shape Pi writes, with values the server can predict from
  * its own records:
  *
- * - the run's `kobe.branch` marker (the sandbox agent's, `data.run_id` = the run);
- * - `model_change` to the run's gateway model under the `kobe` provider, `thinking_level_change`
+ * - the run's `kaiju.branch` marker (the sandbox agent's, `data.run_id` = the run);
+ * - `model_change` to the run's gateway model under the `kaiju` provider, `thinking_level_change`
  *   to one of Pi's levels (Pi writes these at a new session's root, and a `model_change` under the
  *   marker when the branch's model differs);
  * - at a branch-less run's root only, Pi's `system` entry ({@link isRunSystemEntry});
@@ -37,7 +38,7 @@ export interface PromptRunRecord {
   readonly id: string;
   /** The member's message as the server stored it. */
   readonly input: string;
-  /** Where the run branched (`kobe.branch` marker's parent); null: a branch-less run. */
+  /** Where the run branched (`kaiju.branch` marker's parent); null: a branch-less run. */
   readonly parentEntryId: string | null;
   /** The run's attachments, in `run.start` order. */
   readonly attachments: readonly PromptAttachment[];
@@ -66,7 +67,7 @@ const ATTACHED = "\n\nAttached files:\n";
 const SHOWN = " - shown to you as an image";
 const BY_PATH = " - not shown inline; open it from this path";
 
-const KAIJU_PROVIDER = "kobe";
+const KAIJU_PROVIDER = "kaiju";
 const THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 /** Setup entries Pi writes before a prompt. */
 const MAX_SETUP = 4;
@@ -100,7 +101,8 @@ function isRunMarker(entry: PiSessionEntry, runId: string): boolean {
   return (
     entry.type === "custom" &&
     entryShape(entry, ["customType", "data"]) &&
-    e.customType === "kobe.branch" &&
+    // Written by a sandbox still on the image from before the rename, `kobe.branch` (KOBE-827).
+    isEntryType(e.customType, "kaiju.branch") &&
     typeof data === "object" &&
     data !== null &&
     exactKeys(data, ["run_id"]) &&
@@ -115,7 +117,8 @@ export function isRunSetup(entry: PiSessionEntry, gatewayModel: string | undefin
     return (
       gatewayModel !== undefined &&
       entryShape(entry, ["provider", "modelId"]) &&
-      e.provider === KAIJU_PROVIDER &&
+      // A sandbox on the image from before the rename registers Pi's provider as `kobe`.
+      (e.provider === KAIJU_PROVIDER || e.provider === PRE_RENAME_PROVIDER_ID) &&
       e.modelId === gatewayModel
     );
   }
@@ -233,7 +236,7 @@ export function isRunPrompt(
 }
 
 /**
- * The run's prompt in Pi's new entries: from the run's own `kobe.branch` marker under its branch
+ * The run's prompt in Pi's new entries: from the run's own `kaiju.branch` marker under its branch
  * point (required when it has one; a branch-less run starts at the root), through the run's setup
  * entries only, to its prompt ({@link isRunPrompt}). Any other entry there refuses it.
  */

@@ -11,7 +11,7 @@ import {
   parseBranchSummaryRequest,
 } from "./branch-summary-protocol.js";
 
-/** KOBE-548: the kobe-branch-summary command, gated by the agent's armed request. */
+/** KOBE-548: the kaiju-branch-summary command, gated by the agent's armed request. */
 function fakeCtx(options: {
   answer?: string | undefined;
   leaf?: string;
@@ -61,7 +61,7 @@ function fakeCtx(options: {
 
 const armed = (request: object) => JSON.stringify(request);
 
-describe("kobe-branch-summary command", () => {
+describe("kaiju-branch-summary command", () => {
   it("refuses when the agent did not arm it (a member typed the command)", async () => {
     const warnings: string[] = [];
     const f = fakeCtx({ answer: undefined });
@@ -117,7 +117,7 @@ describe("kobe-branch-summary command", () => {
         "thread_busy",
       ],
       ["No model available for summarization", "model_not_configured"],
-      ["kobe.model_error:model_budget_exhausted: no budget", "summary_failed"],
+      ["kaiju.model_error:model_budget_exhausted: no budget", "summary_failed"],
     ] as const) {
       const f = fakeCtx({
         answer: armed({ from: "c", to: "b" }),

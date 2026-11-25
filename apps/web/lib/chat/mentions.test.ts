@@ -18,7 +18,7 @@ describe("MentionStore.restore (KOBE-756: a draft restored from storage)", () =>
   it("puts the kept chips back, refusing what a pick would refuse, and adds no duplicate", () => {
     const store = new MentionStore();
     store.addChip("t", "a.csv");
-    store.restore("t", ["a.csv", "b.md", ".kobe/x", "c​d.txt", "e.txt"]);
+    store.restore("t", ["a.csv", "b.md", ".kaiju/x", "c​d.txt", "e.txt"]);
     expect(store.chips("t")).toEqual(["a.csv", "b.md", "e.txt"]);
   });
 

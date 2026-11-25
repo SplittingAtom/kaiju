@@ -122,7 +122,7 @@ describe.skipIf(!PI_AVAILABLE)("thread.branch_summary in real Pi (KOBE-548)", ()
     const harness = h;
     const server = harness.server;
     expect(server.frames("hello").at(-1)?.capabilities).toContain("thread_branch_summary");
-    // A, B on the main path; C branches from A's answer (the agent's kobe.branch marker).
+    // A, B on the main path; C branches from A's answer (the agent's kaiju.branch marker).
     await run(harness, runId(1), "say A");
     await settled(harness, runId(1));
     await run(harness, runId(2), "say B");
@@ -138,7 +138,7 @@ describe.skipIf(!PI_AVAILABLE)("thread.branch_summary in real Pi (KOBE-548)", ()
     const typed = await run(
       harness,
       runId(4),
-      `/kobe-branch-summary {"from":"${c.id}","to":"${b.id}"}`,
+      `/kaiju-branch-summary {"from":"${c.id}","to":"${b.id}"}`,
     );
     expect(typed).toMatchObject({ ok: true, data: { disposition: "handled" } });
     expect((await entries(harness)).filter((e) => e.type === "branch_summary")).toEqual([]);

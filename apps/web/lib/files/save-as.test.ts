@@ -35,6 +35,7 @@ describe("saveAsProblem", () => {
     expect(saveAsProblem("a//b.md", "a.md")).toMatch(/inside My files/u);
     expect(saveAsProblem("a/../b.md", "a.md")).toMatch(/inside My files/u);
     expect(saveAsProblem("a$b.md", "a.md")).toMatch(/inside My files/u);
+    expect(saveAsProblem(".kaiju/x.md", "a.md")).toMatch(/not available/u);
     expect(saveAsProblem(".kobe/x.md", "a.md")).toMatch(/not available/u);
     expect(saveAsProblem("projects/p1/x.md", "a.md")).toMatch(/read-only/u);
     expect(saveAsProblem("uploads/t1/x.md", "a.md")).toMatch(/read-only/u);

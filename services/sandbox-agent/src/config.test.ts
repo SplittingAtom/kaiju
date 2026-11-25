@@ -105,7 +105,7 @@ describe("sandbox-agent loadConfig", () => {
     expect(config).toMatchObject({
       tokenFile: "/var/run/kaiju/sandbox-wire/token",
       workspaceDir: "/workspace",
-      sessionDir: "/workspace/.kobe/sessions",
+      sessionDir: "/workspace/.kaiju/sessions",
       piBin: "pi",
       maxPiProcesses: 8,
     });

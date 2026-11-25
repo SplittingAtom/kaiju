@@ -233,7 +233,7 @@ describe("propose_file_edit (KOBE-462, ac-4)", () => {
     await seed(w, "projects/p/spec.md", "spec\n", "projects");
     const cases: [string, string][] = [
       ["missing/", "invalid_path"],
-      [".kobe/state.md", "not_found"],
+      [".kaiju/state.md", "not_found"],
       ["projects/p/spec.md", "read_only"],
       ["/etc/passwd", "invalid_path"],
     ];

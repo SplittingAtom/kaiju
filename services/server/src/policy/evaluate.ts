@@ -16,6 +16,7 @@ import {
 import { allowedByRuleMessage, rememberedRuleAllowed, scopeOf } from "./remember-limits.js";
 import { matchingRules, type PolicyRule, type PolicyRuleSet } from "./rules.js";
 import { PROMPT_EXEMPT_KAIJU_TOOLS, riskClassPrompts, type PolicySettings } from "./settings.js";
+import { stateFolderViews } from "./state-folder-views.js";
 import { prepareInput } from "./tool-inputs.js";
 
 /**
@@ -76,7 +77,10 @@ function namesOf(ctx: EvaluationContext): ToolDescriptor[] {
   return [ctx.tool, ...(ctx.previousNames ?? []).map((name) => ({ ...ctx.tool, name }))];
 }
 
-/** Deny or ask rules matching the tool under any of its names, once each, by id. */
+/**
+ * Deny or ask rules matching the tool under any of its names, and its input under either name of
+ * the sandbox's folder (KOBE-827, state-folder-views.ts), once each, by id.
+ */
 function matchingAnyName(
   rules: readonly PolicyRule[],
   effect: "deny" | "ask",
@@ -84,7 +88,9 @@ function matchingAnyName(
 ): PolicyRule[] {
   const byId = new Map<string, PolicyRule>();
   for (const t of namesOf(ctx)) {
-    for (const r of matchingRules(rules, effect, t, ctx.view, ctx.now)) byId.set(r.id, r);
+    for (const view of [ctx.view, ...ctx.folderViews]) {
+      for (const r of matchingRules(rules, effect, t, view, ctx.now)) byId.set(r.id, r);
+    }
   }
   return [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
@@ -92,6 +98,8 @@ function matchingAnyName(
 /** The context plus the prepared (validated, canonical-path) input rules match against. */
 interface Prepared extends EvaluationContext {
   readonly view: JsonObject;
+  /** The view with the sandbox folder's other name (KOBE-827): deny and ask stages only. */
+  readonly folderViews: readonly JsonObject[];
 }
 
 const RISK_REASON = {
@@ -125,7 +133,7 @@ function denyReasons(ctx: Prepared): PolicyReason[] {
       ruleReason(r, "team_deny_rule", "team_deny", `${tool.name} is blocked by team policy.`),
     ),
     ...checkAvailable(tool),
-    ...checkAgentTools(ctx.input.agent, tool, view, ctx.previousNames),
+    ...checkAgentTools(ctx.input.agent, tool, view, ctx.previousNames, ctx.folderViews),
     ...checkConnector(ctx.input, tool, ctx.connector),
   ];
 }
@@ -274,7 +282,7 @@ export function evaluatePolicy(ctx: EvaluationContext): PolicyDecision {
       reasons: [{ code: "invalid_input", stage: "site_deny", message: prepared.message }],
     };
   }
-  const p: Prepared = { ...ctx, view: prepared.view };
+  const p: Prepared = { ...ctx, view: prepared.view, folderViews: stateFolderViews(prepared.view) };
 
   const denies = denyReasons(p);
   if (denies.length > 0) return deny(p, denies);

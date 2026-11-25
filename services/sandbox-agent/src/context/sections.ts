@@ -10,7 +10,7 @@ import { VIEWING_HEADER } from "../memory/viewing-context.js";
 import { CONFLICTS_HEADER } from "../memory/conflict-context.js";
 
 /** kaiju-tools' picks note (KOBE-658, kaiju-tools/memory-hooks.ts `MEMORY_PICKS_TYPE`). */
-const PICKS_NOTE_TYPE = "kobe-memory-picks";
+const PICKS_NOTE_TYPE = "kaiju-memory-picks";
 const PICKS_LABEL = "What Kaiju knows for this message";
 
 /**

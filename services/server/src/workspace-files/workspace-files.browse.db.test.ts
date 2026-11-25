@@ -240,15 +240,15 @@ describe("GET /v1/workspace/file (download)", () => {
     expect((await w.a.get("/v1/workspace/file?path=d/x.txt")).status).toBe(404);
   });
 
-  it("never serves agent-internal paths (.kobe/), like list and delete", async () => {
+  it("never serves agent-internal paths (.kaiju/), like list and delete", async () => {
     const w = await world();
-    // The sync never stores .kobe/ (it is excluded): plant a row as a guard against that changing.
+    // The sync never stores .kaiju/ (it is excluded): plant a row as a guard against that changing.
     await seed(w, w.alice, "state.json", "agent state");
     await fx.admin.query(
-      `UPDATE workspace_files SET path = '.kobe/state.json' WHERE team_id = $1 AND path = 'state.json'`,
+      `UPDATE workspace_files SET path = '.kaiju/state.json' WHERE team_id = $1 AND path = 'state.json'`,
       [w.team],
     );
-    for (const path of [".kobe", ".kobe/state.json"]) {
+    for (const path of [".kaiju", ".kaiju/state.json"]) {
       const res = await w.a.get(`/v1/workspace/file?path=${encodeURIComponent(path)}`);
       expect(res.status, path).toBe(404);
       expect(workspaceFileErrorSchema.parse(res.json).code).toBe("not_found");
@@ -336,7 +336,7 @@ describe("GET /v1/workspace/files/search (KOBE-223)", () => {
     // Never synced; a stray row must still not be offered.
     await fx.admin.query(
       `INSERT INTO workspace_files (team_id, user_id, path, rev, deleted, sha256, blob_key, size, mtime_ms, origin)
-       VALUES ($1, $2, '.kobe/rep.jsonl', 999999, false, $3, 'k/x', 1, 1, 'sandbox')`,
+       VALUES ($1, $2, '.kaiju/rep.jsonl', 999999, false, $3, 'k/x', 1, 1, 'sandbox')`,
       [w.team, w.alice.id, "b".repeat(64)],
     );
     const other = await fx.team(`w2-${randomBytes(3).toString("hex")}`, w.alice, []);

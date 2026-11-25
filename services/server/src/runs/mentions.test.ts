@@ -26,7 +26,7 @@ describe("mention path rules (KOBE-223, ac-3 and B1)", () => {
     for (const p of [
       "/etc/passwd",
       "/workspace/a.txt",
-      "/workspace/.kobe/x",
+      "/workspace/.kaiju/x",
       "../etc/passwd",
       "a/../../b",
       "./a",
@@ -38,8 +38,8 @@ describe("mention path rules (KOBE-223, ac-3 and B1)", () => {
   });
 
   it("refuses agent-internal paths", () => {
-    expect(mentionAllowed(".kobe/session.jsonl")).toBe(false);
-    expect(check([".kobe/x"])).toBe("invalid_mention");
+    expect(mentionAllowed(".kaiju/session.jsonl")).toBe(false);
+    expect(check([".kaiju/x"])).toBe("invalid_mention");
   });
 
   it.each([

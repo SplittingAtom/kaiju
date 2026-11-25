@@ -20,7 +20,7 @@ describe("schedule mentions follow a moved file (KOBE-304)", () => {
 
   it("leaves a schedule alone when nothing moved, the new path can't be mentioned, or the prompt would grow too long", () => {
     expect(retargetMentions({ prompt: "p", mentions: ["x"] }, "a", "b")).toBeUndefined();
-    expect(retargetMentions({ prompt: "p", mentions: ["a"] }, "a", ".kobe/a")).toBeUndefined();
+    expect(retargetMentions({ prompt: "p", mentions: ["a"] }, "a", ".kaiju/a")).toBeUndefined();
     const long = `${"x".repeat(9_990)}${mentionMarker("a")}`;
     expect(
       retargetMentions({ prompt: long, mentions: ["a"] }, "a", "b".repeat(100)),

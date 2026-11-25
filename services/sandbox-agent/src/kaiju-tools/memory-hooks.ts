@@ -174,7 +174,7 @@ const MEMORY_TOOL_NAMES = [TOOL_REMEMBER, TOOL_RECALL, TOOL_SHOW_MEMORY_ITEM];
 const FENCED_RESULT_TOOLS: readonly string[] = [TOOL_RECALL, TOOL_SHOW_MEMORY_ITEM];
 
 /** `customType` of the picks note before a user message (KOBE-658; never stored, never shown). */
-export const MEMORY_PICKS_TYPE = "kobe-memory-picks";
+export const MEMORY_PICKS_TYPE = "kaiju-memory-picks";
 
 export function installMemoryHooks(
   pi: MemoryHooksApi,
@@ -198,7 +198,7 @@ export function installMemoryHooks(
   // bound to the run's user message (by its timestamp: Pi creates the message right after
   // `before_agent_start`) and re-sent before it on every later request, byte for byte, so the
   // system prompt and the history stay cacheable. Never in the session (no memory text in thread
-  // entries). KOBE-662: the server restarts Pi for every message (each run's `kobe.branch`
+  // entries). KOBE-662: the server restarts Pi for every message (each run's `kaiju.branch`
   // marker), so the agent keeps the notes (bound the same way, from the run's user message event)
   // and hands them back in the run file; this map only covers the current run until then. A new
   // agent (sandbox resumed) starts without them: one uncached request.
@@ -364,7 +364,7 @@ export function registerProjectHooks(
 }
 
 /** `customType` of the mid-run sync conflict note (KOBE-492). */
-export const CONFLICT_NOTE_TYPE = "kobe-sync-conflict";
+export const CONFLICT_NOTE_TYPE = "kaiju-sync-conflict";
 
 /** The Pi custom message that carries a mid-run sync conflict note (never displayed). */
 export function conflictNoteMessage(text: string): Record<string, unknown> {

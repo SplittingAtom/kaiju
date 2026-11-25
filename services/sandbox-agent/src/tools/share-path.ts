@@ -7,7 +7,7 @@ import { confineFile, ConfineError } from "../workspace-confine.js";
  * pushed it must name one regular file inside the workspace, reached without any symlink:
  *
  * 1. lexical: relative, or absolute under the workspace root; no `..`, control characters or
- *    backslashes (`workspacePathIssue`); not under `.kobe/` (the agent's own data);
+ *    backslashes (`workspacePathIssue`); not under `.kaiju/` (the agent's own data);
  * 2. physical: the shared `workspace-confine.ts` check (no symlink in any component, a regular
  *    file; fail closed on every filesystem error);
  * 3. the target is at most {@link FILE_SHARE_MAX_BYTES}.
@@ -52,13 +52,13 @@ function lexicalRel(root: string, input: string): string {
   const issue = rel === "." ? "the workspace root" : workspacePathIssue(rel);
   if (issue !== undefined) throw new SharePathError("invalid_path", `invalid path: ${issue}`);
   if (isExcludedPath(rel)) {
-    throw new SharePathError("invalid_path", "files under .kobe/ are the agent's own data");
+    throw new SharePathError("invalid_path", "files under .kaiju/ are the agent's own data");
   }
   return rel;
 }
 
 /**
- * Steps 1 and 2 only (no size limit): one regular workspace file outside `.kobe/`, reached without
+ * Steps 1 and 2 only (no size limit): one regular workspace file outside `.kaiju/`, reached without
  * a symlink. Also `open_file` (KOBE-484), which opens files of any size.
  */
 export async function resolveWorkspaceFile(

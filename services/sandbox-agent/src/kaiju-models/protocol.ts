@@ -13,8 +13,14 @@
  */
 export const MODEL_FILE_ENV = "KAIJU_MODEL_FILE";
 export const MODEL_FILE_VERSION = 1;
-/** The Pi provider id; models are selected as `kobe/<gateway model>`. */
-export const KAIJU_PROVIDER_ID = "kobe";
+/** The Pi provider id; models are selected as `kaiju/<gateway model>`. */
+export const KAIJU_PROVIDER_ID = "kaiju";
+/**
+ * The provider id before the rename (KOBE-827; `@kaiju/protocol` `PRE_RENAME_PROVIDER_ID`): session
+ * files written then record `kobe` in their `model_change` entries and answers. Never registered;
+ * only read, so a resumed branch on the same model records no switch.
+ */
+export const PRE_RENAME_PROVIDER_ID = "kobe";
 
 /** Copies of `@kaiju/protocol` values (pinned by protocol.test.ts). */
 export const PI_MODEL_APIS = [
@@ -23,7 +29,7 @@ export const PI_MODEL_APIS = [
   "google-generative-ai",
 ] as const;
 export type PiModelApi = (typeof PI_MODEL_APIS)[number];
-export const KAIJU_MODEL_ERROR_PREFIX = "kobe.model_error:";
+export const KAIJU_MODEL_ERROR_PREFIX = "kaiju.model_error:";
 /** Bound of a model's context window and output limit (`MODEL_LIMITS_MAX_TOKENS`, KOBE-259). */
 export const MODEL_LIMITS_MAX_TOKENS = 10_000_000;
 export const MODEL_RUN_ERROR_CODES = [

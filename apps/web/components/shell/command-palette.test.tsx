@@ -41,7 +41,10 @@ afterEach(() => {
 
 function conversation(title = "Report") {
   const t = fake.addThread(title);
-  const first = fake.addSystemEntry(t, null, "model_change", { provider: "kobe", modelId: "kimi" });
+  const first = fake.addSystemEntry(t, null, "model_change", {
+    provider: "kaiju",
+    modelId: "kimi",
+  });
   const root = fake.addSystemEntry(t, first, "thinking_level_change", { thinkingLevel: "off" });
   const q = fake.addEntry(t, root, { role: "user", content: "Sum the numbers" });
   // A reasoning block, so the answer has a Show details toggle to watch (KOBE-418).

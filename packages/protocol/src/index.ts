@@ -15,6 +15,7 @@ export * from "./projects.js";
 export * from "./uploads.js";
 export * from "./files.js";
 export * from "./workspace-paths.js";
+export * from "./state-folder.js";
 export * from "./workspace-changes.js";
 export * from "./workspace-events.js";
 export * from "./skill-draft-tool.js";

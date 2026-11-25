@@ -287,7 +287,7 @@ describe("buildPiLaunch", () => {
     const a = on("openai/gpt-fake");
     const b = on("anthropic/claude-fake");
     const none = on(null);
-    expect(a.args.slice(a.args.indexOf("--model"))).toEqual(["--model", "kobe/openai/gpt-fake"]);
+    expect(a.args.slice(a.args.indexOf("--model"))).toEqual(["--model", "kaiju/openai/gpt-fake"]);
     expect(none.args).not.toContain("--model");
     expect(new Set([a.key, b.key, none.key]).size).toBe(1);
     // Without kaiju-models there is no kaiju provider to start on.

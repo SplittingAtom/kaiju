@@ -104,7 +104,7 @@ const registered = (() => {
     return m === null
       ? undefined
       : {
-          provider: "kobe",
+          provider: "kaiju",
           id: m.gateway_model,
           baseUrl: `${file.gateway_url}${BASE_PATHS[m.api]}`,
           contextWindow: m.context_window ?? 128000,
@@ -427,7 +427,7 @@ function handle(cmd) {
         data: { sessionFile, isStreaming: streaming, model: selectedModel ?? null },
       });
     case "set_model":
-      if (registered === undefined || cmd.provider !== "kobe" || cmd.modelId !== registered.id)
+      if (registered === undefined || cmd.provider !== "kaiju" || cmd.modelId !== registered.id)
         return respond(cmd, {
           success: false,
           error: `Model not found: ${cmd.provider}/${cmd.modelId}`,
@@ -441,7 +441,7 @@ function handle(cmd) {
       if (cmd.since === "plant-during") {
         const file = `${process.env.PI_CODING_AGENT_DIR}/models.json`;
         rmSync(file, { force: true });
-        writeFileSync(file, '{"providers":{"kobe":{"models":[]}}}');
+        writeFileSync(file, '{"providers":{"kaiju":{"models":[]}}}');
         return respond(cmd, { success: true, data: { entries: [], leafId: null } });
       }
       const all = entries();

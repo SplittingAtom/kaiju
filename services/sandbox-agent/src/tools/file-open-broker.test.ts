@@ -91,11 +91,11 @@ describe("FileOpenBroker (KOBE-484)", () => {
     expect(broker.onResult(result)).toBe(false);
   });
 
-  it("answers a missing file, a symlink or .kobe/ as a tool error and sends nothing", async () => {
+  it("answers a missing file, a symlink or .kaiju/ as a tool error and sends nothing", async () => {
     for (const [p, code] of [
       ["missing.md", "not_found"],
       ["link", "invalid_path"],
-      [".kobe/state.json", "invalid_path"],
+      [".kaiju/state.json", "invalid_path"],
       ["../etc/passwd", "invalid_path"],
     ] as const) {
       const { broker, frames, replies, reply, settle } = setup();

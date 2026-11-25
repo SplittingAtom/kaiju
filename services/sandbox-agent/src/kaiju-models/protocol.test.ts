@@ -8,9 +8,11 @@ import {
   PI_MODEL_APIS as PROTOCOL_APIS,
   piThreadConfigSchema,
 } from "@kaiju/protocol/sandbox-wire";
+import { PRE_RENAME_PROVIDER_ID as PROTOCOL_OLD_PROVIDER } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import {
   GATEWAY_MODEL,
+  PRE_RENAME_PROVIDER_ID,
   KAIJU_MODEL_ERROR_PREFIX,
   MODEL_LIMITS_MAX_TOKENS,
   MODEL_RUN_ERROR_CODES,
@@ -40,6 +42,7 @@ const parses = (text: string): boolean => {
 describe("kaiju-models protocol", () => {
   it("pins its copies of the @kaiju/protocol constants (the extension ships on its own)", () => {
     expect(KAIJU_MODEL_ERROR_PREFIX).toBe(PROTOCOL_PREFIX);
+    expect(PRE_RENAME_PROVIDER_ID).toBe(PROTOCOL_OLD_PROVIDER);
     expect([...MODEL_RUN_ERROR_CODES]).toEqual([...PROTOCOL_CODES]);
     expect([...PI_MODEL_APIS]).toEqual([...PROTOCOL_APIS]);
     expect(MODEL_LIMITS_MAX_TOKENS).toBe(PROTOCOL_MAX_TOKENS);

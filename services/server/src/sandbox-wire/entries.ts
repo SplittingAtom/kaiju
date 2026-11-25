@@ -6,7 +6,7 @@ import {
 } from "@kaiju/protocol/sandbox-wire";
 import { sql, threadEntries, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { NewRunEvent } from "../event-stream/append.js";
-import { SKIPPED_ENTRY_TYPE } from "../policy/skipped-summary.js";
+import { PRE_RENAME_SKIPPED_ENTRY_TYPE, SKIPPED_ENTRY_TYPE } from "../policy/skipped-summary.js";
 import { ENTRY_EVENT_PAYLOAD_MAX_BYTES, RESTORE_PART_MAX_BYTES } from "./constants.js";
 
 /**
@@ -83,7 +83,8 @@ export function isServerEntryId(entryId: string): boolean {
  * run's skipped-actions note, an unsent prompt). They are never the sync cursor, never restored
  * into Pi, and never where Pi continues from.
  */
-export const piSessionEntrySql = sql`NOT (type = 'custom_message' AND payload ->> 'customType' = ${SKIPPED_ENTRY_TYPE})
+export const piSessionEntrySql = sql`NOT (type = 'custom_message'
+       AND payload ->> 'customType' IN (${SKIPPED_ENTRY_TYPE}, ${PRE_RENAME_SKIPPED_ENTRY_TYPE}))
        AND entry_id NOT LIKE ${`${UNSENT_PROMPT_PREFIX}%`}`;
 
 /**

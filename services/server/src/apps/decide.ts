@@ -2,7 +2,8 @@ import type { AppCallReason, PinnedTool } from "@kaiju/db";
 import type { JsonObject } from "@kaiju/protocol";
 import { appVisible } from "../connectors/visibility.js";
 import { describePinnedTool, type TeamConnector } from "../mcp/catalog.js";
-import { matchingRules, type PolicyRuleSet } from "../policy/rules.js";
+import { matchingRules, type PolicyRule, type PolicyRuleSet } from "../policy/rules.js";
+import { stateFolderViews } from "../policy/state-folder-views.js";
 import type { SchemaValidator, Validation } from "./validate-pool.js";
 
 /**
@@ -74,16 +75,17 @@ export function appBridgeDecision(
   now: Date,
 ): BridgeDecision {
   const descriptor = describePinnedTool(connectorId, tool);
-  if (matchingRules(rules.site, "deny", descriptor, args, now).length > 0) {
+  // Deny and ask also match the arguments under the sandbox folder's other name (KOBE-827).
+  const views = [args, ...stateFolderViews(args)];
+  const matching = (list: readonly PolicyRule[], effect: "deny" | "ask") =>
+    views.flatMap((view) => matchingRules(list, effect, descriptor, view, now));
+  if (matching(rules.site, "deny").length > 0) {
     return { allowed: false, reason: "site_deny_rule" };
   }
-  if (matchingRules(rules.team, "deny", descriptor, args, now).length > 0) {
+  if (matching(rules.team, "deny").length > 0) {
     return { allowed: false, reason: "team_deny_rule" };
   }
-  const asks = [
-    ...matchingRules(rules.site, "ask", descriptor, args, now),
-    ...matchingRules(rules.team, "ask", descriptor, args, now),
-  ];
+  const asks = [...matching(rules.site, "ask"), ...matching(rules.team, "ask")];
   if (asks.length > 0) return { allowed: false, reason: "app_no_prompt" };
   if (descriptor.risk !== "read") return { allowed: false, reason: "app_read_only" };
   return { allowed: true };

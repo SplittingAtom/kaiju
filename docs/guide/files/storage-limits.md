@@ -79,7 +79,7 @@ socket or pipe, a file the backup refused (too large, unreadable) or a name it c
 (backslash, control character, longer than 1024 bytes) means the volume is kept. Your next message
 starts a new sandbox and restores My files from the backup. Not restored, by design: `.venv`,
 `node_modules` and `__pycache__` folders (rebuild them), empty folders, and the agent's own
-`.kobe/` folder (conversations are rebuilt from Kaiju's records).
+`.kaiju/` folder (conversations are rebuilt from Kaiju's records).
 
 ## When your sandbox's storage is lost
 

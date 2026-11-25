@@ -17,7 +17,7 @@ import { SHA256_HEX_PATTERN } from "../skill-package/layout.js";
  * - The walk uses `lstat` and never follows a symbolic link: a link is recorded as `symlink` and
  *   never read, opened or passed on (`outputs/x.xlsx -> /proc/self/environ` reads nothing). It
  *   records regular files only, and never descends into a reserved path
- *   ({@link isReservedWorkspacePath}: a `skills` or hidden segment at any depth, such as `.kobe/`,
+ *   ({@link isReservedWorkspacePath}: a `skills` or hidden segment at any depth, such as `.kaiju/`,
  *   where Pi keeps its session files; so `outputs/skills/x.md` never counts either).
  * - It hashes **only fixture paths**: a path that wasn't a fixture is produced because it is new
  *   (its size comes from `lstat`), so a 4 GiB output is never hashed. A fixture path counts only

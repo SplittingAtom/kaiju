@@ -77,7 +77,7 @@ describe("context capture (KOBE-470)", () => {
 
   it("writes the newest call atomically (0640) and skips summaries", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-ctx-"));
-    const file = path.join(dir, "kobe-context.json");
+    const file = path.join(dir, "kaiju-context.json");
     const recorder = new ContextRecorder(file, { now: () => NOW });
     recorder.record(MODEL, { messages: [{ role: "user", content: "one" }] }, undefined, answer(1));
     recorder.record(MODEL, { messages: [{ role: "user", content: "two" }] }, {}, answer(2));
@@ -97,7 +97,7 @@ describe("context capture (KOBE-470)", () => {
 
   it("only warns when the write fails", async () => {
     const warnings: string[] = [];
-    const recorder = new ContextRecorder("/nonexistent/dir/kobe-context.json", {
+    const recorder = new ContextRecorder("/nonexistent/dir/kaiju-context.json", {
       warn: (m) => warnings.push(m),
     });
     recorder.record(MODEL, { messages: [] }, undefined, answer(1));

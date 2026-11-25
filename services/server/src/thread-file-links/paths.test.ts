@@ -29,7 +29,7 @@ describe("toolCallLink (KOBE-610, TFM1/TFM2)", () => {
     expect(toolCallLink("read", { path: "../etc/passwd" })).toBeUndefined();
     expect(toolCallLink("read", { path: "/workspace" })).toBeUndefined();
     expect(toolCallLink("ls", {})).toBeUndefined();
-    expect(toolCallLink("read", { path: "/workspace/.kobe/session.jsonl" })).toBeUndefined();
+    expect(toolCallLink("read", { path: "/workspace/.kaiju/session.jsonl" })).toBeUndefined();
     expect(toolCallLink("read", { path: "~/a.md" })).toBeUndefined();
     expect(toolCallLink("read", { path: 7 })).toBeUndefined();
     expect(toolCallLink("read", null)).toBeUndefined();

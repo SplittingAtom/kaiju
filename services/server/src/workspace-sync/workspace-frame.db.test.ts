@@ -161,7 +161,7 @@ describe("GET /v1/workspace/frame", () => {
     const extra = await w.a.get(`${frame("x.html", w.team)}&download=1`);
     expect(extra.status).toBe(400);
     expect((await w.a.get(frame("nope.html", w.team))).status).toBe(404);
-    expect((await w.a.get(frame(".kobe/state.html", w.team))).status).toBe(404);
+    expect((await w.a.get(frame(".kaiju/state.html", w.team))).status).toBe(404);
     await seed(w.team, w.alice, "gone.html", "<p>gone</p>");
     await w.a.request("DELETE", "/v1/workspace/files?path=gone.html", undefined, {
       "x-kaiju-team": w.team,

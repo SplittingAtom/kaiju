@@ -73,7 +73,10 @@ function hitIn(place: Place) {
 /** An idle thread with one exchange under Pi's first entries (so its question can be edited). */
 function conversation(title: string, answer = "They add up to 42.") {
   const t = fake.addThread(title);
-  const first = fake.addSystemEntry(t, null, "model_change", { provider: "kobe", modelId: "kimi" });
+  const first = fake.addSystemEntry(t, null, "model_change", {
+    provider: "kaiju",
+    modelId: "kimi",
+  });
   const root = fake.addSystemEntry(t, first, "thinking_level_change", { thinkingLevel: "off" });
   const q = fake.addEntry(t, root, { role: "user", content: `About ${title}` });
   // A reasoning block, so the answer has a Show details toggle to watch (KOBE-418).

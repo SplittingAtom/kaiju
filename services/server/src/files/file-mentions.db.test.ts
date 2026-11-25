@@ -140,7 +140,7 @@ describe("refusals (ac-3)", () => {
     for (const p of [
       "/etc/passwd",
       "/workspace/a.txt",
-      "/workspace/.kobe/x",
+      "/workspace/.kaiju/x",
       "../etc/passwd",
       "./a.txt",
       "a//b",
@@ -173,12 +173,12 @@ describe("refusals (ac-3)", () => {
   it("refuses unknown, deleted and agent-internal files, and more than 20", async () => {
     const w = await f.world();
     await file(w.team, w.owner.id, "gone.txt", true);
-    await file(w.team, w.owner.id, ".kobe/session.jsonl");
+    await file(w.team, w.owner.id, ".kaiju/session.jsonl");
     const threadId = await f.thread(w.owner);
     const msg = await refused(w.owner, threadId, `read ${mentionMarker("nope.txt")}`, ["nope.txt"]);
     expect(msg).toContain("nope.txt");
     await refused(w.owner, threadId, `read ${mentionMarker("gone.txt")}`, ["gone.txt"]);
-    await refused(w.owner, threadId, "read", [".kobe/session.jsonl"]);
+    await refused(w.owner, threadId, "read", [".kaiju/session.jsonl"]);
     const many = Array.from({ length: 21 }, (_, i) => `f${i}.txt`);
     const over = await send(w.owner, threadId, "x", many);
     expect(over.status).toBe(400);

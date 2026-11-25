@@ -165,8 +165,8 @@ describe("limits refused up front (PF4), My files and projects untouched", () =>
       ["uploads", 422, "My files"],
       [`projects/${w.project.slug}`, 422, "My files"],
       ["projects", 422, "My files"],
-      [".kobe", 404, ""],
-      [".kobe/sessions", 404, ""],
+      [".kaiju", 404, ""],
+      [".kaiju/sessions", 404, ""],
       ["keep.md", 422, "folder"],
       ["nowhere", 422, "This folder is empty; create the project from Projects instead"],
     ];

@@ -31,7 +31,7 @@ import {
 } from "./protocol.js";
 
 /**
- * The `kobe` Pi provider (KOBE-41): one model, the run's, served by the Kaiju model gateway through
+ * The `kaiju` Pi provider (KOBE-41): one model, the run's, served by the Kaiju model gateway through
  * Pi's own API adapters. Per request it reads the model file for the current session token (the
  * API key) and the active run (`x-kaiju-run-id`), so a rotated token is picked up by the next
  * request without restarting Pi or cutting a stream.
@@ -41,7 +41,7 @@ import {
  *   {@link RETRY_BUDGET_MS}; only before anything was streamed.
  * - 401: re-read the file once (the agent may just have rotated the token) and retry at once.
  * - anything else, or a retry budget spent: the stream ends with an error whose message names a
- *   Kaiju run error code (`kobe.model_error:<code>`), which the server turns into `run.failed`.
+ *   Kaiju run error code (`kaiju.model_error:<code>`), which the server turns into `run.failed`.
  */
 export const RETRY_BUDGET_MS = 60_000;
 export const RETRY_BASE_MS = 1_000;

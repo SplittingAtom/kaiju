@@ -333,7 +333,7 @@ export class ThreadManager {
    * `thread.branch_summary` (KOBE-548, CT11): the branch summary run. Shaped like `#compact`: busy
    * refused under the lock, the run's model selected first (Pi summarises with its current model),
    * the token held for kaiju-models' `session_before_tree`. Then the agent arms the request and
-   * sends the bare `/kobe-branch-summary` prompt; Pi answers it once the command has finished, and
+   * sends the bare `/kaiju-branch-summary` prompt; Pi answers it once the command has finished, and
    * the command has reported its outcome on the armed dialog by then.
    */
   branchSummary(frame: Frame<"thread.branch_summary">): Promise<BranchSummaryReply> {

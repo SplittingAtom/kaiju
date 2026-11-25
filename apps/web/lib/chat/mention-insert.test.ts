@@ -24,9 +24,11 @@ describe("mentionRefusal", () => {
     }
   });
 
-  it("refuses folders, .kobe/, and names the server would refuse", () => {
+  it("refuses folders, .kaiju/, and names the server would refuse", () => {
     expect(mentionRefusal("notes", "dir")).toBe(MENTION_FOLDER_REFUSED);
-    expect(mentionRefusal(".kobe/sessions/t.jsonl", "file")).toBe(MENTION_NAME_REFUSED);
+    expect(mentionRefusal(".kaiju/sessions/t.jsonl", "file")).toBe(MENTION_NAME_REFUSED);
+    // The folder's name before the rename (KOBE-827) stays out too.
+    expect(mentionRefusal(".kobe/repos/app/main.py", "file")).toBe(MENTION_NAME_REFUSED);
     expect(mentionRefusal("a​b.txt", "file")).toBe(MENTION_NAME_REFUSED); // zero-width
     expect(mentionRefusal("x‮.txt", "file")).toBe(MENTION_NAME_REFUSED); // bidi override
     expect(mentionRefusal("run;rm.sh", "file")).toBe(MENTION_NAME_REFUSED);

@@ -14,7 +14,7 @@ import path from "node:path";
  * Dependency-free (node builtins only), like the rest of kaiju-models.
  */
 export const CONTEXT_FILE_ENV = "KAIJU_CONTEXT_FILE";
-export const CONTEXT_FILE_NAME = "kobe-context.json";
+export const CONTEXT_FILE_NAME = "kaiju-context.json";
 export const CONTEXT_CAPTURE_VERSION = 1;
 /** A larger capture is replaced by a stub (`too_large`); the viewer then rebuilds from the session. */
 export const CONTEXT_CAPTURE_MAX_BYTES = 32 * 1024 * 1024;
@@ -113,9 +113,9 @@ async function writeAtomic(file: string, text: string): Promise<void> {
   }
 }
 
-/** A temp file of the recorder (`kobe-context.json.<hex>.tmp`), for the agent's tripwire. */
+/** A temp file of the recorder (`kaiju-context.json.<hex>.tmp`), for the agent's tripwire. */
 export const isContextTemp = (name: string): boolean =>
-  /^kobe-context\.json\.[0-9a-f]{16}\.tmp$/.test(name);
+  /^kaiju-context\.json\.[0-9a-f]{16}\.tmp$/.test(name);
 
 /**
  * Records the latest session request. Writes are serialized and only the newest pending one is

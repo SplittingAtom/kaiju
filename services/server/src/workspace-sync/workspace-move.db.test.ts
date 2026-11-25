@@ -308,8 +308,8 @@ describe("POST /v1/workspace/files/move (KOBE-304, ac-8)", () => {
       "back\\slash",
       `${"n".repeat(256)}.txt`,
       `${"d/".repeat(600)}a.txt`,
-      ".kobe/a.txt",
-      ".kobe",
+      ".kaiju/a.txt",
+      ".kaiju",
     ]) {
       const res = await move(w.a, "a.txt", to);
       expect(res.status, JSON.stringify(to)).toBe(400);
@@ -320,7 +320,7 @@ describe("POST /v1/workspace/files/move (KOBE-304, ac-8)", () => {
       (await w.a.post("/v1/workspace/files/move", { from: "a.txt", to: "b", force: true })).status,
     ).toBe(400);
     // Agent-internal files stay hidden: not found, as in the listing.
-    expect((await move(w.a, ".kobe/session.jsonl", "s.jsonl")).status).toBe(404);
+    expect((await move(w.a, ".kaiju/session.jsonl", "s.jsonl")).status).toBe(404);
     expect((await w.a.get("/v1/workspace/file?path=a.txt")).text).toBe("a");
   });
 

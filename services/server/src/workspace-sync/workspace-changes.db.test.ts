@@ -465,7 +465,7 @@ describe("GET /v1/workspace/changes (KOBE-496)", () => {
     expect(await bad(changesUrl(w.team, [], ""))).toBe(400);
     const many = Array.from({ length: 33 }, (_, i) => `f${i}.md`);
     expect(await bad(changesUrl(w.team, many))).toBe(400);
-    expect(await bad(changesUrl(w.team, [".kobe/state.json"]))).toBe(400);
+    expect(await bad(changesUrl(w.team, [".kaiju/state.json"]))).toBe(400);
     expect(await bad(changesUrl(w.team, ["../x"]))).toBe(400);
     // No parameter names another member, thread or team: unknown ones are refused.
     expect(await bad(changesUrl(w.team, ["a.md"], `&user=${w.bob.id}`))).toBe(400);

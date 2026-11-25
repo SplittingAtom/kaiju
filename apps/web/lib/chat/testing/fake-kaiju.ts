@@ -126,7 +126,7 @@ export class FakeKaiju extends FakeCore {
         id,
         parentId,
         timestamp: NOW,
-        customType: "kobe.skipped_actions",
+        customType: "kaiju.skipped_actions",
         content,
         display: true,
         details: { run_id: "r-scheduled", skipped_count: count },
@@ -216,7 +216,7 @@ export class FakeKaiju extends FakeCore {
         messageId,
       ),
     /**
-     * The sandbox agent's branch marker (`kobe.branch` custom entry) under the run's branch point,
+     * The sandbox agent's branch marker (`kaiju.branch` custom entry) under the run's branch point,
      * appended before Pi starts when `run.start` carries `parent_entry_id`; the prompt hangs below it.
      */
     branchMarker: (runId: string) =>
@@ -225,7 +225,7 @@ export class FakeKaiju extends FakeCore {
           threadId,
           parentId,
           "custom",
-          { customType: "kobe.branch", data: { run_id: runId } },
+          { customType: "kaiju.branch", data: { run_id: runId } },
           { leaf: false },
         ),
       ),
@@ -239,7 +239,7 @@ export class FakeKaiju extends FakeCore {
           threadId,
           parentId,
           "model_change",
-          { provider: "kobe", modelId },
+          { provider: "kaiju", modelId },
           { leaf: false },
         ),
       ),

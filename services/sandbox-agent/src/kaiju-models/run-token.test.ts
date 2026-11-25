@@ -164,7 +164,7 @@ describe("model limits in kaiju-models (KOBE-259)", () => {
     let current = limited(32_768);
     const selected: unknown[] = [];
     const { fire } = await setup(() => current, selected);
-    const ctx = { model: { provider: "kobe", id: "openai/gpt-fake" } };
+    const ctx = { model: { provider: "kaiju", id: "openai/gpt-fake" } };
     await fire(ctx);
     expect(selected).toHaveLength(0); // registered with these limits; nothing to change
     current = limited(65_536);

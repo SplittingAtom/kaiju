@@ -1,6 +1,7 @@
 import type { Model, Provider } from "@earendil-works/pi-ai";
 import {
   KAIJU_PROVIDER_ID,
+  PRE_RENAME_PROVIDER_ID,
   RUN_TOKEN_UI_TITLE,
   type ModelFileModel,
   type ModelFileState,
@@ -71,12 +72,16 @@ export function branchModel(branch: readonly unknown[]): RecordedModel | undefin
   return undefined;
 }
 
-/** The branch is on `gatewayModel` (or records no model, so there is no switch to record). */
+/**
+ * The branch is on `gatewayModel` (or records no model, so there is no switch to record). A branch
+ * recorded before the rename names the provider `kobe` (KOBE-827): the same models, so no switch.
+ */
 function branchIsOn(ctx: InputContextLike, gatewayModel: string): boolean {
   const recorded = branchModel(ctx.sessionManager?.getBranch() ?? []);
   return (
     recorded === undefined ||
-    (recorded.provider === KAIJU_PROVIDER_ID && recorded.modelId === gatewayModel)
+    ((recorded.provider === KAIJU_PROVIDER_ID || recorded.provider === PRE_RENAME_PROVIDER_ID) &&
+      recorded.modelId === gatewayModel)
   );
 }
 
@@ -114,7 +119,7 @@ export interface KaijuModelsDeps {
 }
 
 /**
- * Register the `kobe` provider from the model file and keep Pi's selected model in step with it:
+ * Register the `kaiju` provider from the model file and keep Pi's selected model in step with it:
  * the agent writes the run's model into the file before every prompt, and Pi runs `input`
  * handlers before it validates the selected model (verified Pi 1.0.0; the same hook the faux
  * model in Kaiju's tests relies on), so a model change between runs needs no Pi restart.
@@ -215,7 +220,7 @@ export async function registerKaijuModels(
     const sameLimits = registered.model !== null && sameModelLimits(registered.model, wanted);
     // KOBE-279: a Pi started on a branch point knows only the run's model (the model file), so it
     // cannot restore the branch's and starts on the run's without recording a switch. Selecting
-    // it again records the `model_change` on the branch (after the agent's `kobe.branch` marker,
+    // it again records the `model_change` on the branch (after the agent's `kaiju.branch` marker,
     // before the prompt: `input` runs first), so the chat shows the change where it happened.
     if (selected === wanted.gateway_model && sameLimits && branchIsOn(ctx, wanted.gateway_model)) {
       return;

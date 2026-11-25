@@ -145,4 +145,4 @@ export function outputFrameUrl(teamId: string): string {
 }
 
 /** The message the shell accepts (the server's `NOTEBOOK_OUTPUT_FRAME_MESSAGE`). */
-export const OUTPUT_FRAME_MESSAGE = "kobe.notebook.html";
+export const OUTPUT_FRAME_MESSAGE = "kaiju.notebook.html";

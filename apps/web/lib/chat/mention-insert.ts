@@ -4,7 +4,7 @@
  * marker the send appends, so it is listed in `mentions[]` and the server validates it as for any
  * pick (KOBE-223).
  */
-import { MENTION_MAX_PER_MESSAGE, mentionPathIssue } from "@kaiju/protocol";
+import { MENTION_MAX_PER_MESSAGE, isExcludedPath, mentionPathIssue } from "@kaiju/protocol";
 
 export const MENTION_FOLDER_REFUSED =
   "Folders can't be mentioned. Mention a file inside the folder instead.";
@@ -16,7 +16,7 @@ export const MENTION_NO_COMPOSER =
 
 /**
  * Why `path` can't be mentioned, or undefined when it can: the KOBE-223 rules (files only, never
- * `.kobe/`, no invisible, format or shell characters, length caps), and at most 20 per message
+ * `.kaiju/`, no invisible, format or shell characters, length caps), and at most 20 per message
  * (`already` = the files the draft mentions now). Project mounts and uploads may be mentioned.
  */
 export function mentionRefusal(
@@ -25,7 +25,7 @@ export function mentionRefusal(
   already: readonly string[] = [],
 ): string | undefined {
   if (type === "dir") return MENTION_FOLDER_REFUSED;
-  if (path === ".kobe" || path.startsWith(".kobe/") || mentionPathIssue(path) !== undefined) {
+  if (isExcludedPath(path) || mentionPathIssue(path) !== undefined) {
     return MENTION_NAME_REFUSED;
   }
   if (!already.includes(path) && already.length >= MENTION_MAX_PER_MESSAGE) {

@@ -205,7 +205,7 @@ describe("workspace sync with project checkouts (CM4)", () => {
     expect(await exists(root, "projects/acme/pushed-new.md")).toBe(false);
     expect(await exists(root, "projects/acme/scratch/tmp.md")).toBe(false);
     // Never lost: what the server never had is kept outside the read-only area.
-    expect(await text(root, "kobe-moved/projects/acme/scratch/tmp.md")).toBe("never pushed");
+    expect(await text(root, "kaiju-moved/projects/acme/scratch/tmp.md")).toBe("never pushed");
     expect(await mode(root, "projects/acme")).toBe(0o555);
     expect(await mode(root, "projects/acme/docs")).toBe(0o555);
     expect(await mode(root, "projects/acme/brief.md")).toBe(0o444);
@@ -218,8 +218,8 @@ describe("workspace sync with project checkouts (CM4)", () => {
       "projects/acme/docs/spec.md",
       "projects/acme/run.sh",
     ]);
-    expect(commits()).toBe(commitsBefore + 1); // only the kobe-moved file, in the free area
-    expect(server.content("kobe-moved/projects/acme/scratch/tmp.md")).toBe("never pushed");
+    expect(commits()).toBe(commitsBefore + 1); // only the kaiju-moved file, in the free area
+    expect(server.content("kaiju-moved/projects/acme/scratch/tmp.md")).toBe("never pushed");
   });
 
   it("recomputes checkouts after hibernation: kept while listed, relocked when it ended meanwhile", async () => {
@@ -247,7 +247,7 @@ describe("workspace sync with project checkouts (CM4)", () => {
     expect(await mode(root, "projects/acme")).toBe(0o555);
     expect(await mode(root, "projects/acme/brief.md")).toBe(0o444);
     expect(await exists(root, "projects/acme/later.md")).toBe(false);
-    expect(await text(root, "kobe-moved/projects/acme/later.md")).toBe(
+    expect(await text(root, "kaiju-moved/projects/acme/later.md")).toBe(
       "written after the last push",
     );
   });

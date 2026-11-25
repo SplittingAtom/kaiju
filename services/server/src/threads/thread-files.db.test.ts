@@ -316,12 +316,12 @@ describe("GET /v1/threads/{id}/files", () => {
     // The sync refuses agent-internal paths; move a synced row there to prove the filter.
     await seed(w, "state.md", "new");
     await fx.admin.query(
-      `UPDATE workspace_files SET path = '.kobe/state.md' WHERE team_id = $1 AND path = 'state.md'`,
+      `UPDATE workspace_files SET path = '.kaiju/state.md' WHERE team_id = $1 AND path = 'state.md'`,
       [w.team],
     );
     await events(w, [
-      ...written("1", "write", ".kobe/state.md"),
-      proposal("2", ".kobe/state.md", "new"),
+      ...written("1", "write", ".kaiju/state.md"),
+      proposal("2", ".kaiju/state.md", "new"),
     ]);
     expect(await paths(w)).toEqual([]);
   });

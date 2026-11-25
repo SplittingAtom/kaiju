@@ -163,7 +163,7 @@ export class FakeWorkspace {
   }
 
   /**
-   * Pi's kobe-branch-summary command (KOBE-548): on success a `branch_summary` entry is appended
+   * Pi's kaiju-branch-summary command (KOBE-548): on success a `branch_summary` entry is appended
    * under `to_entry_id` (Pi does not announce it) and the result goes back as
    * `thread.branch_summary_result`. `report` overrides what the agent reports (a lying sandbox).
    */

@@ -356,12 +356,12 @@ describe("special roots (ac-4)", () => {
     ).toEqual(["Open", "Copy path"]);
   });
 
-  it("uploads/ is marked; a member's drop in it moves like any file; .kobe never shows", async () => {
-    files.set(".kobe/sessions/t.jsonl", 1);
+  it("uploads/ is marked; a member's drop in it moves like any file; .kaiju never shows", async () => {
+    files.set(".kaiju/sessions/t.jsonl", 1);
     mount();
     const uploads = await findItem("uploads");
     expect(within(uploads).getByText("Read-only")).toBeTruthy();
-    expect(within(tree()).queryByRole("treeitem", { name: ".kobe" })).toBeNull();
+    expect(within(tree()).queryByRole("treeitem", { name: ".kaiju" })).toBeNull();
     await userEvent.setup().click(uploads);
     expect((await findItem("drop.pdf")).getAttribute("draggable")).toBe("true");
     expect(item("0b7f3c1e-2d4a-4e5b-8c6d-7e8f9a0b1c2d").getAttribute("draggable")).toBe("false");

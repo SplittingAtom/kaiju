@@ -174,7 +174,7 @@ describe("FileShareBroker", { timeout: SETTLE_MS + 5_000 }, () => {
     ["traversal", "../secret", "invalid_path"],
     ["outside", "/etc/passwd", "invalid_path"],
     ["a symlink out", "link", "invalid_path"],
-    ["excluded", ".kobe/sessions/x", "invalid_path"],
+    ["excluded", ".kaiju/sessions/x", "invalid_path"],
     ["a missing file", "out/none.csv", "not_found"],
   ])("refuses %s before pushing anything", async (_n, p, code) => {
     const t = setup();

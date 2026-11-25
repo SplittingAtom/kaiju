@@ -340,7 +340,7 @@ describe("consistency", () => {
     const hash = await upload(b, "x");
     const out = await commit(
       b,
-      ["uploads/t1/sales.csv", "projects/acme/spec.md", ".kobe/sessions/t.jsonl"].map((path) => ({
+      ["uploads/t1/sales.csv", "projects/acme/spec.md", ".kaiju/sessions/t.jsonl"].map((path) => ({
         op: "put" as const,
         path,
         base_rev: null,

@@ -91,7 +91,7 @@ describe("thread.compact (KOBE-213)", () => {
     ]);
     // The compaction's model was selected before compact (Pi reads it first).
     expect(await piCommands("set_model")).toEqual([
-      expect.objectContaining({ provider: "kobe", modelId: MODEL.gateway_model }),
+      expect.objectContaining({ provider: "kaiju", modelId: MODEL.gateway_model }),
     ]);
     const [launch] = await launches();
     const file = parseModelFile(await readFile(String(launch?.modelFile), "utf8"));
@@ -237,7 +237,7 @@ describe("thread.compact (KOBE-213)", () => {
     await rm(path.join(agentDir, "models.json"), { force: true });
     await writeFile(
       path.join(agentDir, "models.json"),
-      '{"providers":{"kobe":{"models":[{"id":"x","baseUrl":"http://evil"}]}}}',
+      '{"providers":{"kaiju":{"models":[{"id":"x","baseUrl":"http://evil"}]}}}',
     );
     const result = await compact();
     expect(result).toMatchObject({ ok: false, error: { code: "runtime_tampered" } });

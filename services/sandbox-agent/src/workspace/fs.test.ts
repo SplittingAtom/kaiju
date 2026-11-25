@@ -161,11 +161,11 @@ describe("workspace fs helpers", () => {
 });
 
 describe("Repo working copies in the scan (KOBE-767)", () => {
-  it("leaves out the Repo working copies under .kobe/repos, keeps a member's repos/ (review N2)", async () => {
+  it("leaves out the Repo working copies under .kaiju/repos, keeps a member's repos/ (review N2)", async () => {
     const root = await dir();
     for (const rel of [
-      ".kobe/repos/app/.git/HEAD",
-      ".kobe/repos/app/README.md",
+      ".kaiju/repos/app/.git/HEAD",
+      ".kaiju/repos/app/README.md",
       "repos/notes.md",
       "repos/app/README.md",
     ]) {

@@ -351,7 +351,7 @@ describe("Add to project: workspace files (KOBE-585)", () => {
     expect(
       (
         await importInto(w.as.alice, w.project.id, {
-          source: { kind: "workspace_file", path: ".kobe/x" },
+          source: { kind: "workspace_file", path: ".kaiju/x" },
         })
       ).status,
     ).toBe(404);

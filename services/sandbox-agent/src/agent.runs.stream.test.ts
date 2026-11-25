@@ -427,7 +427,7 @@ describe("Pi output hygiene", () => {
     const stream = events();
     expect(stream.map((f) => f.seq)).toEqual(stream.map((_, i) => i + 1));
     expect(stream[1]?.event).toEqual({
-      type: "kobe.event_dropped",
+      type: "kaiju.event_dropped",
       original_type: "tool_execution_update",
       reason: "frame_too_large",
     });

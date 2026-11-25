@@ -79,7 +79,7 @@ export async function readEntryIds(file: string): Promise<Set<string>> {
   return ids;
 }
 
-export const BRANCH_CUSTOM_TYPE = "kobe.branch";
+export const BRANCH_CUSTOM_TYPE = "kaiju.branch";
 
 export type BranchResult =
   | { readonly ok: true; readonly entryId: string }
@@ -146,7 +146,7 @@ export async function missingAppCards(
 
 /**
  * App cards (KOBE-440, `run.start.app_cards`): entries the server wrote while the thread's Pi did
- * not run (a rail launch inserts a `kobe.app_card` `custom_message`, which Pi turns into a user
+ * not run (a rail launch inserts a `kaiju.app_card` `custom_message`, which Pi turns into a user
  * message of its content). With the thread's Pi stopped, the agent appends the ones the session
  * lacks, oldest first, each under a parent the session has; Pi then resumes at the last one, and
  * the run's branch marker hangs below it. A new thread whose first entry is a card has no session

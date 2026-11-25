@@ -731,7 +731,7 @@ Moved to the member guide: [Editing files](guide/files/file-editor.md) (Good hab
   available. The tool call's input stays in the history.
 - **Read-only paths.** `projects/` and `uploads/` are server-owned: Save gets 403 `read_only`, and a
   proposal gets `read_only`. The exception is a member's own drop directly in `uploads/`.
-  `.kobe/` is agent-internal: never synced and always `not_found`. The editor opens read-only
+  `.kaiju/` is agent-internal: never synced and always `not_found`. The editor opens read-only
   files with a notice.
 - **Proposals need a synced file.** The base is the server's synced copy. A file the agent has just
   written but not yet pushed gets `not_found`, and the agent must save it first.

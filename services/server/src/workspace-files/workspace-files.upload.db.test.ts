@@ -85,9 +85,9 @@ describe("POST /v1/workspace/files (upload)", () => {
 
   it("refuses the server-owned areas and the agent-internal one", async () => {
     const w = await world();
-    for (const folder of ["uploads/t1", "projects", "projects/p", ".kobe", ".kobe/s"]) {
+    for (const folder of ["uploads/t1", "projects", "projects/p", ".kaiju", ".kaiju/s"]) {
       const res = await upload(w.a, folder, "x.txt", "x");
-      expect(res.status, folder).toBe(folder.startsWith(".kobe") ? 400 : 403);
+      expect(res.status, folder).toBe(folder.startsWith(".kaiju") ? 400 : 403);
     }
     expect(
       workspaceFileErrorSchema.parse((await upload(w.a, "uploads/t1", "x", "x")).json).code,

@@ -98,7 +98,7 @@ scheduled_run_checks() {
     "$(psql_kaiju "SELECT count(*) FROM run_events WHERE run_id = '${run1:-$SCHED_NONE}' AND type = 'run.completed' AND payload->'skipped_actions'->0->>'tool' = 'bash'")"
   contains "skipped write: the thread holds the skipped-actions summary, off the leaf" '^1:true$' \
     "$(psql_kaiju "SELECT count(*) || ':' || bool_and(t.leaf_entry_id IS DISTINCT FROM e.entry_id)::text FROM thread_entries e JOIN threads t ON t.team_id = e.team_id AND t.id = e.thread_id
-      WHERE e.thread_id = '${thread1:-$SCHED_NONE}' AND e.type = 'custom_message' AND e.payload->>'customType' = 'kobe.skipped_actions'")"
+      WHERE e.thread_id = '${thread1:-$SCHED_NONE}' AND e.type = 'custom_message' AND e.payload->>'customType' = 'kaiju.skipped_actions'")"
   contains "skipped write: the in-app notification says so, with the count" '^schedule.run.skipped_actions:1$' \
     "$(wait_for 30 '^schedule' sched_note "$run1")"
   contains "skipped write: its email was sent" '^sent$' "$(wait_for 120 '^(sent|failed|skipped)$' sched_mail "$run1")"

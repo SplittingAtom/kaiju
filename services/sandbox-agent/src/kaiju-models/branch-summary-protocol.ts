@@ -3,7 +3,7 @@
  * docs/specs/conversation-tree.md CT11; spike KOBE-541). Self-contained like protocol.ts: the
  * extension ships on its own.
  *
- * The agent triggers the extension command with a bare `/kobe-branch-summary` prompt. Member
+ * The agent triggers the extension command with a bare `/kaiju-branch-summary` prompt. Member
  * prompts reach Pi verbatim (spike note 1), so the command takes nothing from its arguments: the
  * handler asks the agent for the request over Pi's RPC dialog channel
  * ({@link BRANCH_SUMMARY_REQUEST_UI_TITLE}, answered by the agent from memory and never relayed, as
@@ -12,9 +12,9 @@
  * second dialog ({@link BRANCH_SUMMARY_RESULT_UI_TITLE}, the outcome as JSON in its placeholder),
  * which the agent takes only while it waits for it.
  */
-export const BRANCH_SUMMARY_COMMAND = "kobe-branch-summary";
-export const BRANCH_SUMMARY_REQUEST_UI_TITLE = "kobe.branch_summary";
-export const BRANCH_SUMMARY_RESULT_UI_TITLE = "kobe.branch_summary_result";
+export const BRANCH_SUMMARY_COMMAND = "kaiju-branch-summary";
+export const BRANCH_SUMMARY_REQUEST_UI_TITLE = "kaiju.branch_summary";
+export const BRANCH_SUMMARY_RESULT_UI_TITLE = "kaiju.branch_summary_result";
 
 /** Pi entry ids as the wire allows them (`idSchema`: 1-128 chars, no whitespace). */
 const ENTRY_ID = /^[^\s]{1,128}$/;

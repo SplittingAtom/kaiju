@@ -1,6 +1,6 @@
 /**
  * Root branches (KOBE-214, CE16): Pi 1.0 writes a settings entry at the root of every session, so a
- * new first message hangs below that hidden entry (and the sandbox agent's `kobe.branch` marker),
+ * new first message hangs below that hidden entry (and the sandbox agent's `kaiju.branch` marker),
  * beside the old one.
  */
 import { beforeEach, describe, expect, it } from "vitest";

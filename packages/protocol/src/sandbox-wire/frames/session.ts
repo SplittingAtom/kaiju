@@ -8,6 +8,7 @@ import {
   piSessionEventSchema,
   piSessionHeaderSchema,
 } from "../pi-rpc.js";
+import { STATE_FOLDER_OUTCOMES } from "../../state-folder.js";
 import { commandId, frame, openCode, seq } from "./wire.js";
 
 /** Connection and Pi session frames: hello, Pi events and commands, restore, acks, shutdown. */
@@ -35,6 +36,20 @@ export const helloFrameSchema = frame("hello", {
   capabilities: z
     .array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/))
     .max(32)
+    .optional(),
+  /**
+   * KOBE-827: what the move of the pre-rename folder `/workspace/.kobe` to `.kaiju` did when this
+   * agent started; absent when there was nothing to move. `code` is the errno code of a failed
+   * move (`EACCES`, ...). Never names a file.
+   */
+  state_folder: z
+    .strictObject({
+      outcome: z.enum(STATE_FOLDER_OUTCOMES),
+      code: z
+        .string()
+        .regex(/^[A-Z][A-Z0-9_]{0,31}$/)
+        .optional(),
+    })
     .optional(),
 });
 

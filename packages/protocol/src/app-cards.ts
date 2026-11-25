@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { idSchema, timestampSchema, uuidSchema } from "./common.js";
+import { PRE_RENAME_ENTRY_TYPES } from "./state-folder.js";
 
 /**
  * MCP App cards (KOBE-440, spec MA11, T14): a member launches an app from the Workspace Rail and
@@ -12,7 +13,9 @@ import { idSchema, timestampSchema, uuidSchema } from "./common.js";
  * untrusted data opened by the member. `details` (the app, the stored result) never reaches the
  * model; the structured result and the template never do.
  */
-export const APP_CARD_CUSTOM_TYPE = "kobe.app_card";
+export const APP_CARD_CUSTOM_TYPE = "kaiju.app_card";
+/** The card's type before the rename (KOBE-827): rows written then keep it, so it is still read. */
+export const PRE_RENAME_APP_CARD_CUSTOM_TYPE = PRE_RENAME_ENTRY_TYPES[APP_CARD_CUSTOM_TYPE];
 
 /** Hello capability: the agent appends `run.start.app_cards` to Pi's session before the run. */
 export const CAPABILITY_APP_CARDS = "app_cards";
@@ -126,7 +129,8 @@ export const appCardEntrySchema = z.strictObject({
   id: z.string().refine(isAppCardEntryId, "not an app card id"),
   parentId: idSchema.nullable(),
   timestamp: timestampSchema,
-  customType: z.literal(APP_CARD_CUSTOM_TYPE),
+  // Stored cards keep the type they were written with (KOBE-827): both names are cards.
+  customType: z.enum([APP_CARD_CUSTOM_TYPE, PRE_RENAME_APP_CARD_CUSTOM_TYPE]),
   content: z.string().min(1).max(APP_CARD_CONTENT_MAX_CHARS),
   display: z.literal(true),
   details: appCardDetailsSchema,

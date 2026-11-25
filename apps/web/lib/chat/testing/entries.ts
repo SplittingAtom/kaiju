@@ -70,7 +70,7 @@ export const skippedSummary = (id: string, parent: string, content: string, coun
       type: "custom_message",
       id,
       parentId: parent,
-      customType: "kobe.skipped_actions",
+      customType: "kaiju.skipped_actions",
       content,
       display: true,
       details: { run_id: "r1", skipped_count: count },
@@ -83,7 +83,7 @@ export const skippedSummary = (id: string, parent: string, content: string, coun
 /** Pi's `model_change` entry (the model a session switched to). */
 export const modelChange = (id: string, parent: string | null, modelId: string) => ({
   ...entry(id, parent, null, "model_change"),
-  payload: { type: "model_change", id, parentId: parent, provider: "kobe", modelId },
+  payload: { type: "model_change", id, parentId: parent, provider: "kaiju", modelId },
 });
 
 /** Pi's `compaction` entry: the summary that replaces everything before `firstKeptEntryId`. */
@@ -107,10 +107,10 @@ export const answered = (
   ...content: Record<string, unknown>[]
 ) => entry(id, parent, { role: "assistant", content, model, usage });
 
-/** The sandbox agent's `kobe.branch` marker: where an edit or a regenerate branches (KOBE-214). */
+/** The sandbox agent's `kaiju.branch` marker: where an edit or a regenerate branches (KOBE-214). */
 export const branchMarker = (id: string, parent: string) => ({
   ...entry(id, parent, null, "custom"),
-  payload: { type: "custom", id, parentId: parent, customType: "kobe.branch", data: {} },
+  payload: { type: "custom", id, parentId: parent, customType: "kaiju.branch", data: {} },
 });
 
 /** Pi's `branch_summary` entry: the summary of the branch left, carried into this one (CT11). */
@@ -142,7 +142,7 @@ export const appCardEntry = (id: string, parent: string) => ({
     type: "custom_message",
     id,
     parentId: parent,
-    customType: "kobe.app_card",
+    customType: "kaiju.app_card",
     content: "",
     display: true,
     details: { tool: "lake_query" },

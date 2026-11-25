@@ -41,8 +41,8 @@ describe("workspace.conflict checks (KOBE-492)", () => {
     expect(
       checkConflict(
         frame({
-          path: ".kobe/state.json",
-          conflict_path: ".kobe/state.conflict-20261023T120000Z.json",
+          path: ".kaiju/state.json",
+          conflict_path: ".kaiju/state.conflict-20261023T120000Z.json",
         }),
       ),
     ).toBe("internal_path");

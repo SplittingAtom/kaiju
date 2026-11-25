@@ -19,7 +19,7 @@ const modelChange = (id: string, parentId: string | null, modelId: string): PiLi
   type: "model_change",
   id,
   parentId,
-  provider: "kobe",
+  provider: "kaiju",
   modelId,
 });
 const message = (id: string, parentId: string, msg: Record<string, unknown>): PiLine => ({
@@ -33,7 +33,7 @@ const ask = (id: string, parentId: string, text: string) =>
 const answer = (id: string, parentId: string, model: string, text: string) =>
   message(id, parentId, {
     role: "assistant",
-    provider: "kobe",
+    provider: "kaiju",
     model,
     content: [{ type: "text", text }],
   });
@@ -47,13 +47,13 @@ const SETUP: readonly PiLine[] = [
 
 /**
  * "Regenerate with…" another model on the first answer: the agent branches at the prompt's parent
- * (Pi's last setup entry) and Pi records the switch after the agent's `kobe.branch` marker.
+ * (Pi's last setup entry) and Pi records the switch after the agent's `kaiju.branch` marker.
  */
 export const REGENERATE_FIRST_WITH_OTHER_MODEL: readonly PiLine[] = [
   ...SETUP,
   ask("u1", "s0", "one"),
   answer("a1", "u1", OPENAI, "openai one"),
-  { type: "custom", id: "b1", parentId: "s0", customType: "kobe.branch", data: { run_id: "r2" } },
+  { type: "custom", id: "b1", parentId: "s0", customType: "kaiju.branch", data: { run_id: "r2" } },
   modelChange("m1", "b1", ANTHROPIC),
   ask("u2", "m1", "one"),
   answer("a2", "u2", ANTHROPIC, "anthropic one"),

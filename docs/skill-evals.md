@@ -82,11 +82,11 @@ It walks only each glob's literal directory (`evalOutputWalkRoots`: `outputs/*.x
 `outputs/`; a glob starting with a wildcard walks all of `/workspace`), so an `npm install` or a
 venv elsewhere costs nothing; each walk stops after 10 000 entries. The walk uses `lstat`, never
 follows a symbolic link (a link is recorded, never read, opened or passed on), records regular
-files only, and never descends into a `skills` or hidden segment at any depth (such as `.kobe/`,
+files only, and never descends into a `skills` or hidden segment at any depth (such as `.kaiju/`,
 where Pi keeps session files; so `outputs/skills/x.md` never counts either). It hashes **only
 fixture paths**: any other path is produced because it is new, so a large output is never hashed;
 a fixture counts only when its bytes changed. Globs are matched as strings against produced paths
-only, so no wildcard (`*`, `?kobe/*`) reaches Kaiju's state or leaves `/workspace`. The check fails
+only, so no wildcard (`*`, `?kaiju/*`) reaches Kaiju's state or leaves `/workspace`. The check fails
 with a reason when a glob matches nothing (`not_produced`), its walk was truncated, or it matches
 more than 100 files or 50 MiB (`over_cap`). Reading a matched file for the judge opens it with
 `O_NOFOLLOW`, refuses it unless `fstat` shows a regular file of the walked size, and reads at most

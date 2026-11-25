@@ -361,7 +361,7 @@ describe("run model resolution (D30)", () => {
       message: {
         role: "assistant",
         stopReason: "error",
-        errorMessage: "kobe.model_error:model_unavailable: model_access_pending after 6 attempts",
+        errorMessage: "kaiju.model_error:model_unavailable: model_access_pending after 6 attempts",
       },
     });
     ws.event(start, { type: "turn_end", message: { role: "assistant" } });

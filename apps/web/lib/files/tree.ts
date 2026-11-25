@@ -3,7 +3,7 @@
  * set, the remembered expansion (localStorage, per team in this browser, like the artifact tabs),
  * and the move rules the tree applies before asking the server (which decides; KOBE-304 ac-8).
  */
-import { isMemberDropPath, WORKSPACE_DROP_FOLDER } from "@kaiju/protocol";
+import { isExcludedPath, isMemberDropPath, WORKSPACE_DROP_FOLDER } from "@kaiju/protocol";
 import type { ApiError } from "../api/client";
 import type { FileEntry } from "./api";
 import { isReadOnlyPath, parentPath } from "./format";
@@ -44,7 +44,8 @@ export type TreeRow =
     };
 
 /** Agent-internal entries never show (the server leaves them out too). */
-const hidden = (entry: FileEntry) => entry.path === ".kobe" || entry.path.startsWith(".kobe/");
+// The agent's own folder, `.kaiju/` (and `.kobe/`, its name before the rename, KOBE-827).
+const hidden = (entry: FileEntry) => isExcludedPath(entry.path);
 
 /** The rows on screen, depth first: a folder's children follow it while it is expanded. */
 export function visibleRows(

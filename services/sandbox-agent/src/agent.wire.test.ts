@@ -36,8 +36,25 @@ describe("dial-out connection", () => {
       agent_version: "0.0.0-test",
       pi_version: "1.0.0",
       runs: [],
-      capabilities: ["app_cards", "trace_spans", "session_renew", "thread_context", "git"],
+      capabilities: [
+        "app_cards",
+        "kaiju_names",
+        "trace_spans",
+        "session_renew",
+        "thread_context",
+        "git",
+      ],
     });
+  });
+
+  it("reports what the move of the pre-rename .kobe folder did, only when there was one (KOBE-827)", async () => {
+    h = await startHarness({ stateFolder: { outcome: "failed", code: "EACCES" } });
+    expect(h.server.frames("hello")[0]).toMatchObject({
+      state_folder: { outcome: "failed", code: "EACCES" },
+    });
+    await h.close();
+    h = await startHarness();
+    expect(h.server.frames("hello")[0]).not.toHaveProperty("state_folder");
   });
 
   it("announces workspace_moves with move replay, and replays when told a move happened (KOBE-304)", async () => {

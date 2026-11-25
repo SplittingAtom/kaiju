@@ -33,7 +33,10 @@ afterEach(() => {
 /** Two exchanges: the second question is the last sent message. */
 function conversation() {
   const t = fake.addThread("Report");
-  const first = fake.addSystemEntry(t, null, "model_change", { provider: "kobe", modelId: "kimi" });
+  const first = fake.addSystemEntry(t, null, "model_change", {
+    provider: "kaiju",
+    modelId: "kimi",
+  });
   const root = fake.addSystemEntry(t, first, "thinking_level_change", { thinkingLevel: "off" });
   const q1 = fake.addEntry(t, root, { role: "user", content: "First question" });
   const a1 = fake.addEntry(t, q1, { role: "assistant", content: [{ type: "text", text: "One." }] });

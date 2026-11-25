@@ -19,7 +19,7 @@ import {
  * KOBE-662: the request up to the newest user message stays byte-stable from one message to the
  * next, against the REAL Pi with the real kaiju-tools, through kaiju-sandbox-agent, as gate1 runs
  * it. The server sends every run after the first with `parent_entry_id` = the thread's leaf, so
- * the agent stops Pi, appends the run's `kobe.branch` marker and starts a new Pi for each message.
+ * the agent stops Pi, appends the run's `kaiju.branch` marker and starts a new Pi for each message.
  * Before the fix the picks notes of earlier messages lived only in kaiju-tools' memory and died
  * with that Pi: `latest_user_keep` (and `tool_only`, which the server runs as keep until
  * KOBE-399) dropped the previous message's note on every turn, so the provider's cache (Ollama
@@ -109,8 +109,8 @@ async function replay(placement: string, turns: number): Promise<Request[]> {
     expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
     await until(() => settled() >= i + 1, 30_000);
   }
-  // As on gate1: one `kobe.branch` marker (and so one Pi start) per message after the first.
-  const markers = (await sessionEntries(t)).filter((e) => e.customType === "kobe.branch");
+  // As on gate1: one `kaiju.branch` marker (and so one Pi start) per message after the first.
+  const markers = (await sessionEntries(t)).filter((e) => e.customType === "kaiju.branch");
   expect(markers).toHaveLength(turns - 1);
   return (await readFile(dump, "utf8"))
     .split("\n")

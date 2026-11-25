@@ -14,10 +14,10 @@ beforeEach(async () => {
   root = path.join(base, "workspace");
   outside = path.join(base, "outside");
   await mkdir(path.join(root, "out"), { recursive: true });
-  await mkdir(path.join(root, ".kobe"), { recursive: true });
+  await mkdir(path.join(root, ".kaiju"), { recursive: true });
   await mkdir(outside);
   await writeFile(path.join(root, "out", "report.csv"), "a,b\n1,2\n");
-  await writeFile(path.join(root, ".kobe", "secret"), "x");
+  await writeFile(path.join(root, ".kaiju", "secret"), "x");
   await writeFile(path.join(outside, "secret.txt"), "top secret");
 });
 afterEach(() => rm(base, { recursive: true, force: true }));
@@ -53,8 +53,8 @@ describe("resolveSharePath", () => {
     expect(await codeOf(value)).toBe("invalid_path");
   });
 
-  it("refuses the excluded .kobe area", async () => {
-    expect(await codeOf(".kobe/secret")).toBe("invalid_path");
+  it("refuses the excluded .kaiju area", async () => {
+    expect(await codeOf(".kaiju/secret")).toBe("invalid_path");
   });
 
   it("refuses a symlink to a file outside the workspace", async () => {

@@ -172,6 +172,7 @@ describe("skills at run start", () => {
     expect(h.server.frames("hello").at(-1)?.capabilities).toEqual([
       "skill_bundles",
       "app_cards",
+      "kaiju_names",
       "trace_spans",
       "session_renew",
       "thread_context",
@@ -181,6 +182,7 @@ describe("skills at run start", () => {
     h = await startHarness();
     expect(h.server.frames("hello").at(-1)?.capabilities).toEqual([
       "app_cards",
+      "kaiju_names",
       "trace_spans",
       "session_renew",
       "thread_context",
@@ -206,6 +208,7 @@ describe("former built-in skills", () => {
     expect(h.server.frames("hello").at(-1)?.capabilities).toEqual([
       "skill_bundles",
       "app_cards",
+      "kaiju_names",
       "trace_spans",
       "session_renew",
       "thread_context",

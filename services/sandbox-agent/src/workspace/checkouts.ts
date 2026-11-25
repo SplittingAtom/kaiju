@@ -102,7 +102,7 @@ export interface CheckoutSyncDeps {
   readonly known: (rel: string) => boolean;
   /** Removes a file (never a folder). */
   readonly remove: (rel: string) => Promise<void>;
-  /** Moves an entry out of the read-only area (`kobe-moved/…`), never losing it. */
+  /** Moves an entry out of the read-only area (`kaiju-moved/…`), never losing it. */
   readonly evict: (rel: string) => Promise<void>;
 }
 

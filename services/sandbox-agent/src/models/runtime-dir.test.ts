@@ -59,12 +59,12 @@ describe("runtime directory tripwire", () => {
   it("accepts kaiju-models' context capture and its temp file in agent/ (KOBE-470), as files only", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir);
-    await writeFile(path.join(runtime, "agent", "kobe-context.json"), "{}");
-    await writeFile(path.join(runtime, "agent", `kobe-context.json.${"c".repeat(16)}.tmp`), "{}");
+    await writeFile(path.join(runtime, "agent", "kaiju-context.json"), "{}");
+    await writeFile(path.join(runtime, "agent", `kaiju-context.json.${"c".repeat(16)}.tmp`), "{}");
     expect(await unexpectedEntries(runtime)).toEqual([]);
-    await rm(path.join(runtime, "agent", "kobe-context.json"));
-    await mkdir(path.join(runtime, "agent", "kobe-context.json"));
-    expect(await unexpectedEntries(runtime)).toEqual(["agent/kobe-context.json (dir)"]);
+    await rm(path.join(runtime, "agent", "kaiju-context.json"));
+    await mkdir(path.join(runtime, "agent", "kaiju-context.json"));
+    expect(await unexpectedEntries(runtime)).toEqual(["agent/kaiju-context.json (dir)"]);
   });
 
   it("reports anything else: Pi config a sibling could plant, or a stray top-level file", async () => {

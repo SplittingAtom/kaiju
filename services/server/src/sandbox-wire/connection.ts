@@ -27,7 +27,7 @@ import {
 } from "./connection-limits.js";
 import type { LeaseViolation, SandboxLimit, WireContext } from "./context.js";
 import { CommandDelivery, type IssuedCommand } from "./delivery.js";
-import { helloRuns, reconcileOrphans, recordHelloTiming } from "./frames/hello.js";
+import { helloRuns, logStateFolder, reconcileOrphans, recordHelloTiming } from "./frames/hello.js";
 import { onPolicyCheck, type PolicyCheckPort } from "./frames/policy.js";
 import type { ConnectionPort } from "./frames/port.js";
 import {
@@ -660,6 +660,8 @@ export class SandboxConnection implements RegisteredConnection {
       return;
     }
     this.#capabilities = new Set(hello.capabilities ?? []);
+    if (hello.state_folder !== undefined)
+      logStateFolder(this.log, this.sandboxId, hello.state_folder);
     const current = await this.#registry.register(this);
     this.#registered = true;
     if ((this.#state as State) === "closed") {

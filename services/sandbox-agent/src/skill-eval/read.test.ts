@@ -94,18 +94,18 @@ describe("readOutputs (KOBE-326)", () => {
   });
 
   it("refuses a missing file and a reserved path", async () => {
-    await mkdir(path.join(ws, ".kobe"));
-    await writeFile(path.join(ws, ".kobe/session.jsonl"), "secret");
+    await mkdir(path.join(ws, ".kaiju"));
+    await writeFile(path.join(ws, ".kaiju/session.jsonl"), "secret");
     const out = await readOutputs(
       ws,
       frame([
         { path: "outputs/none.txt", size: 1 },
-        { path: ".kobe/session.jsonl", size: 6 },
+        { path: ".kaiju/session.jsonl", size: 6 },
       ]),
     );
     expect(out.files).toEqual([
       { path: "outputs/none.txt", status: "refused", reason: "unreadable" },
-      { path: ".kobe/session.jsonl", status: "refused", reason: "unreadable" },
+      { path: ".kaiju/session.jsonl", status: "refused", reason: "unreadable" },
     ]);
   });
 });

@@ -146,7 +146,7 @@ describe("workspace sync (agent)", () => {
     await put(first, "report.md", "# Q3\n");
     await put(first, "bin/run.sh", "#!/bin/sh\necho hi\n", 0o755);
     await put(first, "data/big.csv", "x,y\n".repeat(10_000));
-    await put(first, ".kobe/sessions/t.jsonl", "{}\n"); // rebuilt from Postgres, never synced
+    await put(first, ".kaiju/sessions/t.jsonl", "{}\n"); // rebuilt from Postgres, never synced
     await put(first, "app/node_modules/dep/index.js", "cache"); // rebuildable, skipped
     const sync = await started(first);
     const pushed = await sync.push();
@@ -164,7 +164,7 @@ describe("workspace sync (agent)", () => {
       Math.abs((await stat(path.join(second, "report.md"))).mtimeMs - mtime),
     ).toBeLessThanOrEqual(1);
     // Session files are never restored (only the agent's own sync state lives there, KOBE-304).
-    expect(await exists(second, ".kobe/sessions")).toBe(false);
+    expect(await exists(second, ".kaiju/sessions")).toBe(false);
     expect(server.reports.at(-1)).toMatchObject({ mode: "full", files: 3 });
     // Nothing to push afterwards: restored files match their copy without being read again.
     expect((await restored.push()).changes).toBe(0);
@@ -173,8 +173,12 @@ describe("workspace sync (agent)", () => {
   it("syncs a member's own repos/ folder both ways and never the Repo working copies (KOBE-767 N2)", async () => {
     const first = await volume();
     await put(first, "repos/notes.md", "mine v1");
-    await put(first, ".kobe/repos/app/README.md", "a Repo's file"); // the agent's working copy
-    await put(first, ".kobe/repos/app/.git/HEAD", "ref: refs/heads/main\n");
+    await put(first, ".kaiju/repos/app/README.md", "a Repo's file"); // the agent's working copy
+    await put(first, ".kaiju/repos/app/.git/HEAD", "ref: refs/heads/main\n");
+    // A folder left under the old name (a refused move, KOBE-827) is just as internal.
+    await put(first, ".kobe/repos/old/README.md", "unpushed, before the rename");
+    // A download interrupted on the image from before the rename left its temp file.
+    await put(first, "repos/.kobe-sync-0123456789abcdef01234567", "partial");
     const sync = await started(first);
     await sync.push();
     expect(server.livePaths()).toEqual(["repos/notes.md"]);
@@ -182,7 +186,7 @@ describe("workspace sync (agent)", () => {
     server.serverWrite("repos/notes.md", "mine v2, from the web");
     await sync.pull();
     expect(await text(first, "repos/notes.md")).toBe("mine v2, from the web");
-    expect(await text(first, ".kobe/repos/app/README.md")).toBe("a Repo's file");
+    expect(await text(first, ".kaiju/repos/app/README.md")).toBe("a Repo's file");
     // Push: an edit in the sandbox is saved back.
     await put(first, "repos/notes.md", "mine v3, from the sandbox");
     await utimes(path.join(first, "repos/notes.md"), new Date(), new Date(Date.now() + 5_000));
@@ -193,7 +197,9 @@ describe("workspace sync (agent)", () => {
     const second = await volume();
     await started(second);
     expect(await text(second, "repos/notes.md")).toBe("mine v3, from the sandbox");
-    expect(await exists(second, ".kobe/repos")).toBe(false);
+    expect(await exists(second, ".kaiju/repos")).toBe(false);
+    expect(await exists(second, ".kobe")).toBe(false);
+    expect(await text(first, ".kobe/repos/old/README.md")).toBe("unpushed, before the rename");
   });
 
   it("downloads from a server pod from before the rename (old entry header, KOBE-749)", async () => {
@@ -488,7 +494,7 @@ describe("workspace sync (agent)", () => {
     await put(root, "a.txt", "aaaa");
     await first.flush(10_000, PROOF);
     server.flushed.length = 0;
-    return { root, file: path.join(root, ".kobe", "agent", "workspace-verified.json") };
+    return { root, file: path.join(root, ".kaiju", "agent", "workspace-verified.json") };
   }
 
   it("re-hashes when the saved stamps are corrupt or do not match (KOBE-733)", async () => {
@@ -627,7 +633,7 @@ describe("workspace sync (agent)", () => {
     const sync = await started(root);
     await put(root, "app/.venv/lib/x.py", "rebuildable");
     await put(root, "app/node_modules/m/index.js", "rebuildable");
-    await put(root, ".kobe/sessions/t.jsonl", "rebuilt from the server");
+    await put(root, ".kaiju/sessions/t.jsonl", "rebuilt from the server");
     await mkdir(path.join(root, "empty-folder"));
     await put(root, "app/main.py", "print(1)");
     await sync.flush(5_000, PROOF);
@@ -722,11 +728,11 @@ describe("workspace sync (agent)", () => {
     await put(root, "projects/mine/plan.md", "written before sync existed");
     const sync = await started(root);
     expect(await exists(root, "projects/mine/plan.md")).toBe(false);
-    expect(await text(root, "kobe-moved/projects/mine/plan.md")).toBe(
+    expect(await text(root, "kaiju-moved/projects/mine/plan.md")).toBe(
       "written before sync existed",
     );
     await sync.push();
-    expect(server.content("kobe-moved/projects/mine/plan.md")).toBe("written before sync existed");
+    expect(server.content("kaiju-moved/projects/mine/plan.md")).toBe("written before sync existed");
   });
 
   it("applies deletions it missed when the server compacted them away (resync)", async () => {
@@ -926,10 +932,12 @@ describe("workspace sync (agent)", () => {
   it("ignores server entries in its own area or with invalid names, whatever the server says", async () => {
     const root = await volume();
     const sync = await started(root);
-    server.serverWrite(".kobe/sessions/t.jsonl", '{"forged":true}\n');
+    server.serverWrite(".kaiju/sessions/t.jsonl", '{"forged":true}\n');
+    server.serverWrite(".kobe/sessions/t.jsonl", '{"forged":true}\n'); // old name (KOBE-827)
     server.serverWrite("ok.txt", "fine");
     await sync.pull();
-    expect(await exists(root, ".kobe/sessions/t.jsonl")).toBe(false);
+    expect(await exists(root, ".kaiju/sessions/t.jsonl")).toBe(false);
+    expect(await exists(root, ".kobe")).toBe(false);
     expect(await text(root, "ok.txt")).toBe("fine");
   });
 
@@ -1015,12 +1023,12 @@ describe("pushPath (share_file: push one file and return its revision)", () => {
 
   it("refuses a symlink, a missing file and an excluded or skipped path", async () => {
     const root = await volume();
-    await put(root, ".kobe/x", "x");
+    await put(root, ".kaiju/x", "x");
     await put(root, "app/node_modules/dep.js", "x");
     await put(root, "real.txt", "x");
     await symlink(path.join(root, "real.txt"), path.join(root, "link.txt"));
     const sync = await started(root);
-    for (const rel of ["link.txt", "missing.txt", ".kobe/x", "app/node_modules/dep.js"]) {
+    for (const rel of ["link.txt", "missing.txt", ".kaiju/x", "app/node_modules/dep.js"]) {
       await expect(sync.pushPath(rel), rel).rejects.toThrow();
     }
     expect(server.livePaths()).toEqual([]);

@@ -128,7 +128,7 @@ export interface MoveRefusal {
 /**
  * Why `from` may not move to `to` (KOBE-304), or undefined: the path rules both already passed
  * (`workspacePathSchema`) plus the mention rules for the new path (KOBE-223: no invisible,
- * format, default-ignorable or shell characters), never agent-internal (`.kobe/` stays hidden:
+ * format, default-ignorable or shell characters), never agent-internal (`.kaiju/` stays hidden:
  * not found), never read-only on either side (project mounts, thread uploads; a member's drop
  * may move, and a file may become one), and never onto itself or into itself.
  */

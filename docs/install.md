@@ -1827,6 +1827,29 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   ones written under the old tool names, keep applying to the renamed tools: the server matches
   them against both names (permanently), never allow rules. The rewrite
   cannot be undone by going back a release: restore the `kaiju backup` taken before the upgrade.
+- **The sandbox folder is `/workspace/.kaiju/` (Kaiju rename, KOBE-827).** Each sandbox agent
+  renames its volume's `/workspace/.kobe/` to `.kaiju/` when it starts on the new image (a
+  hibernated sandbox when it wakes), before workspace sync, Pi or any tool runs: one `rename(2)`
+  on the volume, so Pi sessions, the sync state and the Repo working copies (`repos/`, which hold
+  unpushed work and are never synced) move whole or not at all. Nothing in the database changes:
+  no stored row holds a path under the folder (every writer refuses it), and conversation history
+  keeps the paths it was written with. The agent reports the outcome in its `hello`, and the
+  server logs it with the sandbox id: `sandbox folder moved from .kobe to .kaiju` (info), or
+  `sandbox folder .kobe left in place: needs a person (KOBE-827)` (warn, field `state_folder`):
+  `conflict` (both folders hold data: both are left as they are and the agent runs on `.kaiju/`;
+  an earlier move followed by an older image, or a folder someone made before the upgrade),
+  `failed` (the rename failed, with the errno `code`; `.kobe/` is intact and the next start
+  tries again) or `not_a_folder` (`.kobe` is a link or a file; never followed). The warning repeats
+  at every start until resolved: inspect the volume (`kubectl exec` into the sandbox) and bring
+  unpushed commits over from `.kobe/repos/<slug>` with git before removing anything. Rolling back
+  to an older image after the move gives that sandbox a fresh `.kobe/` (its working copies are
+  re-cloned, `.kaiju/` is untouched) and a `conflict` when it returns to this release. Both
+  folder names stay agent-internal for good (never synced, browsed, mentioned or shared). Deny and
+  ask rules whose arguments name one folder also match the same path under the other (never allow
+  rules), and Pi sessions recorded under the old provider id `kobe` and entry types `kobe.branch`,
+  `kobe.app_card` and `kobe.skipped_actions` keep working. Before the upgrade, check that no
+  member stored files under a top-level `.kaiju/` folder (from then on it is internal): such files
+  stay in object storage but no longer show or restore.
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
   namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces
@@ -2405,7 +2428,7 @@ true` lets the hibernation sweep delete a sandbox hibernated for `dormantDays` (
   clears it; no proof (a killed pod, a failed push, an older sandbox image) keeps the volume. Local
   only, and so blocking: symlinks, special files, names the sync refuses, files over
   `sandbox.workspaceSync.maxFileSize`, unreadable files. Not restored by design: `.venv`,
-  `node_modules`, `__pycache__`, empty folders and `.kobe/` (Pi sessions, rebuilt from Postgres).
+  `node_modules`, `__pycache__`, empty folders and `.kaiju/` (Pi sessions, rebuilt from Postgres).
   The proof also needs a quiet sandbox: no kill or reclaim failed during the agent's life, and
   `/proc` shows no process but the agent's own; agents without Pi identities never send it, and the
   server refuses one that does not say it runs them. Each proof is audited (`sandbox.volume_proof`,

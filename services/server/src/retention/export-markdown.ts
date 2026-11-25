@@ -1,4 +1,4 @@
-import { APP_CARD_CUSTOM_TYPE } from "@kaiju/protocol";
+import { isEntryType } from "@kaiju/protocol";
 /**
  * Markdown transcript of a thread for the user's export (spec D18). Entries are Pi 1.0 session
  * entries (D15) as stored, i.e. agent output: every field is checked, and anything unexpected is
@@ -102,7 +102,7 @@ export function entryPlainText(payload: unknown): string {
 export function entryMarkdown(payload: unknown): string | null {
   const entry = record(payload);
   // An app card (KOBE-440): the text the model read, never the stored result or the template.
-  if (entry?.type === "custom_message" && entry.customType === APP_CARD_CUSTOM_TYPE) {
+  if (entry?.type === "custom_message" && isEntryType(entry.customType, "kaiju.app_card")) {
     const tool = inline(str(record(entry.details)?.tool) ?? "app").replace(/`/g, "");
     const when = str(entry.timestamp);
     const text = clip(contentText(entry.content), MAX_TOOL_TEXT);

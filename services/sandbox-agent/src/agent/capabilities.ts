@@ -1,6 +1,7 @@
 import {
   CAPABILITY_ARTIFACTS,
   CAPABILITY_APP_CARDS,
+  CAPABILITY_KAIJU_NAMES,
   CAPABILITY_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
@@ -141,6 +142,8 @@ export function helloCapabilities(deps: AgentDeps): string[] {
     ...(deps.models === undefined ? [] : [CAPABILITY_RUN_TOKEN]),
     // App cards (KOBE-440): appended to the session before the run, like the branch marker.
     CAPABILITY_APP_CARDS,
+    // Entry types under their new names (KOBE-827); an older agent gets the old ones.
+    CAPABILITY_KAIJU_NAMES,
     // Compaction (KOBE-213) summarizes through the gateway with the run's token: same condition.
     ...(deps.models === undefined ? [] : [CAPABILITY_THREAD_COMPACT]),
     // Branch summaries (KOBE-548) go through kaiju-models the same way.

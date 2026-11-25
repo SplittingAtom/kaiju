@@ -36,7 +36,10 @@ afterEach(() => {
 
 function answered() {
   const t = fake.addThread("Units");
-  const first = fake.addSystemEntry(t, null, "model_change", { provider: "kobe", modelId: "kimi" });
+  const first = fake.addSystemEntry(t, null, "model_change", {
+    provider: "kaiju",
+    modelId: "kimi",
+  });
   const u = fake.addEntry(t, first, { role: "user", content: "I prefer metric units." });
   fake.addEntry(t, u, { role: "assistant", content: [{ type: "text", text: "Noted." }] });
   return t;

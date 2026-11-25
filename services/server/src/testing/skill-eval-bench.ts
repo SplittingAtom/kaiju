@@ -27,7 +27,7 @@ export class FakeEvalProvider {
   beforeReply: (ws: FakeWorkspace, start: RunStart) => Promise<void> = async () => {};
   /**
    * When it returns a Pi error message for a run (e.g. the gateway's budget refusal,
-   * `kobe.model_error:model_budget_exhausted: …`), the run fails with it instead of answering.
+   * `kaiju.model_error:model_budget_exhausted: …`), the run fails with it instead of answering.
    */
   fail: (start: RunStart) => string | null = () => null;
   snapshot: EvalWorkspaceSnapshot = { walks: [] };

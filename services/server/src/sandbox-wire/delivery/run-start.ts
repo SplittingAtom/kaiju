@@ -7,9 +7,11 @@ import {
 import {
   CAPABILITY_APP_CARDS,
   CAPABILITY_FILE_EDITS,
+  CAPABILITY_KAIJU_NAMES,
   CAPABILITY_MEMORY,
   CAPABILITY_PROJECTS,
   CAPABILITY_SYNC_CONFLICTS,
+  PRE_RENAME_APP_CARD_CUSTOM_TYPE,
 } from "@kaiju/protocol";
 import { loadRunGitContext } from "../../git/sandbox-git.js";
 import { runGitRepo } from "../../git/working-copy.js";
@@ -74,6 +76,8 @@ export async function prepareRunStart(
   // them), so its model does not see them, and the run does not fail on an unknown parent.
   if (!host.hasCapability(CAPABILITY_APP_CARDS)) {
     out = withoutAppCards(out as RunStartFrame) as ServerToSandboxFrame;
+  } else if (!host.hasCapability(CAPABILITY_KAIJU_NAMES)) {
+    out = withPreRenameAppCards(out as RunStartFrame) as ServerToSandboxFrame;
   }
   // The viewed file (KOBE-462) only reaches agents that fence it; an older one runs without it.
   if (!host.hasCapability(CAPABILITY_FILE_EDITS)) {
@@ -103,6 +107,19 @@ export async function prepareRunStart(
     out = rest as ServerToSandboxFrame;
   }
   return out;
+}
+
+/**
+ * KOBE-827, one release (KOBE-754): a sandbox still on the image from before the rename requires
+ * the old app card type, so its cards go out under that name (the content is the same).
+ */
+export function withPreRenameAppCards(frame: RunStartFrame): RunStartFrame {
+  const cards = frame.app_cards;
+  if (cards === undefined || cards.length === 0) return frame;
+  return {
+    ...frame,
+    app_cards: cards.map((c) => ({ ...c, customType: PRE_RENAME_APP_CARD_CUSTOM_TYPE })),
+  };
 }
 
 /** A start without its app cards: the branch point moves to the first card's parent. */

@@ -38,7 +38,7 @@ describe("export Markdown", () => {
       id: "ka-000000000000000000000001",
       parentId: "e1",
       timestamp: "2026-10-01T10:00:00.000Z",
-      customType: "kobe.app_card",
+      customType: "kaiju.app_card",
       content: "The app-card block below…\n<app-card>3 tables</app-card>",
       display: true,
       details: { tool: "open_explorer", result_ref: "secret-ref" },
@@ -46,7 +46,7 @@ describe("export Markdown", () => {
     expect(card).toContain("**App opened by the member:** `open_explorer`");
     expect(card).toContain("3 tables");
     expect(card).not.toContain("secret-ref");
-    expect(entryMarkdown({ type: "custom_message", customType: "kobe.branch" })).toBeNull();
+    expect(entryMarkdown({ type: "custom_message", customType: "kaiju.branch" })).toBeNull();
   });
 
   it("skips entries that are not conversation turns or are malformed", () => {

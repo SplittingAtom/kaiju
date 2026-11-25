@@ -374,6 +374,7 @@ export class Agent {
       runs: this.#outbox.helloRuns(),
       // Optional features, so the server sends their fields only to agents that can use them.
       ...(capabilities.length === 0 ? {} : { capabilities }),
+      ...(this.#deps.stateFolder === undefined ? {} : { state_folder: this.#deps.stateFolder }),
     };
   }
 
@@ -783,7 +784,7 @@ export class Agent {
 
 /**
  * Build one `pi.event` frame. An event the server's decoder would reject (too large, too deep) is
- * replaced by a `kobe.event_dropped` record (`kaijuEventDroppedSchema` in @kaiju/protocol: not a Pi
+ * replaced by a `kaiju.event_dropped` record (`kaijuEventDroppedSchema` in @kaiju/protocol: not a Pi
  * type, so the server accepts it without translating it), so the seq stays gapless and the run
  * keeps going.
  */

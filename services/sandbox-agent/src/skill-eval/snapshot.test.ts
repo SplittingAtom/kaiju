@@ -46,8 +46,8 @@ describe("snapshotWorkspace (KOBE-325)", () => {
 
   it("records links inside a root without reading them, and skips skills and hidden segments", async () => {
     await mkdir(path.join(ws, "outputs/skills"), { recursive: true });
-    await mkdir(path.join(ws, ".kobe/sessions"), { recursive: true });
-    await writeFile(path.join(ws, ".kobe/sessions/s.jsonl"), "secret");
+    await mkdir(path.join(ws, ".kaiju/sessions"), { recursive: true });
+    await writeFile(path.join(ws, ".kaiju/sessions/s.jsonl"), "secret");
     await writeFile(path.join(ws, "outputs/skills/x.md"), "x");
     await writeFile(path.join(ws, "outputs/.hidden"), "h");
     await symlink("/etc/passwd", path.join(ws, "outputs/link.txt"));

@@ -22,7 +22,7 @@ import { sha256HexSchema, workspaceOriginSchema, workspacePathSchema } from "./w
  *  1. `share_file` runs through kaiju-policy `policy.check` like any tool (`primary_arg` `/path`).
  *  2. kaiju-tools sends `{op:"file.share"}` on fd 4 (`KAIJU_TOOLS_FD`, artifacts.ts).
  *  3. The agent normalizes `input.path` to a workspace path (strip `/workspace/`), refuses paths
- *     outside the workspace, in `.kobe/`, or not a regular file, then **pushes that path**: hash,
+ *     outside the workspace, in `.kaiju/`, or not a regular file, then **pushes that path**: hash,
  *     blob upload and workspace `commit` (a no-op commit is fine when the server already has the
  *     same hash). It waits for the result and keeps the applied entry (`rev`, `sha256`, `size`).
  *     A rejected or conflicting commit fails the tool with `not_synced`.
@@ -165,7 +165,7 @@ export const workspaceDeleteQuerySchema = z.strictObject({ path: workspacePathSc
  * renames one file or folder of the caller's own workspace to the full path `to` (a folder moves
  * with everything in it). The server decides: both paths follow the workspace path rules, `to`
  * also the mention rules (`mentionPathIssue`: no invisible, format or shell characters), neither
- * is agent-internal (`.kobe/`) nor read-only (project mounts, thread uploads; a member's drop in
+ * is agent-internal (`.kaiju/`) nor read-only (project mounts, thread uploads; a member's drop in
  * `uploads/` may move, and a file may move into `uploads/` as a drop), `to` is not `from` nor
  * inside it, and nothing exists at `to` or in its way (`already_exists`: never overwritten).
  * 200 body: {@link workspaceMoveResponseSchema}. Rate-limited per member (429 `rate_limited`).

@@ -54,9 +54,14 @@ describe("workspace sync contract", () => {
     expect(isServerOwnedPath("uploads/t/a.csv")).toBe(true);
     expect(isServerOwnedPath("projects/acme/spec.md")).toBe(true);
     expect(isServerOwnedPath("uploadsx/a")).toBe(false);
-    expect(isExcludedPath(".kobe/sessions/t.jsonl")).toBe(true);
+    expect(isExcludedPath(".kaiju/sessions/t.jsonl")).toBe(true);
+    expect(isExcludedPath(".kaiju")).toBe(true);
+    expect(isExcludedPath(".kaijux")).toBe(false);
+    // The folder's name before the rename (KOBE-827) stays internal for good.
+    expect(isExcludedPath(".kobe/repos/app/README.md")).toBe(true);
     expect(isExcludedPath(".kobe")).toBe(true);
     expect(isExcludedPath(".kobex")).toBe(false);
+    expect(isExcludedPath("kaiju-moved/.kobe/x")).toBe(false);
   });
 
   it("parses entries and changes strictly", () => {

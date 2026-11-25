@@ -104,11 +104,11 @@ describe("viewed-file context (KOBE-462)", () => {
     const other = w.others[0];
     if (!other) throw new Error("no member");
     await seed(w, other.id, "theirs.md", Buffer.from("secret\n"));
-    for (const path of ["theirs.md", "missing.md", ".kobe/state.md"]) {
+    for (const path of ["theirs.md", "missing.md", ".kaiju/state.md"]) {
       const { start, runId } = await sendViewing(w, path);
       expect(start.viewing).toBeUndefined();
       // KOBE-493: an unread file keeps its path for the viewed-file guard; internal paths don't.
-      expect(await viewingRow(runId)).toEqual(path.startsWith(".kobe/") ? null : { path });
+      expect(await viewingRow(runId)).toEqual(path.startsWith(".kaiju/") ? null : { path });
     }
   });
 

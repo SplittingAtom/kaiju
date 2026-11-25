@@ -141,13 +141,13 @@ describe("SessionRestore", () => {
 describe("ensureSessionDir under Pi identities (KOBE-71)", () => {
   it("opens the session dirs and the agent's session files to the workspace group", async () => {
     const workspace = path.join(dir, "ws");
-    const sessions = path.join(workspace, ".kobe", "sessions");
+    const sessions = path.join(workspace, ".kaiju", "sessions");
     // As an agent before KOBE-71 left them: 0700 directories, 0600 files.
     await mkdir(sessions, { recursive: true, mode: 0o700 });
     await writeFile(path.join(sessions, `${EXAMPLE_IDS.thread}.jsonl`), "{}\n", { mode: 0o600 });
     await ensureSessionDir(sessions, { shared: true, workspaceDir: workspace });
     expect((await stat(sessions)).mode & 0o770).toBe(0o770);
-    expect((await stat(path.join(workspace, ".kobe"))).mode & 0o770).toBe(0o770);
+    expect((await stat(path.join(workspace, ".kaiju"))).mode & 0o770).toBe(0o770);
     expect((await stat(path.join(sessions, `${EXAMPLE_IDS.thread}.jsonl`))).mode & 0o777).toBe(
       0o660,
     );

@@ -22,11 +22,11 @@ describe("guarded Pi config (KOBE-169)", () => {
     const agent = await fresh();
     await writeGuardedConfig(agent, false);
     await chmod(path.join(agent, "models.json"), 0o600);
-    await writeFile(path.join(agent, "models.json"), '{"providers":{"kobe":{"models":[]}}}');
+    await writeFile(path.join(agent, "models.json"), '{"providers":{"kaiju":{"models":[]}}}');
     await rm(path.join(agent, "settings.json"));
     expect(await tamperedConfig(agent)).toEqual(["agent/models.json", "agent/settings.json"]);
     await symlink(path.join(agent, "models.json"), path.join(agent, "settings.json"));
     expect(await tamperedConfig(agent)).toEqual(["agent/models.json", "agent/settings.json"]);
-    expect(await readFile(path.join(agent, "models.json"), "utf8")).toContain("kobe");
+    expect(await readFile(path.join(agent, "models.json"), "utf8")).toContain("kaiju");
   });
 });
