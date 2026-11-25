@@ -344,7 +344,7 @@ function sandboxEnv(s: SandboxSettings): { name: string; value: string }[] {
     { name: "https_proxy", value: egress },
     { name: "NO_PROXY", value: noProxy },
     { name: "no_proxy", value: noProxy },
-    { name: "HOME", value: "/home/kobe" },
+    { name: "HOME", value: "/home/kaiju" },
     // KOBE-167: Pi's built-in tools in an executor under the partner uid (needs the partner
     // groups in the pod spec above); the agent refuses to start if it is on and they are missing.
     { name: "KAIJU_TOOL_EXECUTOR", value: String(s.toolExecutor.enabled) },
@@ -401,7 +401,7 @@ export function sandboxPodSpec(
       runAsUser: SANDBOX_UID,
       runAsGroup: SANDBOX_UID,
       fsGroup: SANDBOX_UID,
-      // KOBE-71: `kobe-agent` (may run kaiju-runas) and the Pi identities' groups, so the agent
+      // KOBE-71: `kaiju-agent` (may run kaiju-runas) and the Pi identities' groups, so the agent
       // can hand each Pi a runtime directory only that Pi's group reads. KOBE-166: and their
       // partner (tool) groups, one per Pi identity (reconcile-only rollout, no migration).
       supplementalGroups: [
@@ -435,7 +435,7 @@ export function sandboxPodSpec(
           { name: "tmp", mountPath: "/tmp" },
           { name: "pi-runtime", mountPath: PI_RUNTIME_DIR },
           { name: "pi-skills", mountPath: SKILLS_DIR },
-          { name: "home", mountPath: "/home/kobe" },
+          { name: "home", mountPath: "/home/kaiju" },
           { name: names.bootstrapVolume, mountPath: BOOTSTRAP_TOKEN_DIR, readOnly: true },
         ],
       },

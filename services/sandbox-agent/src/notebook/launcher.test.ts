@@ -20,12 +20,12 @@ describe("kernel launcher (NB10)", () => {
         HTTPS_PROXY: "http://user:token@proxy",
         NODE_OPTIONS: "--inspect",
       },
-      "/home/kobe",
+      "/home/kaiju",
     );
     expect(env).toEqual({
       PATH: "/usr/bin",
       TZ: "UTC",
-      HOME: "/home/kobe",
+      HOME: "/home/kaiju",
       PYTHONDONTWRITEBYTECODE: "1",
       PYTHONUNBUFFERED: "1",
     });

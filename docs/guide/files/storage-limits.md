@@ -101,7 +101,7 @@ can rebuild a member's sandbox for them (**Workspace settings → Storage and hi
 Besides My files, each sandbox has two small scratch areas that are emptied whenever the sandbox
 sleeps or restarts:
 
-- **Home folder** (`$HOME`, `/home/kobe`): **1 GiB** by default.
+- **Home folder** (`$HOME`, `/home/kaiju`): **1 GiB** by default.
 - **`/tmp`**: **2 GiB** by default.
 
 Your site admin can change both (chart values `sandbox.homeSize` and `sandbox.tmpSize`). If either

@@ -5,7 +5,7 @@ checked against code, docs or a running gVisor in this spike.
 
 ## Question
 
-KOBE-71 gave every live Pi process its own uid (`kobe-pi-<n>`, 2000-2063) started through the
+KOBE-71 gave every live Pi process its own uid (`kaiju-pi-<n>`, 2000-2063) started through the
 file-capability helper `kaiju-runas`, with `no_new_privs` and no capabilities. Pi's tools (the `bash`
 tool and everything it starts, Python, `rg`/`fd`) and Pi's in-process tools (read, write, edit) run
 under that same uid. Should each thread get a second, distinct uid for tool execution?

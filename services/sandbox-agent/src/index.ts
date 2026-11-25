@@ -55,7 +55,7 @@ async function main(): Promise<void> {
       ? {}
       : { toolsExtension: await checkExtensionFile(loaded.toolsExtension, "kaiju-tools") }),
   };
-  const home = process.env.HOME ?? "/home/kobe";
+  const home = process.env.HOME ?? "/home/kaiju";
   // KOBE-71: private by default; what Pi identities must reach (workspace files, session files,
   // runtime dirs) gets its mode explicitly.
   process.umask(0o077);

@@ -184,14 +184,14 @@ export const KAIJU_ENDPOINTS = Object.keys(SANDBOX_HOSTS) as KaijuEndpoint[];
  * is enforced by Kaiju's own admission policy for team pods (chart: sandbox-admission.yaml).
  */
 export const POD_SECURITY_LEVEL = "baseline";
-/** UID/GID of the `kobe` user in images/sandbox/Dockerfile (the agent; the workspace group). */
+/** UID/GID of the `kaiju` user in images/sandbox/Dockerfile (the agent; the workspace group). */
 export const SANDBOX_UID = 1000;
-/** Group `kobe-agent` in the image: the only group allowed to execute kaiju-runas (KOBE-71). */
+/** Group `kaiju-agent` in the image: the only group allowed to execute kaiju-runas (KOBE-71). */
 export const SANDBOX_AGENT_GID = 1001;
-/** First Pi identity (`kobe-pi-0`, uid = gid) in the image; kaiju-runas accepts 2000-2063. */
+/** First Pi identity (`kaiju-pi-0`, uid = gid) in the image; kaiju-runas accepts 2000-2063. */
 export const PI_IDENTITY_BASE = 2000;
 /**
- * First partner (tool) identity (`kobe-tool-0`, uid = gid; KOBE-166): Pi identity `n` is paired
+ * First partner (tool) identity (`kaiju-tool-0`, uid = gid; KOBE-166): Pi identity `n` is paired
  * with `PARTNER_IDENTITY_BASE + n`, which kaiju-runas accepts in 3000-3063. The agent gets their
  * groups as well as the Pi ones. Keep equal to PI_IDENTITY_BASE + 1000
  * (services/sandbox-agent `PARTNER_UID_OFFSET`).

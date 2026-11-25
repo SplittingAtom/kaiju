@@ -25,8 +25,8 @@ tool list is more specific, that wins: it reflects this site's and this team's a
   [Working with git repositories](working-with-git.md).
 - The sandbox may sleep between messages. Running processes, the Python kernel and anything outside
   `/workspace` may be gone next time; files in `/workspace` are kept.
-- `$HOME` (`/home/kobe`) is limited to 1 GiB and `/tmp` to 2 GiB by default. Filling either stops
-  the sandbox: it is restarted on the next message with both emptied (`/workspace` is kept). Install
+- `$HOME` (`/home/kaiju`; the older path `/home/kobe` leads to the same folder) is limited to
+  1 GiB and `/tmp` to 2 GiB by default. Filling either stops the sandbox: it is restarted on the next message with both emptied (`/workspace` is kept). Install
   packages inside `/workspace`, not in `$HOME`: Python into a virtual environment
   (`python -m venv /workspace/.venv`, then `/workspace/.venv/bin/pip install …`), npm packages in a
   project folder under `/workspace` (its `node_modules`). A plain `pip install` goes to `~/.local`

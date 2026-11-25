@@ -6,7 +6,7 @@ set -euo pipefail
 IMAGE="${1:?usage: $0 <image>}"
 failed=0
 HARDENED=(--rm --read-only --cap-drop ALL --security-opt no-new-privileges --user 1000:1000
-  --tmpfs /tmp --tmpfs /home/kobe:uid=1000,gid=1000)
+  --tmpfs /tmp --tmpfs /home/kaiju:uid=1000,gid=1000)
 
 run() { docker run "${HARDENED[@]}" --entrypoint "$1" "$IMAGE" "${@:2}"; }
 run_ws() { docker run "${HARDENED[@]}" --tmpfs /workspace:uid=1000,gid=1000 --entrypoint "$1" "$IMAGE" "${@:2}"; }
@@ -91,7 +91,7 @@ export default function (pi) {
   pi.on("session_start", select);
   pi.on("input", select);
 }`);
-const env = { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
+const env = { PATH: process.env.PATH, HOME: "/home/kaiju", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
   PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" };
 if (withFd4) env.KAIJU_TOOLS_FD = "4";
 const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
@@ -132,7 +132,7 @@ check "kaiju-policy loads into Pi and reports ready over fd 3" '"type":"channel.
 const { spawn } = require("node:child_process");
 const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
   "--no-skills", "--extension", "/opt/kaiju/pi-extensions/kaiju-policy/index.js"], { cwd: "/workspace",
-  env: { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
+  env: { PATH: process.env.PATH, HOME: "/home/kaiju", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
     PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" },
   stdio: ["pipe", "ignore", "inherit", "pipe"] });
 p.stdio[3].write(JSON.stringify({ type: "channel.hello", nonce: "image-test" }) + "\n");
@@ -160,7 +160,7 @@ export default function (pi) {
 }`);
 const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
   "--extension", "/tmp/faux.mjs", "--extension", "/opt/kaiju/pi-extensions/kaiju-policy/index.js"], { cwd: "/workspace",
-  env: { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
+  env: { PATH: process.env.PATH, HOME: "/home/kaiju", PI_CODING_AGENT_DIR: "/tmp/pi-agent",
     PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" },
   stdio: ["pipe", "pipe", "inherit", "pipe"] });
 const done = (msg, code) => { console.log(msg); p.kill("SIGKILL"); process.exit(code); };
@@ -203,7 +203,7 @@ srv.listen(0, "127.0.0.1", () => {
     run_id: "11111111-1111-4111-8111-111111111111" }), { mode: 0o600 });
   const p = spawn("pi", ["--mode", "rpc", "--no-session", "--no-extensions", "--no-approve", "--no-context-files",
     "--extension", "/opt/kaiju/pi-extensions/kaiju-models/index.js", "--extension", "/opt/kaiju/pi-extensions/kaiju-policy/index.js"], { cwd: "/workspace",
-    env: { PATH: process.env.PATH, HOME: "/home/kobe", PI_CODING_AGENT_DIR: dir + "/agent", KAIJU_MODEL_FILE: dir + "/model.json",
+    env: { PATH: process.env.PATH, HOME: "/home/kaiju", PI_CODING_AGENT_DIR: dir + "/agent", KAIJU_MODEL_FILE: dir + "/model.json",
       PI_OFFLINE: "1", PI_TELEMETRY: "0", PI_SKIP_VERSION_CHECK: "1", KAIJU_POLICY_FD: "3" },
     stdio: ["pipe", "pipe", "inherit", "pipe"] });
   const done = (msg, code) => { console.log(msg); p.kill("SIGKILL"); process.exit(code); };
@@ -471,17 +471,17 @@ check "no setuid/setgid binaries" '^none$' run sh -c 'f=$(find / -xdev -perm /60
 check "nothing outside /workspace, /tmp, \$HOME is writable by uid 1000" '^none$' run sh -c \
   'f=$(find /bin /sbin /lib /usr /opt /etc /root /var /srv -xdev -writable 2>/dev/null | grep -v "^/var/tmp" | head -5); [ -z "$f" ] && echo none || echo "$f"'
 check "no private keys or credential files baked in" '^none$' run sh -c \
-  'f=$( (grep -rlI "PRIVATE KEY" /opt/kaiju /home/kobe /etc --exclude-dir=ssl 2>/dev/null; find /opt/kaiju /home /etc -xdev \( -name ".env*" -o -name ".npmrc" -o -name "*.pem" -o -name "id_rsa*" \) -not -path "/etc/ssl/*" 2>/dev/null) | head -5); [ -z "$f" ] && echo none || echo "$f"'
+  'f=$( (grep -rlI "PRIVATE KEY" /opt/kaiju /home/kaiju /etc --exclude-dir=ssl 2>/dev/null; find /opt/kaiju /home /etc -xdev \( -name ".env*" -o -name ".npmrc" -o -name "*.pem" -o -name "id_rsa*" \) -not -path "/etc/ssl/*" 2>/dev/null) | head -5); [ -z "$f" ] && echo none || echo "$f"'
 check "no secrets in the environment" '^ok$' run sh -c 'env | grep -Eiq "(api_?key|token|secret|password)=" && echo leaked || echo ok'
 
 # KOBE-71: Pi identities. The pod adds SETUID/SETGID and allows privilege escalation, and gives the
-# agent (uid 1000) the groups kobe-agent (1001) and the Pi identities' groups (2000+).
+# agent (uid 1000) the groups kaiju-agent (1001) and the Pi identities' groups (2000+).
 PRIVSEP=(--rm --read-only --cap-drop ALL --cap-add SETUID --cap-add SETGID --user 1000:1000
-  --group-add 1001 --group-add 2000 --group-add 2001 --tmpfs /tmp --tmpfs /home/kobe:uid=1000,gid=1000)
+  --group-add 1001 --group-add 2000 --group-add 2001 --tmpfs /tmp --tmpfs /home/kaiju:uid=1000,gid=1000)
 run_ps() { docker run "${PRIVSEP[@]}" --entrypoint "$1" "$IMAGE" "${@:2}"; }
 R=/opt/kaiju/bin/kaiju-runas
-check "kaiju-runas: the only file with capabilities, setuid+setgid, root:kobe-agent 0750" \
-  "^$R cap_setgid,cap_setuid=ep root:kobe-agent 750\$" run sh -c \
+check "kaiju-runas: the only file with capabilities, setuid+setgid, root:kaiju-agent 0750" \
+  "^$R cap_setgid,cap_setuid=ep root:kaiju-agent 750\$" run sh -c \
   "getcap -r /bin /sbin /lib /usr /opt /etc 2>/dev/null | tr '\n' ' '; stat -c '%U:%G %a' $R"
 check "kaiju-runas starts a Pi identity: own uid/gid, workspace group, no capabilities, no_new_privs, umask 002" \
   '^uid=2000 gid=2000 groups=1000,2000 caps=0000000000000000/0000000000000000 nnp=1 umask=0002$' run_ps \
@@ -521,9 +521,9 @@ check "a Pi identity cannot read the agent's files or signal it" '^denied denied
 PAIRED=("${PRIVSEP[@]}" --group-add 3000 --group-add 3001)
 run_pair() { docker run "${PAIRED[@]}" --entrypoint "$1" "$IMAGE" "${@:2}"; }
 check "passwd and group have the 64 Pi identities and their 64 partners, paired by number" '^64 64 ok$' run sh -c \
-  'p=$(getent passwd | grep -c "^kobe-pi-"); t=$(getent passwd | grep -c "^kobe-tool-"); ok=ok;
-   for n in 0 17 63; do [ "$(id -u kobe-pi-$n)" = "$((2000+n))" ] && [ "$(id -u kobe-tool-$n)" = "$((3000+n))" ] \
-     && [ "$(id -g kobe-tool-$n)" = "$((3000+n))" ] && [ "$(id -G kobe-tool-$n)" = "$((3000+n))" ] || ok=bad; done; echo "$p $t $ok"'
+  'p=$(getent passwd | grep -c "^kaiju-pi-"); t=$(getent passwd | grep -c "^kaiju-tool-"); ok=ok;
+   for n in 0 17 63; do [ "$(id -u kaiju-pi-$n)" = "$((2000+n))" ] && [ "$(id -u kaiju-tool-$n)" = "$((3000+n))" ] \
+     && [ "$(id -g kaiju-tool-$n)" = "$((3000+n))" ] && [ "$(id -G kaiju-tool-$n)" = "$((3000+n))" ] || ok=bad; done; echo "$p $t $ok"'
 check "kaiju-runas starts a partner uid: own uid/gid, workspace group only, no capabilities, no_new_privs, umask 002" \
   '^uid=3001 gid=3001 groups=1000,3001 caps=0000000000000000/0000000000000000 nnp=1 umask=0002$' run_pair \
   $R 3001 sh -c 'echo "uid=$(id -u) gid=$(id -g) groups=$(id -G | tr " " "\n" | sort -n | paste -sd,) caps=$(awk "/^CapPrm/{p=\$2} /^CapEff/{e=\$2} END{print p \"/\" e}" /proc/self/status) nnp=$(awk "/^NoNewPrivs/{print \$2}" /proc/self/status) umask=$(umask)"'
@@ -554,6 +554,42 @@ check "git trusts repositories owned by another uid under /workspace only (syste
    stat -c '%U:%G' /etc/gitconfig"
 check "a kernel runs as a partner uid through kaiju-runas (KOBE-464)" '^ok 2 3 listeners=0 png=1$' run_pair_ws \
   python3 -c "$KERNEL_PROBE" $R 3000 /usr/local/bin/python3 /opt/kaiju/kernel/kaiju-kernel-bridge.py
+# KOBE-830: the users were renamed from `kobe`, `kobe-agent`, `kobe-pi-<n>`, `kobe-tool-<n>` with
+# the same numeric ids (volumes own files by number), and `/home/kobe` stays as a root-owned symlink
+# to `/home/kaiju` so stored absolute paths (virtualenvs, tool configs, Pi sessions) keep resolving.
+check "users renamed with the same numeric ids, all homes /home/kaiju, no old names left (KOBE-830)" \
+  '^kaiju=1000:1000:/home/kaiju kaiju-agent=1001 pi=2000,2063 tool=3000,3063 homes=1 old=0$' run sh -c \
+  'echo "kaiju=$(getent passwd kaiju | cut -d: -f3,4,6) kaiju-agent=$(getent group kaiju-agent | cut -d: -f3)" \
+     "pi=$(id -u kaiju-pi-0),$(id -g kaiju-pi-63) tool=$(id -u kaiju-tool-0),$(id -g kaiju-tool-63)" \
+     "homes=$(getent passwd | awk -F: "\$3 == 1000 || (\$3 >= 2000 && \$3 <= 3063) { print \$6 }" | sort -u | grep -c .)" \
+     "old=$( (getent passwd; getent group) | grep -c "^kobe")"'
+check "/home/kobe is a root-owned symlink to /home/kaiju in a root-owned /home (KOBE-830)" \
+  '^root:root symbolic link -> /home/kaiju; /home root:root 755; resolves /home/kaiju$' run sh -c \
+  'echo "$(stat -c "%U:%G %F" /home/kobe) -> $(readlink /home/kobe); /home $(stat -c "%U:%G %a" /home); resolves $(cd /home/kobe && pwd -P)"'
+# Not just the read-only root: on a writable one too, neither the agent, a Pi identity nor a
+# partner (tool) uid can replace, move or remove the link, or add anything to /home.
+RW_PAIRED=(--rm --cap-drop ALL --cap-add SETUID --cap-add SETGID --user 1000:1000 --group-add 1001
+  --group-add 2000 --group-add 3000 --tmpfs /tmp --tmpfs /home/kaiju:uid=1000,gid=1000)
+LINK_TRY='for u in 1000 2000 3000; do
+    if [ $u = 1000 ]; then as=; else as="'"$R"' $u"; fi
+    $as sh -c "ln -sfn /tmp /home/kobe; rm -f /home/kobe; mv /home/kobe /home/k2; mkdir /home/x" 2>/dev/null
+    printf "%s:%s " $u "$(readlink /home/kobe)"
+  done; echo "home=$(ls /home | paste -sd,)"'
+check "no sandbox uid can repoint or remove /home/kobe, even on a writable root filesystem (KOBE-830)" \
+  '^1000:/home/kaiju 2000:/home/kaiju 3000:/home/kaiju home=kaiju,kobe$' host \
+  docker run "${RW_PAIRED[@]}" --entrypoint sh "$IMAGE" -c "$LINK_TRY"
+# The home volume (an emptyDir in the pod, not on a volume that persists) is mounted at /home/kaiju;
+# a venv whose shebangs and pyvenv.cfg name /home/kobe, as one made before the rename does, runs.
+VENV_TRY='python3 -m venv /home/kobe/venv >/dev/null 2>&1 || exit 1
+  echo "shebang=$(head -1 /home/kaiju/venv/bin/pip)" \
+    "cfg=$(sed -n "s/^command = .* -m venv //p" /home/kaiju/venv/pyvenv.cfg)" \
+    "old=$(/home/kobe/venv/bin/pip --version | cut -d" " -f1)" \
+    "new=$(/home/kaiju/venv/bin/pip --version | cut -d" " -f1)" \
+    "prefix=$(/home/kobe/venv/bin/python -c "import sys; print(sys.prefix)")"'
+check "a virtualenv made under /home/kobe (before the rename) still runs, by either path (KOBE-830)" \
+  '^shebang=#!/home/kobe/venv/bin/python3? cfg=/home/kobe/venv old=pip new=pip prefix=/home/kobe/venv$' host \
+  docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges --user 1000:1000 --tmpfs /tmp \
+  --tmpfs /home/kaiju:uid=1000,gid=1000,exec --entrypoint sh "$IMAGE" -c "$VENV_TRY"
 # Fail closed: an agent asked for Pi identities (KAIJU_PI_RUNAS) that cannot switch uids (here: no
 # capabilities, no_new_privs) refuses to start rather than run Pi as itself.
 check "the agent refuses to start when it cannot run Pi under its own uid" 'cannot start processes as a Pi identity' host sh -c \

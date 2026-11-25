@@ -22,7 +22,7 @@ const TOOLS = "/opt/kaiju/pi-extensions/kaiju-tools/index.js";
 const EXEC = "/opt/kaiju/pi-extensions/kaiju-exec/index.js";
 const base = {
   sessionFile: "/s/t.jsonl",
-  home: "/home/kobe",
+  home: "/home/kaiju",
   policyExtension: POLICY,
 };
 
@@ -248,7 +248,7 @@ describe("buildPiLaunch", () => {
     expect(env).toEqual({
       PATH: "/usr/bin",
       LANG: "C.UTF-8",
-      HOME: "/home/kobe",
+      HOME: "/home/kaiju",
       PI_SKIP_VERSION_CHECK: "1",
       PI_TELEMETRY: "0",
       PI_OFFLINE: "1",

@@ -157,7 +157,7 @@ describe("runtime directory tripwire", () => {
 
   it("sweeps stale per-process directories at start-up and keeps everything else", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
-    const root = path.join(dir, "kobe-pi");
+    const root = path.join(dir, "kaiju-pi");
     await mkdir(root);
     await processDir(root);
     await processDir(root);
@@ -174,7 +174,7 @@ describe("runtime directory tripwire", () => {
 describe("runtime root and removal (KOBE-71)", () => {
   it("is the agent's own directory: 0711 under Pi identities (reach, never list), else 0700", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
-    const root = path.join(dir, "kobe-pi");
+    const root = path.join(dir, "kaiju-pi");
     await ensureRuntimeRoot(root, true);
     expect((await stat(root)).mode & 0o777).toBe(0o711);
     await ensureRuntimeRoot(root, false);
@@ -184,8 +184,8 @@ describe("runtime root and removal (KOBE-71)", () => {
   it("refuses a root that is not a real directory (planted link)", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     await mkdir(path.join(dir, "elsewhere"));
-    await symlink(path.join(dir, "elsewhere"), path.join(dir, "kobe-pi"));
-    await expect(ensureRuntimeRoot(path.join(dir, "kobe-pi"), true)).rejects.toThrow(
+    await symlink(path.join(dir, "elsewhere"), path.join(dir, "kaiju-pi"));
+    await expect(ensureRuntimeRoot(path.join(dir, "kaiju-pi"), true)).rejects.toThrow(
       /not the agent's own directory/,
     );
   });
@@ -195,15 +195,15 @@ describe("runtime root and removal (KOBE-71)", () => {
     const shared = path.join(dir, "shared");
     await mkdir(shared);
     await chmod(shared, 0o777);
-    await expect(ensureRuntimeRoot(path.join(shared, "kobe-pi"), true)).rejects.toThrow(
+    await expect(ensureRuntimeRoot(path.join(shared, "kaiju-pi"), true)).rejects.toThrow(
       /lets other users rename/,
     );
     // Sticky, like /tmp or a memory-backed emptyDir: the agent's entries are its own.
     await chmod(shared, 0o1777);
-    await expect(ensureRuntimeRoot(path.join(shared, "kobe-pi"), true)).resolves.toBeUndefined();
+    await expect(ensureRuntimeRoot(path.join(shared, "kaiju-pi"), true)).resolves.toBeUndefined();
     // Without identities only the agent uses it: no such requirement.
     await chmod(shared, 0o777);
-    await expect(ensureRuntimeRoot(path.join(shared, "kobe-pi"), false)).resolves.toBeUndefined();
+    await expect(ensureRuntimeRoot(path.join(shared, "kaiju-pi"), false)).resolves.toBeUndefined();
   });
 
   it("removes a runtime directory with everything in it", async () => {

@@ -2,9 +2,17 @@
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
-# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
-# permanent group with their reason. Until then the dry run lists every occurrence as left for
-# hand edits.
+# covers it.
+#
+# Hand work after the apply (docs/ledger/KOBE-830.md): the image links `/home/kobe` to
+# `/home/kaiju` (root-owned, on the read-only root filesystem), test-image.sh checks the link, an
+# old-style virtualenv under /home/kobe and the unchanged numeric ids; the link and its checks sit
+# in a permanent group with their reason. The guide's in-sandbox pages name the new home.
 
 == RN-17 (KOBE-830): The sandbox Unix users (`kobe`, `kobe-agent`, `kobe-pi`, `kobe-tool`) and their home folder, which Pi sessions and workspace files name in absolute paths and the image and the sandbox agent must agree on: renamed with the same numeric ids, `/home/kobe` kept as a symlink (owner decision 2026-11-24, was Q7)
+** /\/home\/kobe\b/
+** /(?<![\/\w-])kobe-(?:agent|pi|tool)(?:-(?:\$\w+|\$\{\w+\}|\d+|\[0-9\]\+|<n>))?(?![\w-])|(?<=\^)kobe-(?:pi|tool)-/
+images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
+services/server/src/sandbox/constants.ts /(?<=the `)kobe(?=` user)/
+images/sandbox/Dockerfile /\bkobe:kobe\b|(?<=`)kobe(?=` \(1000\))|(?<=group `)kobe(?=` \(1000\))/
+e2e/run/42-model-gateway-run.sh /(?<=dir=)kobe(?=:kobe-pi-)/

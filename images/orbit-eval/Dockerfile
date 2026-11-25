@@ -41,8 +41,8 @@ RUN apt-get update \
  && apt-get upgrade -y --no-install-recommends \
  && apt-get install -y --no-install-recommends ca-certificates libpcre2-8-0 \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd --gid 1000 kobe \
- && useradd --uid 1000 --gid 1000 --no-create-home --home-dir /tmp/home --shell /usr/sbin/nologin kobe \
+ && groupadd --gid 1000 kaiju \
+ && useradd --uid 1000 --gid 1000 --no-create-home --home-dir /tmp/home --shell /usr/sbin/nologin kaiju \
  && mkdir -p /input /output \
  && chown 1000:1000 /output \
  && chown -R 0:0 /opt/kaiju \
