@@ -40,7 +40,7 @@ defaults and its sha256 check are unchanged.
 
 ## Evidence (acceptance criteria → test or command output)
 
-- **ac-1:** shards install with `embeddings.local.model.url=http://<k3d gateway>:18080/model.gguf`;
+- **ac-1:** shards install with `embeddings.local.model.url=http://<k3d gateway>:18089/model.gguf`;
   `helm template` with those overrides renders `MODEL_URL` and the extra egress rule; the init
   container script (sha256 check) is untouched. `scripts/ci-embeddings-model.sh` tested locally:
   `pin` reads the values, `serve` answers, `verify` fails on a wrong file.

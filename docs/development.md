@@ -135,7 +135,7 @@ GGUF from a public URL, which on a fresh cluster per shard was slow enough to ex
 The `model` job of `e2e.yml` keeps the file in the GitHub Actions cache, keyed by the sha256 pinned
 in `charts/kaiju/values.yaml` (`embeddings.local.model.sha256`), downloading it with retries and a
 sha256 check only on a miss. Each shard restores it and serves it from the runner
-(`scripts/ci-embeddings-model.sh serve`, port 18080, exported as `KAIJU_E2E_MODEL_PORT`); the
+(`scripts/ci-embeddings-model.sh serve`, port 18089 (18080 is the gate scripts' ingress port-forward), exported as `KAIJU_E2E_MODEL_PORT`); the
 installs in `e2e/run/10-deploy.sh` and `e2e/gate4-restore.sh` then set
 `embeddings.local.model.url` to the k3d network's gateway and allow that address in
 `embeddings.local.networkPolicy.extraEgress` (`e2e/lib/embeddings-model.sh`). The init container

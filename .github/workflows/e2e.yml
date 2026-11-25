@@ -346,7 +346,7 @@ jobs:
       - name: The embeddings model, served to the cluster from the runner
         env:
           HIT: ${{ steps.model-cache.outputs.cache-hit }}
-          PORT: "18080"
+          PORT: "18089"
         run: |
           dir="${RUNNER_TEMP}/embeddings-model"
           if [ "${HIT}" != true ] || ! scripts/ci-embeddings-model.sh verify "${dir}"; then
