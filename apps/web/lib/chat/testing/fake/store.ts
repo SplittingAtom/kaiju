@@ -202,6 +202,11 @@ export class FakeStore {
    * Absent: a 409 `context_unsupported`. A read-only thread is a 403 `not_owner`.
    */
   readonly threadContext = new Map<string, { status: number; body: unknown }[]>();
+  /**
+   * `GET /v1/threads/{id}/stats` (KOBE-842) bodies (wire casing, merged over empty stats), by
+   * thread id; absent: empty stats.
+   */
+  readonly threadStats = new Map<string, Json>();
 
   /**
    * `GET /v1/threads/{id}/context/memories` items (KOBE-382, wire casing), by thread id; absent:

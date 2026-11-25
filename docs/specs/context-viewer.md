@@ -140,6 +140,12 @@ shows what the files hold; so can they when the tools run as Pi's own uid (no to
 the executor (KOBE-167) the capture is out of the tools' reach; the session file is on the
 workspace volume, which the tools can write (as for every session).
 
+**Conversation stats (KOBE-842).** Under the gauge's legend the panel shows the conversation's
+stats from `GET /v1/threads/{id}/stats` (`@kaiju/protocol` thread-stats.ts): counts aggregated in
+Postgres inside `withTeam()` from runs, entries, approvals, `run_usage` and kept `run_events`,
+never from the sandbox. Unlike the context itself (CV2), the route answers whoever may read the
+thread, like `GET /v1/threads/{id}/usage`. Figures not stored are null ("Not recorded").
+
 ## 3. Known gaps
 
 - `session` source: no memory, project instructions or viewed file; no context window.

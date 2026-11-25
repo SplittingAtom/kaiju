@@ -227,12 +227,22 @@
   outline: 1px solid var(--kaiju-status-attention);
 }
 
-.stack {
+/* The right column: the gauge and its legend, the conversation stats under them (KOBE-842). */
+.side {
   display: flex;
   flex: 1;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
   min-width: 0;
   min-height: 0;
+}
+
+.stack {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 12rem;
 }
 
 /* Filled from the bottom: the first kind the model saw lies lowest, free space on top. */
@@ -404,11 +414,17 @@ button.legendRow:hover {
     min-height: 16rem;
   }
 
+  /* The gauge stays above the text, the stats go below it. */
+  .side {
+    display: contents;
+  }
+
   .stack {
     flex: 0 0 auto;
     flex-direction: column;
     order: -1;
     gap: 0.5rem;
+    min-height: 0;
   }
 
   .bar {
@@ -584,4 +600,76 @@ button.legendRow[data-selected] {
 }
 .tkMeta {
   color: var(--kaiju-ctx-syntax-meta);
+}
+
+/* Conversation stats (KOBE-842): compact groups of term/value rows under the gauge. */
+.stats {
+  overflow-y: auto;
+  flex: 0 1 auto;
+  box-sizing: border-box;
+  max-height: 55%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--kaiju-radius-md);
+  font-size: 0.8125rem;
+}
+
+.statsTitle {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.statsGroup + .statsGroup {
+  margin-top: 0.5rem;
+}
+
+.statsGroupTitle {
+  margin: 0 0 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.statsList {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, auto) minmax(0, 1fr);
+  gap: 0.125rem 0.75rem;
+  margin: 0;
+}
+
+.statsRow {
+  display: contents;
+}
+
+.statsTerm {
+  color: var(--muted-foreground);
+  cursor: help;
+}
+
+.statsValue {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.statsValue[data-not-recorded] {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.statsStatus,
+.statsNote {
+  margin: 0.25rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+@media (width < 640px) {
+  .stats {
+    flex: 0 0 auto;
+    max-height: none;
+    order: 1;
+  }
 }

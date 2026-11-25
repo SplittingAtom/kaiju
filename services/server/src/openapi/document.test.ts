@@ -15,6 +15,7 @@ import { threadMarkerRoutes } from "../routes/thread-markers.js";
 import { threadBranchSummaryRoutes } from "../routes/thread-branch-summary.js";
 import { threadCompactRoutes } from "../routes/thread-compact.js";
 import { threadContextRoutes } from "../routes/thread-context.js";
+import { threadStatsRoutes } from "../routes/thread-stats.js";
 import { threadRoutes } from "../routes/threads.js";
 import { threadFolderRoutes } from "../routes/thread-folders.js";
 import { threadFileLinkRoutes, workspaceFileThreadRoutes } from "../routes/thread-file-links.js";
@@ -99,6 +100,7 @@ describe("OpenAPI document (KOBE-34 ac-1)", () => {
         ...mountedOperations("/v1/threads", threadCompactRoutes(fakeDeps)),
         ...mountedOperations("/v1/threads", threadBranchSummaryRoutes(fakeDeps)),
         ...mountedOperations("/v1/threads", threadContextRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadStatsRoutes(fakeDeps)),
         ...mountedOperations("/v1/threads", threadUsageRoutes(fakeDeps)),
         ...mountedOperations("/v1/threads", threadFeedbackRoutes(fakeDeps)),
         ...mountedOperations("/v1/threads", threadFileLinkRoutes(fakeDeps)),

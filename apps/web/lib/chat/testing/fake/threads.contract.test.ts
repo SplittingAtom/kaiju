@@ -6,6 +6,7 @@ import {
   learnStateSchema,
   threadBranchesResponseSchema,
   threadContextMemoriesSchema,
+  threadStatsSchema,
   threadFileLinksResponseSchema,
   threadFileLinksSchema,
   threadFilesResponseSchema,
@@ -73,6 +74,7 @@ describe("fake threads area: answers parse with the protocol (KOBE-717)", () => 
     fake.learnState.set(threadId, { blocker: null });
     fake.fileLinks.link(threadId, { path: "plan.md", access: "write" });
     await expectContract(fake, threadContextMemoriesSchema, "GET", `${at}/context/memories`);
+    await expectContract(fake, threadStatsSchema, "GET", `${at}/stats`);
     await expectContract(fake, learnStateSchema, "GET", `${at}/learn`);
     await expectContract(fake, learnStartResponseSchema, "POST", `${at}/learn`, { mode: "new" });
     await expectContract(fake, threadFilesResponseSchema, "GET", `${at}/files`);

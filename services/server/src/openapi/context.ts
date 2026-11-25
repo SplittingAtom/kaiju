@@ -4,6 +4,7 @@ import {
   threadContextMemoriesSchema,
   threadContextSchema,
   threadContextWakingSchema,
+  threadStatsSchema,
   type ThreadContextErrorCode,
 } from "@kaiju/protocol";
 
@@ -92,6 +93,36 @@ export function contextOpenApiPaths(): Record<string, Record<string, unknown>> {
         },
       },
     },
+    "/v1/threads/{id}/stats": {
+      get: {
+        operationId: "getThreadStats",
+        summary: "The conversation's stats",
+        description:
+          "Whoever may read the thread (its owner, and members it is shared with) reads counts " +
+          "aggregated from what Kaiju stores about it, over every branch: turns and their " +
+          "outcomes, compactions, branch summaries, models, tool calls (failed, refused), " +
+          "approvals, skills used, MCP connector calls, tokens (input, output, cached, " +
+          "reasoning), thinking levels, cost, and the median and 95th percentile of the time to " +
+          "the first token and of a turn's duration. A figure Kaiju does not have is null, not 0. " +
+          "`refused`, `failures_by_code` and `first_token` come from a turn's live events, which " +
+          "are folded away 7 days after it ends (`events` counts kept and folded turns). Read " +
+          "from the database only; no sandbox is woken.",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        ],
+        responses: {
+          "200": json("ThreadStats", "The figures."),
+          "400": json("Error", "`invalid_request`: bad id."),
+          "401": json("Error", "`unauthenticated`: no session."),
+          "403": json("Error", "`forbidden`, `not_a_team_member`."),
+          "404": json(
+            "Error",
+            "`thread_not_found`: unknown id, or a thread the caller may not read.",
+          ),
+          "429": json("Error", "`rate_limited`: more than 30 reads a minute."),
+        },
+      },
+    },
   };
 }
 
@@ -101,5 +132,6 @@ export function contextOpenApiSchemas(): Record<string, JsonSchema> {
     ThreadContextWaking: schemaOf(threadContextWakingSchema),
     ThreadContextError: schemaOf(threadContextErrorSchema),
     ThreadContextMemories: schemaOf(threadContextMemoriesSchema),
+    ThreadStats: schemaOf(threadStatsSchema),
   };
 }

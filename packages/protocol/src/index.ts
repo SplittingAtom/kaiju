@@ -56,6 +56,7 @@ export * from "./skill-request.js";
 export * from "./item-references.js";
 export * from "./app-cards.js";
 export * from "./context-viewer.js";
+export * from "./thread-stats.js";
 export * from "./branding.js";
 export * from "./agent-roster.js";
 export * from "./agent-ownership.js";
