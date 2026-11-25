@@ -112,7 +112,7 @@ afterAll(async () => {
 });
 
 describe("the seed (ac-1)", () => {
-  it("publishes every Kaiju skill (kobe-guide too, KOBE-620) as approved Kaiju catalog versions with no person, tagged Default", async () => {
+  it("publishes every Kaiju skill (kaiju-guide too, KOBE-620, KOBE-833) as approved Kaiju catalog versions with no person, tagged Default", async () => {
     const results = await seed();
     expect(results.map((r) => [r.name, r.action])).toEqual(
       KAIJU_SKILL_NAMES.map((n) => [n, "created"]),
@@ -131,9 +131,9 @@ describe("the seed (ac-1)", () => {
       expect(r, r.name).toMatchObject({
         sp: "kaiju",
         vp: "kaiju",
-        // skill-creator 1.2.0 saves Workbench drafts (KOBE-442, after 1.1.0's eval suites of
-        // KOBE-328); the others are still 1.0.0.
-        semver: r.name === "skill-creator" ? "1.2.0" : "1.0.0",
+        // Each one's version under the new name (KOBE-833): skill-creator 1.3.0 (1.2.0 saved
+        // Workbench drafts, KOBE-442), the others 1.1.0.
+        semver: r.name === "skill-creator" ? "1.3.0" : "1.1.0",
         state: "approved",
         submitted_by: null,
         reviewed_by: null,
@@ -226,7 +226,7 @@ describe("the seed (ac-1)", () => {
 });
 
 describe("the Default sync installs them in every team (ac-1)", () => {
-  it("every team gets all of them (kobe-guide too, KOBE-620), On by default, Track within major, by Kaiju, and no notice", async () => {
+  it("every team gets all of them (kaiju-guide too, KOBE-620, KOBE-833), On by default, Track within major, by Kaiju, and no notice", async () => {
     // A team opts out of pdf before the sync reaches it: the opt-out is kept.
     await f.fx.admin.query(
       `INSERT INTO team_skill_optouts (team_id, skill_id, opted_out_by)
@@ -369,7 +369,7 @@ describe("versions only rise", () => {
   async function variant(name: string, semver: string, extra?: Record<string, string>) {
     const dir = await mkdtemp(path.join(tmpdir(), "kaiju-variant-"));
     await cp(path.join(KAIJU_PACKAGES_DIR, name), path.join(dir, name), { recursive: true });
-    // Either manifest name: the built-ins keep the pre-rename one until KOBE-833.
+    // Either manifest name (the built-ins have `kaiju.skill.yaml` since KOBE-833).
     const yaml = path.join(
       dir,
       name,
@@ -377,7 +377,7 @@ describe("versions only rise", () => {
     );
     await writeFile(
       yaml,
-      (await readFile(yaml, "utf8")).replace("version: 1.0.0", `version: ${semver}`),
+      (await readFile(yaml, "utf8")).replace(/^version: .*$/m, `version: ${semver}`),
     );
     const md = path.join(dir, name, "SKILL.md");
     await writeFile(md, `${await readFile(md, "utf8")}\nChanged in ${semver}.\n`);
@@ -391,7 +391,7 @@ describe("versions only rise", () => {
   }
 
   it("refuses new bytes under a held semver or a lower one, and Block packages", async () => {
-    expect((await seed([await variant("docx", "1.0.0")]))[0]).toMatchObject({
+    expect((await seed([await variant("docx", "1.1.0")]))[0]).toMatchObject({
       action: "refused",
       reason: "version_reused",
     });
@@ -400,12 +400,12 @@ describe("versions only rise", () => {
       reason: "version_not_newer",
     });
     expect(
-      (await seed([await variant("docx", "1.2.0", { "tool.exe": "MZ\u0000binary" })]))[0],
+      (await seed([await variant("docx", "1.3.0", { "tool.exe": "MZ\u0000binary" })]))[0],
     ).toMatchObject({ action: "refused", reason: "scan_block" });
   });
 
   it("a raised minor is published and reaches Default installs through Track within major", async () => {
-    const next = await variant("docx", "1.1.0");
+    const next = await variant("docx", "1.2.0");
     expect((await seed([next]))[0]).toMatchObject({ action: "published" });
     const { config } = await startOf(upgraded, await pinnedThread(upgraded.owner, ["docx"]));
     expect(config.skill_bundles?.find((b) => b.name === "docx")?.sha256).toBe(

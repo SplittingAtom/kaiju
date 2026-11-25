@@ -22,11 +22,19 @@ const PUBLISHED: Record<string, Record<string, { runtime: string; package: strin
       runtime: "ca616d138484673b4e44d30b80fefbad6054ddd502d9d9903e3ddaf1a30364cb",
       package: "d996440a667e8af726f13b0cca72ecab611e1a020cfc6feefe171f95587746e3",
     },
+    "1.1.0": {
+      runtime: "ca616d138484673b4e44d30b80fefbad6054ddd502d9d9903e3ddaf1a30364cb",
+      package: "0f794e60d870a9ed737c45acb211d192ad5a69f7c642479964cb8b25d180608e",
+    },
   },
   charts: {
     "1.0.0": {
       runtime: "6763bc70d0c5520684484b65a4c79fad26d72f14b5cb54ef8de98e978837198f",
       package: "75253531719219817620ef28dad9bd1b59525efb9fd2a74cca2488ee83f73310",
+    },
+    "1.1.0": {
+      runtime: "6763bc70d0c5520684484b65a4c79fad26d72f14b5cb54ef8de98e978837198f",
+      package: "9b97c3057808adb311c4c954ddd46da21d36d7501e99a187defb9d842f8d9de3",
     },
   },
   docx: {
@@ -34,11 +42,19 @@ const PUBLISHED: Record<string, Record<string, { runtime: string; package: strin
       runtime: "b778622cc009f1a871aea325e14cbc5cf25ca3a2b99638d0806f648a33490b53",
       package: "e9be33a6714640c488bd77ea170fdff3a0c430c26a6b8008e08187c039b66b5f",
     },
+    "1.1.0": {
+      runtime: "b778622cc009f1a871aea325e14cbc5cf25ca3a2b99638d0806f648a33490b53",
+      package: "dbdf7729b2d053c7ccc47fcdb72ec6f93ed0ad8623ed5512191d319afe8d1926",
+    },
   },
   pdf: {
     "1.0.0": {
       runtime: "c9f0565f3b800856bccfa222a2634f84978d7b61bddcc6948be5a328f5823628",
       package: "7fcb96529d9e5acdcdd274da9ca6a1c0493f41d0f93a521005661d5978df5b62",
+    },
+    "1.1.0": {
+      runtime: "c9f0565f3b800856bccfa222a2634f84978d7b61bddcc6948be5a328f5823628",
+      package: "d259e79823f8b5b7c03954dab47051c622306d5ee4d8ec3754a792d0db011342",
     },
   },
   xlsx: {
@@ -46,11 +62,19 @@ const PUBLISHED: Record<string, Record<string, { runtime: string; package: strin
       runtime: "223e931984da44638277a682948c5602a35f9406b7f7d97751bcce5f3ed56a32",
       package: "cb090f9141f04e088b680dfd2aaae17211831bccde5b54a63b3903c315450f69",
     },
+    "1.1.0": {
+      runtime: "223e931984da44638277a682948c5602a35f9406b7f7d97751bcce5f3ed56a32",
+      package: "74c68d39f0c83d0e50d1cd5919d6e93034f3e635a16a7760e99cba985bf87836",
+    },
   },
   "code-review": {
     "1.0.0": {
       runtime: "1dafd860ab601ec3de3076ee33824896fea60914e00384f5195b86ad8d5d4f81",
       package: "4e5d9fd34c09b6b76601c3c635b985b7cf5881bd22b9283b2ed2162144f72753",
+    },
+    "1.1.0": {
+      runtime: "1dafd860ab601ec3de3076ee33824896fea60914e00384f5195b86ad8d5d4f81",
+      package: "5c3f4b1358fab068d84cd39da3bf9e1027dd32f1bd860a0f98615b4c99a1689a",
     },
   },
   "skill-creator": {
@@ -66,17 +90,30 @@ const PUBLISHED: Record<string, Record<string, { runtime: string; package: strin
       runtime: "391af382e4841a621515dc3632d0151da15f4251c984b8950e7f535b77ba7e15",
       package: "4e719e33003b019a95ff293c302fca3879b3599ca639d2615e8806dc025599d0",
     },
+    "1.3.0": {
+      runtime: "b38a1154d4bc65a1489c392cecfa6ba5d6883cf26bd40775f1ff55e9887bd374",
+      package: "8c8f05fa8eb0d04c262eb6a2260cbbec1d9d0eb3a9645a228783a1c33c52d39c",
+    },
   },
+  // Published as kobe-guide (KOBE-620); KOBE-833 renamed the catalog skill (migration 0263), which
+  // keeps this version as history next to kaiju-guide's.
   "kobe-guide": {
     "1.0.0": {
       runtime: "1e0cb2f5361a760c0ac4d4ec37f92ed6d3c77f4b0e3714b6c92e0eef57d877de",
       package: "ee3440a8e9ce7fdc7acc8346a23d6e2c7caaa9e731245bda0cb833b8601c5a88",
     },
   },
+  // 1.1.0, above kobe-guide's 1.0.0, so a Site whose renamed skill holds that version takes it.
+  "kaiju-guide": {
+    "1.1.0": {
+      runtime: "5da4919d03438a8ea5aa2875887f5cde8ce242ad6feb7a04dcd6a900ca6cfa1f",
+      package: "b455ad30284658042bb9914940a4ea87011c4d1a38ce1252aaaf6262ea30af64",
+    },
+  },
 };
 
 describe("the Kaiju package set (KOBE-317)", () => {
-  it("holds exactly the former built-ins and kobe-guide (KOBE-620), each named like its directory", async () => {
+  it("holds exactly the former built-ins and kaiju-guide (KOBE-620, KOBE-833), each named like its directory", async () => {
     const set = await loadKaijuPackages();
     expect(set.map((p) => p.name)).toEqual([...KAIJU_SKILL_NAMES]);
     expect([...DB_KAIJU_SKILL_NAMES]).toEqual([...KAIJU_SKILL_NAMES]);
@@ -174,7 +211,7 @@ describe("skill-creator saves to the Workbench (KOBE-442 ac-4)", () => {
 
   it("calls save_skill_draft after validation and describes the Workbench flow", async () => {
     const { creator, text } = await files();
-    expect(creator.semver).toBe("1.2.0");
+    expect(creator.semver).toBe("1.3.0");
     const md = text("SKILL.md");
     expect(md).toContain("save_skill_draft");
     expect(md).toMatch(/after\s+`validate\.py`\s+passes/i);

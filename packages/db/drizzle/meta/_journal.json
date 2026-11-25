@@ -1842,6 +1842,13 @@
       "when": 1795588729281,
       "tag": "0262_kaiju_stored_values",
       "breakpoints": true
+    },
+    {
+      "idx": 263,
+      "version": "7",
+      "when": 1795601660387,
+      "tag": "0263_kaiju_guide_skill",
+      "breakpoints": true
     }
   ]
 }

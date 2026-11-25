@@ -1,6 +1,6 @@
 apiVersion: kobe.dev/skill/v1
 name: kaiju-guide
-version: 1.0.0
+version: 1.1.0
 summary: "Answers questions about using and administering Kaiju from the Kaiju user guide, read through the kaiju connector's docs tools."
 license: Apache-2.0
-changelog: Published by Kaiju with the Kaiju guide's docs tools (KOBE-620).
+changelog: Kaiju's guide skill under its new name, saying Kaiju and the kaiju connector's tool names (mcp__kaiju__docs_index), with the manifest kaiju.skill.yaml (KOBE-833).

@@ -27,10 +27,11 @@ export const KAIJU_GALLERY_KEY = "kaiju";
  * their keys are no longer listed here. Raise an entry's generation with every change to its file.
  * Generation 5 (KOBE-831) renamed it from Kobe: migration 0262 moved the key `kobe` to `kaiju`
  * (same row, id and versions), and the seed renames it only where a site admin has not customized
- * it (a customized one keeps its name and is offered the update).
+ * it (a customized one keeps its name and is offered the update). Generation 6 (KOBE-833) names the
+ * guide skill by its new name, `kaiju-guide` (migration 0263 renamed the catalog skill).
  */
 export const GALLERY_DEFINITIONS: readonly GalleryDefinition[] = [
-  { key: KAIJU_GALLERY_KEY, generation: 5, file: KAIJU_FILE },
+  { key: KAIJU_GALLERY_KEY, generation: 6, file: KAIJU_FILE },
 ];
 
 export interface ParsedGalleryDefinition {

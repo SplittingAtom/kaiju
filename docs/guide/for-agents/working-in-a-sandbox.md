@@ -94,7 +94,7 @@ other connector (no internet access, no key). Its tools are named `mcp__kaiju__<
 
 - **Docs tools** (`docs_index`, `docs_page`, `docs_search`, `docs_full`) are always available,
   whatever your agent's connector list, in every run including scheduled ones. Use them for any
-  question about using or administering Kaiju; the **kobe-guide** skill says how.
+  question about using or administering Kaiju; the **kaiju-guide** skill says how.
 - **Admin tools** (`team_<area>_<verb>`, `site_<area>_<verb>`) do Team console and Site console
   work. Use them only when they are in your tool list: they are listed only when the site and the
   team turned them on, your agent uses the kaiju connector, and the user's role allows them. Never

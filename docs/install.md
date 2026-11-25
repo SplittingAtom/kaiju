@@ -1917,6 +1917,25 @@ path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   rewrite cannot be undone by going back a release: restore the `kaiju backup` taken before the
   upgrade (backups taken before the upgrade restore with this release's `kaiju restore` and are
   migrated like any database).
+- **Kaiju's skills and the memory extractor's prompt under the new name (Kaiju rename,
+  KOBE-833, migration `0263_kaiju_guide_skill`).** The migration renames Kaiju's catalog skill
+  `kobe-guide` to `kaiju-guide` in place (same skill id, so team installs with their pins and
+  access, opt-outs, blocks, tags and its version 1.0.0 stay with it) and updates the reserved-name
+  CHECK `registry_skills_kobe_names`; both names stay reserved for Kaiju. Where a maintainer's
+  catalog skill already holds `kaiju-guide`, Kaiju's keeps `kobe-guide` (the Job logs a `KOBE-833`
+  notice) and the server's seed skips the new version, logged. The new server publishes each of
+  Kaiju's eight skills as a new version (`kaiju.skill.yaml` manifests, text that says Kaiju and
+  `mcp__kaiju__` tool names): 1.1.0, skill-creator 1.3.0. Installs on Track within major or Latest
+  move to them at their next run; an install a team admin pinned stays on its version and shows
+  Update available. Agents that list `kobe-guide` (drafts, published versions, copies of the
+  gallery agent) get `kaiju-guide` with no change; the gallery agent's generation 6 lists
+  `kaiju-guide`. Learning passes use the extractor prompt `memory-extractor-v3` (only the product
+  name changed from v2); candidates record the version that proposed them. During the rolling
+  `helm upgrade`, pods of the previous release find no `kobe-guide` catalog skill: an agent run
+  there that names it is told the skill is not available, and their seed fails for `kobe-guide`
+  (logged and retried) because the new trigger `registry_skills_pre_rename_name` refuses a second
+  Kaiju skill under the old name. Going back a release needs the `kaiju backup` taken before the
+  upgrade.
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
   namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces

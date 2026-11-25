@@ -45,15 +45,22 @@ export const KAIJU_SKILL_NAMES = [
   "xlsx",
   "code-review",
   "skill-creator",
-  "kobe-guide",
+  "kaiju-guide",
 ] as const;
 /**
- * Kaiju names added after Sites could already hold them (KOBE-620): a non-Kaiju catalog skill that
- * took one before the upgrade keeps it (the check below lets it, so the migration never fails),
- * the server refuses new ones (`isKaijuSkillName`), and the Kaiju seed skips that skill there
- * (logged) instead of publishing it. Every name here is also in `KAIJU_SKILL_NAMES`.
+ * Names Kaiju's skills had before the rename (KOBE-833; mirrors the keys of
+ * `PRE_RENAME_KAIJU_SKILL_NAMES`, @kaiju/protocol): still reserved for publisher `kaiju`, which
+ * holds such a row only on a Site where migration 0263 could not rename it (the new name was
+ * taken), and no longer shipped.
  */
-export const KAIJU_SKILL_NAMES_ADDED_LATER = ["kobe-guide"] as const;
+export const KAIJU_PRE_RENAME_SKILL_NAMES = ["kobe-guide"] as const;
+/**
+ * Kaiju names added after Sites could already hold them (KOBE-620, KOBE-833): a non-Kaiju catalog
+ * skill that took one before the upgrade keeps it (the check below lets it, so the migration never
+ * fails), the server refuses new ones (`isKaijuSkillName`), and the Kaiju seed skips that skill
+ * there (logged) instead of publishing it. Every name here is also reserved for Kaiju.
+ */
+export const KAIJU_SKILL_NAMES_ADDED_LATER = ["kobe-guide", "kaiju-guide"] as const;
 const NOTE_MAX = 4000;
 const quoted = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`).join(", "));
 
@@ -152,7 +159,7 @@ export const registrySkills = pgTable(
     // name or be renamed away from one.
     check(
       "registry_skills_kobe_names",
-      sql`(${t.publisher} = 'kaiju') = (${t.name} IN (${quoted(KAIJU_SKILL_NAMES)})) OR (${t.publisher} <> 'kaiju' AND ${t.name} IN (${quoted(KAIJU_SKILL_NAMES_ADDED_LATER)}))`,
+      sql`(${t.publisher} = 'kaiju') = (${t.name} IN (${quoted([...KAIJU_SKILL_NAMES, ...KAIJU_PRE_RENAME_SKILL_NAMES])})) OR (${t.publisher} <> 'kaiju' AND ${t.name} IN (${quoted(KAIJU_SKILL_NAMES_ADDED_LATER)}))`,
     ),
     // All or nothing, and only on a Kaiju skill (KOBE-495).
     check(

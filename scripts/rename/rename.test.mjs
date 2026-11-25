@@ -507,9 +507,22 @@ test("real allowlist: owners of the cases from review round 1", () => {
     ["scripts/hadron.sh", 'echo "KOBE-${BASH_REMATCH[2]}"', "KOBE-", "permanent"],
     ["apps/web/lib/admin/nav/types.ts", "type TicketId = `KOBE-${number}`;", "KOBE-", "permanent"],
     ["packages/db/drizzle/0137_kobe_published_skills.sql", "", "kobe", "permanent"],
-    ["services/server/builtin-skills/pdf/kobe.skill.yaml", "", "kobe", "RN-20"],
-    ["services/server/builtin-skills/kobe-guide/SKILL.md", "", "kobe", "permanent"],
-    ["packages/db/src/schema/registry.ts", '  "kobe-guide",', "kobe-guide", "permanent"],
+    // KOBE-833 (RN-20) renamed the built-in packages: their old paths are no longer kept.
+    ["services/server/builtin-skills/pdf/kobe.skill.yaml", "", "kobe", "unowned"],
+    ["services/server/builtin-skills/kobe-guide/SKILL.md", "", "kobe", "unowned"],
+    [
+      "packages/db/src/schema/registry.ts",
+      'export const KAIJU_PRE_RENAME_SKILL_NAMES = ["kobe-guide"] as const;',
+      "kobe-guide",
+      "permanent",
+    ],
+    ["services/server/src/agents/x.ts", "  - kobe-guide", "kobe-guide", "unowned"],
+    [
+      "services/server/src/memory/learn/prompt/v2/prompt.ts",
+      "  \"You are Kobe's memory extractor.",
+      "Kobe",
+      "permanent",
+    ],
     ["packages/db/src/schema/registry.ts", "    kobeShippedVersion: text(),", "kobe", "permanent"],
     ["services/server/src/x.ts", "row.kobeShippedVersion", "kobe", "permanent"],
     [

@@ -107,7 +107,7 @@ describe("the gallery agent renamed where an install has not changed it (KOBE-83
       name: "Kaiju",
       slug: KAIJU_GALLERY_KEY,
       currentVersion: 2,
-      gallery: { customized: false, generation: 5, updateAvailable: false },
+      gallery: { customized: false, generation: 6, updateAvailable: false },
     });
     const history = await as.admin.get(`${BASE}/${agentId}/versions`);
     expect(history.json.versions.map((v: { version: number }) => v.version)).toEqual([2, 1]);
@@ -158,7 +158,7 @@ describe("the gallery agent renamed where an install has not changed it (KOBE-83
     expect(one.json.agent).toMatchObject({
       name: "Kobe",
       prompt: "You are Kobe, edited for us.",
-      gallery: { customized: true, generation: 5, customizedFromGeneration: 4 },
+      gallery: { customized: true, generation: 6, customizedFromGeneration: 4 },
     });
     expect(one.json.agent.gallery.updateAvailable).toBe(true);
     // The fork still names the version it came from.

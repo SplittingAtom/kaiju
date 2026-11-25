@@ -97,8 +97,11 @@ docs/guide/agents/agents.md /(?<=rename have a `)kobe(?=:` section instead)/
 ** /\b(?:skill\.kobe\.(?:published|detached)|mcp\.kobe\.team_level_changed|skill\.reset_to_kobe)\b/
 ** /\bkobe(?:CommitId)\b/
 
-== permanent: Built-in skill names, pinned by a CHECK constraint (registry_skills_kobe_names); the built-in connectors' URLs moved to `kaiju-server.internal` with KOBE-826 (migration 0260 updated `connectors_builtin_url`)
-** !services/server/builtin-skills/** /\bkobe-guide\b/
+== permanent: The name `kobe-guide` Kaiju's guide skill had before the rename (owner decision 2026-11-24, spec §11 A12, KOBE-833): migration 0263 renamed the catalog skill `kaiju-guide` in place, but the old name stays reserved for Kaiju (a Site where a maintainer held the new name keeps Kaiju's skill under it, and a maintainer's skill that held the old name before KOBE-620 keeps it), agents that list it (drafts, immutable published versions, copies of the gallery agent) read it as `kaiju-guide` for good, and its published 1.0.0 stays in the pinned version table; so the reserved-name lists behind the CHECK `registry_skills_kobe_names`, the read-time mapping, the pinned table, the upgrade, seed, maintainer and resolution tests that build that state, and the docs that explain the rename keep it (the migrations and their snapshots are in the applied-migrations group)
+packages/db/src/schema/registry.ts packages/protocol/src/skill-catalog.ts services/server/src/skills/renamed-skills.ts services/server/src/skills/kaiju-packages.test.ts /\bkobe-guide\b/
+packages/db/src/kaiju-guide-skill-upgrade.db.test.ts packages/db/src/kobe-guide-skill-upgrade.db.test.ts packages/db/src/kaiju-stored-values-upgrade.db.test.ts /\bkobe-guide\b/
+services/server/src/skills/kaiju-guide-rename.db.test.ts services/server/src/skills/skill-maintainers.db.test.ts /\bkobe-guide\b/
+docs/guide/whats-new.md docs/install.md docs/skill-package.md /\bkobe-guide\b/
 
 == permanent: Extractor prompts v1 and v2, whose bytes are pinned (`fixtures/prompt.sha256`) and recorded with their fixtures: kept for history and for the eval's replay of earlier runs; KOBE-833 (RN-20, owner decision 2026-11-24 A12) made v3 with the new name
 services/server/src/memory/learn/prompt/v1/prompt.ts services/server/src/memory/learn/prompt/v2/prompt.ts /\bKobe\b/
@@ -268,12 +271,5 @@ docs/install.md /(?<=\*\*Stored `)kobe(?=` values are)|(?<=RENAME VALUE ')kobe(?
 
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
-
-== RN-20 (KOBE-833): Built-in skill packages and versioned model prompts, whose bytes are pinned (published package hashes, prompt fixtures): new skill and prompt versions under the new name, with an eval and new recordings (owner decision 2026-11-24, was Q12)
-services/server/builtin-skills/** /kobe/i
-services/server/src/memory/learn/prompt/build.ts /\bKobe\b/
-path services/server/builtin-skills/skill-creator/scripts/kobe_rules.py /kobe/
-path services/server/builtin-skills/** /\bkobe(?=\.skill\.yaml$)/
-path services/server/builtin-skills/** /\bkobe(?=-guide\/)/
 
 # ---------------------------------------------------------------------------------------------

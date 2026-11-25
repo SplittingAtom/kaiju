@@ -5,6 +5,7 @@ import type { ResolveInput, SkillOmission, SkillRef } from "../resolver/resolve.
 import { blockedAmong } from "../skills/blocklist.js";
 import { frozenStates, type FrozenSkill } from "../skills/frozen.js";
 import { personalSkillUsage, teamSkillStates } from "../skills/review.js";
+import { currentSkillNames } from "../skills/renamed-skills.js";
 import { readPersonalSkillsDisabled } from "../skills/settings.js";
 import { loadCatalogFacts } from "./catalog-facts.js";
 
@@ -273,8 +274,9 @@ export async function loadSkillFacts(
   },
 ): Promise<SkillFacts> {
   // Kaiju's skills (the former built-ins, KOBE-317) are catalog names like any other: they resolve
-  // through the team's install (or the Default install still on its way, catalog-facts.ts).
-  const listed = [...new Set(args.agentSkillNames)];
+  // through the team's install (or the Default install still on its way, catalog-facts.ts). A name
+  // one of them had before the rename reads as the new one (KOBE-833).
+  const listed = await currentSkillNames(tx, args.agentSkillNames);
   const access = await teamSkillAccess(tx, args.teamId, args.userId);
   const named = await namedLocalSkills(tx, args.teamId, listed, access, args.frozen);
   const { namedCatalog, teamNames } = named;

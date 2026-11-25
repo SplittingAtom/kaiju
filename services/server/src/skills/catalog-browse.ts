@@ -10,6 +10,7 @@ import { cardUsage, type CardUsage } from "./usage-views.js";
 import { hostStandings } from "../egress/host-standing.js";
 import { readPackage } from "./registry/review-diff.js";
 import { readCatalogSwitches } from "./settings.js";
+import { namesResolvingTo } from "./renamed-skills.js";
 
 /**
  * The member's Catalog tab (KOBE-336, SK25): every catalog skill with an approved version, as seen
@@ -390,14 +391,18 @@ const FILES_CACHE_MAX = 100;
 
 /** This team's agents (current version, not archived) that name the skill. */
 async function agentsUsing(tx: KaijuTx, teamId: string, name: string) {
+  const names = sql.join(
+    (await namesResolvingTo(tx, name)).map((n) => sql`${n}`),
+    sql`, `,
+  );
   const res = await tx.execute<{ id: string; name: string }>(sql`
     SELECT a.id, COALESCE(a.frontmatter ->> 'name', a.slug) AS name
       FROM team_agents a
       JOIN team_agent_versions v
         ON v.team_id = a.team_id AND v.agent_id = a.id AND v.version = a.current_version
      WHERE a.team_id = ${teamId} AND a.archived_at IS NULL
-       AND (v.frontmatter -> 'skills' ? ${name}
-            OR v.frontmatter -> 'skills' -> 'exclusive' ? ${name})
+       AND (v.frontmatter -> 'skills' ?| ARRAY[${names}]
+            OR v.frontmatter -> 'skills' -> 'exclusive' ?| ARRAY[${names}])
      ORDER BY name`);
   return res.rows;
 }

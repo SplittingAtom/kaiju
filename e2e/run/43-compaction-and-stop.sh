@@ -243,7 +243,7 @@ JS
     kaiju_dir() { # a Kaiju skill's directory in the run's skill store: its newest approved version
       printf '/run/kaiju-skills/store/sk-%s' "$(psql_kaiju "SELECT v.runtime_hash FROM registry_versions v JOIN registry_skills s ON s.id = v.skill_id WHERE s.name = '$1' AND s.publisher = 'kaiju' AND v.state = 'approved' ORDER BY v.seq DESC LIMIT 1")"
     }
-    contains "Kaiju skills: the eight are Kaiju-published catalog skills, approved (KOBE-317; kobe-guide KOBE-620)" '^8$' \
+    contains "Kaiju skills: the eight are Kaiju-published catalog skills, approved (KOBE-317; kaiju-guide KOBE-620, KOBE-833)" '^8$' \
       "$(psql_kaiju "SELECT count(DISTINCT s.name) FROM registry_skills s JOIN registry_versions v ON v.skill_id = s.id WHERE s.publisher = 'kaiju' AND v.state = 'approved'")"
     contains "the gallery holds exactly one agent, Kaiju (key kaiju)" '^kaiju$' \
       "$(psql_kaiju "SELECT string_agg(gallery_key, ',') FROM site_agents WHERE scope = 'gallery' AND archived_at IS NULL")"

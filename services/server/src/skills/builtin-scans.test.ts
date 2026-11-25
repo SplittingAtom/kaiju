@@ -10,18 +10,19 @@ import { loadKaijuPackages } from "./kaiju-packages.js";
  * table deliberately, with the reason in the ticket's ledger.
  */
 const PINNED: Readonly<Record<string, { verdict: string; rules: readonly string[] }>> = {
-  "charts@1.0.0": { verdict: "pass", rules: [] },
+  // KOBE-833: every built-in's next version under the new name (manifest kaiju.skill.yaml, text).
+  "charts@1.1.0": { verdict: "pass", rules: [] },
   // The review demo's planted fake Stripe key (scripts/sample.py); Caution since KOBE-379 H-2.
-  "code-review@1.0.0": { verdict: "caution", rules: ["secret:stripe-key"] },
-  "data-analysis@1.0.0": { verdict: "pass", rules: [] },
-  "docx@1.0.0": { verdict: "pass", rules: [] },
-  "kobe-guide@1.0.0": { verdict: "pass", rules: [] },
-  "pdf@1.0.0": { verdict: "pass", rules: [] },
-  "skill-creator@1.2.0": {
+  "code-review@1.1.0": { verdict: "caution", rules: ["secret:stripe-key"] },
+  "data-analysis@1.1.0": { verdict: "pass", rules: [] },
+  "docx@1.1.0": { verdict: "pass", rules: [] },
+  "kaiju-guide@1.1.0": { verdict: "pass", rules: [] },
+  "pdf@1.1.0": { verdict: "pass", rules: [] },
+  "skill-creator@1.3.0": {
     verdict: "caution",
     rules: ["network:node-http", "network:python-http", "network:socket"],
   },
-  "xlsx@1.0.0": { verdict: "pass", rules: [] },
+  "xlsx@1.1.0": { verdict: "pass", rules: [] },
 };
 
 describe("builtin skill scans", () => {

@@ -1,6 +1,6 @@
 apiVersion: kobe.dev/skill/v1
 name: skill-creator
-version: 1.2.0
+version: 1.3.0
 summary: "Write, validate and save a Kaiju skill to the Workbench: SKILL.md, scripts, references and evals, by Kaiju's rules."
 license: Apache-2.0
-changelog: Saves the skill as a private Workbench draft with save_skill_draft and hands over to the Workbench (test pane, Run evals, Save version) (KOBE-442).
+changelog: Published under the name Kaiju, with the manifest kaiju.skill.yaml (KOBE-833).
