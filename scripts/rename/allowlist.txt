@@ -221,6 +221,10 @@ services/sandbox-agent/src/kaiju-models/protocol.ts services/sandbox-agent/src/k
 == permanent: The model-error prefix `kobe.model_error:` of sandboxes still on the image from before the rename, read next to the new one so a run on such a sandbox during an upgrade fails with its real code (KOBE-827); removed with the one-release fallbacks in KOBE-754
 packages/protocol/src/sandbox-wire/pi-events.ts /\bkobe\.model_error:/
 
+== permanent: The in-cluster model provider's pre-rename gateway name `kobe-local` (owner decision 2026-11-24, spec §11 A5, KOBE-828): migration 0261 rewrites the stored model ids, but `run_usage` is append-only and keeps them, so readers map `kobe-local/<model>` to `kaiju-local/<model>` for good (usage reports, vectors made under the old id); the protocol constant, the comments that say what was renamed, the gateway's one-release alias (removed in KOBE-754), the upgrade and restore tests that build a pre-rename database and the docs that explain the rename keep the old name
+packages/protocol/src/local-models.ts **/*local-models*.test.ts **/*pre-rename-local*.test.ts **/*local-rename*.test.ts /\bkobe-local\b/
+** /\bkobe-local(?=\/<model>|` before the rename)/
+
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
 

@@ -51,7 +51,7 @@ describe("withLocalEmbedding", () => {
     });
   });
 
-  it("names the gateway model `kobe-local/<model>`", () => {
+  it("names the gateway model `kaiju-local/<model>`", () => {
     expect(localEmbeddingGatewayModel(LOCAL)).toBe("kobe-local/nomic-embed-text");
   });
 
