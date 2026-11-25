@@ -83,7 +83,7 @@ async function submitted(verdict = "pass", extra?: Uint8Array): Promise<string> 
   const valid = validateZipBundle(
     zipSync({
       "SKILL.md": strToU8(`---\nname: ${name}\ndescription: Scans. Use it.\n---\n# Scan\n`),
-      "kobe.skill.yaml": strToU8(
+      "kaiju.skill.yaml": strToU8(
         `apiVersion: kobe.dev/skill/v1\nname: ${name}\nversion: 1.0.0\nsummary: S.\nlicense: MIT\n`,
       ),
       ...(extra ? { "assets/blob.txt": extra } : {}),

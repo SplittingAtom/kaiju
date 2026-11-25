@@ -17,7 +17,7 @@ function version(name: string, semver: string, body: string, id: string): Mirror
     ["SKILL.md", enc(`---\nname: ${name}\ndescription: test\n---\n${body}\n`)],
     ["scripts/build.py", enc("print('hi')\n")],
     ["evals/cases.yaml", enc("cases: []\n")],
-    ["kobe.skill.yaml", enc(`apiVersion: kobe.dev/skill/v1\nname: ${name}\nversion: ${semver}\n`)],
+    ["kaiju.skill.yaml", enc(`apiVersion: kobe.dev/skill/v1\nname: ${name}\nversion: ${semver}\n`)],
     ["provenance.json", enc(`{"name":"${name}"}`)],
   ]);
   const hashes = skillPackageHashes(files, { kaijuProvenance: true });

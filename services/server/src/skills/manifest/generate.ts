@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { and, eq, registryTags, withTeam, type KaijuDb } from "@kaiju/db";
-import { MANIFEST_PATH, SERVER_CALL_LIMITS, type KaijuSkillManifest } from "@kaiju/protocol";
+import { isManifestPath, SERVER_CALL_LIMITS, type KaijuSkillManifest } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
 import { resolveRunModel } from "../../runs/models.js";
@@ -9,7 +9,7 @@ import { manifestMessages } from "./prompt.js";
 import { ManifestYamlError, manifestFromReply, manifestYaml } from "./parse.js";
 
 /**
- * Drafts a version's `kobe.skill.yaml` with a model (KOBE-564): one server-originated call
+ * Drafts a version's `kaiju.skill.yaml` with a model (KOBE-564): one server-originated call
  * (KOBE-234 contract, purpose `skill_manifest`, no run) on the model the member chose, which
  * must be enabled for the team (never a fallback to another model), under the member's own budget
  * lines. The reply is cleaned to the package contract (`parse.ts`); the name, version and
@@ -171,7 +171,7 @@ export function createSkillManifestGenerator(
         semver: request.semver,
         skillMd: new TextDecoder().decode(md),
         paths: [...request.files.keys()]
-          .filter((p) => p !== SKILL_MD_PATH && p !== MANIFEST_PATH)
+          .filter((p) => p !== SKILL_MD_PATH && !isManifestPath(p))
           .sort(),
         knownTags: await knownTags(),
         // Fresh per call, never stored or sent anywhere but in this call's user message.

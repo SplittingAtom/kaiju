@@ -30,7 +30,7 @@ export const createSchema = z.strictObject({
 });
 export const patchSchema = z.strictObject({ shared: z.boolean() });
 export const destinationSchema = z.enum(["team", "personal"]);
-/** Create kobe.skill.yaml in a draft (KOBE-564): the member's model and license choice. */
+/** Create kaiju.skill.yaml in a draft (KOBE-564): the member's model and license choice. */
 export const manifestChoiceSchema = z.strictObject({
   model: z.string().min(1).max(128).optional(),
   license: z.string().regex(LICENSE_PATTERN).optional(),

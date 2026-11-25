@@ -22,7 +22,7 @@ import { CASES, manifest, skillMd } from "../testing/registry-fixtures.js";
 /**
  * KOBE-345 (SK30): exports. A visible team or personal version as a portable zip (with or
  * without evals/) under one `<name>/` folder, only once approved and never blocklisted; a
- * catalog version's portable zip for members, its full package (kobe.skill.yaml, provenance.json)
+ * catalog version's portable zip for members, its full package (kaiju.skill.yaml, provenance.json)
  * for Site catalog managers only, hashing back to the recorded hashes. Deterministic bytes; an
  * export round-trips through the governed import (KOBE-344).
  */
@@ -47,7 +47,7 @@ const upload = (name: string, semver: string) =>
   new RawBody(
     zipSync({
       "SKILL.md": strToU8(skillMd(name)),
-      "kobe.skill.yaml": strToU8(manifest(name, semver)),
+      "kaiju.skill.yaml": strToU8(manifest(name, semver)),
       "scripts/run.py": strToU8("print('hi')\n"),
       "evals/cases.yaml": strToU8(CASES),
     }),
@@ -93,7 +93,7 @@ async function catalogVersion(
   const valid = validateZipBundle(
     zipSync({
       "SKILL.md": strToU8(skillMd(name)),
-      "kobe.skill.yaml": strToU8(manifest(name, semver)),
+      "kaiju.skill.yaml": strToU8(manifest(name, semver)),
       "evals/cases.yaml": strToU8(CASES),
     }),
   );
@@ -301,7 +301,7 @@ describe("exports (KOBE-345)", () => {
     expect(pkg.status, pkg.text).toBe(200);
     const { folder, files } = unpack(pkg.bytes);
     expect(folder).toBe("ledger");
-    expect(files.has("kobe.skill.yaml")).toBe(true);
+    expect(files.has("kaiju.skill.yaml")).toBe(true);
     const provenance = provenanceSchema.parse(
       JSON.parse(new TextDecoder().decode(files.get("provenance.json"))),
     );

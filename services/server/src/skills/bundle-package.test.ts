@@ -1,13 +1,13 @@
 import { strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { describe, expect, it } from "vitest";
 import { packageHash, runtimeHash } from "@kaiju/protocol/node";
-import { validateZipBundle } from "./bundle.js";
+import { readManifestIn, TWO_MANIFESTS_MESSAGE, validateZipBundle } from "./bundle.js";
 import { sha256Hex } from "./storage.js";
 
 /**
  * Uploads under the KOBE-309 package contract (KOBE-310): authored packages that today's path
- * rules refuse are refused before anything is stored; `evals/` and `kobe.skill.yaml` stay in the
- * package but never reach the runtime zip a sandbox gets; a `kobe.skill.yaml` must be valid and
+ * rules refuse are refused before anything is stored; `evals/` and `kaiju.skill.yaml` stay in the
+ * package but never reach the runtime zip a sandbox gets; a `kaiju.skill.yaml` must be valid and
  * name the skill.
  */
 const SKILL_MD = "---\nname: demo-skill\ndescription: Does demo things\n---\n# Demo\n";
@@ -32,7 +32,7 @@ describe("authored packages today's rules refuse", () => {
   });
 
   it("refuses case variants of reserved names and a file named evals", () => {
-    for (const path of ["Evals/cases.yaml", "KOBE.SKILL.YAML", "evals"])
+    for (const path of ["Evals/cases.yaml", "KAIJU.SKILL.YAML", "evals"])
       expect(failure({ [path]: "x" }).code, path).toBe("reserved_path");
   });
 
@@ -49,12 +49,12 @@ describe("authored packages today's rules refuse", () => {
 });
 
 describe("runtime and package zips", () => {
-  it("keeps evals/ and kobe.skill.yaml out of the runtime zip and in the package", () => {
+  it("keeps evals/ and kaiju.skill.yaml out of the runtime zip and in the package", () => {
     const files = {
       "SKILL.md": SKILL_MD,
       "scripts/run.py": "print(1)\n",
       "evals/cases.yaml": "cases: []\n",
-      "kobe.skill.yaml": MANIFEST,
+      "kaiju.skill.yaml": MANIFEST,
     };
     const result = validateZipBundle(zip(files));
     if (!result.ok) throw new Error(result.error.code);
@@ -63,7 +63,7 @@ describe("runtime and package zips", () => {
     expect(names(b.packageZip ?? new Uint8Array())).toEqual([
       "SKILL.md",
       "evals/cases.yaml",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
       "scripts/run.py",
     ]);
     expect(sha256Hex(b.zip)).toBe(runtimeHash(asMap(files)));
@@ -81,16 +81,44 @@ describe("runtime and package zips", () => {
     expect(result.value.manifest).toBeNull();
   });
 
-  it("refuses a kobe.skill.yaml that is invalid or names another skill", () => {
-    expect(failure({ "kobe.skill.yaml": "apiVersion: kobe.dev/skill/v9\n" }).code).toBe(
+  it("refuses a kaiju.skill.yaml that is invalid or names another skill", () => {
+    expect(failure({ "kaiju.skill.yaml": "apiVersion: kobe.dev/skill/v9\n" }).code).toBe(
       "invalid_manifest",
     );
-    expect(failure({ "kobe.skill.yaml": "name: [unclosed\n" }).code).toBe("invalid_manifest");
-    expect(failure({ "kobe.skill.yaml": "a: 1\na: 2\n" }).code).toBe("invalid_manifest");
+    expect(failure({ "kaiju.skill.yaml": "name: [unclosed\n" }).code).toBe("invalid_manifest");
+    expect(failure({ "kaiju.skill.yaml": "a: 1\na: 2\n" }).code).toBe("invalid_manifest");
     const other = failure({
-      "kobe.skill.yaml": MANIFEST.replace("name: demo-skill", "name: other"),
+      "kaiju.skill.yaml": MANIFEST.replace("name: demo-skill", "name: other"),
     });
     expect(other).toMatchObject({ code: "invalid_manifest" });
     expect(other.message).toMatch(/name/);
+  });
+
+  it("reads kobe.skill.yaml, the manifest's name before the rename (KOBE-825)", () => {
+    const result = validateZipBundle(zip({ "SKILL.md": SKILL_MD, "kobe.skill.yaml": MANIFEST }));
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.manifest).toMatchObject({ name: "demo-skill", version: "1.2.0" });
+    expect(names(result.value.zip)).toEqual(["SKILL.md"]);
+    // A package persisted before the rename keeps its path, so its hashes don't move.
+    expect(names(result.value.packageZip ?? new Uint8Array())).toEqual([
+      "SKILL.md",
+      "kobe.skill.yaml",
+    ]);
+    const bad = failure({ "kobe.skill.yaml": "a: 1\na: 2\n" });
+    expect(bad).toMatchObject({ code: "invalid_manifest" });
+    expect(bad.message).toMatch(/^kobe\.skill\.yaml: /);
+  });
+
+  it("refuses a package holding both manifest names, with a message naming both (KOBE-825 ac-2)", () => {
+    const both = failure({ "kaiju.skill.yaml": MANIFEST, "kobe.skill.yaml": MANIFEST });
+    expect(both.code).toBe("invalid_manifest");
+    expect(both.message).toBe(TWO_MANIFESTS_MESSAGE);
+    expect(both.message).toMatch(/kaiju\.skill\.yaml.*kobe\.skill\.yaml/);
+    expect(
+      readManifestIn(
+        asMap({ "kaiju.skill.yaml": MANIFEST, "kobe.skill.yaml": MANIFEST }),
+        "demo-skill",
+      ),
+    ).toMatchObject({ ok: false, error: { message: TWO_MANIFESTS_MESSAGE } });
   });
 });

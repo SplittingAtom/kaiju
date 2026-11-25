@@ -5,11 +5,12 @@ import type { ApiError } from "../../lib/api/client";
 import { manifestWrittenNotice, type ManifestDraftChoice } from "../../lib/skills/manifest-choice";
 import { ErrorNotice } from "../admin/error-notice";
 import { Notice } from "../ui/console";
+import { isManifestPath } from "@kaiju/protocol";
 import { ManifestChoiceForm } from "./create-manifest";
 import { MANIFEST, type DraftEditor } from "./use-draft-editor";
 
 /**
- * Create kobe.skill.yaml in the Workbench editor (KOBE-564): under the file tree while the draft
+ * Create kaiju.skill.yaml in the Workbench editor (KOBE-564): under the file tree while the draft
  * has none. The chosen model drafts it from the draft's SKILL.md and files, it is written at the
  * revision the author sees (pending edits first, like any change), and the tree opens on it. Its
  * version is a placeholder that Save version writes.
@@ -28,7 +29,8 @@ export function DraftManifest({
   const [error, setError] = useState<ApiError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const create = editor.createManifest;
-  const has = editor.files.some((f) => f.path === MANIFEST);
+  // Either name (KOBE-825): a draft of an older version keeps kobe.skill.yaml.
+  const has = editor.files.some((f) => isManifestPath(f.path));
   if (!create || (has && notice === null)) return null;
   // Made just now: the offer is spent, the notice stays until the author moves on.
   if (has)
@@ -55,7 +57,7 @@ export function DraftManifest({
     <div className="mt-3 flex flex-col gap-2">
       <ManifestChoiceForm
         teamId={teamId}
-        intro="No kobe.skill.yaml yet: Kaiju can write one from SKILL.md and the files with a model of your choice. Promotion to the Site needs it."
+        intro="No kaiju.skill.yaml yet: Kaiju can write one from SKILL.md and the files with a model of your choice. Promotion to the Site needs it."
         pending={pending}
         done={notice !== null}
         onCreate={(choice) => void run(choice)}

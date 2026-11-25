@@ -235,7 +235,7 @@ export function deleteDraftFile(
 }
 
 /**
- * Create kobe.skill.yaml in an open draft (KOBE-564): the chosen model drafts it from the
+ * Create kaiju.skill.yaml in an open draft (KOBE-564): the chosen model drafts it from the
  * draft's SKILL.md and files; written at `rev` like any file (the server's `If-Match`).
  */
 export function createDraftManifest(

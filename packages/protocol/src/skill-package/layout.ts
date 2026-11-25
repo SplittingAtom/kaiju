@@ -5,11 +5,17 @@
  *   SKILL.md            required; the portable skill (Agent Skills format)     runtime
  *   scripts/ references/ assets/ (and any other path)                          runtime
  *   evals/              eval suite: cases.yaml, fixtures/ (KOBE-324)           package only
- *   kobe.skill.yaml     author-edited registry metadata (manifest.ts)          package only
+ *   kaiju.skill.yaml    author-edited registry metadata (manifest.ts)          package only
  *   provenance.json     Kaiju-generated at promotion (provenance.ts)            neither hash
  *
+ * The manifest's pre-rename name `kobe.skill.yaml` ({@link LEGACY_MANIFEST_PATH}) is still read
+ * everywhere (KOBE-825, owner decision 2026-11-24): packages, Registry versions and exports made
+ * before the rename keep it, and a stored package is never rewritten (its hash names the path).
+ * Kaiju writes {@link MANIFEST_PATH} for anything new; a package holding both is refused
+ * (`two_manifests`).
+ *
  * Three file sets, all addressed by path → bytes:
- *  - the **runtime payload**: every file except `evals/**`, `kobe.skill.yaml` and
+ *  - the **runtime payload**: every file except `evals/**`, the manifest (either name) and
  *    `provenance.json`. Its canonical zip is the bundle a sandbox gets (`--skill <dir>`), and its
  *    SHA-256, the **runtime hash**, is the skill's identity everywhere (blocklist, resolver,
  *    materialization): the `content_hash` columns.
@@ -22,7 +28,12 @@
  */
 
 export const SKILL_MD_PATH = "SKILL.md";
-export const MANIFEST_PATH = "kobe.skill.yaml";
+/** The manifest's name: what Kaiju writes for a new manifest (KOBE-825). */
+export const MANIFEST_PATH = "kaiju.skill.yaml";
+/** The manifest's pre-rename name, read like {@link MANIFEST_PATH}, never written anew. */
+export const LEGACY_MANIFEST_PATH = "kobe.skill.yaml";
+/** Both manifest names, the current one first. */
+export const MANIFEST_PATHS = [MANIFEST_PATH, LEGACY_MANIFEST_PATH] as const;
 export const PROVENANCE_PATH = "provenance.json";
 export const EVALS_DIR = "evals/";
 /** Conventional payload directories (Agent Skills); other paths are allowed too. */
@@ -41,8 +52,31 @@ export const MAX_PACKAGE_PATH_BYTES = 240;
 
 export type PackageFileRole = "runtime" | "evals" | "manifest" | "provenance";
 
+/** Whether `path` is the manifest, under either name. */
+export function isManifestPath(path: string): boolean {
+  return path === MANIFEST_PATH || path === LEGACY_MANIFEST_PATH;
+}
+
+/**
+ * The manifest path a file set holds, the current name first; null when it has none. A set
+ * holding both is not a valid package ({@link checkPackagePaths}), so callers that read an
+ * unchecked set check that first.
+ */
+export function manifestPathIn(files: { has(path: string): boolean }): string | null {
+  return MANIFEST_PATHS.find((p) => files.has(p)) ?? null;
+}
+
+/**
+ * Where an edit writes the manifest: where the package already has it (an old package keeps
+ * `kobe.skill.yaml`, so its other bytes and its review diff stay as they were), else under the
+ * current name.
+ */
+export function manifestWritePath(files: { has(path: string): boolean }): string {
+  return manifestPathIn(files) ?? MANIFEST_PATH;
+}
+
 export function packageFileRole(path: string): PackageFileRole {
-  if (path === MANIFEST_PATH) return "manifest";
+  if (isManifestPath(path)) return "manifest";
   if (path === PROVENANCE_PATH) return "provenance";
   if (path.startsWith(EVALS_DIR)) return "evals";
   return "runtime";
@@ -57,7 +91,7 @@ const pick = (files: PackageFiles, keep: (role: PackageFileRole) => boolean): Pa
 export const runtimeFiles = (files: PackageFiles): PackageFiles =>
   pick(files, (role) => role === "runtime");
 
-/** Everything the package hash covers: the payload, `evals/` and `kobe.skill.yaml`. */
+/** Everything the package hash covers: the payload, `evals/` and the manifest. */
 export const hashedPackageFiles = (files: PackageFiles): PackageFiles =>
   pick(files, (role) => role !== "provenance");
 
@@ -112,6 +146,7 @@ export type PackageProblemCode =
   | "reserved_name_case"
   | "reserved_directory"
   | "provenance_not_allowed"
+  | "two_manifests"
   | "skill_md_missing";
 
 export interface PackageProblem {
@@ -129,7 +164,7 @@ export interface CheckPackageOptions {
 }
 
 /** The reserved root names, exact spelling; case variants are refused (`reserved_name_case`). */
-const RESERVED_ROOT = [SKILL_MD_PATH, MANIFEST_PATH, PROVENANCE_PATH, EVALS_DIR.slice(0, -1)];
+const RESERVED_ROOT = [SKILL_MD_PATH, ...MANIFEST_PATHS, PROVENANCE_PATH, EVALS_DIR.slice(0, -1)];
 const RESERVED_BY_FOLD = new Map(RESERVED_ROOT.map((name) => [fold(name), name]));
 
 /**
@@ -146,11 +181,13 @@ function fold(s: string): string {
  *  - two paths equal under case folding (they collide on case-insensitive filesystems);
  *  - a path that is both a file and a directory (`scripts` and `scripts/x`, case-folded): no
  *    filesystem or git tree can hold both;
- *  - a root name that is a case variant of a reserved one (`Evals/`, `KOBE.SKILL.YAML`,
+ *  - a root name that is a case variant of a reserved one (`Evals/`, `KAIJU.SKILL.YAML`,
  *    `skill.md`): refused rather than treated as payload or as reserved, so an author on a
  *    case-insensitive filesystem never ships evals into the runtime by accident;
  *  - a file named `evals` (the directory is reserved);
  *  - a `provenance.json` without {@link CheckPackageOptions.kaijuProvenance};
+ *  - both manifest names (`two_manifests`, on the old name's path): which one counts would be a
+ *    guess, so the author keeps one;
  *  - no `SKILL.md` at the root.
  */
 export function checkPackagePaths(
@@ -175,6 +212,7 @@ export function checkPackagePaths(
     const segments = key.split("/");
     for (let i = 1; i < segments.length; i++) dirs.add(segments.slice(0, i).join("/"));
   }
+  const hasManifest = valid.includes(MANIFEST_PATH);
   for (const path of valid) {
     const key = fold(path);
     const segments = key.split("/");
@@ -192,6 +230,8 @@ export function checkPackagePaths(
     if (path === EVALS_DIR.slice(0, -1)) problems.push({ path, problem: "reserved_directory" });
     if (path === PROVENANCE_PATH && !options.kaijuProvenance)
       problems.push({ path, problem: "provenance_not_allowed" });
+    if (path === LEGACY_MANIFEST_PATH && hasManifest)
+      problems.push({ path, problem: "two_manifests" });
   }
   if (!skillMd) problems.push({ path: SKILL_MD_PATH, problem: "skill_md_missing" });
   return problems;

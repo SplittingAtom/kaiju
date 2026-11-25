@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { structuredPatch } from "diff";
 import { unzipSync } from "fflate";
+import { isManifestPath } from "@kaiju/protocol";
 import type { BlobStore } from "../../retention/blobs.js";
 import { readVerified } from "../blob-read.js";
 
@@ -8,7 +9,7 @@ import { readVerified } from "../blob-read.js";
  * The review screen's diff (KOBE-334, SK23): a submitted package against the skill's currently
  * approved version, file by file, with a unified patch for each changed text file. Both packages
  * are read from the catalog store and verified against the hashes their rows record (never
- * trusted); `evals/` and `kobe.skill.yaml` are part of the package, so they are diffed too.
+ * trusted); `evals/` and `kaiju.skill.yaml` are part of the package, so they are diffed too.
  */
 
 /** Where a version's package zip is and how to verify it (its row's columns). */
@@ -182,7 +183,7 @@ const CODE = /\.(sh|bash|zsh|py|js|mjs|cjs|ts|rb|pl|php|ps1|bat|cmd|lua|r|go|rs)
 
 export function readingRank(path: string): number {
   if (path === "SKILL.md") return 0;
-  if (path === "kobe.skill.yaml") return 1;
+  if (isManifestPath(path)) return 1;
   if (path.startsWith("scripts/") || path.startsWith("bin/") || CODE.test(path)) return 2;
   return 3;
 }
@@ -223,7 +224,7 @@ function fileDiff(
 }
 
 /**
- * `after` against `before` (null: a new skill, every file added). SKILL.md, kobe.skill.yaml and
+ * `after` against `before` (null: a new skill, every file added). SKILL.md, kaiju.skill.yaml and
  * `scripts/` come first (review-335 M2), then the rest; within each, changed, added, removed and
  * unchanged files, each by path. A file the request's budget didn't reach is `skipped`: the review
  * screen loads it on its own (`diffOneFile`).

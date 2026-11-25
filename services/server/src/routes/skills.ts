@@ -270,7 +270,7 @@ function bundleHandler(r: SkillRouteContext) {
  * A portable export (KOBE-345, SK30): `?format=portable` (the payload, SKILL.md and its files)
  * or `portable_evals` (with `evals/`), under one `<name>/` folder, deterministic bytes. Who sees
  * the skill may export it; a team version only once its team review approved it, and never a
- * blocklisted one. The full package (kobe.skill.yaml, provenance.json) is the catalog's.
+ * blocklisted one. The full package (kaiju.skill.yaml, provenance.json) is the catalog's.
  */
 function exportHandler(r: SkillRouteContext) {
   const { db, skillStore, visible, reviewsFor } = r;

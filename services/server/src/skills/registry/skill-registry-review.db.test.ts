@@ -182,7 +182,7 @@ describe("the queue and the review screen (ac-1)", () => {
     }[];
     expect(files.slice(0, 2).map((f) => [f.path, f.status])).toEqual([
       ["SKILL.md", "changed"],
-      ["kobe.skill.yaml", "changed"],
+      ["kaiju.skill.yaml", "changed"],
     ]);
     expect(files[0]?.hunks[0]?.lines).toEqual(
       expect.arrayContaining(["-Add a totals row.", "+Add a totals row and a chart."]),

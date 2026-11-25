@@ -2,7 +2,7 @@
 
 The files of one skill version as promotion, the Skills Registry, export and the git mirror carry
 them (KOBE-309; spec Kaiju v1.2 Skills System, SK14, SK19, SK29). The code is the contract:
-`packages/protocol/src/skill-package/` (layout, canonical zip, `kobe.skill.yaml`,
+`packages/protocol/src/skill-package/` (layout, canonical zip, `kaiju.skill.yaml`,
 `provenance.json`) and `@kaiju/protocol/node` (`runtimeHash`, `packageHash`). Golden vectors:
 `@kaiju/protocol/testing` `SKILL_HASH_VECTORS`; golden fixtures:
 `packages/protocol/src/skill-package/fixtures/`.
@@ -15,9 +15,17 @@ The eval suite's own format is in [skill-evals.md](skill-evals.md).
 SKILL.md                 required; portable skill (Agent Skills format)   runtime payload
 scripts/ references/ assets/ (any other path too)                         runtime payload
 evals/cases.yaml         eval suite (KOBE-324), evals/fixtures/           package only
-kobe.skill.yaml          author-edited registry metadata                  package only
+kaiju.skill.yaml         author-edited registry metadata                  package only
 provenance.json          Kaiju-generated at promotion                      in neither hash
 ```
+
+The manifest's name before the rename, `kobe.skill.yaml`, is read like `kaiju.skill.yaml`
+everywhere (KOBE-825): uploads, imports, drafts and the Workbench, scans, exports, the Registry and
+the git mirror. Packages persisted before the rename (object-store packages, Registry versions,
+exports people downloaded) keep it and are never rewritten, since the package hash covers the
+path. Kaiju writes `kaiju.skill.yaml` for a new manifest and edits an existing one where it is
+(Save version's number, a fork's name). A package holding both names is refused
+(`two_manifests`), as which one counts would be a guess. The runtime payload excludes both names.
 
 Only these root names are reserved: `scripts/evals/x` is payload. `checkPackagePaths` is the
 validator, and the zip and hash functions run it themselves (no unchecked entry point; they throw
@@ -31,7 +39,7 @@ validator, and the zip and hash functions run it themselves (no unchecked entry 
   and so is a path that is both a file and a directory (`scripts` and `scripts/x`): no
   filesystem or git tree holds both. Directories are implied, never entries.
 - **Reserved names are exact:** a root name that is a case variant of one (`Evals/`,
-  `KOBE.SKILL.YAML`, `Provenance.json`, `skill.md`) is **refused**, not treated as payload or as
+  `KAIJU.SKILL.YAML`, `Provenance.json`, `skill.md`) is **refused**, not treated as payload or as
   reserved. A file named `evals` is refused.
 - **`provenance.json` is Kaiju's:** authored content (uploads, drafts, imports, built-ins) never
   carries one; it is refused unless Kaiju assembled the package (`{ kaijuProvenance: true }`).
@@ -45,13 +53,13 @@ validator, and the zip and hash functions run it themselves (no unchecked entry 
 
 Both are lowercase hex SHA-256 of a **canonical zip**:
 
-| Hash         | Covers                                                                | Used for                                                                                               |
-| ------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Runtime hash | the payload: all but `evals/**`, `kobe.skill.yaml`, `provenance.json` | identity everywhere: `content_hash`, blocklist, resolver, materialization, the sandbox's `--skill` dir |
-| Package hash | all but `provenance.json`                                             | `package_hash`, Registry versions, scorecard freshness (SK20), package zips                            |
+| Hash         | Covers                                                                 | Used for                                                                                               |
+| ------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Runtime hash | the payload: all but `evals/**`, `kaiju.skill.yaml`, `provenance.json` | identity everywhere: `content_hash`, blocklist, resolver, materialization, the sandbox's `--skill` dir |
+| Package hash | all but `provenance.json`                                              | `package_hash`, Registry versions, scorecard freshness (SK20), package zips                            |
 
 `provenance.json` records both hashes, so neither covers it. For a skill without `evals/` and
-`kobe.skill.yaml`, the two hashes are equal.
+`kaiju.skill.yaml`, the two hashes are equal.
 
 ### Identity: one hash per payload
 
@@ -63,7 +71,7 @@ runtimeHash`. The resolver and the Pi `--skill` directory are unchanged.
 Before KOBE-310 the server hashes the whole upload. For a bundle without the reserved root names
 the stored `content_hash` already is its runtime hash (the server test in
 `services/server/src/skills/package-hash.test.ts` proves the bytes are equal). Two kinds of stored
-bundle are different: one that holds `evals/` or `kobe.skill.yaml` at its root has a
+bundle are different: one that holds `evals/` or the manifest (`kobe.skill.yaml` then) at its root has a
 `content_hash` that is **not** its runtime hash (its sandboxes receive those files today), and one
 that today's path rules refuse (a root `provenance.json`, invisible or bidi characters, a
 file/folder clash, a case variant such as `Evals/`) has no runtime hash at all. KOBE-310 therefore:
@@ -73,13 +81,13 @@ file/folder clash, a case variant such as `Evals/`) has no runtime hash at all. 
    runtime zips, so `content_hash = runtimeHash` for every new version.
 2. **Recomputes every stored hash once** (on upgrade, in the background), from the stored zip:
    - valid under today's rules and equal: nothing to do;
-   - valid but different (`evals/`, `kobe.skill.yaml`): an **alias** from the stored hash to the
+   - valid but different (`evals/`, the manifest under either name): an **alias** from the stored hash to the
      runtime hash;
    - refused by today's rules: **legacy**. Its stored hash stays its only identity (no alias);
      it keeps running exactly as before, but is never promotable or exportable until re-saved,
      and the re-save goes through today's rules and gets a runtime hash. (A root
      `provenance.json` is legacy, never hashed with `kaijuProvenance`.)
-   - a stored `kobe.skill.yaml` (never read before KOBE-310) that is invalid or names another
+   - a stored manifest (`kobe.skill.yaml`, never read before KOBE-310) that is invalid or names another
      skill, or an invalid SKILL.md, also makes it legacy.
 
    Every checked hash is recorded with its outcome, so the recompute is **idempotent and
@@ -130,31 +138,31 @@ tool can reproduce them:
   (no comment). No directory entries, extra fields, data descriptors, encryption or zip64.
 - Nothing depends on the clock, the timezone, file modes or the tool's compression.
 
-## kobe.skill.yaml
+## kaiju.skill.yaml
 
 UTF-8, at most 16 KiB, one YAML 1.2 (core schema) document whose root is a mapping; duplicate
 keys and aliases are refused (`MANIFEST_YAML_OPTIONS` for eemeli/yaml). Unknown keys are refused.
 
-| Key                                  | Rule                                                                                 |
-| ------------------------------------ | ------------------------------------------------------------------------------------ |
-| `apiVersion`                         | `kobe.dev/skill/v1`                                                                  |
-| `name`                               | skill name pattern; must equal the SKILL.md frontmatter `name`                       |
-| `version`                            | MAJOR.MINOR.PATCH (9 digits a part, no pre-release); must equal the saved semver     |
-| `summary`                            | 1–280 characters (UTF-16 code units, as everywhere in this contract)                 |
-| `tags`                               | ≤ 10 unique topic slugs (unknown ones are proposals)                                 |
-| `license`                            | SPDX expression or `Proprietary`; required at submission (SK20), not in a draft      |
-| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kaiju sets maintainers on approval (SK24)      |
-| `capabilities.egress`                | ≤ 50 exact lowercase hosts (no wildcard, no port), checked against the team's egress |
-| `capabilities.packages.pip` / `.npm` | ≤ 50 requirement strings each, no whitespace                                         |
-| `compatibility.kobe` / `.pi`         | short version ranges, informational                                                  |
-| `changelog`                          | 1–1024 characters                                                                    |
+| Key                                  | Rule                                                                                                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiVersion`                         | `kobe.dev/skill/v1`                                                                                                                                               |
+| `name`                               | skill name pattern; must equal the SKILL.md frontmatter `name`                                                                                                    |
+| `version`                            | MAJOR.MINOR.PATCH (9 digits a part, no pre-release); must equal the saved semver                                                                                  |
+| `summary`                            | 1–280 characters (UTF-16 code units, as everywhere in this contract)                                                                                              |
+| `tags`                               | ≤ 10 unique topic slugs (unknown ones are proposals)                                                                                                              |
+| `license`                            | SPDX expression or `Proprietary`; required at submission (SK20), not in a draft                                                                                   |
+| `maintainers`                        | ≤ 20 unique `user:<uuid>`; a request: Kaiju sets maintainers on approval (SK24)                                                                                   |
+| `capabilities.egress`                | ≤ 50 exact lowercase hosts (no wildcard, no port), checked against the team's egress                                                                              |
+| `capabilities.packages.pip` / `.npm` | ≤ 50 requirement strings each, no whitespace                                                                                                                      |
+| `compatibility.kaiju` / `.pi`        | short version ranges, informational; `.kobe`, the pre-rename key, is still read, and when both `.kaiju` and `.kobe` are present they must be equal (else refused) |
+| `changelog`                          | 1–1024 characters                                                                                                                                                 |
 
 Nothing in it grants anything: capabilities and any frontmatter never pre-approve tools.
 
 ### Created by Kaiju on request (KOBE-564)
 
 A version promoted without a manifest is refused (`no_manifest`, SK20). The Promote panel then
-offers **Create kobe.skill.yaml**: the member picks a model the team enables (the team default
+offers **Create kaiju.skill.yaml**: the member picks a model the team enables (the team default
 preselected) and their license (`Proprietary`, `Apache-2.0`, `MIT`, `BSD-3-Clause`; the license is
 the author's statement, never the model's), and Kaiju asks that model, in one server-originated
 call (purpose `skill_manifest`, [server-model-calls.md](design/server-model-calls.md)), for the
@@ -209,7 +217,8 @@ it; a scorecard from another package hash is stale.
 
 Kaiju's own catalog skills (KOBE-317, SK4: the former built-ins) are published by the server
 itself from the package set it ships (`services/server/builtin-skills/<name>/`, each with a
-`kobe.skill.yaml` whose `version` is the catalog semver). Nobody promotes them, so their
+manifest whose `version` is the catalog semver; they keep `kobe.skill.yaml` until their next
+versions, KOBE-833, since renaming the file changes the package hash). Nobody promotes them, so their
 provenance (stored with the version) has `publisher: "kobe"` instead of `source`, `submitter`,
 `confirmedBy`, `origin` and `scorecard`; the rest is as above. Their versions only rise: changing a
 skill's files means raising its `version` (`kaiju-packages.test.ts` holds each version's hashes),
@@ -249,7 +258,7 @@ SKILL.md frontmatter checks, the same package limits) and publish a new version 
 ## Scan limits
 
 The scanner (`@kaiju/skill-scanner`) reads every text file of the package, `evals/` and
-`kobe.skill.yaml` included, up to the upload's per-file limit (10 MiB): no file an upload accepts
+`kaiju.skill.yaml` included, up to the upload's per-file limit (10 MiB): no file an upload accepts
 is refused or blocked for its size alone. A server test ties the two limits together. The scanner
 reads at most 20 MiB of text per package. A package with more text than that (the upload allows
 25 MiB uncompressed) gets one Block finding, `scan-incomplete`, so bulk never buys a Pass. A file

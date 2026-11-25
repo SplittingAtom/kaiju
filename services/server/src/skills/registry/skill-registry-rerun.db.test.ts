@@ -78,7 +78,7 @@ async function submittedVersion(name: string, submitter: string): Promise<string
   const valid = validateZipBundle(
     zipSync({
       "SKILL.md": strToU8(skillMd(name)),
-      "kobe.skill.yaml": strToU8(manifest),
+      "kaiju.skill.yaml": strToU8(manifest),
       "evals/cases.yaml": strToU8(SUITE),
     }),
   );

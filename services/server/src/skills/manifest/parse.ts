@@ -3,6 +3,7 @@ import {
   LICENSE_PATTERN,
   MANIFEST_API_VERSION,
   MANIFEST_MAX_BYTES,
+  MANIFEST_PATH,
   MAX_EGRESS_HOSTS,
   MAX_PACKAGES_PER_MANAGER,
   MAX_TAGS,
@@ -16,7 +17,7 @@ import { stringify } from "yaml";
 import { readManifest } from "../bundle.js";
 
 /**
- * From a model's reply to a `kobe.skill.yaml` the package contract accepts (KOBE-564). The reply
+ * From a model's reply to a `kaiju.skill.yaml` the package contract accepts (KOBE-564). The reply
  * is untrusted text: the one JSON object in it is read leniently, every field is cleaned to the
  * contract's rules or dropped, and the fields the model never decides come from the version
  * (`apiVersion`, `name`, `version`) and the author (`license`). The result always validates
@@ -176,7 +177,7 @@ export function manifestFromReply(reply: string, seed: ManifestSeed): ParsedMani
 
 export class ManifestYamlError extends Error {
   constructor(message: string) {
-    super(`kobe.skill.yaml: ${message}`);
+    super(`${MANIFEST_PATH}: ${message}`);
     this.name = "ManifestYamlError";
   }
 }

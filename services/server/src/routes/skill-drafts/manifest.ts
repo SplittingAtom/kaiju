@@ -1,4 +1,4 @@
-import { MANIFEST_PATH } from "@kaiju/protocol";
+import { MANIFEST_PATH, manifestPathIn } from "@kaiju/protocol";
 import { withTeam } from "@kaiju/db";
 import { Hono } from "hono";
 import type { TeamVariables } from "../../authz/middleware.js";
@@ -18,13 +18,13 @@ import {
   type DraftKit,
 } from "./shared.js";
 
-/** Create kobe.skill.yaml in an open draft (KOBE-564) with the member's chosen model. */
+/** Create kaiju.skill.yaml in an open draft (KOBE-564) with the member's chosen model. */
 export function draftManifestRoutes(kit: DraftKit): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
   const { deps, db, ctxOf, failure, json } = kit;
 
   /**
-   * Create kobe.skill.yaml in an open draft (KOBE-564): the member's chosen model drafts it from
+   * Create kaiju.skill.yaml in an open draft (KOBE-564): the member's chosen model drafts it from
    * the draft's SKILL.md and files, and it is written at `If-Match`'s revision like any file.
    * The version number inside is a placeholder: Save version writes the number it saves as.
    */
@@ -41,7 +41,7 @@ export function draftManifestRoutes(kit: DraftKit): Hono<{ Variables: TeamVariab
         c,
         503,
         "model_calls_unavailable",
-        "This server has no model gateway for its own calls; write kobe.skill.yaml yourself.",
+        "This server has no model gateway for its own calls; write kaiju.skill.yaml yourself.",
       );
     const ctx = ctxOf(c);
     // `visibleDraft` is the edit check too (`canEdit`): a draft the caller may not write is 404.
@@ -50,8 +50,9 @@ export function draftManifestRoutes(kit: DraftKit): Hono<{ Variables: TeamVariab
       return draft ? { draft, files: await readAllFiles(tx, ctx.teamId, id.data) } : null;
     });
     if (!loaded) return error(c, 404, "not_found", "No such draft.");
-    if (loaded.files.has(MANIFEST_PATH))
-      return error(c, 409, "has_manifest", "This draft already has a kobe.skill.yaml.");
+    const existing = manifestPathIn(loaded.files);
+    if (existing !== null)
+      return error(c, 409, "has_manifest", `This draft already has a ${existing}.`);
     if (loaded.draft.rev !== rev)
       return error(c, 409, "stale_revision", "This draft changed. Reload it to see the change.", {
         rev: loaded.draft.rev,

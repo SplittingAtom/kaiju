@@ -1,10 +1,11 @@
 import { parse } from "yaml";
+import { isManifestPath } from "@kaiju/protocol";
 import { parseSemver } from "../semver.js";
 import { manifestWithoutNumber } from "./manifest-sync.js";
 
 /**
  * The suggested semver bump of a Save version (KOBE-321, spec SK14): patch for references, assets
- * and other files (`evals/`, `kobe.skill.yaml` included), minor for an edit of SKILL.md's
+ * and other files (`evals/`, `kaiju.skill.yaml` included), minor for an edit of SKILL.md's
  * instructions or its other frontmatter, major for a change of the name, the description or any
  * script. The author decides; this only advises. Files are compared byte for byte.
  */
@@ -52,10 +53,10 @@ function partsOf(bytes: Uint8Array | undefined): SkillMdParts | null {
 const same = (a: Uint8Array | undefined, b: Uint8Array | undefined): boolean =>
   a !== undefined && b !== undefined && Buffer.from(a).equals(Buffer.from(b));
 
-/** Same file; for kobe.skill.yaml, the same apart from the number and changelog a save writes. */
+/** Same file; for the manifest (either name), the same apart from the number and changelog a save writes. */
 function sameFile(path: string, a: Uint8Array | undefined, b: Uint8Array | undefined): boolean {
   if (same(a, b)) return true;
-  if (path !== "kobe.skill.yaml" || !a || !b) return false;
+  if (!isManifestPath(path) || !a || !b) return false;
   const x = manifestWithoutNumber(a);
   return x !== null && x === manifestWithoutNumber(b);
 }

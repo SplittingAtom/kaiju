@@ -18,8 +18,8 @@ const MANIFEST = [
 /** KOBE-322: a draft's manifest takes the number and changelog of the version being saved. */
 describe("withSavedNumber", () => {
   it("writes the saved number and changelog, keeping every other key and comment", () => {
-    const out = withSavedNumber(new Map([["kobe.skill.yaml", enc(MANIFEST)]]), "0.1.0", "First.");
-    const text = dec(out.get("kobe.skill.yaml"));
+    const out = withSavedNumber(new Map([["kaiju.skill.yaml", enc(MANIFEST)]]), "0.1.0", "First.");
+    const text = dec(out.get("kaiju.skill.yaml"));
     expect(parse(text)).toEqual({
       apiVersion: "kobe.dev/skill/v1",
       name: "notes",
@@ -30,23 +30,31 @@ describe("withSavedNumber", () => {
     expect(text).toContain("# the parent's number");
   });
 
+  it("writes into kobe.skill.yaml where a pre-rename draft has it, never adding the new name (KOBE-825)", () => {
+    const out = withSavedNumber(new Map([["kobe.skill.yaml", enc(MANIFEST)]]), "0.2.0", "Second.");
+    expect([...out.keys()]).toEqual(["kobe.skill.yaml"]);
+    expect(parse(dec(out.get("kobe.skill.yaml")))).toMatchObject({ version: "0.2.0" });
+  });
+
   it("leaves a draft without a manifest, or with one that doesn't parse, alone", () => {
     const none = new Map([["SKILL.md", enc("x")]]);
     expect([...withSavedNumber(none, "1.0.0", "x").keys()]).toEqual(["SKILL.md"]);
     const broken = enc("version: [");
     expect(
-      withSavedNumber(new Map([["kobe.skill.yaml", broken]]), "1.0.0", "x").get("kobe.skill.yaml"),
+      withSavedNumber(new Map([["kaiju.skill.yaml", broken]]), "1.0.0", "x").get(
+        "kaiju.skill.yaml",
+      ),
     ).toBe(broken);
     expect(manifestWithoutNumber(broken)).toBeNull();
   });
 
   it("makes a manifest that differs only in its number no change for the bump", () => {
-    const saved = withSavedNumber(new Map([["kobe.skill.yaml", enc(MANIFEST)]]), "2.4.0", "Next.");
-    expect(adviseBump(saved, new Map([["kobe.skill.yaml", enc(MANIFEST)]]))).toEqual({
+    const saved = withSavedNumber(new Map([["kaiju.skill.yaml", enc(MANIFEST)]]), "2.4.0", "Next.");
+    expect(adviseBump(saved, new Map([["kaiju.skill.yaml", enc(MANIFEST)]]))).toEqual({
       kind: null,
       reasons: [],
     });
-    const changed = new Map([["kobe.skill.yaml", enc(MANIFEST.replace("Notes.", "Other."))]]);
+    const changed = new Map([["kaiju.skill.yaml", enc(MANIFEST.replace("Notes.", "Other."))]]);
     expect(adviseBump(saved, changed).kind).toBe("patch");
   });
 });

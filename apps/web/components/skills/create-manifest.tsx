@@ -16,7 +16,7 @@ import { Button, Select } from "../ui/console";
 import { draftHref } from "./draft-href";
 
 /**
- * The choice behind Create kobe.skill.yaml (KOBE-564): the model that writes it (the team
+ * The choice behind Create kaiju.skill.yaml (KOBE-564): the model that writes it (the team
  * default preselected; only models the team enables are offered) and the author's license (never
  * the model's). `onCreate` runs the call; the caller shows its outcome.
  */
@@ -42,7 +42,7 @@ export function ManifestChoiceForm({
   const teamDefault = enabled.find((m) => m.alias === defaultModel);
   const defaultName = teamDefault ? modelName(teamDefault) : null;
   return (
-    <div className="flex flex-col gap-2 text-sm" role="group" aria-label="Create kobe.skill.yaml">
+    <div className="flex flex-col gap-2 text-sm" role="group" aria-label="Create kaiju.skill.yaml">
       <p className="m-0">{intro}</p>
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1">
@@ -85,7 +85,7 @@ export function ManifestChoiceForm({
           disabled={pending || done || models.status === "loading"}
           onClick={() => onCreate({ model: model === "" ? undefined : model, license })}
         >
-          Create kobe.skill.yaml
+          Create kaiju.skill.yaml
         </Button>
       </div>
     </div>
@@ -93,7 +93,7 @@ export function ManifestChoiceForm({
 }
 
 /**
- * Create kobe.skill.yaml from the Promote panel (KOBE-564): offered when the Site refuses a
+ * Create kaiju.skill.yaml from the Promote panel (KOBE-564): offered when the Site refuses a
  * version for having no manifest. Kaiju drafts the file with the chosen model and forks the
  * version into a Workbench draft of the member's; the editor opens on it: review, Save version,
  * run the evals again, then promote the new version.
@@ -120,7 +120,7 @@ export function CreateManifest({
     <div className="flex flex-col gap-2">
       <ManifestChoiceForm
         teamId={teamId}
-        intro="Kaiju can write kobe.skill.yaml for this version with a model of your choice, into a new Workbench draft. Save that draft as the next version and promote it."
+        intro="Kaiju can write kaiju.skill.yaml for this version with a model of your choice, into a new Workbench draft. Save that draft as the next version and promote it."
         pending={mutation.pending}
         done={mutation.notice !== null}
         onCreate={(choice) => void create(choice)}

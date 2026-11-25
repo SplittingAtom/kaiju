@@ -6,7 +6,7 @@ import { SKILL_HASH_SQL } from "./skill-blocklist.js";
 // docs/skill-package.md "Identity"). One row per distinct stored `content_hash`, written once by
 // the recompute (or at upload for new versions) and never changed:
 //   - runtime_hash = stored_hash: the stored zip is its own runtime payload (every new version);
-//   - runtime_hash <> stored_hash: an alias; the stored zip held `evals/` or `kobe.skill.yaml`.
+//   - runtime_hash <> stored_hash: an alias; the stored zip held `evals/` or `kaiju.skill.yaml`.
 //     Many stored hashes can share one runtime hash: together they are one blocklist identity;
 //   - runtime_hash NULL with `problems`: legacy, refused by today's path rules; its stored hash
 //     stays its only identity and it is never promotable or exportable until re-saved.

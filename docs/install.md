@@ -2138,11 +2138,11 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   the previous release keeps working and `helm rollback` is safe. After the upgrade the servers check, in the background (at start and every 10 minutes, one replica at a time), each stored skill version against the package contract
   ([skill packages](skill-package.md#identity-one-hash-per-payload)) and logs
   `skills: stored hashes checked against the package contract` with the counts: `aliased` versions
-  held `evals/` or `kobe.skill.yaml` (they share one blocklist identity with their runtime
+  held `evals/` or `kaiju.skill.yaml` (they share one blocklist identity with their runtime
   payload), `legacy` ones use paths today's rules refuse (they keep running, but can't be
   promoted or exported until re-saved), `unreadable` ones are retried at the next start. Uploads
   from now on refuse such paths (`reserved_path`, `path_conflict`, `unsafe_path`), and a
-  package's `evals/` and `kobe.skill.yaml` no longer reach the sandbox.
+  package's `evals/` and `kaiju.skill.yaml` no longer reach the sandbox.
 - **Skill version numbers (KOBE-308, migrations `0129_skill_semver` and
   `0130_skill_semver_backfill`).** Every team and personal skill version gets a semver: version
   n uploaded before becomes `0.n.0` (with `seq` n), and the Job log says how many

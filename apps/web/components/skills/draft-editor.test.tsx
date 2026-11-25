@@ -301,7 +301,7 @@ describe("Workbench editor: files", () => {
   });
 });
 
-describe("Workbench editor: Create kobe.skill.yaml (KOBE-564)", () => {
+describe("Workbench editor: Create kaiju.skill.yaml (KOBE-564)", () => {
   const MODELS = {
     models: [
       { alias: "k2", label: "Kimi K2", enabled: true, isDefault: true },
@@ -326,9 +326,9 @@ describe("Workbench editor: Create kobe.skill.yaml (KOBE-564)", () => {
           source: "model",
         },
       ],
-      "GET /v1/skills/drafts/d-1/files/kobe.skill.yaml": [200, bytes(YAML)],
+      "GET /v1/skills/drafts/d-1/files/kaiju.skill.yaml": [200, bytes(YAML)],
     });
-    const group = screen.getByRole("group", { name: "Create kobe.skill.yaml" });
+    const group = screen.getByRole("group", { name: "Create kaiju.skill.yaml" });
     const model = (await within(group).findByRole("combobox", {
       name: "Model for the manifest",
     })) as HTMLSelectElement;
@@ -338,8 +338,8 @@ describe("Workbench editor: Create kobe.skill.yaml (KOBE-564)", () => {
     ]);
     await userEvent.selectOptions(model, "glm");
     await userEvent.selectOptions(within(group).getByRole("combobox", { name: "License" }), "MIT");
-    await userEvent.click(within(group).getByRole("button", { name: "Create kobe.skill.yaml" }));
-    expect(await screen.findByText("kobe.skill.yaml written by glm.")).toBeDefined();
+    await userEvent.click(within(group).getByRole("button", { name: "Create kaiju.skill.yaml" }));
+    expect(await screen.findByText("kaiju.skill.yaml written by glm.")).toBeDefined();
     const post = must(calls.find((c) => c.method === "POST"));
     expect([post.url, post.headers.get("if-match")]).toEqual([
       "/v1/skills/drafts/d-1/manifest",
@@ -347,13 +347,13 @@ describe("Workbench editor: Create kobe.skill.yaml (KOBE-564)", () => {
     ]);
     expect(JSON.parse(String(post.body))).toEqual({ model: "glm", license: "MIT" });
     const tree = within(screen.getByRole("navigation", { name: "Files" }));
-    expect(tree.getByRole("button", { name: "kobe.skill.yaml" })).toBeDefined();
+    expect(tree.getByRole("button", { name: "kaiju.skill.yaml" })).toBeDefined();
     expect(
-      ((await screen.findByLabelText("Contents of kobe.skill.yaml")) as HTMLTextAreaElement).value,
+      ((await screen.findByLabelText("Contents of kaiju.skill.yaml")) as HTMLTextAreaElement).value,
     ).toBe(YAML);
     // Once there, the offer is gone.
     await waitFor(() =>
-      expect(screen.queryByRole("group", { name: "Create kobe.skill.yaml" })).toBeNull(),
+      expect(screen.queryByRole("group", { name: "Create kaiju.skill.yaml" })).toBeNull(),
     );
   });
 
@@ -364,12 +364,12 @@ describe("Workbench editor: Create kobe.skill.yaml (KOBE-564)", () => {
         200,
         {
           draft: DRAFT(3),
-          files: [...FILES, { path: "kobe.skill.yaml", size: 80, kind: "text", updated_at: "x" }],
+          files: [...FILES, { path: "kaiju.skill.yaml", size: 80, kind: "text", updated_at: "x" }],
         },
       ],
       "GET /v1/team/models": [200, MODELS],
     });
-    expect(screen.queryByRole("group", { name: "Create kobe.skill.yaml" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "Create kaiju.skill.yaml" })).toBeNull();
     cleanup();
     await opened({
       ...BASE,
@@ -379,13 +379,13 @@ describe("Workbench editor: Create kobe.skill.yaml (KOBE-564)", () => {
         { code: "call_failed", message: "The model k2 did not answer (budget exhausted)." },
       ],
     });
-    const group = screen.getByRole("group", { name: "Create kobe.skill.yaml" });
+    const group = screen.getByRole("group", { name: "Create kaiju.skill.yaml" });
     await within(group).findByRole("combobox", { name: "Model for the manifest" });
-    await userEvent.click(within(group).getByRole("button", { name: "Create kobe.skill.yaml" }));
+    await userEvent.click(within(group).getByRole("button", { name: "Create kaiju.skill.yaml" }));
     expect(await screen.findByText(/did not answer/)).toBeDefined();
     expect(
       within(screen.getByRole("navigation", { name: "Files" })).queryByRole("button", {
-        name: "kobe.skill.yaml",
+        name: "kaiju.skill.yaml",
       }),
     ).toBeNull();
   });

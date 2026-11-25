@@ -290,7 +290,7 @@ describe("governed import (KOBE-344)", () => {
   it("carries the origin into the saved version and the promoted catalog provenance (review)", async () => {
     const sha = commit({
       "skills/ledger/SKILL.md": skillMd("ledger", "keeps books"),
-      "skills/ledger/kobe.skill.yaml": manifest("ledger", "1.0.0"),
+      "skills/ledger/kaiju.skill.yaml": manifest("ledger", "1.0.0"),
       "skills/ledger/evals/cases.yaml": CASES,
     });
     const made = await importGit(builder, sha, { path: "skills/ledger" });

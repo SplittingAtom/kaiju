@@ -245,7 +245,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "skill.manifest.generated": {
     fields: "`draftId`, `skillId?`, `scope?`, `version?`, `semver?`, `model`, `from` (model, seed)",
-    when: "Kaiju drafted a kobe.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564)",
+    when: "Kaiju drafted a kaiju.skill.yaml for a version without one, with the member's chosen model, into a new Workbench draft of theirs; metadata only, never the file's text (KOBE-564)",
   },
   "skill.member_add.added": {
     fields: "`skillId`, `name`, `semver`, `pinMode`",

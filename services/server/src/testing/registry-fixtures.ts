@@ -55,7 +55,7 @@ export const pkg = (name: string, semver: string, options: PackageOptions = {}) 
   new RawBody(
     zipSync({
       "SKILL.md": strToU8(skillMd(name, options.body)),
-      "kobe.skill.yaml": strToU8(manifest(name, semver, options.egress)),
+      "kaiju.skill.yaml": strToU8(manifest(name, semver, options.egress)),
       "evals/cases.yaml": strToU8(CASES),
       "evals/fixtures/sales.csv": strToU8("region,total\nnorth,1\n"),
       "evals/fixtures/regions/map.json": strToU8("{}"),

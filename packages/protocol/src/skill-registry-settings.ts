@@ -27,7 +27,7 @@ export const registrySubmissionRulesSchema = z
     minTriggerPrecision: ratio.default(0.8),
     /** A Block scan verdict is refused (Caution and Pass go to review). */
     refuseBlockVerdict: z.boolean().default(true),
-    /** `license` present in kobe.skill.yaml (internal skills may say `Proprietary`). */
+    /** `license` present in kaiju.skill.yaml (internal skills may say `Proprietary`). */
     requireLicense: z.boolean().default(true),
     /** The scorecard is from this exact package hash. */
     requireFreshScorecard: z.boolean().default(true),

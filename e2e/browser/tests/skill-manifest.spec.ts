@@ -3,7 +3,7 @@ import { RUN_TIMEOUT_MS, SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
 
 /**
- * KOBE-564: Create kobe.skill.yaml with a model, against a real deployment, both ways in. From
+ * KOBE-564: Create kaiju.skill.yaml with a model, against a real deployment, both ways in. From
  * the Promote panel: a personal version uploaded without a manifest is refused (`no_manifest`),
  * Kaiju drafts the file with the team default model and the Workbench opens on the new draft with
  * it in place. From the editor: a fresh draft gets one under its file tree. Each flow spends one
@@ -40,11 +40,11 @@ async function deleteOpenDraft(page: Page, name: string): Promise<void> {
 /** The generated file as the editor shows it: the skill's name, the author's license, a summary. */
 async function expectManifestOpen(page: Page, name: string): Promise<void> {
   const tree = panelOf(page).getByRole("navigation", { name: "Files" });
-  await expect(tree.getByRole("button", { name: "kobe.skill.yaml" })).toBeVisible({
+  await expect(tree.getByRole("button", { name: "kaiju.skill.yaml" })).toBeVisible({
     timeout: SHELL_TIMEOUT_MS,
   });
-  await tree.getByRole("button", { name: "kobe.skill.yaml" }).click();
-  const contents = panelOf(page).getByLabel("Contents of kobe.skill.yaml");
+  await tree.getByRole("button", { name: "kaiju.skill.yaml" }).click();
+  const contents = panelOf(page).getByLabel("Contents of kaiju.skill.yaml");
   await expect(contents).toHaveValue(/apiVersion: kobe\.dev\/skill\/v1/, {
     timeout: SHELL_TIMEOUT_MS,
   });
@@ -87,16 +87,16 @@ test("Promote to Site: a version without a manifest gets one from the team model
     .getByRole("button", { name: `Promote ${PROMOTED} v${semver} to the Site` })
     .click();
   const promote = panelOf(page).getByRole("group", { name: "Promote to Site" });
-  await expect(promote.getByRole("alert")).toContainText("needs a kobe.skill.yaml", {
+  await expect(promote.getByRole("alert")).toContainText("needs a kaiju.skill.yaml", {
     timeout: SHELL_TIMEOUT_MS,
   });
   await expect(promote.getByRole("button", { name: "Promote" })).toBeDisabled();
-  const create = promote.getByRole("group", { name: "Create kobe.skill.yaml" });
+  const create = promote.getByRole("group", { name: "Create kaiju.skill.yaml" });
   const model = create.getByRole("combobox", { name: "Model for the manifest" });
   await expect(model).toBeEnabled({ timeout: SHELL_TIMEOUT_MS });
   await expect(model.locator("option").first()).toHaveText(/^Team default \(.+\)$/);
   await expect(create.getByRole("combobox", { name: "License" })).toHaveValue("Proprietary");
-  await create.getByRole("button", { name: "Create kobe.skill.yaml" }).click();
+  await create.getByRole("button", { name: "Create kaiju.skill.yaml" }).click();
   // One real model call, then the Workbench editor on the new draft.
   await expect(page).toHaveURL(/\/me\/skills\/drafts\/[0-9a-f-]{36}/, {
     timeout: RUN_TIMEOUT_MS,
@@ -108,7 +108,7 @@ test("Promote to Site: a version without a manifest gets one from the team model
   await deleteOpenDraft(page, PROMOTED);
 });
 
-test("the Workbench editor writes kobe.skill.yaml into an open draft", async ({ page }) => {
+test("the Workbench editor writes kaiju.skill.yaml into an open draft", async ({ page }) => {
   await page.goto("/me/skills?tab=workbench");
   await panelOf(page).getByLabel("Skill name").fill(DRAFTED);
   await panelOf(page).getByRole("button", { name: "Start a draft" }).click();
@@ -120,18 +120,20 @@ test("the Workbench editor writes kobe.skill.yaml into an open draft", async ({ 
     .fill(`Builds the weekly ${DRAFTED} sales summary. Use when asked for a sales summary.`);
   await expect(panelOf(page).getByText("All changes saved.")).toBeVisible({ timeout: 5_000 });
 
-  const create = panelOf(page).getByRole("group", { name: "Create kobe.skill.yaml" });
+  const create = panelOf(page).getByRole("group", { name: "Create kaiju.skill.yaml" });
   await expect(create.getByRole("combobox", { name: "Model for the manifest" })).toBeEnabled({
     timeout: SHELL_TIMEOUT_MS,
   });
-  await create.getByRole("button", { name: "Create kobe.skill.yaml" }).click();
+  await create.getByRole("button", { name: "Create kaiju.skill.yaml" }).click();
   await expect(
     panelOf(page).getByText(
-      /^kobe\.skill\.yaml written by .+\.$|starts from the SKILL\.md description\.$/,
+      /^kaiju\.skill\.yaml written by .+\.$|starts from the SKILL\.md description\.$/,
     ),
   ).toBeVisible({ timeout: RUN_TIMEOUT_MS });
   // The offer is spent; the file is in the tree and open.
-  await expect(panelOf(page).getByRole("group", { name: "Create kobe.skill.yaml" })).toHaveCount(0);
+  await expect(panelOf(page).getByRole("group", { name: "Create kaiju.skill.yaml" })).toHaveCount(
+    0,
+  );
   await expectManifestOpen(page, DRAFTED);
   // It survives a reload (it is a draft file like any other).
   await page.reload();

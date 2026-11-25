@@ -11,9 +11,14 @@ import {
   crc32,
   hashedPackageFiles,
   kaijuSkillManifestSchema,
+  isManifestPath,
   MANIFEST_MAX_BYTES,
+  MANIFEST_PATH,
+  MANIFEST_PATHS,
   MANIFEST_YAML_OPTIONS,
   manifestMismatches,
+  manifestPathIn,
+  manifestWritePath,
   packageFileRole,
   packagePathProblem,
   provenanceMismatches,
@@ -34,16 +39,40 @@ describe("package layout (KOBE-309)", () => {
     expect(packageFileRole("SKILL.md")).toBe("runtime");
     expect(packageFileRole("scripts/build.py")).toBe("runtime");
     expect(packageFileRole("scripts/evals/x")).toBe("runtime");
-    expect(packageFileRole("references/kobe.skill.yaml")).toBe("runtime");
+    expect(packageFileRole("references/kaiju.skill.yaml")).toBe("runtime");
     expect(packageFileRole("evals/cases.yaml")).toBe("evals");
     expect(packageFileRole("evals/fixtures/a.csv")).toBe("evals");
-    expect(packageFileRole("kobe.skill.yaml")).toBe("manifest");
+    expect(packageFileRole("kaiju.skill.yaml")).toBe("manifest");
     expect(packageFileRole("provenance.json")).toBe("provenance");
+  });
+
+  it("reads the manifest's pre-rename name like the current one, and refuses both (KOBE-825)", () => {
+    expect(packageFileRole("kobe.skill.yaml")).toBe("manifest");
+    expect(packageFileRole("references/kobe.skill.yaml")).toBe("runtime");
+    expect(MANIFEST_PATHS).toEqual(["kaiju.skill.yaml", "kobe.skill.yaml"]);
+    expect(isManifestPath("kobe.skill.yaml") && isManifestPath("kaiju.skill.yaml")).toBe(true);
+    const legacy = new Map([
+      ["SKILL.md", utf8("x")],
+      ["kobe.skill.yaml", utf8("m")],
+    ]);
+    expect([...runtimeFiles(legacy).keys()]).toEqual(["SKILL.md"]);
+    expect(manifestPathIn(legacy)).toBe("kobe.skill.yaml");
+    expect(manifestWritePath(legacy)).toBe("kobe.skill.yaml");
+    expect(manifestPathIn(new Map([["SKILL.md", utf8("x")]]))).toBeNull();
+    expect(manifestWritePath(new Map([["SKILL.md", utf8("x")]]))).toBe(MANIFEST_PATH);
+    expect(checkPackagePaths(["SKILL.md", "kobe.skill.yaml"])).toEqual([]);
+    expect(checkPackagePaths(["SKILL.md", "kaiju.skill.yaml"])).toEqual([]);
+    expect(checkPackagePaths(["SKILL.md", "kaiju.skill.yaml", "kobe.skill.yaml"])).toEqual([
+      { path: "kobe.skill.yaml", problem: "two_manifests" },
+    ]);
+    expect(checkPackagePaths(["SKILL.md", "KOBE.SKILL.YAML"])).toEqual([
+      { path: "KOBE.SKILL.YAML", problem: "reserved_name_case" },
+    ]);
   });
 
   it("splits a package into the runtime payload and the hashed package", () => {
     const files = new Map(
-      ["SKILL.md", "evals/cases.yaml", "kobe.skill.yaml", "provenance.json", "assets/a"].map(
+      ["SKILL.md", "evals/cases.yaml", "kaiju.skill.yaml", "provenance.json", "assets/a"].map(
         (p) => [p, utf8(p)] as const,
       ),
     );
@@ -51,7 +80,7 @@ describe("package layout (KOBE-309)", () => {
     expect([...hashedPackageFiles(files).keys()]).toEqual([
       "SKILL.md",
       "evals/cases.yaml",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
       "assets/a",
     ]);
   });
@@ -115,7 +144,7 @@ describe("package layout (KOBE-309)", () => {
     for (const path of [
       "Evals/cases.yaml",
       "EVALS",
-      "KOBE.SKILL.YAML",
+      "KAIJU.SKILL.YAML",
       "Provenance.json",
       "skill.md",
     ])
@@ -126,7 +155,7 @@ describe("package layout (KOBE-309)", () => {
         },
       );
     expect(
-      checkPackagePaths(["SKILL.md", "scripts/Evals/x", "references/KOBE.SKILL.YAML"]),
+      checkPackagePaths(["SKILL.md", "scripts/Evals/x", "references/KAIJU.SKILL.YAML"]),
     ).toEqual([]);
     expect(checkPackagePaths(["SKILL.md", "aς", "aσ"]).map((p) => p.problem)).toEqual([
       "duplicate",
@@ -244,7 +273,7 @@ describe("golden hash vectors (KOBE-309 ac-3)", () => {
     });
   }
 
-  it("equals the package hash for a package with no evals/ and no kobe.skill.yaml", () => {
+  it("equals the package hash for a package with no evals/ and no kaiju.skill.yaml", () => {
     const files = new Map([
       ["SKILL.md", utf8("x")],
       ["provenance.json", utf8("{}")],
@@ -303,7 +332,7 @@ const PROVENANCE_REFUSALS: Record<string, string> = {
 const issueAt = (i: { path: PropertyKey[] }) =>
   i.path.length === 0 ? "(root)" : i.path.map(String).join(".");
 
-describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
+describe("kaiju.skill.yaml (KOBE-309 ac-1)", () => {
   const all = fixtures("manifest");
 
   it("has valid and invalid golden fixtures", () => {
@@ -347,9 +376,26 @@ describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
         egress: ["pypi.org", "files.pythonhosted.org"],
         packages: { pip: ["openpyxl==3.1.*"] },
       },
-      compatibility: { kobe: ">=1.2", pi: "1.0.x" },
+      compatibility: { kaiju: ">=1.2", pi: "1.0.x" },
       changelog: "Adds a totals row per region.",
     });
+  });
+
+  it("reads compatibility.kobe, the pre-rename key; both keys only with the same range (KOBE-825)", () => {
+    const base = {
+      apiVersion: "kobe.dev/skill/v1",
+      name: "notes",
+      version: "1.0.0",
+      summary: "S.",
+    };
+    const parse = (compatibility: Record<string, string>) =>
+      kaijuSkillManifestSchema.safeParse({ ...base, compatibility });
+    expect(parse({ kobe: ">=1" }).success).toBe(true);
+    expect(parse({ kaiju: ">=1" }).success).toBe(true);
+    expect(parse({ kaiju: ">=1", kobe: ">=1" }).success).toBe(true);
+    const differ = parse({ kaiju: ">=2", kobe: ">=1" });
+    expect(differ.success).toBe(false);
+    expect(differ.error?.issues.map(issueAt)).toEqual(["compatibility.kobe"]);
   });
 
   it("must name the SKILL.md name and the saved semver", () => {

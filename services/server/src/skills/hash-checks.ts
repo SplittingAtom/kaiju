@@ -11,19 +11,19 @@ import {
   type KaijuDb,
   type KaijuTx,
 } from "@kaiju/db";
-import { checkPackagePaths, MANIFEST_PATH } from "@kaiju/protocol";
+import { checkPackagePaths } from "@kaiju/protocol";
 import { runtimeHash } from "@kaiju/protocol/node";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import { readVerified } from "./blob-read.js";
-import { readManifest } from "./bundle.js";
+import { readManifestIn } from "./bundle.js";
 import { parseSkillMd } from "./skill-md.js";
 
 /**
  * What each stored skill hash is under the KOBE-309 package contract (KOBE-310;
  * docs/skill-package.md "Identity"), in the site-wide `skill_hash_checks`:
  *  - same: the stored zip is its own runtime payload (every version stored since KOBE-310);
- *  - alias: the stored zip held `evals/` or `kobe.skill.yaml`, so its runtime hash differs. Many
+ *  - alias: the stored zip held `evals/` or a manifest, so its runtime hash differs. Many
  *    stored hashes can share one runtime hash; the runtime hash and all of them are one group;
  *  - legacy: today's path rules refuse the stored zip. Its stored hash is its only identity.
  * Rows are written once and never changed.
@@ -156,7 +156,7 @@ async function unchecked(db: KaijuDb): Promise<Stored[]> {
 
 /**
  * The outcome for one stored zip (already verified against its hash): legacy when today's path
- * rules refuse it, or when its SKILL.md or `kobe.skill.yaml` (never read before KOBE-310) is
+ * rules refuse it, or when its SKILL.md or manifest (never read before KOBE-310) is
  * invalid; otherwise its runtime hash. Rows are written once and never re-evaluated, so a later
  * tightening of the rules applies to new uploads only.
  */
@@ -167,8 +167,7 @@ export function classifyStoredZip(hash: string, zip: Uint8Array): HashOutcome {
     const skillMd = files.get("SKILL.md");
     const parsed = skillMd ? parseSkillMd(skillMd) : "missing";
     if (typeof parsed === "string") problems.add("invalid_skill_md");
-    else if (!readManifest(files.get(MANIFEST_PATH), parsed.name).ok)
-      problems.add("invalid_manifest");
+    else if (!readManifestIn(files, parsed.name).ok) problems.add("invalid_manifest");
   }
   if (problems.size > 0) return { runtimeHash: null, problems: [...problems].sort() };
   const runtime = runtimeHash(files);

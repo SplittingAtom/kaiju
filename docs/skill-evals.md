@@ -27,7 +27,7 @@ runtime zip), and the Workbench test chat, which builds its bundle through the s
 
 ## evals/cases.yaml
 
-Text rules as `kobe.skill.yaml`: UTF-8, at most 64 KiB, one YAML 1.2 (core schema) document whose
+Text rules as `kaiju.skill.yaml`: UTF-8, at most 64 KiB, one YAML 1.2 (core schema) document whose
 root is a mapping; duplicate keys, aliases and explicit tags (`!foo`, `!!timestamp`) are refused,
 and nesting is at most 16 levels (checked on the lexer's tokens before the tree is built, flow brackets
 and block levels, compact `- - -` included, so no engine overflows its stack; an overflow is still

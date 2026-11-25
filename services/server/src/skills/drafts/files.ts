@@ -1,4 +1,9 @@
-import { checkPackagePaths, type PackageProblemCode } from "@kaiju/protocol";
+import {
+  checkPackagePaths,
+  LEGACY_MANIFEST_PATH,
+  MANIFEST_PATH,
+  type PackageProblemCode,
+} from "@kaiju/protocol";
 import { SKILL_DRAFT_MAX_BYTES } from "@kaiju/db";
 import { SKILL_LIMITS } from "../limits.js";
 
@@ -28,10 +33,21 @@ export const SKILL_MD_PATH = "SKILL.md";
 const PROBLEM_TEXT: Partial<Record<PackageProblemCode, string>> = {
   duplicate: "another file has this path in a different case",
   file_and_directory: "it is both a file and a folder",
-  reserved_name_case: "only SKILL.md, evals/ and kobe.skill.yaml, spelled exactly so, are special",
+  reserved_name_case:
+    "only SKILL.md, evals/ and kaiju.skill.yaml (or kobe.skill.yaml, its old name), spelled exactly so, are special",
   reserved_directory: "evals is a folder",
   provenance_not_allowed: "Kaiju writes provenance.json itself",
 };
+
+/**
+ * Why a draft can't hold both manifest names (KOBE-825), naming the one it already has: adding
+ * the new name next to the old one, or the old name next to the new one.
+ */
+function twoManifestsText(written: string): string {
+  return written === LEGACY_MANIFEST_PATH
+    ? `the draft already has its manifest as ${MANIFEST_PATH}: edit that file instead`
+    : `the draft already has its manifest as ${LEGACY_MANIFEST_PATH}, the old name: keep that file, or delete it first`;
+}
 
 /**
  * The file path of a `/files/<path>` URL: each segment percent-decoded on its own (a decoded `/`
@@ -63,6 +79,7 @@ export function draftPathProblem(path: string, others: readonly string[]): strin
   );
   const mine = problems.find((p) => p.path === path) ?? problems[0];
   if (!mine) return null;
+  if (mine.problem === "two_manifests") return twoManifestsText(path);
   return (
     PROBLEM_TEXT[mine.problem] ?? `the path is not allowed (${mine.problem.replaceAll("_", " ")})`
   );

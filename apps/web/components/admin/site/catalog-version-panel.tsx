@@ -177,7 +177,7 @@ function VersionDetail({
         <Pre label="provenance.json, as recorded" value={view.provenance} />
       </Section>
       <Section title="Manifest" level={3}>
-        <Pre label="kobe.skill.yaml" value={view.manifest} />
+        <Pre label="kaiju.skill.yaml" value={view.manifest} />
       </Section>
     </div>
   );

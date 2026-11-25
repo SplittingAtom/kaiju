@@ -120,7 +120,7 @@ export async function publishBundle(
 }
 
 /**
- * The number and changelog of a version: as given, or from the package's `kobe.skill.yaml`
+ * The number and changelog of a version: as given, or from the package's manifest
  * (KOBE-309). When both give one, they must agree: the manifest never renumbers a version behind
  * the author's back.
  */
@@ -132,14 +132,14 @@ export function numberingFrom(
   if (manifest && given.semver !== undefined && given.semver !== manifest.version)
     return {
       ok: false,
-      message: `semver ${given.semver} differs from kobe.skill.yaml's version ${manifest.version}.`,
+      message: `semver ${given.semver} differs from the manifest's version ${manifest.version}.`,
     };
   if (
     manifest?.changelog &&
     given.changelog !== undefined &&
     given.changelog !== manifest.changelog
   )
-    return { ok: false, message: "The changelog differs from kobe.skill.yaml's changelog." };
+    return { ok: false, message: "The changelog differs from the manifest's changelog." };
   const semver = given.semver ?? manifest?.version;
   const changelog = given.changelog ?? manifest?.changelog;
   return {

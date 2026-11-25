@@ -72,7 +72,7 @@ async function publish(
         "SKILL.md": strToU8(
           `---\nname: ${name}\ndescription: ${summary} Use it for ${name}.\n---\n# ${name}\n\nStep ${semver}.\n`,
         ),
-        "kobe.skill.yaml": strToU8(`${manifest}\n`),
+        "kaiju.skill.yaml": strToU8(`${manifest}\n`),
         "scripts/run.py": strToU8("print('hi')\n"),
       }),
     );
@@ -326,7 +326,7 @@ describe("detail (ac-2, ac-3)", () => {
     expect(d.json.skillMd).toBe("# sales-report\n\nStep 1.1.0.\n");
     expect((d.json.files as { path: string }[]).map((f) => f.path)).toEqual([
       "SKILL.md",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
       "scripts/run.py",
     ]);
     // Submitted, rejected and retracted versions never show; the card is the approved 1.1.0.

@@ -35,7 +35,7 @@ describe("Promote to Site (KOBE-333)", () => {
         200,
         preview([
           { code: "no_scorecard", message: "Run the full evals of this version first." },
-          { code: "license", message: "kobe.skill.yaml needs a license." },
+          { code: "license", message: "kaiju.skill.yaml needs a license." },
         ]),
       ],
     });
@@ -45,7 +45,7 @@ describe("Promote to Site (KOBE-333)", () => {
     expect(within(panel).getByText(/Started from a conversation/)).toBeTruthy();
     const alert = within(panel).getByRole("alert");
     expect(alert.textContent).toContain("Run the full evals of this version first.");
-    expect(alert.textContent).toContain("kobe.skill.yaml needs a license.");
+    expect(alert.textContent).toContain("kaiju.skill.yaml needs a license.");
     expect(within(panel).getByRole("button", { name: "Promote" }).hasAttribute("disabled")).toBe(
       true,
     );
@@ -66,7 +66,7 @@ describe("Promote to Site (KOBE-333)", () => {
   });
 });
 
-describe("Create kobe.skill.yaml (KOBE-564)", () => {
+describe("Create kaiju.skill.yaml (KOBE-564)", () => {
   const MODELS = {
     models: [
       { alias: "k2", label: "Kimi K2", enabled: true, isDefault: true },
@@ -75,7 +75,7 @@ describe("Create kobe.skill.yaml (KOBE-564)", () => {
     ],
     default: "k2",
   };
-  const NO_MANIFEST = { code: "no_manifest", message: "The package needs a kobe.skill.yaml." };
+  const NO_MANIFEST = { code: "no_manifest", message: "The package needs a kaiju.skill.yaml." };
 
   it("is offered only when the Site refuses for a missing manifest", async () => {
     stubApi({
@@ -84,7 +84,7 @@ describe("Create kobe.skill.yaml (KOBE-564)", () => {
     });
     renderTeam(<PromotePanel teamId={TEAM.id} source={SOURCE} onDone={() => {}} />);
     await screen.findByRole("group", { name: "Promote to Site" });
-    expect(screen.queryByRole("group", { name: "Create kobe.skill.yaml" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "Create kaiju.skill.yaml" })).toBeNull();
   });
 
   it("offers the team's enabled models with the default preselected and the author's license, then opens the draft", async () => {
@@ -104,7 +104,7 @@ describe("Create kobe.skill.yaml (KOBE-564)", () => {
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, assign });
     renderTeam(<PromotePanel teamId={TEAM.id} source={SOURCE} onDone={() => {}} />);
-    const group = await screen.findByRole("group", { name: "Create kobe.skill.yaml" });
+    const group = await screen.findByRole("group", { name: "Create kaiju.skill.yaml" });
     const model = (await within(group).findByRole("combobox", {
       name: "Model for the manifest",
     })) as HTMLSelectElement;
@@ -123,7 +123,7 @@ describe("Create kobe.skill.yaml (KOBE-564)", () => {
     expect(license.value).toBe("Proprietary");
     await userEvent.selectOptions(model, "glm");
     await userEvent.selectOptions(license, "Apache-2.0");
-    await userEvent.click(within(group).getByRole("button", { name: "Create kobe.skill.yaml" }));
+    await userEvent.click(within(group).getByRole("button", { name: "Create kaiju.skill.yaml" }));
     expect(await screen.findByText(/written by glm/)).toBeTruthy();
     const post = calls.find((c) => c.method === "POST");
     expect(JSON.parse(String(post?.body))).toEqual({
@@ -146,9 +146,9 @@ describe("Create kobe.skill.yaml (KOBE-564)", () => {
       ],
     });
     renderTeam(<PromotePanel teamId={TEAM.id} source={SOURCE} onDone={() => {}} />);
-    const group = await screen.findByRole("group", { name: "Create kobe.skill.yaml" });
+    const group = await screen.findByRole("group", { name: "Create kaiju.skill.yaml" });
     await within(group).findByRole("combobox", { name: "Model for the manifest" });
-    await userEvent.click(within(group).getByRole("button", { name: "Create kobe.skill.yaml" }));
+    await userEvent.click(within(group).getByRole("button", { name: "Create kaiju.skill.yaml" }));
     expect(await screen.findByText(/did not answer/)).toBeTruthy();
     const post = calls.find((c) => c.method === "POST");
     expect(JSON.parse(String(post?.body))).toEqual({ ...SOURCE, license: "Proprietary" });

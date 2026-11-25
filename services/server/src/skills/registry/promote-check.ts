@@ -51,7 +51,7 @@ export interface PromotionPlan {
   readonly runtimeHash: string;
   readonly scan: ScanResult;
   readonly scorecard: CatalogSkillEvalScorecard | null;
-  /** The payload (what agents load) and kobe.skill.yaml, which leaves too (review C4-L3). */
+  /** The payload (what agents load) and kaiju.skill.yaml, which leaves too (review C4-L3). */
   readonly files: readonly PackageFile[];
   /** `evals/`: cases and fixtures, which leave the team too. */
   readonly fixtures: readonly PackageFile[];
@@ -217,11 +217,11 @@ async function refusalsOf(
       });
   }
   if (!plan.bundle.manifest)
-    out.push({ code: "no_manifest", message: "The package needs a kobe.skill.yaml." });
+    out.push({ code: "no_manifest", message: "The package needs a kaiju.skill.yaml." });
   else if (rules.requireLicense && !plan.bundle.manifest.license)
     out.push({
       code: "license",
-      message: "kobe.skill.yaml needs a license (Proprietary is fine).",
+      message: "The manifest needs a license (Proprietary is fine).",
     });
   // A scan that didn't finish is never submitted as a verdict (P2-11): try again.
   if (scanIncomplete(plan.scan))

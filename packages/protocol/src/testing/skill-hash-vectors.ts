@@ -24,15 +24,22 @@ const PAYLOAD: readonly [string, Uint8Array][] = [
   ["references/style.md", utf8("# Style\n")],
   ["assets/logo.bin", Uint8Array.from({ length: 256 }, (_, i) => i)],
 ];
-const PACKAGE_EXTRAS: readonly [string, Uint8Array][] = [
+const MANIFEST_BYTES = utf8(
+  "apiVersion: kobe.dev/skill/v1\nname: quarterly-report\nversion: 1.3.0\nsummary: Builds the workbook.\n",
+);
+const EVALS: readonly [string, Uint8Array][] = [
   ["evals/cases.yaml", utf8("cases:\n  - id: q3\n    prompt: Build Q3\n")],
   ["evals/fixtures/sales.csv", utf8("region,total\nnorth,10\n")],
-  [
-    "kobe.skill.yaml",
-    utf8(
-      "apiVersion: kobe.dev/skill/v1\nname: quarterly-report\nversion: 1.3.0\nsummary: Builds the workbook.\n",
-    ),
-  ],
+];
+/** A package as written before the rename: the manifest's old name (KOBE-825), hashes unchanged. */
+const PACKAGE_EXTRAS: readonly [string, Uint8Array][] = [
+  ...EVALS,
+  ["kobe.skill.yaml", MANIFEST_BYTES],
+];
+/** The same package with the manifest under its current name: the path is in the package hash. */
+const KAIJU_PACKAGE_EXTRAS: readonly [string, Uint8Array][] = [
+  ...EVALS,
+  ["kaiju.skill.yaml", MANIFEST_BYTES],
 ];
 const PROVENANCE: [string, Uint8Array] = ["provenance.json", utf8('{"apiVersion":"x"}')];
 
@@ -98,5 +105,12 @@ export const SKILL_HASH_VECTORS: readonly SkillHashVector[] = [
     ]),
     runtimeHash: "505f95cd6479ef6971e73c8e1d43aac900097b6acd55d3dea30c04d7e7a7816d",
     packageHash: "505f95cd6479ef6971e73c8e1d43aac900097b6acd55d3dea30c04d7e7a7816d",
+  },
+  {
+    name: "the full package with the manifest as kaiju.skill.yaml (KOBE-825): same runtime hash",
+    files: new Map([...PAYLOAD, ...KAIJU_PACKAGE_EXTRAS, PROVENANCE]),
+    options: { kaijuProvenance: true },
+    runtimeHash: PAYLOAD_RUNTIME,
+    packageHash: "5caf7fd80e24bcc0cdca7d9fd7ce271244b777db51feea2a54c2eade789bb74a",
   },
 ];

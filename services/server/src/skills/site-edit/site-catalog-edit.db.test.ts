@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { canonicalZip } from "@kaiju/protocol";
+import { canonicalZip, manifestWritePath } from "@kaiju/protocol";
 import { strToU8, unzipSync, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { validateZipBundle } from "../bundle.js";
@@ -57,7 +57,7 @@ async function maintainerSkill(
       "SKILL.md": strToU8(
         `---\nname: ${name}\ndescription: Builds reports.\n---\n# ${name}\n\nStep one.\n`,
       ),
-      "kobe.skill.yaml": strToU8(`${manifest}\n`),
+      "kaiju.skill.yaml": strToU8(`${manifest}\n`),
       "references/notes.md": strToU8("Notes.\n"),
       ...extra,
     }),
@@ -97,8 +97,10 @@ async function maintainerSkill(
 /** `p` re-numbered `semver` (its files otherwise the same, SKILL.md with a new line). */
 function shippedAs(p: KaijuPackage, semver: string): KaijuPackage {
   const files = new Map(Object.entries(unzipSync(p.bundle.packageZip ?? p.bundle.zip)));
-  const yaml = new TextDecoder().decode(files.get("kobe.skill.yaml"));
-  files.set("kobe.skill.yaml", strToU8(yaml.replace(/^version: .*$/m, `version: ${semver}`)));
+  // The built-ins keep their pre-rename manifest name until KOBE-833: edit it where it is.
+  const manifestPath = manifestWritePath(files);
+  const yaml = new TextDecoder().decode(files.get(manifestPath));
+  files.set(manifestPath, strToU8(yaml.replace(/^version: .*$/m, `version: ${semver}`)));
   const md = new TextDecoder().decode(files.get("SKILL.md"));
   files.set("SKILL.md", strToU8(`${md}\nShipped ${semver}.\n`));
   const valid = validateZipBundle(canonicalZip(files));
@@ -165,7 +167,7 @@ describe("the view (ac-1)", () => {
     expect(detail.status, json(detail)).toBe(200);
     expect(detail.json.files.map((f: { path: string }) => f.path)).toEqual([
       "SKILL.md",
-      "kobe.skill.yaml",
+      "kaiju.skill.yaml",
       "references/notes.md",
     ]);
     expect(detail.json.frontmatter).toMatchObject({ name: "site-report" });
