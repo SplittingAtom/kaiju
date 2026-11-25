@@ -234,7 +234,8 @@ apps/web/lib/apps/host-bridge-drag.test.ts /\bkobe\/notifications\//i
 docs/guide/building-mcp-apps.md /`(?:io\.kobe\/item-kind|kobe\/notifications\/drag-(?:start|move|end|cancel)|kobe)`|(?<=was called )Kobe(?= before)/
 
 == permanent: The sandbox's pre-rename home folder `/home/kobe` (owner decision 2026-11-24, spec §11 A7, KOBE-830): the users were renamed with the same numeric ids, and the image keeps `/home/kobe` as a root-owned symlink to `/home/kaiju` (root-owned /home, read-only root filesystem) so absolute paths stored before the rename keep resolving: virtualenvs' shebangs and pyvenv.cfg, tool configs and shell history in /workspace, Pi sessions and thread entries rebuilt from Postgres; the Dockerfile that makes the link and names the old users, the image checks that prove the link, its ownership, that no sandbox uid can repoint it, that an old-style venv runs and that no old user name is left, the manifest test's comment and the guide lines that tell agents and members the old path still works
-images/sandbox/Dockerfile images/sandbox/test-image.sh /\/home\/kobe\b|`kobe(?:-agent|-pi-<n>|-tool-<n>)?`|(?<=\^)kobe(?=")|(?<=home=kaiju,)kobe\b/
+images/sandbox/Dockerfile /(?<=`)\/home\/kobe(?=`)|(?<=ln -s \/home\/kaiju )\/home\/kobe\b|(?<=chown -h 0:0 )\/home\/kobe\b|`kobe(?:-agent|-pi-<n>|-tool-<n>)?`/
+images/sandbox/test-image.sh /\/home\/kobe\b|`kobe(?:-agent|-pi-<n>|-tool-<n>)?`|(?<=\^)kobe(?=")|(?<=home=kaiju,)kobe\b/
 services/server/src/sandbox/manifests.test.ts docs/guide/whats-new.md docs/guide/for-agents/working-in-a-sandbox.md /\/home\/kobe\b/
 
 == RN-9: Test install names, replaced by the fresh install under the new name
