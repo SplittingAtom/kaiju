@@ -25,6 +25,13 @@
 --    5) only where the agent is not customized, so a gallery agent a site admin edited keeps its
 --    name and is offered the update. The new CHECK `site_agents_gallery_key_renamed` keeps an
 --    older pod's seed from adding a second gallery agent under the old key during the upgrade.
+-- 5. Kaiju maintains its own skills (review M1): a Kaiju skill never has maintainer rows. The
+--    maintainers guard of the previous release compared the publisher with `kobe`, so a pod of
+--    that release could add one during the rolling upgrade. New triggers refuse a maintainer row
+--    on a skill published by `kaiju`, and a skill becoming `kaiju` while it has maintainers
+--    (invoker rights, pinned search_path, as 0181; SQLSTATE 23514, constraint
+--    `registry_maintainers_not_kaiju`). Rows already there are removed first, each audited as
+--    `skill.maintainer.removed` by the system (none exist unless something wrote one by hand).
 --
 -- Kept as they were: audit rows (append-only; the audit views explain old values), run events,
 -- thread entries, agent versions and Orbit eval records (`agent_slug`, manifests) and member
@@ -38,6 +45,49 @@ ALTER TABLE "registry_skills" DROP CONSTRAINT "registry_skills_detached";--> sta
 ALTER TABLE "registry_versions" DROP CONSTRAINT "registry_versions_kobe_publisher";--> statement-breakpoint
 ALTER TABLE "registry_versions" DROP CONSTRAINT "registry_versions_approval";--> statement-breakpoint
 ALTER TYPE "public"."registry_publisher" RENAME VALUE 'kobe' TO 'kaiju';--> statement-breakpoint
+WITH removed AS (
+  DELETE FROM "registry_maintainers" m
+   USING "registry_skills" s
+   WHERE s.id = m.skill_id AND s.publisher = 'kaiju'
+  RETURNING m.skill_id, m.user_id
+)
+INSERT INTO "audit_log" (actor_kind, action, target)
+SELECT 'system', 'skill.maintainer.removed',
+       jsonb_build_object('skillId', skill_id, 'userId', user_id)
+  FROM removed;--> statement-breakpoint
+CREATE FUNCTION public.registry_maintainers_not_kaiju()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+BEGIN
+  IF EXISTS (SELECT 1 FROM "public"."registry_skills" s
+              WHERE s.id = NEW.skill_id AND s.publisher::text = 'kaiju' FOR KEY SHARE) THEN
+    RAISE EXCEPTION 'Kaiju maintains its own skills: no maintainer can be added to one'
+      USING ERRCODE = '23514', CONSTRAINT = 'registry_maintainers_not_kaiju';
+  END IF;
+  RETURN NEW;
+END;
+$function$;--> statement-breakpoint
+CREATE TRIGGER "registry_maintainers_not_kaiju" AFTER INSERT OR UPDATE OF "skill_id"
+  ON "registry_maintainers"
+  FOR EACH ROW EXECUTE FUNCTION public.registry_maintainers_not_kaiju();--> statement-breakpoint
+CREATE FUNCTION public.registry_skills_kaiju_unmaintained()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+BEGIN
+  IF NEW.publisher::text = 'kaiju' AND NEW.publisher IS DISTINCT FROM OLD.publisher AND EXISTS (
+      SELECT 1 FROM "public"."registry_maintainers" m WHERE m.skill_id = NEW.id) THEN
+    RAISE EXCEPTION 'Kaiju maintains its own skills: remove the maintainers first'
+      USING ERRCODE = '23514', CONSTRAINT = 'registry_maintainers_not_kaiju';
+  END IF;
+  RETURN NEW;
+END;
+$function$;--> statement-breakpoint
+CREATE TRIGGER "registry_skills_kaiju_unmaintained" AFTER UPDATE OF "publisher" ON "registry_skills"
+  FOR EACH ROW EXECUTE FUNCTION public.registry_skills_kaiju_unmaintained();--> statement-breakpoint
 ALTER TABLE "registry_versions" DISABLE TRIGGER "registry_versions_immutable";--> statement-breakpoint
 UPDATE "registry_versions"
    SET "provenance" = jsonb_set("provenance", '{publisher}', '"kaiju"')

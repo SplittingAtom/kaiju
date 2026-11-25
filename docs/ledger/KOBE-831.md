@@ -75,8 +75,9 @@
   upgrade's roll; the value is internal (members and admins never see a tool's `source`/`scope`),
   so the owner's intent (members see Kaiju) holds without it. New code maps the old value
   whenever it reads a manifest, for good, since frozen versions keep it forever; old pods keep
-  reading unchanged rows. Versions new pods publish say `kaiju` (an old pod cannot read those:
-  only agents published during the roll, on old pods, for minutes).
+  reading unchanged rows. Versions new pods publish say `kaiju`, which an old pod cannot read:
+  agents published during the roll, and the gallery agent's generation-5 version (review L1,
+  below).
 - **Mixed rollout: where an old pod meets a rewritten value** (after the migration, before its
   replacement):
   - SQL naming the enum value `'kobe'` errors: its Kaiju skills seed at start (logged, retried by
@@ -89,14 +90,27 @@
   - Its gallery seed is refused by `site_agents_gallery_key_renamed` (logged, retirement
     postponed) instead of adding a second "Kobe". Intended.
   - JS comparisons with `"kobe"` stop recognizing Kaiju skills: the Site catalog view shows them
-    as maintainer skills (cosmetic); detach refuses (`not_kobe`, fail closed); the maintainers
-    guard no longer refuses a Kaiju skill, so a Site admin acting through an old pod could add a
-    maintainer to one. Acceptable: Site admins only, minutes, and it grants nothing (the composite
-    FK `registry_versions_publisher_fk` refuses any non-Kaiju version on a Kaiju skill); noted in
-    install.md.
+    as maintainer skills (cosmetic); detach refuses (`not_kobe`, fail closed).
+  - Maintainers (review M1, fixed): the old maintainers guard would let a Site admin add a
+    maintainer to a Kaiju skill, and that row would have outlived the roll, letting a non-admin
+    deprecate/undeprecate Kaiju's versions and read their site-wide usage. Now refused by the
+    database: trigger `registry_maintainers_not_kaiju` (insert or move of a maintainer row onto a
+    Kaiju skill) and `registry_skills_kaiju_unmaintained` (a maintained skill becoming Kaiju's),
+    both 23514 / `registry_maintainers_not_kaiju`, invoker rights, pinned search_path (as 0181);
+    migration 0262 first deletes any such row, audited `skill.maintainer.removed` (system). In
+    depth, deprecate/undeprecate (`isActiveMaintainer`) and the usage route never count a
+    maintainer row on a Kaiju skill. Fail closed.
+  - Member submission under a Kaiju name (review L2): the old `submissionRight` no longer sees
+    the name as reserved, but the version insert is refused by `registry_versions_publisher_guard`
+    (23503, a `maintainer` version on a `kaiju` skill). Acceptable: fail closed.
+  - Gallery agent version from the new seed (review L1): the first new pod publishes generation 5
+    with `kaiju` tool values; an old pod running the gallery agent's current version (new chat via
+    team default, schedule, pinned thread on it) cannot parse it, so the run fails to start or
+    every call is denied. Acceptable: fail closed, minutes; versions published before the upgrade
+    keep working on old pods.
   - The old web shows Kaiju skills as "Team-published" and no detach panel until reloaded
     (cosmetic). No API aliases: the response field and error codes changed outright.
-  - Runs on published agents: unaffected (manifests unchanged).
+  - Runs on agent versions published before the upgrade: unaffected (manifests unchanged).
 - **Audit history** untouched. The audit schema keeps `previousPublisher: "kobe"` readable
   (doc regenerated); the site and team audit views show `(before the rename; now kaiju)` next to
   `publisher`/`previousPublisher` `kobe` and a gallery agent's `slug`/`key` `kobe`
@@ -106,7 +120,7 @@
 
 ## One-release aliases (KOBE-754's removal list)
 
-- None. Permanent (not one-release): `withCurrentNames`' tool mapping (frozen versions keep the
+- None. Permanent (not one-release): the maintainer triggers, `withCurrentNames`' tool mapping (frozen versions keep the
   old value forever), `STARTUP_SEEDED_ROWS`'
   text comparison, the CHECK `site_agents_gallery_key_renamed`, the audit enum value and the
   audit views' explanation, the migration.
@@ -136,7 +150,9 @@ nowhere, so no change there. `/llms.txt` and `/docs/<slug>.md` are generated fro
   value only in `audit_log.target`, the versions' manifests and the fork's slug); server
   `policy/pre-rename-manifest.db.test.ts` (2: a run on a version frozen with `kobe` gets
   `create_artifact` allowed and its version reads with `kaiju`; control: an unparsable manifest
-  denies); server `gallery/gallery-kaiju-rename.db.test.ts` (3, ac-2 unchanged →
+  denies); db upgrade test +3 (review M1: row removed and audited, insert/move refused for owner
+  and app role, a maintained skill cannot become Kaiju's); server `skill-retirement.db.test.ts` +1
+  (a stray maintainer row on a Kaiju skill cannot deprecate or read usage); server `gallery/gallery-kaiju-rename.db.test.ts` (3, ac-2 unchanged →
   Kaiju v2 with v1 kept, fork keeps name and `forkedFrom`, thread, team default and runnable list
   by id; customized → kept, update offered, Reset gives Kaiju; old key refused); cli
   `kaiju-stored-values-backup.db.test.ts` (2, ac-3 pre-rename backup restore then upgrade;

@@ -1903,7 +1903,7 @@ path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   seed, Site console detach and reset of a Kaiju skill, and a run whose agent names a Kaiju skill
   the team has no install of yet, which fails to start), they find no gallery agent for new chats (a
   new chat starts with no agent), and their gallery seed is refused by the new CHECK
-  `site_agents_gallery_key_renamed` instead of adding a second agent. Runs on published agents keep working. One check of theirs no longer recognizes Kaiju's skills: a Site admin acting through an old pod could add a maintainer to one, which gives nothing (the database refuses any version but Kaiju's on those skills); remove it afterwards if it happens. The
+  `site_agents_gallery_key_renamed` instead of adding a second agent. Runs on agent versions published before the upgrade keep working; the gallery agent's new version (published by the first new pod) cannot be read by old pods, so a run on it there fails ("the run's agent version can't be read"). Their checks no longer recognize Kaiju's skills by publisher, so the database does: it refuses a maintainer on a Kaiju skill (new trigger `registry_maintainers_not_kaiju`; the migration also removes any such row, audited as `skill.maintainer.removed`) and a member's version under a Kaiju skill's name. The
   rewrite cannot be undone by going back a release: restore the `kaiju backup` taken before the
   upgrade (backups taken before the upgrade restore with this release's `kaiju restore` and are
   migrated like any database).

@@ -137,6 +137,13 @@ async function populate(db: TestDatabase, shape: { slugTaken: boolean }): Promis
         ids.admin,
       ],
     );
+    // A maintainer row on the Kaiju skill (as a pod of the previous release could add during the
+    // roll), and one on the maintainer's skill.
+    await c.query(
+      `INSERT INTO registry_maintainers (skill_id, user_id, added_by)
+       VALUES ($1, $2, $3), ($4, $2, $3)`,
+      [ids.kaijuSkill, ids.user, ids.admin, ids.reportSkill],
+    );
     // The gallery agent as the seed left it (customized here), and a member's fork of it.
     await c.query(
       `INSERT INTO site_agents (id, scope, slug, frontmatter, prompt, gallery_key,
@@ -334,6 +341,64 @@ describe("the registry publisher `kaiju` (KOBE-831, ac-1)", () => {
     await expect(
       admin(0, (c) => c.query(`UPDATE registry_versions SET provenance = '{}'`)),
     ).rejects.toMatchObject({ code: "55000" });
+  });
+});
+
+describe("Kaiju's skills have no maintainers (KOBE-831 review M1)", () => {
+  it("removed the maintainer row on the Kaiju skill, audited, and kept the other skill's", async () => {
+    const { ids } = site(0);
+    expect(
+      await rows(0, `SELECT skill_id, user_id FROM registry_maintainers ORDER BY skill_id`),
+    ).toEqual([{ skill_id: ids.reportSkill, user_id: ids.user }]);
+    expect(
+      await rows(
+        0,
+        `SELECT actor_kind, target FROM audit_log WHERE action = 'skill.maintainer.removed'`,
+      ),
+    ).toEqual([{ actor_kind: "system", target: { skillId: ids.kaijuSkill, userId: ids.user } }]);
+  });
+
+  it("refuses a maintainer on a Kaiju skill from now on, as an old pod would add it", async () => {
+    const { ids } = site(0);
+    await admin(0, async (c) => {
+      await expect(
+        c.query(
+          `INSERT INTO registry_maintainers (skill_id, user_id, added_by) VALUES ($1, $2, $3)`,
+          [ids.kaijuSkill, ids.admin, ids.admin],
+        ),
+      ).rejects.toMatchObject({ code: "23514", constraint: "registry_maintainers_not_kaiju" });
+      await expect(
+        c.query(`UPDATE registry_maintainers SET skill_id = $1 WHERE skill_id = $2`, [
+          ids.kaijuSkill,
+          ids.reportSkill,
+        ]),
+      ).rejects.toMatchObject({ constraint: "registry_maintainers_not_kaiju" });
+    });
+    // The app role too (the server's own connection).
+    await withClient(site(0).db.appUrl, async (c) => {
+      await expect(
+        c.query(
+          `INSERT INTO registry_maintainers (skill_id, user_id, added_by) VALUES ($1, $2, $3)`,
+          [ids.kaijuSkill, ids.admin, ids.admin],
+        ),
+      ).rejects.toMatchObject({ constraint: "registry_maintainers_not_kaiju" });
+    });
+  });
+
+  it("refuses making a maintained skill Kaiju's", async () => {
+    await admin(0, async (c) => {
+      const s = await c.query<{ id: string }>(
+        `INSERT INTO registry_skills (name, summary) VALUES ('kobe-guide', 'Ours.') RETURNING id`,
+      );
+      const id = s.rows[0]?.id;
+      await c.query(`INSERT INTO registry_maintainers (skill_id, user_id) VALUES ($1, $2)`, [
+        id,
+        site(0).ids.user,
+      ]);
+      await expect(
+        c.query(`UPDATE registry_skills SET publisher = 'kaiju' WHERE id = $1`, [id]),
+      ).rejects.toMatchObject({ constraint: "registry_maintainers_not_kaiju" });
+    });
   });
 });
 

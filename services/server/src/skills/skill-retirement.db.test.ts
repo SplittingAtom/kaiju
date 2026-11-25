@@ -571,3 +571,41 @@ describe("Undo a deprecation", () => {
     expect((await (as.admin as TestBrowser).post(`${path}/undeprecate`, {})).status).toBe(200);
   });
 });
+
+describe("Kaiju's own skills have no maintainers (KOBE-831 review M1)", () => {
+  it("never lets a maintainer row on a Kaiju skill deprecate it or read its usage", async () => {
+    const s = await h.admin.query<{ id: string }>(
+      `INSERT INTO registry_skills (name, summary, publisher) VALUES ('docx', 'D.', 'kaiju')
+       RETURNING id`,
+    );
+    const kaijuSkill = s.rows[0]?.id as string;
+    await h.admin.query(
+      `INSERT INTO registry_versions (skill_id, publisher, semver, seq, runtime_hash, package_hash,
+         runtime_storage_key, runtime_size_bytes, manifest, provenance, source, scan, verdict,
+         state, approved_at)
+       VALUES ($1, 'kaiju', '1.0.0', 1, $2, $3, 'k', 10, '{}', '{}', '{}', '{}', 'pass',
+         'approved', now())`,
+      [kaijuSkill, hashOf("docx@1.0.0:runtime"), hashOf("docx@1.0.0:package")],
+    );
+    // The database refuses the row (migration 0262); a stray one (written with the guard off)
+    // still grants nothing.
+    await expect(
+      h.admin.query(`INSERT INTO registry_maintainers (skill_id, user_id) VALUES ($1, $2)`, [
+        kaijuSkill,
+        ids.maintainer,
+      ]),
+    ).rejects.toMatchObject({ constraint: "registry_maintainers_not_kaiju" });
+    await h.admin.query(
+      `BEGIN;
+       ALTER TABLE registry_maintainers DISABLE TRIGGER registry_maintainers_not_kaiju;
+       INSERT INTO registry_maintainers (skill_id, user_id) VALUES ('${kaijuSkill}', '${ids.maintainer}');
+       ALTER TABLE registry_maintainers ENABLE TRIGGER registry_maintainers_not_kaiju;
+       COMMIT;`,
+    );
+    const maintainer = as.maintainer as TestBrowser;
+    const base = `/v1/site/skills/catalog/${kaijuSkill}`;
+    expect((await maintainer.post(`${base}/versions/1.0.0/deprecate`, {})).status).toBe(403);
+    expect((await maintainer.get(`/v1/skills/catalog/${kaijuSkill}/usage`)).status).toBe(403);
+    await h.admin.query(`DELETE FROM registry_maintainers WHERE skill_id = $1`, [kaijuSkill]);
+  });
+});

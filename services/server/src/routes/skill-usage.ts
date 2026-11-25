@@ -38,7 +38,9 @@ export function skillUsageRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariab
     const found = await db.execute<{ maintainer: boolean }>(sql`
       SELECT EXISTS (SELECT 1 FROM registry_maintainers m JOIN users u ON u.id = m.user_id
                       WHERE m.skill_id = s.id AND m.user_id = ${userId}
-                        AND u.deactivated_at IS NULL) AS maintainer
+                        AND u.deactivated_at IS NULL
+                        -- Kaiju's skills have no maintainers (KOBE-831 review M1).
+                        AND s.publisher::text <> 'kaiju') AS maintainer
         FROM registry_skills s
        WHERE s.id = ${id.data}
          AND EXISTS (SELECT 1 FROM registry_versions v WHERE v.skill_id = s.id
