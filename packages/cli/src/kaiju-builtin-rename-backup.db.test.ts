@@ -119,7 +119,7 @@ describe("a backup taken before the built-in connectors' rename (KOBE-826)", () 
       { key: "kaiju_mcp.mode", value: "admin" },
       {
         key: "kaiju_mcp.renamed",
-        value: '{"segments": {"kobe": "kaiju", "kobe_git": "kaiju_git"}}',
+        value: '{"segments": {"kobe": "kaiju", "kobe_git": "kaiju_git"}, "registered": {}}',
       },
     ]);
     expect(await sql(dst.adminUrl, `SELECT settings FROM teams`)).toEqual([
