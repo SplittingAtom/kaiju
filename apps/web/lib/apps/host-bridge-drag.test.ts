@@ -9,9 +9,10 @@ import {
 
 /**
  * KOBE-553 ac-1: the bridge-mediated pointer drag (DRAG-CONTRACT.md). The four
- * `kobe/notifications/drag-*` notifications are taken only from the bound frame with the opaque
+ * `kaiju/notifications/drag-*` notifications are taken only from the bound frame with the opaque
  * origin, their params parsed with zod (item a plain object of at most 8 KiB, x and y finite);
- * anything else is dropped, and a move, end or cancel without a live start is ignored.
+ * anything else is dropped, and a move, end or cancel without a live start is ignored. KOBE-829:
+ * every case runs under the old `kobe/notifications/drag-*` names too, which mean the same.
  */
 const ITEM = {
   kind: "table",
@@ -21,10 +22,8 @@ const ITEM = {
   identifier: "mlb.lahman.batting",
   uri: "catalyst://lakehouse/mlb/lahman/batting",
 };
-const START = "kobe/notifications/drag-start";
-const MOVE = "kobe/notifications/drag-move";
-const END = "kobe/notifications/drag-end";
-const CANCEL = "kobe/notifications/drag-cancel";
+const NEW_PREFIX = "kaiju/notifications/";
+const OLD_PREFIX = "kobe/notifications/";
 const note = (method: string, params?: unknown) => ({
   jsonrpc: "2.0",
   method,
@@ -69,7 +68,15 @@ function setup(withDrag = true) {
   return { frame, events, bridge, send, tick: (ms: number) => (now += ms) };
 }
 
-describe("pointer drags from an app frame (KOBE-553 ac-1)", () => {
+describe.each([
+  ["the new names", NEW_PREFIX],
+  ["the old names (KOBE-829)", OLD_PREFIX],
+])("pointer drags from an app frame under %s (KOBE-553 ac-1)", (_label, prefix) => {
+  const START = `${prefix}drag-start`;
+  const MOVE = `${prefix}drag-move`;
+  const END = `${prefix}drag-end`;
+  const CANCEL = `${prefix}drag-cancel`;
+
   it("forwards start, moves and end from the bound frame, frame-relative", () => {
     const t = setup();
     t.send(note(START, { item: ITEM, x: 10, y: 20 }));
@@ -238,10 +245,65 @@ describe("pointer drags from an app frame (KOBE-553 ac-1)", () => {
     expect(t.events).toEqual([]);
   });
 
-  it("drops other kaiju/ notifications", () => {
+  it("drops other notifications under the prefix", () => {
     const t = setup();
-    t.send(note("kobe/notifications/drag-drop", { item: ITEM, x: 1, y: 1 }));
-    t.send(note("kobe/notifications/drag-startx", { item: ITEM, x: 1, y: 1 }));
+    t.send(note(`${prefix}drag-drop`, { item: ITEM, x: 1, y: 1 }));
+    t.send(note(`${START}x`, { item: ITEM, x: 1, y: 1 }));
+    expect(t.events).toEqual([]);
+  });
+});
+
+describe("both name sets at once (KOBE-829)", () => {
+  const item = { item: ITEM, x: 1, y: 1 };
+
+  it("an app sending each phase under both names drops once", () => {
+    const t = setup();
+    for (const prefix of [OLD_PREFIX, NEW_PREFIX]) t.send(note(`${prefix}drag-start`, item));
+    for (const prefix of [OLD_PREFIX, NEW_PREFIX]) {
+      t.send(note(`${prefix}drag-move`, { x: 5, y: 5 }));
+    }
+    for (const prefix of [OLD_PREFIX, NEW_PREFIX]) {
+      t.send(note(`${prefix}drag-end`, { x: 9, y: 9 }));
+    }
+    // The second start replaces the first (same item); the second end finds no live drag.
+    expect(t.events.map((e) => e.phase)).toEqual(["start", "cancel", "start", "move", "move", "end"]);
+  });
+
+  it("one live drag whichever name a message uses", () => {
+    const t = setup();
+    t.send(note(`${OLD_PREFIX}drag-start`, item));
+    t.send(note(`${NEW_PREFIX}drag-move`, { x: 2, y: 2 }));
+    t.send(note(`${NEW_PREFIX}drag-cancel`));
+    t.send(note(`${OLD_PREFIX}drag-end`, { x: 3, y: 3 }));
+    expect(t.events.map((e) => e.phase)).toEqual(["start", "move", "cancel"]);
+  });
+
+  it("an end under the other name still escapes the message budget", () => {
+    const t = setup();
+    t.send(note(`${NEW_PREFIX}drag-start`, item));
+    for (let i = 0; i < BRIDGE_LIMITS.messagesPerSecond + 5; i += 1) {
+      t.send(note(`${NEW_PREFIX}drag-move`, { x: i, y: i }));
+    }
+    t.send(note(`${OLD_PREFIX}drag-end`, { x: 1, y: 1 }));
+    expect(t.events.at(-1)).toEqual({ phase: "end", x: 1, y: 1 });
+  });
+
+  it("takes exactly the two names: no other prefix, case or spelling", () => {
+    const t = setup();
+    for (const method of [
+      "KAIJU/notifications/drag-start",
+      "Kobe/notifications/drag-start",
+      "kaiju/notifications/Drag-Start",
+      "io.kaiju/notifications/drag-start",
+      "kaiju/notification/drag-start",
+      "kaiju/notifications/drag-start ",
+      "x/kaiju/notifications/drag-start",
+      "ui/notifications/drag-start",
+      "notifications/drag-start",
+      "drag-start",
+    ]) {
+      t.send(note(method, item));
+    }
     expect(t.events).toEqual([]);
   });
 });

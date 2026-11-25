@@ -2,9 +2,15 @@
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
-# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
-# permanent group with their reason. Until then the dry run lists every occurrence as left for
-# hand edits.
+# covers it.
+#
+# Hand work before the apply (docs/ledger/KOBE-829.md): the bridge takes the drag notifications
+# under either name (`dragPhaseOf`, one exact table of eight methods), the chips read the kind
+# under either `_meta` key (`itemKindOfMeta`, new key first), `hostInfo.name` is `kaiju`, the deny
+# reason `not_allowed_in_kaiju` and the in-browser chip stand-in `kaiju-reference:`; the old names
+# the bridge keeps accepting sit in a permanent group with their reason. After: the app
+# developers' guide page.
 
 == RN-16 (KOBE-829): MCP Apps names shared with external app servers (the `_meta` key, the bridge's notification methods and host name): new names, the old ones still accepted (owner decision 2026-11-24, was Q6)
+** /\bio\.kobe\/[\w-]*/
+** /\bkobe\/notifications\/[\w${}-]*/

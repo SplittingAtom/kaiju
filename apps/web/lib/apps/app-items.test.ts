@@ -12,7 +12,7 @@ const link = (over: Record<string, unknown> = {}) => ({
   type: "resource_link",
   uri: "catalyst://lakehouse/cat/ns/orders",
   name: "cat.ns.orders",
-  _meta: { "io.kobe/item-kind": "table" },
+  _meta: { "io.kaiju/item-kind": "table" },
   ...over,
 });
 
@@ -36,12 +36,22 @@ describe("appItemsOf (KOBE-490 ac-1)", () => {
 
   it("makes unknown or missing kinds generic", () => {
     const { items } = appItemsOf([
-      link({ uri: "a://1", _meta: { "io.kobe/item-kind": "Weird Kind" } }),
+      link({ uri: "a://1", _meta: { "io.kaiju/item-kind": "Weird Kind" } }),
       link({ uri: "a://2", _meta: undefined }),
-      link({ uri: "a://3", _meta: { "io.kobe/item-kind": 7 } }),
+      link({ uri: "a://3", _meta: { "io.kaiju/item-kind": 7 } }),
       link({ uri: "a://4", _meta: { "io.kobe/item-kind": "spaceship" } }),
+      link({ uri: "a://5", _meta: { "io.other/item-kind": "table" } }),
     ]);
-    expect(items.map((i) => i.kind)).toEqual(["item", "item", "item", "item"]);
+    expect(items.map((i) => i.kind)).toEqual(["item", "item", "item", "item", "item"]);
+  });
+
+  it("reads the kind under the new key or the old one, the new one first (KOBE-829)", () => {
+    const { items } = appItemsOf([
+      link({ uri: "a://1", _meta: { "io.kaiju/item-kind": "view" } }),
+      link({ uri: "a://2", _meta: { "io.kobe/item-kind": "namespace" } }),
+      link({ uri: "a://3", _meta: { "io.kaiju/item-kind": "table", "io.kobe/item-kind": "view" } }),
+    ]);
+    expect(items.map((i) => i.kind)).toEqual(["view", "namespace", "table"]);
   });
 
   it("drops invalid blocks: script-like schemes, bad uris, names and titles", () => {

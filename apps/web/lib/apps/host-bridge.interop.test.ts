@@ -64,7 +64,7 @@ describe("ext-apps App against Kaiju's bridge (review LOW-5)", () => {
     cleanup.push(() => app.close());
 
     // Kaiju's ui/initialize answer passes the App's own schema.
-    expect(app.getHostVersion()).toEqual({ name: "kobe", version: "1" });
+    expect(app.getHostVersion()).toEqual({ name: "kaiju", version: "1" });
     expect(app.getHostContext()).toMatchObject({ theme: "dark", displayMode: "inline" });
     expect(app.getHostCapabilities()?.openLinks).toBeUndefined();
     await vi.waitFor(() => expect(h.initialized).toHaveBeenCalledTimes(1));

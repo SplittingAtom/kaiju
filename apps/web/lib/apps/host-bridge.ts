@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import {
   PROTOCOL_VERSION,
-  DRAG_METHODS,
+  dragPhaseOf,
   callToolParams,
   displayModeParams,
   dragCancelParams,
@@ -16,6 +16,7 @@ import {
   responseSchema,
   sizeChangedParams,
   type DisplayMode,
+  type DragPhase,
   type ModelContext,
   type SizeChanged,
 } from "./bridge-schema";
@@ -34,22 +35,26 @@ import { appItemsOf, type LinkedItem } from "./app-items";
  *   (a chip), `ui/request-display-mode` (inline or fullscreen), size-changed, and logging
  *   (dropped, counted). Everything else, `ui/open-link`, `ui/download-file`, `resources/*`,
  *   `sampling/*` and `elicitation/*` included, is denied with `-32601`
- *   `{reason: "not_allowed_in_kobe"}`.
+ *   `{reason: "not_allowed_in_kaiju"}`.
  * - Per frame: 40 messages per second in all (more are dropped unread), 64 KiB per message
  *   (checked cheaply first), 10 requests per second, tool calls one at a time with at most 4
  *   admitted (a `validation_busy` answer is retried once), results capped at 4 MiB, and
  *   `initialized` honoured once.
  * - The bridge binds to the first window `frame()` names; if that changes (a re-used iframe
  *   navigated to another app), or once detached, it neither answers nor posts (review MEDIUM-1).
- * - Kaiju's pointer-drag extension (KOBE-553, DRAG-CONTRACT.md): `kobe/notifications/drag-start`
+ * - Kaiju's pointer-drag extension (KOBE-553, DRAG-CONTRACT.md): `kaiju/notifications/drag-start`
  *   (an item of at most {@link DRAG_ITEM_MAX} and a frame-relative point), `drag-move`, `drag-end`
- *   and `drag-cancel` go to `handlers.drag`; a move, end or cancel without a live start is
+ *   and `drag-cancel` go to `handlers.drag`; the same four under their old `kobe/notifications/`
+ *   names mean exactly the same (KOBE-829: one live drag per frame whichever name a message uses,
+ *   so an app sending both names still drops once); a move, end or cancel without a live start is
  *   ignored, any start (valid or not) cancels the live one first, and detaching cancels a live
  *   drag. A valid end or cancel of the live drag is exempt from the message budget.
  * - Replies go only to the frame's `contentWindow`, with target `"*"` (an opaque origin cannot be
  *   named), so a reply never carries anything the app is not entitled to.
  */
-export const NOT_ALLOWED = "not_allowed_in_kobe";
+export const NOT_ALLOWED = "not_allowed_in_kaiju";
+/** `hostInfo.name` in the `ui/initialize` answer (KOBE-829: was `kobe`; informational only). */
+export const HOST_NAME = "kaiju";
 export const BRIDGE_LIMITS = Object.freeze({
   messageBytes: 64 * 1024,
   messagesPerSecond: 40,
@@ -231,7 +236,7 @@ export function attachHostBridge(
         return {
           result: {
             protocolVersion: PROTOCOL_VERSION,
-            hostInfo: { name: "kobe", version: HOST_VERSION },
+            hostInfo: { name: HOST_NAME, version: HOST_VERSION },
             hostCapabilities: {
               serverTools: {},
               logging: {},
@@ -278,10 +283,10 @@ export function attachHostBridge(
     }
   };
 
-  const handleDrag = (method: string, params: unknown) => {
+  const handleDrag = (phase: DragPhase, params: unknown) => {
     const drag = handlers.drag;
     if (drag === undefined) return;
-    if (method === DRAG_METHODS.start) {
+    if (phase === "start") {
       // Any start ends the live drag first, valid or not: the app's next moves and end belong to
       // the new one, never to the old item (review 2).
       if (dragging) {
@@ -296,7 +301,7 @@ export function attachHostBridge(
       return;
     }
     if (!dragging) return;
-    if (method === DRAG_METHODS.cancel) {
+    if (phase === "cancel") {
       if (parse(dragCancelParams, params) === undefined && params !== undefined) return;
       dragging = false;
       drag({ phase: "cancel" });
@@ -304,31 +309,34 @@ export function attachHostBridge(
     }
     const point = parse(dragPointParams, params);
     if (!point) return;
-    if (method === DRAG_METHODS.end) dragging = false;
-    drag({ phase: method === DRAG_METHODS.end ? "end" : "move", x: point.x, y: point.y });
+    if (phase === "end") dragging = false;
+    drag({ phase, x: point.x, y: point.y });
   };
-  const isDrag = (method: string) => Object.values<string>(DRAG_METHODS).includes(method);
   /**
    * A valid `drag-end` or `drag-cancel` for the live drag, handled outside the message budget:
    * it only clears state, and losing it to a burst would strand the ghost and the cue (review 3).
    * At most one per drag, since it ends the drag; anything else takes the budgeted path.
    */
-  const stopsDrag = (data: unknown): boolean => {
-    if (!dragging || handlers.drag === undefined) return false;
-    if (roughlyTooLarge(data, BRIDGE_LIMITS.messageBytes)) return false;
+  const stopsDrag = (data: unknown): DragPhase | undefined => {
+    if (!dragging || handlers.drag === undefined) return undefined;
+    if (roughlyTooLarge(data, BRIDGE_LIMITS.messageBytes)) return undefined;
     const notification = parse(notificationSchema, data);
-    if (!notification || "id" in (data as object)) return false;
-    const { method, params } = notification;
-    if (method === DRAG_METHODS.end) return parse(dragPointParams, params) !== undefined;
-    if (method === DRAG_METHODS.cancel) {
-      return params === undefined || parse(dragCancelParams, params) !== undefined;
+    if (!notification || "id" in (data as object)) return undefined;
+    const phase = dragPhaseOf(notification.method);
+    const { params } = notification;
+    if (phase === "end") return parse(dragPointParams, params) !== undefined ? phase : undefined;
+    if (phase === "cancel") {
+      return params === undefined || parse(dragCancelParams, params) !== undefined
+        ? phase
+        : undefined;
     }
-    return false;
+    return undefined;
   };
 
   const handleNotification = (method: string, params: unknown) => {
-    if (isDrag(method)) {
-      handleDrag(method, params);
+    const phase = dragPhaseOf(method);
+    if (phase !== undefined) {
+      handleDrag(phase, params);
     } else if (method === "ui/notifications/size-changed") {
       const size = parse(sizeChangedParams, params);
       if (size) handlers.sizeChanged(size);
@@ -347,9 +355,9 @@ export function attachHostBridge(
     const frame = current();
     if (frame === null || event.source !== frame || event.origin !== "null") return;
     const data: unknown = event.data;
-    if (stopsDrag(data)) {
-      const { method, params } = data as { method: string; params?: unknown };
-      handleDrag(method, params);
+    const stop = stopsDrag(data);
+    if (stop !== undefined) {
+      handleDrag(stop, (data as { params?: unknown }).params);
       return;
     }
     // Every other message counts, before it is measured or parsed (review LOW-1, LOW-2).

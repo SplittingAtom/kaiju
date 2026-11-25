@@ -76,11 +76,34 @@ export const sizeChangedParams = z.object({
  * validates it as it does a native drop.
  */
 export const DRAG_METHODS = Object.freeze({
+  start: "kaiju/notifications/drag-start",
+  move: "kaiju/notifications/drag-move",
+  end: "kaiju/notifications/drag-end",
+  cancel: "kaiju/notifications/drag-cancel",
+});
+/**
+ * The same four methods under their name before the rename (KOBE-829, spec rename-kaiju §11 A6),
+ * still accepted so app servers built against them (Catalyst's Lakehouse Picker) keep dragging;
+ * removed in a later release once they have switched. Each means exactly what its new name means.
+ */
+export const LEGACY_DRAG_METHODS = Object.freeze({
   start: "kobe/notifications/drag-start",
   move: "kobe/notifications/drag-move",
   end: "kobe/notifications/drag-end",
   cancel: "kobe/notifications/drag-cancel",
 });
+export type DragPhase = keyof typeof DRAG_METHODS;
+/**
+ * Exactly the eight method names above, each to its phase: no prefix match, so the set the
+ * bridge takes is the four phases under either name and nothing else.
+ */
+const DRAG_PHASES: ReadonlyMap<string, DragPhase> = new Map(
+  [DRAG_METHODS, LEGACY_DRAG_METHODS].flatMap((names) =>
+    (Object.keys(names) as DragPhase[]).map((phase) => [names[phase], phase] as const),
+  ),
+);
+/** The drag phase a notification method names under either name, else undefined. */
+export const dragPhaseOf = (method: string): DragPhase | undefined => DRAG_PHASES.get(method);
 const coordinate = z.number().finite();
 const plainObject = z.custom<Record<string, unknown>>(
   (v) =>
