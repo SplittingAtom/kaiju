@@ -73,6 +73,7 @@ spec:
       restartPolicy: Never
       {{- include "kaiju.imagePullSecrets" . | nindent 6 }}
       serviceAccountName: {{ $fullname }}-isolation-preflight
+      enableServiceLinks: false
       {{- include "kaiju.podSecurityContext" . | nindent 6 }}
       containers:
         - name: preflight

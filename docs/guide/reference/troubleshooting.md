@@ -287,6 +287,13 @@ admin, who sees it in the audit log and on **Users**.
 **I see the wrong workspace's threads.** Switch with the **Workspace** switcher at the top of the
 rail.
 
+**Which version of Kaiju is running?** Open the guide (the **Docs** icon in the bar). Beside its
+title it shows the running build: **Build** and the build number (the first 12 characters of the
+commit it was built from), then the build date and time in UTC, for example
+`Build 1e6fff80abcd · 2026-11-24 14:03 UTC`. When the site runs a numbered release, **Version**
+and its number come first. **Development build** means the server was built without these
+details, as in local development. Quote the build number when you report a problem.
+
 ## Related
 
 - [Glossary](../glossary.md)

@@ -134,7 +134,7 @@ e2e/fixtures/memory-relevance/items.json /\bKobe\b/
 == permanent: Headers as written before the rename, read back from notes and prompts captured before the upgrade (the context viewer accepts both); removed with the one-release fallbacks in KOBE-754
 services/sandbox-agent/src/memory/semantic-context.ts services/sandbox-agent/src/context/sections.test.ts /## What Kobe knows\b/
 
-== permanent: Old environment variable names read for one release (KOBE-748, spec §3 change 5): the fallback helper, the startup warning that names them, the tests that start each service with them, the dev check for the renamed test database URL, the skill-scan result marker of scanner images built before the rename (review LOW-1) and the operator docs; removed with the one-release fallbacks in KOBE-754
+== permanent: Old environment variable names read for one release (KOBE-748, spec §3 change 5): the fallback helper, the startup warning that names them, the tests that start each service with them, the dev check for the renamed test database URL, the skill-scan result marker of scanner images built before the rename (review LOW-1), the Services named kobe-* whose Kubernetes service-link variables the helper skips (KOBE-836) and the operator docs; removed with the one-release fallbacks in KOBE-754
 packages/protocol/src/node/legacy-env.ts packages/protocol/src/node/legacy-env.test.ts /\bKOBE_(?:\*|[A-Z0-9_]*)/
 services/*/src/config.ts services/*/src/index.ts services/server/src/cli/legacy-env.ts apps/web/lib/config.ts apps/web/instrumentation.ts packages/cli/src/config.ts packages/db/src/cli/env.ts /\bKOBE_\*/
 services/*/src/config.test.ts services/server/src/core/config.test.ts services/server/src/cli/legacy-env.test.ts apps/web/lib/config.test.ts packages/cli/src/config.test.ts packages/db/src/cli/env.test.ts /\bKOBE_(?:\*|[A-Z0-9_]*)/
@@ -142,6 +142,7 @@ charts/k{obe,aiju}/tests/env-names.test.ts packages/protocol/src/testing/legacy-
 services/server/src/skills/registry/external-scan-result.ts /(?<=")KOBE_EXTERNAL_SCAN(?= ")/
 packages/db/src/test-support/database.ts scripts/check-test-db-env.sh package.json /\bKOBE_TEST_DATABASE_URL\b/
 docs/install.md docs/releases/** /\bKOBE_[A-Z0-9_*]*/
+packages/protocol/src/node/legacy-env.ts packages/protocol/src/node/legacy-env.test.ts docs/install.md /`?\bkobe-\*`?/
 
 == permanent: Old header names, the span attribute prefix and a session-storage key read for one release and sent next to the new ones (KOBE-749, spec §3 changes 6 and 8): the shared header map, its readers and senders, the egress rules' reserved prefix, the skill export's and the workspace file's old response headers, the trace frames' attribute prefix of older sandbox agents, the reload-draft stash of the last build before the rename, and the tests that send them; removed with the one-release fallbacks in KOBE-754
 packages/protocol/src/legacy-headers.ts packages/protocol/src/legacy-headers.test.ts /\b(?:x-)?kobe-[a-z-]+|(?<=")kobe(?="\))/

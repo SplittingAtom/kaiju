@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { GuideView } from "../../../components/docs/guide-view";
+import { currentBuildInfo } from "../../../lib/build/build-info";
 import { pageBySlug } from "../../../lib/docs/guide";
 import { getSiteBranding } from "../../../lib/theme/branding-server";
 
@@ -22,5 +24,7 @@ export default async function DocsPage({ params }: Props) {
   const page = slug === null ? null : pageBySlug(slug);
   if (slug !== null && page === null) notFound();
   const { appName } = await getSiteBranding();
-  return <GuideView page={page} appName={appName} />;
+  // KOBE-837: the build is read from this process's environment per request, never prerendered.
+  await connection();
+  return <GuideView page={page} appName={appName} build={currentBuildInfo()} />;
 }

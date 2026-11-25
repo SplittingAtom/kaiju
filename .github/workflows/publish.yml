@@ -34,30 +34,36 @@ jobs:
           # gate: the severities with a fix that fail the job (Chris, 2026-11-20, KOBE-691): the
           # Node service images and web on HIGH too; the sandbox (large Debian/Python surface)
           # stays CRITICAL-only, with HIGH in the report.
-          - { name: web, dockerfile: apps/web/Dockerfile, gate: "HIGH,CRITICAL" }
+          # build-info: the image gets KAIJU_BUILD_SHA and KAIJU_BUILD_DATE (KOBE-837); the services
+          # share one Dockerfile, so all four get them.
+          - { name: web, dockerfile: apps/web/Dockerfile, gate: "HIGH,CRITICAL", build-info: true }
           - {
               name: server,
               dockerfile: services/Dockerfile,
               build-args: SERVICE=server,
               gate: "HIGH,CRITICAL",
+              build-info: true,
             }
           - {
               name: mcp-proxy,
               dockerfile: services/Dockerfile,
               build-args: SERVICE=mcp-proxy,
               gate: "HIGH,CRITICAL",
+              build-info: true,
             }
           - {
               name: egress-proxy,
               dockerfile: services/Dockerfile,
               build-args: SERVICE=egress-proxy,
               gate: "HIGH,CRITICAL",
+              build-info: true,
             }
           - {
               name: model-gateway,
               dockerfile: services/Dockerfile,
               build-args: SERVICE=model-gateway,
               gate: "HIGH,CRITICAL",
+              build-info: true,
             }
           - { name: sandbox, dockerfile: images/sandbox/Dockerfile, gate: CRITICAL }
     steps:
@@ -66,6 +72,20 @@ jobs:
           persist-credentials: false
       - id: tag
         run: echo "short=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      # KOBE-837: the build the app shows (guide title): this commit and its commit time (ISO 8601),
+      # not the run's start, so a re-run builds the same args and reuses the layer cache.
+      - id: build-info
+        env:
+          BUILD_INFO: ${{ matrix.build-info }}
+        run: |
+          if [ "${BUILD_INFO}" = "true" ]; then
+            {
+              echo "args<<KAIJU_BUILD_INFO_EOF"
+              echo "KAIJU_BUILD_SHA=${GITHUB_SHA}"
+              echo "KAIJU_BUILD_DATE=$(git log -1 --format=%cI "${GITHUB_SHA}")"
+              echo "KAIJU_BUILD_INFO_EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           # BuildKit's own image through the Docker Hub mirror (Docker Hub pulls fail from shared runner IPs).
@@ -82,7 +102,9 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          build-args: ${{ matrix.build-args }}
+          build-args: |
+            ${{ matrix.build-args }}
+            ${{ steps.build-info.outputs.args }}
           platforms: linux/amd64
           load: true
           push: false
@@ -113,7 +135,9 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          build-args: ${{ matrix.build-args }}
+          build-args: |
+            ${{ matrix.build-args }}
+            ${{ steps.build-info.outputs.args }}
           platforms: linux/amd64
           push: true
           provenance: true

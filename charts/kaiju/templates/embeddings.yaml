@@ -52,6 +52,7 @@ spec:
       {{- include "kaiju.imagePullSecrets" . | nindent 6 }}
       serviceAccountName: {{ $fullname }}-workload
       automountServiceAccountToken: false
+      enableServiceLinks: false
       {{- include "kaiju.podSecurityContext" . | nindent 6 }}
       initContainers:
         # Puts the model file on the volume (download) or checks it is there (preloaded), and
