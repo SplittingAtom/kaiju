@@ -112,9 +112,9 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
 
 /**
  * A tool's `source` or `scope` as frozen before the rename (KOBE-831): Kaiju's own tools were
- * `kobe`. Migration 0262 rewrote the stored versions, but a pod of the previous release can still
- * publish one during the rolling upgrade, and Orbit evals keep their copy, so readers map it for
- * good (permanent, not a one-release alias).
+ * `kobe`. Published versions are immutable and were not rewritten (members never see the value,
+ * and pods of the previous release keep reading them during a rolling upgrade), so readers map it
+ * for good (permanent, not a one-release alias).
  */
 export const PRE_RENAME_TOOL_ORIGIN = "kobe";
 

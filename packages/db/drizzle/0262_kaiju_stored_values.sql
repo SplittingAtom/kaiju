@@ -13,13 +13,11 @@
 --    (0133): its trigger is disabled for this one rewrite only, inside this transaction, and
 --    nothing else changes (the package bytes and hashes do not hold the provenance; exports write
 --    provenance.json from this column).
--- 3. Frozen tool manifests of published agent versions (site and team): the tools' `source` and
---    `scope` `kobe` -> `kaiju` (Kaiju's own tools: artifacts, shared files, memory, skills, file
---    edits). Versions are immutable (D19): their triggers are disabled for this one rewrite, and
---    nothing else in a version changes. A manifest that would outgrow its size check keeps its
---    old values; readers map them for good (`withCurrentNames`), as they must for versions an
---    older pod publishes during the rolling upgrade. Orbit evals keep their copy (history; the
---    same reader maps it where an eval still publishes).
+-- 3. Not rewritten (coordinator decision, KOBE-831): the frozen tool manifests of published agent
+--    versions keep their tools' `source`/`scope` `kobe`. Members never see the value; the server
+--    of this release maps it to `kaiju` whenever it reads a manifest (`withCurrentNames`, for
+--    good), while pods of the previous release keep reading the unchanged rows during the
+--    rolling upgrade (a rewrite would fail every run on a published agent there).
 -- 4. The gallery agent (owner decision A13): its key `kobe` becomes `kaiju`, and its slug too
 --    where no other gallery agent holds `kaiju`. The id, versions, forks (`forked_from_*`),
 --    threads, schedules, team defaults and scores keep pointing at it (all by id). Its name and
@@ -29,13 +27,11 @@
 --    older pod's seed from adding a second gallery agent under the old key during the upgrade.
 --
 -- Kept as they were: audit rows (append-only; the audit views explain old values), run events,
--- thread entries, Orbit eval records (`agent_slug`, manifests) and member content (agents forked
--- from the gallery agent keep their own name and slug).
+-- thread entries, agent versions and Orbit eval records (`agent_slug`, manifests) and member
+-- content (agents forked from the gallery agent keep their own name and slug).
 --
--- Migrations run as the owner role (no superuser, no BYPASSRLS). `team_agent_versions` has FORCE
--- ROW LEVEL SECURITY with no `kobe.team_id` set, so FORCE is lifted for this update only (one
--- transaction; ALTER TABLE holds its lock until commit), as 0235/0258/0260/0261; no team is set.
--- No row is deleted. The helper function exists only inside this transaction.
+-- Migrations run as the owner role (no superuser, no BYPASSRLS). Every table touched here is
+-- site-wide (no RLS), so no team is set and no FORCE is lifted. No row is deleted.
 -- (kaiju-stored-values-upgrade.db.test.ts migrates a populated database.)
 ALTER TABLE "registry_skills" DROP CONSTRAINT "registry_skills_kobe_names";--> statement-breakpoint
 ALTER TABLE "registry_skills" DROP CONSTRAINT "registry_skills_detached";--> statement-breakpoint
@@ -50,37 +46,6 @@ UPDATE "registry_versions"
    SET "provenance" = jsonb_set("provenance", '{scan,scanner,name}', '"kaiju-skill-scanner"')
    WHERE "provenance" #>> '{scan,scanner,name}' = 'kobe-skill-scanner';--> statement-breakpoint
 ALTER TABLE "registry_versions" ENABLE TRIGGER "registry_versions_immutable";--> statement-breakpoint
-CREATE FUNCTION "public"."kaiju_831_manifest"(m jsonb) RETURNS jsonb
-  LANGUAGE sql IMMUTABLE SET search_path = pg_catalog AS $$
-  SELECT CASE WHEN coalesce(jsonb_typeof(m -> 'tools'), '') <> 'array' THEN m ELSE
-    jsonb_set(m, '{tools}', (
-      SELECT coalesce(jsonb_agg(
-               CASE WHEN jsonb_typeof(e) <> 'object' THEN e
-                    ELSE e
-                      || CASE WHEN e ->> 'source' = 'kobe' THEN '{"source":"kaiju"}'::jsonb
-                              ELSE '{}'::jsonb END
-                      || CASE WHEN e ->> 'scope' = 'kobe' THEN '{"scope":"kaiju"}'::jsonb
-                              ELSE '{}'::jsonb END END
-               ORDER BY i), '[]'::jsonb)
-        FROM jsonb_array_elements(m -> 'tools') WITH ORDINALITY AS t(e, i))) END
-$$;--> statement-breakpoint
-ALTER TABLE "team_agent_versions" NO FORCE ROW LEVEL SECURITY;--> statement-breakpoint
-ALTER TABLE "team_agent_versions" DISABLE TRIGGER "team_agent_versions_immutable";--> statement-breakpoint
-ALTER TABLE "site_agent_versions" DISABLE TRIGGER "site_agent_versions_immutable";--> statement-breakpoint
-UPDATE "site_agent_versions"
-   SET "tool_manifest" = "public"."kaiju_831_manifest"("tool_manifest")
-   WHERE ("tool_manifest" -> 'tools' @> '[{"source":"kobe"}]'
-          OR "tool_manifest" -> 'tools' @> '[{"scope":"kobe"}]')
-     AND octet_length("public"."kaiju_831_manifest"("tool_manifest")::text) <= 65536;--> statement-breakpoint
-UPDATE "team_agent_versions"
-   SET "tool_manifest" = "public"."kaiju_831_manifest"("tool_manifest")
-   WHERE ("tool_manifest" -> 'tools' @> '[{"source":"kobe"}]'
-          OR "tool_manifest" -> 'tools' @> '[{"scope":"kobe"}]')
-     AND octet_length("public"."kaiju_831_manifest"("tool_manifest")::text) <= 65536;--> statement-breakpoint
-ALTER TABLE "site_agent_versions" ENABLE TRIGGER "site_agent_versions_immutable";--> statement-breakpoint
-ALTER TABLE "team_agent_versions" ENABLE TRIGGER "team_agent_versions_immutable";--> statement-breakpoint
-ALTER TABLE "team_agent_versions" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP FUNCTION "public"."kaiju_831_manifest"(jsonb);--> statement-breakpoint
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM site_agents WHERE gallery_key = 'kobe')

@@ -13,14 +13,13 @@ import {
 /**
  * KOBE-831 (RN-18) as an upgrade runs it (the owner role) over populated databases: the value
  * `kobe` stored in enums and rows becomes `kaiju` (ac-1). The registry publisher is renamed in
- * place (every row and CHECK follows), Kaiju-published provenance and the frozen tool manifests
- * of published agent versions are rewritten with their immutability triggers off for that one
- * statement, and the gallery agent's key and slug move to `kaiju` with its id, versions and forks
- * kept. History (audit rows) keeps the old values. Site 1 has another gallery agent on the slug
+ * place (every row and CHECK follows), Kaiju-published provenance is rewritten with its
+ * immutability trigger off for that one statement, and the gallery agent's key and slug move to
+ * `kaiju` with its id, versions and forks kept. History (audit rows) and the frozen tool manifests
+ * of published agent versions keep the old values (readers map those, `withCurrentNames`). Site 1 has another gallery agent on the slug
  * `kaiju`, so its renamed agent keeps the slug `kobe`.
  */
 const MARKER = "-- KOBE-831 (rename step RN-18";
-const MANIFEST_MAX = 64 * 1024;
 
 async function withClient<T>(url: string, fn: (c: pg.Client) => Promise<T>): Promise<T> {
   const c = new pg.Client({ connectionString: url });
@@ -44,7 +43,6 @@ interface Ids {
   readonly otherGallery: string;
   readonly fork: string;
   readonly teamAgent: string;
-  readonly big: string;
 }
 
 interface Site {
@@ -64,11 +62,10 @@ const newIds = (): Ids => ({
   otherGallery: randomUUID(),
   fork: randomUUID(),
   teamAgent: randomUUID(),
-  big: randomUUID(),
 });
 
 /** A frozen manifest as versions before the rename stored it: Kaiju's tools are `kobe`. */
-const manifest = (pad: string[] = []) => ({
+const manifest = () => ({
   format: 1,
   floor: "site",
   tools: [
@@ -77,14 +74,11 @@ const manifest = (pad: string[] = []) => ({
     { name: "propose_file_edit", source: "kobe", risk: "read", scope: "kobe", open_world: false },
   ],
   connectors: "all",
-  tools_allow: pad,
+  tools_allow: [],
   tools_deny: [],
   excluded: [],
   approval_mode: { requested: null, floor: "ask-on-write", effective: "ask-on-write" },
 });
-
-const renamed = (m: ReturnType<typeof manifest>) =>
-  JSON.parse(JSON.stringify(m).replaceAll('"kobe"', '"kaiju"')) as ReturnType<typeof manifest>;
 
 const provenance = (publisher: string | null) => ({
   apiVersion: "kobe.dev/v1",
@@ -174,27 +168,18 @@ async function populate(db: TestDatabase, shape: { slugTaken: boolean }): Promis
          published_by, draft_revision) VALUES ($1, 1, '{"name":"Kobe"}', 'Mine now.', $2, $3, 1)`,
       [ids.fork, manifest(), ids.user],
     );
-    // A team agent's version (FORCE RLS), and one whose rewrite would outgrow the size check.
+    // A team agent's version.
     await c.query(
       `INSERT INTO team_agents (team_id, id, owner_user_id, slug, frontmatter)
-       VALUES ($1, $2, $3, 'agent', '{"name":"A"}'), ($1, $4, $3, 'big', '{"name":"B"}')`,
-      [ids.team, ids.teamAgent, ids.user, ids.big],
+       VALUES ($1, $2, $3, 'agent', '{"name":"A"}')`,
+      [ids.team, ids.teamAgent, ids.user],
     );
-    const base = await c.query<{ n: number }>(`SELECT octet_length($1::jsonb::text) AS n`, [
-      manifest([""]),
-    ]);
-    const pad = "x".repeat(MANIFEST_MAX - 2 - (base.rows[0]?.n ?? 0));
-    for (const [agent, m] of [
-      [ids.teamAgent, manifest()],
-      [ids.big, manifest([pad])],
-    ] as const) {
-      await c.query(
-        `INSERT INTO team_agent_versions (team_id, agent_id, version, frontmatter, prompt,
-           tool_manifest, published_by, draft_revision, skill_manifest)
-         VALUES ($1, $2, 1, '{"name":"A"}', 'p', $3, $4, 1, '{"skills": []}')`,
-        [ids.team, agent, m, ids.user],
-      );
-    }
+    await c.query(
+      `INSERT INTO team_agent_versions (team_id, agent_id, version, frontmatter, prompt,
+         tool_manifest, published_by, draft_revision, skill_manifest)
+       VALUES ($1, $2, 1, '{"name":"A"}', 'p', $3, $4, 1, '{"skills": []}')`,
+      [ids.team, ids.teamAgent, manifest(), ids.user],
+    );
     // History: an audit row naming Kaiju's publisher and the gallery agent's slug.
     await c.query(
       `INSERT INTO audit_log (actor_kind, action, target) VALUES
@@ -352,8 +337,8 @@ describe("the registry publisher `kaiju` (KOBE-831, ac-1)", () => {
   });
 });
 
-describe.each([0, 1])("frozen tool manifests and the gallery agent, site %i (KOBE-831)", (i) => {
-  it("rewrites Kaiju tools' source and scope in site and team versions only", async () => {
+describe.each([0, 1])("agent versions and the gallery agent, site %i (KOBE-831)", (i) => {
+  it("leaves the frozen tool manifests of published versions as they were", async () => {
     const { ids } = site(i);
     const versions = await rows(
       i,
@@ -361,27 +346,10 @@ describe.each([0, 1])("frozen tool manifests and the gallery agent, site %i (KOB
        UNION ALL SELECT agent_id, tool_manifest FROM team_agent_versions`,
     );
     const byAgent = new Map(versions.map((r) => [r.agent_id as string, r.m as unknown]));
-    expect(byAgent.get(ids.gallery)).toEqual(renamed(manifest()));
-    expect(byAgent.get(ids.fork)).toEqual(renamed(manifest()));
-    expect(byAgent.get(ids.teamAgent)).toEqual(renamed(manifest()));
-    // Would outgrow the size check: kept as it was (readers map it, `withCurrentNames`).
-    const big = byAgent.get(ids.big) as ReturnType<typeof manifest>;
-    expect(big.tools.map((t) => t.source)).toEqual(["pi", "kobe", "kobe"]);
-  });
-
-  it("puts the triggers and FORCE row level security back", async () => {
-    for (const table of ["team_agent_versions", "site_agent_versions"]) {
-      await expect(
-        admin(i, (c) => c.query(`UPDATE ${table} SET prompt = 'x'`)),
-        table,
-      ).rejects.toThrow(/immutable/);
+    for (const agent of [ids.gallery, ids.fork, ids.teamAgent]) {
+      expect(byAgent.get(agent), agent).toEqual(manifest());
     }
-    const force = await rows(
-      i,
-      `SELECT relforcerowsecurity AS f FROM pg_class WHERE relname = 'team_agent_versions'`,
-    );
-    expect(force).toEqual([{ f: true }]);
-    const helper = await rows(i, `SELECT 1 FROM pg_proc WHERE proname = 'kaiju_831_manifest'`);
+    const helper = await rows(i, `SELECT 1 FROM pg_proc WHERE proname LIKE 'kaiju_831%'`);
     expect(helper).toEqual([]);
   });
 
@@ -452,9 +420,11 @@ describe.each([0, 1])("frozen tool manifests and the gallery agent, site %i (KOB
       }
     });
     // audit_log: append-only history; site_agents.slug: the member's fork (and, on site 1, the
-    // gallery agent, whose slug `kaiju` was taken); team_agent_versions: the oversized manifest.
+    // gallery agent, whose slug `kaiju` was taken); the versions' frozen manifests, which readers
+    // map (`withCurrentNames`).
     expect(found).toEqual([
       "audit_log.target",
+      "site_agent_versions.tool_manifest",
       "site_agents.slug",
       "team_agent_versions.tool_manifest",
     ]);

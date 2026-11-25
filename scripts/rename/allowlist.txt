@@ -239,7 +239,7 @@ images/sandbox/test-image.sh /\/home\/kobe\b|`kobe(?:-agent|-pi-<n>|-tool-<n>)?`
 services/server/src/sandbox/manifests.test.ts docs/guide/whats-new.md docs/guide/for-agents/working-in-a-sandbox.md /\/home\/kobe\b/
 
 == permanent: The value `kobe` that Kaiju's skill publisher, its tools' frozen `source` and `scope` and the gallery agent's key and slug had before the rename (owner decision 2026-11-24, spec §11 A8 and A13, KOBE-831): migration 0262 renamed them in place, but audit rows are append-only and keep them, a pod of the previous release can still publish an agent version with the old tool values during the roll, backups of older releases hold them, and the old gallery key stays refused so an older pod's seed cannot add a second gallery agent; so the audit event's schema and doc, the audit views' explanation, the manifest reader that maps old tool values, the backup's text comparison of the publisher, the gallery key CHECK, the comments that say what was renamed, the upgrade, restore and rename tests that build a pre-rename state and the docs that explain the rename keep it
-packages/db/src/kaiju-stored-values-upgrade.db.test.ts packages/cli/src/kaiju-stored-values-backup.db.test.ts services/server/src/gallery/gallery-kaiju-rename.db.test.ts apps/web/lib/admin/renamed-names.test.ts /kobe/i
+packages/db/src/kaiju-stored-values-upgrade.db.test.ts packages/cli/src/kaiju-stored-values-backup.db.test.ts services/server/src/gallery/gallery-kaiju-rename.db.test.ts services/server/src/policy/pre-rename-manifest.db.test.ts apps/web/lib/admin/renamed-names.test.ts /kobe/i
 packages/db/src/catalog-site-edit-upgrade.db.test.ts /(?<=VALUES \([^\n]*)'kobe'/
 packages/db/src/audit/events/skills.ts /(?<=\/\/ `)kobe(?=`: Kaiju's own versions)|(?<="site", ")kobe(?="\])/
 packages/db/src/audit/events/skills.doc.ts docs/audit-log.md /(?<=rows from before the rename say )kobe(?= for kaiju)/
@@ -247,7 +247,7 @@ packages/db/src/schema/agents.ts /(?<=\$\{t\.galleryKey\} <> ')kobe(?=')/
 packages/db/src/startup-seeds.ts /(?<=^ \* `)kobe(?=`, which `= 'kaiju'`)|(?<=IN \('kaiju', ')kobe(?='\))/
 packages/protocol/src/skill-catalog.ts /(?<=publisher was `)kobe(?=`)|(?<=PRE_RENAME_STORED_VALUE = ")kobe(?=")|(?<=`previousPublisher` `)kobe(?=`)|(?<=`key` `)kobe(?=` of a gallery agent)/
 apps/web/lib/admin/renamed-names.ts /(?<=key and slug, `)kobe(?=`)|(?<=`publisher: )kobe(?=`)/
-services/server/src/agents/manifest.ts /^ \* `kobe`(?=\. Migration 0262)|(?<=PRE_RENAME_TOOL_ORIGIN = ")kobe(?=")|(?<=`scope` `)kobe(?=` read as)/
+services/server/src/agents/manifest.ts /^ \* `kobe`(?=\. Published versions are immutable)|(?<=PRE_RENAME_TOOL_ORIGIN = ")kobe(?=")|(?<=`scope` `)kobe(?=` read as)/
 services/server/src/agents/manifest.test.ts /(?<=source and scope )kobe(?= \(before the rename)/
 services/server/src/gallery/definitions.ts /(?<=renamed it from )Kobe(?=:)|(?<=moved the key `)kobe(?=` to `kaiju`)/
 docs/guide/whats-new.md /(?<=\(it was \*\*)Kobe(?=\*\*\)\. The upgrade publishes)|^`kobe`(?=\); the audit log keeps the old value)/

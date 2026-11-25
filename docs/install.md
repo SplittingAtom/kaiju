@@ -1890,22 +1890,23 @@ path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   migration `0262_kaiju_stored_values`).** The migration renames the registry publisher value
   (`ALTER TYPE registry_publisher RENAME VALUE 'kobe' TO 'kaiju'`: every catalog skill and version
   keeps its row, and the CHECKs that name it are re-created), rewrites Kaiju-published provenance
-  (`publisher`, scanner `kaiju-skill-scanner`) and the frozen tool manifests of published agent
-  versions (Kaiju's own tools have `source` and `scope` `kaiju`; a manifest the rewrite would push
-  past its 64 KiB limit is kept and read as `kaiju`), and moves the gallery agent's key `kobe` to
+  (`publisher`, scanner `kaiju-skill-scanner`), and moves the gallery agent's key `kobe` to
   `kaiju`, with its slug where no other gallery agent holds `kaiju` (the Job logs a `KOBE-831`
-  notice otherwise). Its id, versions, forks, threads, schedules and team defaults are unchanged
-  (all by id; no URL or stored message names an agent's slug). The new server then publishes the
-  gallery agent as **Kaiju** (generation 5) unless a site admin customized it, in which case it
-  keeps its name and the console offers the update. Audit rows keep the old values; the audit
-  views show today's next to them. During the rolling `helm upgrade`, server pods of the previous
-  release fail closed for those minutes: they refuse the renamed enum value (catalog skill queries
-  that name `kobe` error), cannot read the rewritten agent versions (a run on a published agent
-  fails as "the run's agent version can't be read"), find no gallery agent for new chats, and
-  their gallery seed is refused by the new CHECK `site_agents_gallery_key_renamed` instead of
-  adding a second agent. Nothing is allowed that should not be. The rewrite cannot be undone by
-  going back a release: restore the `kaiju backup` taken before the upgrade (backups taken before
-  the upgrade restore with this release's `kaiju restore` and are migrated like any database).
+  notice otherwise). Published agent versions are not touched: their frozen tool lists keep the
+  old internal value, which this release reads as `kaiju`. The gallery agent's id, versions, forks,
+  threads, schedules and team defaults are unchanged (all by id; no URL or stored message names an
+  agent's slug). The new server then publishes the gallery agent as **Kaiju** (generation 5)
+  unless a site admin customized it, in which case it keeps its name and the console offers the
+  update. Audit rows keep the old values; the audit views show today's next to them. During the
+  rolling `helm upgrade`, server pods of the previous release fail closed in a few places for
+  those minutes: their queries that name the old publisher value error (their Kaiju skills
+  seed, Site console detach and reset of a Kaiju skill, and a run whose agent names a Kaiju skill
+  the team has no install of yet, which fails to start), they find no gallery agent for new chats (a
+  new chat starts with no agent), and their gallery seed is refused by the new CHECK
+  `site_agents_gallery_key_renamed` instead of adding a second agent. Runs on published agents keep working. One check of theirs no longer recognizes Kaiju's skills: a Site admin acting through an old pod could add a maintainer to one, which gives nothing (the database refuses any version but Kaiju's on those skills); remove it afterwards if it happens. The
+  rewrite cannot be undone by going back a release: restore the `kaiju backup` taken before the
+  upgrade (backups taken before the upgrade restore with this release's `kaiju restore` and are
+  migrated like any database).
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
   namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces

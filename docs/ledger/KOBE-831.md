@@ -21,7 +21,8 @@
   CHECKs naming it; Kaiju-published provenance (`publisher`, and the scanner name
   `kobe-skill-scanner`, also in promoted and site versions); the frozen `tool_manifest` of
   published agent versions (Kaiju's tools had `source`/`scope` `kobe`: artifacts, shared files,
-  memory, skill drafts, file edits); the gallery agent's `gallery_key` and `slug`. Not stored:
+  memory, skill drafts, file edits; kept, see Decisions); the gallery agent's `gallery_key` and
+  `slug`. Not stored:
   the theme preset (`kobe` was never a preset; the branding test that refuses it now uses
   `kaiju`, so no web theme check is needed), memory/file `source`/`scope` outside manifests (the
   policy engine derives descriptors from `BUILTIN_TOOLS` per call), the review finding `source`
@@ -34,9 +35,8 @@
      (`registry_versions_approval` compares as text, so it had to be re-added).
   2. provenance `publisher` and scanner name rewritten with `registry_versions_immutable` off for
      those two statements only.
-  3. manifests (site and team versions) rewritten with the immutability triggers off and FORCE
-     lifted on `team_agent_versions` only, no team set; a manifest the rewrite would push past
-     64 KiB is left as is (readers map it). Orbit evals keep their copy (history).
+  3. agent versions untouched (coordinator decision below). Every table touched is site-wide (no
+     RLS): no team set, no FORCE lifted.
   4. gallery key `kobe` → `kaiju`, slug too unless another gallery agent holds `kaiju` (notice);
      two keys `kobe` and `kaiju` at once raise (no release ever seeded `kaiju`). New CHECK
      `site_agents_gallery_key_renamed` (`gallery_key <> 'kobe'`).
@@ -44,7 +44,9 @@
   `BUILTIN_TOOLS`; server seeds, detach/reset, catalog view, maintainers, catalog facts, policy
   prompt table; API field `kobe` → `kaiju` on a Site catalog skill (`KaijuState`), error codes
   `not_kaiju`, `kaiju_skill`, review finding source `kaiju`, scanner `kaiju-skill-scanner`; web
-  reads them. `withSiteNames` became `withCurrentNames` and also maps `kobe` tool values.
+  reads them. `withSiteNames` became `withCurrentNames` and also maps tools' `source`/`scope` `kobe` →
+  `kaiju`, permanently (every manifest reader goes through it: run tools, Dangerous mode, version
+  records, eval publish).
   `@kaiju/db` `STARTUP_SEEDED_ROWS` compares the publisher as text with both spellings, so the
   CLI still backs up and restores databases of older releases (found by the restore test: `=
 'kaiju'` is invalid enum input there).
@@ -68,14 +70,33 @@
   needed. The key is read only server-side (`KAIJU_GALLERY_KEY`) and moved by the migration.
   Where an old slug is still shown: audit rows (explained, below), Orbit eval rows (history), an
   agent export's file name (new exports say `kaiju.md`).
-- **Mixed rollout (fail closed, minutes of the roll).** Old pods after the migration: SQL naming
-  `'kobe'` for the enum errors (catalog facts, Kaiju skill seed, detach); rewritten manifests
-  fail their strict parse, so runs on published agents and version views error
-  (`UnreadableVersionError`); the default-agent lookup by key finds nothing (new chats start with
-  no agent); their gallery seed hits the new CHECK and is logged as failed (retirement then
-  postponed) instead of adding a second "Kobe". New pods read old-pod writes: manifests with
-  `kobe` map for good. The old web shows Kaiju skills as "Team-published" and no detach panel
-  until reloaded (cosmetic). No API aliases: the response field and error codes changed outright.
+- **Frozen tool manifests are not rewritten (coordinator decision 2026-11-25).** A rewrite made
+  every published-agent run on an old pod fail (`UnreadableVersionError`) for the minutes of each
+  upgrade's roll; the value is internal (members and admins never see a tool's `source`/`scope`),
+  so the owner's intent (members see Kaiju) holds without it. New code maps the old value
+  whenever it reads a manifest, for good, since frozen versions keep it forever; old pods keep
+  reading unchanged rows. Versions new pods publish say `kaiju` (an old pod cannot read those:
+  only agents published during the roll, on old pods, for minutes).
+- **Mixed rollout: where an old pod meets a rewritten value** (after the migration, before its
+  replacement):
+  - SQL naming the enum value `'kobe'` errors: its Kaiju skills seed at start (logged, retried by
+    the next start), Site console detach/reset of a Kaiju skill (error), and run-start catalog
+    facts for an agent naming a Kaiju skill the team has no install of yet (that run fails to
+    start; teams normally have the Default installs). Acceptable: fail closed, minutes.
+  - Gallery key lookup by `kobe` finds nothing: new chats on an old pod start with no agent, Make a
+    skill from this / Workbench test chats / skill evals report the agent unavailable.
+    Acceptable: fail closed.
+  - Its gallery seed is refused by `site_agents_gallery_key_renamed` (logged, retirement
+    postponed) instead of adding a second "Kobe". Intended.
+  - JS comparisons with `"kobe"` stop recognizing Kaiju skills: the Site catalog view shows them
+    as maintainer skills (cosmetic); detach refuses (`not_kobe`, fail closed); the maintainers
+    guard no longer refuses a Kaiju skill, so a Site admin acting through an old pod could add a
+    maintainer to one. Acceptable: Site admins only, minutes, and it grants nothing (the composite
+    FK `registry_versions_publisher_fk` refuses any non-Kaiju version on a Kaiju skill); noted in
+    install.md.
+  - The old web shows Kaiju skills as "Team-published" and no detach panel until reloaded
+    (cosmetic). No API aliases: the response field and error codes changed outright.
+  - Runs on published agents: unaffected (manifests unchanged).
 - **Audit history** untouched. The audit schema keeps `previousPublisher: "kobe"` readable
   (doc regenerated); the site and team audit views show `(before the rename; now kaiju)` next to
   `publisher`/`previousPublisher` `kobe` and a gallery agent's `slug`/`key` `kobe`
@@ -85,15 +106,14 @@
 
 ## One-release aliases (KOBE-754's removal list)
 
-- None. Permanent (not one-release): `withCurrentNames`' tool mapping, `STARTUP_SEEDED_ROWS`'
+- None. Permanent (not one-release): `withCurrentNames`' tool mapping (frozen versions keep the
+  old value forever), `STARTUP_SEEDED_ROWS`'
   text comparison, the CHECK `site_agents_gallery_key_renamed`, the audit enum value and the
   audit views' explanation, the migration.
 
 ## Open
 
-- During the roll, old pods fail every run on a published agent (all versions were rewritten).
-  The alternative was read-time mapping only (no manifest rewrite, as KOBE-256 did); the owner
-  asked for a data migration, so the rewrite stays and the window is documented in install.md.
+- None.
 
 ## Docs evaluation
 
@@ -110,10 +130,12 @@ nowhere, so no change there. `/llms.txt` and `/docs/<slug>.md` are generated fro
 - Unit: protocol 1406, db 1113, server 4618 (8 skipped), web 4384, cli 101, mcp-proxy 175,
   guide 33.
 - New tests: db `kaiju-stored-values-upgrade.db.test.ts` (12, ac-1: two populated sites, enum
-  labels and rows, the four CHECKs re-created and enforced, provenance, site/team manifests and
-  the oversized one kept, triggers and FORCE back, gallery key/slug moved or kept, fork lineage,
-  new CHECK, full column scan: old value only in `audit_log.target`, the fork's slug and the
-  oversized manifest); server `gallery/gallery-kaiju-rename.db.test.ts` (3, ac-2 unchanged →
+  labels and rows, the four CHECKs re-created and enforced, provenance, site/team manifests left
+  as they were, gallery key/slug moved or kept, fork lineage, new CHECK, full column scan: old
+  value only in `audit_log.target`, the versions' manifests and the fork's slug); server
+  `policy/pre-rename-manifest.db.test.ts` (2: a run on a version frozen with `kobe` gets
+  `create_artifact` allowed and its version reads with `kaiju`; control: an unparsable manifest
+  denies); server `gallery/gallery-kaiju-rename.db.test.ts` (3, ac-2 unchanged →
   Kaiju v2 with v1 kept, fork keeps name and `forkedFrom`, thread, team default and runnable list
   by id; customized → kept, update offered, Reset gives Kaiju; old key refused); cli
   `kaiju-stored-values-backup.db.test.ts` (2, ac-3 pre-rename backup restore then upgrade;

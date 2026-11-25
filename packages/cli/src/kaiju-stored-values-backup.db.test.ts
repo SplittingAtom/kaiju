@@ -18,8 +18,8 @@ import { BLOB_REFS, memoryLister, sql, U1 } from "./testing/fixtures.js";
 /**
  * KOBE-831 (RN-18): a backup taken before the stored `kobe` values were renamed restores on the
  * release it was taken with and then goes through the upgrade's migrations like any database of
- * that release: Kaiju's catalog skills are published by `kaiju`, their provenance and the frozen
- * tool manifests say `kaiju`, and the gallery agent keeps its id under the key and slug `kaiju`
+ * that release: Kaiju's catalog skills are published by `kaiju`, their provenance says `kaiju` (the
+ * frozen tool manifests keep `kobe`, which the server maps when it reads them), and the gallery agent keeps its id under the key and slug `kaiju`
  * (ac-3). A site already on the renamed schema refuses it before loading anything.
  */
 const pgBinDir = process.env.KAIJU_PG_BIN_DIR || undefined;
@@ -127,7 +127,7 @@ describe("a backup taken before the stored kobe values were renamed (KOBE-831)",
                 v.tool_manifest->'tools'->0->>'scope' AS scope
            FROM site_agents a JOIN site_agent_versions v ON v.agent_id = a.id`,
       ),
-    ).toEqual([{ id: AGENT, slug: "kaiju", key: "kaiju", source: "kaiju", scope: "kaiju" }]);
+    ).toEqual([{ id: AGENT, slug: "kaiju", key: "kaiju", source: "kobe", scope: "kobe" }]);
   }, 180_000);
 
   it("is refused by a site on the renamed schema, before anything is loaded", async () => {
