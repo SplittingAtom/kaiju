@@ -15,6 +15,7 @@
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
   min-width: 0;
@@ -168,6 +169,43 @@
   color: var(--foreground);
   background: var(--background);
   border-left: 4px solid var(--kind, var(--border));
+}
+
+/* The heading is a button that collapses its section (KOBE-841); the chevron is drawn, not text. */
+.labelButton {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: start;
+  white-space: pre;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.labelButton::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-block: 4px solid transparent;
+  border-inline-start: 5px solid var(--muted-foreground);
+  transform: rotate(90deg);
+}
+
+.labelButton[aria-expanded="false"]::before {
+  transform: none;
+}
+
+.labelButton:focus-visible {
+  outline: 2px solid var(--kaiju-composer-focus);
+  outline-offset: -2px;
 }
 
 .label[data-active] {
@@ -431,4 +469,119 @@ button.legendRow:hover {
 .memoryNote {
   margin: 0.25rem 0 0;
   color: var(--muted-foreground);
+}
+
+/* KOBE-841: the text column's controls (Formatted/Raw, Expand all, Collapse all, the filter). */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--kaiju-console-control-border);
+  border-radius: var(--kaiju-radius-md);
+}
+
+.segmentedButton {
+  padding: 0.125rem 0.5rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--foreground);
+  background: var(--background);
+  border: 0;
+  cursor: pointer;
+}
+
+.segmentedButton + .segmentedButton {
+  border-inline-start: 1px solid var(--kaiju-console-control-border);
+}
+
+.segmentedButton[aria-pressed="true"] {
+  font-weight: 600;
+  color: var(--background);
+  background: var(--foreground);
+}
+
+.segmentedButton:focus-visible,
+.smallButton:focus-visible,
+.legendRow:focus-visible {
+  outline: 2px solid var(--kaiju-composer-focus);
+  outline-offset: 1px;
+}
+
+.filterChip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+  padding: 0.125rem 0.25rem 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--foreground);
+  background: var(--muted);
+  border-radius: var(--kaiju-radius-md);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  padding: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+/* The legend's filter: its row pressed, its segment outlined, the other segments faded. */
+button.legendRow[data-selected] {
+  background: var(--muted);
+  box-shadow: inset 3px 0 0 var(--kind, var(--foreground));
+}
+
+.stack[data-filtered] .segment {
+  opacity: 0.3;
+}
+
+.stack[data-filtered] .segment[data-selected] {
+  opacity: 1;
+  outline: 2px solid var(--foreground);
+  outline-offset: -2px;
+}
+
+/* Formatted view tokens (KOBE-841): theme tokens per kind, readable in both schemes. */
+.tkKey {
+  color: var(--kaiju-ctx-syntax-key);
+}
+.tkString {
+  color: var(--kaiju-ctx-syntax-string);
+}
+.tkNumber,
+.tkLiteral {
+  color: var(--kaiju-ctx-syntax-number);
+}
+.tkPunct {
+  color: var(--muted-foreground);
+}
+.tkComment {
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+.tkTag {
+  color: var(--kaiju-ctx-syntax-tag);
+}
+.tkAttr {
+  color: var(--kaiju-ctx-syntax-attr);
+}
+.tkMeta {
+  color: var(--kaiju-ctx-syntax-meta);
 }

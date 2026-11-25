@@ -17,16 +17,20 @@ import { SET_BY_SITE } from "../../lib/memory/items-api";
 import {
   WAKE_GIVE_UP_MS,
   approximateNotice,
+  contextDownload,
   formatShare,
   gaugeModel,
   nextWakeDelay,
   type ContextRead,
+  type GaugeKind,
   type GaugeModel,
 } from "../../lib/chat/context-viewer";
+import { saveBytes } from "../../lib/files/save";
 import type { Panel } from "../../lib/shell/panels";
 import { useKaijuExtras } from "../chat/kaiju-runtime";
+import { ContextBoundary } from "./context-boundary";
 import { ContextStack } from "./context-stack";
-import { ContextText, type ContextTextHandle } from "./context-text";
+import { ContextText } from "./context-text";
 import { IconAction } from "./icon-action";
 import { WorkspacePanel } from "./workspace-panel";
 import styles from "./context-viewer.module.css";
@@ -232,8 +236,9 @@ function PhaseLine({ phase, onRetry }: { readonly phase: Phase; readonly onRetry
  * The context viewer (KOBE-471, docs/specs/context-viewer.md): what the thread's latest model call
  * sent the model, read live from the owner's sandbox. A panel over the workspace like the
  * consoles (`WorkspacePanel`: modal, Escape and Close return focus to the gauge), rendered by
- * `ContextViewerHost` beside the workspace grid as the Threads panel is, so it covers the window. The raw text takes two thirds of the width; the stacked gauge
- * and its legend the rest (stacked above the text at phone width). Owner only: the gauge offers it
+ * `ContextViewerHost` beside the workspace grid as the Threads panel is, so it covers the window. The text takes two thirds of the width; the stacked gauge
+ * and its legend the rest (stacked above the text at phone width). A legend row filters the text
+ * to its kind; Download saves what the panel holds as text (KOBE-841). Owner only: the gauge offers it
  * only on the member's own thread (the route answers 403 to anyone else).
  */
 export function ContextViewer({
@@ -251,7 +256,18 @@ export function ContextViewer({
 }) {
   const { phase, context, again, attempt } = useContextRead(read);
   const memories = useMemoriesRead(readMemories, attempt);
-  const text = useRef<ContextTextHandle>(null);
+  const [filter, setFilter] = useState<{ context: ThreadContext; kind: GaugeKind } | null>(null);
+  // A Refresh's new answer starts unfiltered.
+  const shownFilter = filter !== null && filter.context === context ? filter.kind : null;
+  const pick = (kind: GaugeKind) => {
+    if (context === null) return;
+    setFilter(shownFilter === kind ? null : { context, kind });
+  };
+  const download = () => {
+    if (context === null) return;
+    const { filename, text } = contextDownload(context, new Date());
+    saveBytes(filename, new TextEncoder().encode(text));
+  };
   const model = useMemo(
     () => (context === null ? null : gaugeModel(context, fallbackWindow)),
     [context, fallbackWindow],
@@ -265,6 +281,12 @@ export function ContextViewer({
             {context !== null && model !== null ? summaryOf(context, model) : ""}
           </p>
           <IconAction
+            command="download-file"
+            label="Download the context"
+            aria-disabled={context === null}
+            onClick={context === null ? undefined : download}
+          />
+          <IconAction
             command="refresh-files"
             label="Refresh the context"
             aria-disabled={busy}
@@ -275,10 +297,21 @@ export function ContextViewer({
         {context !== null && <Notices context={context} />}
         {memories !== null && <ContextMemoriesList memories={memories} />}
         {context !== null && model !== null && (
-          <div className={styles.columns}>
-            <ContextText sections={context.sections} handle={text} />
-            <ContextStack model={model} onPick={(section) => text.current?.show(section)} />
-          </div>
+          <ContextBoundary>
+            <div className={styles.columns}>
+              <ContextText
+                sections={context.sections}
+                filter={shownFilter}
+                onClearFilter={() => setFilter(null)}
+              />
+              <ContextStack
+                model={model}
+                selected={shownFilter}
+                memoryUnknown={context.missing.includes("memory")}
+                onPick={pick}
+              />
+            </div>
+          </ContextBoundary>
         )}
       </div>
     </WorkspacePanel>

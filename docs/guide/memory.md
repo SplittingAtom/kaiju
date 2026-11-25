@@ -164,7 +164,8 @@ what your latest message's run was given, grouped by place, each with the versio
 Policy and site memories say **Set by the Site**. While
 your newest message is still waiting, it shows the previous message's and says so. The
 `/session` dialog shows the same count as **Memories in context**. Both are yours only: people a
-conversation is shared with never see what your memory gave it.
+conversation is shared with never see what your memory gave it. The panel's gauge lists **Memory** with the
+tokens memories took up in that call (see [The Context panel](chat/context-panel.md)).
 
 ## Learn from this chat
 
