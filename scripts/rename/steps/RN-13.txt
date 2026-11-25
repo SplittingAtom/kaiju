@@ -2,9 +2,39 @@
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
-# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
-# permanent group with their reason. Until then the dry run lists every occurrence as left for
-# hand edits.
+# covers it.
+#
+# Hand work after the apply (docs/ledger/KOBE-826.md): migration 0260 (rows, tool names, settings
+# keys, pending approvals, the `kaiju_mcp.renamed` marker), the old routes and API fields served
+# for one release, the historical deny codes and audit setting names read next to the new ones,
+# the readers of the marker (audit view, shared-thread redaction, the engine's refusal of an old
+# name), and the guide.
 
 == RN-13 (KOBE-826): Built-in connector: id `kobe`, its MCP tool names, API routes (`/v1/team/connectors/kobe`, a catalog skill's `/kobe/compare` and `/kobe/reset`, server and web client together) and the site settings keys stored in the database: renamed with a data migration (owner decision 2026-11-24, was Q3)
+** /\bmcp__kobe__\w*/
+** /\bkobe_mcp(?:\.\w+|_mode)?\b/
+** /\bkobe_(?:reads_per_minute|writes_per_hour|admin_write|admin_not_allowed|admin_rate_limited|omitted)\b/
+** /\bkobe-builtin\b/
+** /\/connectors\/kobe\b/
+** /(?<=[\w}"'`])(?<!charts|opt|\/home)\/kobe(?=["'`]|\/(?:compare|reset)\b)/
+docs/** **/*.md /\*\*kobe\*\*|\bkobe connector|the-kobe-connector|\bmcp__kobe_(?:builtin|git)__\w*|(?<=name `)kobe(?=` was taken)/
+** /\bkobe(?:McpMode|ReadsPerMinute|WritesPerHour)\b/
+** /\bkobe-git(?:-builtin)?\b/
+** /\/internal\/v1\/mcp\/kobe\b/
+** /\bmcp__<kobe>__/
+** /(?<=\b(?:builtin\}?|kind|BuiltinServer|kind \?\?)\s{0,3}(?:=|:|===|!==)?\s{0,3}(?:\{ kind: )?)["'`]kobe["'`]/
+** /(?<=\[)"kobe"(?=, (?:"kobe-builtin"|deps\.))/
+** /(?<="(?:list|call):)kobe(?=")|(?<=CONNECTOR_ID, name: )"kobe"/
+** /(?<=builtin, )"kobe"|(?<=builtin: "kobe" \| "git" = )"kobe"/
+** /(?<='member', )'kobe'/
+** /(?<=\? |\?\? |name \?\? )"kobe"/
+** /(?<=named )kobe\b(?!-)/
+** /\bkobe(?=: (?:await withTeam|obj\(\{))|(?<=\{ )kobe(?=: K(?:obe|aiju)TeamConnector \})|(?<=res\.data\.)kobe\b|(?<=BUILTIN_CONNECTORS = \[)"kobe"|(?<=POST )\/kobe(?=\/(?:compare|reset))/
+** /`kobe-\$\{decided\.run_id\}`/
+packages/db/src/kobe-builtin-upgrade.db.test.ts /(?<=named `)kobe(?=`)|(?<=\[ids\.k(?:obe|aiju), )"kobe"|(?<=name: )"kobe"(?=, builtin)/
+services/server/src/k{obe,aiju}-mcp/k{obe,aiju}-mcp-web.db.test.ts /(?<=json\.)kobe\b|(?<=name: )"kobe"/
+e2e/browser/tests/kaiju-admin-mcp.spec.ts /\bmcp__kobe(?=\(|\[)|(?<=\{ )kobe(?=\?:)|(?<=json\.)kobe\b|(?<=the `)kobe(?=` connector)/
+** /(?<=PinnedTools?\()"kobe(?:_builtin)?"|\bmcp__kobe_(?:builtin|git)__\w*|(?<=segments: \[)"kobe(?:_builtin)?"|(?<=took the name `)kobe(?=`)/
+apps/web/components/admin/team-connectors-page.test.tsx apps/web/components/admin/team/agent-builder/agent-creator.test.tsx /(?<![@\w\/-])kobe(?![\w\/-])|(?<=name: \/)kobe(?=\/)/
+packages/db/src/connectors/builtin.ts packages/db/src/schema/connectors.ts services/server/src/k{obe,aiju}-mcp/** services/server/src/threads/admin-redaction.ts services/server/src/git-tools/catalog.ts apps/web/lib/admin/api/team/connectors.ts /`kobe`|"kobe" in hex/
+path packages/db/src/** /(?<=^packages\/db\/src\/)kobe(?=-builtin-(?:connector|upgrade)\.db\.test\.ts$)/

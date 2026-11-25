@@ -74,6 +74,7 @@ charts/k{obe,aiju}/** /`kobe\.\$\{a\}`|(?<=printf ")kobe(?=\.%s session tokens")
 ** /\bkobe:[a-z][\w-]*(?::|\$\{)/
 ** /\bkobe-sign-in-throttle(?=\\u0000)/
 ** /\bkobe-memory-fence:/
+** /\bkobe_mcp\.limit:/
 packages/db/src/migrate.ts /(?<=0x6b6f6265; \/\/ )"kobe"/
 services/server/src/models/sync.ts /\("kobe" \+ 40\)/
 
@@ -183,6 +184,9 @@ packages/protocol/src/skill-package/skill-package.test.ts services/server/src/sk
 # order of work reads bottom-up: RN-12..RN-20 (the owner's answers of 2026-11-24, KOBE-824), then
 # RN-9, the fresh test install, last.
 # ---------------------------------------------------------------------------------------------
+
+== permanent: The marker that replaces a tool input too large or invalid to keep (`kobe_omitted`), stored in append-only run events and thread entries and read back by the MCP App claim and the thread-file map: still written under its old name, so every stored event and every reader agree (KOBE-826)
+services/server/src/sandbox-wire/translate.ts services/server/src/sandbox-wire/translate.test.ts services/server/src/apps/claim.ts packages/protocol/src/events.ts packages/protocol/src/thread-files.ts /\bkobe_omitted\b/
 
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
