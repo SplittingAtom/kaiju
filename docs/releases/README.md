@@ -16,5 +16,6 @@ chart is `charts/kaiju` and the images are `ghcr.io/splittingatom/kaiju-*`: upgr
 release in place with `helm upgrade <release> charts/kaiju` and unchanged values. See
 [Upgrade notes](../install.md#upgrade-notes).
 
+- [v1.5: Kobe is now Kaiju](v1.5.md)
 - [v1.4: Git organizations](v1.4.md)
 - [v1.3: Semantic Memory](v1.3.md)
