@@ -13,9 +13,10 @@ import { api } from "./support/tree.js";
  *    (`data-kaiju-learn-nudge="pulse"`, two beats, recorded by a MutationObserver because it lasts
  *    2.4 s); a thumbs down then gives a `correction` nudge and a second pulse on the next read. No
  *    learning pass starts (no spinner, `running` stays null). Since KOBE-840 the dot (and so its
- *    pulse) shows only above 30% context use: ten short turns stay below that on gate1's models,
- *    so there the spec checks the server's nudges and that no dot shows or pulses (the context
- *    meter's figure decides which). Spends ten short model turns.
+ *    pulse) shows only above 30% context use: the page's reads of the team's models and the
+ *    thread's usage are answered with a fixed context window and a chosen use (`driveContextUse`),
+ *    so the spec shows no dot or pulse at exactly 30% and the dot and its pulse at 31%, whatever
+ *    model the install runs. Spends ten short model turns.
  * 2. Workspace and Site console › Memory › Quality show queue health (pending, oldest waiting,
  *    median time to decision), how memories are used (runs, thumbs down, last received, flags) and
  *    Learn's pass numbers, in sane formats (gate1's numbers vary). Light and dark screenshots of
@@ -26,6 +27,8 @@ const LEARN_PATH = /\/v1\/threads\/[^/]+\/learn(\?|$)/;
 const DURATION = /^\d+ (min|h|days)$/;
 const COUNT = /^\d+$/;
 const PULSE_TIMEOUT_MS = 30_000;
+/** How long the spec watches for a pulse that must not come (the pulse starts within frames). */
+const PULSE_WATCH_MS = 3_000;
 
 interface LearnStateWire {
   readonly blocker: { readonly code: string } | null;
@@ -98,9 +101,51 @@ const pulses = (page: Page) => page.evaluate(() => window.__kaijuNudgePulses ?? 
 
 /** The memory dot shows above this share of the context window (KOBE-840). */
 const MEMORY_DOT_MIN_CONTEXT_PERCENT = 30;
+/** The context window every team model gets in this spec (the routes below). */
+const CONTEXT_WINDOW = 100_000;
+const TEAM_MODELS_PATH = /\/v1\/team\/models(\?|$)/;
+const USAGE_PATH = /\/v1\/threads\/[^/]+\/usage(\?|$)/;
 
-/** The context meter's figure (aria-valuenow of aria-valuemax), as the + button reads it. */
-async function contextPercent(page: Page): Promise<number> {
+type Wire = Record<string, unknown> & { data?: Record<string, unknown> };
+
+/**
+ * KOBE-840: drives the context use the + button reads, deterministically. The fake model of the
+ * gate7 install (and some catalogs) leave the context window blank or report no usage, so the
+ * gauge shows no meter and the dot never shows. The page's own reads are answered with every team
+ * model at `CONTEXT_WINDOW` tokens and the thread's newest call at `percent()` of it: exactly the
+ * figure the context gauge and the + button compute (`contextPercent`). Only after a reload does
+ * the stored call decide (a run streamed in this tab keeps its own figure).
+ */
+async function driveContextUse(page: Page, percent: () => number): Promise<void> {
+  await page.route(TEAM_MODELS_PATH, async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const res = await route.fetch();
+    const body = (await res.json()) as Wire;
+    const target = body.data ?? body;
+    const models = (target["models"] as Record<string, unknown>[] | undefined) ?? [];
+    target["models"] = models.map((m) => ({ ...m, context_window: CONTEXT_WINDOW }));
+    await route.fulfill({ response: res, json: body });
+  });
+  await page.route(USAGE_PATH, async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const res = await route.fetch();
+    const body = (await res.json()) as Wire;
+    const target = body.data ?? body;
+    const call = (target["latest_call"] as Record<string, unknown> | null | undefined) ?? null;
+    target["latest_call"] = {
+      run_id: call?.["run_id"] ?? "00000000-0000-4000-8000-000000000840",
+      at: call?.["at"] ?? new Date().toISOString(),
+      model: call?.["model"] ?? "kobe-840",
+      input_tokens: Math.round((CONTEXT_WINDOW * percent()) / 100),
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+    };
+    await route.fulfill({ response: res, json: body });
+  });
+}
+
+/** The context meter's figure after a reload: the one the + button reads. */
+async function meterPercent(page: Page): Promise<number> {
   const meter = page.getByRole("meter", { name: "Context used" });
   await expect(meter).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   const now = Number(await meter.getAttribute("aria-valuenow"));
@@ -132,9 +177,13 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
     return states[states.length - 1] as LearnStateWire;
   };
   await recordPulses(page);
+  // KOBE-840: at or below 30% context use no dot (so no pulse) until the figure passes 30%.
+  let percent = MEMORY_DOT_MIN_CONTEXT_PERCENT;
+  await driveContextUse(page, () => percent);
 
   await chat.open();
   const plus = page.getByRole("button", { name: "Add to your message", exact: true });
+  const dot = plus.locator('[data-kaiju-learn-mark="dot"]');
   for (let i = 1; i <= NUDGE_MESSAGES; i += 1) {
     // ask() returns once the reply finished and the chat is idle.
     const threadId = await chat.ask(`No tools. Reply with the single word OK. (${i})`);
@@ -148,17 +197,30 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
       expect(state.nudge?.reason).toBe("messages");
     }
   }
-  // KOBE-840: the dot, and so its pulse, waits for more than 30% context use.
-  const dotShown = (await contextPercent(page)) > MEMORY_DOT_MIN_CONTEXT_PERCENT;
-  const dot = plus.locator('[data-kaiju-learn-mark="dot"]');
-  if (dotShown) {
-    await expect.poll(() => pulses(page), { timeout: PULSE_TIMEOUT_MS }).toBe(1);
-    // A hint only: the dot stays, no pass started.
-    await expect(dot).toBeVisible();
-  } else {
-    await expect(dot).toHaveCount(0);
-    expect(await pulses(page)).toBe(0);
-  }
+
+  // No pulse so far: a run's own streamed figure stayed at or below 30% (else the nudge would be
+  // claimed already and the 31% step below could not pulse).
+  expect(await pulses(page), "no dot while the run's own context figure is low").toBe(0);
+
+  // Exactly 30% (the stored call decides after a reload): the nudge is there, the dot is not.
+  let seen = states.length;
+  await page.reload();
+  await expect(chat.composer).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
+  expect((await latestAfter(seen)).nudge?.reason).toBe("messages");
+  expect(await meterPercent(page)).toBe(MEMORY_DOT_MIN_CONTEXT_PERCENT);
+  await expect(plus).toBeVisible();
+  await expect(dot).toHaveCount(0);
+  await page.waitForTimeout(PULSE_WATCH_MS);
+  expect(await pulses(page)).toBe(0);
+
+  // Above 30%: the dot shows and pulses once for the waiting nudge (it was never claimed).
+  percent = MEMORY_DOT_MIN_CONTEXT_PERCENT + 1;
+  await page.reload();
+  await expect(chat.composer).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
+  expect(await meterPercent(page)).toBe(MEMORY_DOT_MIN_CONTEXT_PERCENT + 1);
+  await expect.poll(() => pulses(page), { timeout: PULSE_TIMEOUT_MS }).toBe(1);
+  // A hint only: the dot stays, no pass started.
+  await expect(dot).toBeVisible();
   await expect(plus).not.toHaveAttribute("data-kaiju-learn-state", "spinner");
   await expect(page.locator("[data-kaiju-learn-notice]")).not.toContainText(
     "Kaiju is learning from this chat",
@@ -168,14 +230,13 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
   const down = await chat.messageAction(chat.answers.last(), "Bad answer");
   await down.click();
   await expect(down).toHaveAttribute("aria-pressed", "true");
-  const seen = states.length;
+  seen = states.length;
   await page.reload();
   await expect(chat.composer).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   const corrected = await latestAfter(seen);
   expect(corrected.nudge?.reason).toBe("correction");
   expect(corrected.running).toBeNull();
-  if (dotShown) await expect.poll(() => pulses(page), { timeout: PULSE_TIMEOUT_MS }).toBe(1);
-  else expect(await pulses(page)).toBe(0);
+  await expect.poll(() => pulses(page), { timeout: PULSE_TIMEOUT_MS }).toBe(1);
   await expect(plus).not.toHaveAttribute("data-kaiju-learn-state", "spinner");
   // Leave no rating behind (the thread goes to Trash at the end).
   const again = await chat.messageAction(chat.answers.last(), "Bad answer");

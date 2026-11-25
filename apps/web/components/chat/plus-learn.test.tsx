@@ -157,6 +157,21 @@ describe("the + button's Learn state (ac-1)", { timeout: 30_000 }, () => {
     expect(mark(above)).toBe("dot");
   });
 
+  it("KOBE-840: unknown context use (no model call read yet) shows no dot", async () => {
+    const t = answered();
+    fake.learnState.set(t, { new_messages: true });
+    openApp(fake, t);
+    await composer();
+    await waitFor(
+      () => expect(fake.requests.some((r) => r.path === `/v1/threads/${t}/learn`)).toBe(true),
+      WAIT,
+    );
+    expect(screen.queryByRole("meter", { name: "Context used" })).toBeNull();
+    const button = await plus();
+    expect(mark(button)).toBeNull();
+    expect(button.getAttribute("aria-describedby")).toBeNull();
+  });
+
   it("KOBE-840: suggestions to review keep their count whatever the context use", async () => {
     const t = answered();
     learnable(t, { candidates: 2 }, 5);

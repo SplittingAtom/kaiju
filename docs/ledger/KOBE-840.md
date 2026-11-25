@@ -96,6 +96,14 @@ in-sandbox agent sees or can do changed.
   colours); chat CSS snapshot updated.
 - ac-4: `components/chat/composer-focus.test.tsx` (load, load on a thread, touch load, New
   conversation, Threads panel, another field, the rules).
+- CI fix (gate7-b, run 45655346069): the gate7 install's model gave no context meter, so the
+  spec's meter read failed. Unknown context use (no call read yet, compacted since, no window in
+  the catalog) keeps the dot hidden (decision; unit test in `plus-learn.test.tsx`, guide says so).
+  `memory-quality-nudge.spec.ts` now drives the figure: it answers the page's
+  `GET /v1/team/models` (every model 100k window) and `GET /v1/threads/:id/usage` (newest call at
+  a chosen share) through `page.route`, then after reloads proves no dot or pulse at exactly 30%
+  and the dot plus one pulse at 31%, then the correction pulse. Not run locally (needs a
+  deployment); reasoned through and typechecked.
 - ac-5: `e2e/browser/tests/composer-focus.spec.ts` (load, two threads from Threads, New
   conversation, palette; Pixel 7 load), not run here (needs gate1). The gold glow on a pending
   approval needs a model turn to raise the approval, so it is unit-tested instead (above).

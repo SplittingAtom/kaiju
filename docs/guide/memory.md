@@ -186,7 +186,8 @@ The **+** button shows where Learn is:
 | A spinner       | Kaiju is learning from it now; you can keep chatting                                                                                                        |
 | A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review                                                                                 |
 
-Below 30% the dot stays away, but **+** › **Memory** › **Learn from this chat** works the same.
+At 30% or below, or while the context use isn't known yet (before the first answer, or right
+after Kaiju compacted the conversation), the dot stays away, but **+** › **Memory** › **Learn from this chat** works the same.
 
 **The nudge.** The dot pulses once, as a reminder, after about 10 of your messages since Kaiju last
 learned from this conversation (or since it started), or after you correct the agent: a thumbs
