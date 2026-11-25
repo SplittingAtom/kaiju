@@ -17,6 +17,7 @@ import { recordAudit } from "../../audit/record.js";
 import { siteRoleAllows, type SiteRole } from "../../authz/permissions.js";
 import { logger } from "../../logger.js";
 import type { Mailer } from "../../mail/mailer.js";
+import { readMailAppName } from "../../mail/app-name.js";
 import { oneLine } from "../../mail/messages.js";
 import { isReservedName } from "./names.js";
 
@@ -387,12 +388,13 @@ export async function notifyUnmaintained(
     "",
     `${deps.publicUrl}/admin/site/skill-tags`,
   ].join("\n");
+  const app = await readMailAppName(deps.db);
   let sent = 0;
   for (const admin of admins) {
     try {
       await deps.mailer.send({
         to: admin.email,
-        subject: "Kaiju: catalog skills unmaintained",
+        subject: `${app}: catalog skills unmaintained`,
         text,
       });
       sent += 1;

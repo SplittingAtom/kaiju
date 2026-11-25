@@ -15,6 +15,8 @@ import {
   type ThreadContextErrorCode,
 } from "@kaiju/protocol";
 import "../security/zod-jitless";
+import { formatTokens } from "../admin/usage-format";
+import { lineText, wrapLine, type FormattedLine } from "./context-format";
 import { teamHeaders } from "../teams";
 
 export type ContextRead =
@@ -177,8 +179,8 @@ export interface GaugeSlice {
   readonly share: number;
   /** Its part of the context window (or of the total without one), 0..1, for the legend. */
   readonly ofWindow: number;
-  /** The first section of this kind (where a click scrolls to). */
-  readonly firstSection: number;
+  /** The first section of this kind (where a click scrolls to); null when it has none. */
+  readonly firstSection: number | null;
 }
 
 export interface GaugeModel {
@@ -192,9 +194,16 @@ export interface GaugeModel {
   readonly over: boolean;
 }
 
+/**
+ * Kinds the legend lists even when the call had none (KOBE-841): Memory, so the member always sees
+ * what memories cost, 0 tokens included. Memory is every `memory` section (the saved memory, What
+ * Kaiju knows and the per-message picks); the memory tools' definitions count as tool definitions.
+ */
+const ALWAYS_LISTED: ReadonlySet<GaugeKind> = new Set(["memory"]);
+
 /** The stacked gauge: tokens per kind against the call's window (else the gauge's, else the total). */
 export function gaugeModel(context: ThreadContext, fallbackWindow: number | null): GaugeModel {
-  const sums = new Map<GaugeKind, { tokens: number; first: number }>();
+  const sums = new Map<GaugeKind, { tokens: number; first: number | null }>();
   context.sections.forEach((s, i) => {
     const kind = gaugeKindOf(s.kind);
     const was = sums.get(kind);
@@ -205,8 +214,8 @@ export function gaugeModel(context: ThreadContext, fallbackWindow: number | null
   const scale = Math.max(window ?? 0, total, 1);
   const basis = Math.max(window ?? total, 1);
   const slices = GAUGE_KINDS.flatMap((kind) => {
-    const sum = sums.get(kind);
-    if (sum === undefined) return [];
+    const sum = sums.get(kind) ?? (ALWAYS_LISTED.has(kind) ? { tokens: 0, first: null } : null);
+    if (sum === null) return [];
     return [
       {
         kind,
@@ -233,19 +242,52 @@ export const WRAP_COLUMNS = 160;
 
 export type TextRow =
   | { readonly type: "label"; readonly section: number }
-  | { readonly type: "line"; readonly section: number; readonly text: string };
+  | {
+      readonly type: "line";
+      readonly section: number;
+      readonly text: string;
+      /** The line's formatted tokens (Formatted view); absent: plain text. */
+      readonly tokens?: FormattedLine;
+    };
 
-/** The text as rows: a label row per section, then its lines, long lines wrapped. */
-export function buildRows(sections: readonly ContextSection[]): {
+export interface RowOptions {
+  /** Sections shown as their label only (KOBE-841). */
+  readonly collapsed?: ReadonlySet<number>;
+  /** Only sections of this gauge kind (a legend filter, KOBE-841); null: all. */
+  readonly filter?: GaugeKind | null;
+  /** The Formatted view's lines of a section (cached by the caller); absent: the raw text. */
+  readonly format?: (section: number) => readonly FormattedLine[];
+  /** With `format`: only these sections are formatted (the rest raw until shown); absent: all. */
+  readonly formatted?: ReadonlySet<number>;
+}
+
+/** The text as rows: a label row per section, then its lines unless collapsed, long lines wrapped. */
+export function buildRows(
+  sections: readonly ContextSection[],
+  { collapsed, filter = null, format, formatted }: RowOptions = {},
+): {
   readonly rows: readonly TextRow[];
-  /** Each section's label row. */
-  readonly firstRow: readonly number[];
+  /** Each shown section's label row (undefined for a section filtered out). */
+  readonly firstRow: readonly (number | undefined)[];
 } {
   const rows: TextRow[] = [];
-  const firstRow: number[] = [];
+  const firstRow: (number | undefined)[] = [];
   sections.forEach((s, section) => {
+    if (filter !== null && gaugeKindOf(s.kind) !== filter) {
+      firstRow.push(undefined);
+      return;
+    }
     firstRow.push(rows.length);
     rows.push({ type: "label", section });
+    if (collapsed?.has(section) === true) return;
+    if (format !== undefined && (formatted === undefined || formatted.has(section))) {
+      for (const line of format(section)) {
+        for (const piece of wrapLine(line, WRAP_COLUMNS)) {
+          rows.push({ type: "line", section, text: lineText(piece), tokens: piece });
+        }
+      }
+      return;
+    }
     for (const line of s.text.split("\n")) {
       if (line.length <= WRAP_COLUMNS) {
         rows.push({ type: "line", section, text: line });
@@ -353,4 +395,91 @@ export function approximateNotice(context: ThreadContext): string | null {
   const parts = context.missing.map((m) => MISSING_LABELS[m]);
   const lead = "Approximate — the sandbox restarted since the last model call.";
   return parts.length === 0 ? lead : `${lead} May lack: ${parts.join(", ")}.`;
+}
+
+/** Where the Formatted/Raw choice is remembered, per browser (KOBE-841). */
+export const CONTEXT_VIEW_KEY = "kaiju.contextViewer.view";
+
+export type ContextView = "formatted" | "raw";
+
+/** The remembered view; Formatted when none (or storage is unavailable). */
+export function readContextView(): ContextView {
+  try {
+    return localStorage.getItem(CONTEXT_VIEW_KEY) === "raw" ? "raw" : "formatted";
+  } catch {
+    return "formatted";
+  }
+}
+
+export function writeContextView(view: ContextView): void {
+  try {
+    localStorage.setItem(CONTEXT_VIEW_KEY, view);
+  } catch {
+    // Not remembered: private mode or storage blocked.
+  }
+}
+
+/** A section's heading as the text and the download show it: kind, label, tokens, shortened. */
+export function sectionHeading(s: ContextSection): string {
+  const parts = [SECTION_LABELS[s.kind]];
+  if (s.label !== "") parts.push(s.label);
+  parts.push(`${formatTokens(s.tokens)} tokens`);
+  if (s.truncated) parts.push("shortened");
+  return parts.join(" · ");
+}
+
+const stamp = (d: Date) =>
+  d
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z")
+    .replace(/:/g, "")
+    .replace("T", "-");
+
+/** 16 random hex characters for the download's section headings. */
+function randomBoundary(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return `kaiju-${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+}
+
+const occursIn = (context: ThreadContext, boundary: string) =>
+  context.sections.some((s) => s.text.includes(boundary) || s.label.includes(boundary));
+
+/**
+ * The Download (KOBE-841): the context as the panel holds it, every section's heading (kind,
+ * label, exact token count) and its raw text as sent, nothing else. Built from the route's answer
+ * already on screen, so it carries the same owner-only access and the same cuts (CV6) as the panel.
+ */
+export function contextDownload(
+  context: ThreadContext,
+  now: Date,
+  makeBoundary: () => string = randomBoundary,
+): { readonly filename: string; readonly text: string } {
+  // Section text is untrusted and could contain a heading line of its own: each real heading
+  // carries a random boundary that occurs nowhere in the content.
+  let boundary = makeBoundary();
+  for (let n = 0; n < 8 && occursIn(context, boundary); n++) boundary = makeBoundary();
+  if (occursIn(context, boundary)) throw new Error("no unused download boundary");
+  const head = [
+    `Kaiju context of conversation ${context.thread_id}`,
+    `Model: ${context.model ?? "unknown"}`,
+    `Captured: ${context.captured_at ?? "no model call yet"}`,
+    `Tokens: ${context.total_tokens}${context.context_window === null ? "" : ` of ${context.context_window}`} (${context.tokens_basis === "usage" ? "reported by the model" : "estimated"})`,
+    `Source: ${context.source}${context.exact ? "" : ` (approximate; may lack: ${context.missing.join(", ") || "nothing listed"})`}`,
+  ];
+  head.push(
+    `Sections: ${context.sections.length}, each starting with a line "===== ${boundary} <n>. …"; that boundary appears nowhere else in this file.`,
+  );
+  if (context.truncated) {
+    head.push(
+      `Shortened to fit${context.omitted_sections > 0 ? `; ${context.omitted_sections} sections left out of the middle` : ""}.`,
+    );
+  }
+  const body = context.sections.map(
+    (s, i) =>
+      `===== ${boundary} ${i + 1}. ${SECTION_LABELS[s.kind]}${s.label === "" ? "" : ` · ${s.label}`} · ${s.tokens} tokens${s.truncated ? " · shortened" : ""} =====\n${s.text}`,
+  );
+  return {
+    filename: `kaiju-context-${context.thread_id}-${stamp(now)}.txt`,
+    text: `${head.join("\n")}\n\n${body.join("\n\n")}\n`,
+  };
 }

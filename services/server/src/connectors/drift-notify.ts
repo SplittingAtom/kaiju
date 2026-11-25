@@ -11,6 +11,7 @@ import {
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import type { MailMessage, Mailer } from "../mail/mailer.js";
+import { mailAppName, readMailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 import { driftRecipients, siteAdminIds, type DriftRecipient } from "./drift-recipients.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
@@ -82,7 +83,10 @@ export function driftMessage(
     readonly invalid?: readonly InvalidTemplateNote[];
   },
   to: string,
+  /** The Site's app name, ready for mail (`readMailAppName`, KOBE-834). */
+  appName: string,
 ): MailMessage {
+  const app = mailAppName(appName);
   const name = oneLine(event.name);
   const templates = event.templates ?? [];
   const invalid = event.invalid ?? [];
@@ -90,7 +94,7 @@ export function driftMessage(
     event.tools.length === 0
       ? []
       : [
-          `The tools of the ${name} connector changed upstream. These tools are disabled in Kaiju until`,
+          `The tools of the ${name} connector changed upstream. These tools are disabled in ${app} until`,
           "a site admin reviews and re-approves them:",
           ...bullets(event.tools),
           "",
@@ -99,7 +103,7 @@ export function driftMessage(
     templates.length === 0
       ? []
       : [
-          `These app templates of the ${name} connector changed upstream or are new. Kaiju shows`,
+          `These app templates of the ${name} connector changed upstream or are new. ${app} shows`,
           "their tools' results as text until a site admin reviews and approves them:",
           ...bullets(templates),
           "",
@@ -108,7 +112,7 @@ export function driftMessage(
     invalid.length === 0
       ? []
       : [
-          `These app templates of the ${name} connector cannot be pinned, so Kaiju does not show them:`,
+          `These app templates of the ${name} connector cannot be pinned, so ${app} does not show them:`,
           ...bullets(
             invalid.map((t) => `${t.uri} (${INVALID_REASONS[t.reason] ?? oneLine(t.reason)})`),
           ),
@@ -134,7 +138,10 @@ export function skippedMessage(
   publicUrl: string,
   event: Pick<DriftEvent, "name" | "source" | "authKind">,
   to: string,
+  /** The Site's app name, ready for mail (`readMailAppName`, KOBE-834). */
+  appName: string,
 ): MailMessage {
+  const app = mailAppName(appName);
   const name = oneLine(event.name);
   const oauth = event.authKind === "oauth";
   const fix = oauth
@@ -144,7 +151,7 @@ export function skippedMessage(
       ]
     : event.source === "site"
       ? [
-          `The ${name} connector uses a site-wide key, and it has none Kaiju can use (not set, or`,
+          `The ${name} connector uses a site-wide key, and it has none ${app} can use (not set, or`,
           "its server URL changed since it was set). Set (or re-enter) its site-wide key.",
         ]
       : [
@@ -155,7 +162,7 @@ export function skippedMessage(
     to,
     subject: `Connector ${name}: tools are not checked for changes`,
     text: [
-      `The ${name} connector asks for credentials, and Kaiju has none to check its tools with:`,
+      `The ${name} connector asks for credentials, and ${app} has none to check its tools with:`,
       ...(oauth
         ? [
             "the site admin who last pinned or approved its tools has no usable connected account",
@@ -179,17 +186,20 @@ export function templatesSkippedMessage(
   publicUrl: string,
   event: Pick<DriftEvent, "name" | "reason">,
   to: string,
+  /** The Site's app name, ready for mail (`readMailAppName`, KOBE-834). */
+  appName: string,
 ): MailMessage {
+  const app = mailAppName(appName);
   const name = oneLine(event.name);
   const why =
     event.reason === "proxy_outdated"
-      ? "Kaiju's MCP proxy is older than this server and cannot read app templates: upgrade it."
+      ? `${app}'s MCP proxy is older than this server and cannot read app templates: upgrade it.`
       : `The server's app templates could not be read (${oneLine(event.reason ?? "unknown")}).`;
   return {
     to,
     subject: `Connector ${name}: app templates are not checked for changes`,
     text: [
-      `Kaiju checks the tools of the ${name} connector but not its app templates (ui://).`,
+      `${app} checks the tools of the ${name} connector but not its app templates (ui://).`,
       "Only templates a site admin approved are shown; changes on the server are not noticed.",
       "",
       why,
@@ -360,6 +370,8 @@ export async function notifyDrift(
 ): Promise<number> {
   const windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
   let sent = 0;
+  // Read once per pass, and only when there is something to send (KOBE-834).
+  let appName: string | undefined;
   try {
     for (const recent of await recentEvents(deps.db)) {
       const event = await stillCurrent(deps.db, recent);
@@ -380,7 +392,8 @@ export async function notifyDrift(
               : event.kind === "templates_skipped"
                 ? templatesSkippedMessage
                 : driftMessage;
-          await deps.mailer.send(message(deps.publicUrl, event, recipient.email));
+          appName ??= await readMailAppName(deps.db);
+          await deps.mailer.send(message(deps.publicUrl, event, recipient.email, appName));
           sent += 1;
           await record(deps.db, event, recipient, true);
         } catch (err) {

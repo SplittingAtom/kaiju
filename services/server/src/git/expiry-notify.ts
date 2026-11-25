@@ -20,6 +20,7 @@ import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { readAppName } from "../branding/settings.js";
 import type { MailMessage, Mailer } from "../mail/mailer.js";
+import { mailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import { GIT_EXPIRY_NOTICE_DAYS } from "./connection-view.js";
@@ -64,7 +65,7 @@ export function gitExpiryMessage(input: {
   const c = input.connection;
   const name = oneLine(c.displayName);
   const team = oneLine(input.teamName);
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   const expires = c.credentialExpiresAt ?? new Date(input.now);
   const lapsed = expires.getTime() <= input.now;
   const date = expires.toISOString().slice(0, 10);

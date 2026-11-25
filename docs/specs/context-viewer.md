@@ -132,7 +132,9 @@ plaintext is at most 2 MiB of section text and about 2.95 MiB of JSON, so the se
 4 MiB wire cap.
 
 **CV9. Text is untrusted.** Every section text came from the model, tools, web pages, files or
-teammates. The web renders it as plain text only (never Markdown or HTML). Without Pi identities
+teammates. The web renders it as plain text only (never Markdown or HTML). The Formatted view
+(KOBE-841) lays out YAML, XML, HTML and JSON with its own tokenizer into coloured React text
+nodes: no live HTML, no entity resolution, no remote loads; Raw shows the text as sent. Without Pi identities
 (development) the thread's own tools could rewrite the capture or the session file; the viewer
 shows what the files hold; so can they when the tools run as Pi's own uid (no tool executor). With
 the executor (KOBE-167) the capture is out of the tools' reach; the session file is on the

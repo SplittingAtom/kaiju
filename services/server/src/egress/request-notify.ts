@@ -17,6 +17,7 @@ import {
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import type { MailMessage } from "../mail/mailer.js";
+import { mailAppName, readMailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 
@@ -60,7 +61,10 @@ export function requestMessage(
   event: EgressRequestEvent,
   detail: Detail,
   to: string,
+  /** The Site's app name, ready for mail (`readMailAppName`, KOBE-834). */
+  appName: string,
 ): MailMessage {
+  const app = mailAppName(appName);
   const team = oneLine(detail.team);
   const requester = oneLine(detail.requester);
   if (event === "requested" && detail.scope === "site") {
@@ -68,7 +72,7 @@ export function requestMessage(
       to,
       subject: `Access request: ${detail.pattern} for the ${team} team (site ceiling)`,
       text: [
-        `${requester} asked to allow ${detail.pattern} for the ${team} team's sandboxes on Kaiju.`,
+        `${requester} asked to allow ${detail.pattern} for the ${team} team's sandboxes on ${app}.`,
         `A request to ${detail.domain} was blocked: it is outside the site's egress ceiling or resolved to an internal address, so a site admin decides.`,
         ...(detail.threadId ? [`Thread: ${detail.threadId}`] : []),
         "",
@@ -81,7 +85,7 @@ export function requestMessage(
       to,
       subject: `Access request: ${detail.pattern} for the ${team} team`,
       text: [
-        `${requester} asked to enable ${detail.pattern} for the ${team} team's sandboxes on Kaiju.`,
+        `${requester} asked to enable ${detail.pattern} for the ${team} team's sandboxes on ${app}.`,
         `A request to ${detail.domain} was blocked by the team's egress policy.`,
         ...(detail.threadId ? [`Thread: ${detail.threadId}`] : []),
         "",
@@ -218,6 +222,8 @@ export async function deliverEgressRequestNotifications(
 ): Promise<number> {
   const db = deps.database.db;
   let sent = 0;
+  // Read once per batch, and only when something is due (KOBE-834).
+  let appName: string | undefined;
   try {
     for (const row of await claim(db, teamId)) {
       const detail = await detailOf(db, teamId, row.request_id);
@@ -235,7 +241,10 @@ export async function deliverEgressRequestNotifications(
         continue;
       }
       try {
-        await deps.mailer.send(requestMessage(deps.publicUrl, row.event, detail, to.email));
+        appName ??= await readMailAppName(db);
+        await deps.mailer.send(
+          requestMessage(deps.publicUrl, row.event, detail, to.email, appName),
+        );
         await settle(db, teamId, row, "sent");
         sent++;
       } catch (err) {

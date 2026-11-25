@@ -160,7 +160,7 @@ describe("context viewer", () => {
     await waitFor(() => expect(document.activeElement).toBe(gauge));
   });
 
-  it("stacks the gauge by kind with a legend of tokens and shares; a legend row scrolls to its first section", async () => {
+  it("stacks the gauge by kind with a legend of tokens and shares; a legend row filters to its kind", async () => {
     const t = thread();
     const many = Array.from({ length: 300 }, (_, i) => section("user_message", 1, `line ${i}`));
     const sections = [...SECTIONS, ...many, section("compaction_summary", 99, "Summary here")];
@@ -172,6 +172,7 @@ describe("context viewer", () => {
       .map((li) => li.textContent);
     expect(rows).toEqual([
       "System prompt400 tokens40%",
+      "Memory0 tokens0%",
       "Tool definitions200 tokens20%",
       "User prompts400 tokens40%",
       "Assistant replies200 tokens20%",
@@ -188,7 +189,8 @@ describe("context viewer", () => {
       .click(within(legend).getByRole("button", { name: /Compaction summary/ }));
     const label = await within(text).findByText(/Compaction summary · 99 tokens/);
     expect(label.closest("[data-active]")).not.toBeNull();
-    expect(text.scrollTop).toBeGreaterThan(0);
+    // Filtered: only the compaction summary is left in the text.
+    expect(within(text).queryByText(/System prompt · /)).toBeNull();
   });
 
   it("searches the text and steps through the matches", async () => {

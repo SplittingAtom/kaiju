@@ -13,6 +13,7 @@ import {
 } from "@kaiju/db";
 import { recordAuditAfter } from "../audit/record.js";
 import type { MailMessage, Mailer } from "../mail/mailer.js";
+import { mailAppName, readMailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 import { PERIOD_DAYS, upcomingShortening, type RetentionPeriod } from "./periods.js";
 import { readMaximumLayer, readTeamLayer } from "./settings.js";
@@ -33,6 +34,8 @@ const LABEL: Readonly<Record<RetentionPeriod, string>> = {
 };
 
 export function shorteningMessage(input: {
+  /** The Site's app name (`readMailAppName`, KOBE-834). */
+  readonly appName: string;
   readonly to: string;
   readonly teamName: string;
   readonly period: RetentionPeriod;
@@ -43,17 +46,18 @@ export function shorteningMessage(input: {
   const team = oneLine(input.teamName);
   const when = input.effectiveAt.toUTCString();
   const label = LABEL[input.period];
+  const app = mailAppName(input.appName);
   return {
     to: input.to,
     subject: `${team}: conversations older than ${label} will be deleted on ${when}`,
     text: [
-      `The ${team} team on Kaiju will keep conversations for ${label} after their last activity,`,
+      `The ${team} team on ${app} will keep conversations for ${label} after their last activity,`,
       `starting ${when}. From then on, older conversations are deleted for good every night.`,
       "",
       `Today, ${input.threads} conversation${input.threads === 1 ? "" : "s"} in the team would be deleted on that date`,
       "(not counting conversations in Trash, which are deleted 30 days after being trashed anyway).",
       "",
-      "Members can export their own conversations before then (Export my conversations in Kaiju):",
+      `Members can export their own conversations before then (Export my conversations in ${app}):`,
       input.appUrl,
       "",
       "Team admins can cancel the change in the team console (Retention) until that date.",
@@ -67,11 +71,15 @@ export interface NotifyDeps {
   readonly publicUrl: string;
 }
 
-/** Notifies one team's admins of its next shortening, if any. Returns the emails sent. */
+/**
+ * Notifies one team's admins of its next shortening, if any. Returns the emails sent. `appName`
+ * lets a pass over every team read the Site's app name once; read here when left out.
+ */
 export async function notifyShortening(
   deps: NotifyDeps,
   teamId: string,
   now = new Date(),
+  appName?: string,
 ): Promise<number> {
   const plan = await withTeam(deps.db, teamId, async (tx) => {
     const upcoming = upcomingShortening(
@@ -102,10 +110,12 @@ export async function notifyShortening(
   });
   if (!plan) return 0;
   const [team] = await deps.db.select({ name: teams.name }).from(teams).where(eq(teams.id, teamId));
+  const app = appName ?? (await readMailAppName(deps.db));
   let sent = 0;
   for (const admin of plan.admins) {
     await deps.mailer.send(
       shorteningMessage({
+        appName: app,
         to: admin.email,
         teamName: team?.name ?? "Your team",
         period: plan.upcoming.period,
@@ -134,6 +144,7 @@ export async function notifyShortening(
 export async function notifyAllTeams(deps: NotifyDeps, now = new Date()): Promise<number> {
   const all = await deps.db.select({ id: teams.id }).from(teams).orderBy(asc(teams.id));
   let sent = 0;
-  for (const { id } of all) sent += await notifyShortening(deps, id, now);
+  const appName = await readMailAppName(deps.db);
+  for (const { id } of all) sent += await notifyShortening(deps, id, now, appName);
   return sent;
 }

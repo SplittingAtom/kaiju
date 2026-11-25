@@ -1,3 +1,4 @@
+import { mailAppName } from "./app-name.js";
 import type { MailMessage } from "./mailer.js";
 
 /** Collapses control characters (CR/LF included) and trims, so values can't break a header. */
@@ -12,7 +13,10 @@ const ROLE_NAMES = {
   member: "member",
 } as const;
 
-/** Every message names the site by its configured name (`readAppName`, theming TH1). */
+/**
+ * Every message names the site by its configured name (`readAppName`, theming TH1), cleaned for
+ * mail headers and defaulted when empty (`mailAppName`, KOBE-834).
+ */
 interface Branded {
   /** The app name (`branding.app_name`, default "Kaiju"). */
   readonly appName: string;
@@ -27,7 +31,7 @@ export function siteInviteMessage(
   },
 ): MailMessage {
   const inviter = oneLine(input.inviterName);
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   return {
     to: input.to,
     subject: `${inviter} invited you to ${app}`,
@@ -54,7 +58,7 @@ export function teamInviteMessage(
 ): MailMessage {
   const inviter = oneLine(input.inviterName);
   const team = oneLine(input.teamName);
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   return {
     to: input.to,
     subject: `${inviter} invited you to the ${team} team on ${app}`,
@@ -78,7 +82,7 @@ export function teamMemberAddedMessage(
 ): MailMessage {
   const adder = oneLine(input.adderName);
   const team = oneLine(input.teamName);
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   return {
     to: input.to,
     subject: `${adder} added you to the ${team} team on ${app}`,
@@ -108,7 +112,7 @@ export function siteAdminChangeMessage(
 ): MailMessage {
   const admin = oneLine(input.adminName);
   const team = oneLine(input.teamName);
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   const names = input.memberNames.map((n) => oneLine(n)).join(", ") || "a member";
   const role = input.role ? ROLE_NAMES[input.role] : null;
   const what = {
@@ -135,7 +139,7 @@ export function passwordResetMessage(
     readonly expiresInMinutes: number;
   },
 ): MailMessage {
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   return {
     to: input.to,
     subject: `Reset your ${app} password`,
@@ -183,7 +187,7 @@ export function scheduledRunMessage(
   const when = input.when === null ? "" : ` (${oneLine(input.when)})`;
   const outcome = OUTCOME_SUBJECT[input.outcome];
   const skipped = input.skippedCount ?? 0;
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   return {
     to: input.to,
     subject: `Your scheduled run ${outcome} in the ${team} team`,

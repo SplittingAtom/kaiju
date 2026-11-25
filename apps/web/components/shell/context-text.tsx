@@ -4,22 +4,27 @@ import type { ContextSection } from "@kaiju/protocol";
 import {
   useCallback,
   useEffect,
-  useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
-  type ReactNode,
-  type Ref,
 } from "react";
-import { formatTokens } from "../../lib/admin/usage-format";
 import {
-  SECTION_LABELS,
+  GAUGE_LABELS,
   buildRows,
   findMatches,
-  splitMatches,
+  gaugeKindOf,
+  readContextView,
+  sectionHeading,
   visibleRange,
+  writeContextView,
+  type ContextView,
+  type GaugeKind,
 } from "../../lib/chat/context-viewer";
+import { highlighted, LineBoundary, TokenLine } from "./context-line";
+import { ContextTextControls } from "./context-text-controls";
+import { useLazyFormat } from "./use-lazy-format";
 import styles from "./context-viewer.module.css";
 
 /** One row's height in px: `.row` in context-viewer.module.css sets the same. */
@@ -27,57 +32,96 @@ const ROW_PX = 20;
 /** The viewport assumed before it is measured (and where nothing is laid out). */
 const FALLBACK_VIEWPORT = 800;
 
-export interface ContextTextHandle {
-  /** Scrolls to a section's label and marks it. */
-  readonly show: (section: number) => void;
+/** The collapsed sections, cleared when the sections change (a Refresh). */
+const NONE: ReadonlySet<number> = new Set();
+
+function useCollapsed(sections: readonly ContextSection[]) {
+  const [state, setState] = useState(() => ({ sections, collapsed: NONE }));
+  if (state.sections !== sections) setState({ sections, collapsed: NONE });
+  const collapsed = state.sections === sections ? state.collapsed : NONE;
+  const set = (next: ReadonlySet<number>) => setState({ sections, collapsed: next });
+  return {
+    collapsed,
+    toggle: (i: number) => {
+      const next = new Set(collapsed);
+      if (!next.delete(i)) next.add(i);
+      set(next);
+    },
+    expandAll: () => set(new Set()),
+    collapseAll: () => set(new Set(sections.map((_, i) => i))),
+  };
 }
 
-function labelOf(s: ContextSection): string {
-  const parts = [SECTION_LABELS[s.kind]];
-  if (s.label !== "") parts.push(s.label);
-  parts.push(`${formatTokens(s.tokens)} tokens`);
-  if (s.truncated) parts.push("shortened");
-  return parts.join(" · ");
-}
-
-/** The line with each match of `query` marked; plain text only. */
-function highlighted(text: string, query: string): ReactNode {
-  return splitMatches(text, query).map((part, i) =>
-    part.hit ? <mark key={i}>{part.text}</mark> : part.text,
-  );
+/** What the live region says after the filter changes. */
+function announce(filter: GaugeKind | null, count: number): string {
+  if (filter === null) return "Showing every section.";
+  const n = `${count} ${count === 1 ? "section" : "sections"}`;
+  return `Showing only ${GAUGE_LABELS[filter]}: ${n}.`;
 }
 
 /**
- * The context's raw text (KOBE-471): each section under a label naming its kind and tokens, its
- * text as sent, monospace, as plain text (it is untrusted: never Markdown or HTML). Rows have one
- * height and only those near the viewport are rendered, so a context of thousands of sections
- * scrolls lightly. The search box marks matches and steps through them (Enter, Shift+Enter).
+ * The context's text (KOBE-471, KOBE-841): each section under a heading naming its kind and
+ * tokens (a button that collapses it to the heading), its text in the Formatted view (YAML, XML,
+ * HTML and JSON laid out and coloured, as text nodes only) or the Raw view (exactly as sent),
+ * monospace, never Markdown or live HTML. Rows have one height and only those near the viewport
+ * are rendered, so a context of thousands of sections scrolls lightly. A legend filter shows one
+ * kind only. The search box marks matches and steps through them (Enter, Shift+Enter).
  */
 export function ContextText({
   sections,
-  handle,
+  filter,
+  onClearFilter,
 }: {
   readonly sections: readonly ContextSection[];
-  readonly handle: Ref<ContextTextHandle>;
+  /** Only sections of this kind (the legend's filter); null: all. */
+  readonly filter: GaugeKind | null;
+  readonly onClearFilter: () => void;
 }) {
-  const { rows, firstRow } = useMemo(() => buildRows(sections), [sections]);
+  const [view, setView] = useState<ContextView>(readContextView);
+  const { format, formatted, reveal } = useLazyFormat(sections);
+  const { collapsed, toggle, expandAll, collapseAll } = useCollapsed(sections);
+  const { rows, firstRow } = useMemo(
+    () =>
+      buildRows(sections, {
+        collapsed,
+        filter,
+        ...(view === "formatted" ? { format, formatted } : {}),
+      }),
+    [sections, collapsed, filter, view, format, formatted],
+  );
+  const shownCount = useMemo(
+    () =>
+      filter === null
+        ? sections.length
+        : sections.filter((s) => gaugeKindOf(s.kind) === filter).length,
+    [sections, filter],
+  );
   const pane = useRef<HTMLDivElement>(null);
   const viewportRef = useRef(FALLBACK_VIEWPORT);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewport, setViewport] = useState(FALLBACK_VIEWPORT);
-  const [active, setActive] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [current, setCurrent] = useState(0);
   // Each step bumps it, so stepping to the same match (the only one) scrolls to it again.
   const [stepSeq, setStepSeq] = useState(0);
   const matches = useMemo(() => findMatches(rows, query), [rows, query]);
-  // New matches (another query, or a Refresh's text) start again at the first.
-  const [seenMatches, setSeenMatches] = useState(matches);
-  if (seenMatches !== matches) {
-    setSeenMatches(matches);
+  // Another query, or a Refresh's text, starts again at the first match (sections formatted as
+  // they scroll into view change the rows, not the place in the matches).
+  const [seen, setSeen] = useState({ query, sections });
+  if (seen.query !== query || seen.sections !== sections) {
+    setSeen({ query, sections });
     setCurrent(0);
   }
   const at = matches.length === 0 ? 0 : Math.min(current, matches.length - 1);
+
+  // A new filter marks its kind's first section, at the top; the live region says what is shown.
+  const [seenFilter, setSeenFilter] = useState(filter);
+  const [announcement, setAnnouncement] = useState("");
+  const active = filter === null ? null : sections.findIndex((s) => gaugeKindOf(s.kind) === filter);
+  if (seenFilter !== filter) {
+    setSeenFilter(filter);
+    setAnnouncement(announce(filter, shownCount));
+  }
 
   useEffect(() => {
     const el = pane.current;
@@ -99,18 +143,14 @@ export function ContextText({
     setScrollTop(top);
   }, []);
 
-  useImperativeHandle(
-    handle,
-    () => ({
-      show: (section) => {
-        const row = firstRow[section];
-        if (row === undefined) return;
-        setActive(section);
-        scrollToRow(row, 0);
-      },
-    }),
-    [firstRow, scrollToRow],
-  );
+  useEffect(() => {
+    scrollToRow(0, 0);
+  }, [filter, scrollToRow]);
+
+  const onView = (next: ContextView) => {
+    setView(next);
+    writeContextView(next);
+  };
 
   // The current match is brought into view, a third down from the top.
   const currentRow = matches[at];
@@ -130,9 +170,62 @@ export function ContextText({
   };
 
   const [start, end] = visibleRange({ scrollTop, viewport, rowPx: ROW_PX, count: rows.length });
+
+  // Sections near the viewport, expanded and not yet formatted, are formatted now; the section at
+  // the top of the viewport keeps its place while rows above or inside it change length.
+  const anchor = useRef<{ section: number; offset: number } | null>(null);
+  useLayoutEffect(() => {
+    if (view !== "formatted") return;
+    const ids = new Set<number>();
+    for (let i = start; i < end; i++) {
+      const row = rows[i];
+      if (row !== undefined && !formatted.has(row.section) && !collapsed.has(row.section)) {
+        ids.add(row.section);
+      }
+    }
+    if (ids.size === 0) return;
+    const top = rows[Math.floor(scrollTop / ROW_PX)];
+    const at = top === undefined ? undefined : firstRow[top.section];
+    if (top !== undefined && at !== undefined) {
+      anchor.current = { section: top.section, offset: Math.floor(scrollTop / ROW_PX) - at };
+    }
+    reveal([...ids]);
+  }, [view, rows, firstRow, start, end, formatted, collapsed, scrollTop, reveal]);
+  useLayoutEffect(() => {
+    const held = anchor.current;
+    if (held === null) return;
+    anchor.current = null;
+    const at = firstRow[held.section];
+    if (at === undefined) return;
+    const row = Math.min(at + held.offset, Math.max(rows.length - 1, 0));
+    if (row !== Math.floor(scrollTop / ROW_PX)) scrollToRow(row, 0);
+  }, [rows, firstRow, scrollTop, scrollToRow]);
+
+  // A focused heading stays rendered when it scrolls out of the window, so focus is never lost.
+  const [focused, setFocused] = useState<number | null>(null);
+  const focusedRow = focused === null ? undefined : firstRow[focused];
+  const shownRows = Array.from({ length: Math.max(end - start, 0) }, (_, k) => start + k);
+  if (focusedRow !== undefined && (focusedRow < start || focusedRow >= end)) {
+    shownRows.push(focusedRow);
+  }
+
   const q = query.trim();
   return (
     <div className={styles.textColumn}>
+      <ContextTextControls
+        view={view}
+        onView={onView}
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        filter={filter}
+        filterCount={shownCount}
+        onClearFilter={() => {
+          onClearFilter();
+          // The Clear filter button goes away with the filter: focus moves to the text.
+          pane.current?.focus();
+        }}
+        announcement={announcement}
+      />
       <div className={styles.search} role="search">
         <input
           type="search"
@@ -176,23 +269,43 @@ export function ContextText({
         aria-label="Context text"
         tabIndex={0}
         className={`${styles.pane} kaiju-panel`}
+        data-context-view={view}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
       >
+        {rows.length === 0 && (
+          <p className={styles.empty} role="note">
+            {filter === null
+              ? "This context is empty."
+              : `No ${GAUGE_LABELS[filter]} in this context.`}
+          </p>
+        )}
         <div className={styles.spacer} style={{ height: rows.length * ROW_PX }}>
-          {rows.slice(start, end).map((row, k) => {
-            const i = start + k;
+          {shownRows.map((i) => {
+            const row = rows[i];
+            if (row === undefined) return null;
             const s = sections[row.section];
             if (s === undefined) return null;
             if (row.type === "label") {
+              const open = !collapsed.has(row.section);
               return (
                 <div
-                  key={i}
+                  key={`s${row.section}`}
                   className={`${styles.row} ${styles.label}`}
                   data-kind={s.kind}
                   data-active={active === row.section || undefined}
                   style={{ top: i * ROW_PX }}
                 >
-                  {labelOf(s)}
+                  <button
+                    type="button"
+                    className={styles.labelButton}
+                    aria-expanded={open}
+                    data-context-section={row.section}
+                    onFocus={() => setFocused(row.section)}
+                    onBlur={() => setFocused(null)}
+                    onClick={() => toggle(row.section)}
+                  >
+                    {sectionHeading(s)}
+                  </button>
                 </div>
               );
             }
@@ -203,7 +316,13 @@ export function ContextText({
                 data-current={i === currentRow || undefined}
                 style={{ top: i * ROW_PX }}
               >
-                {highlighted(row.text, query)}
+                {row.tokens === undefined ? (
+                  highlighted(row.text, query)
+                ) : (
+                  <LineBoundary text={row.text}>
+                    <TokenLine tokens={row.tokens} query={query} />
+                  </LineBoundary>
+                )}
               </div>
             );
           })}

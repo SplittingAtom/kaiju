@@ -79,6 +79,8 @@ esac
 
 # shellcheck source=lib/gate-common.sh
 source e2e/lib/gate-common.sh
+# shellcheck source=lib/embeddings-model.sh
+source e2e/lib/embeddings-model.sh
 # shellcheck source=lib/gate-turns.sh
 source e2e/lib/gate-turns.sh
 # shellcheck source=gate2/sandbox.sh
@@ -213,15 +215,20 @@ KEPT_SECRETS=(
   egress-proxy-internal:egressProxy.git.internalKeySecret
 )
 chart_args() { # → the helm arguments every site installs with (after -n <namespace>)
-  local extra=()
+  local extra=() model_out model_args=()
   [[ -n "$TAG" ]] && extra+=(--set "global.imageTag=$TAG" --set global.imagePullPolicy=IfNotPresent)
   if [[ "$TARGET" == namespace ]]; then
     extra+=(--set "postgres.external.existingSecret=$DB_SECRET_OF_SITE" --set "s3.prefix=$S3_PREFIX")
     [[ -n "${KAIJU_GATE4_RESTORE_HOST:-}" ]] && extra+=(--set "ingress.host=$KAIJU_GATE4_RESTORE_HOST")
   fi
   # Bifrost may reach the fake model upstream (a private address), as e2e/run.sh allows it.
+  # KOBE-839: in CI the embeddings model comes from the runner (looked up per call: the
+  # restore recreates the cluster and its network). Empty locally.
+  model_out=$(embeddings_model_args) || return 1
+  [[ -z "$model_out" ]] || mapfile -t model_args <<<"$model_out"
   printf '%s\n' -f "$VALUES" "${extra[@]}" --set-json "bifrost.networkPolicy.extraEgress=$LLM_RULE" \
-    --set bifrost.allowUnsafeProviderEndpoints=true "${SITE_ARGS[@]+"${SITE_ARGS[@]}"}"
+    --set bifrost.allowUnsafeProviderEndpoints=true "${model_args[@]+"${model_args[@]}"}" \
+    "${SITE_ARGS[@]+"${SITE_ARGS[@]}"}"
 }
 helm_install() { # namespace → installs the release there and waits
   local args=()

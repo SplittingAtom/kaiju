@@ -243,6 +243,7 @@ on every preset's surfaces.
 | Context gauge    | `--kaiju-gauge-ok`, `--kaiju-gauge-warn`, `--kaiju-gauge-full` (derived from status)                                                                                     | Follow status colours                                     |
 | Context viewer   | `--kaiju-ctx-system-prompt`, `-agent-instructions`, `-skills`, `-memory`, `-viewing-file`, `-tool-definitions`, `-user`, `-assistant`, `-tools`, `-compaction`, `-other` | Okabe-Ito/Tol hues chosen for colour-vision safety        |
 | Context patterns | `--kaiju-ctx-pattern-stripe` (`rgb(255 255 255 / 45%)`), `--kaiju-ctx-pattern-dot` (`rgb(255 255 255 / 55%)`), the same in both themes                                   | The stripes and dots that tell kinds apart without colour |
+| Context syntax   | `--kaiju-ctx-syntax-key`, `-string`, `-number`, `-tag`, `-attr`, `-meta`                                                                                                 | The Formatted view's token colours (KOBE-841), per scheme |
 | Theme switch     | `--kaiju-when-light`, `--kaiju-when-dark` (`display` values; also swap the dark logo)                                                                                    | Mechanism, not style                                      |
 
 ## 5. Typography

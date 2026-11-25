@@ -177,6 +177,7 @@ describe("skip email remedy for an OAuth connector (KOBE-784)", () => {
       "https://kaiju.example",
       { name: "linear", source: "member", authKind: "oauth" },
       "a@x.test",
+      "Acme",
     );
     expect(mail.text).toMatch(/connects their own account/);
     expect(mail.text).toMatch(/pin/);

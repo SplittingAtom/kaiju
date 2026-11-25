@@ -16,6 +16,11 @@
 # e2e/gate5.sh) and `gate7-a`/`gate7-b` (KOBE-675: Gate 7's U39-U54, e2e/gate7.sh) and `gate-sso` (KOBE-633: OIDC sign-in against a mock Entra ID and Entra's SCIM
 # requests, offline; e2e/gate-sso.sh). The gate shards keep their output; the `stories` job then gives one
 # verdict per user story U1-U16 from them (e2e/gate4.sh, KOBE-232).
+# The chart's embeddings model (a ~260 MiB GGUF, KOBE-839) is fetched once per run by the `model`
+# job into the GitHub Actions cache, keyed by its sha256 from charts/kaiju/values.yaml; each shard
+# restores it and serves it from the runner (scripts/ci-embeddings-model.sh), and the e2e installs
+# point embeddings.local.model.url at that server (e2e/lib/embeddings-model.sh), so no cluster
+# downloads it from the internet and the chart's sha256 check runs as on any install.
 # Branch protection and the merge queue require the check named `k3d`: the last job, which passes
 # only when every image build and every shard passed.
 name: e2e
@@ -198,9 +203,38 @@ jobs:
           if [ "${CODE}" = false ]; then echo "docs-only change: nothing to build"; exit 0; fi
           [ "${IMAGES}" = success ]
 
+  # KOBE-839: the embeddings model in the Actions cache once per run (a hit costs seconds), so the
+  # shards never wait on its public host. The key is the model's sha256: a new pin is a new entry.
+  model:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      key: ${{ steps.pin.outputs.key }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: pin
+        run: |
+          scripts/ci-embeddings-model.sh pin | tee -a "$GITHUB_OUTPUT"
+          echo "key=embeddings-model-$(scripts/ci-embeddings-model.sh pin | sed -n 's/^sha256=//p')" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/embeddings-model
+          key: ${{ steps.pin.outputs.key }}
+      - name: Download the model (cache miss), with retries and its sha256 checked
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: scripts/ci-embeddings-model.sh fetch "${RUNNER_TEMP}/embeddings-model"
+      - name: The cached model matches its sha256
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: scripts/ci-embeddings-model.sh verify "${RUNNER_TEMP}/embeddings-model"
+
   e2e:
     name: e2e (${{ matrix.shard }})
-    needs: image
+    needs: [image, model]
     runs-on: ${{ (github.event.pull_request.head.repo.fork && 'ubuntu-24.04') || vars.KAIJU_RUNNER || 'ubuntu-24.04' }}
     # Healthy shards take about 10 min; under peak load the self-hosted runners' Docker data
     # (Longhorn on the nodes' HDDs) is far slower (ci/runners/README.md).
@@ -300,6 +334,31 @@ jobs:
             echo "inotify limits already sufficient"
           else
             sudo sysctl -w fs.inotify.max_user_instances=1024 fs.inotify.max_user_watches=524288
+          fi
+      # KOBE-839: the embeddings model from the cache the `model` job filled (downloaded here only
+      # if the entry is gone), served from the runner on every address; the install points the
+      # chart's model URL at the k3d network's gateway (e2e/lib/embeddings-model.sh).
+      - id: model-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/embeddings-model
+          key: ${{ needs.model.outputs.key }}
+      - name: The embeddings model, served to the cluster from the runner
+        env:
+          HIT: ${{ steps.model-cache.outputs.cache-hit }}
+          PORT: "18089"
+        run: |
+          dir="${RUNNER_TEMP}/embeddings-model"
+          if [ "${HIT}" != true ] || ! scripts/ci-embeddings-model.sh verify "${dir}"; then
+            echo "::warning::embeddings model not in the cache: downloading it"
+            scripts/ci-embeddings-model.sh fetch "${dir}"
+          fi
+          # Later steps' installs read KAIJU_E2E_MODEL_PORT (e2e/lib/embeddings-model.sh); a runner
+          # that cannot serve (no python3) keeps the chart's public URL rather than failing here.
+          if scripts/ci-embeddings-model.sh serve "${dir}" "${PORT}"; then
+            echo "KAIJU_E2E_MODEL_PORT=${PORT}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::could not serve the embeddings model: the cluster downloads it from its public URL"
           fi
       - name: Create k3d cluster with gVisor and agent-sandbox
         env:

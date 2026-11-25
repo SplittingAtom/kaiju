@@ -111,6 +111,7 @@ describe("gaugeModel", () => {
     const model = gaugeModel(ctx, null);
     expect(model.slices.map((s) => [s.kind, s.tokens, s.firstSection])).toEqual([
       ["system_prompt", 100, 0],
+      ["memory", 0, null],
       ["tool_definitions", 50, 1],
       ["user_message", 30, 2],
       ["assistant_message", 20, 5],
@@ -128,7 +129,7 @@ describe("gaugeModel", () => {
     const bare = gaugeModel(ctx, null);
     expect(bare.window).toBeNull();
     expect(bare.free).toBe(0);
-    expect(bare.slices[0]?.share).toBe(1);
+    expect(bare.slices.find((s) => s.kind === "user_message")?.share).toBe(1);
   });
 
   it("caps at the total when the context is over the window", () => {
@@ -136,7 +137,7 @@ describe("gaugeModel", () => {
     const model = gaugeModel(ctx, null);
     expect(model.over).toBe(true);
     expect(model.free).toBe(0);
-    expect(model.slices[0]?.share).toBe(1);
+    expect(model.slices.find((s) => s.kind === "user_message")?.share).toBe(1);
   });
 });
 

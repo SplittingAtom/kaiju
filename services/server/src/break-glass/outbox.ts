@@ -16,6 +16,7 @@ import {
 import { recordAudit } from "../audit/record.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
+import { readMailAppName } from "../mail/app-name.js";
 import { grantMessage } from "./notify.js";
 import { activeSiteAdmins, getGrant, type GrantDetail, type GrantRow } from "./store.js";
 
@@ -240,6 +241,8 @@ export async function deliverBreakGlassNotifications(
   let sent = 0;
   try {
     const rows = await claim(db, options.grantId);
+    // Read once per batch, and only when something is due (KOBE-834).
+    const appName = rows.length > 0 ? await readMailAppName(db) : "";
     const details = new Map<string, GrantDetail | undefined>();
     for (const row of rows) {
       if (!details.has(row.grant_id)) details.set(row.grant_id, await getGrant(db, row.grant_id));
@@ -260,6 +263,7 @@ export async function deliverBreakGlassNotifications(
       const message = grantMessage(deps, detail, row.event, to, {
         isSiteAdmin: row.recipient_role === "site_admin" || row.recipient_role === "requester",
         wasActive: row.was_active,
+        appName,
       });
       try {
         await deps.mailer.send(message);

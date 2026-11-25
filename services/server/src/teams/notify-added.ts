@@ -1,6 +1,6 @@
 import { eq, users, type TeamRole } from "@kaiju/db";
-import { readAppName } from "../branding/settings.js";
 import type { ServerDeps } from "../deps.js";
+import { appNameOnce } from "../mail/app-name.js";
 import { teamMemberAddedMessage } from "../mail/messages.js";
 
 /**
@@ -18,7 +18,8 @@ export function mailMembersAdded(
   },
 ): void {
   if (deps.mailer.disabled || input.userIds.length === 0) return;
-  // One task per recipient: a refused address doesn't stop the others.
+  // One task per recipient: a refused address doesn't stop the others. One app name read for all.
+  const appName = appNameOnce(deps.database.db);
   for (const userId of input.userIds) {
     deps.background.run(
       "team member added email failed",
@@ -35,7 +36,7 @@ export function mailMembersAdded(
             adderName: input.adderName,
             teamName: input.teamName,
             role: input.role,
-            appName: await readAppName(db),
+            appName: await appName(),
             signInUrl: `${deps.publicUrl}/`,
           }),
         );
