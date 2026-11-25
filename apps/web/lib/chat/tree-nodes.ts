@@ -7,7 +7,7 @@
  * nodes: a model or agent change is the next node's `model` / `agentVersion`, a compaction is the
  * `compacted` tick of the node it sits in. Pure; the panel (KOBE-546) draws it.
  */
-import type { ThreadBranchesResponse } from "@kaiju/protocol";
+import { isEntryType, type ThreadBranchesResponse } from "@kaiju/protocol";
 import { isAppCardEntry, parseEntry, recordedModel, type ParsedEntry } from "./entries";
 import type { AgentMarker } from "./markers";
 import { succeededToolCalls, toolBadges, type TreeBadges } from "./tree-badges";
@@ -26,8 +26,8 @@ import type { ThreadEntry } from "./types";
 export const TREE_EXCERPT_MAX = 120;
 export const TOOLS_ONLY_EXCERPT = "(tools only)";
 
-/** The sandbox agent's branch marker (`pi/session-files.ts` BRANCH_CUSTOM_TYPE). */
-const BRANCH_MARKER_TYPE = "kobe.branch";
+/** The sandbox agent's branch marker (`pi/session-files.ts` BRANCH_CUSTOM_TYPE; `kobe.branch` before the rename, KOBE-827). */
+const BRANCH_MARKER_TYPE = "kaiju.branch";
 const PREFIX_EMPTY = "empty:";
 const PREFIX_SKIPPED = "skipped:";
 
@@ -168,7 +168,7 @@ function ghostEntries(
   }
   const isMarker = (e: ThreadEntry) =>
     e.type === "custom" &&
-    (e.payload.customType === undefined || e.payload.customType === BRANCH_MARKER_TYPE);
+    (e.payload.customType === undefined || isEntryType(e.payload.customType, BRANCH_MARKER_TYPE));
   return entries.filter((e) => {
     if (!isMarker(e) || aboveMessage.has(e.entryId) || skip(e)) return false;
     const parent = e.parentId === null ? undefined : byId.get(e.parentId);

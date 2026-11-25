@@ -13,7 +13,7 @@ import {
   type SkillDraftSaveFrame,
   type SkillDraftSaveResultFrame,
 } from "@kaiju/protocol/sandbox-wire";
-import { TEMP_PREFIX, lstatIfExists } from "../workspace/fs.js";
+import { isSyncTempName, lstatIfExists } from "../workspace/fs.js";
 import { DEFAULT_SKIP_DIRS, PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
@@ -83,7 +83,7 @@ async function listFiles(root: string, folder: string): Promise<string[]> {
     const entries = await readdir(abs, { withFileTypes: true });
     entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     for (const entry of entries) {
-      if (entry.name.startsWith(".") || entry.name.startsWith(TEMP_PREFIX)) continue;
+      if (entry.name.startsWith(".") || isSyncTempName(entry.name)) continue;
       const child = `${rel}/${entry.name}`;
       if (workspacePathIssue(child) !== undefined || child.length > SKILL_DRAFT_TOOL_PATH_MAX) {
         throw new FolderError("invalid_path", `${child} is not a valid skill file path`);

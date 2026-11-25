@@ -257,7 +257,7 @@ describe("the stopped prompt later in the conversation (KOBE-290)", () => {
       { leaf: false },
     );
     const marker = fake.addSystemEntry(t, prompt, "custom", {
-      customType: "kobe.branch",
+      customType: "kaiju.branch",
       data: { run_id: "r2" },
     });
     const next = fake.addEntry(t, marker, { role: "user", content: "next question" });

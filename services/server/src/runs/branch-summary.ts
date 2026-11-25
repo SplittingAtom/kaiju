@@ -67,6 +67,7 @@ const HTTP_CODE: Readonly<Record<string, RunEndCode>> = {
   isolation_runtime_missing: "sandbox_unavailable",
   workspace_unavailable: "sandbox_unavailable",
   sandbox_failed: "sandbox_unavailable",
+  sandbox_start_failed: "sandbox_unavailable",
   workspace_quota_exhausted: "sandbox_unavailable",
   workspace_volume_lost: "sandbox_unavailable",
   workspace_volume_unreachable: "sandbox_unavailable",

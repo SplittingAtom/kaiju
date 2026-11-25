@@ -148,7 +148,7 @@ export async function resolveRunModel(
  */
 /**
  * The gateway model a catalog alias names (`<gateway provider>/<model>`), as `run.start` passes
- * it and Pi records it (`model_change.modelId` under the `kobe` provider); undefined if unknown.
+ * it and Pi records it (`model_change.modelId` under the `kaiju` provider); undefined if unknown.
  */
 export async function gatewayModelOf(
   tx: KaijuTx,

@@ -74,7 +74,7 @@ describe("server moves as local renames (KOBE-304)", () => {
     for (const move of [
       { from: "a", to: "uploads/a", type: "dir" },
       { from: "uploads/x", to: "a2", type: "file" },
-      { from: "a", to: ".kobe/a", type: "dir" },
+      { from: "a", to: ".kaiju/a", type: "dir" },
       { from: "a", to: "../a", type: "dir" },
       { from: "../etc", to: "e", type: "dir" },
       { from: "a", to: "a/b", type: "dir" },

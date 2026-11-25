@@ -399,7 +399,7 @@ describe("POST /v1/threads/{id}/branch-summary (KOBE-548)", () => {
     await f.fx.admin.query(
       `INSERT INTO thread_entries (team_id, thread_id, entry_id, parent_id, type, payload)
        VALUES ($1, $2, $3, $4, 'custom_message', $5)`,
-      [w.team, threadId, card, a2, { type: "custom_message", customType: "kobe.app_card" }],
+      [w.team, threadId, card, a2, { type: "custom_message", customType: "kaiju.app_card" }],
     );
     await f.fx.admin.query(`UPDATE threads SET leaf_entry_id = $3 WHERE team_id = $1 AND id = $2`, [
       w.team,

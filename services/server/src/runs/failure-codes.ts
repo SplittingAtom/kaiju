@@ -46,6 +46,10 @@ export const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
   // KOBE-636: the sandbox pod ended (evicted, killed) and the wake's one replacement failed too.
   sandbox_failed:
     "Your sandbox stopped (it may have run out of temporary space or memory) and could not be restarted. Your files in /workspace are kept. Send your message again; if this keeps happening, ask your site admin.",
+  // KOBE-827: the sandbox agent could not move /workspace/.kobe at start (fixed text, never the
+  // sandbox's own words).
+  sandbox_start_failed:
+    "Your sandbox could not start: its workspace folder could not be moved to the new name. Nothing was deleted; an admin can see the details.",
   thread_not_found: "The run could not start: the thread is not available to the workspace.",
   start_lost: "The run could not start: the server that started it stopped. Send it again.",
   start_failed: "The run could not start in your workspace.",

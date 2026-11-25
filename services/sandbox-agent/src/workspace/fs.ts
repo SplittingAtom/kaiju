@@ -54,7 +54,7 @@ export interface ScanResult {
    * Entries the sync cannot carry and that are not rebuildable (KOBE-733): symlinks, special files
    * (sockets, FIFOs, devices) and names the contract refuses (`workspacePathIssue`: backslashes,
    * control characters, too long). A folder with such a name counts once for its whole subtree.
-   * Not counted, by design: `.kobe/` (agent state; Pi sessions are rebuilt from the server, D15),
+   * Not counted, by design: `.kaiju/` (agent state; Pi sessions are rebuilt from the server, D15),
    * interrupted-download temp files, the rebuildable `skipDirs` (node_modules, __pycache__, .venv),
    * and empty folders (not preserved by the sync).
    */
@@ -62,7 +62,16 @@ export interface ScanResult {
 }
 
 /** Temp files of an interrupted download: never synced. */
-export const TEMP_PREFIX = ".kobe-sync-";
+export const TEMP_PREFIX = ".kaiju-sync-";
+/**
+ * The prefix agents used before the rename (KOBE-827): a download interrupted on the old image can
+ * leave such a file on a volume for good, so it stays a temp file, never synced.
+ */
+export const PRE_RENAME_TEMP_PREFIX = ".kobe-sync-";
+
+/** Whether `name` is a temp file of an interrupted download (either prefix). */
+export const isSyncTempName = (name: string): boolean =>
+  name.startsWith(TEMP_PREFIX) || name.startsWith(PRE_RENAME_TEMP_PREFIX);
 
 /**
  * The slugs of the member's project checkouts (CM4, KOBE-580): each `projects/<slug>/` is part of
@@ -126,7 +135,7 @@ export function toLocalStamped(stat: BigIntStats): LocalFile {
 
 /**
  * Regular files under `root` (or only under its folder `from`), skipping excluded areas
- * (`.kobe/`), directories named in `skipDirs` (anywhere), symlinks, special files and temp files.
+ * (`.kaiju/`), directories named in `skipDirs` (anywhere), symlinks, special files and temp files.
  * Stops after `maxFiles`.
  */
 export async function scanWorkspace(
@@ -152,7 +161,7 @@ export async function scanWorkspace(
     for await (const entry of dir) {
       if (truncated) return;
       const child = rel === "" ? entry.name : `${rel}/${entry.name}`;
-      if (isExcludedPath(child) || entry.name.startsWith(TEMP_PREFIX)) continue;
+      if (isExcludedPath(child) || isSyncTempName(entry.name)) continue;
       if (entry.isDirectory() && options.skipDirs.has(entry.name)) continue;
       if (workspacePathIssue(child) !== undefined) {
         skipped += 1;

@@ -15,7 +15,7 @@ import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
  *  1. `save_skill_draft` runs through kaiju-policy `policy.check` like any tool (`primary_arg`
  *     `/folder`; a deny rule can refuse it).
  *  2. kaiju-tools sends `{op:"skill.draft_save"}` on fd 4.
- *  3. The agent walks the folder (no symlinks, nothing under `.kobe/` or skipped directories),
+ *  3. The agent walks the folder (no symlinks, nothing under `.kaiju/` or skipped directories),
  *     pushes each file through workspace sync and keeps each applied entry.
  *  4. It sends `skill.draft_save` with `files` = those entries and waits for the result.
  *  5. The server checks: capability; run active and leased; the allowed input for `tool_call_id`

@@ -38,7 +38,7 @@ export function liveWritePaths(
     }
     const path = (t.call?.input as { path?: unknown } | undefined)?.path;
     const normal = typeof path === "string" ? workspaceToolPath(path) : undefined;
-    // Agent-internal files (`.kobe/`) are never listed: waiting for them would only re-read.
+    // Agent-internal files (`.kaiju/`) are never listed: waiting for them would only re-read.
     return normal === undefined || isExcludedPath(normal) ? [] : [normal];
   });
 }

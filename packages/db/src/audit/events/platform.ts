@@ -255,6 +255,7 @@ export const PLATFORM_EVENTS = {
       "volume_quota",
       "volume_lost",
       "volume_node_down",
+      "sandbox_start_failed",
       "unknown",
     ]),
     detail: z

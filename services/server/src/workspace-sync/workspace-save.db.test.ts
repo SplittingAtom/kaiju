@@ -161,7 +161,7 @@ describe("PUT /v1/workspace/file (KOBE-462)", () => {
     const base = await seed(w, w.alice, "projects/p/spec.md", "spec\n", "projects");
     expect((await save(w.a, "projects/p/spec.md", base, "x")).status).toBe(403);
     expect((await save(w.a, "uploads/thread-1/a.txt", base, "x")).status).toBe(403);
-    expect((await save(w.a, ".kobe/state.json", base, "x")).status).toBe(404);
+    expect((await save(w.a, ".kaiju/state.json", base, "x")).status).toBe(404);
     expect(
       (await w.a.put(`/v1/workspace/file?base_sha256=${base}`, new RawBody("x", "text/plain")))
         .status,

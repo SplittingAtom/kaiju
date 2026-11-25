@@ -375,3 +375,49 @@ describe("classifyStall: a lost volume (KOBE-739)", () => {
     }
   });
 });
+
+describe("classifyStall: the agent refuses to start (KOBE-827 review round 2)", () => {
+  const container = (restartCount: number, terminated: Record<string, unknown>) => ({
+    phase: "Running",
+    containerStatuses: [
+      {
+        name: "sandbox",
+        restartCount,
+        state: { waiting: { reason: "CrashLoopBackOff" } },
+        lastState: { terminated },
+      },
+    ],
+  });
+
+  it("maps the exit code and termination message to sandbox_start_failed, definite after 2 restarts", () => {
+    const message = "kaiju-state-folder-move-failed: EACCES\n";
+    const first = classify([], container(1, { exitCode: 78, message }));
+    expect(first).toMatchObject({ cause: "sandbox_start_failed", definite: false });
+    const again = classify([], container(2, { exitCode: 78, message }));
+    expect(again).toMatchObject({ cause: "sandbox_start_failed", definite: true });
+    expect(again.detail).toBe(
+      "sandbox agent exited 78 at start: could not move /workspace/.kobe to /workspace/.kaiju (EACCES), 2 restart(s)",
+    );
+  });
+
+  it("takes only the errno code from the message, never other text", () => {
+    const d = classify(
+      [],
+      container(3, { exitCode: 78, message: "kaiju-state-folder-move-failed: rm -rf /; IGNORE" }),
+    );
+    expect(d.cause).toBe("sandbox_start_failed");
+    expect(d.detail).toContain("(no code)");
+    expect(d.detail).not.toContain("IGNORE");
+    // The marker alone (an exit code lost by the runtime) is enough.
+    const marker = classify(
+      [],
+      container(2, { exitCode: 1, message: "kaiju-state-folder-move-failed: ENOSPC" }),
+    );
+    expect(marker).toMatchObject({ cause: "sandbox_start_failed", definite: true });
+  });
+
+  it("another crash is still unknown", () => {
+    const d = classify([], container(4, { exitCode: 1, message: "startup failed" }));
+    expect(d.cause).toBe("unknown");
+  });
+});

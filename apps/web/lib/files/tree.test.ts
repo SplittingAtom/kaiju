@@ -42,7 +42,7 @@ afterEach(() => {
 describe("visible rows (KOBE-304)", () => {
   it("walks expanded folders depth first, with levels, positions and Show more", () => {
     const folders = new Map([
-      ["", load([e("a", "dir"), e("b", "dir"), e(".kobe", "dir"), e("z.txt")])],
+      ["", load([e("a", "dir"), e("b", "dir"), e(".kaiju", "dir"), e(".kobe", "dir"), e("z.txt")])],
       ["a", load([e("a/x.txt"), e("a/y.txt"), e("a/z.txt")])],
       ["b", load([e("b/1")], "c")],
     ]);

@@ -18,6 +18,7 @@ import { fail, ok, type CommandOutcome } from "./threads/outcome.js";
 import { compactFailure, type CompactReply } from "./threads/compact.js";
 import { branchSummaryFailure, type BranchSummaryReply } from "./threads/branch-summary.js";
 import { sandboxQuiet } from "./workspace/quiet.js";
+import { stateFolderNotice } from "./workspace/state-folder.js";
 import type { ReclaimProof } from "./workspace/sync.js";
 import { WireClient, type FatalReason, type WireLogger } from "./wire/client.js";
 import { encodeOutbound } from "./wire/encode.js";
@@ -131,6 +132,7 @@ export class Agent {
       notebookTools: this.#caps().notebookTools,
       memoryTools: this.#caps().memory,
       traceparentOf: (runId) => this.#traces.modelParentOf(runId),
+      ...stateFolderNoticeOption(deps.stateFolder),
       ...(deps.extensions === undefined ? {} : { extensions: deps.extensions }),
       ...(deps.policyReadyTimeoutMs === undefined
         ? {}
@@ -374,6 +376,7 @@ export class Agent {
       runs: this.#outbox.helloRuns(),
       // Optional features, so the server sends their fields only to agents that can use them.
       ...(capabilities.length === 0 ? {} : { capabilities }),
+      ...(this.#deps.stateFolder === undefined ? {} : { state_folder: this.#deps.stateFolder }),
     };
   }
 
@@ -783,7 +786,7 @@ export class Agent {
 
 /**
  * Build one `pi.event` frame. An event the server's decoder would reject (too large, too deep) is
- * replaced by a `kobe.event_dropped` record (`kaijuEventDroppedSchema` in @kaiju/protocol: not a Pi
+ * replaced by a `kaiju.event_dropped` record (`kaijuEventDroppedSchema` in @kaiju/protocol: not a Pi
  * type, so the server accepts it without translating it), so the seq stays gapless and the run
  * keeps going.
  */
@@ -834,4 +837,10 @@ function logRefusal(
     },
     "command refused",
   );
+}
+
+/** The state folder notice for the thread manager (KOBE-827 review M2), when there is one. */
+function stateFolderNoticeOption(report: AgentDeps["stateFolder"]): { stateFolderNotice?: string } {
+  const notice = stateFolderNotice(report);
+  return notice === undefined ? {} : { stateFolderNotice: notice };
 }

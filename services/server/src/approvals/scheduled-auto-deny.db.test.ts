@@ -215,7 +215,7 @@ describe("a write that would ask is skipped and reported (ac-1)", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.parent_id).toBe("a1");
     expect(rows[0]?.payload).toMatchObject({
-      customType: "kobe.skipped_actions",
+      customType: "kaiju.skipped_actions",
       display: true,
     });
     expect(String(rows[0]?.payload.content)).toMatch(

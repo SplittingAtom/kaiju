@@ -26,15 +26,15 @@ const line = (...f: string[]) => `noise\nKAIJU-REPO-STATUS\t${f.join("\t")}\n`;
 
 describe("Repo working copy (KOBE-767)", () => {
   it("keeps the working copy in the reserved area the sync leaves alone (review N2)", () => {
-    expect(workingCopyDir("/workspace", repo)).toBe("/workspace/.kobe/repos/app");
-    expect(isExcludedPath(".kobe/repos/app/README.md")).toBe(true);
+    expect(workingCopyDir("/workspace", repo)).toBe("/workspace/.kaiju/repos/app");
+    expect(isExcludedPath(".kaiju/repos/app/README.md")).toBe(true);
     expect(isExcludedPath("repos/app/README.md")).toBe(false);
   });
 
   it("passes every value as a positional argument, never inside the script", () => {
     const args = repoScriptArgs("/workspace", repo, true);
     expect(args.slice(0, 2)).toEqual(["-c", REPO_SCRIPT]);
-    expect(args.slice(3)).toEqual(["/workspace/.kobe/repos/app", repo.clone_url, "main", "1"]);
+    expect(args.slice(3)).toEqual(["/workspace/.kaiju/repos/app", repo.clone_url, "main", "1"]);
     expect(REPO_SCRIPT).not.toContain("github");
     expect(repoScriptArgs("/workspace", repo, false).at(-1)).toBe("0");
   });

@@ -9,13 +9,16 @@
  * conversation turns; `model_change` and `compaction` are shown as markers (KOBE-209). One entry is the server's, not Pi's: a scheduled run's skipped-actions
  * summary (KOBE-178), a `custom_message` with `customType` {@link SKIPPED_SUMMARY_TYPE}.
  */
+import { isEntryType } from "@kaiju/protocol";
 import type { ThreadEntry } from "./types";
 
 /** `customType` of the server-written skipped-actions summary of a scheduled run (KOBE-178). */
-export const SKIPPED_SUMMARY_TYPE = "kobe.skipped_actions";
+export const SKIPPED_SUMMARY_TYPE = "kaiju.skipped_actions";
 
 /** `customType` of an app card a member launched from the rail (KOBE-440). */
-export const APP_CARD_TYPE = "kobe.app_card";
+export const APP_CARD_TYPE = "kaiju.app_card";
+// Entries written before the rename keep `kobe.skipped_actions` and `kobe.app_card` (KOBE-827):
+// both names are read (`isEntryType`).
 
 export type AssistantPiece =
   | { readonly kind: "text"; readonly text: string }
@@ -153,7 +156,7 @@ const SKIPPED_SUMMARY_ID = "ks-";
 export function isSkippedSummary(entry: ThreadEntry): boolean {
   return (
     entry.type === "custom_message" &&
-    (entry.payload.customType === SKIPPED_SUMMARY_TYPE ||
+    (isEntryType(entry.payload.customType, SKIPPED_SUMMARY_TYPE) ||
       (entry.payloadOffloaded && entry.entryId.startsWith(SKIPPED_SUMMARY_ID)))
   );
 }
@@ -213,7 +216,8 @@ export function isAppCardEntry(entry: ThreadEntry): boolean {
 
 function appCard(entry: ThreadEntry): ParsedEntry | undefined {
   if (!isAppCardEntry(entry)) return undefined;
-  if (!entry.payloadOffloaded && entry.payload.customType !== APP_CARD_TYPE) return undefined;
+  if (!entry.payloadOffloaded && !isEntryType(entry.payload.customType, APP_CARD_TYPE))
+    return undefined;
   const tool = str(record(entry.payload.details)?.tool) ?? "";
   return { kind: "appCard", tool: tool.slice(0, 128) };
 }

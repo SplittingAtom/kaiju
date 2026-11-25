@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EXAMPLE_IDS } from "@kaiju/protocol/testing";
 import { Agent, type WorkspaceHooks } from "../agent.js";
+import type { AgentDeps } from "../agent/deps.js";
 import { loadConfig } from "../config.js";
 import { FakeServer, type FakeServerOptions } from "./fake-server.js";
 import type { EgressWiring } from "../egress/egress-wiring.js";
@@ -84,6 +85,8 @@ export interface HarnessOptions {
   readonly kernels?: KernelManager;
   /** `/proc` for the reclaim proof's quiet check (KOBE-733). */
   readonly procRoot?: string;
+  /** The state folder move's outcome the agent reports in `hello` (KOBE-827). */
+  readonly stateFolder?: AgentDeps["stateFolder"];
 }
 
 /** The fake Pi ignores the file; it plays kaiju-policy's handshake itself (see fake-pi.mjs). */
@@ -93,7 +96,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
   const server = await FakeServer.start({ token: TOKEN, ...options.server });
   const dir = await mkdtemp(path.join(tmpdir(), "kaiju-agent-"));
   const workspace = path.join(dir, "workspace");
-  const sessions = path.join(workspace, ".kobe", "sessions");
+  const sessions = path.join(workspace, ".kaiju", "sessions");
   await mkdir(workspace, { recursive: true });
   const tokenFile = path.join(dir, "token");
   await writeFile(tokenFile, `${TOKEN}\n`, { mode: 0o600 });
@@ -145,6 +148,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     ...(options.skillEval === undefined ? {} : { skillEval: options.skillEval(workspace) }),
     ...(options.kernels === undefined ? {} : { kernels: options.kernels }),
     ...(options.procRoot === undefined ? {} : { procRoot: options.procRoot }),
+    ...(options.stateFolder === undefined ? {} : { stateFolder: options.stateFolder }),
     ...(options.workspace === undefined ? {} : { workspace: options.workspace(workspace) }),
     ...(options.policyReadyTimeoutMs === undefined
       ? {}

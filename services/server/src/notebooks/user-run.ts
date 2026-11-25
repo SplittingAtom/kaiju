@@ -259,7 +259,8 @@ function failureCode(outcome: Extract<CommandOutcome, { ok: false }>): string {
     code === "workspace_volume_lost" ||
     code === "workspace_volume_unreachable" ||
     code === "workspace_rebuilding" ||
-    code === "sandbox_failed"
+    code === "sandbox_failed" ||
+    code === "sandbox_start_failed"
     ? code
     : "start_failed";
 }

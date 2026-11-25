@@ -1,4 +1,5 @@
 import {
+  PRE_RENAME_ENTRY_TYPES,
   type KaijuEventType,
   type PolicyReasonCode,
   type RiskClass,
@@ -16,7 +17,9 @@ import { loadSkippedReport } from "./skipped-actions.js";
  */
 
 /** `customType` of the thread entry (also how the sync cursor recognises server-written entries). */
-export const SKIPPED_ENTRY_TYPE = "kobe.skipped_actions";
+export const SKIPPED_ENTRY_TYPE = "kaiju.skipped_actions";
+/** The type of entries written before the rename (KOBE-827): still recognised, never written. */
+export const PRE_RENAME_SKIPPED_ENTRY_TYPE = PRE_RENAME_ENTRY_TYPES[SKIPPED_ENTRY_TYPE];
 
 /** Lines of the summary that name a call; the rest is counted. */
 const SUMMARY_LINES_MAX = 20;
@@ -140,6 +143,7 @@ export async function isSkippedSummaryEntry(
   const res = await tx.execute(sql`
     SELECT 1 FROM thread_entries
      WHERE team_id = ${teamId} AND thread_id = ${threadId} AND entry_id = ${entryId}
-       AND type = 'custom_message' AND payload ->> 'customType' = ${SKIPPED_ENTRY_TYPE}`);
+       AND type = 'custom_message'
+       AND payload ->> 'customType' IN (${SKIPPED_ENTRY_TYPE}, ${PRE_RENAME_SKIPPED_ENTRY_TYPE})`);
   return res.rows.length > 0;
 }

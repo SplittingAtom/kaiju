@@ -6,7 +6,7 @@ const GW = "http://model-gateway.kaiju.internal:80";
 const MODEL = { gatewayModel: "openai/gpt-fake", api: "openai-completions" as const };
 const selected = (extra: Record<string, unknown> = {}) => ({
   model: {
-    provider: "kobe",
+    provider: "kaiju",
     id: "openai/gpt-fake",
     baseUrl: `${GW}/v1`,
     contextWindow: 200_000,
@@ -16,7 +16,7 @@ const selected = (extra: Record<string, unknown> = {}) => ({
 });
 
 describe("selectsModel (KOBE-213)", () => {
-  it("accepts the gateway's kobe model of that id", () => {
+  it("accepts the gateway's kaiju model of that id", () => {
     expect(selectsModel(selected(), MODEL, GW)).toBe(true);
   });
 

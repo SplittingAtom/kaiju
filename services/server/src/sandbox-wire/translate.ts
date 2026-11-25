@@ -39,7 +39,7 @@ export type RunFailureCode = ModelRunErrorCode | "model_output_limit";
  * | `agent_settled`                              | mirror entries, then the run completes — or fails,  |
  * |                                              | when its last assistant message ended in error or   |
  * |                                              | was cut off at the output limit (KOBE-258)          |
- * | anything else (incl. `kobe.event_dropped`)   | accepted, no effect                                 |
+ * | anything else (incl. `kaiju.event_dropped`)   | accepted, no effect                                 |
  *
  * Session entries are never taken from the event stream: Pi emits `entry_appended` only for
  * extension entries, so persisted entries (with their ids) come from `get_entries` (entries.ts).

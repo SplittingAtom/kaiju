@@ -23,7 +23,7 @@ import { PI_AVAILABLE, PI_BIN, REAL_POLICY_EXTENSION } from "./testing/real-pi.j
 /**
  * KOBE-169: the three KOBE-165 redirect cases, now THROUGH THE AGENT (real kaiju-sandbox-agent, real
  * Pi 1.0.0, real kaiju-models and kaiju-policy, real bash tool). A tool plants `models.json` with a
- * `providers.kobe.models[]` entry carrying its own `baseUrl`; the server then sends `set_model`.
+ * `providers.kaiju.models[]` entry carrying its own `baseUrl`; the server then sends `set_model`.
  * Since the follow-up the wire no longer admits `set_model` at all, and every remaining pi.command
  * is refused with `runtime_tampered` (and that Pi stopped) while the guarded files are not what the
  * agent wrote, so neither the session token nor the run token reaches the tool's listener, also when the

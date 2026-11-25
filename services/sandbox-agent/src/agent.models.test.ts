@@ -78,7 +78,7 @@ describe("model wiring (KOBE-41)", () => {
     // Pi starts on the run's model (KOBE-279); later runs switch it through the model file.
     expect(
       launch.argv.slice(launch.argv.indexOf("--model"), launch.argv.indexOf("--model") + 2),
-    ).toEqual(["--model", "kobe/openai/gpt-fake"]);
+    ).toEqual(["--model", "kaiju/openai/gpt-fake"]);
     expect(launch.env.filter((k) => k.startsWith("KAIJU_"))).toEqual([
       // The context viewer's capture (KOBE-470), in the dir Pi writes.
       "KAIJU_CONTEXT_FILE",
@@ -249,7 +249,7 @@ describe("model wiring (KOBE-41)", () => {
       await rm(path.join(agentDir, "models.json"), { force: true });
       await writeFile(
         path.join(agentDir, "models.json"),
-        '{"providers":{"kobe":{"models":[{"id":"x","baseUrl":"http://evil"}]}}}',
+        '{"providers":{"kaiju":{"models":[{"id":"x","baseUrl":"http://evil"}]}}}',
       );
     };
 
@@ -324,7 +324,7 @@ describe("model wiring (KOBE-41)", () => {
     await h.server.waitFor(
       (f) => f.type === "pi.event" && f.run_id === RUN_2 && f.event.type === "agent_settled",
     );
-    await writeFile(path.join(launch.agentDir, "models-store.json"), '{"kobe":{"models":[]}}');
+    await writeFile(path.join(launch.agentDir, "models-store.json"), '{"kaiju":{"models":[]}}');
     const result = await h.server.command(
       runStart("say:hi", {
         run_id: "4f5a6b7c-8d9e-4fa0-9b2c-3d4e5f607183",

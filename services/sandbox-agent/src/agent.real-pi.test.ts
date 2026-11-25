@@ -169,7 +169,7 @@ describe.skipIf(!PI_AVAILABLE)("real Pi 1.0.0 in RPC mode (no model credentials)
     const after = await piCommand({ type: "get_entries", since: "c1b2c3d4" });
     const tail = (after as { data: { entries: Record<string, unknown>[]; leafId: string } }).data;
     const marker = tail.entries.find((e) => e.type === "custom");
-    expect(marker).toMatchObject({ parentId: "b1b2c3d4", customType: "kobe.branch" });
+    expect(marker).toMatchObject({ parentId: "b1b2c3d4", customType: "kaiju.branch" });
     // Pi resumed on the branch: the abandoned question is no longer in its context.
     const state = await piCommand({ type: "get_state" });
     expect(state).toMatchObject({ ok: true, data: { messageCount: 2 } });

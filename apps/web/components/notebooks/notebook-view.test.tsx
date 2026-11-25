@@ -160,7 +160,7 @@ describe("rendering cells and saved outputs (ac-1, ac-2)", () => {
     expect(post).toHaveBeenCalledTimes(1);
     expect(post).toHaveBeenCalledWith(
       {
-        type: "kobe.notebook.html",
+        type: "kaiju.notebook.html",
         html: "<b id=kernel-html>bold</b><script>parent.x=1</script>",
       },
       "*",
@@ -176,7 +176,7 @@ describe("rendering cells and saved outputs (ac-1, ac-2)", () => {
     const post = vi.fn();
     Object.defineProperty(second, "contentWindow", { value: { postMessage: post } });
     act(() => second.dispatchEvent(new Event("load")));
-    expect(post).toHaveBeenCalledWith({ type: "kobe.notebook.html", html: "<p>two</p>" }, "*");
+    expect(post).toHaveBeenCalledWith({ type: "kaiju.notebook.html", html: "<p>two</p>" }, "*");
     rerender(<OutputFrame html="<p>two</p>" teamId="t" />);
     expect(screen.getByTitle("HTML output")).toBe(second); // same HTML: same frame
   });

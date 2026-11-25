@@ -35,7 +35,7 @@ groups {P, 1000}, `no_new_privs`, no capabilities, as a descendant of Pi. What i
 **The bridge (the real gap).** Because the tool shares Pi's uid it can write Pi's `agent/` directory.
 Pi 1.0.0 re-reads `models.json` when the model list is reopened (`docs/models.md`: "Opening `/model`
 reloads the file"), lets it set a provider's `baseUrl`/headers, and runs `!command` values at request
-time. If a planted `models.json` can redirect the `kobe` provider (or add a provider the next
+time. If a planted `models.json` can redirect the `kaiju` provider (or add a provider the next
 `set_model` selects) to a listener the tool controls, the provider attaches `x-kaiju-run-token` and the
 session token to that request, and the "in memory only" property of KOBE-118 is gone: the tool never
 reads Pi's memory, it makes Pi hand the token over. Whether `models.json` can override an
@@ -148,7 +148,7 @@ KOBE-27), can read and write them. Paired uids keep exactly this:
   Pi (`P`, also in group 1000) reads and writes the same files by group. Shared group, umask and
   setgid directories are enough; **no ACLs** needed.
 - What changes: files tools create are owned by `T`, not `P`. `chmod`/`chown` by `P` no longer
-  work on them (Pi never does that). Pi's own files (session JSONL under `/workspace/.kobe/sessions`)
+  work on them (Pi never does that). Pi's own files (session JSONL under `/workspace/.kaiju/sessions`)
   stay `P:1000 0660`; tools can still rewrite them through the group (KOBE-71 residual risk 4,
   unchanged; moving the session dir to the agent is a separate idea, not proposed).
 - Recycled-uid files (KOBE-71 residual 9) now belong to a pool of `T` uids; same treatment, and the
@@ -250,7 +250,7 @@ Pinned by `kaiju-exec/pi-spawn-sites.test.ts` (it fails when an upgrade adds, mo
 | `core/footer-data-provider.js`                                                                                | `git symbolic-ref`                                    | TUI footer; RPC mode builds none (the resource loader only reads `.git` files).                                                                                                                          |
 | `utils/clipboard-command.js`, `utils/open-browser.js`, `modes/interactive/*`, `rpc-client.js`                 | clipboard tools, `xdg-open`, `$EDITOR`, `gh`, `trash` | Interactive mode / OAuth / client library only; not constructed in `--mode rpc`.                                                                                                                         |
 | `utils/tools-manager.js`, `utils/paths.js`                                                                    | `rg --version`, downloads, `xattr`                    | Called by the replaced grep/find, interactive start-up and the package manager only.                                                                                                                     |
-| Bundled provider SDKs (AWS `credential_process`, Google external-account executables, Anthropic helper shell) | credential helpers                                    | Only when a Bedrock/Vertex/Anthropic-SDK model is selected; Kaiju's model is the `kobe` provider, `set_model` is not allowed over the wire (KOBE-169) and `run.start` names a gateway model.             |
+| Bundled provider SDKs (AWS `credential_process`, Google external-account executables, Anthropic helper shell) | credential helpers                                    | Only when a Bedrock/Vertex/Anthropic-SDK model is selected; Kaiju's model is the `kaiju` provider, `set_model` is not allowed over the wire (KOBE-169) and `run.start` names a gateway model.            |
 | Built-in `codemode` extension (model-written JS in a worker inside Pi)                                        | -                                                     | Not loaded: built-ins load only as explicit `builtin:<name>` paths and the agent passes none but (later) `builtin:mcp`. Enabling it would put model code in Pi's process; do not.                        |
 
 The residual in-Pi site is therefore the `!command` resolver, and it is only as steerable as the

@@ -7,7 +7,7 @@ import { mayLoadAppFrame, WEBRTC_GUARD } from "../connectors/app-frame.js";
 import { uuidSchema } from "../threads/schemas.js";
 
 /** The message type the parent page posts the output's HTML with. */
-export const NOTEBOOK_OUTPUT_FRAME_MESSAGE = "kobe.notebook.html";
+export const NOTEBOOK_OUTPUT_FRAME_MESSAGE = "kaiju.notebook.html";
 
 /**
  * The frame's whole document. It writes the HTML its parent (Kaiju's page) posts, once, and then

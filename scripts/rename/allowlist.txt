@@ -176,6 +176,7 @@ docs/specs/** /kobe/i
 
 == permanent: The skill manifest's pre-rename names, read everywhere next to the new ones (owner decision 2026-11-24, spec §11 A2, KOBE-825): `kobe.skill.yaml` and its `compatibility.kobe` key live in skill packages outside the database (object-store packages, Registry versions, exports people downloaded, the built-ins until KOBE-833) that are never rewritten, since the package hash covers the path; the protocol constant and schema key, the readers' messages and comments, the pre-rename golden hash vector, the contract and guide pages, and the tests that read them
 packages/protocol/src/skill-package/layout.ts packages/protocol/src/testing/skill-hash-vectors.ts services/server/src/skills/bundle.ts services/server/src/skills/drafts/files.ts services/server/src/skills/drafts/fork.ts apps/web/lib/skills/paths.ts apps/web/components/skills/draft-manifest.tsx docs/skill-package.md docs/guide/agents/skills.md docs/guide/whats-new.md /\bkobe\.skill\.yaml\b|\bcompatibility\.kobe\b/
+docs/skill-package.md /(?<=informational; `)\.kobe(?=`, the pre-rename key)|(?<=`\.kaiju` and `)\.kobe(?=` are present)/
 packages/protocol/src/skill-package/manifest.ts /\bkobe\.skill\.yaml\b|\bcompatibility\.kobe\b|(?<=`)kobe(?=`)|^\s*kobe(?=: z\.)|\bc\.kobe\b|(?<=path: \[")kobe(?="\])/
 packages/protocol/src/skill-package/skill-package.test.ts services/server/src/skills/bundle-package.test.ts services/server/src/skills/drafts/files.test.ts services/server/src/skills/drafts/manifest-sync.test.ts apps/web/lib/skills/paths.test.ts /\bkobe\\?\.skill\\?\.yaml\b|\bcompatibility\.kobe\b|(?<=\{ |, )kobe(?=: ")/i
 
@@ -208,6 +209,17 @@ packages/db/src/schema/connectors.ts services/server/src/kaiju-mcp/kaiju-mcp-web
 services/server/src/openapi/undocumented-allowlist.ts services/server/src/routes/__snapshots__/route-inventory.app.txt services/server/src/kaiju-mcp/kaiju-mcp-web.db.test.ts services/server/src/kaiju-mcp/kaiju-mcp.guards.db.test.ts services/mcp-proxy/src/server-client.test.ts docs/install.md /\/v1\/team\/connectors\/kobe\b|\/kobe\/(?:compare|reset)\b|\/internal\/v1\/mcp\/kobe\/(?:list|calls|\*)?/
 services/server/src/kaiju-mcp/kaiju-mcp-web.db.test.ts /(?<=\[")kobe(?="\])|(?<=json\.)kobe(?=\.level)/
 services/server/src/git-hosts/git-transport.db.test.ts services/mcp-proxy/src/server-client.test.ts /(?<=\["kaiju", ")kobe(?="\])|(?<=Servers of the release before the rename serve only `)kobe(?=`)|(?<=toBe\(")kobe(?="\))/
+
+== permanent: Names the sandbox wrote into workspace volumes, Pi session files and thread entries before the rename (owner decision 2026-11-24, spec §11 A4, KOBE-827): the `.kobe/` folder, which the sandbox agent moves to `.kaiju/` at wake and which stays agent-internal for good (sync, restore, file browser, mentions, sharing: a folder a refused move leaves behind holds unpushed working copies), the temp prefix `.kobe-sync-` of downloads interrupted on the old image, the custom entry types `kobe.branch`, `kobe.app_card` and `kobe.skipped_actions` and the Pi provider id `kobe` that stored sessions and append-only thread entries keep (read next to the new ones), deny and ask rules matching a path under either folder name, the move's report, its tests and the docs that explain it
+packages/protocol/src/state-folder.ts packages/protocol/src/state-folder.test.ts services/sandbox-agent/src/workspace/state-folder.ts services/sandbox-agent/src/workspace/state-folder.test.ts services/server/src/policy/state-folder-views.ts services/server/src/policy/evaluate.state-folder.test.ts services/server/src/policy/skipped-summary-names.db.test.ts services/server/src/sandbox-wire/delivery/run-start-names.test.ts apps/web/lib/chat/pre-rename-entries.test.ts /kobe/i
+packages/protocol/src/workspace-paths.ts packages/protocol/src/sandbox-wire/frames/session.ts packages/protocol/src/sandbox-wire/workspace-sync.test.ts services/sandbox-agent/src/index.ts services/sandbox-agent/src/agent/deps.ts services/sandbox-agent/src/threads/manager-options.ts services/sandbox-agent/src/agent.wire.test.ts services/sandbox-agent/src/workspace/fs.ts services/sandbox-agent/src/workspace/sync.test.ts services/server/src/sandbox-wire/frames/hello.ts services/server/src/sandbox/stall-diagnosis.ts services/server/src/sandbox/stall-diagnosis.test.ts services/server/src/sandbox-lifecycle/ready.ts services/server/src/sandbox-lifecycle/ready.test.ts services/server/src/runs/failure-codes.ts packages/db/src/audit/events/platform.doc.ts docs/audit-log.md services/server/src/apps/decide.test.ts apps/web/lib/files/tree.ts apps/web/lib/files/tree.test.ts apps/web/lib/files/save-as.test.ts apps/web/lib/chat/mention-insert.test.ts docs/guide/whats-new.md docs/guide/files/workspaces-and-projects.md docs/guide/for-agents/working-with-git.md docs/install.md /(?<![\w-])\.kobex?\b(?!-)|\.kobe-sync-/
+apps/web/lib/chat/entries.ts apps/web/lib/chat/tree-nodes.ts services/server/src/runs/run-prompt-pi.ts services/server/src/runs/run-prompt-pi.test.ts services/sandbox-agent/src/kaiju-models.model-change.real-pi.test.ts docs/install.md /\bkobe\.(?:branch|app_card|skipped_actions)\b/
+docs/guide/whats-new.md /(?<=earlier ones stay in `)kobe-moved\/(?=`)|(?<=provider id `)kobe(?=`)/
+docs/install.md /(?<=provider id `)kobe(?=`)/
+services/sandbox-agent/src/kaiju-models/protocol.ts services/sandbox-agent/src/kaiju-models/register.ts services/server/src/runs/run-prompt-pi.ts services/server/src/runs/run-prompt-pi.test.ts services/sandbox-agent/src/kaiju-models.model-change.real-pi.test.ts /(?<=[`"'])kobe(?=[`"'])|\bprovider kobe\b|\bkobe-provider\b/
+
+== permanent: The model-error prefix `kobe.model_error:` of sandboxes still on the image from before the rename, read next to the new one so a run on such a sandbox during an upgrade fails with its real code (KOBE-827); removed with the one-release fallbacks in KOBE-754
+packages/protocol/src/sandbox-wire/pi-events.ts /\bkobe\.model_error:/
 
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
@@ -279,19 +291,6 @@ e2e/run/42-model-gateway-run.sh /(?<=dir=)kobe(?=:kobe-pi-)/
 
 == RN-15 (KOBE-828): Model ids `kobe-local/...` stored in model catalogs, embedding settings and vectors: renamed with a migration (owner decision 2026-11-24, was Q5)
 ** /\bkobe-local(?:\/[\w.:-]*)?/
-
-== RN-14 (KOBE-827): Names persisted in workspace volumes and Pi session files (the `.kobe/` folder, custom entry types, the Pi provider id): renamed with a migration, workspace volumes included (owner decision 2026-11-24, was Q4)
-** /(?<![\w-])\.kobe\b(?!-)/
-** /\bkobe\\?\.(?:branch|app_card|skipped_actions|event_dropped|model_error|notebook\.html)\b/
-** /\bprovider["']?\s*:\s*["']kobe["']/
-** /["']providers?["']\s*:\s*\{\s*["']kobe["']/
-docs/skill-evals.md packages/protocol/src/skill-evals/outputs.test.ts /\?kobe\/\*/
-packages/protocol/src/sandbox-wire/workspace-sync.test.ts /(?<=")\.kobex(?=")/
-docs/design/paired-tool-uid.md /`kobe` provider/
-** /\bkobe-moved\b|\/?kobe-branch-summary\b|\bkobe\.branch_summary(?:_result)?\b|\bkobe-context(?:\\?\.json)?\b|\bkobe-(?:memory-picks|sync-conflict)\b|\.kobe-sync-|`kobe\.` prefix/
-apps/web/components/chat/markers.test.tsx /\bkobe(?=\/(?:fast|deep)\b)/
-** /(?<=["'])kobe(?=\/openai\/gpt-fake")|(?<='\{")kobe(?=":\{"models")|(?<=provider !== )"kobe"|(?<=defaultProvider: )"kobe"|(?<=models\.json"\), "utf8"\)\)\.toContain\()"kobe"/
-** /(?<=K(?:OBE|AIJU)_PROVIDER(?:_ID)? = )"kobe"|(?<=`)kobe(?=` (?:Pi )?provider)|(?<=the )kobe(?= (?:Pi )?provider)|\bproviders\.kobe\.models\b|\bkobe (?=model(?: of| a tool))|(?<=only the )kobe(?= provider)/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area

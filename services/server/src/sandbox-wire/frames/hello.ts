@@ -81,3 +81,22 @@ export function recordHelloTiming(
     })
     .catch((err: unknown) => log.debug({ err }, "hello timing unavailable"));
 }
+
+/**
+ * KOBE-827: the agent's report of its move of `/workspace/.kobe` to `.kaiju` at startup. A move is
+ * noted; anything else (both folders hold data, a failed rename, a `.kobe` that is not a folder)
+ * needs a person: the old folder is intact, may hold unpushed working copies under `repos/`, and is
+ * reported again at every start until it is resolved (guide: "Working with git", Old folder).
+ */
+export function logStateFolder(
+  log: Pick<Logger, "info" | "warn">,
+  sandboxId: string,
+  report: NonNullable<HelloFrame["state_folder"]>,
+): void {
+  const fields = { sandbox_id: sandboxId, state_folder: report.outcome, code: report.code };
+  if (report.outcome === "moved" || report.outcome === "removed_empty") {
+    log.info(fields, "sandbox folder moved from .kobe to .kaiju");
+  } else {
+    log.warn(fields, "sandbox folder .kobe left in place: needs a person (KOBE-827)");
+  }
+}

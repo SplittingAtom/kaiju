@@ -54,18 +54,18 @@ function piTakesPrompt(ws: FakeWorkspace, start: RunStart, announce = true): Ent
       type: "custom",
       id: id(),
       parentId: start.parent_entry_id,
-      customType: "kobe.branch",
+      customType: "kaiju.branch",
       data: { run_id: start.run_id },
     }).id;
   } else if (parent === null) {
-    // Pi records the run's gateway model under the `kobe` provider (none without a model).
+    // Pi records the run's gateway model under the `kaiju` provider (none without a model).
     const model = start.config?.model?.gateway_model;
     if (model !== undefined) {
       parent = append(ws, threadId, {
         type: "model_change",
         id: id(),
         parentId: null,
-        provider: "kobe",
+        provider: "kaiju",
         modelId: model,
       }).id;
     }
@@ -514,7 +514,7 @@ describe("an ended run's late batch is checked against the run (sandbox untruste
           type: "custom",
           id: "b4dbranc",
           parentId: firstPrompt,
-          customType: "kobe.branch",
+          customType: "kaiju.branch",
           data: { run_id: start.run_id },
         },
         { type: "message", id: "u5er0003", parentId: "b4dbranc", message: said("second try") },

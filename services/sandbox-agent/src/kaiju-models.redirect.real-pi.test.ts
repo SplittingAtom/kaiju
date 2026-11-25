@@ -160,7 +160,7 @@ async function setModelScenario(
   const who = `id -u > '${rpc.workspace}/tool-uid'`;
   await runWith(rpc, gw, session, 1, OPENAI, `bash: ${who}; ${command}`);
   await runWith(rpc, gw, session, 2, ANTHROPIC, "another model");
-  await rpc.command({ type: "set_model", provider: "kobe", modelId: OPENAI.gateway_model });
+  await rpc.command({ type: "set_model", provider: "kaiju", modelId: OPENAI.gateway_model });
   if (removeAfterReload) {
     // What the tool does from a background process: the files are gone again.
     const files = Object.keys(plant);

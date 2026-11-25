@@ -659,7 +659,7 @@ describe("root branches: the first message is editable like any other (KOBE-214,
   it("after a reload, a root edit whose run saved nothing is an empty version, not another root", async () => {
     const { t, root } = compactedThread();
     // The run ended before Pi saved the prompt: only the agent's branch marker, now the leaf.
-    fake.addSystemEntry(t, root, "custom", { customType: "kobe.branch", data: {} });
+    fake.addSystemEntry(t, root, "custom", { customType: "kaiju.branch", data: {} });
     openApp(fake, t);
     expect(await screen.findByText(/This version has no messages/)).toBeTruthy();
     expect(screen.queryByText("follow-up answer")).toBeNull();

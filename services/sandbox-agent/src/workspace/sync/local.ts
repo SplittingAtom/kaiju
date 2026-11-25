@@ -91,7 +91,7 @@ export async function downloadSafely(
 
 /**
  * A file in a server-owned area the server never wrote (or a tool's folder or link left in an
- * ended checkout): moved to `kobe-moved/…`, never lost.
+ * ended checkout): moved to `kaiju-moved/…`, never lost.
  */
 export async function evict(s: SyncState, path: string): Promise<void> {
   try {

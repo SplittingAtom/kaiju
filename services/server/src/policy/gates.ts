@@ -51,10 +51,13 @@ export function checkAgentTools(
   input: JsonObject,
   /** Names the tool had before a rename (KOBE-826): `tools.deny` also matches them, never allow. */
   previousNames: readonly string[] = [],
+  /** The input under the sandbox folder's other name (KOBE-827): `tools.deny` only, never allow. */
+  folderViews: readonly JsonObject[] = [],
 ): PolicyReason[] {
   const names = [tool, ...previousNames.map((name) => ({ ...tool, name }))];
+  const inputs = [input, ...folderViews];
   const denied = agent.tools_deny.find((e) =>
-    names.some((t) => matchAgentToolEntry(e, t, input, "restrict")),
+    names.some((t) => inputs.some((i) => matchAgentToolEntry(e, t, i, "restrict"))),
   );
   if (denied !== undefined) {
     return [

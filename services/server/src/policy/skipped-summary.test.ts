@@ -43,6 +43,6 @@ describe("skippedSummary (server template, no model)", () => {
   });
 
   it("uses a stable entry type", () => {
-    expect(SKIPPED_ENTRY_TYPE).toBe("kobe.skipped_actions");
+    expect(SKIPPED_ENTRY_TYPE).toBe("kaiju.skipped_actions");
   });
 });

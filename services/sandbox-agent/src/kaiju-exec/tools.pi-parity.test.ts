@@ -91,7 +91,7 @@ afterAll(async () => {
 function toolContext(): never {
   return {
     cwd: work,
-    model: { provider: "kobe", id: "m-1", input: ["text", "image"] },
+    model: { provider: "kaiju", id: "m-1", input: ["text", "image"] },
     thinkingLevel: "off",
     sessionManager: { getSessionId: () => "session-1", getSessionFile: () => "/tmp/s.jsonl" },
   } as never;

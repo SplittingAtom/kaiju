@@ -190,7 +190,7 @@ describe("parsing evals/cases.yaml", () => {
     expect(suite({ outputs: ["../x"] })).toBe(false);
     expect(suite({ outputs: ["out/*.png", "out/*.png"] })).toBe(false);
     expect(suite({ outputs: ["skills/x/*"] })).toBe(false);
-    expect(suite({ outputs: [".kobe/*"] })).toBe(false);
+    expect(suite({ outputs: [".kaiju/*"] })).toBe(false);
     expect(suite({ outputs: ["*"] })).toBe(true);
     expect(suite({ contains: "" })).toBe(false);
     expect(suite({ triggers: true, max_cost_usd: 0 })).toBe(false);

@@ -453,7 +453,7 @@ describe("app cards (KOBE-440)", () => {
       type: "custom_message",
       id: CARD,
       parentId,
-      customType: "kobe.app_card",
+      customType: "kaiju.app_card",
       content: "The app-card block below…",
       display: true,
       details: { tool: "open_explorer", result_ref: "r" },

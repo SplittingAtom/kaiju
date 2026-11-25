@@ -180,7 +180,7 @@ describe.skipIf(!PI_AVAILABLE)("Stop before Pi's first token in real Pi 1.0.0 (K
     // What comes back: the aborted answer (a sibling of the next run's branch marker), then the
     // next run's own entries.
     expect(since.entries[0]?.id).toBe(aborted[0]?.id);
-    expect(since.entries.find((e) => e.customType === "kobe.branch")?.parentId).toBe(user?.id);
+    expect(since.entries.find((e) => e.customType === "kaiju.branch")?.parentId).toBe(user?.id);
     const echoed = (harness.server.frames("pi.event") as PiEventFrame[]).flatMap((f) => {
       const ev = f.event as { type?: string; message?: { role?: string; content?: unknown } };
       if (f.run_id !== RUN_2 || ev.type !== "message_end" || ev.message?.role !== "assistant")

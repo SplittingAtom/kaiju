@@ -77,7 +77,7 @@ const SKIPPED_NOTE: Entry = {
   type: "custom_message",
   payload: {
     type: "custom_message",
-    customType: "kobe.skipped_actions",
+    customType: "kaiju.skipped_actions",
     content: "Skipped actions",
     display: true,
     timestamp: AT,

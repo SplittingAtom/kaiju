@@ -31,7 +31,7 @@ export * from "../workspace-paths.js";
  * - Content is addressed by SHA-256: the sandbox uploads a blob once (`PUT blobs/<sha256>`, the
  *   server verifies the hash while streaming), then commits paths that point at it.
  * - Areas: `uploads/` and `projects/` are **server-owned** (written only by the server: KOBE-53
- *   uploads, KOBE-57 project mounts; read-only to the agent, never accepted in a commit); `.kobe/`
+ *   uploads, KOBE-57 project mounts; read-only to the agent, never accepted in a commit); `.kaiju/`
  *   is agent-internal and never synced (Pi session files are rebuilt from Postgres, D15).
  *   Everything else is sandbox-owned: the live volume is authoritative and S3 is its durable copy.
  *

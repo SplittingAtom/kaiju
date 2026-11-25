@@ -24,7 +24,7 @@ const answer = { role: "assistant", usage: { input: 900, cacheRead: 100, cacheWr
 describe("thread.context answer (KOBE-470)", () => {
   it("reads the capture and totals the call's prompt tokens", async () => {
     dir = await mkdtemp(path.join(tmpdir(), "kaiju-assemble-"));
-    const file = path.join(dir, "kobe-context.json");
+    const file = path.join(dir, "kaiju-context.json");
     await writeFile(
       file,
       captureText({ id: "glm-5", contextWindow: 128_000 }, context, answer, NOW),

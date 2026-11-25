@@ -54,8 +54,8 @@ describe("workspace file browser paths", () => {
   });
 
   it("knows the agent-internal area", () => {
-    expect(isInternalPath(".kobe")).toBe(true);
-    expect(isInternalPath(".kobe/session.jsonl")).toBe(true);
+    expect(isInternalPath(".kaiju")).toBe(true);
+    expect(isInternalPath(".kaiju/session.jsonl")).toBe(true);
     expect(isInternalPath(".kaijux/f")).toBe(false);
   });
 
@@ -90,8 +90,8 @@ describe("moveRefusal (KOBE-304)", () => {
     }
   });
   it("hides agent-internal sources and refuses internal or unmentionable targets", () => {
-    expect(moveRefusal(".kobe/x", "x")?.code).toBe("not_found");
-    for (const to of [".kobe/x", ".kobe", "a​b", "a$b", "a;b", "a`b", "a b", "a\u{e0041}"]) {
+    expect(moveRefusal(".kaiju/x", "x")?.code).toBe("not_found");
+    for (const to of [".kaiju/x", ".kaiju", "a​b", "a$b", "a;b", "a`b", "a b", "a\u{e0041}"]) {
       expect(moveRefusal("a", to)?.code, JSON.stringify(to)).toBe("invalid_path");
     }
   });

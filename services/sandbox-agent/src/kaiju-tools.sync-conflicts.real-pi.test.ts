@@ -164,6 +164,29 @@ describe.skipIf(!PI_AVAILABLE)("sync conflicts in real Pi (KOBE-492)", () => {
   }, 120_000);
 });
 
+describe.skipIf(!PI_AVAILABLE)("the sandbox folder notice in real Pi (KOBE-827 review M2)", () => {
+  it("puts the conflict notice in every run's system prompt, naming both folders", async () => {
+    const notice = ["## Sandbox folder", "both hold data", "deleted nothing"];
+    h = await startHarness({
+      piBin: PI_BIN,
+      env: { KAIJU_POLICY_EXTENSION: REAL_POLICY_EXTENSION },
+      extensions: [FAUX_MODEL_EXTENSION],
+      toolsExtension: REAL_TOOLS_EXTENSION,
+      stateFolder: { outcome: "conflict" },
+    });
+    const t = h;
+    for (const runId of [RUN, RUN_2]) {
+      const result = await t.server.command(
+        runStart(fauxScript([{ countInSystem: notice.map(b64) }]), { run_id: runId }),
+        30_000,
+      );
+      expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
+      await until(() => settled(t, runId), 30_000);
+      expect(countsOf(t, runId)).toEqual([1, 1, 1]);
+    }
+  }, 120_000);
+});
+
 async function memoryFiles(t: Harness): Promise<string[]> {
   const { readdir } = await import("node:fs/promises");
   const root = path.join(t.dir, "pi-runtime");

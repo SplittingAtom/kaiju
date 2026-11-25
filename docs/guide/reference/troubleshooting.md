@@ -27,6 +27,12 @@ sleeps. To avoid it, ask the agent to install packages and write large files ins
 Your files are kept. Send your message again; if it keeps happening, ask your site admin (they see
 the reason in the audit log).
 
+**"Your sandbox could not start: its workspace folder could not be moved to the new name".** After
+the upgrade that renamed the product to Kaiju, each sandbox moves its own folder to the new name when it
+starts; yours could not, so it does not start until an admin fixes the cause. Nothing was deleted:
+your files and the agent's unpushed work are where they were. Ask your site admin (they see the
+reason in the audit log), then send your message again.
+
 **"Your team has used all of its workspace storage".** The team's quota of sandbox volumes is
 full, so yours could not be created. Nothing of yours was deleted. Ask your team or site admin
 to free or raise the quota, then send your message again.

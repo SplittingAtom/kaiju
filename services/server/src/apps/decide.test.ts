@@ -93,6 +93,17 @@ describe("appBridgeDecision (MA5)", () => {
   const decide = (tool: PinnedTool, set: PolicyRuleSet) =>
     appBridgeDecision(ID, tool, { table: "t" }, set, NOW);
 
+  it("a deny on the sandbox folder's old name meets the arguments under the new one (KOBE-827)", () => {
+    const deny = rule({ arg_pattern: { "/table": "*/.kobe/*" } });
+    const args = { table: "/workspace/.kaiju/x" };
+    expect(appBridgeDecision(ID, read, args, rules({ team: [deny] }), NOW)).toMatchObject({
+      allowed: false,
+      reason: "team_deny_rule",
+    });
+    expect(appBridgeDecision(ID, read, { table: "t" }, rules({ team: [deny] }), NOW)).toEqual({
+      allowed: true,
+    });
+  });
   it("allows a read tool with no rules", () => {
     expect(decide(read, rules({}))).toEqual({ allowed: true });
   });

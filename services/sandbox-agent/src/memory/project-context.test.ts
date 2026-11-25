@@ -111,7 +111,7 @@ describe("a Repo in the project section (KOBE-767)", () => {
 
   it("names the working copy, the read-only mirror and how changes reach the host", () => {
     const text = projectContextText(project({ access: "write" }), repo) ?? "";
-    expect(text).toContain("/workspace/.kobe/repos/apollo");
+    expect(text).toContain("/workspace/.kaiju/repos/apollo");
     expect(text).toContain("https://github.com/acme/apollo.git (default branch main)");
     expect(text).toContain("projects/apollo is Kaiju's read-only copy");
     expect(text).toContain("git_open_pull_request");
@@ -124,6 +124,6 @@ describe("a Repo in the project section (KOBE-767)", () => {
     expect(projectContextText(project(), other)).toBe(projectContextText(project()));
     expect(
       memoryRunFileContent(undefined, "n", project(), undefined, undefined, repo).project,
-    ).toContain("/workspace/.kobe/repos/apollo");
+    ).toContain("/workspace/.kaiju/repos/apollo");
   });
 });

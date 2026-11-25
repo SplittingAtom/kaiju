@@ -53,6 +53,6 @@ describe("outbound frames start with v and type", () => {
     const huge = { type: "message_update", text: "x".repeat(5 * 1024 * 1024) };
     const placeholder = encodePiEvent(RUN, THREAD, 2, huge);
     expect(placeholder).toMatch(PREFIX);
-    expect(placeholder).toContain("kobe.event_dropped");
+    expect(placeholder).toContain("kaiju.event_dropped");
   });
 });

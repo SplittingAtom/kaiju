@@ -17,7 +17,7 @@ import { assertOnVolume } from "./volume.js";
  * follows finds the moved files already in place.
  *
  * A rename is refused (and the pull alone converges, as for an agent without this) when a path is
- * not the agent's own (server-owned areas, `.kobe/`), when either side or any parent is a symlink
+ * not the agent's own (server-owned areas, `.kaiju/`), when either side or any parent is a symlink
  * or not a directory, when the real parent directories are not where they should be under the
  * volume's real root, or when the destination already exists locally. A replayed move whose
  * source is gone is a no-op: replay is idempotent.
@@ -93,7 +93,7 @@ async function present(root: string, rel: string): Promise<boolean> {
 }
 
 /** Where the agent remembers the last revision it pulled, for the replay on wake. */
-const STATE_DIR = ".kobe";
+const STATE_DIR = ".kaiju";
 const STATE_FILE = "workspace-sync.json";
 
 export interface AppliedMove {
@@ -175,7 +175,7 @@ export class MoveReplay {
       const stat = await lstatIfExists(dir);
       if (!stat) await mkdir(dir, { mode: 0o700 });
       else if (!stat.isDirectory()) return;
-      // Written on the volume only: a `.kobe` swapped for a link must not make the agent write
+      // Written on the volume only: a `.kaiju` swapped for a link must not make the agent write
       // into an agent-only directory elsewhere (KOBE-71 confused deputy, review nit).
       const final = path.join(dir, STATE_FILE);
       const temp = tempPathFor(final);

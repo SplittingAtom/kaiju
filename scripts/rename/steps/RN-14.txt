@@ -2,9 +2,23 @@
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
-# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
-# permanent group with their reason. Until then the dry run lists every occurrence as left for
-# hand edits.
+# covers it.
+#
+# Hand work after the apply (docs/ledger/KOBE-827.md): the sandbox agent's move of `.kobe/` to
+# `.kaiju/` at wake (workspace/state-folder.ts) and its report in `hello.state_folder`; both
+# folders agent-internal (`WORKSPACE_EXCLUDED_PREFIXES`); deny and ask rules match a path under
+# either folder name; readers of the old entry types, temp-file prefix, model-error prefix and
+# provider id; the guide.
 
 == RN-14 (KOBE-827): Names persisted in workspace volumes and Pi session files (the `.kobe/` folder, custom entry types, the Pi provider id): renamed with a migration, workspace volumes included (owner decision 2026-11-24, was Q4)
+** /(?<![\w-])\.kobe\b(?!-)/
+** /\bkobe\\?\.(?:branch|app_card|skipped_actions|event_dropped|model_error|notebook\.html)\b/
+** /\bprovider["']?\s*:\s*["']kobe["']/
+** /["']providers?["']\s*:\s*\{\s*["']kobe["']/
+docs/skill-evals.md packages/protocol/src/skill-evals/outputs.test.ts /\?kobe\/\*/
+packages/protocol/src/sandbox-wire/workspace-sync.test.ts /(?<=")\.kobex(?=")/
+docs/design/paired-tool-uid.md /`kobe` provider/
+** /\bkobe-moved\b|\/?kobe-branch-summary\b|\bkobe\.branch_summary(?:_result)?\b|\bkobe-context(?:\\?\.json)?\b|\bkobe-(?:memory-picks|sync-conflict)\b|\.kobe-sync-|`kobe\.` prefix/
+apps/web/components/chat/markers.test.tsx /\bkobe(?=\/(?:fast|deep)\b)/
+** /(?<=["'])kobe(?=\/openai\/gpt-fake")|(?<='\{")kobe(?=":\{"models")|(?<=provider !== )"kobe"|(?<=defaultProvider: )"kobe"|(?<=models\.json"\), "utf8"\)\)\.toContain\()"kobe"/
+** /(?<=K(?:OBE|AIJU)_PROVIDER(?:_ID)? = )"kobe"|(?<=`)kobe(?=` (?:Pi )?provider)|(?<=the )kobe(?= (?:Pi )?provider)|\bproviders\.kobe\.models\b|\bkobe (?=model(?: of| a tool))|(?<=only the )kobe(?= provider)/

@@ -156,7 +156,7 @@ describe("picking a file with @ makes a chip (KOBE-756)", { timeout: 30_000 }, (
 
   it("a file with an unmentionable name is refused and the typed text stays", async () => {
     // The server's search would leave it out; a stale or odd result must still be refused.
-    fake.workspaceFiles.set(".kobe/notes-summary.md", new Uint8Array(1));
+    fake.workspaceFiles.set(".kaiju/notes-summary.md", new Uint8Array(1));
     const realFetch = fake.fetch;
     vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -165,7 +165,7 @@ describe("picking a file with @ makes a chip (KOBE-756)", { timeout: 30_000 }, (
           entries: [
             {
               name: "notes-summary.md",
-              path: ".kobe/notes-summary.md",
+              path: ".kaiju/notes-summary.md",
               type: "file",
               size_bytes: 1,
               mtime: "2026-11-01T00:00:00.000Z",
@@ -203,7 +203,7 @@ describe("picking a file with @ makes a chip (KOBE-756)", { timeout: 30_000 }, (
     fake.teamModels.push({ alias: "kimi", label: "Kimi", enabled: true, is_default: true });
     const t = fake.addThread("Report");
     const first = fake.addSystemEntry(t, null, "model_change", {
-      provider: "kobe",
+      provider: "kaiju",
       modelId: "kimi",
     });
     const root = fake.addSystemEntry(t, first, "thinking_level_change", { thinkingLevel: "off" });

@@ -8,7 +8,7 @@ import { PiProcessError } from "../pi/pi-process.js";
 import type { RunModel } from "../models/types.js";
 
 /** The Pi provider id kaiju-models registers (kaiju-models/protocol.ts `KAIJU_PROVIDER_ID`). */
-const KAIJU_PROVIDER = "kobe";
+const KAIJU_PROVIDER = "kaiju";
 
 type ResultOk = Extract<ThreadCompactResultFrame, { ok: true }>;
 type ResultErr = Extract<ThreadCompactResultFrame, { ok: false }>;
@@ -45,8 +45,8 @@ export function compactModelOf(
 }
 
 /**
- * Pi already uses `model` (`get_state.model`): the kobe model of that gateway model, served by the
- * model gateway (`baseUrl`: a kobe model a tool planted elsewhere is never accepted, KOBE-169)
+ * Pi already uses `model` (`get_state.model`): the kaiju model of that gateway model, served by the
+ * model gateway (`baseUrl`: a kaiju model a tool planted elsewhere is never accepted, KOBE-169)
  * and, when the server sent limits, with exactly those limits. Pi reads the model before
  * `session_before_compact`, so the summary goes to whatever is selected here.
  */
@@ -70,7 +70,7 @@ export function selectsModel(state: unknown, model: RunModel, gatewayUrl: string
   );
 }
 
-/** Pi RPC `set_model` for the compaction's model (only the kobe provider; never the server's input). */
+/** Pi RPC `set_model` for the compaction's model (only the kaiju provider; never the server's input). */
 export const setModelCommand = (model: RunModel) => ({
   type: "set_model",
   provider: KAIJU_PROVIDER,

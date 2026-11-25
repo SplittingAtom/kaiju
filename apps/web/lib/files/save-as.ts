@@ -4,7 +4,7 @@
  * (path rules, read-only areas) and never overwrites: a save without a base version creates the
  * file or answers 409 `version_conflict` when one is there.
  */
-import { mentionPathIssue } from "@kaiju/protocol";
+import { isExcludedPath, mentionPathIssue } from "@kaiju/protocol";
 import { isReadOnlyPath, parentPath } from "./format";
 import { baseName, joinPath } from "./tree";
 
@@ -38,7 +38,7 @@ export function saveAsProblem(
   if (path !== target) return "A path can't start or end with a space.";
   if (path.endsWith("/")) return "End the path with the file's name.";
   if (path === current) return "That is this file. Use Save, or choose another path.";
-  if (path === ".kobe" || path.startsWith(".kobe/")) return "That folder is not available.";
+  if (isExcludedPath(path)) return "That folder is not available.";
   if (mentionPathIssue(path) !== undefined) {
     return "Use a path inside My files (no leading /, no empty, . or .. parts) without invisible or control characters, `, $ or ;.";
   }

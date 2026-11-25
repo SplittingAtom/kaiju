@@ -250,7 +250,7 @@ describe("context sections (KOBE-470)", () => {
     const note = "## What Kaiju knows for this message\n<<<BEGIN UNTRUSTED MEMORY n>>>\n- fact: x";
     const sections = sectionsOf([
       { role: "user", content: [{ type: "text", text: note }] },
-      { role: "custom", customType: "kobe-memory-picks", content: note },
+      { role: "custom", customType: "kaiju-memory-picks", content: note },
       { role: "user", content: `${VIEWING_HEADER}\nfile` },
       { role: "user", content: "hi" },
     ]);

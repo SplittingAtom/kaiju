@@ -20,28 +20,28 @@ const state: ModelFileState = {
   token: "token-one-".padEnd(40, "1"),
   run_id: null,
 };
-const RUN_MODEL = { provider: "kobe", id: "anthropic/claude-fake" };
+const RUN_MODEL = { provider: "kaiju", id: "anthropic/claude-fake" };
 
-const modelChange = (modelId: string) => ({ type: "model_change", provider: "kobe", modelId });
+const modelChange = (modelId: string) => ({ type: "model_change", provider: "kaiju", modelId });
 const answer = (model: string) => ({
   type: "message",
-  message: { role: "assistant", provider: "kobe", model },
+  message: { role: "assistant", provider: "kaiju", model },
 });
 const user = { type: "message", message: { role: "user", content: "hi" } };
-const marker = { type: "custom", customType: "kobe.branch" };
+const marker = { type: "custom", customType: "kaiju.branch" };
 
 describe("branchModel", () => {
   it("is the latest model_change or answer on the branch, as Pi resumes it", () => {
     expect(branchModel([modelChange("a/one"), user])).toEqual({
-      provider: "kobe",
+      provider: "kaiju",
       modelId: "a/one",
     });
     expect(branchModel([modelChange("a/one"), user, answer("b/two"), marker])).toEqual({
-      provider: "kobe",
+      provider: "kaiju",
       modelId: "b/two",
     });
     expect(branchModel([answer("b/two"), modelChange("a/one"), marker])).toEqual({
-      provider: "kobe",
+      provider: "kaiju",
       modelId: "a/one",
     });
     expect(branchModel([user, marker])).toBeUndefined();
@@ -80,7 +80,7 @@ describe("kaiju-models input hook (KOBE-279)", () => {
   it("selects the run's model again when Pi is on it but the branch is on another", async () => {
     const { fire, selected } = await setup();
     await fire([modelChange("openai/gpt-fake"), user, answer("openai/gpt-fake"), marker]);
-    expect(selected).toEqual([expect.objectContaining({ provider: "kobe", id: RUN_MODEL.id })]);
+    expect(selected).toEqual([expect.objectContaining({ provider: "kaiju", id: RUN_MODEL.id })]);
   });
 
   it("records nothing when the branch is on the run's model already", async () => {

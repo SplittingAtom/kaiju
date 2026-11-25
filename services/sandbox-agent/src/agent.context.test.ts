@@ -85,7 +85,7 @@ describe("thread.context (KOBE-470)", () => {
       ok: true,
     });
     const [launch] = (await h.commandsLog()) as { agentDir: string }[];
-    const file = path.join(launch?.agentDir as string, "kobe-context.json");
+    const file = path.join(launch?.agentDir as string, "kaiju-context.json");
     const context = {
       messages: [
         { role: "system", content: "", sections: { preamble: "Pi" } },

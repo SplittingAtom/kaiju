@@ -62,4 +62,4 @@ export class PushPathError extends Error {
 
 export const DEFAULT_SKIP_DIRS = ["node_modules", "__pycache__", ".venv"] as const;
 /** Where files found in a server-owned area that the server never wrote are moved (and kept). */
-export const EVICTED_PREFIX = "kobe-moved/";
+export const EVICTED_PREFIX = "kaiju-moved/";

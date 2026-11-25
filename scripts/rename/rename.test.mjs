@@ -423,6 +423,10 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
     ["e2e/run/10-deploy.sh", "$HELM upgrade --install kobe charts/kobe -n x", "kobe"],
     ["charts/kaiju/values.yaml", "image: ghcr.io/splittingatom/kobe-server", "kobe-server"],
     ["services/server/src/x.ts", "export type KobeTx = Tx;", "Kobe"],
+    // RN-14 (KOBE-827): the agent's file names, entry types and folder are renamed.
+    ["services/sandbox-agent/src/x.ts", 'join(dir, "agent/kobe-context.json")', "kobe"],
+    ["services/sandbox-agent/src/x.test.ts", "expect(m).toMatch(/^kobe\\.model_error:x/);", "kobe"],
+    ["services/sandbox-agent/src/x.ts", 'const STATE_DIR = ".kobe";', "kobe"],
   ];
   for (const [path, line, token] of gone) {
     assert.equal(realGroup(path, line, token), "unowned", `${line} ${token}`);
@@ -455,12 +459,6 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
       "kobe",
       /^RN-18: The gallery agent's name/,
     ],
-    [
-      "services/sandbox-agent/src/x.ts",
-      'join(dir, "agent/kobe-context.json")',
-      "kobe",
-      /^RN-14: Names persisted in workspace volumes/,
-    ],
     // Escaped forms in regex literals belong to the value they spell (KOBE-747).
     [
       "packages/db/src/team-setters.test.ts",
@@ -468,11 +466,12 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
       "kobe",
       /^permanent: Postgres settings/,
     ],
+    // RN-14 is done (KOBE-827): the old model-error prefix is read for one release, in one place.
     [
-      "services/sandbox-agent/src/x.test.ts",
-      "expect(m).toMatch(/^kobe\\.model_error:x/);",
+      "packages/protocol/src/sandbox-wire/pi-events.ts",
+      'export const PRE_RENAME_MODEL_ERROR_PREFIX = "kobe.model_error:";',
       "kobe",
-      /^RN-14: Names persisted in workspace volumes/,
+      /^permanent: The model-error prefix `kobe\.model_error:`/,
     ],
     [
       "services/server/src/auth/x.ts",

@@ -290,7 +290,7 @@ describe.runIf(HELPER !== undefined)("project files are read-only to tools (KOBE
       expect((await readdir(`${p}/acme`)).sort()).toEqual(["docs"]);
       expect(await readdir(`${p}/acme/docs`)).toEqual(["brief.md"]);
       // The tool's own folder is not lost, but no longer in the project folder.
-      expect(await readFile(`${root}/kobe-moved/projects/acme/tooldir/t.md`, "utf8")).toBe("t\n");
+      expect(await readFile(`${root}/kaiju-moved/projects/acme/tooldir/t.md`, "utf8")).toBe("t\n");
       for (const rel of ["acme", "acme/docs", "acme/docs/brief.md"]) {
         expect((await lstat(`${p}/${rel}`)).uid, rel).toBe(process.getuid?.());
       }

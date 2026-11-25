@@ -1,4 +1,4 @@
-import type { RunStartFrame } from "@kaiju/protocol/sandbox-wire";
+import type { HelloFrame, RunStartFrame } from "@kaiju/protocol/sandbox-wire";
 import type { Config } from "../config.js";
 import type { EgressWiring } from "../egress/egress-wiring.js";
 import type { McpWiring } from "../mcp/pi-mcp-config.js";
@@ -26,6 +26,8 @@ export interface AgentDeps {
   readonly home: string;
   readonly parentEnv: Readonly<Record<string, string | undefined>>;
   readonly onExit: (code: number) => void;
+  /** What the move of the pre-rename `.kobe` folder did at startup (KOBE-827), for `hello`. */
+  readonly stateFolder?: HelloFrame["state_folder"];
   readonly backoff?: BackoffPolicy;
   readonly heartbeatTimeoutMs?: number;
   /** Outbound send pace (KOBE-429); default `SANDBOX_SEND_PACE`. Tests only. */

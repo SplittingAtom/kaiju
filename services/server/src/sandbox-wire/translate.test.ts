@@ -122,9 +122,9 @@ describe("Pi → Kaiju translation", () => {
     expect(answer.syncEntries).toBe(false);
   });
 
-  it("ignores unknown types (incl. kobe.event_dropped) and flags malformed known ones", async () => {
+  it("ignores unknown types (incl. kaiju.event_dropped) and flags malformed known ones", async () => {
     const t = translator();
-    expect((await t.translate(1, { type: "kobe.event_dropped" })).events).toEqual([]);
+    expect((await t.translate(1, { type: "kaiju.event_dropped" })).events).toEqual([]);
     expect((await t.translate(2, { type: "queue_update" })).invalid).toBeUndefined();
     const bad = await t.translate(3, { type: "message_update" });
     expect(bad.invalid).toBeTruthy();
@@ -192,7 +192,7 @@ describe("model call failures (KOBE-41)", () => {
       2,
       assistantEnd({
         stopReason: "error",
-        errorMessage: "kobe.model_error:model_not_enabled: model_not_enabled after 1 attempt",
+        errorMessage: "kaiju.model_error:model_not_enabled: model_not_enabled after 1 attempt",
       }) as never,
     );
     const end = await t.translate(3, { type: "agent_settled" } as never);

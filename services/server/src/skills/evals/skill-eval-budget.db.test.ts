@@ -396,7 +396,7 @@ describe("skill eval budgets (KOBE-327)", () => {
     ].join("\n");
     const draft = await bench.draftWith(w.owner, "refused", cases, {});
     const provider = bench.provider();
-    provider.fail = () => "kobe.model_error:model_budget_exhausted: gave up after 1 attempt";
+    provider.fail = () => "kaiju.model_error:model_budget_exhausted: gave up after 1 attempt";
     const started = await startEval(w, draft, "with_only");
     expect(started.status, JSON.stringify(started.json)).toBe(202);
     const evalRunId = started.json.evalRunId as string;
@@ -425,7 +425,7 @@ describe("skill eval budgets (KOBE-327)", () => {
       {},
     );
     const provider = bench.provider();
-    provider.fail = () => "kobe.model_error:model_unavailable: gave up after 6 attempts";
+    provider.fail = () => "kaiju.model_error:model_unavailable: gave up after 6 attempts";
     const started = await startEval(w, draft, "with_only");
     const evalRunId = started.json.evalRunId as string;
     await bench.drive(bench.runnerFor(provider, 1), w.team, evalRunId);

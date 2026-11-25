@@ -25,6 +25,13 @@ import { SkillStore } from "./skills/store.js";
 import { piVersion as readPiVersion, readAgentVersion } from "./version.js";
 import { SyncClient } from "./workspace/client.js";
 import { WorkspaceSync } from "./workspace/sync.js";
+import { STATE_FOLDER_EXIT_CODE } from "@kaiju/protocol";
+import {
+  StateFolderStartError,
+  stateFolderAtStart,
+  writeStartFailure,
+  type StateFolderReport,
+} from "./workspace/state-folder.js";
 
 /**
  * kaiju-sandbox-agent entry point: the sandbox's main process (D13). Dials out to the server; opens
@@ -52,6 +59,21 @@ async function main(): Promise<void> {
   // KOBE-71: private by default; what Pi identities must reach (workspace files, session files,
   // runtime dirs) gets its mode explicitly.
   process.umask(0o077);
+  // KOBE-827: the pre-rename `/workspace/.kobe` becomes `.kaiju` before anything else touches the
+  // volume (sync, Pi, kernels, tools); one rename, never a merge (workspace/state-folder.ts). A
+  // failed move stops the start here (StateFolderStartError), so nothing creates `.kaiju` and the
+  // next start retries on a clean volume.
+  const stateFolder = await stateFolderAtStart(checked.workspaceDir).catch(
+    async (error: unknown) => {
+      if (error instanceof StateFolderStartError) {
+        logStateFolder(error.report);
+        // The server's stall check reads these (KOBE-827 review round 2): a fixed reason, a distinct code.
+        await writeStartFailure(error.report);
+      }
+      throw error;
+    },
+  );
+  logStateFolder(stateFolder);
   // Pi identities first: they decide how the runtime directories are laid out, and an agent that
   // was asked for them but cannot provide them must not start Pi under the agent's uid instead.
   const identities = await piIdentities(checked);
@@ -177,6 +199,7 @@ async function main(): Promise<void> {
     exec,
     kernels,
     onExit: (code) => process.exit(code),
+    ...(stateFolder === undefined ? {} : { stateFolder }),
   });
   process.on("exit", () => agent.killAll());
   // The pod is going away (deleted, evicted, drained): runs still active after the drain are
@@ -187,6 +210,27 @@ async function main(): Promise<void> {
   }
   agent.start();
   workspace?.start();
+}
+
+/** The state folder move's outcome in the agent's log (the server gets it in `hello`). */
+function logStateFolder(report: StateFolderReport | undefined): void {
+  if (report === undefined) return;
+  const fields = {
+    outcome: report.outcome,
+    ...(report.code === undefined ? {} : { code: report.code }),
+  };
+  if (report.outcome === "moved") {
+    logger.info(fields, "moved the sandbox folder /workspace/.kobe to /workspace/.kaiju");
+  } else if (report.outcome === "removed_empty") {
+    logger.info(fields, "removed the empty pre-rename folder /workspace/.kobe");
+  } else if (report.outcome === "conflict") {
+    logger.error(
+      fields,
+      "both /workspace/.kobe and /workspace/.kaiju hold data: left both as they are",
+    );
+  } else {
+    logger.error(fields, "could not move /workspace/.kobe to /workspace/.kaiju: left it as it is");
+  }
 }
 
 /**
@@ -380,5 +424,5 @@ function mcpWiring(
 
 main().catch((error: unknown) => {
   logger.fatal({ err: error instanceof Error ? error.message : String(error) }, "startup failed");
-  process.exitCode = 1;
+  process.exitCode = error instanceof StateFolderStartError ? STATE_FOLDER_EXIT_CODE : 1;
 });

@@ -233,7 +233,7 @@ describe("Gate 2: a budget stops a run after its current step (D30)", () => {
       message: {
         role: "assistant",
         stopReason: "error",
-        errorMessage: "kobe.model_error:model_budget_exhausted: gave up after 1 attempt",
+        errorMessage: "kaiju.model_error:model_budget_exhausted: gave up after 1 attempt",
       },
     });
     ws.event(start, { type: "turn_end", message: { role: "assistant" } });
@@ -259,7 +259,7 @@ describe("Gate 2: a budget stops a run after its current step (D30)", () => {
       message: {
         role: "assistant",
         stopReason: "error",
-        errorMessage: "kobe.model_error:model_unavailable: gave up after 6 attempts",
+        errorMessage: "kaiju.model_error:model_unavailable: gave up after 6 attempts",
       },
     });
     ws.event(start, { type: "turn_end", message: { role: "assistant" } });
@@ -279,7 +279,7 @@ describe("Gate 2: a budget stops a run after its current step (D30)", () => {
       message: {
         role: "assistant",
         stopReason: "error",
-        errorMessage: "kobe.model_error:model_budget_exhausted: gave up after 1 attempt",
+        errorMessage: "kaiju.model_error:model_budget_exhausted: gave up after 1 attempt",
       },
     });
     ws.event(start, { type: "turn_end", message: { role: "assistant" } });

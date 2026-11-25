@@ -215,7 +215,10 @@ describe("GET /v1/threads/{id}/context (KOBE-470)", () => {
     const { w, ws, threadId } = await world();
     const answers: ((frame: ContextFrame) => object)[] = [
       () => ({ ok: false, error: { code: "pi_rejected", message: "the thread is compacting" } }),
-      () => ({ ok: false, error: { code: "internal", message: "ENOENT /workspace/.kobe/secret" } }),
+      () => ({
+        ok: false,
+        error: { code: "internal", message: "ENOENT /workspace/.kaiju/secret" },
+      }),
       (frame) => sealedOk(frame, { ...ANSWER, sections: [{ kind: "nope" }] }),
       // Plaintext (an agent that does not seal) is refused, never relayed.
       () => ({ ok: true, data: ANSWER }),

@@ -37,7 +37,7 @@ const marker = (id: string, parentId: string, runId = RUN): PiSessionEntry => ({
   id,
   parentId,
   timestamp: t,
-  customType: "kobe.branch",
+  customType: "kaiju.branch",
   data: { run_id: runId },
 });
 const model = (id: string, parentId: string | null, modelId = MODEL): PiSessionEntry => ({
@@ -45,7 +45,7 @@ const model = (id: string, parentId: string | null, modelId = MODEL): PiSessionE
   id,
   parentId,
   timestamp: t,
-  provider: "kobe",
+  provider: "kaiju",
   modelId,
 });
 const thinking = (id: string, parentId: string | null): PiSessionEntry => ({
@@ -119,6 +119,19 @@ describe("the run's prompt in Pi's entries after the run ended (KOBE-290)", () =
     );
     const shaped = { ...marker("k1", "p0"), data: { run_id: RUN, note: "x" } };
     expect(findRunPrompt([shaped, user("u1", "k1")], record()).kind).toBe("absent");
+  });
+});
+
+describe("a sandbox still on the image from before the rename (KOBE-827)", () => {
+  it("finds the run's prompt under a kobe.branch marker and a kobe-provider model change", () => {
+    const old = (e: PiSessionEntry): PiSessionEntry =>
+      e.type === "custom"
+        ? ({ ...e, customType: "kobe.branch" } as PiSessionEntry)
+        : ({ ...e, provider: "kobe" } as PiSessionEntry);
+    const entries = [old(marker("k1", "p0")), old(model("m1", "k1")), user("u1", "m1")];
+    expect(ids(findRunPrompt(entries, record()))).toEqual(["k1", "m1", "u1"]);
+    const other = { ...marker("k1", "p0"), customType: "evil.branch" } as PiSessionEntry;
+    expect(findRunPrompt([other, user("u1", "k1")], record()).kind).toBe("absent");
   });
 });
 

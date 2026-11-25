@@ -54,8 +54,8 @@ export function racy(stamp: FileStamp, startNs: bigint | undefined): boolean {
   return stamp.ctimeNs >= edge || stamp.mtimeNs >= edge;
 }
 
-const KAIJU_DIR = ".kobe";
-/** The agent's own directory: `.kobe/` is shared with the Pi identities (sessions, 2770). */
+const KAIJU_DIR = ".kaiju";
+/** The agent's own directory: `.kaiju/` is shared with the Pi identities (sessions, 2770). */
 const STATE_DIR = `${KAIJU_DIR}/agent`;
 const CLOCK_FILE = "workspace-clock";
 const STAMPS_FILE = "workspace-verified.json";
@@ -71,8 +71,8 @@ function agentOwned(stat: { uid: number; mode: number }, mode: number): boolean 
 }
 
 /**
- * `.kobe/agent/` on the volume, created agent-only (0700). Undefined when it is anything else: a
- * link, a file, or a directory not owned by the agent or not 0700. The workspace and `.kobe/` are
+ * `.kaiju/agent/` on the volume, created agent-only (0700). Undefined when it is anything else: a
+ * link, a file, or a directory not owned by the agent or not 0700. The workspace and `.kaiju/` are
  * writable by the member's identities, who can swap entries in them but cannot make a directory
  * owned by the agent's uid, so a swapped one is never trusted (its stamps count as absent).
  */
@@ -93,10 +93,10 @@ async function stateDir(root: string, create: boolean): Promise<string | undefin
   return found?.isDirectory() && agentOwned(found, 0o700) ? dir : undefined;
 }
 
-/** Writes `text` to `.kobe/<name>` atomically, on the volume only (never through a link). */
+/** Writes `text` to `.kaiju/<name>` atomically, on the volume only (never through a link). */
 async function writeState(root: string, name: string, text: string): Promise<void> {
   const dir = await stateDir(root, true);
-  if (dir === undefined) throw new Error(".kobe/agent is not the agent's own directory");
+  if (dir === undefined) throw new Error(".kaiju/agent is not the agent's own directory");
   const final = path.join(dir, name);
   const temp = tempPathFor(final);
   const handle = await openAgentTemp(temp, 0o600);

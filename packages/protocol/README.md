@@ -90,7 +90,7 @@ Gaps reported by KOBE-23/24/30/35/36, fixed in one contract PR:
 - `pi.command` no longer admits `fork` (it moves Pi to a new session file); branching is
   `run.start.parent_entry_id`.
 - `session.restore`: one `command.result` per part; the agent rewrites `header.cwd`.
-- `kobe.event_dropped` placeholder (`KAIJU_EVENT_DROPPED_TYPE`, `kaijuEventDroppedSchema`).
+- `kaiju.event_dropped` placeholder (`KAIJU_EVENT_DROPPED_TYPE`, `kaijuEventDroppedSchema`).
 - `pi.ui_request` is deduped by `(thread_id, request.id)`.
 - kaiju-policy checks and freezes the executed object; it does not replace `event.input`.
 - The approval token never enters the sandbox (the agent strips it from `policy.result`).

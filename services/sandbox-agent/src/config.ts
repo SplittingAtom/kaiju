@@ -27,7 +27,7 @@ const configSchema = z.object({
   KAIJU_BOOTSTRAP_TOKEN_FILE: z.string().startsWith("/").optional(),
   KAIJU_WORKSPACE_DIR: z.string().startsWith("/").default("/workspace"),
   /** Pi session JSONL per thread; on the workspace volume so it survives hibernation (D13/D15). */
-  KAIJU_SESSION_DIR: z.string().startsWith("/").default("/workspace/.kobe/sessions"),
+  KAIJU_SESSION_DIR: z.string().startsWith("/").default("/workspace/.kaiju/sessions"),
   KAIJU_PI_BIN: z.string().min(1).default("pi"),
   /**
    * Where each Pi process gets its private runtime directory (its `PI_CODING_AGENT_DIR`, which Pi

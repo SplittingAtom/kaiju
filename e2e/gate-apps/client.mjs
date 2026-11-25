@@ -189,7 +189,7 @@ async function appsEntries() {
     after = r.json.next_entries_after;
   }
   const byId = new Map(entries.map((e) => [e.entry_id, e]));
-  const cards = entries.filter((e) => e.payload?.customType === "kobe.app_card");
+  const cards = entries.filter((e) => e.payload?.customType === "kaiju.app_card");
   out("cards", cards.length);
   for (const card of cards) {
     const text = String(card.payload?.content ?? "");

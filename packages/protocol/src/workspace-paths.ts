@@ -35,8 +35,12 @@ export function isMemberDropPath(path: string): boolean {
   return name !== "" && !name.includes("/") && !isThreadFolderName(name);
 }
 
-/** Agent-internal; never synced (session JSONL is rebuilt from Postgres). */
-export const WORKSPACE_EXCLUDED_PREFIXES = [".kobe/"] as const;
+/**
+ * Agent-internal; never synced (session JSONL is rebuilt from Postgres). `.kobe/` is the same
+ * folder's name before the rename (KOBE-827, state-folder.ts): the sandbox agent moves it at wake,
+ * and one it could not move stays as internal as it was, for good.
+ */
+export const WORKSPACE_EXCLUDED_PREFIXES = [".kaiju/", ".kobe/"] as const;
 
 export const WORKSPACE_PATH_MAX_BYTES = 1024;
 export const WORKSPACE_SEGMENT_MAX_BYTES = 255;

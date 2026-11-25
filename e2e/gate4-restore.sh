@@ -608,7 +608,7 @@ contains "...in a sandbox that wakes for it (sandbox.waking)" '^waking=[a-z_]+' 
 contains "...and Pi gets the earlier turns (its session rebuilt from Postgres)" "history said: .*(gate4 restore hello|$REPORT)" "$(said "$next")"
 if sbx_await "$SBX_WAIT" "the restored thread"; then
   contains "Pi's session file is in the new sandbox" '^jsonl=[1-9][0-9]*$' \
-    "$(in_sbx "f=/workspace/.kobe/sessions/$T_DATA.jsonl; if test -s \$f; then echo jsonl=\$(wc -l < \$f); else echo jsonl=missing; fi")"
+    "$(in_sbx "f=/workspace/.kaiju/sessions/$T_DATA.jsonl; if test -s \$f; then echo jsonl=\$(wc -l < \$f); else echo jsonl=missing; fi")"
   contains "...written by the server's restore of the lost session" '^[1-9]' \
     "$($KUBECTL -n "$NS" logs -l app.kubernetes.io/component=server -c server --since-time="$lost_at" --tail=-1 2>/dev/null \
       | grep -F "\"thread_id\":\"$T_DATA\"" | grep -c 'Pi session lost; restoring from Postgres' || true)"

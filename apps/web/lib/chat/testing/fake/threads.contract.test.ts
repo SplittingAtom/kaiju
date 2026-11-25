@@ -22,7 +22,7 @@ import { call, expectContract } from "./contract";
 function seeded(fake: FakeKaiju) {
   const threadId = fake.addThread("Budget");
   const root = fake.addSystemEntry(threadId, null, "model_change", {
-    provider: "kobe",
+    provider: "kaiju",
     modelId: "k2",
   });
   const prompt = fake.addEntry(threadId, root, { role: "user", content: "Plan it" });

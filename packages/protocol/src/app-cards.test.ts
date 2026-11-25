@@ -114,7 +114,7 @@ describe("app card entries", () => {
     for (const bad of [
       { type: "custom" },
       { id: "1a2b3c4d" },
-      { customType: "kobe.branch" },
+      { customType: "kaiju.branch" },
       { content: "x".repeat(16 * 1024 + 1) },
       { details: { connector_id: RUN } },
     ]) {

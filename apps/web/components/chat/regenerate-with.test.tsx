@@ -42,7 +42,10 @@ const say = (text: string) => ({ role: "assistant", content: [{ type: "text", te
 /** Like Pi 1.0: the session's first model and a settings entry at the root, then one turn. */
 function oneTurn() {
   const t = fake.addThread("Report");
-  const first = fake.addSystemEntry(t, null, "model_change", { provider: "kobe", modelId: "kimi" });
+  const first = fake.addSystemEntry(t, null, "model_change", {
+    provider: "kaiju",
+    modelId: "kimi",
+  });
   const root = fake.addSystemEntry(t, first, "thinking_level_change", { thinkingLevel: "off" });
   const u1 = fake.addEntry(t, root, ask("summarise it"));
   fake.addEntry(t, u1, say("kimi answer"));

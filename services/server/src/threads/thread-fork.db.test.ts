@@ -51,7 +51,7 @@ const message = (id: string, parent: string | null, role: "user" | "assistant", 
 
 /**
  * A Pi-shaped history: a settings root (Pi 1.0 writes one), a compacted first turn and a second
- * turn after the compaction, and a sibling root branch (`kobe.branch` under the root, KOBE-214).
+ * turn after the compaction, and a sibling root branch (`kaiju.branch` under the root, KOBE-214).
  */
 const HISTORY: readonly Entry[] = [
   {
@@ -93,7 +93,7 @@ const HISTORY: readonly Entry[] = [
       id: "k1",
       parentId: "s0",
       timestamp: AT,
-      customType: "kobe.branch",
+      customType: "kaiju.branch",
       data: {},
     },
   },
