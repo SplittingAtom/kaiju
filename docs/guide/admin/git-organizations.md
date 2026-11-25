@@ -201,9 +201,14 @@ Kaiju's server makes a git commit authored as the member (with the address chose
 [Commit author email](#commit-author-email), and "_name_ via Kaiju" as committer) and pushes it
 with the connection's credential:
 
-- **By default**, to a new branch named `kobe/<member>/<message>-<commit>`, and opens a pull
+- **By default**, to a new branch named `kaiju/<member>/<message>-<commit>`, and opens a pull
   request into the default branch. Further commits from the same working copy are added to that
   pull request while it is open; after it is merged or closed, the next commit opens a new one.
+  Branches Kaiju made before the rename are named `kobe/<member>/...`: they keep their names (a
+  branch under an open pull request can't be renamed), their open pull requests keep taking that
+  member's commits until merged or closed, and a member still has only one open pull request per
+  Repo from Kaiju. Kaiju never deletes these branches, under either name; delete merged ones on
+  the host as you would any other.
 - **With "Allow commits straight to the default branch"** (off by default), straight to the
   default branch, and Kaiju's copy of the Repo takes the same commit. Where the host protects the
   default branch, Kaiju opens a pull request instead and says so. Turning the setting on or off is

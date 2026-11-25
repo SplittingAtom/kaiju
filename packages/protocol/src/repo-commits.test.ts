@@ -20,7 +20,7 @@ describe("commits to a Repo (KOBE-767)", () => {
   it("answers a pull request or a direct push", () => {
     const pr = {
       status: "pull_request",
-      branch: "kobe/ada/fix-typo-aaaaaaa",
+      branch: "kaiju/ada/fix-typo-aaaaaaa",
       commit_sha: SHA,
       number: 12,
       url: "https://github.com/acme/app/pull/12",
@@ -51,7 +51,7 @@ describe("commits to a Repo (KOBE-767)", () => {
     expect(
       projectCommitOutcomeSchema.safeParse({
         status: "pull_request",
-        branch: "kobe/x",
+        branch: "kaiju/x",
         number: 3,
         url: "",
         opened: false,
@@ -136,7 +136,7 @@ describe("Repo commit info (KOBE-767)", () => {
       default_branch: "main",
       direct_commits: false,
       can_commit: true,
-      pull_request: { branch: "kobe/a/b-1234567", number: 2, url: "" },
+      pull_request: { branch: "kaiju/a/b-1234567", number: 2, url: "" },
       working_copy: {
         branch: "main",
         head_sha: SHA,

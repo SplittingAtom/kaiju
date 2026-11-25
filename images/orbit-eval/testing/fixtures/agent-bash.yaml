@@ -13,6 +13,6 @@ setup:
         - mcp__github__list_issues
   edges: []
 metadata:
-  kobe:
+  kaiju:
     agent_version: 1
     manifest_format: 1

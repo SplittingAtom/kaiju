@@ -20,6 +20,15 @@ from .settings import Settings, SettingsError, load_settings
 EXIT_USAGE = 2
 EXIT_RUN = 3
 
+# Kaiju's section of an export's metadata (KOBE-832): written `kaiju`, files exported before the
+# rename say `kobe`; either is accepted, a file with both is refused (the server's orbit-schema.ts).
+METADATA_KEY = "kaiju"
+PRE_RENAME_METADATA_KEY = "kobe"
+BOTH_SECTIONS = (
+    "the agent file has both a `kaiju:` and a `kobe:` section under `metadata`. "
+    "Keep `kaiju:` only: `kobe:` is the name files exported before the rename use."
+)
+
 
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="kaiju-orbit-eval", description=__doc__)
@@ -44,6 +53,9 @@ def _load_agent(path: Path):
     from orbit.wrapper.yaml_loader import load_experiment_config
 
     config = load_experiment_config(path)
+    metadata = getattr(config, "metadata", None) or {}
+    if METADATA_KEY in metadata and PRE_RENAME_METADATA_KEY in metadata:
+        raise PackError(BOTH_SECTIONS)
     if len(config.setup.agents) != 1:
         raise PackError(f"expected exactly one agent in {path}, found {len(config.setup.agents)}")
     return config, config.setup.agents[0]

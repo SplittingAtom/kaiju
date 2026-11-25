@@ -103,6 +103,11 @@ expect "Orbit's loader rejects an invalid export" 'invalid input' "$out"
 expect "...exit code 2" 'rc=2$' "$out"
 out="$(job validate "$KAIJU_EXPORT_FIXTURE" -- "${STDIN_YAML[@]}" --validate-only)"
 expect "validates a KOBE-90 export fixture without model calls" 'ok: 5 scenarios, agent .sales-analyst. with 3 tools' "$out"
+out="$(job prerename "$FIX/agent-pre-rename.yaml" -- "${STDIN_YAML[@]}" --validate-only)"
+expect "accepts a file exported before the rename (metadata kobe:, KOBE-832)" 'ok: 5 scenarios, agent .fixture-agent. with 1 tools' "$out"
+out="$(job bothsections "$FIX/agent-both-sections.yaml" -- "${STDIN_YAML[@]}" --validate-only)"
+expect "refuses a file with both kaiju: and kobe: metadata sections" 'both a `kaiju:` and a `kobe:` section' "$out"
+expect "...exit code 2" 'rc=2$' "$out"
 
 echo "== evaluation against a fake model endpoint"
 docker run -d "${HARDENED[@]}" --network "$NET" --name "$RUN_ID-fake" \

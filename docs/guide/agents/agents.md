@@ -65,6 +65,12 @@ still asks when the mode or a rule says so. Each conversation uses the lists of 
 **Save draft** keeps your changes; **Test chat** tries the draft without publishing. **Publish…**
 creates a new version, after a safety check. Each published version is kept in **Version history**.
 
+**Export to Orbit** (in the builder and on each version in Version history) downloads a published
+version as an Orbit YAML file (`<agent>-v<n>.orbit.yaml`) for safety evaluation. Its `metadata`
+has a `kaiju:` section with the version, approval mode and connectors. Files exported before the
+rename have a `kobe:` section instead; Kaiju's evaluation runner still reads them, with no change
+needed. A file with both sections is refused: keep `kaiju:` only.
+
 ### Memory
 
 The builder's **Memory** section sets how much memory the agent uses, per published version:

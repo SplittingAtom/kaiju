@@ -86,7 +86,7 @@ export interface PiLaunchInput {
    */
   readonly modelsExtension?: string | undefined;
   /**
-   * The model Pi starts on (KOBE-279), with {@link modelsExtension}: `--model kobe/<gateway
+   * The model Pi starts on (KOBE-279), with {@link modelsExtension}: `--model kaiju/<gateway
    * model>`, outside the launch key. Without it a Pi restarted on a session resumes the branch's
    * model, which only works when Pi's asynchronous auth check of the extension's provider happened
    * to finish first; otherwise Pi starts with no model and the run's selection is recorded as a

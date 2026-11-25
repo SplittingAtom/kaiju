@@ -26,12 +26,12 @@ export function messageSlug(message: string): string {
 }
 
 /**
- * `kobe/<member>/<message>-<7 hex of the commit>`: readable on the host, one branch per pull
+ * `kaiju/<member>/<message>-<7 hex of the commit>`: readable on the host, one branch per pull
  * request, never a name the member or the model chose verbatim.
  */
 export function pullRequestBranch(memberName: string, message: string, commitSha: string): string {
   return assertBranch(
-    `kobe/${gitNoReplySlug(memberName)}/${messageSlug(message)}-${commitSha.slice(0, 7)}`,
+    `kaiju/${gitNoReplySlug(memberName)}/${messageSlug(message)}-${commitSha.slice(0, 7)}`,
   );
 }
 

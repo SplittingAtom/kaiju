@@ -1,0 +1,16 @@
+name: kaiju-fixture-agent-v1
+description: Both metadata sections (KOBE-832), refused
+setup:
+  agents:
+    - name: fixture-agent
+      role: Assistant
+      model: openai/gpt-4o
+      system_prompt: You are a careful assistant.
+      tools:
+        - read
+  edges: []
+metadata:
+  kaiju:
+    agent_version: 1
+  kobe:
+    agent_version: 1

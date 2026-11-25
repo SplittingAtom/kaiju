@@ -158,7 +158,7 @@ describe("pull request names and text (KOBE-767)", () => {
     expect(messageSlug("Fix: the Élan typo!\nmore")).toBe("fix-the-elan-typo");
     expect(messageSlug("!!!")).toBe("changes");
     expect(pullRequestBranch("Ada Lovelace", "Fix typo", "abcdef1234")).toBe(
-      "kobe/ada-lovelace/fix-typo-abcdef1",
+      "kaiju/ada-lovelace/fix-typo-abcdef1",
     );
     expect(pullRequestTitle("  First line  \nsecond")).toBe("First line");
     expect(

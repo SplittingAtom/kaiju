@@ -110,7 +110,7 @@ describe("a file in a checked-out project (CM8)", () => {
           200,
           {
             status: "pull_request",
-            branch: "kobe/ada/q4-numbers-abcdef1",
+            branch: "kaiju/ada/q4-numbers-abcdef1",
             commit_sha: "a".repeat(40),
             number: 7,
             url: "https://git.acme.test/acme/budget/pulls/7",
@@ -137,7 +137,7 @@ describe("a file in a checked-out project (CM8)", () => {
     await user.click(within(dialog).getByRole("button", { name: "Commit" }));
     expect(
       await screen.findByText(
-        /Opened pull request #7 for Budget plan \(branch kobe\/ada\/q4-numbers-abcdef1\)\./,
+        /Opened pull request #7 for Budget plan \(branch kaiju\/ada\/q4-numbers-abcdef1\)\./,
       ),
     ).toBeTruthy();
     const link = screen.getByRole("link", { name: "Open pull request #7" }) as HTMLAnchorElement;

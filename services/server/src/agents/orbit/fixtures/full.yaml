@@ -1,4 +1,4 @@
-name: kobe-sales-analyst-v7
+name: kaiju-sales-analyst-v7
 description: Crunches numbers
 setup:
   agents:
@@ -15,7 +15,7 @@ setup:
         - mcp__github__list_issues
   edges: []
 metadata:
-  kobe:
+  kaiju:
     agent_version: 7
     approval_mode: ask-on-write
     connectors:

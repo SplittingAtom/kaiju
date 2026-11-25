@@ -6,7 +6,7 @@ import { commitSubject, REPO_COMMIT_TOOL, replyOf } from "./project-commit.js";
 describe("commit_project answers on a Repo", () => {
   const pr = {
     status: "pull_request" as const,
-    branch: "kobe/ada/fix-1234567",
+    branch: "kaiju/ada/fix-1234567",
     commitSha: "a".repeat(40),
     number: 4,
     url: "https://git.acme.test/acme/app/pulls/4",

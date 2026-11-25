@@ -130,10 +130,12 @@ conversation on a Repo:
 - **Readers.** If the user is not an editor of the project (or the connection is at **Read**), you
   can fetch and read the working copy but not push.
 - **`commit_project` on a Repo.** When the user has the project checked out, `commit_project`
-  commits their copy to the host: by default to a new branch with a pull request (`pull_request`
-  in the result, with its number and link; later commits from the same copy are added to that pull
-  request while it is open). Only where a Workspace admin allows commits to the default branch, and
-  the host does not protect it, does it go straight to the default branch (`pushed`). If the
+  commits their copy to the host: by default to a new branch `kaiju/<member>/<message>-<commit>`
+  with a pull request (`pull_request` in the result, with its branch, number and link; later
+  commits from the same copy are added to that pull request while it is open, including one opened
+  before the rename on a `kobe/<member>/...` branch). Only where a Workspace admin allows commits
+  to the default branch, and the host does not protect it, does it go straight to the default
+  branch (`pushed`). If the
   result is `repo_moved`, a file in the commit changed on the host since the user's copy: ask the
   user to Update the checkout, then commit again. Each such commit asks the user to approve it
   (`commit_repo`, naming the host, repository and branch); no rule allows it without asking.

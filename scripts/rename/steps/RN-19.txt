@@ -2,11 +2,17 @@
 #
 # Same format as allowlist.txt (scripts/rename/README.md). The script changes an occurrence only
 # where a pattern below matches it AND the allowlist gives it to this step AND no permanent entry
-# covers it. No patterns yet: the step's ticket writes them (README "How a step uses it", step 1),
-# leaving out the old names its migration and its read-both fallbacks must keep, which move to a
-# permanent group with their reason. Until then the dry run lists every occurrence as left for
-# hand edits.
+# covers it.
+#
+# Hand work after the apply (docs/ledger/KOBE-832.md): the Orbit export's metadata reader that
+# takes `kaiju:` or `kobe:` and refuses both (server schema and the eval image's loader), the
+# test that tracks a stored pre-rename `kobe/` pull request branch to its merge, the pre-rename
+# fixtures, and the permanent group that keeps the old names those read.
 
 == RN-19 (KOBE-832): Agent file (orbit) export section `kobe:`, read back from files outside the database: written as `kaiju:`, both read (owner decision 2026-11-24, was Q11)
+services/server/src/agents/orbit/** images/orbit-eval/testing/fixtures/** /^\s*kobe:/
+services/server/src/agents/orbit/** /`kobe-\$\{slug\}-v\$\{version\}`/
+services/server/src/agents/orbit/** /(?<=^name: |toBe\(")kobe(?=-sales-analyst-v\d)|(?<=metadata\.)kobe\b/
 
 == RN-19 (KOBE-832): Workspace git branch prefix `kobe/<member>/...` in members' repositories: new branches get `kaiju/`, existing branches stay (owner decision 2026-11-24, was Q10)
+** /(?<!\.)\bkobe\\?\/(?=[a-z-]+\\?\/[\w-]+-[0-9a-f]{7}\b|a\/b-1\b|<|\$\{gitNoReplySlug)|(?<=name: ")kobe(?=\/x")|(?<=")kobe(?=\/(?:probe|x|one|feature)")|(?<=\/\^)kobe(?=\\\/\[a-z0-9-\]\+\\\/)/

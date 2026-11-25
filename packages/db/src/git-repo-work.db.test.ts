@@ -71,7 +71,7 @@ const branchRow = (teamId: string, ids: { projectId: string; repositoryId: strin
   repositoryId: ids.repositoryId,
   baseCommitId: randomUUID(),
   baseSha: SHA,
-  branch: "kobe/ada/fix-1234567",
+  branch: "kaiju/ada/fix-1234567",
   headSha: "b".repeat(40),
   treeSha: "c".repeat(40),
   pullNumber: 3,
