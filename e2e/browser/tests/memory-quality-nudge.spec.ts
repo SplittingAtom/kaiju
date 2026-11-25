@@ -106,41 +106,70 @@ const CONTEXT_WINDOW = 100_000;
 const TEAM_MODELS_PATH = /\/v1\/team\/models(\?|$)/;
 const USAGE_PATH = /\/v1\/threads\/[^/]+\/usage(\?|$)/;
 
-type Wire = Record<string, unknown> & { data?: Record<string, unknown> };
+/** The one model the page is told the team has (shaped like `GET /v1/team/models`, KOBE-44). */
+const SPEC_MODEL = "spec-context-model";
+const NOW = new Date().toISOString();
+
+/** `GET /v1/team/models` as the server answers it (`TeamModels`, snake_case on the wire). */
+function teamModelsBody() {
+  return {
+    models: [
+      {
+        alias: SPEC_MODEL,
+        provider_id: "spec",
+        model: SPEC_MODEL,
+        label: "Spec model",
+        input_modalities: ["text"],
+        gateway_model: `spec/${SPEC_MODEL}`,
+        max_output_tokens: null,
+        context_window: CONTEXT_WINDOW,
+        reasoning: false,
+        enabled: true,
+        is_default: true,
+        created_at: NOW,
+        updated_at: NOW,
+      },
+    ],
+    default: SPEC_MODEL,
+  };
+}
+
+/** `GET /v1/threads/:id/usage` (`ThreadUsage`): no per-run rows, the newest call at `percent`. */
+function usageBody(threadId: string, percent: number) {
+  return {
+    thread_id: threadId,
+    runs: [],
+    latest_call: {
+      run_id: "00000000-0000-4000-8000-000000000840",
+      at: NOW,
+      model: `spec/${SPEC_MODEL}`,
+      input_tokens: Math.round((CONTEXT_WINDOW * percent) / 100),
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+    },
+  };
+}
 
 /**
  * KOBE-840: drives the context use the + button reads, deterministically. The fake model of the
  * gate7 install (and some catalogs) leave the context window blank or report no usage, so the
- * gauge shows no meter and the dot never shows. The page's own reads are answered with every team
- * model at `CONTEXT_WINDOW` tokens and the thread's newest call at `percent()` of it: exactly the
- * figure the context gauge and the + button compute (`contextPercent`). Only after a reload does
- * the stored call decide (a run streamed in this tab keeps its own figure).
+ * gauge shows no meter and the dot never shows. The page's reads of the team's models and the
+ * thread's usage are answered entirely in the browser with synthetic bodies (never `route.fetch`,
+ * which runs in Node and misses the browser's host mapping): the team's default model has a
+ * `CONTEXT_WINDOW` window and the thread's newest call used `percent()` of it, exactly the figure
+ * the context gauge and the + button compute (`contextPercent`). The conversation follows the
+ * team default, so runs still use the install's real default model. Only after a reload does the
+ * stored call decide (a run streamed in this tab keeps its own figure).
  */
 async function driveContextUse(page: Page, percent: () => number): Promise<void> {
   await page.route(TEAM_MODELS_PATH, async (route) => {
     if (route.request().method() !== "GET") return route.fallback();
-    const res = await route.fetch();
-    const body = (await res.json()) as Wire;
-    const target = body.data ?? body;
-    const models = (target["models"] as Record<string, unknown>[] | undefined) ?? [];
-    target["models"] = models.map((m) => ({ ...m, context_window: CONTEXT_WINDOW }));
-    await route.fulfill({ response: res, json: body });
+    await route.fulfill({ json: teamModelsBody() });
   });
   await page.route(USAGE_PATH, async (route) => {
     if (route.request().method() !== "GET") return route.fallback();
-    const res = await route.fetch();
-    const body = (await res.json()) as Wire;
-    const target = body.data ?? body;
-    const call = (target["latest_call"] as Record<string, unknown> | null | undefined) ?? null;
-    target["latest_call"] = {
-      run_id: call?.["run_id"] ?? "00000000-0000-4000-8000-000000000840",
-      at: call?.["at"] ?? new Date().toISOString(),
-      model: call?.["model"] ?? "kobe-840",
-      input_tokens: Math.round((CONTEXT_WINDOW * percent()) / 100),
-      cache_read_tokens: 0,
-      cache_write_tokens: 0,
-    };
-    await route.fulfill({ response: res, json: body });
+    const threadId = /\/v1\/threads\/([^/]+)\/usage/.exec(route.request().url())?.[1] ?? "";
+    await route.fulfill({ json: usageBody(decodeURIComponent(threadId), percent()) });
   });
 }
 
