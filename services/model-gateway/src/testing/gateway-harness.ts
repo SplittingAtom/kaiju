@@ -255,7 +255,7 @@ export function useGatewayHarness(): void {
               object: "list",
               data: [
                 { id: "openai/m", object: "model", created: 1, owned_by: "openai" },
-                { id: "kobe-local/nomic-embed-text", object: "model", owned_by: "kobe-local" },
+                { id: "kaiju-local/nomic-embed-text", object: "model", owned_by: "kaiju-local" },
                 { id: "gemini/g", object: "model", owned_by: "gemini" },
               ],
             }),

@@ -293,9 +293,6 @@ e2e/run/42-model-gateway-run.sh /(?<=dir=)kobe(?=:kobe-pi-)/
 ** /\bname: "kobe", version\b/
 ** /\bkobe-reference:|\bnot_allowed_in_kobe\b/
 
-== RN-15 (KOBE-828): Model ids `kobe-local/...` stored in model catalogs, embedding settings and vectors: renamed with a migration (owner decision 2026-11-24, was Q5)
-** /\bkobe-local(?:\/[\w.:-]*)?/
-
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
 # triages them: narrows the pattern, renames, or moves an entry to another group.

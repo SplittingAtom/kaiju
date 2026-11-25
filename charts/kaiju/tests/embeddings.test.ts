@@ -6,7 +6,7 @@ import { loadModelsConfig } from "../../../services/server/src/models/config.js"
 
 // Render tests for the optional in-cluster CPU embedding service (KOBE-659): llama.cpp's
 // llama-server with nomic-embed-text, reachable only from Bifrost, and handed to the server so the
-// gateway sync registers it as the Bifrost provider `kobe-local`.
+// gateway sync registers it as the Bifrost provider `kaiju-local`.
 
 const CHART_DIR = fileURLToPath(new URL("..", import.meta.url));
 const HELM = process.env.HELM_BIN ?? "helm";

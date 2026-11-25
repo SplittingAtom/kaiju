@@ -7,7 +7,7 @@
 # (MIT, `ghcr.io/ggml-org/llama.cpp`, pinned by version and digest) serving one small embedding
 # model (nomic-embed-text v1.5, Apache-2.0) over an OpenAI-compatible API. Only Bifrost may connect:
 # every embedding call goes through the model gateway, where the server registers this service as
-# the keyless provider `kobe-local` (model `kobe-local/<model.name>`). The model file lives on a
+# the keyless provider `kaiju-local` (model `kaiju-local/<model.name>`). The model file lives on a
 # PVC: the init container downloads it once (pinned URL, sha256 checked), or, for air-gapped
 # installs (model.download=false), only checks a file preloaded onto the claim. The pod's only
 # egress is that download (DNS and public HTTPS); with download off it has none.

@@ -11,7 +11,7 @@ runs whose token fetch timed out) are refused with 401.
 {{- if $emb.enabled }}
 
 Embeddings: {{ include "kaiju.fullname" . }}-embeddings serves {{ $emb.model.name }} on CPU, registered in the
-model gateway as kobe-local/{{ $emb.model.name }}.
+model gateway as kaiju-local/{{ $emb.model.name }}.
 {{- if $emb.model.download }} It downloads the model once on first start.
 {{- else }} The model must be preloaded on its volume (download off).
 {{- end }}

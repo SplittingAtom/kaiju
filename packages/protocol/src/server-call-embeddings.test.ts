@@ -27,7 +27,7 @@ const EMBED: ServerCallClaims = {
   purpose: "memory_embed",
   team_id: EXAMPLE_IDS.team,
   user_id: EXAMPLE_IDS.user,
-  model: "kobe-local/nomic-embed-text",
+  model: "kaiju-local/nomic-embed-text",
   max_output_tokens: 1,
   iat: NOW,
   exp: NOW + 30,
@@ -69,7 +69,7 @@ describe("memory_embed purpose (KOBE-409)", () => {
 
 describe("embeddings body", () => {
   const ok = (body: unknown) => serverCallEmbeddingsRequestSchema.safeParse(body).success;
-  const model = "kobe-local/nomic-embed-text";
+  const model = "kaiju-local/nomic-embed-text";
 
   it("takes one input or a batch of up to 64, floats only", () => {
     expect(ok({ model, input: "fiscal year" })).toBe(true);

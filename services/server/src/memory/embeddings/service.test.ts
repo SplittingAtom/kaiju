@@ -26,7 +26,7 @@ function service(embed: EmbeddingClient["embed"], deadline = 30) {
     log: silent,
     queryDeadlineMs: deadline,
   });
-  s.usableModel = async () => "kobe-local/nomic-embed-text";
+  s.usableModel = async () => "kaiju-local/nomic-embed-text";
   return s;
 }
 
@@ -38,7 +38,7 @@ describe("query embedding deadline (KOBE-409)", () => {
       return [[0.1, 0.2]];
     });
     expect(await s.queryVector(input)).toEqual({
-      model: "kobe-local/nomic-embed-text",
+      model: "kaiju-local/nomic-embed-text",
       vector: [0.1, 0.2],
     });
     expect(seen?.inputs).toEqual(["where do I park?"]);
@@ -88,10 +88,10 @@ describe("recall query embedding (KOBE-664)", () => {
     // The selector's 30 ms deadline does not apply: recall is a tool call, not the run's start.
     s.usableModel = async () => {
       await sleep(40);
-      return "kobe-local/nomic-embed-text";
+      return "kaiju-local/nomic-embed-text";
     };
     expect(await s.recallVector({ ...input, message: "where's my car" })).toEqual({
-      model: "kobe-local/nomic-embed-text",
+      model: "kaiju-local/nomic-embed-text",
       vector: [0.5, 0.6],
     });
     expect(seen?.inputs).toEqual(["where's my car"]);
@@ -131,7 +131,7 @@ describe("recall query embedding (KOBE-664)", () => {
       log: silent,
       recallDeadlineMs: 20,
     });
-    slow.usableModel = async () => "kobe-local/nomic-embed-text";
+    slow.usableModel = async () => "kaiju-local/nomic-embed-text";
     const t0 = Date.now();
     expect(await slow.recallVector(input)).toBeUndefined();
     expect(Date.now() - t0).toBeLessThan(200);
@@ -157,7 +157,7 @@ describe("query embedding started when the message is accepted (KOBE-409 review 
     order.push("select");
     const t0 = Date.now();
     expect(await s.queryVector(input)).toEqual({
-      model: "kobe-local/nomic-embed-text",
+      model: "kaiju-local/nomic-embed-text",
       vector: [0.3, 0.4],
     });
     expect(Date.now() - t0).toBeLessThan(15);
@@ -200,7 +200,7 @@ describe("query embedding started when the message is accepted (KOBE-409 review 
     s.prefetchQuery({ ...input, message: "an edited message" });
     await sleep(5);
     expect(await s.queryVector(input)).toEqual({
-      model: "kobe-local/nomic-embed-text",
+      model: "kaiju-local/nomic-embed-text",
       vector: [1],
     });
     expect(seen).toBe("where do I park?");
@@ -230,7 +230,7 @@ describe("vector leg deadline (KOBE-409 L5)", () => {
 describe("embedding helpers (KOBE-409)", () => {
   it("prefixes per model family", () => {
     // nomic-embed-text ranks better without its card's prefixes on the relevance set (gate-7b).
-    expect(documentText("kobe-local/nomic-embed-text", "x")).toBe("x");
+    expect(documentText("kaiju-local/nomic-embed-text", "x")).toBe("x");
     expect(queryText("mac/nomic-embed-text:latest", "x")).toBe("x");
     expect(queryText("mac/qwen3-embedding:0.6b", "x")).toMatch(/^Instruct: .*\nQuery: x$/s);
     expect(documentText("mac/qwen3-embedding:0.6b", "x")).toBe("x");
@@ -241,7 +241,7 @@ describe("embedding helpers (KOBE-409)", () => {
 
   it("stores vectors under the document scheme, so a scheme change re-embeds", () => {
     // nomic's documents lost their prefix (scheme 2): vectors stored by scheme 1 no longer match.
-    expect(storedVectorModel("kobe-local/nomic-embed-text")).toBe("kobe-local/nomic-embed-text#d2");
+    expect(storedVectorModel("kaiju-local/nomic-embed-text")).toBe("kaiju-local/nomic-embed-text#d2");
     expect(storedVectorModel("mac/qwen3-embedding:0.6b")).toBe("mac/qwen3-embedding:0.6b");
     expect(storedVectorModel("openai/text-embedding-3-small")).toBe(
       "openai/text-embedding-3-small",
@@ -249,17 +249,17 @@ describe("embedding helpers (KOBE-409)", () => {
   });
 
   it("picks the stored model only while its provider is on the gateway", () => {
-    expect(pickEmbeddingModel(null, new Set(["kobe-local"]))).toEqual({
+    expect(pickEmbeddingModel(null, new Set(["kaiju-local"]))).toEqual({
       ok: false,
       reason: "no_model",
     });
-    expect(pickEmbeddingModel("gone/m", new Set(["kobe-local"]))).toEqual({
+    expect(pickEmbeddingModel("gone/m", new Set(["kaiju-local"]))).toEqual({
       ok: false,
       reason: "provider_missing",
     });
-    expect(pickEmbeddingModel("kobe-local/m", new Set(["kobe-local"]))).toEqual({
+    expect(pickEmbeddingModel("kaiju-local/m", new Set(["kaiju-local"]))).toEqual({
       ok: true,
-      model: "kobe-local/m",
+      model: "kaiju-local/m",
     });
   });
 

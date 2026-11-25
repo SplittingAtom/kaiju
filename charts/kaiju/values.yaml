@@ -656,7 +656,7 @@ bifrost:
 # Embedding models (KOBE-659). Every embedding call goes through the model gateway (Bifrost).
 # `local` runs a small CPU embedding model in the cluster, on by default: llama.cpp's llama-server
 # (MIT) with nomic-embed-text v1.5 (Apache-2.0, 768 dimensions, ~270 MB). The server registers it
-# in Bifrost as the keyless provider `kobe-local` (model `kobe-local/<model.name>`); only Bifrost
+# in Bifrost as the keyless provider `kaiju-local` (model `kaiju-local/<model.name>`); only Bifrost
 # can reach it. Off: use an external model instead, added as a Site console provider (a LAN
 # Ollama or a hosted provider with a site key; a private address needs
 # bifrost.networkPolicy.extraEgress).
@@ -669,7 +669,7 @@ embeddings:
       tag: server-b12004
       digest: sha256:b32890309c1a33a534a01b0b461e953dc2c5a6bac20213abcf48e22847a19c85
     model:
-      # Served under this name (`/v1/models`); the gateway model is kobe-local/<name>.
+      # Served under this name (`/v1/models`); the gateway model is kaiju-local/<name>.
       name: nomic-embed-text
       # GGUF file on the model volume.
       file: nomic-embed-text-v1.5.f16.gguf

@@ -19,7 +19,7 @@ import { statementHash } from "./learn/validate.js";
  * proposal. A refused embedding never fails or rolls back the save (the build catches it later).
  */
 const PAIR = generateSessionKeyPair();
-const MODEL = "kobe-local/test-embed";
+const MODEL = "kaiju-local/test-embed";
 const fx = new EventStreamFixture();
 let refuse: string | undefined;
 let calls = 0;
@@ -48,7 +48,7 @@ beforeAll(async () => {
     models: { providerKeySecrets: ["p".repeat(40)] },
     blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
-    embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
+    embeddings: { localModel: "kaiju-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));
   const email = `vsp-adm-${randomUUID().slice(0, 6)}@events.test`;
   const { id } = await fx

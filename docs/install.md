@@ -819,8 +819,8 @@ like every other model. By default the chart runs a small one in the cluster
   tag and digest; never `latest`) serving **nomic-embed-text v1.5** (Apache-2.0, 768 dimensions,
   the f16 GGUF, about 270 MB) on CPU: one replica, non-root, read-only root filesystem, requests
   1 CPU / 1 GiB and limits 2 CPUs / 1 GiB (`embeddings.local.resources`, `threads: 2`). No GPU.
-- **In the gateway.** The server registers it in Bifrost as the keyless provider `kobe-local`, so
-  the model is `kobe-local/nomic-embed-text`. It is the chart's, not a Site console provider:
+- **In the gateway.** The server registers it in Bifrost as the keyless provider `kaiju-local`, so
+  the model is `kaiju-local/nomic-embed-text`. It is the chart's, not a Site console provider:
   turning it off removes it from Bifrost on the next sync. The provider id `local` is reserved.
 - **Network.** Only Bifrost's pods may connect (port 8080); sandboxes, the shim and the server
   cannot. Bifrost's egress policy gets a rule to it.
@@ -843,7 +843,7 @@ like every other model. By default the chart runs a small one in the cluster
 - **Check it** (after a deploy): from the Bifrost pod, the only one allowed to connect,
   `kubectl -n <ns> exec deploy/<release>-bifrost -- wget -qO- --header 'Content-Type: application/json' --post-data '{"model":"nomic-embed-text","input":"hello"}' http://<release>-embeddings:8080/v1/embeddings`
   returns a 768-number vector; the same from any other pod times out. Bifrost lists the model:
-  from the server pod, `GET $KAIJU_BIFROST_URL/api/models?provider=kobe-local` with
+  from the server pod, `GET $KAIJU_BIFROST_URL/api/models?provider=kaiju-local` with
   `Authorization: Bearer base64(kobe:$KAIJU_BIFROST_ADMIN_PASSWORD)` shows `nomic-embed-text`.
 
 ## MCP connectors

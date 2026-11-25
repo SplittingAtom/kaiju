@@ -14,7 +14,7 @@ export type EmbeddingModel =
 
 /**
  * The gateway provider names now: every Site provider (`gatewayProviderName`) plus the chart's
- * in-cluster embedding provider when it runs one (`localModel`, e.g. `kobe-local/nomic-embed-text`).
+ * in-cluster embedding provider when it runs one (`localModel`, e.g. `kaiju-local/nomic-embed-text`).
  */
 export async function gatewayProviderNames(
   db: KaijuDb | KaijuTx,

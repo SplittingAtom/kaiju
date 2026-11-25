@@ -7,7 +7,7 @@ import {
   withLocalEmbedding,
 } from "./local-embedding.js";
 
-// KOBE-659: the chart's in-cluster embedding service becomes a Bifrost provider (`kobe-local`)
+// KOBE-659: the chart's in-cluster embedding service becomes a Bifrost provider (`kaiju-local`)
 // pushed by the gateway sync, besides the Site console's providers (which stay the way to use an
 // external embedding model: a LAN Ollama or a hosted provider with a site key).
 
@@ -42,7 +42,7 @@ describe("withLocalEmbedding", () => {
       },
     ]);
     const desired = buildDesiredState({ providers, catalog: [], teams: [] }, "f".repeat(32));
-    expect(desired.providers.find((p) => p.name === "kobe-local")).toMatchObject({
+    expect(desired.providers.find((p) => p.name === "kaiju-local")).toMatchObject({
       custom: true,
       keyless: true,
       baseUrl: LOCAL.url,
@@ -52,7 +52,7 @@ describe("withLocalEmbedding", () => {
   });
 
   it("names the gateway model `kaiju-local/<model>`", () => {
-    expect(localEmbeddingGatewayModel(LOCAL)).toBe("kobe-local/nomic-embed-text");
+    expect(localEmbeddingGatewayModel(LOCAL)).toBe("kaiju-local/nomic-embed-text");
   });
 
   it("changes nothing when the chart runs no local service (external models only)", () => {
@@ -93,13 +93,13 @@ describe("the Site embedding model on every member's key (KOBE-409)", () => {
           { teamId: "t1", members: ["u1"], aliases: ["chat"] },
           { teamId: "t2", members: ["u2"], aliases: [] },
         ],
-        siteModels: ["kobe-local/nomic-embed-text", "gone/model"],
+        siteModels: ["kaiju-local/nomic-embed-text", "gone/model"],
       },
       "f".repeat(32),
     );
     expect(desired.virtualKeys.map((k) => k.models)).toEqual([
-      { "kobe-local": ["nomic-embed-text"], ollama: ["qwen3.5:9b"] },
-      { "kobe-local": ["nomic-embed-text"] },
+      { "kaiju-local": ["nomic-embed-text"], ollama: ["qwen3.5:9b"] },
+      { "kaiju-local": ["nomic-embed-text"] },
     ]);
   });
 });

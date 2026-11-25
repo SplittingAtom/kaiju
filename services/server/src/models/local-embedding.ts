@@ -6,14 +6,15 @@ import type { ProviderInput } from "./desired.js";
  * The chart's in-cluster embedding service (KOBE-659, Helm `embeddings.local`) as a gateway
  * provider. It is not a Site console provider (no row: the chart owns it), so the sync adds it to
  * the providers it pushes: a keyless OpenAI-compatible Bifrost provider on a private address,
- * named `kaiju-local` (`kobe-local` before the rename, KOBE-828), whose model is `kaiju-local/<model>`. Turning the chart value off removes it
- * from Bifrost on the next sync. External embedding models stay ordinary Site console providers.
+ * named `kaiju-local` (`kobe-local` before the rename, KOBE-828), whose model is
+ * `kaiju-local/<model>`. Turning the chart value off removes it from Bifrost on the next sync.
+ * External embedding models stay ordinary Site console providers.
  */
 export const LOCAL_EMBEDDING_PROVIDER_ID = "local";
 
 const LOCAL_KIND = "openai_compatible" as const;
 
-/** The Bifrost model id of the local embedding model, e.g. `kobe-local/nomic-embed-text`. */
+/** The Bifrost model id of the local embedding model, e.g. `kaiju-local/nomic-embed-text`. */
 export function localEmbeddingGatewayModel(local: LocalEmbeddingConfig): string {
   return `${gatewayProviderName(LOCAL_EMBEDDING_PROVIDER_ID, LOCAL_KIND)}/${local.model}`;
 }

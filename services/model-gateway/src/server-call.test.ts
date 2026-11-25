@@ -459,7 +459,7 @@ describe("server calls: memory embeddings (KOBE-409 ac-3)", () => {
   });
 
   it("takes the Site embedding model although no Workspace enabled it (the VK still decides)", async () => {
-    const model = "kobe-local/nomic-embed-text";
+    const model = "kaiju-local/nomic-embed-text";
     const r = await post("/v1/embeddings", asServer(embedToken({ model })), {
       model,
       input: "Fiscal year starts in April",
