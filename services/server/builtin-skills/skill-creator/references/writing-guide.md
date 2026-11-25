@@ -38,14 +38,14 @@ Limits: up to 1024 characters. Put it in double quotes in the frontmatter so col
   pyarrow, matplotlib, openpyxl, python-docx, reportlab, pypdf). No package installs, no network.
 - Scripts are not executable files: the skill must say `python scripts/x.py`, not `./x.py`.
 - Print clear output the agent can read; exit non-zero with a message on bad input.
-- Never put credentials in a skill. Connectors reach external services through Kobe's MCP proxy.
+- Never put credentials in a skill. Connectors reach external services through Kaiju's MCP proxy.
 
-## Kobe constraints that matter
+## Kaiju constraints that matter
 
 - The sandbox has no direct internet access; outbound traffic, where a team allows it, goes through
-  Kobe's egress proxy. A skill should work offline unless the user explicitly needs otherwise.
+  Kaiju's egress proxy. A skill should work offline unless the user explicitly needs otherwise.
 - Network calls, package installs, piping downloads into a shell, obfuscated code and secret-shaped
-  strings are flagged by Kobe's scanner; flagged skills wait for team-admin review.
+  strings are flagged by Kaiju's scanner; flagged skills wait for team-admin review.
 - Built-in names are reserved: data-analysis, charts, docx, pdf, xlsx, code-review, skill-creator.
 
 ## Checklist before packaging

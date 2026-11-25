@@ -78,12 +78,30 @@ export const KAIJU_SKILL_NAMES = [
   "xlsx",
   "code-review",
   "skill-creator",
-  "kobe-guide",
+  "kaiju-guide",
 ] as const;
 export type KaijuSkillName = (typeof KAIJU_SKILL_NAMES)[number];
 
-export function isKaijuSkillName(name: string): name is KaijuSkillName {
-  return (KAIJU_SKILL_NAMES as readonly string[]).includes(name);
+/**
+ * Kaiju's skills that were renamed (KOBE-833, spec §11 A12), old name to new. Migration 0263
+ * renamed the catalog skill in place (its installs, tags and old versions follow it); the old name
+ * stays reserved for Kaiju, and an agent that still names it gets the new skill
+ * (`currentSkillNames`, server), unless a catalog skill holds the old name. Permanent: published
+ * agent versions keep their skill list forever.
+ */
+export const PRE_RENAME_KAIJU_SKILL_NAMES: Readonly<Record<string, KaijuSkillName>> = {
+  "kobe-guide": "kaiju-guide",
+};
+
+/** Names reserved for Kaiju: the skills it ships and the names they had before (KOBE-833). */
+export const KAIJU_RESERVED_SKILL_NAMES: readonly string[] = [
+  ...KAIJU_SKILL_NAMES,
+  ...Object.keys(PRE_RENAME_KAIJU_SKILL_NAMES),
+];
+
+/** A name reserved for Kaiju's own skills: one it ships, or a pre-rename one (KOBE-833). */
+export function isKaijuSkillName(name: string): boolean {
+  return KAIJU_RESERVED_SKILL_NAMES.includes(name);
 }
 export const REGISTRY_SKILL_STATUSES = [
   "active",

@@ -1,4 +1,4 @@
-"""Kobe's skill upload rules, mirrored for offline checks (stdlib only).
+"""Kaiju's skill upload rules, mirrored for offline checks (stdlib only).
 
 Source of truth: services/server/src/skills/{limits,skill-md}.ts (refusals) and
 packages/skill-scanner/src/rules.ts (flags that send a skill to team-admin review).
@@ -67,7 +67,7 @@ MAX_SCAN_LINE = 4096
 def parse_frontmatter(text):
     """Returns (fields, error). Reads top-level `key: value` pairs, quoted or plain, and `>`/`|` blocks.
 
-    Kobe parses the frontmatter with a full YAML parser; keep to these simple forms and it agrees.
+    Kaiju parses the frontmatter with a full YAML parser; keep to these simple forms and it agrees.
     """
     match = FENCE.match(text.lstrip("\ufeff"))
     if not match:
@@ -103,7 +103,7 @@ def _scalar(raw):
 
 
 def scan_line(line):
-    """Kobe scanner categories this line would be flagged for."""
+    """Kaiju scanner categories this line would be flagged for."""
     line = line[:MAX_SCAN_LINE]
     found = {category for category, pattern in SCRIPT_RULES if pattern.search(line)}
     if any(p.search(line) for p in SECRET_RULES):

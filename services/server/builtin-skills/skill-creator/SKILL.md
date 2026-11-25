@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: "Create a new Kobe skill (a SKILL.md folder with optional scripts and references) or improve an existing one: interview the user, draft it in the workspace, test it on realistic prompts, check it against the Kobe upload rules and save it to the user's Workbench as a private draft. Use whenever the user wants to make, write, turn a workflow into, fix, test or tune a skill, even if they only say 'make this repeatable' or 'remember how to do this'."
+description: "Create a new Kaiju skill (a SKILL.md folder with optional scripts and references) or improve an existing one: interview the user, draft it in the workspace, test it on realistic prompts, check it against the Kaiju upload rules and save it to the user's Workbench as a private draft. Use whenever the user wants to make, write, turn a workflow into, fix, test or tune a skill, even if they only say 'make this repeatable' or 'remember how to do this'."
 ---
 
 # Skill creator
@@ -68,7 +68,7 @@ not, and judge from the description alone whether each would trigger. Tighten th
 near miss would trigger or a real request would not.
 
 Then propose the skill's eval suite for the Workbench: `/workspace/skills/NAME/evals/cases.yaml`
-(Kobe runs it, with and without the skill, and scores lift and trigger precision and recall).
+(Kaiju runs it, with and without the skill, and scores lift and trigger precision and recall).
 Turn the trigger prompts into cases: each real request into a positive case (`triggers: true`,
 plus `contains`, `outputs` or a `judge` rubric when the result can be checked), and **always at
 least one near miss into a negative case** (`triggers: false`), so precision can be measured:
@@ -106,13 +106,13 @@ Stop when the user is happy or the changes stop helping.
 python scripts/validate.py /workspace/skills/NAME
 ```
 
-`validate.py` applies Kobe's upload rules (frontmatter, name, description length, file count and
-sizes, safe paths, no symlinks) and reports what Kobe's scanner will flag. Errors block the save;
+`validate.py` applies Kaiju's upload rules (frontmatter, name, description length, file count and
+sizes, safe paths, no symlinks) and reports what Kaiju's scanner will flag. Errors block the save;
 fix them. Flags do not block, but a flagged skill waits for a team admin's review before the team
 can use it, so remove anything the skill does not need (network calls, package installs, secrets:
 the sandbox has no internet access and no package installs anyway).
 
-After `validate.py` passes, call the `save_skill_draft` tool with `folder` set to NAME. Kobe checks
+After `validate.py` passes, call the `save_skill_draft` tool with `folder` set to NAME. Kaiju checks
 the folder as it checks an upload and saves it as the user's **private draft** in their Workbench;
 the answer shows an Open in Workbench card. Calling it again from this conversation updates the
 same draft, so save again after every round of changes. The tool never publishes, shares, tests or

@@ -11,7 +11,7 @@ const SCRIPT = fileURLToPath(new URL("../scripts/generate-guide.mjs", import.met
 let dir = "";
 
 function run(files: Record<string, string>) {
-  dir = mkdtempSync(join(tmpdir(), "kobe-guide-"));
+  dir = mkdtempSync(join(tmpdir(), "kaiju-guide-"));
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, "guide", path)), { recursive: true });
     writeFileSync(join(dir, "guide", path), content);

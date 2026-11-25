@@ -350,7 +350,7 @@ describe("Kaiju-shipped skills (ac-4)", () => {
     const after = await as.admin.get(`${BASE}/${pdfId}`);
     expect(after.json.kaiju).toMatchObject({ detached: true, detachedFromVersion: pdf.semver });
     expect(await audits("skill.detached", pdfId)).toHaveLength(1);
-    const newer = shippedAs(pdf, "1.1.0");
+    const newer = shippedAs(pdf, "1.2.0");
     const seeded = await seedKaijuSkills({
       db: h.deps.database.db,
       blobs,
@@ -364,14 +364,14 @@ describe("Kaiju-shipped skills (ac-4)", () => {
     );
     expect(versions.rows.map((r) => r.semver)).toEqual([pdf.semver]);
     expect((await as.admin.get(`${BASE}/${pdfId}`)).json.kaiju).toMatchObject({
-      shippedVersion: "1.1.0",
+      shippedVersion: "1.2.0",
       updateAvailable: true,
     });
   });
 
   it("publishes a site version (Default sync in the Default's major), compares, resets only above it", async () => {
     const draft = (await as.admin.get(`${BASE}/${pdfId}`)).json.draft;
-    const res = await publish("admin", pdfId, draft.rev, "1.0.5");
+    const res = await publish("admin", pdfId, draft.rev, "1.1.5");
     expect(res.status, json(res)).toBe(201);
     expect(res.json).toMatchObject({ version: { previous: { publisher: "kaiju" } }, notified: 0 });
     const sync = await h.admin.query(
@@ -387,11 +387,11 @@ describe("Kaiju-shipped skills (ac-4)", () => {
     expect(by.rows).toEqual([{ requested_by: ids.admin, by_kobe: false }]);
     const compare = await as.admin.get(`${BASE}/${pdfId}/kaiju/compare`);
     expect(compare.status, json(compare)).toBe(200);
-    expect(compare.json).toMatchObject({ current: { semver: "1.0.5", publisher: "site" } });
-    // The release ships 1.0.0, not above the Site's 1.0.5: refused, still detached.
+    expect(compare.json).toMatchObject({ current: { semver: "1.1.5", publisher: "site" } });
+    // The release ships 1.1.0, not above the Site's 1.1.5: refused, still detached.
     const refused = await as.admin.post(`${BASE}/${pdfId}/kaiju/reset`, {});
     expect(refused.status).toBe(409);
-    expect(refused.json).toMatchObject({ code: "shipped_not_above", siteSemver: "1.0.5" });
+    expect(refused.json).toMatchObject({ code: "shipped_not_above", siteSemver: "1.1.5" });
     expect((await as.member.post(`${BASE}/${pdfId}/kaiju/reset`, {})).status).toBe(403);
     // A release shipping 2.0.0 resets it, and the seed publishes 2.0.0 at once.
     const higher = shippedAs(pdf, "2.0.0");

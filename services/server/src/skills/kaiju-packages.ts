@@ -8,9 +8,8 @@ import { validateZipBundle, type ValidBundle } from "./bundle.js";
  * The package set of Kaiju's own catalog skills (KOBE-317, SK4): the former built-ins, one
  * directory per skill under `services/server/builtin-skills/<name>/`, shipped with the server
  * image (so a Kaiju release updates them without a sandbox image rebuild). Each holds the skill's
- * files and a manifest (either name; the built-ins keep the pre-rename one until KOBE-833
- * publishes their next versions) whose `version` is the catalog semver: changing a skill's files
- * means raising it (`kaiju-packages.test.ts` holds each version's hash).
+ * files and a manifest (`kaiju.skill.yaml` since KOBE-833) whose `version` is the catalog semver:
+ * changing a skill's files means raising it (`kaiju-packages.test.ts` holds each version's hash).
  *
  * Every package goes through the upload's own checks (`validateZipBundle`: limits, paths,
  * SKILL.md, manifest), so a Kaiju skill is held to the rules a member's upload is.

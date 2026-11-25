@@ -1,12 +1,13 @@
-import { KAIJU_SKILL_NAMES } from "@kaiju/protocol";
+import { KAIJU_RESERVED_SKILL_NAMES } from "@kaiju/protocol";
 
 /**
  * The Site's flat skill namespace (KOBE-332, SK24): catalog names are unique (the database's
- * `registry_skills_name_unique`), Kaiju's built-in names are reserved for Kaiju
- * (`registry_skills_kobe_names`), and near names are a typosquat hint for reviewers, never a block.
+ * `registry_skills_name_unique`), Kaiju's built-in names and the names they had before the rename
+ * (KOBE-833) are reserved for Kaiju (`registry_skills_kobe_names`), and near names are a typosquat
+ * hint for reviewers, never a block.
  */
 
-const RESERVED: ReadonlySet<string> = new Set(KAIJU_SKILL_NAMES);
+const RESERVED: ReadonlySet<string> = new Set(KAIJU_RESERVED_SKILL_NAMES);
 
 export function isReservedName(name: string): boolean {
   return RESERVED.has(name);

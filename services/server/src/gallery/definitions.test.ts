@@ -24,11 +24,13 @@ describe("the one gallery agent, Kaiju (KOBE-254)", () => {
   const floor = { scope: "site", site: [], team: [], approvalFloor: "auto" } as const;
   const manifest = computeToolManifest(kaiju.frontmatter, floor, new Date());
 
-  it("ships exactly one gallery agent, Kaiju, at generation 5", () => {
+  it("ships exactly one gallery agent, Kaiju, at generation 6", () => {
     // 2: the web-search notice is scoped to requests that need the web (review of #240).
     // 3: no built-in web search any more; research goes through connectors (KOBE-606).
     // 5: renamed Kaiju (KOBE-831); installs that customized it keep their own name.
-    expect(parsed.map((p) => [p.key, p.generation])).toEqual([[KAIJU_GALLERY_KEY, 5]]);
+    // 6: names the guide skill kaiju-guide (KOBE-833).
+    expect(parsed.map((p) => [p.key, p.generation])).toEqual([[KAIJU_GALLERY_KEY, 6]]);
+    expect(kaiju.frontmatter.skills).toContain("kaiju-guide");
     expect(KAIJU_GALLERY_KEY).toBe("kaiju");
     expect(kaiju.frontmatter.name).toBe("Kaiju");
     expect(kaiju.frontmatter.description).toBeTruthy();

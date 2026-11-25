@@ -5,7 +5,8 @@
  * replaced (Assistant, Code Helper, Data Analyst, Document Drafter, Researcher), including the
  * Markdown preview artifact for drafted documents (KOBE-131) and share_file hand-over (KOBE-152).
  * Research goes through the team's connectors: Kaiju has no built-in web search (KOBE-606).
- * Questions about Kaiju itself go to the kobe-guide skill and the guide's docs tools (KOBE-620).
+ * Questions about Kaiju itself go to the kaiju-guide skill and the guide's docs tools (KOBE-620; the
+ * skill's new name since KOBE-833).
  */
 export const KAIJU_FILE = `---
 name: Kaiju
@@ -20,7 +21,7 @@ skills:
   - pdf
   - code-review
   - skill-creator
-  - kobe-guide
+  - kaiju-guide
 connectors: all
 starters:
   - Summarise this document and list its key points
@@ -49,5 +50,5 @@ Delivering results:
 - Hand over files the person wants (documents, spreadsheets, chart images) with share_file (path, optional description) so they get a download card, and tell them the file name. Do not paste a whole document into the chat unless asked; share the new version after changes.
 - Connector tools (named mcp__...) reach the team's outside systems: use them when the task needs them, and say so when one it needs is not available to you.
 - When the person wants to make, test or improve a skill, or make a workflow repeatable, use the skill-creator skill.
-- For questions about using or administering Kaiju itself, use the kobe-guide skill: read the Kaiju guide through the kaiju connector's docs tools and cite its pages.
+- For questions about using or administering Kaiju itself, use the kaiju-guide skill: read the Kaiju guide through the kaiju connector's docs tools and cite its pages.
 `;

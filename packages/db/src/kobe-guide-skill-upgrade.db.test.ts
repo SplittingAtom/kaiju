@@ -60,12 +60,13 @@ describe("kobe-guide on upgrade (KOBE-620)", () => {
       expect(kept.rows).toEqual([{ name: "kobe-guide", publisher: "maintainer" }]);
       // The kept row can still change (its maintainers keep working on it).
       await c.query(`UPDATE registry_skills SET summary = 'Still ours.' WHERE name = 'kobe-guide'`);
-      // Kaiju cannot take it over (one name, one skill), nor publish under another name.
+      // Kaiju cannot take it over (since KOBE-833 no new Kaiju row takes the old name at all), nor
+      // publish under another name.
       await expect(
         c.query(
           `INSERT INTO registry_skills (name, summary, publisher) VALUES ('kobe-guide', 'K.', 'kaiju')`,
         ),
-      ).rejects.toMatchObject({ constraint: "registry_skills_name_unique" });
+      ).rejects.toMatchObject({ constraint: "registry_skills_pre_rename_name" });
       await expect(
         c.query(
           `INSERT INTO registry_skills (name, summary, publisher) VALUES ('my-tool', 'K.', 'kaiju')`,
@@ -75,10 +76,9 @@ describe("kobe-guide on upgrade (KOBE-620)", () => {
       await expect(
         c.query(`INSERT INTO registry_skills (name, summary) VALUES ('xlsx', 'Mine.')`),
       ).rejects.toMatchObject({ constraint: "registry_skills_kobe_names" });
-      // Without the clash, Kaiju publishes kobe-guide.
-      await c.query(`DELETE FROM registry_skills WHERE name = 'kobe-guide'`);
+      // Kaiju publishes the guide under its new name (KOBE-833).
       await c.query(
-        `INSERT INTO registry_skills (name, summary, publisher) VALUES ('kobe-guide', 'K.', 'kaiju')`,
+        `INSERT INTO registry_skills (name, summary, publisher) VALUES ('kaiju-guide', 'K.', 'kaiju')`,
       );
     });
   }, 120_000);

@@ -1,7 +1,7 @@
-"""Check a skill folder against Kobe's upload rules before packaging.
+"""Check a skill folder against Kaiju's upload rules before packaging.
 
 python validate.py SKILL_DIR
-Prints errors (Kobe would refuse the upload), flags (Kobe's scanner would send the skill to
+Prints errors (Kaiju would refuse the upload), flags (Kaiju's scanner would send the skill to
 team-admin review) and warnings (likely problems). Exit status 1 when there are errors.
 """
 
@@ -10,7 +10,7 @@ import re
 import sys
 from pathlib import Path
 
-import kobe_rules as k
+import kaiju_rules as k
 
 
 def bundle_files(root):
@@ -94,7 +94,7 @@ def check_files(root, files, errors, flags, warnings):
             for category in sorted(k.scan_line(line)):
                 flags.append(f"{rel}:{n}: {category}: {line.strip()[:100]}")
         if rel.parts[0] == "scripts" and text.startswith("#!") and rel.suffix not in (".py", ".sh"):
-            warnings.append(f"{rel}: scripts are not executable in Kobe; run it through an interpreter.")
+            warnings.append(f"{rel}: scripts are not executable in Kaiju; run it through an interpreter.")
     if total > k.MAX_UNCOMPRESSED_BYTES:
         errors.append(f"{total} bytes in all; the limit is {k.MAX_UNCOMPRESSED_BYTES}.")
 

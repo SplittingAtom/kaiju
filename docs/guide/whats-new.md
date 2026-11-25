@@ -67,6 +67,17 @@ own catalog skills now show the publisher `kaiju` in the API and in skill proven
 `kobe`); the audit log keeps the old value in events from before the upgrade and shows today's
 next to it.
 
+Kaiju's own skills have new versions that say Kaiju (1.1.0; skill-creator 1.3.0), and the skill
+that answers questions about Kaiju from this guide is now **kaiju-guide** (it was **kobe-guide**).
+The upgrade renamed it in place: every team keeps its install, with the same settings, and its
+earlier version stays in the skill's history. Installs set to **Track within major** or
+**Latest** move to the new versions by themselves; an install a team admin pinned to a version
+stays on it and shows **Update available**. Agents that list `kobe-guide` get `kaiju-guide` with no
+change needed; new agents should list `kaiju-guide`. The name `kaiju-guide` is now reserved for
+Kaiju's skill: if your team or you made a skill with that name before the upgrade, agents that list
+it now get Kaiju's guide, and your skill shows as **shadowed** until you rename it. Memory suggestions come from a new version
+of the extractor prompt that only changes the product name.
+
 Commits to a Repo from **Commit…** or an agent's `commit_project` now go to branches named
 `kaiju/<member>/...` (it was `kobe/<member>/...`). Pull requests Kaiju opened before the upgrade
 stay on their `kobe/` branches and keep taking your commits until they are merged or closed; you

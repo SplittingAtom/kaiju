@@ -217,8 +217,10 @@ it; a scorecard from another package hash is stale.
 
 Kaiju's own catalog skills (KOBE-317, SK4: the former built-ins) are published by the server
 itself from the package set it ships (`services/server/builtin-skills/<name>/`, each with a
-manifest whose `version` is the catalog semver; they keep `kobe.skill.yaml` until their next
-versions, KOBE-833, since renaming the file changes the package hash). Nobody promotes them, so their
+manifest whose `version` is the catalog semver; since KOBE-833 the manifest is `kaiju.skill.yaml`,
+published as each skill's next version, because renaming the file changes the package hash, and the
+guide skill is `kaiju-guide`, the old `kobe-guide` renamed in place by migration 0263 with its earlier
+version kept). Nobody promotes them, so their
 provenance (stored with the version) has `publisher: "kaiju"` instead of `source`, `submitter`,
 `confirmedBy`, `origin` and `scorecard`; the rest is as above. Their versions only rise: changing a
 skill's files means raising its `version` (`kaiju-packages.test.ts` holds each version's hashes),

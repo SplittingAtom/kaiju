@@ -5,6 +5,7 @@ import type { Mailer } from "../../mail/mailer.js";
 import { oneLine } from "../../mail/messages.js";
 import { pickCatalogVersion, type CatalogVersion } from "../../resolver/catalog-pins.js";
 import type { Retired } from "./retire.js";
+import { namesResolvingTo } from "../renamed-skills.js";
 
 /**
  * Who hears of a retirement (KOBE-340, SK31's Notice column), after it commits:
@@ -84,13 +85,17 @@ async function everyoneWithIt(tx: KaijuTx, teamId: string, r: Retired): Promise<
                         semvers.map((v) => sql`${v}`),
                         sql`, `,
                       )}))`);
+  const names = sql.join(
+    (await namesResolvingTo(tx, r.name)).map((n) => sql`${n}`),
+    sql`, `,
+  );
   const agents = await tx.execute<{ user_id: string }>(sql`
     SELECT DISTINCT a.owner_user_id AS user_id
       FROM team_agents a JOIN team_agent_versions v
         ON v.team_id = a.team_id AND v.agent_id = a.id AND v.version = a.current_version
      WHERE a.team_id = ${teamId}
-       AND (v.frontmatter -> 'skills' ? ${r.name}
-         OR v.frontmatter -> 'skills' -> 'exclusive' ? ${r.name})`);
+       AND (v.frontmatter -> 'skills' ?| ARRAY[${names}]
+         OR v.frontmatter -> 'skills' -> 'exclusive' ?| ARRAY[${names}])`);
   // Only people still in the team.
   const ids = [...new Set([...ran.rows, ...agents.rows].map((x) => x.user_id))];
   if (ids.length === 0) return [];

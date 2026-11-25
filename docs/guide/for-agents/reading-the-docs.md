@@ -26,7 +26,7 @@ uses that name, call the `mcp__kaiju__` one.
 | `docs_search` | Pages whose titles, summaries or headings match a query, ranked, with slugs and URLs. |
 | `docs_full`   | One section's pages in one text; the whole guide only while it fits one result.       |
 
-The **kobe-guide** skill, which Kaiju installs in every team, says how to use them: for any
+The **kaiju-guide** skill, which Kaiju installs in every team, says how to use them: for any
 question about using or administering Kaiju, start with `docs_index`, read the pages that fit with
 `docs_page` (or find them with `docs_search`), answer from the guide rather than from memory, and
 cite the pages' URLs. Do not fetch the docs over the internet from a sandbox: the docs tools are

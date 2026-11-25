@@ -27,7 +27,7 @@ Open **Skills** in the top bar (`/me/skills`). It has four tabs:
 In a conversation, **+** → **Skills** shows the skills available to you there. An agent can also
 name the skills it loads (see [Agents](agents.md)).
 
-Kaiju installs its own skills in every team, **On by default**. One of them, **kobe-guide**, makes
+Kaiju installs its own skills in every team, **On by default**. One of them, **kaiju-guide**, makes
 the agent answer questions about Kaiju from this guide (read through the built-in Kaiju connector's
 docs tools, with no internet access) and cite the pages it used. Ask "How do I…" in any
 conversation.
