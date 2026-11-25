@@ -14,7 +14,7 @@ import { panelOf } from "./support/panel.js";
 /** The gallery list: the Agents page's Site tab (KOBE-570); the editor stays in the console. */
 const GALLERY = "/agents?tab=site";
 const EDITOR = "/admin/site/gallery";
-const AGENT = process.env["KAIJU_GALLERY_AGENT"] ?? "Kobe";
+const AGENT = process.env["KAIJU_GALLERY_AGENT"] ?? "Kaiju";
 const TEAM_KEY = "kaiju.lastTeamId";
 
 async function openGallery(page: Page): Promise<void> {

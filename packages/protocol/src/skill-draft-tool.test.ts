@@ -19,9 +19,9 @@ const file = (path: string) => ({ path, rev: 3, sha256: SHA, size: 10 });
 describe("save_skill_draft contract (KOBE-442)", () => {
   it("is a Kaiju write tool on Kaiju-owned storage, deniable like every tool", () => {
     expect(BUILTIN_TOOLS[SAVE_SKILL_DRAFT_TOOL]).toEqual({
-      source: "kobe",
+      source: "kaiju",
       risk: "write",
-      scope: "kobe",
+      scope: "kaiju",
       open_world: false,
       primary_arg: "/folder",
     });

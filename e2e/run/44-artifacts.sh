@@ -6,7 +6,7 @@
     echo "==> artifacts (KOBE-131)"
     art_html='<!doctype html><html><body><h1 id=t>Sales</h1><script>document.getElementById("t").textContent="Sales chart"</script></body></html>'
     art_new="${art_html/Sales chart/Sales chart v2}"
-    art_out=$(chat_run "tool: create_artifact {\"kind\":\"html\",\"title\":\"Sales chart\",\"content\":\"${art_html//\"/\\\"}\"}" 300000 "" "$(gallery_id kobe)" "" 1)
+    art_out=$(chat_run "tool: create_artifact {\"kind\":\"html\",\"title\":\"Sales chart\",\"content\":\"${art_html//\"/\\\"}\"}" 300000 "" "$(gallery_id kaiju)" "" 1)
     printf '     artifact create: %s\n' "$(printf '%s' "$art_out" | tr '\n' ' ' | cut -c1-500)"
     art_thread=$(printf '%s\n' "$art_out" | sed -n 's/^thread_id=//p')
     contains "artifacts: the run completed" '^terminal=run.completed$' "$art_out"
@@ -88,7 +88,7 @@
       " "$1" "$2" "${3:-}" "${4:-}" 2>&1
     }
     share_text="kobe-152 $(date +%s) $RANDOM"
-    sf_out=$(chat_run "bash: echo '$share_text' > /workspace/shared-report.txt; exit 0" 300000 "" "$(gallery_id kobe)" "" 1)
+    sf_out=$(chat_run "bash: echo '$share_text' > /workspace/shared-report.txt; exit 0" 300000 "" "$(gallery_id kaiju)" "" 1)
     sf_thread=$(printf '%s\n' "$sf_out" | sed -n 's/^thread_id=//p')
     contains "share_file: the run that wrote the file completed" '^terminal=run.completed$' "$sf_out"
     sf_out=$(chat_run "tool: share_file {\"path\":\"shared-report.txt\",\"description\":\"E2E report\"}" 300000 "" "" "$sf_thread" 1)

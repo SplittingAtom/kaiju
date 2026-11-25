@@ -35,7 +35,7 @@ const STALE_CONNECTION_SECONDS = WIRE_DEFAULTS.staleConnectionMs / 1000;
  *   content). Anyone else gets 404, as for a thread they can't see.
  * - **Allow** signs `HMAC(team, run, tool_call_id, tool, token expiry, canonical input)` with the
  *   site's approval key (`@kaiju/protocol` approval.ts), over the canonical input stored when the
- *   approval was requested — the exact bytes the sandbox asked about. Built-in and kobe tools have
+ *   approval was requested — the exact bytes the sandbox asked about. Built-in and kaiju tools have
  *   no downstream verifier (the `policy.result` is the authorisation), so their approval is marked
  *   used at once; MCP approvals stay consumable once, by the MCP proxy (KOBE-58).
  * - **Remember** (allow only) writes a user allow rule for exactly this tool (`insertUserAllowRule`,

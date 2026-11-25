@@ -119,7 +119,7 @@ async function catalogVersion(
       modified: true,
     },
     scan: {
-      scanner: { name: "kobe-skill-scanner", version: "1", rulesVersion: "1" },
+      scanner: { name: "kaiju-skill-scanner", version: "1", rulesVersion: "1" },
       verdict: "pass",
       findings: [],
     },

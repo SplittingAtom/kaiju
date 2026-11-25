@@ -49,7 +49,7 @@ const reviewFinding = obj({
   severity: str,
   category: nullable(str),
   acknowledged: nullable(obj({ by: person, at: str })),
-  source: oneOfStrings("kobe", "external"),
+  source: oneOfStrings("kaiju", "external"),
   "title?": str,
   "externalSeverity?": str,
 });

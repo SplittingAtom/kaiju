@@ -60,7 +60,7 @@ export const createThreadBodySchema = z.strictObject({
    */
   test: z.boolean().optional(),
   /**
-   * A Workbench test chat (KOBE-323): a conversation with the Kobe agent (`agent_id` absent or
+   * A Workbench test chat (KOBE-323): a conversation with the Kaiju agent (`agent_id` absent or
    * that agent) whose runs load only this draft, one the caller can see. No project, not `test`.
    */
   skill_draft_id: uuidSchema.optional(),

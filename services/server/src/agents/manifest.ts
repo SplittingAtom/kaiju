@@ -60,7 +60,7 @@ export const EXCLUSION_REASONS = [
 
 const manifestToolSchema = z.strictObject({
   name: z.string().min(1).max(256),
-  source: z.enum(["pi", "kobe"]),
+  source: z.enum(["pi", "kaiju"]),
   risk: riskClassSchema,
   scope: toolScopeSchema,
   open_world: z.boolean(),
@@ -111,11 +111,22 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
 /**
+ * A tool's `source` or `scope` as frozen before the rename (KOBE-831): Kaiju's own tools were
+ * `kobe`. Published versions are immutable and were not rewritten (members never see the value,
+ * and pods of the previous release keep reading them during a rolling upgrade), so readers map it
+ * for good (permanent, not a one-release alias).
+ */
+export const PRE_RENAME_TOOL_ORIGIN = "kobe";
+
+const currentOrigin = (v: unknown): unknown => (v === PRE_RENAME_TOOL_ORIGIN ? "kaiju" : v);
+
+/**
  * A stored manifest with today's names. Versions published before KOBE-256 froze `floor: "install"`
  * and the exclusion reason `install_deny_rule` for the site; their rows are never rewritten, so a
  * reader renames them to `site` / `site_deny_rule` before parsing (same content, same content key).
+ * Tools frozen with `source` / `scope` `kobe` read as `kaiju` (KOBE-831).
  */
-export function withSiteNames(stored: unknown): unknown {
+export function withCurrentNames(stored: unknown): unknown {
   if (!isRecord(stored)) return stored;
   const excluded = Array.isArray(stored.excluded)
     ? {
@@ -124,8 +135,21 @@ export function withSiteNames(stored: unknown): unknown {
         ),
       }
     : {};
+  const tools = Array.isArray(stored.tools)
+    ? {
+        tools: stored.tools.map((t: unknown) =>
+          isRecord(t) && (t.source === PRE_RENAME_TOOL_ORIGIN || t.scope === PRE_RENAME_TOOL_ORIGIN)
+            ? {
+                ...t,
+                ...("source" in t ? { source: currentOrigin(t.source) } : {}),
+                ...("scope" in t ? { scope: currentOrigin(t.scope) } : {}),
+              }
+            : t,
+        ),
+      }
+    : {};
   const floor = stored.floor === "install" ? { floor: "site" } : {};
-  return { ...stored, ...floor, ...excluded };
+  return { ...stored, ...floor, ...excluded, ...tools };
 }
 
 /** The policy floor a version is published against. */

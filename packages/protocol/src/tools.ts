@@ -20,19 +20,19 @@ export const toolAnnotationsSchema = z.strictObject({
 });
 export type ToolAnnotations = z.infer<typeof toolAnnotationsSchema>;
 
-/** `pi` = Pi built-ins; `kobe` = kaiju-tools extension; `mcp` = connector tool via the MCP proxy. */
-export const toolSourceSchema = z.enum(["pi", "kobe", "mcp"]);
+/** `pi` = Pi built-ins; `kaiju` = kaiju-tools extension; `mcp` = connector tool via the MCP proxy. */
+export const toolSourceSchema = z.enum(["pi", "kaiju", "mcp"]);
 export type ToolSource = z.infer<typeof toolSourceSchema>;
 
 /**
  * Where a tool's effects land. `sandbox`: the user's own sandbox (/workspace, /tmp), bounded by
  * gVisor and the egress proxy — D29: "shell and file tools are bounded by the sandbox and egress
- * policy". `kobe`: Kaiju-owned, team-scoped storage (artifacts, shared files, memory). `external`:
+ * policy". `kaiju`: Kaiju-owned, team-scoped storage (artifacts, shared files, memory). `external`:
  * a third-party system via the MCP proxy. SPECULATIVE reading for KOBE-35: in `ask-on-write`,
- * `sandbox`/`kobe` tools are not prompted for by risk class alone (deny/ask rules and `ask-all`
+ * `sandbox`/`kaiju` tools are not prompted for by risk class alone (deny/ask rules and `ask-all`
  * still apply); `external` tools follow the risk class.
  */
-export const toolScopeSchema = z.enum(["sandbox", "kobe", "external"]);
+export const toolScopeSchema = z.enum(["sandbox", "kaiju", "external"]);
 export type ToolScope = z.infer<typeof toolScopeSchema>;
 
 export const toolDescriptorSchema = z.strictObject({
@@ -48,7 +48,7 @@ export const toolDescriptorSchema = z.strictObject({
 export type ToolDescriptor = z.infer<typeof toolDescriptorSchema>;
 
 export interface BuiltinTool {
-  readonly source: "pi" | "kobe";
+  readonly source: "pi" | "kaiju";
   readonly risk: RiskClass;
   readonly open_world: boolean;
   readonly scope: ToolScope;
@@ -110,28 +110,28 @@ export const BUILTIN_TOOLS: Readonly<Record<string, BuiltinTool>> = {
   list_mcp_resources: { source: "pi", risk: "read", scope: "external", open_world: true },
   list_mcp_resource_templates: { source: "pi", risk: "read", scope: "external", open_world: true },
   read_mcp_resource: { source: "pi", risk: "read", scope: "external", open_world: true },
-  create_artifact: { source: "kobe", risk: "write", scope: "kobe", open_world: false },
-  update_artifact: { source: "kobe", risk: "write", scope: "kobe", open_world: false },
+  create_artifact: { source: "kaiju", risk: "write", scope: "kaiju", open_world: false },
+  update_artifact: { source: "kaiju", risk: "write", scope: "kaiju", open_world: false },
   share_file: {
-    source: "kobe",
+    source: "kaiju",
     risk: "write",
-    scope: "kobe",
+    scope: "kaiju",
     open_world: false,
     primary_arg: "/path",
   },
   /** KOBE-576: commits the member's checked-out project working copy (needs project.access write). */
   commit_project: {
-    source: "kobe",
+    source: "kaiju",
     risk: "write",
-    scope: "kobe",
+    scope: "kaiju",
     open_world: false,
     primary_arg: "/message",
   },
   /** KOBE-442: the member's private Workbench draft from `/workspace/skills/<folder>/`. */
   save_skill_draft: {
-    source: "kobe",
+    source: "kaiju",
     risk: "write",
-    scope: "kobe",
+    scope: "kaiju",
     open_world: false,
     primary_arg: "/folder",
   },
@@ -140,9 +140,9 @@ export const BUILTIN_TOOLS: Readonly<Record<string, BuiltinTool>> = {
    * it in the web), so it is a read: not prompted in ask-on-write; deny/ask rules still apply.
    */
   propose_file_edit: {
-    source: "kobe",
+    source: "kaiju",
     risk: "read",
-    scope: "kobe",
+    scope: "kaiju",
     open_world: false,
     primary_arg: "/path",
   },
@@ -151,9 +151,9 @@ export const BUILTIN_TOOLS: Readonly<Record<string, BuiltinTool>> = {
    * content, so it is a read: not prompted in ask-on-write; deny/ask rules still apply.
    */
   open_file: {
-    source: "kobe",
+    source: "kaiju",
     risk: "read",
-    scope: "kobe",
+    scope: "kaiju",
     open_world: false,
     primary_arg: "/path",
   },
@@ -162,16 +162,16 @@ export const BUILTIN_TOOLS: Readonly<Record<string, BuiltinTool>> = {
    * (risk destructive, scope sandbox): the team's tool policy applies unchanged (NB3).
    */
   run_python: {
-    source: "kobe",
+    source: "kaiju",
     risk: "destructive",
     scope: "sandbox",
     open_world: false,
     primary_arg: "/code",
   },
-  remember: { source: "kobe", risk: "write", scope: "kobe", open_world: false },
-  recall: { source: "kobe", risk: "read", scope: "kobe", open_world: false },
+  remember: { source: "kaiju", risk: "write", scope: "kaiju", open_world: false },
+  recall: { source: "kaiju", risk: "read", scope: "kaiju", open_world: false },
   /** KOBE-399: shows one saved memory the run was given or recalled; writes nothing. */
-  show_memory_item: { source: "kobe", risk: "read", scope: "kobe", open_world: false },
+  show_memory_item: { source: "kaiju", risk: "read", scope: "kaiju", open_world: false },
 };
 
 /**

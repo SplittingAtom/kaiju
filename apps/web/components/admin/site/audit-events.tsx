@@ -66,7 +66,7 @@ function Details({
   return (
     <ul className="m-0 list-none p-0 text-sm">
       {entries.map(([key, value]) => {
-        const note = renamedNote(value, renamed);
+        const note = renamedNote(value, renamed, { key, target });
         return (
           <li key={key} className="break-all">
             <span className="text-console-muted">{key}:</span> {plainValue(value)}

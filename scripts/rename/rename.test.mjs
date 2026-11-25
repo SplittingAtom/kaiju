@@ -452,12 +452,19 @@ test("real allowlist after RN-3 (KOBE-747): package imports, renamed files and t
       "kobe",
       /^permanent: The Postgres database name/,
     ],
-    // The gallery agent's file moves with the agent (KOBE-831), not with RN-3.
+    // The gallery agent's file moved with the agent (KOBE-831): the old path is not allowed.
     [
       "services/server/src/x.ts",
       'import { KOBE_FILE } from "./agents/kobe.js";',
       "kobe",
-      /^RN-18: The gallery agent's name/,
+      /^unowned$/,
+    ],
+    // RN-18 is done (KOBE-831): the pre-rename tool value is read for good, in one place.
+    [
+      "services/server/src/agents/manifest.ts",
+      'export const PRE_RENAME_TOOL_ORIGIN = "kobe";',
+      "kobe",
+      /^permanent: The value `kobe` that Kaiju's skill publisher/,
     ],
     // Escaped forms in regex literals belong to the value they spell (KOBE-747).
     [
@@ -629,7 +636,8 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "unowned",
     ],
     ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', "kobeName", "unowned"],
-    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', '"kobe"', "RN-18"],
+    // RN-18 renamed the stored value (KOBE-831): no longer allowed.
+    ["services/server/src/kobe-mcp/h.ts", 'export let kobeName = "kobe";', '"kobe"', "unowned"],
   ];
   for (const [path, line, token, step] of cases) {
     assert.equal(realOwner(path, line, token), step, `${path}: ${line || "(path)"} ${token}`);

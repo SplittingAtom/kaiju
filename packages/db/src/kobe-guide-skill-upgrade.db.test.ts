@@ -63,12 +63,12 @@ describe("kobe-guide on upgrade (KOBE-620)", () => {
       // Kaiju cannot take it over (one name, one skill), nor publish under another name.
       await expect(
         c.query(
-          `INSERT INTO registry_skills (name, summary, publisher) VALUES ('kobe-guide', 'K.', 'kobe')`,
+          `INSERT INTO registry_skills (name, summary, publisher) VALUES ('kobe-guide', 'K.', 'kaiju')`,
         ),
       ).rejects.toMatchObject({ constraint: "registry_skills_name_unique" });
       await expect(
         c.query(
-          `INSERT INTO registry_skills (name, summary, publisher) VALUES ('my-tool', 'K.', 'kobe')`,
+          `INSERT INTO registry_skills (name, summary, publisher) VALUES ('my-tool', 'K.', 'kaiju')`,
         ),
       ).rejects.toMatchObject({ constraint: "registry_skills_kobe_names" });
       // The older Kaiju names stay Kaiju's.
@@ -78,7 +78,7 @@ describe("kobe-guide on upgrade (KOBE-620)", () => {
       // Without the clash, Kaiju publishes kobe-guide.
       await c.query(`DELETE FROM registry_skills WHERE name = 'kobe-guide'`);
       await c.query(
-        `INSERT INTO registry_skills (name, summary, publisher) VALUES ('kobe-guide', 'K.', 'kobe')`,
+        `INSERT INTO registry_skills (name, summary, publisher) VALUES ('kobe-guide', 'K.', 'kaiju')`,
       );
     });
   }, 120_000);

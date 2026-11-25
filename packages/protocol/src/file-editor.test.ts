@@ -29,9 +29,9 @@ const input = { path: "/workspace/notes.md", content: "new\n", summary: "Fix the
 describe("propose_file_edit contract (KOBE-462)", () => {
   it("is a built-in read on Kaiju's side: not prompted, still policy-checked by path", () => {
     expect(BUILTIN_TOOLS.propose_file_edit).toEqual({
-      source: "kobe",
+      source: "kaiju",
       risk: "read",
-      scope: "kobe",
+      scope: "kaiju",
       open_world: false,
       primary_arg: "/path",
     });

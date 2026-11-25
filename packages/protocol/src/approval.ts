@@ -22,7 +22,7 @@ import { idSchema, uuidSchema } from "./common.js";
  *   the enforcement point that executes the call — the MCP proxy for MCP tools (KOBE-58), which
  *   finds the approval by (run_id, tool_call_id) server-side. kaiju-sandbox-agent strips any
  *   `approval` from `policy.result` before kaiju-policy sees it (KOBE-23), so it never reaches Pi or
- *   a tool. For Pi built-ins and kobe tools the server's `policy.result` is itself the
+ *   a tool. For Pi built-ins and kaiju tools the server's `policy.result` is itself the
  *   authorisation.
  *
  * Verification is normative and has two halves; a call runs only if both pass:

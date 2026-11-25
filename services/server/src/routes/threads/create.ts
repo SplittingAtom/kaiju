@@ -43,7 +43,7 @@ export function threadCreateRoutes(kit: ThreadKit): Hono<{ Variables: TeamVariab
       // MT3: a conversation in a project that is not open yet opens it, within the cap.
       const limit = projectId === null ? undefined : await mountCapRefusal(tx, viewer, projectId);
       if (limit !== undefined) return { tooManyMounts: limit } as const;
-      // KOBE-323: a Workbench test chat talks to the Kobe agent about a draft the caller can see.
+      // KOBE-323: a Workbench test chat talks to the Kaiju agent about a draft the caller can see.
       const chat =
         draftId === undefined
           ? null

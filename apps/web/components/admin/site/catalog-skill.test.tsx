@@ -18,7 +18,7 @@ const VERSION = {
   id: "v-1",
   semver: "1.0.0",
   seq: 1,
-  publisher: "kobe",
+  publisher: "kaiju",
   state: "approved",
   verdict: "pass",
   approvedAt: "2026-10-20T10:00:00Z",
@@ -41,11 +41,11 @@ const SKILL = {
   id: "s-1",
   name: "pdf",
   summary: "Reads PDFs.",
-  publisher: "kobe",
+  publisher: "kaiju",
   status: "active",
   retired: false,
   blocklisted: false,
-  kobe: ATTACHED,
+  kaiju: ATTACHED,
   draft: null,
   versions: [VERSION],
 };
@@ -58,7 +58,7 @@ const VIEW = {
   frontmatter: { name: "pdf", description: "Reads PDFs." },
   frontmatterProblem: null,
   manifest: { version: "1.0.0" },
-  provenance: { publisher: "kobe" },
+  provenance: { publisher: "kaiju" },
   scan: { verdict: "pass", findings: [], scripts: ["scripts/run.py"], skipped: [] },
   hashes: { runtime: "a".repeat(64), package: "b".repeat(64) },
 };
@@ -111,7 +111,7 @@ describe("catalog skill view (ac-1)", () => {
     expect(screen.getAllByText("a".repeat(64)).length).toBeGreaterThan(0);
     expect(screen.getByLabelText("SKILL.md frontmatter").textContent).toContain('"name": "pdf"');
     expect(screen.getByLabelText("provenance.json, as recorded").textContent).toContain(
-      '"publisher": "kobe"',
+      '"publisher": "kaiju"',
     );
     // SKILL.md opens rendered; Raw switches to the read-only viewer.
     expect(await screen.findByText("Read it.")).toBeTruthy();
@@ -135,7 +135,7 @@ describe("catalog skill view (ac-1)", () => {
   it("says a newer Kaiju version is available, compares, and resets after asking", async () => {
     const detached = {
       ...SKILL,
-      kobe: {
+      kaiju: {
         ...ATTACHED,
         detached: true,
         detachedFromVersion: "1.0.0",
@@ -150,7 +150,7 @@ describe("catalog skill view (ac-1)", () => {
       [`GET ${BASE}/s-1/kaiju/compare`]: [
         200,
         {
-          current: { id: "v-1", semver: "1.0.0", publisher: "kobe" },
+          current: { id: "v-1", semver: "1.0.0", publisher: "kaiju" },
           shipped: { semver: "1.1.0" },
           diff: {
             files: [
@@ -234,7 +234,7 @@ describe("site draft editor (ac-2, ac-3)", () => {
             name: "pdf",
             semver: "1.1.0",
             verdict: "pass",
-            previous: { publisher: "kobe", semver: "1.0.0" },
+            previous: { publisher: "kaiju", semver: "1.0.0" },
           },
           notified: 0,
         },

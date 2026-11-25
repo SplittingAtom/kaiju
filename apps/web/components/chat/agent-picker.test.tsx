@@ -71,34 +71,38 @@ describe("agent picker", () => {
       {
         id: "g-kaiju",
         scope: "gallery",
-        galleryKey: "kobe",
+        galleryKey: "kaiju",
         default: true,
-        slug: "kobe",
-        name: "Kobe",
+        slug: "kaiju",
+        name: "Kaiju",
         model: null,
       },
-      { id: "t-kaiju", scope: "team", slug: "kaiju-team1", name: "Kobe", model: null },
-      { id: "t-ops", scope: "team", slug: "kobe-ops", name: "Kobe", model: null },
-      { id: "p-kaiju", scope: "personal", slug: "kaiju-mine", name: "Kobe", model: null },
+      { id: "t-kaiju", scope: "team", slug: "kaiju-team1", name: "Kaiju", model: null },
+      { id: "t-ops", scope: "team", slug: "kaiju-ops", name: "Kaiju", model: null },
+      { id: "p-kaiju", scope: "personal", slug: "kaiju-mine", name: "Kaiju", model: null },
       { id: "t-solo", scope: "team", slug: "solo", name: "Solo", model: null },
     );
     openApp(fake);
     const radios = within(await group()).getAllByRole("radio") as HTMLInputElement[];
     expect(radios.map((r) => r.closest("label")?.textContent)).toEqual([
       "No agentA plain conversation",
-      "KobePersonal",
-      "KobeTeamkaiju-team1",
-      "KobeTeamkobe-ops",
+      "KaijuPersonal",
+      "KaijuTeamkaiju-team1",
+      "KaijuTeamkaiju-ops",
       "SoloTeam",
-      "KobeBuilt-in",
+      "KaijuBuilt-in",
     ]);
     // Screen readers hear the origin with the name, and the slug where the origin is shared.
-    expect(within(await group()).getByRole("radio", { name: "Kobe, Built-in" })).toBeTruthy();
-    expect(within(await group()).getByRole("radio", { name: "Kobe, Team, kobe-ops" })).toBeTruthy();
-    const user = userEvent.setup();
-    await user.click(within(await group()).getByRole("radio", { name: "Kobe, Team, kaiju-team1" }));
+    expect(within(await group()).getByRole("radio", { name: "Kaiju, Built-in" })).toBeTruthy();
     expect(
-      await screen.findByRole("button", { name: "Chat with: Kobe (Team, kaiju-team1)" }),
+      within(await group()).getByRole("radio", { name: "Kaiju, Team, kaiju-ops" }),
+    ).toBeTruthy();
+    const user = userEvent.setup();
+    await user.click(
+      within(await group()).getByRole("radio", { name: "Kaiju, Team, kaiju-team1" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Chat with: Kaiju (Team, kaiju-team1)" }),
     ).toBeTruthy();
     await user.click(within(await group()).getByRole("radio", { name: "Solo, Team" }));
     expect(await screen.findByRole("button", { name: "Chat with: Solo" })).toBeTruthy();
@@ -108,7 +112,7 @@ describe("agent picker", () => {
     fake.runnableAgents.length = 0;
     fake.runnableAgents.push(
       { id: "s-lent", scope: "personal", group: "site", name: "Site Lent", model: null },
-      { id: "g-kaiju", scope: "gallery", group: "site", name: "Kobe", model: null },
+      { id: "g-kaiju", scope: "gallery", group: "site", name: "Kaiju", model: null },
       {
         id: "t-lent",
         scope: "personal",
@@ -132,7 +136,7 @@ describe("agent picker", () => {
         .map((r) => r.getAttribute("aria-label"));
     expect(names(must(groups[0]))).toEqual(["Own, Personal"]);
     expect(names(must(groups[1]))).toEqual(["Team Lent, Personal, Dangerous", "Owned, Team"]);
-    expect(names(must(groups[2]))).toEqual(["Site Lent, Personal", "Kobe, Built-in"]);
+    expect(names(must(groups[2]))).toEqual(["Site Lent, Personal", "Kaiju, Built-in"]);
     expect(within(picker).getByText("Dangerous")).toBeTruthy();
     expect(within(picker).queryByText(/Update available/)).toBeNull();
   });

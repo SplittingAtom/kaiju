@@ -25,10 +25,10 @@ export async function detachInTx(tx: KaijuTx, skillId: string, userId: string): 
     UPDATE registry_skills s SET detached_at = now(), detached_by = ${userId},
       detached_from_version = (
         SELECT v.semver FROM registry_versions v
-         WHERE v.skill_id = s.id AND v.publisher = 'kobe' ORDER BY v.seq DESC LIMIT 1),
+         WHERE v.skill_id = s.id AND v.publisher = 'kaiju' ORDER BY v.seq DESC LIMIT 1),
       updated_at = now()
-     WHERE s.id = ${skillId} AND s.publisher = 'kobe' AND s.detached_at IS NULL
-       AND EXISTS (SELECT 1 FROM registry_versions v WHERE v.skill_id = s.id AND v.publisher = 'kobe')
+     WHERE s.id = ${skillId} AND s.publisher = 'kaiju' AND s.detached_at IS NULL
+       AND EXISTS (SELECT 1 FROM registry_versions v WHERE v.skill_id = s.id AND v.publisher = 'kaiju')
     RETURNING s.name, s.detached_from_version`);
   const row = rows[0] as { name: string; detached_from_version: string } | undefined;
   if (!row) return false;
@@ -61,7 +61,7 @@ export interface KaijuCompare {
 
 export type CompareResult =
   | { readonly ok: true; readonly compare: KaijuCompare }
-  | { readonly ok: false; readonly code: "not_found" | "not_kobe" | "not_shipped" | "not_stored" };
+  | { readonly ok: false; readonly code: "not_found" | "not_kaiju" | "not_shipped" | "not_stored" };
 
 /** The shipped package against the skill's newest version, file by file. */
 export async function compareWithKaiju(deps: KaijuDeps, skillId: string): Promise<CompareResult> {
@@ -69,7 +69,7 @@ export async function compareWithKaiju(deps: KaijuDeps, skillId: string): Promis
     SELECT name, publisher::text AS publisher FROM registry_skills WHERE id = ${skillId}`);
   const skill = rows[0];
   if (!skill) return { ok: false, code: "not_found" };
-  if (skill.publisher !== "kobe") return { ok: false, code: "not_kobe" };
+  if (skill.publisher !== "kaiju") return { ok: false, code: "not_kaiju" };
   const p = await shipped(deps, skill.name);
   if (!p) return { ok: false, code: "not_shipped" };
   const current = (await versionRows(deps.db, skillId))[0];
@@ -91,7 +91,7 @@ export type ResetResult =
   | { readonly ok: true; readonly shippedSemver: string; readonly seed: KaijuSeedResult | null }
   | {
       readonly ok: false;
-      readonly code: "forbidden" | "not_found" | "not_kobe" | "not_detached" | "not_shipped";
+      readonly code: "forbidden" | "not_found" | "not_kaiju" | "not_detached" | "not_shipped";
     }
   | {
       readonly ok: false;
@@ -113,7 +113,7 @@ export async function resetToKaiju(
     SELECT name, publisher::text AS publisher FROM registry_skills WHERE id = ${skillId}`);
   const skill = rows[0];
   if (!skill) return { ok: false, code: "not_found" };
-  if (skill.publisher !== "kobe") return { ok: false, code: "not_kobe" };
+  if (skill.publisher !== "kaiju") return { ok: false, code: "not_kaiju" };
   const p = await shipped(deps, skill.name);
   if (!p) return { ok: false, code: "not_shipped" };
   const result = await deps.db.transaction(async (tx): Promise<ResetResult> => {

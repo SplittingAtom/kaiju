@@ -110,7 +110,7 @@ describe("kaiju restore's target check on a started site (KOBE-422)", () => {
       replacedAudit: `2:${head?.hash ?? ""}:2`,
     });
     // Rolled back: the started site is as it was.
-    expect(await sql(db.adminUrl, "SELECT slug FROM site_agents")).toEqual([{ slug: "kobe" }]);
+    expect(await sql(db.adminUrl, "SELECT slug FROM site_agents")).toEqual([{ slug: "kaiju" }]);
     expect(await sql(db.adminUrl, "SELECT count(*)::int AS n FROM audit_log")).toEqual([{ n: 2 }]);
     expect(await sql(db.adminUrl, "SELECT count(*)::int AS n FROM skill_usage_snapshots")).toEqual([
       { n: 1 },
@@ -140,7 +140,7 @@ describe("kaiju restore's target check on a started site (KOBE-422)", () => {
       db.adminUrl,
       `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, client_secret_sealed,
          client_secret_key_id, subject_claim, access_claim, managed_by)
-       VALUES ('okta', 'Okta', 'oidc', 'https://idp.example.com', 'kobe', 'e1.k.sealed', 'k',
+       VALUES ('okta', 'Okta', 'oidc', 'https://idp.example.com', 'kaiju', 'e1.k.sealed', 'k',
          'sub', 'roles', 'console')`,
     );
     await expect(prelude(db)).rejects.toThrow(
@@ -197,7 +197,7 @@ describe("kaiju restore's target check on a started site (KOBE-422)", () => {
        UPDATE site_agents SET customized_at = now(),
          customized_by = '00000000-0000-4000-8000-0000000000a2',
          customized_from_generation = coalesce(gallery_generation, 1)
-         WHERE gallery_key = 'kobe'`,
+         WHERE gallery_key = 'kaiju'`,
     ],
     [
       "audit_log",

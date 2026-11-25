@@ -50,7 +50,7 @@ const upstreamServer = new FakeUpstream();
 let internal: ServerType;
 let upstream: UpstreamClient;
 let proxy: ReturnType<typeof createProxyApp>;
-let kaijuName = "kobe";
+let kaijuName = "kaiju";
 
 beforeAll(async () => {
   await fx.setup([{}], () => ({

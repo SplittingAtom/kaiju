@@ -3,13 +3,13 @@ import { RUN_TIMEOUT_MS, SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
 
 /**
- * KOBE-442: skill-creator saves its skill straight into the Workbench. A Kobe-agent conversation
+ * KOBE-442: skill-creator saves its skill straight into the Workbench. A Kaiju-agent conversation
  * builds a small skill with skill-creator, which calls `save_skill_draft` after `validate.py`
  * passes; the tool card shows Open in Workbench, the link opens the member's private draft (started
  * from this conversation), and a second save from the same conversation updates that draft
  * instead of making another. The spec deletes the draft and trashes the thread at the end.
  *
- * Needs the active team's default agent to be Kobe (it carries skill-creator) with the team's
+ * Needs the active team's default agent to be Kaiju (it carries skill-creator) with the team's
  * ask-on-write default (save_skill_draft runs without a card), and a sandbox image with
  * `skill_drafts` (KOBE-442). Spends a few model turns. Run on gate1:
  * `npx playwright test skill-creator-workbench`.

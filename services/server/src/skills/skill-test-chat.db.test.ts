@@ -12,7 +12,7 @@ import { must, type Person } from "../testing/event-stream-fixture.js";
 import type { AuthResult, SandboxAuthenticator } from "../workspace-sync/auth.js";
 
 /**
- * Workbench test chats (KOBE-323, SK13): an ordinary thread with the Kobe agent whose runs load
+ * Workbench test chats (KOBE-323, SK13): an ordinary thread with the Kaiju agent whose runs load
  * only the draft's current revision (no Required, agent-named, offered or personal skill), scanned
  * before the message is accepted; the Used-skill badge from a read of the draft's SKILL.md; the
  * draft's bundle served only to the run that listed it, and removed with the draft.
@@ -214,7 +214,7 @@ describe("ac-1: a test chat runs only the draft's current revision", () => {
     ws.kill();
   });
 
-  it("is an ordinary thread of the team (listed), with the Kobe agent only", async () => {
+  it("is an ordinary thread of the team (listed), with the Kaiju agent only", async () => {
     const w = await world();
     const d = await draftOf(w.owner, "listed-skill");
     const thread = await testChat(w.owner, d.id);

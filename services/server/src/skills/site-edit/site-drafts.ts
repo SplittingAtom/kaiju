@@ -207,10 +207,10 @@ async function bump(tx: KaijuTx, draftId: string, userId: string): Promise<void>
 export async function lockedSkill(
   tx: KaijuTx,
   skillId: string,
-): Promise<{ name: string; publisher: "kobe" | "maintainer"; status: string }> {
+): Promise<{ name: string; publisher: "kaiju" | "maintainer"; status: string }> {
   const { rows } = await tx.execute<{
     name: string;
-    publisher: "kobe" | "maintainer";
+    publisher: "kaiju" | "maintainer";
     status: string;
   }>(
     sql`SELECT name, publisher::text AS publisher, status::text AS status

@@ -50,7 +50,7 @@ const ERRORS = {
   scheduled_thread: [409, "A scheduled conversation runs its schedule's agent."],
   project_not_found: [404, "No project with that id is available to you."],
   draft_not_found: [404, "No draft with that id is available to you."],
-  test_chat_agent: [400, "A Workbench test chat runs the Kobe agent: leave agent_id out."],
+  test_chat_agent: [400, "A Workbench test chat runs the Kaiju agent: leave agent_id out."],
   read_only: [403, "This thread is shared with you read-only."],
   thread_busy: [
     409,

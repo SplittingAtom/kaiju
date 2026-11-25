@@ -256,7 +256,7 @@ function allow(ctx: Prepared, reasons: PolicyReason[]): PolicyDecision {
  * run, and not Kaiju-scoped (those prompts are floors). Undefined otherwise.
  */
 function dangerousAllow(ctx: Prepared): PolicyReason | undefined {
-  if (ctx.input.actor.kind !== "user" || ctx.tool.scope === "kobe") return undefined;
+  if (ctx.input.actor.kind !== "user" || ctx.tool.scope === "kaiju") return undefined;
   if (!ctx.input.agent.dangerous_tools.includes(ctx.tool.name)) return undefined;
   return {
     code: "dangerous_mode",

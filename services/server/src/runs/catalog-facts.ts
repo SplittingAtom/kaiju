@@ -116,9 +116,11 @@ async function pendingKaijuDefaults(
 ): Promise<Map<string, { skillId: string; major: number }>> {
   const out = new Map<string, { skillId: string; major: number }>();
   if (names.length === 0) return out;
+  // `publisher` as text: the run-start resolution is also replayed over a schema from before
+  // migration 0262 (skill-freeze-upgrade.db.test.ts), where `'kaiju'` is no enum value yet.
   const { rows } = await tx.execute<{ id: string; name: string }>(sql`
     SELECT s.id, s.name FROM registry_skills s
-    WHERE s.publisher = 'kobe' AND s.status IN ('active', 'unmaintained') AND s.name IN (${sql.join(
+    WHERE s.publisher::text = 'kaiju' AND s.status IN ('active', 'unmaintained') AND s.name IN (${sql.join(
       names.map((n) => sql`${n}`),
       sql`, `,
     )})

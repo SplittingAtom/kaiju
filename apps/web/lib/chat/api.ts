@@ -156,7 +156,7 @@ export interface ChatApi extends FileLinksApi {
     projectId?: string | null,
     /** The conversation's thinking level (KOBE-260); null/absent = the model's default. */
     thinkingLevel?: ThinkingLevel | null,
-    /** A Workbench test chat (KOBE-323): the Kobe agent on this draft; `agent` is then left out. */
+    /** A Workbench test chat (KOBE-323): the Kaiju agent on this draft; `agent` is then left out. */
     skillDraftId?: string,
     /** Connectors off from the start (KOBE-451): checked by the server like the toggle. */
     connectorsOff?: readonly string[],

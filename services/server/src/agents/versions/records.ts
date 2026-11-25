@@ -15,7 +15,7 @@ import {
 import type { AgentMemorySetting } from "@kaiju/protocol";
 import type { SkillLeftOut } from "../skill-freeze.js";
 import { skillManifestSchema, type SkillManifest } from "../../skills/frozen.js";
-import { toolManifestSchema, withSiteNames, type ToolManifest } from "../manifest.js";
+import { toolManifestSchema, withCurrentNames, type ToolManifest } from "../manifest.js";
 import { inLocation, siteWhere, type AgentLocation, type AgentRecord } from "../store.js";
 
 /**
@@ -130,7 +130,7 @@ export class UnreadableVersionError extends Error {
  */
 export function toVersion(row: FullRow): AgentVersionRecord {
   const { frontmatter, prompt, toolManifest, skillManifest, ...rest } = row;
-  const manifest = toolManifestSchema.safeParse(withSiteNames(toolManifest));
+  const manifest = toolManifestSchema.safeParse(withCurrentNames(toolManifest));
   if (!manifest.success) throw new UnreadableVersionError(row.agentId, row.version);
   // Only team rows select the column; a team row without a readable one fails closed.
   const skills = "skillManifest" in row ? skillManifestSchema.safeParse(skillManifest) : undefined;

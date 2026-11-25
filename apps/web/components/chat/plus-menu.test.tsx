@@ -330,16 +330,16 @@ describe("Apps (ac-7)", { timeout: 30_000 }, () => {
     fake.runnableAgents.push({
       id: "a-kaiju",
       scope: "gallery",
-      galleryKey: "kobe",
+      galleryKey: "kaiju",
       default: true,
-      name: "Kobe",
+      name: "Kaiju",
       model: null,
     });
     openApp(fake);
     const user = userEvent.setup();
     await waitFor(async () =>
       expect(
-        (within(await agentChoices()).getByRole("radio", { name: /Kobe/ }) as HTMLInputElement)
+        (within(await agentChoices()).getByRole("radio", { name: /Kaiju/ }) as HTMLInputElement)
           .checked,
       ).toBe(true),
     );

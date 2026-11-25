@@ -124,7 +124,7 @@ export type MaintainerResult =
         | "user_not_found"
         | "last_maintainer"
         | "too_many"
-        | "kobe_skill";
+        | "kaiju_skill";
       readonly message: string;
     };
 
@@ -135,7 +135,7 @@ const fail = (code: Extract<MaintainerResult, { ok: false }>["code"], message: s
 async function guard(tx: KaijuTx, skillId: string, actor: Actor) {
   const skill = await skillOf(tx, skillId, true);
   if (!skill) return fail("not_found", "No catalog skill with that id.");
-  if (skill.publisher === "kobe") return fail("kobe_skill", "Kaiju maintains its own skills.");
+  if (skill.publisher === "kaiju") return fail("kaiju_skill", "Kaiju maintains its own skills.");
   const list = await listMaintainers(tx, skillId);
   if (!mayManage(list, actor))
     return fail("forbidden", "Only its maintainers or a Site admin can change its maintainers.");
@@ -276,7 +276,7 @@ export async function submissionRight(
     .where(eq(registrySkills.name, name));
   // Kaiju's names are Kaiju's; only a skill that held a name before Kaiju reserved it (KOBE-620,
   // `KAIJU_SKILL_NAMES_ADDED_LATER`) keeps working under it.
-  if (isReservedName(name) && (row === undefined || row.publisher === "kobe"))
+  if (isReservedName(name) && (row === undefined || row.publisher === "kaiju"))
     return { ok: false, code: "reserved", message: `${name} is reserved for Kaiju's own skill.` };
   if (!row) return { ok: true, skill: null };
   const skill = { id: row.id, name: row.name, status: row.status };

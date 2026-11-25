@@ -155,7 +155,7 @@ function provenance(
       : null,
     scan: {
       scanner: {
-        name: "kobe-skill-scanner",
+        name: "kaiju-skill-scanner",
         version: scan.ruleSetVersion,
         rulesVersion: scan.ruleSetVersion,
       },
@@ -305,7 +305,7 @@ export async function publishSiteDraft(
         publishedBy: userId,
         verdict: verdict === "caution" ? "caution" : "pass",
         runtimeHash,
-        previousPublisher: (previous?.publisher ?? null) as "kobe" | "maintainer" | "site" | null,
+        previousPublisher: (previous?.publisher ?? null) as "kaiju" | "maintainer" | "site" | null,
         previousSemver: previous?.semver ?? null,
       },
     });

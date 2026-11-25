@@ -151,7 +151,7 @@ describe("run_python input (NB13)", () => {
 
   it("is a built-in treated like bash (NB3)", () => {
     expect(BUILTIN_TOOLS.run_python).toEqual({
-      source: "kobe",
+      source: "kaiju",
       risk: "destructive",
       scope: "sandbox",
       open_world: false,

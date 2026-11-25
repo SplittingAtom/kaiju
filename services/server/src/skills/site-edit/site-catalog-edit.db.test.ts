@@ -160,7 +160,7 @@ describe("the view (ac-1)", () => {
     expect((await as.member.get(`${BASE}/${reportId}`)).status).toBe(403);
     const view = await as.admin.get(`${BASE}/${reportId}`);
     expect(view.status, json(view)).toBe(200);
-    expect(view.json).toMatchObject({ name: "site-report", publisher: "maintainer", kobe: null });
+    expect(view.json).toMatchObject({ name: "site-report", publisher: "maintainer", kaiju: null });
     const v = view.json.versions[0];
     expect(v).toMatchObject({ semver: "1.0.0", publisher: "maintainer", stored: true });
     const detail = await as.admin.get(`${BASE}/${reportId}/versions/${v.id}`);
@@ -342,13 +342,13 @@ describe("Kaiju-shipped skills (ac-4)", () => {
 
   it("detaches on the first edit; the seed skips it and records the shipped version", async () => {
     const view = await as.admin.get(`${BASE}/${pdfId}`);
-    expect(view.json.kobe).toMatchObject({ detached: false });
+    expect(view.json.kaiju).toMatchObject({ detached: false });
     const started = await as.admin.post(`${BASE}/${pdfId}/draft`, {
       versionId: view.json.versions[0].id,
     });
     expect(started.status, json(started)).toBe(201);
     const after = await as.admin.get(`${BASE}/${pdfId}`);
-    expect(after.json.kobe).toMatchObject({ detached: true, detachedFromVersion: pdf.semver });
+    expect(after.json.kaiju).toMatchObject({ detached: true, detachedFromVersion: pdf.semver });
     expect(await audits("skill.detached", pdfId)).toHaveLength(1);
     const newer = shippedAs(pdf, "1.1.0");
     const seeded = await seedKaijuSkills({
@@ -363,7 +363,7 @@ describe("Kaiju-shipped skills (ac-4)", () => {
       [pdfId],
     );
     expect(versions.rows.map((r) => r.semver)).toEqual([pdf.semver]);
-    expect((await as.admin.get(`${BASE}/${pdfId}`)).json.kobe).toMatchObject({
+    expect((await as.admin.get(`${BASE}/${pdfId}`)).json.kaiju).toMatchObject({
       shippedVersion: "1.1.0",
       updateAvailable: true,
     });
@@ -373,7 +373,7 @@ describe("Kaiju-shipped skills (ac-4)", () => {
     const draft = (await as.admin.get(`${BASE}/${pdfId}`)).json.draft;
     const res = await publish("admin", pdfId, draft.rev, "1.0.5");
     expect(res.status, json(res)).toBe(201);
-    expect(res.json).toMatchObject({ version: { previous: { publisher: "kobe" } }, notified: 0 });
+    expect(res.json).toMatchObject({ version: { previous: { publisher: "kaiju" } }, notified: 0 });
     const sync = await h.admin.query(
       `SELECT kind::text FROM skill_default_syncs WHERE version_id = $1`,
       [res.json.version.versionId],
@@ -411,8 +411,8 @@ describe("Kaiju-shipped skills (ac-4)", () => {
       seed: { action: "published" },
     });
     const after = (await as.admin.get(`${BASE}/${pdfId}`)).json;
-    expect(after.kobe).toMatchObject({ detached: false, shippedVersion: null });
-    expect(after.versions[0]).toMatchObject({ semver: "2.0.0", publisher: "kobe" });
+    expect(after.kaiju).toMatchObject({ detached: false, shippedVersion: null });
+    expect(after.versions[0]).toMatchObject({ semver: "2.0.0", publisher: "kaiju" });
     expect(await audits("skill.reset_to_kobe", pdfId)).toEqual([
       expect.objectContaining({
         target: expect.objectContaining({ shippedSemver: "2.0.0", fromSemver: pdf.semver }),

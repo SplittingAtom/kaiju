@@ -5,7 +5,7 @@ import { uuidSchema } from "./common.js";
  * The team's default agent for new threads (KOBE-571, spec agents-roster §7.7, goals: "a team
  * default agent chosen from the team roster"). Stored in the team's settings; when unset, or when
  * the chosen agent is not runnable for a member, new threads start with the site default (the
- * gallery agent Kobe, KOBE-458).
+ * gallery agent Kaiju, KOBE-458).
  *
  * REST (team-scoped):
  * - `GET /v1/team/default-agent` (any member) → {@link teamDefaultAgentSchema}

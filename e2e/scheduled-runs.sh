@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # KOBE-181 (65f of KOBE-65): scheduled runs end to end. Sourced by e2e/run.sh after the model setup
-# (KOBE-40/41) and the gallery agent Kobe (KOBE-89, KOBE-254); uses its helpers (psql_kaiju, probe, retry, answers,
+# (KOBE-40/41) and the gallery agent Kaiju (KOBE-89, KOBE-254); uses its helpers (psql_kaiju, probe, retry, answers,
 # contains, wait_for) and the Owner's real sandbox with the fake model.
 #
 # No real interval is waited for (the minimum is 15 min): schedules are created through the API with
@@ -67,7 +67,7 @@ sched_fire() { # label schedule-id seconds → pulls it due, waits for its threa
 
 scheduled_run_checks() {
   local t0=$SECONDS agent at s1 s2 s3 out run1 run2 run3 thread1 note1
-  agent=$(psql_kaiju "SELECT id FROM site_agents WHERE scope = 'gallery' AND gallery_key = 'kobe' AND archived_at IS NULL")
+  agent=$(psql_kaiju "SELECT id FROM site_agents WHERE scope = 'gallery' AND gallery_key = 'kaiju' AND archived_at IS NULL")
   at=$(printf '%02d:00' $(((10#$(date -u +%H) + 12) % 24)))
   psql_kaiju "INSERT INTO users (id, name, email, email_verified) VALUES ('$SCHED_USER_ID', 'E2E scheduler', '$SCHED_EMAIL', true) ON CONFLICT DO NOTHING;
     INSERT INTO accounts (user_id, account_id, provider_id, password)

@@ -1,5 +1,5 @@
 /**
- * "Make a skill from this" (KOBE-322, spec SK10 start 2): a new conversation with the Kobe agent
+ * "Make a skill from this" (KOBE-322, spec SK10 start 2): a new conversation with the Kaiju agent
  * (which carries skill-creator), with the source conversation attached as a Markdown file. An
  * attachment lands read-only in the new thread's `/workspace/uploads/<thread>/`, so the source
  * thread itself is never touched. The composer is prefilled with the request to skill-creator
@@ -12,7 +12,7 @@ import type { ApiResult } from "../api/client";
 import type { ChatApi } from "../chat/api";
 import { conversationMarkdown } from "../chat/thread-copy";
 
-export const KAIJU_AGENT_KEY = "kobe";
+export const KAIJU_AGENT_KEY = "kaiju";
 export const SOURCE_FILE = "source-conversation.md";
 
 export const skillPrompt = (title: string) =>
@@ -45,11 +45,11 @@ export async function startSkillFromConversation(
   if (!copied.ok) return copied;
   const agents = await api.runnableAgents();
   if (!agents.ok) return agents;
-  const kobe = agents.data.find((a) => a.galleryKey === KAIJU_AGENT_KEY);
-  if (!kobe)
-    return failed("The Kobe agent isn't available in this team, so skill-creator can't run.");
+  const kaiju = agents.data.find((a) => a.galleryKey === KAIJU_AGENT_KEY);
+  if (!kaiju)
+    return failed("The Kaiju agent isn't available in this team, so skill-creator can't run.");
   const thread = await api.createThread(`Skill from: ${source.title}`.slice(0, 200), null, {
-    agentId: kobe.id,
+    agentId: kaiju.id,
     test: false,
   });
   if (!thread.ok) return thread;

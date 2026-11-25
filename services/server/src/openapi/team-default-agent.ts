@@ -36,7 +36,7 @@ export function teamDefaultAgentOpenApiPaths(): Record<string, Record<string, un
         operationId: "getTeamDefaultAgent",
         summary: "The team's default agent for new threads, with the roster's choices",
         description:
-          "Null when the team uses the site default (the gallery agent Kobe). `unavailable` says " +
+          "Null when the team uses the site default (the gallery agent Kaiju). `unavailable` says " +
           "the chosen agent is no longer on the roster or runnable here: new threads then start " +
           "with the site default.",
         parameters: [teamHeader(false)],

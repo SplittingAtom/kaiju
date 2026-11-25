@@ -89,11 +89,11 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
       switch (r.code) {
         case "not_found":
           return error(c, 404, "not_found", "No such catalog skill.");
-        case "not_kobe":
+        case "not_kaiju":
           return error(
             c,
             409,
-            "not_kobe",
+            "not_kaiju",
             "Only Kaiju's own skills compare with a shipped version.",
           );
         case "not_shipped":
@@ -115,8 +115,8 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
           return error(c, 403, "forbidden", "You don't have permission to do that.");
         case "not_found":
           return error(c, 404, "not_found", "No such catalog skill.");
-        case "not_kobe":
-          return error(c, 409, "not_kobe", "Only Kaiju's own skills reset to Kaiju.");
+        case "not_kaiju":
+          return error(c, 409, "not_kaiju", "Only Kaiju's own skills reset to Kaiju.");
         case "not_detached":
           return error(
             c,

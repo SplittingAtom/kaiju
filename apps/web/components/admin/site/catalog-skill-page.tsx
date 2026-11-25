@@ -37,7 +37,7 @@ export const catalogSkillHref = (id: string) =>
 export const catalogEditHref = (id: string) => `${catalogSkillHref(id)}/edit`;
 
 const PUBLISHER: Readonly<Record<CatalogVersionRow["publisher"], string>> = {
-  kobe: "Kaiju",
+  kaiju: "Kaiju",
   maintainer: "Maintainer",
   site: "Site",
 };
@@ -148,7 +148,7 @@ function SkillView({
       );
       if (!yes) return;
       replace = true;
-    } else if (skill.kobe && !skill.kobe.detached) {
+    } else if (skill.kaiju && !skill.kaiju.detached) {
       const yes = await confirm(
         {
           title: `Edit ${skill.name}, a Kaiju skill?`,
@@ -169,8 +169,8 @@ function SkillView({
       <PageHeader
         title={
           <>
-            {skill.name} <Badge>{skill.publisher === "kobe" ? "Kaiju" : "Team-published"}</Badge>{" "}
-            <DetachedBadge kobe={skill.kobe} />
+            {skill.name} <Badge>{skill.publisher === "kaiju" ? "Kaiju" : "Team-published"}</Badge>{" "}
+            <DetachedBadge kaiju={skill.kaiju} />
           </>
         }
         back={<Link href={CATALOG_HOME}>Skill tags</Link>}
@@ -190,7 +190,7 @@ function SkillView({
           </p>
         </Notice>
       )}
-      <KaijuPanel skillId={skill.id} name={skill.name} kobe={skill.kobe} onReset={reload} />
+      <KaijuPanel skillId={skill.id} name={skill.name} kaiju={skill.kaiju} onReset={reload} />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
       <Section title="Versions">
         <Versions
@@ -220,7 +220,7 @@ export function CatalogSkillPage({ skillId }: { readonly skillId: string }) {
   const { state, reload } = useResource(() => getCatalogSkill(skillId));
   return (
     <ResourceView state={state} label="the catalog skill">
-      {(skill) => <SkillView key={JSON.stringify(skill.kobe)} skill={skill} reload={reload} />}
+      {(skill) => <SkillView key={JSON.stringify(skill.kaiju)} skill={skill} reload={reload} />}
     </ResourceView>
   );
 }

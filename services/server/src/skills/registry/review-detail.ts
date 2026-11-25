@@ -49,8 +49,8 @@ export interface ReviewFinding {
   readonly severity: string;
   readonly category: string | null;
   readonly acknowledged: Acknowledgement | null;
-  /** `kobe` (Kaiju's own scanner) or `external` (the optional external scanner, KOBE-341). */
-  readonly source: "kobe" | "external";
+  /** `kaiju` (Kaiju's own scanner) or `external` (the optional external scanner, KOBE-341). */
+  readonly source: "kaiju" | "external";
   /** External findings: the scanner's title and own severity ("info" ones need no acknowledgement). */
   readonly title?: string;
   readonly externalSeverity?: string;
@@ -120,7 +120,7 @@ async function findingsOf(db: KaijuDb, v: { id: string; scan: Record<string, unk
       severity,
       category: typeof f.category === "string" ? f.category : null,
       acknowledged: severity === "caution" ? (acks.get(key) ?? null) : null,
-      source: "kobe",
+      source: "kaiju",
     };
   });
   const external = externalFindings(v.scan);

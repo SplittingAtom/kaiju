@@ -32,7 +32,7 @@ async function pickSkill(page: Page): Promise<CatalogRow | null> {
     return ((await res.json()) as { skills: CatalogRow[] }).skills;
   }, API);
   return (
-    skills.find((s) => (wanted ? s.name === wanted : s.publisher !== "kobe" && s.latest)) ?? null
+    skills.find((s) => (wanted ? s.name === wanted : s.publisher !== "kaiju" && s.latest)) ?? null
   );
 }
 

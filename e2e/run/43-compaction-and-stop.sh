@@ -224,13 +224,13 @@ JS
       "PATCH /v1/site/models/catalog/fast {\"input_usd_per_mtok\":null,\"output_usd_per_mtok\":null}")
     expect "the budget and prices are removed again" '^200 ' "$restore"
 
-    # KOBE-89, KOBE-254: the one gallery agent, Kobe, completes a short sample task per built-in
+    # KOBE-89, KOBE-254: the one gallery agent, Kaiju, completes a short sample task per built-in
     # skill in the Owner's real sandbox (gVisor, no network). Since KOBE-317 the skills are Kaiju's
     # catalog skills, fetched as bundles into the run's skill store (sk-<runtime hash>),
     # through the fake model: it answers "bash: <command>" with a bash tool call. Kaiju pins no
     # model, so the runs use the team default. The server seeded it at start. Sandbox tools run
     # without approval unless a rule asks (KOBE-37 left one).
-    echo "==> gallery agent Kobe (KOBE-89, KOBE-254)"
+    echo "==> gallery agent Kaiju (KOBE-89, KOBE-254)"
     psql_kaiju "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';" >/dev/null
     gallery_id() { psql_kaiju "SELECT id FROM site_agents WHERE scope = 'gallery' AND gallery_key = '$1' AND archived_at IS NULL"; }
     gallery_run() { # key content [timeout-ms] → CHAT_JS output for a thread with that gallery agent
@@ -241,38 +241,38 @@ JS
     }
     gal_dir='cd "${TMPDIR:-/tmp}" && rm -rf g89 && mkdir g89 && cd g89'
     kaiju_dir() { # a Kaiju skill's directory in the run's skill store: its newest approved version
-      printf '/run/kaiju-skills/store/sk-%s' "$(psql_kaiju "SELECT v.runtime_hash FROM registry_versions v JOIN registry_skills s ON s.id = v.skill_id WHERE s.name = '$1' AND s.publisher = 'kobe' AND v.state = 'approved' ORDER BY v.seq DESC LIMIT 1")"
+      printf '/run/kaiju-skills/store/sk-%s' "$(psql_kaiju "SELECT v.runtime_hash FROM registry_versions v JOIN registry_skills s ON s.id = v.skill_id WHERE s.name = '$1' AND s.publisher = 'kaiju' AND v.state = 'approved' ORDER BY v.seq DESC LIMIT 1")"
     }
     contains "Kaiju skills: the eight are Kaiju-published catalog skills, approved (KOBE-317; kobe-guide KOBE-620)" '^8$' \
-      "$(psql_kaiju "SELECT count(DISTINCT s.name) FROM registry_skills s JOIN registry_versions v ON v.skill_id = s.id WHERE s.publisher = 'kobe' AND v.state = 'approved'")"
-    contains "the gallery holds exactly one agent, Kobe (key kobe)" '^kobe$' \
+      "$(psql_kaiju "SELECT count(DISTINCT s.name) FROM registry_skills s JOIN registry_versions v ON v.skill_id = s.id WHERE s.publisher = 'kaiju' AND v.state = 'approved'")"
+    contains "the gallery holds exactly one agent, Kaiju (key kaiju)" '^kaiju$' \
       "$(psql_kaiju "SELECT string_agg(gallery_key, ',') FROM site_agents WHERE scope = 'gallery' AND archived_at IS NULL")"
     contains "Kaiju asks for every team connector and narrows no tool" '^all:none$' \
-      "$(psql_kaiju "SELECT (v.frontmatter->>'connectors') || ':' || coalesce(v.frontmatter->>'tools', 'none') FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kobe'")"
-    g_out=$(gallery_run kobe "hello-kaiju-$RANDOM")
-    printf '     gallery kobe: %s\n' "$(printf '%s' "$g_out" | grep -v '^text=' | tr '\n' ' ')"
+      "$(psql_kaiju "SELECT (v.frontmatter->>'connectors') || ':' || coalesce(v.frontmatter->>'tools', 'none') FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kaiju'")"
+    g_out=$(gallery_run kaiju "hello-kaiju-$RANDOM")
+    printf '     gallery kaiju: %s\n' "$(printf '%s' "$g_out" | grep -v '^text=' | tr '\n' ' ')"
     contains "Kaiju: a thread with it starts (201, team default model)" '^thread=201:default$' "$g_out"
     contains "Kaiju: the run completed with the expected text" '^text=fake-openai: hello-kaiju-[0-9]+$' "$g_out"
     contains "Kaiju: the thread is pinned to the gallery agent" '^gallery$' \
       "$(psql_kaiju "SELECT agent_scope FROM threads WHERE id = '$(printf '%s\n' "$g_out" | sed -n 's/^thread_id=//p')'")"
-    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kaiju_dir data-analysis)/scripts/describe.py $(kaiju_dir data-analysis)/scripts/sample.csv | grep -c 'rows: 6' && python $(kaiju_dir charts)/scripts/chart.py $(kaiju_dir charts)/scripts/sample.csv --kind bar --x region --y amount --agg sum --title t --out c.png >/dev/null && echo chart-bytes \$(wc -c < c.png)")
-    printf '     kobe data: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
+    g_out=$(gallery_run kaiju "bash: $gal_dir && python $(kaiju_dir data-analysis)/scripts/describe.py $(kaiju_dir data-analysis)/scripts/sample.csv | grep -c 'rows: 6' && python $(kaiju_dir charts)/scripts/chart.py $(kaiju_dir charts)/scripts/sample.csv --kind bar --x region --y amount --agg sum --title t --out c.png >/dev/null && echo chart-bytes \$(wc -c < c.png)")
+    printf '     kaiju data: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
     contains "Kaiju data: the run completed" '^terminal=run.completed$' "$g_out"
     contains "Kaiju data: the data-analysis skill profiled the data and the charts skill produced a PNG" \
       '^text=fake-openai: tool said: 1 chart-bytes [0-9]{4,}$' "$g_out"
     # KOBE-123: the agent's prompt reaches Pi (--append-system-prompt) and so the model: the fake
     # model answers "system?" with the system messages it received.
-    g_out=$(gallery_run kobe "system?")
+    g_out=$(gallery_run kaiju "system?")
     contains "Kaiju: the system-prompt run completes" '^terminal=run.completed$' "$g_out"
     contains "Kaiju: its research guidance (connectors, KOBE-606) reaches the model through Pi's system prompt" \
       '^text=fake-openai: system said: .*Research: for current or outside facts, use a connector tool' "$g_out"
     contains "Kaiju: its published prompt no longer names the retired built-in web search (KOBE-606)" '^0$' \
-      "$(psql_kaiju "SELECT count(*) FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kobe' AND v.prompt ~* 'web_search|web search'")"
-    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kaiju_dir docx)/scripts/md_to_docx.py $(kaiju_dir docx)/scripts/sample.md out.docx --title T >/dev/null && python $(kaiju_dir docx)/scripts/docx_text.py out.docx | grep -c 'south | 310.35' && python $(kaiju_dir pdf)/scripts/md_to_pdf.py $(kaiju_dir pdf)/scripts/sample.md out.pdf --title T >/dev/null && test -s out.pdf && echo docx-and-pdf-produced")
-    printf '     kobe documents: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
+      "$(psql_kaiju "SELECT count(*) FROM site_agent_versions v JOIN site_agents a ON a.id = v.agent_id AND v.version = a.current_version WHERE a.gallery_key = 'kaiju' AND v.prompt ~* 'web_search|web search'")"
+    g_out=$(gallery_run kaiju "bash: $gal_dir && python $(kaiju_dir docx)/scripts/md_to_docx.py $(kaiju_dir docx)/scripts/sample.md out.docx --title T >/dev/null && python $(kaiju_dir docx)/scripts/docx_text.py out.docx | grep -c 'south | 310.35' && python $(kaiju_dir pdf)/scripts/md_to_pdf.py $(kaiju_dir pdf)/scripts/sample.md out.pdf --title T >/dev/null && test -s out.pdf && echo docx-and-pdf-produced")
+    printf '     kaiju documents: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
     contains "Kaiju documents: the docx and pdf skills produced and read back the files offline" \
       '^text=fake-openai: tool said: 1 docx-and-pdf-produced$' "$g_out"
-    g_out=$(gallery_run kobe "bash: $gal_dir && python $(kaiju_dir code-review)/scripts/scan.py $(kaiju_dir code-review)/scripts/sample.py | grep -o '[0-9]* finding' | head -1")
-    printf '     kobe code: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
+    g_out=$(gallery_run kaiju "bash: $gal_dir && python $(kaiju_dir code-review)/scripts/scan.py $(kaiju_dir code-review)/scripts/sample.py | grep -o '[0-9]* finding' | head -1")
+    printf '     kaiju code: %s\n' "$(printf '%s' "$g_out" | tr '\n' ' ' | cut -c1-400)"
     contains "Kaiju code: the code-review skill scanned the sample" '^text=fake-openai: tool said: 4 finding$' "$g_out"
 

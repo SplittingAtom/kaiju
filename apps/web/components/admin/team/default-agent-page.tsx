@@ -20,7 +20,7 @@ const GROUPS = [
 /**
  * The team's default agent for new conversations (KOBE-571, spec agents-roster §7.7): a team admin
  * picks it from the team's roster (Team and Site tabs: published, active here); without one, new
- * conversations start with the site default (the gallery agent Kobe). Audited by the server.
+ * conversations start with the site default (the gallery agent Kaiju). Audited by the server.
  */
 export function TeamDefaultAgentPage() {
   const teamId = useTeamAccess().team.id;
@@ -77,7 +77,7 @@ function DefaultAgentForm({
         hint="Members can still pick any agent they can run. If the default can't run for a member, the site default applies."
       >
         <Select value={choice} onChange={(e) => setChoice(e.target.value)}>
-          <option value={SITE_DEFAULT}>The site default (Kobe)</option>
+          <option value={SITE_DEFAULT}>The site default (Kaiju)</option>
           {GROUPS.map((g) => {
             const options = current.options.filter((o) => o.group === g.id);
             if (options.length === 0) return null;

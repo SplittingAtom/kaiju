@@ -20,7 +20,7 @@
   "fromConversation": false,
   "scan": {
     "scanner": {
-      "name": "kobe-skill-scanner",
+      "name": "kaiju-skill-scanner",
       "version": "1.2.0",
       "rulesVersion": "2026.10.1"
     },

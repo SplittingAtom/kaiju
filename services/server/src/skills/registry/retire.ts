@@ -74,10 +74,16 @@ export type RetireResult =
   | { readonly ok: true; readonly retired: Retired }
   | { readonly ok: false; readonly code: RetireRefusal };
 
+/**
+ * An active maintainer of a skill that is not Kaiju's (KOBE-831 review M1: Kaiju maintains its own
+ * skills; the database refuses maintainer rows on them, and this never counts one either).
+ */
 async function isActiveMaintainer(tx: KaijuTx, skillId: string, userId: string) {
   const r = await tx.execute(sql`
     SELECT 1 FROM registry_maintainers m JOIN users u ON u.id = m.user_id
-     WHERE m.skill_id = ${skillId} AND m.user_id = ${userId} AND u.deactivated_at IS NULL`);
+      JOIN registry_skills s ON s.id = m.skill_id
+     WHERE m.skill_id = ${skillId} AND m.user_id = ${userId} AND u.deactivated_at IS NULL
+       AND s.publisher::text <> 'kaiju'`);
   return r.rows.length > 0;
 }
 

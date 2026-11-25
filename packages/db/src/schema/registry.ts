@@ -34,7 +34,7 @@ const SUMMARY_MAX = 280;
 /** The code-defined system tags (SK5); mirrors `SYSTEM_TAGS` (@kaiju/protocol, a test ties them). */
 export const SYSTEM_TAG_NAMES = ["default"] as const;
 /**
- * The catalog names Kaiju publishes (KOBE-317, SK4, SK24): reserved for publisher `kobe`. Mirrors
+ * The catalog names Kaiju publishes (KOBE-317, SK4, SK24): reserved for publisher `kaiju`. Mirrors
  * `KAIJU_SKILL_NAMES` (@kaiju/protocol, a server test ties them).
  */
 export const KAIJU_SKILL_NAMES = [
@@ -61,7 +61,7 @@ const quoted = (values: readonly string[]) => sql.raw(values.map((v) => `'${v}'`
  * `site`: a version a Site admin made in the Site Console and published without review (KOBE-495);
  * only versions carry it, never a skill (registry_skills keeps its own publisher).
  */
-export const registryPublisher = pgEnum("registry_publisher", ["kobe", "maintainer", "site"]);
+export const registryPublisher = pgEnum("registry_publisher", ["kaiju", "maintainer", "site"]);
 export const registrySkillStatus = pgEnum("registry_skill_status", [
   "active",
   "deprecated",
@@ -148,11 +148,11 @@ export const registrySkills = pgTable(
     ),
     check("registry_skills_replacement_not_self", sql`${t.replacementId} <> ${t.id}`),
     // Built-in names stay Kaiju's and Kaiju publishes only them (SK4, SK24, review-317 S2): no
-    // maintainer skill takes one, and `kobe` (approved without a reviewer) can't carry any other
+    // maintainer skill takes one, and `kaiju` (approved without a reviewer) can't carry any other
     // name or be renamed away from one.
     check(
       "registry_skills_kobe_names",
-      sql`(${t.publisher} = 'kobe') = (${t.name} IN (${quoted(KAIJU_SKILL_NAMES)})) OR (${t.publisher} <> 'kobe' AND ${t.name} IN (${quoted(KAIJU_SKILL_NAMES_ADDED_LATER)}))`,
+      sql`(${t.publisher} = 'kaiju') = (${t.name} IN (${quoted(KAIJU_SKILL_NAMES)})) OR (${t.publisher} <> 'kaiju' AND ${t.name} IN (${quoted(KAIJU_SKILL_NAMES_ADDED_LATER)}))`,
     ),
     // All or nothing, and only on a Kaiju skill (KOBE-495).
     check(
@@ -161,7 +161,7 @@ export const registrySkills = pgTable(
         OR (${t.detachedAt} IS NOT NULL AND ${t.detachedBy} IS NOT NULL
           AND ${t.detachedFromVersion} IS NOT NULL AND ${t.detachedFromVersion} ~ ${sql.raw(`'${SEMVER_FORMAT}'`)}
           AND (${t.kobeShippedVersion} IS NULL OR ${t.kobeShippedVersion} ~ ${sql.raw(`'${SEMVER_FORMAT}'`)})
-          AND ${t.publisher} = 'kobe')`,
+          AND ${t.publisher} = 'kaiju')`,
     ),
   ],
 );
@@ -212,7 +212,7 @@ export const registryVersions = pgTable(
       .notNull()
       .references(() => registrySkills.id),
     /**
-     * `kobe`: published by Kaiju itself (KOBE-317, SK4), from the package set the server ships:
+     * `kaiju`: published by Kaiju itself (KOBE-317, SK4), from the package set the server ships:
      * no submitter and no reviewer (no person submits or approves it, and no stand-in user is
      * recorded). `site`: made and published by a Site admin in the Site Console (KOBE-495), on any
      * catalog skill, without review: the admin is the submitter, nobody reviews it.
@@ -274,8 +274,8 @@ export const registryVersions = pgTable(
     // Kaiju publishes without a person (KOBE-317): no submitter, reviewer or claim, never flagged.
     check(
       "registry_versions_kobe_publisher",
-      sql`(${t.publisher} = 'kobe') = (${t.submittedBy} IS NULL)
-        AND (${t.publisher} <> 'kobe' OR (${t.reviewedBy} IS NULL AND ${t.claimedBy} IS NULL
+      sql`(${t.publisher} = 'kaiju') = (${t.submittedBy} IS NULL)
+        AND (${t.publisher} <> 'kaiju' OR (${t.reviewedBy} IS NULL AND ${t.claimedBy} IS NULL
           AND NOT ${t.selfApproved} AND ${t.runtimeStorageKey} IS NOT NULL))`,
     ),
     // A Site admin publishes without review (KOBE-495): the admin submitted it, nobody reviewed or
@@ -325,7 +325,7 @@ export const registryVersions = pgTable(
     check(
       "registry_versions_approval",
       sql`(${t.state} IN ('approved', 'deprecated', 'withdrawn', 'revoked'))
-        = (${t.approvedAt} IS NOT NULL AND (${t.reviewedBy} IS NOT NULL OR ${t.publisher}::text IN ('kobe', 'site')))`,
+        = (${t.approvedAt} IS NOT NULL AND (${t.reviewedBy} IS NOT NULL OR ${t.publisher}::text IN ('kaiju', 'site')))`,
     ),
   ],
 );

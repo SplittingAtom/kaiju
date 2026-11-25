@@ -147,7 +147,7 @@ describe("Kaiju-published rows carry no person", () => {
   it("publishes a Kaiju version with no submitter or reviewer, approved, with its bytes", async () => {
     await withClient(database().appUrl, async (c) => {
       const skill = await c.query<{ id: string }>(
-        `INSERT INTO registry_skills (name, summary, publisher) VALUES ('pdf', 'PDFs.', 'kobe')
+        `INSERT INTO registry_skills (name, summary, publisher) VALUES ('pdf', 'PDFs.', 'kaiju')
          RETURNING id`,
       );
       kaijuSkill = skill.rows[0]?.id as string;
@@ -155,7 +155,7 @@ describe("Kaiju-published rows carry no person", () => {
         c.query<{ id: string }>(
           `INSERT INTO registry_versions (${VERSION_COLUMNS}, publisher${extra})
            VALUES ($1, '1.0.0', 1, $2, $2, '{}', '{}', '{}', '{}', 'pass', 'approved', now(),
-             'kobe'${values}) RETURNING id`,
+             'kaiju'${values}) RETURNING id`,
           [kaijuSkill, HASH_B],
         );
       // Bytes are required, a submitter or reviewer refused.
@@ -190,7 +190,7 @@ describe("Kaiju-published rows carry no person", () => {
              runtime_storage_key, runtime_size_bytes)
            VALUES ($1, $2, 9, $3, $3, '{}', '{}', '{}', '{}', 'pass', 'approved', now(), $4, $5,
              $6, 'k', 10)`,
-          [skill, semver, HASH_A, publisher, submitter, publisher === "kobe" ? null : ids.admin],
+          [skill, semver, HASH_A, publisher, submitter, publisher === "kaiju" ? null : ids.admin],
         );
       await expect(insert(ids.skill, "maintainer", null, "2.0.0")).rejects.toMatchObject({
         constraint: "registry_versions_kobe_publisher",
@@ -199,7 +199,7 @@ describe("Kaiju-published rows carry no person", () => {
       await expect(insert(kaijuSkill, "maintainer", ids.user, "2.0.0")).rejects.toMatchObject({
         constraint: "registry_versions_publisher_fk",
       });
-      await expect(insert(ids.skill, "kobe", null, "2.0.0")).rejects.toMatchObject({
+      await expect(insert(ids.skill, "kaiju", null, "2.0.0")).rejects.toMatchObject({
         constraint: "registry_versions_publisher_fk",
       });
     });
@@ -216,7 +216,7 @@ describe("Kaiju-published rows carry no person", () => {
       // And Kaiju publishes only those (review-317 S2): no other name, no rename away.
       await expect(
         c.query(
-          `INSERT INTO registry_skills (name, summary, publisher) VALUES ('my-tool', 'M.', 'kobe')`,
+          `INSERT INTO registry_skills (name, summary, publisher) VALUES ('my-tool', 'M.', 'kaiju')`,
         ),
       ).rejects.toMatchObject({ constraint: "registry_skills_kobe_names" });
       await expect(

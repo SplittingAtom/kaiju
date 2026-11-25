@@ -1,6 +1,6 @@
 import type { ApprovalMode, PolicyDecision, PolicyReason } from "@kaiju/protocol";
 import { sql, withTeam, type KaijuDb, type KaijuTx, type TeamRole } from "@kaiju/db";
-import { toolManifestSchema, withSiteNames, type ToolManifest } from "../agents/manifest.js";
+import { toolManifestSchema, withCurrentNames, type ToolManifest } from "../agents/manifest.js";
 import { recordAudit } from "../audit/record.js";
 import type { SiteRole } from "../authz/permissions.js";
 
@@ -58,7 +58,7 @@ async function dangerousManifest(
       : await tx.execute<{ tool_manifest: unknown }>(sql`
           SELECT tool_manifest FROM site_agent_versions
            WHERE agent_id = ${pin.agentId} AND version = ${pin.version}`);
-  const parsed = toolManifestSchema.safeParse(withSiteNames(res.rows[0]?.tool_manifest));
+  const parsed = toolManifestSchema.safeParse(withCurrentNames(res.rows[0]?.tool_manifest));
   return parsed.success && parsed.data.approval_mode.dangerous === true ? parsed.data : null;
 }
 

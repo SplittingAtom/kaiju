@@ -44,7 +44,7 @@ export const upstreamServer = new FakeUpstream();
 export let internal: ServerType;
 export let upstream: UpstreamClient;
 export let proxy: ReturnType<typeof createProxyApp>;
-export let kaijuName = "kobe";
+export let kaijuName = "kaiju";
 
 export const setSite = async (key: string, value: string | null) => {
   if (value === null) await fx.admin.query(`DELETE FROM site_settings WHERE key = $1`, [key]);

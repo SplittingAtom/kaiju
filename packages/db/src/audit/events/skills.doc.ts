@@ -85,7 +85,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "registry.version_published": {
     fields:
-      "`registryVersionId`, `skillId`, `name`, `semver`, `publisher` (site), `publishedBy`, `verdict`, `runtimeHash`, `previousPublisher`, `previousSemver`",
+      "`registryVersionId`, `skillId`, `name`, `semver`, `publisher` (site), `publishedBy`, `verdict`, `runtimeHash`, `previousPublisher` (kaiju, maintainer or site; rows from before the rename say kobe for kaiju), `previousSemver`",
     when: "A Site admin published a version they made in the Site Console straight into the Catalog: scanned, never reviewed (a Block stops it); the previous version's publisher and semver are recorded (KOBE-495)",
   },
   "registry.withdrawn": {
@@ -237,7 +237,7 @@ export const SKILLS_EVENT_DOCS = {
   },
   "skill.maintainer.removed": {
     fields: "`skillId`, `userId`",
-    when: "A maintainer or Site admin removed a maintainer; never the last (KOBE-332)",
+    when: "A maintainer or Site admin removed a maintainer; never the last (KOBE-332), except the rename migration removing maintainers from Kaiju's own skills (KOBE-831)",
   },
   "skill.maintainers.reassigned": {
     fields: "`skillId`, `userIds`",

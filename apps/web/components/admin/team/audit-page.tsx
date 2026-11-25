@@ -111,7 +111,7 @@ export function TeamAuditPage() {
                         <TableCell>
                           <code className="break-all">{JSON.stringify(e.target)}</code>
                           {renamedNotes(e.target, data.renamedToolSegments).map((r) => (
-                            <div key={r.value} className="break-all text-sm text-console-muted">
+                            <div key={r.key} className="break-all text-sm text-console-muted">
                               {r.value} {r.note}
                             </div>
                           ))}

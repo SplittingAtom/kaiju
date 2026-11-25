@@ -19,7 +19,7 @@ import { canPinAgent } from "./versions.js";
  * (jsonb, no migration), chosen by a team admin from the team's roster: a team-owned agent, an
  * active team roster entry, a site roster entry or a gallery agent, published, active here and not
  * archived. `defaultNewThreadPin` (default-agent.ts) reads it and still resolves it per member, so
- * a choice that stops being runnable falls back to the site default (Kobe).
+ * a choice that stops being runnable falls back to the site default (Kaiju).
  */
 
 /** The `teams.settings` key. */

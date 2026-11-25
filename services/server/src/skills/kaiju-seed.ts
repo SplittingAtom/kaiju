@@ -14,7 +14,7 @@ import { putSkillBundle, sha256Hex } from "./storage.js";
 
 /**
  * Kaiju's own catalog skills (KOBE-317, SK4): at every server start, the package set the server
- * ships (`kaiju-packages.ts`) is published as approved catalog versions, publisher `kobe`, so a
+ * ships (`kaiju-packages.ts`) is published as approved catalog versions, publisher `kaiju`, so a
  * fresh install and every upgrade end with the same catalog. Like the gallery seed, it is
  * idempotent and a failure never stops the server from starting.
  *
@@ -125,13 +125,13 @@ export const scanDocument = (scan: ScanResult) => ({
 function provenance(p: KaijuPackage, scan: ScanResult, at: Date) {
   return {
     apiVersion: PROVENANCE_API_VERSION,
-    publisher: "kobe",
+    publisher: "kaiju",
     name: p.name,
     version: p.semver,
     hashes: { runtime: sha256Hex(p.bundle.zip), package: p.bundle.packageHash },
     scan: {
       scanner: {
-        name: "kobe-skill-scanner",
+        name: "kaiju-skill-scanner",
         version: scan.ruleSetVersion,
         rulesVersion: scan.ruleSetVersion,
       },
@@ -157,12 +157,12 @@ async function lockedSkill(tx: KaijuTx, p: KaijuPackage): Promise<SkillRow> {
   const summary = p.manifest.summary;
   const found = await tx.execute<{ id: string; detached: boolean }>(sql`
     SELECT id, detached_at IS NOT NULL AS detached FROM registry_skills
-     WHERE name = ${p.name} AND publisher = 'kobe' FOR UPDATE`);
+     WHERE name = ${p.name} AND publisher = 'kaiju' FOR UPDATE`);
   const row0 = found.rows[0];
   if (row0) return { id: row0.id, created: false, detached: row0.detached === true };
   const inserted = await tx.execute<{ id: string }>(sql`
     INSERT INTO registry_skills (name, summary, publisher)
-    VALUES (${p.name}, ${summary}, 'kobe') RETURNING id`);
+    VALUES (${p.name}, ${summary}, 'kaiju') RETURNING id`);
   const row = inserted.rows[0];
   if (!row) throw new Error("skills: Kaiju skill insert returned no row");
   return { id: row.id, created: true, detached: false };
@@ -179,7 +179,7 @@ async function recordShipped(
 ): Promise<boolean> {
   const { rows } = await db.execute<{ id: string }>(sql`
     UPDATE registry_skills SET kobe_shipped_version = ${semver}, updated_at = now()
-     WHERE name = ${name} AND publisher = 'kobe' AND detached_at IS NOT NULL
+     WHERE name = ${name} AND publisher = 'kaiju' AND detached_at IS NOT NULL
        AND kobe_shipped_version IS DISTINCT FROM ${semver}
     RETURNING id`);
   return rows.length > 0;
@@ -189,7 +189,7 @@ async function recordShipped(
 async function isDetached(db: KaijuDb, name: string): Promise<boolean> {
   const { rows } = await db.execute(sql`
     SELECT 1 FROM registry_skills
-     WHERE name = ${name} AND publisher = 'kobe' AND detached_at IS NOT NULL`);
+     WHERE name = ${name} AND publisher = 'kaiju' AND detached_at IS NOT NULL`);
   return rows.length > 0;
 }
 
@@ -224,11 +224,11 @@ async function insertVersion(
     INSERT INTO registry_versions (skill_id, publisher, semver, seq, runtime_hash, package_hash,
       runtime_storage_key, runtime_size_bytes, package_storage_key, manifest, provenance, source,
       scan, verdict, state, submitted_at, approved_at)
-    VALUES (${skillId}, 'kobe', ${p.semver}, ${at.seq}, ${sha256Hex(p.bundle.zip)},
+    VALUES (${skillId}, 'kaiju', ${p.semver}, ${at.seq}, ${sha256Hex(p.bundle.zip)},
       ${p.bundle.packageHash}, ${at.stored.runtimeKey}, ${at.stored.runtimeSize},
       ${at.stored.packageKey}, ${JSON.stringify(manifest)}::jsonb,
       ${JSON.stringify(provenance(p, at.scan, at.now))}::jsonb,
-      ${JSON.stringify({ publisher: "kobe" })}::jsonb,
+      ${JSON.stringify({ publisher: "kaiju" })}::jsonb,
       ${JSON.stringify(scanDocument(at.scan))}::jsonb, ${at.scan.verdict}::scan_verdict,
       'approved', ${at.now.toISOString()}::timestamptz, ${at.now.toISOString()}::timestamptz)
     RETURNING id`);
@@ -273,7 +273,7 @@ async function held(db: KaijuDb, p: KaijuPackage): Promise<boolean> {
 /** Another publisher's catalog skill holds the name (KOBE-620). */
 async function nameTaken(db: KaijuDb, name: string): Promise<boolean> {
   const res = await db.execute(sql`
-    SELECT 1 FROM registry_skills WHERE name = ${name} AND publisher <> 'kobe'`);
+    SELECT 1 FROM registry_skills WHERE name = ${name} AND publisher <> 'kaiju'`);
   return res.rows.length > 0;
 }
 

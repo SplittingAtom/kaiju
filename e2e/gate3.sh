@@ -353,8 +353,8 @@ fi
 # ---- ac-5: CSV → S3 → sandbox → chart artifact under CSP; the sandbox is lost and nothing is ---------
 if [[ "$STEPS" == *" data "* ]] && sbx_need "ac-5 (data)"; then
   echo "==> ac-5: CSV upload, a computed chart artifact under a strict CSP, then the sandbox is deleted"
-  KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
-  contains "the gallery agent Kobe (data-analysis and charts skills) exists" '^[0-9a-f-]{36}$' "$KAIJU_AGENT"
+  KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kaiju"')")
+  contains "the gallery agent Kaiju (data-analysis and charts skills) exists" '^[0-9a-f-]{36}$' "$KAIJU_AGENT"
   CSV=$'region,amount\nnorth,120.5\nsouth,80\nnorth,30\neast,50.25\n'
   start=$(turn "$U_M1" "gate3 data $NONCE" "\"agentId\":\"$KAIJU_AGENT\",\"title\":\"gate3 data\"")
   T_DATA=$(field thread "$start")

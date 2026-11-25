@@ -28,7 +28,27 @@ describe("names recorded before the rename (KOBE-826)", () => {
       "(before the rename; now mcp__kaiju__docs_page)",
     );
     expect(renamedNotes({ tool: "mcp__kobe__docs_page", value: "admin", n: 3 }, segments)).toEqual([
-      { value: "mcp__kobe__docs_page", note: "(before the rename; now mcp__kaiju__docs_page)" },
+      {
+        key: "tool",
+        value: "mcp__kobe__docs_page",
+        note: "(before the rename; now mcp__kaiju__docs_page)",
+      },
     ]);
+  });
+});
+
+describe("values recorded before the rename, known by their field (KOBE-831)", () => {
+  it("maps Kaiju's publisher and the gallery agent's slug and key, nothing else", () => {
+    const note = "(before the rename; now kaiju)";
+    expect(renamedNotes({ publisher: "site", previousPublisher: "kobe" }, undefined)).toEqual([
+      { key: "previousPublisher", value: "kobe", note },
+    ]);
+    expect(renamedNotes({ scope: "gallery", slug: "kobe", agentId: "a" }, {})).toEqual([
+      { key: "slug", value: "kobe", note },
+    ]);
+    // A member's own agent may be called kobe: not renamed.
+    expect(renamedNotes({ scope: "personal", slug: "kobe" }, {})).toEqual([]);
+    expect(renamedNotes({ name: "kobe", value: "kobe" }, {})).toEqual([]);
+    expect(renamedNote("kobe", undefined)).toBeUndefined();
   });
 });

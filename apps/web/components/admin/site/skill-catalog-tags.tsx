@@ -235,7 +235,7 @@ export function CatalogTagsSection({
                         >
                           Usage
                         </Button>
-                        {s.publisher !== "kobe" && (
+                        {s.publisher !== "kaiju" && (
                           <Button
                             variant="ghost"
                             aria-expanded={maintaining === s.id}

@@ -394,7 +394,7 @@ describe("sandbox wire", () => {
       false,
     );
     expect(projectToolInputSchema.commit_project).toBe(commitProjectToolInputSchema);
-    expect(BUILTIN_TOOLS.commit_project).toMatchObject({ source: "kobe", risk: "write" });
+    expect(BUILTIN_TOOLS.commit_project).toMatchObject({ source: "kaiju", risk: "write" });
     const req = {
       id: "r",
       op: "project.commit",
