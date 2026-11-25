@@ -8,6 +8,7 @@ import {
   COMPOSER_KEYS,
   EDITOR_KEYS,
   isMacPlatform,
+  APP_SHORTCUTS,
   MORE_SHORTCUTS,
   SHEET_NAMES,
   SHEET_NOTES,
@@ -88,6 +89,19 @@ export function ShortcutSheet() {
           <h3 className="m-0 text-sm font-semibold">Memory</h3>
           <ul className="m-0 list-none p-0" aria-label="Memory shortcuts">
             {MORE_SHORTCUTS.map((id) => (
+              <li key={id} className={ROW} data-kaiju-shortcut-more={id}>
+                <span>{command(id).name}</span>
+                <span className="flex shrink-0 gap-1">
+                  {shortcutsOf(command(id)).map((k) => (
+                    <Keys key={k} keys={k} mac={mac} />
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <h3 className="m-0 text-sm font-semibold">Apps</h3>
+          <ul className="m-0 list-none p-0" aria-label="Apps shortcuts">
+            {APP_SHORTCUTS.map((id) => (
               <li key={id} className={ROW} data-kaiju-shortcut-more={id}>
                 <span>{command(id).name}</span>
                 <span className="flex shrink-0 gap-1">

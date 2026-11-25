@@ -40,6 +40,7 @@ sheet.
 | Mod+.                              | Stop                                                                  |
 | Mod+Shift+E, or Up in an empty box | Edit your last message                                                |
 | Mod+Shift+L                        | Learn from this chat (new messages since the last pass)               |
+| Mod+Shift+X                        | Browse apps: the rail's Apps view (when you have picker apps)         |
 | @                                  | Mention one of your files in the message                              |
 | /                                  | Slash commands, at the start of the message box                       |
 

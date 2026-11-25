@@ -99,7 +99,15 @@ describe("the + menu (ac-1)", { timeout: 30_000 }, () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((i) => i.textContent),
-    ).toEqual(["Attach files", "Connectors", "Memory", "Skills", "Apps"]);
+    ).toEqual([
+      "Attach files",
+      "Connectors",
+      "Memory",
+      "Skills",
+      // KOBE-844: a line under the name says what Apps does; Browse apps only with apps.
+      "AppsAdd an app card to this conversation",
+    ]);
+    expect(within(menu).getByRole("menuitem", { name: "Apps" })).toBeTruthy();
     const picker = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
     await user.click(within(menu).getByRole("menuitem", { name: "Attach files" }));
     expect(picker).toHaveBeenCalledOnce();
@@ -179,6 +187,34 @@ describe("Connectors (ac-2, ac-3, ac-6)", { timeout: 30_000 }, () => {
     const { sub } = await openSub("Apps");
     expect(await within(sub).findByText("No apps for you here.", {}, WAIT)).toBeTruthy();
     expect(within(sub).queryByRole("menuitem", { name: /Lakehouse Explorer/ })).toBeNull();
+  });
+});
+
+describe("Browse apps (KOBE-844, Chris 2026-11-25)", { timeout: 30_000 }, () => {
+  it("opens the rail's Apps view, with a line saying how it differs from Apps", async () => {
+    fake.teamApps = [APP];
+    openApp(fake, answered());
+    await composer();
+    const { user, menu } = await openMenu();
+    const browse = await within(menu).findByRole("menuitem", { name: "Browse apps" }, WAIT);
+    expect(browse.getAttribute("data-command")).toBe("browse-apps");
+    const line = document.getElementById(must(browse.getAttribute("aria-describedby")));
+    expect(line?.textContent).toBe("Open your app pickers in the side rail");
+    expect(browse.querySelector("svg.lucide-app-window")).not.toBeNull();
+    await user.click(browse);
+    const apps = await screen.findByRole("region", { name: "Apps" }, WAIT);
+    expect(apps.id).toBe("kaiju-rail-apps");
+    await waitFor(() => expect(apps.hidden).toBe(false));
+    // The rail's view takes the focus; the closing menu does not take it back.
+    await waitFor(() => expect(document.activeElement).toBe(apps));
+    expect(must(document.getElementById("kaiju-rail-files")).hidden).toBe(true);
+  });
+
+  it("is not offered to a member without apps", async () => {
+    openApp(fake, answered());
+    await composer();
+    const { menu } = await openMenu();
+    expect(within(menu).queryByRole("menuitem", { name: "Browse apps" })).toBeNull();
   });
 });
 

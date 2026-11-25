@@ -258,6 +258,16 @@ const LIST = [
     slash: "files",
     readOnlySafe: true,
   },
+  // Opens the rail's Apps view (KOBE-844, Chris 2026-11-25): the + menu's Browse apps, its key and
+  // the palette, since the rail's Files | Apps tabs went. Bound by the rail, which knows the apps.
+  {
+    id: "browse-apps",
+    name: "Browse apps",
+    icon: AppWindowIcon,
+    scope: "app",
+    shortcut: "Mod+Shift+X",
+    readOnlySafe: true,
+  },
   // CE12 (KOBE-208): opens or closes every reasoning block and tool card: its key and the palette.
   // On screen each answer has its own toggle (answer-detail, KOBE-418).
   {
@@ -346,7 +356,7 @@ const LIST = [
   },
   { id: "show-threads", name: "Show threads", icon: MessagesSquareIcon, scope: "rail" },
   { id: "show-files", name: "Show files", icon: FolderIcon, scope: "rail" },
-  // Only when the member has apps (KOBE-440): expands the rail at its Apps section.
+  // Only when the member's last view is Apps (KOBE-440, KOBE-844): expands the rail at it.
   { id: "show-apps", name: "Show apps", icon: AppWindowIcon, scope: "rail" },
   // Under 768 px the rail is a drawer the bar opens (CE8, KOBE-201).
   { id: "open-rail", name: "Show the workspace", icon: PanelLeftOpenIcon, scope: "rail" },

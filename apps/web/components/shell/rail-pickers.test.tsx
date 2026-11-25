@@ -9,7 +9,7 @@ import { RAIL_WIDTH_VAR } from "../../lib/shell/rail-width";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { BRIDGE_ATTACHED_ATTR } from "../apps/app-frame";
-import { chatRequests, composer, openApp } from "../chat/testing";
+import { browseApps, chatRequests, composer, openApp, showFilesFromApps } from "../chat/testing";
 import { PICKER_RAIL_PX } from "./rail-pickers";
 
 /**
@@ -61,10 +61,8 @@ function answered() {
   return t;
 }
 
-async function appsTab(): Promise<HTMLElement> {
-  fireEvent.click(await screen.findByRole("tab", { name: "Apps" }));
-  return screen.findByRole("tabpanel", { name: "Apps" });
-}
+/** The rail's Apps view, opened with Browse apps (KOBE-844: no tabs). */
+const appsTab = browseApps;
 const pickerSelect = (section: HTMLElement) =>
   within(section).getByRole("combobox", { name: "Picker" }) as HTMLSelectElement;
 const puts = () => fake.requests.filter((r) => r.method === "PUT" && r.path === PREFERENCES_PATH);
@@ -180,7 +178,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
     fake.preferences = { rail_picker: PICKER.appId, rail_tab: "apps" };
     openApp(fake, answered());
     expect(await screen.findByTitle(PICKER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
-    expect(pickerSelect(await screen.findByRole("tabpanel", { name: "Apps" })).value).toBe(
+    expect(pickerSelect(await screen.findByRole("region", { name: "Apps" })).value).toBe(
       PICKER.appId,
     );
   });
@@ -190,7 +188,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
     fake.preferences = { rail_tab: "apps" };
     openApp(fake, answered());
     expect(await screen.findByTitle(PICKER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
-    const section = await screen.findByRole("tabpanel", { name: "Apps" });
+    const section = await screen.findByRole("region", { name: "Apps" });
     expect(pickerSelect(section).value).toBe(PICKER.appId);
     await bridgeUp(PICKER_FRAME);
     expect(openings()).toHaveLength(1);
@@ -201,7 +199,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
     fake.teamApps = [PICKER, QUERY_PICKER];
     fake.preferences = { rail_picker: null, rail_tab: "apps" };
     openApp(fake, answered());
-    const section = await screen.findByRole("tabpanel", { name: "Apps" });
+    const section = await screen.findByRole("region", { name: "Apps" });
     await within(section).findByRole("combobox", { name: "Picker" });
     await settled();
     expect(pickerSelect(section).value).toBe("");
@@ -225,7 +223,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
     fake.teamApps = [EXPLORER, QUERY_PICKER];
     fake.preferences = { rail_picker: PICKER.appId, rail_tab: "apps" };
     openApp(fake, answered());
-    const section = await screen.findByRole("tabpanel", { name: "Apps" });
+    const section = await screen.findByRole("region", { name: "Apps" });
     await waitFor(() => expect(pickerSelect(section).value).toBe(QUERY_PICKER.appId));
     expect(within(section).getByText(/Your picker is no longer available/)).toBeTruthy();
     expect(await screen.findByTitle(OTHER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
@@ -393,7 +391,7 @@ describe("the picker's opening tool result (KOBE-460 fix: Loading catalogs…)",
     await pickerWindow();
     await flush();
     expect(openings()).toHaveLength(1);
-    fireEvent.click(screen.getByRole("tab", { name: "Files" }));
+    showFilesFromApps();
     await waitFor(() => expect(screen.queryByTitle(PICKER_FRAME)).toBeNull());
     await appsTab();
     await pickerWindow();
@@ -513,7 +511,7 @@ describe("the rail's width with a picker (KOBE-460 ac-5)", () => {
     fake.teamApps = [PICKER];
     fake.preferences = { rail_width: 480, rail_tab: "apps", rail_picker: null };
     openApp(fake, answered());
-    const section = await screen.findByRole("tabpanel", { name: "Apps" });
+    const section = await screen.findByRole("region", { name: "Apps" });
     await waitFor(() => expect(railVar()).toBe("480px"));
     await userEvent.setup().selectOptions(pickerSelect(section), PICKER.appId);
     // The picker shows: the member's wider width stays.
@@ -528,7 +526,7 @@ describe("the rail's width with a picker (KOBE-460 ac-5)", () => {
     fake.preferences = { rail_picker: PICKER.appId, rail_tab: "apps" };
     openApp(fake, answered());
     expect(await screen.findByTitle(PICKER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "Files" }));
+    showFilesFromApps();
     await waitFor(() => expect(screen.queryByTitle(PICKER_FRAME)).toBeNull());
     await appsTab();
     expect(await screen.findByTitle(PICKER_FRAME)).toBeTruthy();
@@ -538,7 +536,7 @@ describe("the rail's width with a picker (KOBE-460 ac-5)", () => {
     fake.teamApps = [PICKER];
     fake.preferences = { rail_picker: PICKER.appId, rail_tab: "files" };
     openApp(fake, answered());
-    await screen.findByRole("tab", { name: "Apps" });
+    await waitFor(() => must(document.getElementById("kaiju-rail-apps")), { timeout: 4_000 });
     await settled();
     expect(railVar()).toBe("");
     await appsTab();

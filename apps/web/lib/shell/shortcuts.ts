@@ -26,6 +26,9 @@ export const CE23_SHORTCUTS = [
 /** Keyed commands added after CE23, listed in the sheet's own section (KOBE-395: Learn). */
 export const MORE_SHORTCUTS = ["learn"] as const satisfies readonly CommandId[];
 
+/** The sheet's Apps section (KOBE-844): Browse apps, the rail's Apps view. */
+export const APP_SHORTCUTS = ["browse-apps"] as const satisfies readonly CommandId[];
+
 /** What the sheet adds to a row. */
 export const SHEET_NOTES: Partial<Readonly<Record<CommandId, string>>> = {
   "new-thread": "Mod+N works in an installed app only: browsers keep it for a new window.",

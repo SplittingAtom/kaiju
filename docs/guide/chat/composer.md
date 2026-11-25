@@ -26,7 +26,9 @@ message box from anywhere.
 ## The composer toolbar
 
 - **+** opens **Attach files**, your **Connectors** for this conversation, **Memory** (**Learn
-  from this chat**, see [Memory](../memory.md#learn-from-this-chat)), **Skills** and **Apps**. A
+  from this chat**, see [Memory](../memory.md#learn-from-this-chat)), **Skills**, **Apps** (adds an
+  app card to this conversation) and, if a site admin placed a picker app in the rail for you,
+  **Browse apps** (opens the rail's Apps view, where that picker runs). A
   dot, spinner or number on **+** shows where Learn is for this conversation.
 - The agent picker chooses which agent answers. See [Agents](../agents/agents.md).
 - **Model for this conversation** and the thinking level. See [Models](../models.md).

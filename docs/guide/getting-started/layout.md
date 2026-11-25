@@ -44,9 +44,14 @@ The rail is the left column. Its top line holds, in order:
 - **Team console**, shown only to team admins (see [Team admin overview](../admin/team-admin.md));
 - **Collapse the rail** (Ctrl+B or Cmd+B toggles it).
 
-Below the top line are two tabs. **Files** shows the workspace tree: your projects and **My
-files**. **Apps** appears only when a site admin has placed an app in the rail for you; it runs one
-picker app you choose from its list. See [Connectors and apps](../connectors-and-apps.md).
+Below the top line the rail shows **Files**: the workspace tree, your projects and **My files**.
+The gear icon beside the **Projects** heading (**Manage projects**) opens the projects page.
+
+If a site admin has placed an app in the rail for you, **Browse apps** shows the rail's **Apps**
+view instead: it runs one picker app you choose from its list. Open it from the message box's
+**+** menu (**Browse apps**), with **Mod+Shift+X**, or from the command palette. The **Show
+files** icon at the top of the Apps view (or **Mod+Shift+F**) brings Files back. The rail opens
+on whichever of the two you used last. See [Connectors and apps](../connectors-and-apps.md).
 
 ## The conversation column
 

@@ -8,16 +8,33 @@ import {
 
 /**
  * The rail's section toggle (KOBE-419/453/448): "Files panel", or "Files and apps" when the
- * member has apps (the section's Files | Apps tabs).
+ * member has apps (the section shows Files or, after Browse apps, the Apps view; KOBE-844).
  */
 export const FILES_TOGGLE = /^(Files panel|Files and apps)$/;
 
-/**
- * The rail's Files section: a region named Files, or with apps the Files tab's panel (KOBE-448),
- * the same element either way.
- */
+/** The rail's Files section: a region named Files. */
 export function filesSection(page: Page): Locator {
   return page.locator("#kaiju-rail-files");
+}
+
+/** The rail's Apps view (a region named Apps), there only for a member with apps. */
+export function appsSection(page: Page): Locator {
+  return page.locator("#kaiju-rail-apps");
+}
+
+/**
+ * Opens the rail's Apps view as a member does since its tab went (KOBE-844, Chris 2026-11-25):
+ * Browse apps, here by its key (the + menu and the palette run the same).
+ */
+export async function browseApps(page: Page): Promise<void> {
+  await page.locator("body").press("ControlOrMeta+Shift+X");
+  await expect(appsSection(page)).toBeVisible();
+}
+
+/** Back to Files from the Apps view: its own Show files (KOBE-844). */
+export async function showFilesFromApps(page: Page): Promise<void> {
+  await appsSection(page).getByRole("button", { name: "Show files", exact: true }).click();
+  await expect(filesSection(page)).toBeVisible();
 }
 
 /** The chat's address parameter for the open thread (`/?thread=<id>`). */
@@ -106,22 +123,21 @@ export class Chat {
     }
   }
 
-  /** The Files section on, on the wanted tab (where the team has apps). */
+  /** The section on, on the wanted view (Files, or Apps where the member has apps). */
   private async pickTab(tab: "files" | "apps"): Promise<void> {
     const toggle = this.railHeader.getByRole("button", { name: FILES_TOGGLE });
     if ((await toggle.getAttribute("aria-pressed")) === "false") await toggle.click();
-    // Files | Apps (KOBE-448): the tab is stored per member, so another spec may have left Apps.
-    // Wait for the apps list to settle (a member last on Apps sees "Loading apps…"), then pick
-    // the tab this spec needs.
+    // Files or Apps (KOBE-448, KOBE-844): the view is stored per member, so another spec may have
+    // left Apps. Wait for the apps list to settle (a member last on Apps sees "Loading apps…"),
+    // then show the view this spec needs.
     await expect(this.page.getByText("Loading apps…")).toHaveCount(0, {
       timeout: SHELL_TIMEOUT_MS,
     });
-    const wanted = this.page
-      .getByRole("tablist", { name: "Files and apps" })
-      .getByRole("tab", { name: tab === "files" ? "Files" : "Apps", exact: true });
-    if (!(await wanted.isVisible())) return; // no apps here: Files alone
-    if ((await wanted.getAttribute("aria-selected")) !== "true") await wanted.click();
-    await expect(wanted).toHaveAttribute("aria-selected", "true");
+    const apps = appsSection(this.page);
+    if ((await apps.count()) === 0) return; // no apps here: Files alone
+    const onApps = await apps.isVisible();
+    if (tab === "apps" && !onApps) await browseApps(this.page);
+    if (tab === "files" && onApps) await showFilesFromApps(this.page);
   }
 
   /** The Threads panel over the workspace (KOBE-453). */

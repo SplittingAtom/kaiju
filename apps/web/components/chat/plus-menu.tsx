@@ -2,12 +2,13 @@
 
 import { AppWindowIcon, KeyRoundIcon, PaperclipIcon } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { listChatConnectors } from "../../lib/chat/composer-plus-api";
 import { MY_CONNECTOR_KEYS } from "../../lib/apps/app-cards";
 import { useAppLaunch } from "../apps/use-app-launch";
 import { IconAction } from "../shell/icon-action";
-import { hasRailApps, useRailApps } from "../shell/rail-apps";
+import { useBoundCommands } from "../shell/command-bindings";
+import { hasRailApps, useRailApps, type RailAppsState } from "../shell/rail-apps";
 import { useNavigate } from "../shell/use-navigate";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { useChatSession } from "./kaiju-runtime";
@@ -45,15 +46,76 @@ function useConnectorsOff(threadId: string | null, open: boolean): ReadonlySet<s
   return off;
 }
 
-/** The + menu's Apps (KOBE-451): the rail's Apps, launched exactly as the rail launches them. */
+/**
+ * An item's name and, under it, a short line saying what it does (KOBE-844): the name alone is its
+ * accessible name, the line its description.
+ */
+function useDescribed({ name, line }: { readonly name: string; readonly line: string }) {
+  const id = useId();
+  return {
+    nameId: `${id}-name`,
+    labelProps: { "aria-labelledby": `${id}-name`, "aria-describedby": `${id}-line` },
+    face: (
+      <span className="flex min-w-0 flex-col">
+        <span id={`${id}-name`}>{name}</span>
+        <span id={`${id}-line`} className="text-muted-foreground text-xs whitespace-normal">
+          {line}
+        </span>
+      </span>
+    ),
+  };
+}
+
+/**
+ * Browse apps (KOBE-844, Chris 2026-11-25): opens the rail's Apps view, the pickers a site admin
+ * placed there, through the rail's own binding (Mod+Shift+X and the palette run the same).
+ * Only when the member has apps, as the rail's view.
+ */
+function BrowseAppsItem({
+  apps,
+  keepFocus,
+}: {
+  readonly apps: RailAppsState | null;
+  /** The rail's Apps view takes the focus: the menu leaves it there when it closes. */
+  keepFocus(): void;
+}) {
+  const bound = useBoundCommands();
+  const { labelProps, face } = useDescribed({
+    name: "Browse apps",
+    line: "Open your app pickers in the side rail",
+  });
+  const browse = bound["browse-apps"];
+  if (!hasRailApps(apps) || browse === undefined) return null;
+  return (
+    <DropdownMenu.Item
+      className={PLUS_ITEM}
+      data-command="browse-apps"
+      {...labelProps}
+      onSelect={() => {
+        keepFocus();
+        browse.onSelect?.();
+      }}
+    >
+      <AppWindowIcon aria-hidden className="size-4 shrink-0" />
+      {face}
+    </DropdownMenu.Item>
+  );
+}
+
+/** The + menu's Apps (KOBE-451): an app card in the conversation, launched as the rail did. */
 function AppsSubmenu({
+  apps,
   threadId,
   open,
 }: {
+  readonly apps: RailAppsState | null;
   readonly threadId: string | null;
   readonly open: boolean;
 }) {
-  const apps = useRailApps();
+  const { nameId, labelProps, face } = useDescribed({
+    name: "Apps",
+    line: "Add an app card to this conversation",
+  });
   // An app whose connector is off in this conversation is not offered here (review LOW-5); the
   // server refuses its card there too.
   const off = useConnectorsOff(threadId, open);
@@ -62,14 +124,14 @@ function AppsSubmenu({
   const { busy, error, launch } = useAppLaunch();
   return (
     <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kaiju-plus="apps">
+      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kaiju-plus="apps" {...labelProps}>
         <AppWindowIcon aria-hidden className="size-4 shrink-0" />
-        Apps
+        {face}
       </DropdownMenu.SubTrigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
         <DropdownMenu.SubContent
           data-kaiju-portal
-          aria-label="Apps"
+          aria-labelledby={nameId}
           sideOffset={4}
           className={PLUS_CONTENT}
         >
@@ -114,6 +176,25 @@ function AppsSubmenu({
   );
 }
 
+/** Apps and Browse apps, from one read of the member's apps, made while the menu is open. */
+function AppsItems({
+  threadId,
+  open,
+  keepFocus,
+}: {
+  readonly threadId: string | null;
+  readonly open: boolean;
+  keepFocus(): void;
+}) {
+  const apps = useRailApps();
+  return (
+    <>
+      <AppsSubmenu apps={apps} threadId={threadId} open={open} />
+      <BrowseAppsItem apps={apps} keepFocus={keepFocus} />
+    </>
+  );
+}
+
 /** A Learn notice beside the + button: started, refused with the reason, or finished. */
 function LearnNotice({ learn }: { readonly learn: Learn }) {
   const { text, n } = learn.notice;
@@ -137,7 +218,7 @@ function LearnNotice({ learn }: { readonly learn: Learn }) {
  * The composer's + menu (KOBE-451): everything that adds to a message under one button, opening
  * upward. Attach files (drag and drop onto the composer still attaches), Connectors (on or off
  * for this conversation), Memory (Learn from this chat, KOBE-395), Skills (a chip the server
- * checks) and Apps (an app card, as from the rail). Radix's menu button: Enter, Space or the
+ * checks), Apps (an app card) and Browse apps (the rail's Apps view, KOBE-844). Radix's menu button: Enter, Space or the
  * arrows open it, arrows move and open submenus, Escape closes and returns the focus. The button
  * carries the Learn state (KOBE-395): a spinner while a pass runs, the count of candidates from
  * this chat waiting in To review, or a dot for new messages since the last pass, which pulses
@@ -162,6 +243,8 @@ export function PlusMenu({
   useLearnBindings(learn, threadId);
   const face = plusIndicator(learn.state);
   const pulse = useLearnNudge(threadId, learn.state);
+  // Browse apps moves the focus to the rail's Apps view; the menu must not take it back.
+  const focusMoved = useRef(false);
   return (
     <span className="relative inline-flex shrink-0" data-kaiju-plus-wrap="">
       <DropdownMenu.Root open={open} onOpenChange={setOpen} modal={false}>
@@ -184,6 +267,11 @@ export function PlusMenu({
             align="start"
             sideOffset={6}
             className={PLUS_CONTENT}
+            onCloseAutoFocus={(e) => {
+              if (!focusMoved.current) return;
+              focusMoved.current = false;
+              e.preventDefault();
+            }}
           >
             <DropdownMenu.Item className={PLUS_ITEM} data-command="attach" onSelect={onAttach}>
               <PaperclipIcon aria-hidden className="size-4 shrink-0" />
@@ -192,7 +280,13 @@ export function PlusMenu({
             <ConnectorsSubmenu threadId={threadId} open={open} />
             <MemorySubmenu learn={learn} threadId={threadId} />
             <SkillsSubmenu draft={draft} threadId={threadId} open={open} />
-            <AppsSubmenu threadId={threadId} open={open} />
+            <AppsItems
+              threadId={threadId}
+              open={open}
+              keepFocus={() => {
+                focusMoved.current = true;
+              }}
+            />
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>

@@ -30,15 +30,17 @@ import {
 import { railDocked } from "../../lib/shell/layout";
 import { RAIL_ID, RailResizeHandle } from "./rail-resize";
 import { useRail, type RailApi, type RailTab } from "./rail-state";
-import { RAIL_TAB_IDS, RailTabList } from "./rail-tabs";
 import { useShellBand } from "./shell-band";
 import { useModalLayer } from "./use-modal-layer";
 import { RailTeam, RailTeamIcon } from "./rail-team";
-import { RailApps, hasRailApps, useRailApps } from "./rail-apps";
+import { APPS_SECTION_ID, RailApps, hasRailApps, useRailApps } from "./rail-apps";
+import { useBindCommands } from "./command-bindings";
 import styles from "./rail.module.css";
 import { RAIL_ACTION, RAIL_ACTION_VARIANT, RAIL_HEADER_VARIANT } from "./rail-action";
 
-const SECTION_IDS = { files: RAIL_TAB_IDS.files.panel, apps: RAIL_TAB_IDS.apps.panel } as const;
+const SECTION_IDS = { files: "kaiju-rail-files", apps: APPS_SECTION_ID } as const;
+
+const NO_APPS = "You have no apps to browse here.";
 
 /** The member's role in the active team, once their teams are read. */
 const activeRole = ({ my }: MyTeamsState) =>
@@ -61,16 +63,16 @@ function useRevealFocus({ revealed, collapsed }: RailApi) {
   useEffect(() => {
     if (revealed === null || collapsed || handled.current === revealed.seq) return;
     handled.current = revealed.seq;
-    // The tab asked for, in the rail's one section (KOBE-448).
+    // The view asked for, in the rail's one section (KOBE-448, KOBE-844).
     document.getElementById(SECTION_IDS[revealed.section])?.focus();
   }, [revealed, collapsed]);
 }
 
 /**
  * The icons of the collapsed rail (CE5): Expand the rail at the top (saved like Mod+B), then New
- * conversation, Threads (the panel, KOBE-453) and one for the Files | Apps section, which opens it
- * on the member's last tab (KOBE-448). New keeps the rail as it is. Hidden, not unmounted, while the rail is expanded, so focus can return to the
- * icon that opened a drawer.
+ * conversation, Threads (the panel, KOBE-453) and one for the section, which opens it on the
+ * member's last view, Files or Apps (KOBE-448, KOBE-844). New keeps the rail as it is. Hidden,
+ * not unmounted, while the rail is expanded, so focus can return to the icon that opened a drawer.
  */
 function CollapsedIcons({
   rail,
@@ -81,7 +83,7 @@ function CollapsedIcons({
   readonly rail: RailApi;
   readonly teams: MyTeamsState;
   readonly teamName: string;
-  /** The tab the section opens on: Apps only when the member has apps. */
+  /** The view the section opens on: Apps only when the member has apps. */
   readonly tab: RailTab;
 }) {
   const endDraftProject = useEndDraftProject();
@@ -182,8 +184,8 @@ function ThreadActions() {
 }
 
 /**
- * Shows or hides the rail's section (KOBE-453, KOBE-448: Files, or Files | Apps; saved per
- * member). Hidden, the rail collapses to its strip.
+ * Shows or hides the rail's section (KOBE-453, KOBE-448: Files, or the Apps view since KOBE-844;
+ * saved per member). Hidden, the rail collapses to its strip.
  */
 function FilesToggle({ rail, withApps }: { readonly rail: RailApi; readonly withApps: boolean }) {
   const on = shows(rail.panels, "files");
@@ -291,7 +293,6 @@ function RailFiles({
   showFolder,
   clearDrop,
   hidden,
-  tabbed,
   createsProjects,
 }: {
   /** Team admins and contributors: My files folders offer Promote to project… (KOBE-586). */
@@ -306,8 +307,6 @@ function RailFiles({
   clearDrop(): void;
   /** Not on screen (Apps is, or the section is off): kept mounted (its tree, listing), not shown. */
   hidden: boolean;
-  /** A tab beside Apps (KOBE-448): its tab names it, so its own title is for screen readers. */
-  tabbed: boolean;
 }) {
   useListWhenShown(rail, rail.settled && !hidden && !rail.collapsed);
   const refresh = () => {
@@ -348,13 +347,16 @@ function RailFiles({
         : undefined,
     [session, rail, aui],
   );
-  const content = (
-    <>
+  return (
+    <section
+      id={SECTION_IDS.files}
+      aria-labelledby="kaiju-rail-files-title"
+      tabIndex={-1}
+      className={styles.section}
+      hidden={hidden}
+    >
       <div className={styles.sectionHeader}>
-        <h3
-          id="kaiju-rail-files-title"
-          className={tabbed ? `${styles.sectionTitle} sr-only` : styles.sectionTitle}
-        >
+        <h3 id="kaiju-rail-files-title" className={styles.sectionTitle}>
           Files
         </h3>
       </div>
@@ -383,41 +385,27 @@ function RailFiles({
           fileLinks={fileLinks}
         />
       )}
-    </>
-  );
-  // Beside Apps (KOBE-448) the Files tab's panel is the section, named by its tab (one name, no
-  // second landmark inside it).
-  if (tabbed) {
-    return (
-      <div
-        id={SECTION_IDS.files}
-        role="tabpanel"
-        aria-labelledby={RAIL_TAB_IDS.files.tab}
-        tabIndex={-1}
-        className={styles.section}
-        hidden={hidden}
-      >
-        <div className={styles.tabSection}>{content}</div>
-      </div>
-    );
-  }
-  return (
-    <section
-      id={SECTION_IDS.files}
-      aria-labelledby="kaiju-rail-files-title"
-      tabIndex={-1}
-      className={styles.section}
-      hidden={hidden}
-    >
-      {content}
     </section>
   );
 }
 
 /**
+ * Browse apps (KOBE-844, Chris 2026-11-25): the + menu's item, Mod+Shift+X and the palette open
+ * the rail's Apps view, which the Files | Apps tabs opened before.
+ */
+function useBrowseApps(rail: RailApi, showsApps: boolean) {
+  useBindCommands({
+    "browse-apps": {
+      onSelect: () => rail.reveal("apps"),
+      blocker: showsApps ? null : NO_APPS,
+    },
+  });
+}
+
+/**
  * The workspace rail (CE2, CE5, KOBE-198): its top line (KOBE-419, KOBE-453: team selector, New
- * conversation, Threads, the Files toggle, Team console, collapse), then Apps (when the member has
- * any) over Files. The threads are a panel over the workspace since KOBE-453
+ * conversation, Threads, the Files toggle, Team console, collapse), then one view: Files, or Apps
+ * (when the member has any) once Browse apps opened it (KOBE-844: no tabs). The threads are a panel over the workspace since KOBE-453
  * (`threads-panel.tsx`). 280 px, or 48 px collapsed to the team's initials and icons. The sections
  * stay mounted (hidden) while collapsed, so their state survives; collapsed, nothing wakes.
  * The whole rail is the drop zone for files (A3, KOBE-199, `rail-drop-zone.tsx`).
@@ -453,14 +441,14 @@ export function WorkspaceRail({
   // One read of the member's teams for the top line and the collapsed strip.
   const teams = useMyTeams(false);
   const filesShown = shows(rail.panels, "files");
-  // Files | Apps (KOBE-448): the Apps tab (KOBE-440) only when the member has apps or a key to add;
-  // else the section is Files alone, without a tablist, whatever tab is stored.
+  // Files or Apps (KOBE-448, KOBE-844): the Apps view (KOBE-440) only when the member has apps or a
+  // key to add; else the section is Files, whatever view is stored.
   const apps = useRailApps();
   const showsApps = hasRailApps(apps);
   // A member last on Apps sees nothing else while the apps list is on its way (no Files flash).
   const appsPending = apps === null && rail.tab === "apps";
   const tab: RailTab = showsApps || appsPending ? rail.tab : "files";
-  const gridRows = showsApps ? "auto minmax(0, 1fr)" : "minmax(0, 1fr)";
+  useBrowseApps(rail, showsApps);
 
   return (
     <>
@@ -485,12 +473,7 @@ export function WorkspaceRail({
               <ErrorNotice error={listError} />
             </div>
           )}
-          <div
-            id="kaiju-rail-sections"
-            className={styles.sections}
-            style={{ gridTemplateRows: gridRows }}
-          >
-            {showsApps && <RailTabList tab={tab} onChange={rail.setTab} />}
+          <div id="kaiju-rail-sections" className={styles.sections}>
             <RailFiles
               rail={rail}
               api={filesApi}
@@ -499,7 +482,6 @@ export function WorkspaceRail({
               showFolder={drop.showFolder}
               clearDrop={drop.clear}
               hidden={!filesShown || tab !== "files"}
-              tabbed={showsApps}
               createsProjects={canCreateProjects(activeRole(teams))}
             />
             {appsPending && (
