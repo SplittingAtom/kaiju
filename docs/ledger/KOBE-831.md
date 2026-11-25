@@ -158,8 +158,8 @@ nowhere, so no change there. `/llms.txt` and `/docs/<slug>.md` are generated fro
   `kaiju-stored-values-backup.db.test.ts` (2, ac-3 pre-rename backup restore then upgrade;
   refused on the new schema); server `manifest.test.ts` (+1), web `renamed-names.test.ts` (+1).
 - Whole DB suites (pg_dump 17 from /usr/lib/postgresql/17/bin), after the coordinator's
-  manifest decision: db 2212 passed (cross-team probe suite included), server 3770 passed, cli 55
-  passed. Unit after it: db 1113, server 4618 (8 skipped).
+  manifest decision: db 2212, server 3770, cli 55 passed; after review M1 (origin/main merged):
+  db 2215 (cross-team probe suite included), server 3771, cli 55 passed. Unit after it: db 1113, server 4618 (8 skipped).
 - `check-public-hygiene.sh`, `check-site-wording.mjs`, `rename/guard.mjs`, rename self-test (24): ok.
 - Found by the suites: `STARTUP_SEEDED_ROWS` (backup/restore of older releases) and the run-start
   catalog-facts query (replayed over an older schema in `skill-freeze-upgrade`) compare the
