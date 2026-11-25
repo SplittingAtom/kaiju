@@ -201,7 +201,7 @@ describe("skills at run start", () => {
  */
 describe("former built-in skills", () => {
   it("never advertises builtin_skills, even with the old image variable set", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-builtin-gone-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-builtin-gone-"));
     h = await startHarness({ skills: store(), env: { KAIJU_BUILTIN_SKILLS_DIR: dir } });
     expect(h.server.frames("hello").at(-1)?.capabilities).toEqual([
       "skill_bundles",

@@ -1,6 +1,6 @@
 ---
 title: How AI agents should read these docs
-summary: How an AI agent reads Kaiju's documentation, through the kobe connector's docs tools inside a sandbox or as llms.txt, llms-full.txt and one Markdown file per page outside Kaiju.
+summary: How an AI agent reads Kaiju's documentation, through the kaiju connector's docs tools inside a sandbox or as llms.txt, llms-full.txt and one Markdown file per page outside Kaiju.
 section: For agents
 order: 1
 audience: agent
@@ -11,12 +11,13 @@ assistants answering questions about Kaiju from outside, and crawlers building a
 The same guide people read in Kaiju's docs viewer is served as plain Markdown so you can read it
 without parsing HTML.
 
-## Inside a Kaiju sandbox: the kobe connector's docs tools
+## Inside a Kaiju sandbox: the kaiju connector's docs tools
 
-Every agent in Kaiju has the built-in **kobe** connector with four docs tools, whatever connectors
+Every agent in Kaiju has the built-in **kaiju** connector with four docs tools, whatever connectors
 the agent itself lists. They hold no one's data, never ask for approval and work in every run,
-scheduled runs included. Pi names them `mcp__kobe__<tool>` (on some sites the connector is
-called `kobe-builtin`).
+scheduled runs included. Pi names them `mcp__kaiju__<tool>` (on some sites the connector is
+called `kaiju-builtin`). Before the rename they were `mcp__kobe__<tool>`; if an earlier message
+uses that name, call the `mcp__kaiju__` one.
 
 | Tool          | What it returns                                                                       |
 | ------------- | ------------------------------------------------------------------------------------- |
@@ -31,10 +32,10 @@ question about using or administering Kaiju, start with `docs_index`, read the p
 cite the pages' URLs. Do not fetch the docs over the internet from a sandbox: the docs tools are
 the source and need no internet access.
 
-When someone asks you to change something in Kaiju, use the kobe connector's admin tools only if
+When someone asks you to change something in Kaiju, use the kaiju connector's admin tools only if
 they are listed for you. They act as that person, with their permissions, and every change shows
 them an approval card first; see
-[Working inside a Kaiju sandbox](working-in-a-sandbox.md#the-kobe-connector). If they are not
+[Working inside a Kaiju sandbox](working-in-a-sandbox.md#the-kaiju-connector). If they are not
 listed, answer from the guide and tell the person where in the console to do it.
 
 ## Outside Kaiju: llms.txt and Markdown pages

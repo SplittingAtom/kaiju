@@ -9,9 +9,17 @@
  * Values under these keys are documents, not API fields, so their keys stay as sent: agent
  * frontmatter, policy arg patterns keyed by JSON pointers, and Pi session entries (thread entry
  * `payload`, KOBE-34; break-glass reads, KOBE-16), whose tool-call arguments must reach the UI exactly as the agent wrote them.
- * An approval's `input` (KOBE-37) is the tool input exactly as it will run if allowed.
+ * An approval's `input` (KOBE-37) is the tool input exactly as it will run if allowed. The audit
+ * pages' map of pre-rename tool segments is keyed by segments.
  */
-const OPAQUE_KEYS: ReadonlySet<string> = new Set(["frontmatter", "argPattern", "payload", "input"]);
+const OPAQUE_KEYS: ReadonlySet<string> = new Set([
+  "frontmatter",
+  "argPattern",
+  "payload",
+  "input",
+  // KOBE-826: Pi server segments (`kobe_git` → `kaiju_git`) are values, not field names.
+  "renamedToolSegments",
+]);
 
 type CamelKey<S extends string> = S extends `${infer Head}_${infer Tail}`
   ? `${Head}${Capitalize<CamelKey<Tail>>}`

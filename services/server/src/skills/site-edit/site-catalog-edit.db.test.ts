@@ -385,14 +385,14 @@ describe("Kaiju-shipped skills (ac-4)", () => {
       [res.json.version.versionId],
     );
     expect(by.rows).toEqual([{ requested_by: ids.admin, by_kobe: false }]);
-    const compare = await as.admin.get(`${BASE}/${pdfId}/kobe/compare`);
+    const compare = await as.admin.get(`${BASE}/${pdfId}/kaiju/compare`);
     expect(compare.status, json(compare)).toBe(200);
     expect(compare.json).toMatchObject({ current: { semver: "1.0.5", publisher: "site" } });
     // The release ships 1.0.0, not above the Site's 1.0.5: refused, still detached.
-    const refused = await as.admin.post(`${BASE}/${pdfId}/kobe/reset`, {});
+    const refused = await as.admin.post(`${BASE}/${pdfId}/kaiju/reset`, {});
     expect(refused.status).toBe(409);
     expect(refused.json).toMatchObject({ code: "shipped_not_above", siteSemver: "1.0.5" });
-    expect((await as.member.post(`${BASE}/${pdfId}/kobe/reset`, {})).status).toBe(403);
+    expect((await as.member.post(`${BASE}/${pdfId}/kaiju/reset`, {})).status).toBe(403);
     // A release shipping 2.0.0 resets it, and the seed publishes 2.0.0 at once.
     const higher = shippedAs(pdf, "2.0.0");
     const db = h.deps.database.db;

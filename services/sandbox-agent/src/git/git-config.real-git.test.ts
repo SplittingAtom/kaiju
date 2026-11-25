@@ -107,7 +107,7 @@ describe.skipIf(backend === undefined)(
     let env: Record<string, string> = {};
 
     beforeAll(async () => {
-      root = mkdtempSync(path.join(tmpdir(), "kobe-git-config-"));
+      root = mkdtempSync(path.join(tmpdir(), "kaiju-git-config-"));
       const repos = path.join(root, "repos");
       mkdirSync(path.join(repos, "acme"), { recursive: true });
       const bare = path.join(repos, "acme", "app.git");

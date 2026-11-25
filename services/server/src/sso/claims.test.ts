@@ -12,7 +12,7 @@ const ENTRA: ClaimsProvider = {
 };
 const GENERIC: ClaimsProvider = {
   kind: "oidc",
-  issuer: "https://idp.example.com/realms/kobe",
+  issuer: "https://idp.example.com/realms/kaiju",
   clientId: "client-2",
   tenantId: null,
   subjectClaim: "sub",

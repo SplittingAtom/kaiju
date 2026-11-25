@@ -30,7 +30,7 @@ import { KAIJU_ADMIN_TOOLS, kaijuToolByName } from "./tools/index.js";
 
 /**
  * The Kaiju MCP server, hosted by the server itself (KOBE-619, spec kobe-admin-mcp §3 design (b)).
- * The MCP proxy routes the built-in connector here (`/internal/v1/mcp/kobe/{list,calls}`); each
+ * The MCP proxy routes the built-in connector here (`/internal/v1/mcp/kaiju/{list,calls}`); each
  * call is decided and executed in this one request: the sandbox token is authenticated by the
  * route, the run leased to the sandbox for the claimed thread is resolved, `decideMcpCall` decides
  * (policy engine, Kaiju admin guard, signed approval verified and consumed, audit), and only an
@@ -189,7 +189,7 @@ export function createKaijuMcpService(options: KaijuMcpServiceOptions): KaijuMcp
                 !(await withinKaijuLimit(db, principal.userId, def.readOnly ? "read" : "write"))
               ) {
                 return {
-                  code: "kobe_admin_rate_limited",
+                  code: "kaiju_admin_rate_limited",
                   message: def.readOnly
                     ? "Too many Kaiju admin reads in the last minute; try again shortly."
                     : "Too many Kaiju admin changes in the last hour; try again later.",
@@ -211,7 +211,7 @@ export function createKaijuMcpService(options: KaijuMcpServiceOptions): KaijuMcp
       if (!locked.ok) {
         return {
           outcome: "denied",
-          code: "kobe_admin_rate_limited",
+          code: "kaiju_admin_rate_limited",
           message: "Kaiju is busy with your other admin calls; try again shortly.",
         };
       }
@@ -246,7 +246,7 @@ export function createKaijuMcpService(options: KaijuMcpServiceOptions): KaijuMcp
       const toolCallId =
         decided.tool_call_id !== undefined && PLAIN_ID.test(decided.tool_call_id)
           ? decided.tool_call_id
-          : `kobe-${decided.run_id}`;
+          : `kaiju-${decided.run_id}`;
       const executed = await executeKaijuTool(
         api,
         {

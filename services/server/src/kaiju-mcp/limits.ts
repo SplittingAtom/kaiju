@@ -1,6 +1,9 @@
 import {
   KAIJU_BUILTIN_CONNECTOR_ID,
+  eq,
+  preRenameKey,
   siteSettings,
+  siteSettingValue,
   sql,
   type KaijuDb,
   type KaijuTx,
@@ -12,10 +15,10 @@ import { recordAudit } from "../audit/record.js";
  * hour, site settings with defaults 60 and 30. Counted from the person's allowed `mcp.tool_call`
  * rows for the built-in connector in the audit log, so the limit holds across server replicas and
  * restarts; the window is found by `at` (indexed) and the person's rows by `(actor_id, seq)`.
- * Calls of the docs tools (`mcp__<kobe>__docs_*`, KOBE-620) are not admin calls and never count.
+ * Calls of the docs tools (`mcp__<kaiju>__docs_*`, KOBE-620) are not admin calls and never count.
  */
-export const KAIJU_READS_PER_MINUTE_KEY = "kobe_mcp.reads_per_minute";
-export const KAIJU_WRITES_PER_HOUR_KEY = "kobe_mcp.writes_per_hour";
+export const KAIJU_READS_PER_MINUTE_KEY = "kaiju_mcp.reads_per_minute" as const;
+export const KAIJU_WRITES_PER_HOUR_KEY = "kaiju_mcp.writes_per_hour" as const;
 export const KAIJU_READS_PER_MINUTE_DEFAULT = 60;
 export const KAIJU_WRITES_PER_HOUR_DEFAULT = 30;
 /** Bounds of both limits (the Site settings API validates against them). */
@@ -35,13 +38,13 @@ export interface KaijuLimits {
 
 /** The limits in force (stored value, else the default); read on every call, so never stale. */
 export async function readKaijuLimits(db: Pick<KaijuTx, "execute">): Promise<KaijuLimits> {
-  const res = await db.execute<{ key: string; value: string }>(sql`
-    SELECT key, value FROM public.site_settings
-     WHERE key IN (${KAIJU_READS_PER_MINUTE_KEY}, ${KAIJU_WRITES_PER_HOUR_KEY})`);
-  const byKey = new Map(res.rows.map((r) => [r.key, r.value]));
+  const res = await db.execute<{ reads: string | null; writes: string | null }>(sql`
+    SELECT ${siteSettingValue(KAIJU_READS_PER_MINUTE_KEY)} AS reads,
+           ${siteSettingValue(KAIJU_WRITES_PER_HOUR_KEY)} AS writes`);
+  const row = res.rows[0];
   return {
-    readsPerMinute: limitOf(byKey.get(KAIJU_READS_PER_MINUTE_KEY), KAIJU_READS_PER_MINUTE_DEFAULT),
-    writesPerHour: limitOf(byKey.get(KAIJU_WRITES_PER_HOUR_KEY), KAIJU_WRITES_PER_HOUR_DEFAULT),
+    readsPerMinute: limitOf(row?.reads, KAIJU_READS_PER_MINUTE_DEFAULT),
+    writesPerHour: limitOf(row?.writes, KAIJU_WRITES_PER_HOUR_DEFAULT),
   };
 }
 
@@ -61,10 +64,12 @@ export async function storeKaijuLimit(
       target: siteSettings.key,
       set: { value: String(value), updatedAt: new Date() },
     });
+  // The pre-rename key goes with it (one release, KOBE-826 L3): readers take it first.
+  await tx.delete(siteSettings).where(eq(siteSettings.key, preRenameKey(key)));
   await recordAudit(tx, {
     action: "site.settings.updated",
     target: {
-      setting: kind === "read" ? "kobe_reads_per_minute" : "kobe_writes_per_hour",
+      setting: kind === "read" ? "kaiju_reads_per_minute" : "kaiju_writes_per_hour",
       value,
     },
   });
@@ -91,7 +96,7 @@ export async function withinKaijuLimit(
           -- The docs tools (KOBE-620) are no admin reads: they never count.
           AND a.target ->> 'tool' !~ '__docs_[a-z_]+$'
           AND (a.target ->> 'risk' = 'read') = ${kind === "read"}) AS used,
-      (SELECT s.value FROM public.site_settings s WHERE s.key = ${key}) AS limit_value`);
+      ${siteSettingValue(key)} AS limit_value`);
   const row = res.rows[0];
   if (row === undefined) return false;
   const limit = limitOf(

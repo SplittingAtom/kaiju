@@ -377,7 +377,7 @@ describe("ApprovalCard", () => {
     };
     const adminAsked = () =>
       asked({
-        tool: "mcp__kobe__team_members_set_role",
+        tool: "mcp__kaiju__team_members_set_role",
         input: { user_id: "u1", from_role: "member", to_role: "team_admin" },
         admin: {
           scope: "team",

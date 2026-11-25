@@ -121,7 +121,7 @@ describe("Connectors (ac-2, ac-3, ac-6)", { timeout: 30_000 }, () => {
       connector_id: "6b6f6265-0000-4000-8000-000000000001",
       name: "kaiju",
       problem: null,
-      builtin: { kind: "kobe", admin: "read_write" },
+      builtin: { kind: "kaiju", admin: "read_write" },
     });
     const t = answered();
     openApp(fake, t);

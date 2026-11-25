@@ -58,8 +58,8 @@ export const setSite = async (key: string, value: string | null) => {
 export const setLevel = (team: string, level: string | null) =>
   fx.admin.query(
     level === null
-      ? `UPDATE teams SET settings = settings - 'kobe_mcp.admin' WHERE id = $1`
-      : `UPDATE teams SET settings = settings || jsonb_build_object('kobe_mcp.admin', $2::text) WHERE id = $1`,
+      ? `UPDATE teams SET settings = settings - 'kaiju_mcp.admin' WHERE id = $1`
+      : `UPDATE teams SET settings = settings || jsonb_build_object('kaiju_mcp.admin', $2::text) WHERE id = $1`,
     level === null ? [team] : [team, level],
   );
 
@@ -248,7 +248,7 @@ export function useKaijuMcpWorld(): void {
 
   beforeEach(async () => {
     await setSite(KAIJU_MCP_MODE_KEY, "admin");
-    await setSite("kobe_mcp.reads_per_minute", null);
-    await setSite("kobe_mcp.writes_per_hour", null);
+    await setSite("kaiju_mcp.reads_per_minute", null);
+    await setSite("kaiju_mcp.writes_per_hour", null);
   });
 }

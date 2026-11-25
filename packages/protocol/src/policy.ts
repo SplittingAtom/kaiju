@@ -51,9 +51,26 @@ export const HISTORICAL_POLICY_NAMES = {
   install_deny: "site_deny",
   install_deny_rule: "site_deny_rule",
   install_ask_rule: "site_ask_rule",
+  // KOBE-826 (the built-in connector's rename): the Kaiju admin codes' names before it.
+  kobe_admin_write: "kaiju_admin_write",
+  kobe_admin_not_allowed: "kaiju_admin_not_allowed",
+  kobe_admin_rate_limited: "kaiju_admin_rate_limited",
 } as const;
 const HISTORICAL_STAGES = ["install_deny"] as const;
-const HISTORICAL_REASON_CODES = ["install_deny_rule", "install_ask_rule"] as const;
+const HISTORICAL_REASON_CODES = [
+  "install_deny_rule",
+  "install_ask_rule",
+  "kobe_admin_write",
+  "kobe_admin_not_allowed",
+  "kobe_admin_rate_limited",
+] as const;
+
+/** A stored reason code as today's code (a historical one as its successor). */
+export function currentReasonCode(code: string): string {
+  return Object.hasOwn(HISTORICAL_POLICY_NAMES, code)
+    ? HISTORICAL_POLICY_NAMES[code as keyof typeof HISTORICAL_POLICY_NAMES]
+    : code;
+}
 
 /** The thing being decided. Built by the server from its own state; `tool` from its registry. */
 export const policyInputSchema = z
@@ -164,12 +181,12 @@ export const POLICY_REASON_CODES = [
   // KOBE-619 (Kaiju MCP, spec kobe-admin-mcp §6): a Kaiju admin write asks in every mode (stage
   // ask_rule), Dangerous and remembered approvals included; never remembered or approved in bulk;
   // denied where nobody can be asked (auto, scheduled, skill eval; stage approval_mode).
-  "kobe_admin_write",
+  "kaiju_admin_write",
   // KOBE-619: a Kaiju admin tool the person may not use now (permission, team or site switch, or a
   // run that gets docs tools only) → deny (stage team_deny).
-  "kobe_admin_not_allowed",
+  "kaiju_admin_not_allowed",
   // KOBE-619: the person's admin reads per minute or writes per hour are used up → deny.
-  "kobe_admin_rate_limited",
+  "kaiju_admin_rate_limited",
   // KOBE-762 (spec workspace-git G9, G12): a git host tool the connection (level, agents), the
   // member's role or the Site refuses now → deny (stage team_deny), before anyone is asked.
   "git_not_allowed",

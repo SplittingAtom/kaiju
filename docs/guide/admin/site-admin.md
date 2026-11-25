@@ -109,7 +109,11 @@ read a person's portable preferences either; reading them needs its own break-gl
   on, a **Filter tools** field narrows the list by name or description ("12 of 140 tools") and
   each column scrolls on its own. The details are read-only, apart from **Your account** for an
   OAuth connector (below); **Review**, **Re-probe**, **Enable**/**Disable** and **Site key** stay
-  in the row. Escape or **Close** returns to the list.
+  in the row. Escape or **Close** returns to the list. The names `kaiju` and `kaiju-git` (and
+  their earlier names `kobe` and `kobe-git`, with `-builtin` versions of all four) belong to
+  Kaiju's built-in connectors and cannot be used for a registered connector. The upgrade to these
+  names renamed a registered connector that already had one to `<name>-registered`, with its
+  rules and settings, and recorded that in the audit log.
 - **Adding a connector that uses OAuth.** Kaiju lists an OAuth server's tools with a site admin's
   own connected account, so a new one has **No tools yet: connect an account** in the list until
   someone connects. The server is reached through Kaiju's connector policy like any other.
@@ -156,7 +160,9 @@ read a person's portable preferences either; reading them needs its own break-gl
   anything that points into its conversations (thread, message, run, learning pass, candidate,
   tool call or approval ids, thread folder names, and the "via agent" line); the workspace's own
   audit log (Team console › **Audit view**) keeps them. The same holds for the export and for
-  audit forwarding. A short note above the events says so.
+  audit forwarding. A short note above the events says so. Events recorded before the rename to
+  Kaiju keep the tool and setting names of that time (`mcp__kobe__docs_index`, `kobe_mcp_mode`);
+  the log shows today's name next to each.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
 - **Retention maximum**: the longest retention any team may choose. What else Kaiju deletes on its

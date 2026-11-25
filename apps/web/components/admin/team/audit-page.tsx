@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ApiError, ApiResult } from "../../../lib/api/client";
+import { renamedSegmentsOf } from "../../../lib/admin/api/site/audit";
 import { listTeamAudit, type TeamAuditEvent } from "../../../lib/admin/api/team/audit";
 import { listTeamGrants, type TeamGrants } from "../../../lib/admin/api/team/break-glass";
 import {
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from "../../ui/console";
 import { useTeamAccess } from "../console-context";
+import { renamedNotes } from "../../../lib/admin/renamed-names";
 import { ErrorNotice } from "../error-notice";
 import { DateTime, ResourceView } from "../parts";
 import { useResource } from "../use-resource";
@@ -26,16 +28,24 @@ interface AuditData {
   readonly grants: TeamGrants;
   readonly events: readonly TeamAuditEvent[];
   readonly nextCursor: string | null;
+  /** Pre-rename tool segments → since (KOBE-826), to explain names in older events. */
+  readonly renamedToolSegments?: Readonly<Record<string, string>>;
 }
 
 async function loadAudit(teamId: string): Promise<ApiResult<AuditData>> {
   const [grants, page] = await Promise.all([listTeamGrants(teamId), listTeamAudit(teamId)]);
   if (!grants.ok) return grants;
   if (!page.ok) return page;
+  const renamed = renamedSegmentsOf(page.data.renamedToolSegments);
   return {
     ok: true,
     status: 200,
-    data: { grants: grants.data, events: page.data.events, nextCursor: page.data.nextCursor },
+    data: {
+      grants: grants.data,
+      events: page.data.events,
+      nextCursor: page.data.nextCursor,
+      ...(renamed === undefined ? {} : { renamedToolSegments: renamed }),
+    },
   };
 }
 
@@ -100,6 +110,11 @@ export function TeamAuditPage() {
                         </TableCell>
                         <TableCell>
                           <code className="break-all">{JSON.stringify(e.target)}</code>
+                          {renamedNotes(e.target, data.renamedToolSegments).map((r) => (
+                            <div key={r.value} className="break-all text-sm text-console-muted">
+                              {r.value} {r.note}
+                            </div>
+                          ))}
                         </TableCell>
                       </TableRow>
                     ))}

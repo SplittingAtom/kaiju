@@ -23,6 +23,11 @@ export interface TeamAuditEvent {
 export interface TeamAuditPage {
   readonly events: readonly TeamAuditEvent[];
   readonly nextCursor: string | null;
+  /**
+   * The built-in connectors' Pi server segments before the rename → since (KOBE-826); events keep
+   * the tool names they were recorded with. Absent from a server of the release before it.
+   */
+  readonly renamedToolSegments?: Readonly<Record<string, string>>;
 }
 
 export function listTeamAudit(

@@ -51,7 +51,7 @@ describe("the engine's allow-list gate", () => {
     expect(allows(allow, builtin("remember"))).toBe(true);
     expect(allows(allow, mcp("mcp__jira__search"))).toBe(true);
     expect(allows(allow, mcp("mcp__jira__delete"))).toBe(false);
-    expect(allows(allow, mcp("mcp__kobe__search_docs"))).toBe(false);
+    expect(allows(allow, mcp("mcp__kaiju__search_docs"))).toBe(false);
   });
   it("a list naming a built-in allows only the built-ins it names", () => {
     const allow = ["read", "bash:ls *", "mcp__jira__*"];

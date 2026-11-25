@@ -219,7 +219,7 @@ function serverFailure(id: JsonRpcId, failure: string): Answer {
  */
 const builtinOf = (ctx: CallContext): BuiltinServer | undefined =>
   ctx.connectorId === KAIJU_BUILTIN_CONNECTOR_ID
-    ? "kobe"
+    ? "kaiju"
     : ctx.connectorId === GIT_BUILTIN_CONNECTOR_ID
       ? "git"
       : undefined;
@@ -323,7 +323,7 @@ async function callKaiju(
         ...(threadId === undefined ? {} : { threadId }),
         ...(typeof toolCallId === "string" && toolCallId.length <= 128 ? { toolCallId } : {}),
       },
-      builtinOf(ctx) ?? "kobe",
+      builtinOf(ctx) ?? "kaiju",
     );
     const log = (outcome: string, reason?: string) =>
       deps.log.info(

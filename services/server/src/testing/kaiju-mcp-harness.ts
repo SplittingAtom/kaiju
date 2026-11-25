@@ -70,9 +70,9 @@ export class KaijuMcpHarness {
   private upstream: UpstreamClient | undefined;
   private proxy: ReturnType<typeof createProxyApp> | undefined;
   private kaijuName = "kobe";
-  private gitName = "kobe-git";
+  private gitName = "kaiju-git";
   /** Which built-in the calls below address (KOBE-762: the git connector is its own). */
-  builtin: "kobe" | "git" = "kobe";
+  builtin: "kaiju" | "git" = "kaiju";
   private nextId = 1;
 
   /** `extra`: more server options (the git tools' envelope and host seam, KOBE-762). */
@@ -87,7 +87,7 @@ export class KaijuMcpHarness {
     if (seeded.outcome === "names_taken") throw new Error("kaiju names taken");
     this.kaijuName = seeded.name;
     const git = await seedGitBuiltinConnector(fx.db);
-    if (git.outcome === "names_taken") throw new Error("kobe-git names taken");
+    if (git.outcome === "names_taken") throw new Error("kaiju-git names taken");
     this.gitName = git.name;
     await this.upstreamServer.start();
     const app = createInternalApp({
@@ -157,8 +157,8 @@ export class KaijuMcpHarness {
   async setLevel(team: string, level: string | null): Promise<void> {
     await this.fx.admin.query(
       level === null
-        ? `UPDATE teams SET settings = settings - 'kobe_mcp.admin' WHERE id = $1`
-        : `UPDATE teams SET settings = settings || jsonb_build_object('kobe_mcp.admin', $2::text) WHERE id = $1`,
+        ? `UPDATE teams SET settings = settings - 'kaiju_mcp.admin' WHERE id = $1`
+        : `UPDATE teams SET settings = settings || jsonb_build_object('kaiju_mcp.admin', $2::text) WHERE id = $1`,
       level === null ? [team] : [team, level],
     );
   }
@@ -166,8 +166,8 @@ export class KaijuMcpHarness {
   /** Admin tools on, default limits. */
   async reset(): Promise<void> {
     await this.setSite(KAIJU_MCP_MODE_KEY, "admin");
-    await this.setSite("kobe_mcp.reads_per_minute", null);
-    await this.setSite("kobe_mcp.writes_per_hour", null);
+    await this.setSite("kaiju_mcp.reads_per_minute", null);
+    await this.setSite("kaiju_mcp.writes_per_hour", null);
   }
 
   async world(level: string | null = "read_write"): Promise<KaijuWorld> {

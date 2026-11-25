@@ -19,7 +19,7 @@ import {
 /** KOBE-619 (spec kobe-admin-mcp §6, KA2): Kaiju admin writes ask in every mode. */
 const NOW = new Date("2026-11-11T10:00:00.000Z");
 const kaiju = (risk: ToolDescriptor["risk"]): ToolDescriptor => ({
-  name: "mcp__kobe__team_members_set_role",
+  name: "mcp__kaiju__team_members_set_role",
   source: "mcp",
   connector_id: KAIJU_BUILTIN_CONNECTOR_ID,
   risk,
@@ -69,11 +69,17 @@ describe("guardKaijuAdmin", () => {
     expect(out.effect).toBe("require_approval");
     expect(out.reasons.map((r) => r.code)).not.toContain("dangerous_mode");
     expect(out.reasons.map((r) => r.code)).not.toContain("user_allow_rule");
-    expect(out.reasons[0]?.code).toBe("kobe_admin_write");
+    expect(out.reasons[0]?.code).toBe("kaiju_admin_write");
     expect(isKaijuAdminAsk(out.reasons)).toBe(true);
     if (out.effect === "require_approval") {
       expect(Date.parse(out.expires_at)).toBe(NOW.getTime() + APPROVAL_TTL_MS);
     }
+  });
+
+  it("recognises its ask under the code's pre-rename name (KOBE-826)", () => {
+    const old = [{ code: "kobe_admin_write", stage: "ask_rule", message: "m" }];
+    expect(isKaijuAdminAsk(old)).toBe(true);
+    expect(isKaijuAdminAsk([{ code: "team_ask_rule" }])).toBe(false);
   });
 
   it.each(["ask-on-write", "ask-all"] as const)("asks in %s", (mode) => {
@@ -85,12 +91,12 @@ describe("guardKaijuAdmin", () => {
   it("denies a write where nobody can be asked: auto, scheduled, skill eval", () => {
     expect(guardKaijuAdmin(allow("team_allow_rule"), g({ input: input("auto") }))).toMatchObject({
       effect: "deny",
-      reasons: [{ code: "kobe_admin_write" }],
+      reasons: [{ code: "kaiju_admin_write" }],
     });
     for (const over of [{ input: input("auto", "schedule") }, { evalRun: true }]) {
       expect(guardKaijuAdmin(allow("team_allow_rule"), g(over))).toMatchObject({
         effect: "deny",
-        reasons: [{ code: "kobe_admin_not_allowed" }],
+        reasons: [{ code: "kaiju_admin_not_allowed" }],
       });
     }
   });
@@ -111,11 +117,11 @@ describe("guardKaijuAdmin", () => {
     const allowed = allow("dangerous_mode");
     expect(guardKaijuAdmin(allowed, g({ tool: other }))).toBe(allowed);
     expect(isKaijuTool(other)).toBe(false);
-    expect(kaijuToolName("mcp__kobe_builtin__team_members_list")).toBe("team_members_list");
+    expect(kaijuToolName("mcp__kaiju_builtin__team_members_list")).toBe("team_members_list");
   });
 
   it("leaves the docs tools to the ordinary policy: scheduled runs, evals and auto too (KOBE-620)", () => {
-    const docs: ToolDescriptor = { ...kaiju("read"), name: "mcp__kobe__docs_index" };
+    const docs: ToolDescriptor = { ...kaiju("read"), name: "mcp__kaiju__docs_index" };
     expect(isKaijuTool(docs)).toBe(true);
     expect(isKaijuAdminTool(docs)).toBe(false);
     expect(isKaijuAdminTool(kaiju("read"))).toBe(true);
@@ -132,7 +138,7 @@ describe("guardKaijuAdmin", () => {
       risk: "write" as const,
       tool: kaiju("write").name,
       inputCanonical: "{}",
-      reasons: [{ code: "kobe_admin_write", stage: "ask_rule", message: "m" }],
+      reasons: [{ code: "kaiju_admin_write", stage: "ask_rule", message: "m" }],
     };
     expect(batchable(row as never, kaiju("write"))).toBe(false);
     expect(batchable({ ...row, reasons: [] } as never, kaiju("write"))).toBe(true);

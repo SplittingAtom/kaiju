@@ -156,7 +156,7 @@ export const siteSkillsEditDetails: Readonly<Record<string, CatalogDetail>> = {
     response: untyped("SiteSkillDraftScan", obj({ rev: int, ...scanFields, ruleSetVersion: str })),
     errors: ["404", "422", "429", "503"],
   },
-  "get /v1/site/skills/catalog-skills/{skillId}/kobe/compare": {
+  "get /v1/site/skills/catalog-skills/{skillId}/kaiju/compare": {
     response: untyped(
       "KaijuSkillCompare",
       obj({
@@ -167,7 +167,7 @@ export const siteSkillsEditDetails: Readonly<Record<string, CatalogDetail>> = {
     ),
     errors: ["404", "409", "503"],
   },
-  "post /v1/site/skills/catalog-skills/{skillId}/kobe/reset": {
+  "post /v1/site/skills/catalog-skills/{skillId}/kaiju/reset": {
     body: null,
     response: untyped(
       "KaijuSkillReset",

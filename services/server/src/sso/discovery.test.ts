@@ -8,7 +8,7 @@ import { FakeIdp, resolver } from "./testing.js";
 
 const TENANT = "11111111-2222-4333-8444-555555555555";
 const ENTRA = `https://login.microsoftonline.com/${TENANT}/v2.0`;
-const KC = "https://kc.example.com/realms/kobe";
+const KC = "https://kc.example.com/realms/kaiju";
 
 function net(idp: FakeIdp, policy: Partial<SsoNet["policy"]> = {}): SsoNet {
   return {
@@ -195,7 +195,7 @@ describe("SSRF guard on discovery (KOBE-626 ac-6)", () => {
     const idp = new FakeIdp();
     const report = await validateDiscovery(net(idp), {
       kind: "oidc",
-      issuer: "https://kc.example.com:8443/realms/kobe",
+      issuer: "https://kc.example.com:8443/realms/kaiju",
     });
     expect(report).toMatchObject({ ok: false, failure: "port_not_allowed" });
   });

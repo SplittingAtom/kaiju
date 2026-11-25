@@ -113,7 +113,7 @@ function cgi(
 }
 
 export async function startGitServer(options: GitServerOptions = {}): Promise<GitServer> {
-  const root = mkdtempSync(path.join(tmpdir(), "kobe-git-server-"));
+  const root = mkdtempSync(path.join(tmpdir(), "kaiju-git-server-"));
   const requests: GitServer["requests"] = [];
   const expected = options.credentials
     ? `Basic ${Buffer.from(`${options.credentials.username}:${options.credentials.token}`).toString("base64")}`
@@ -235,7 +235,7 @@ export async function startConnectProxy(opts: {
 
 /** A throwaway self-signed certificate for `name` (SAN), made with the openssl CLI. */
 export function selfSignedCert(name: string): { key: string; cert: string } {
-  const dir = mkdtempSync(path.join(tmpdir(), "kobe-git-cert-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "kaiju-git-cert-"));
   try {
     const key = path.join(dir, "key.pem");
     const cert = path.join(dir, "cert.pem");

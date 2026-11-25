@@ -36,7 +36,7 @@ describe("the built-in kaiju connector row", () => {
     const results = await Promise.all(
       Array.from({ length: 8 }, () => seedKaijuBuiltinConnector(app.db)),
     );
-    const rows = await app.db.select().from(connectors).where(eq(connectors.builtin, "kobe"));
+    const rows = await app.db.select().from(connectors).where(eq(connectors.builtin, "kaiju"));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       id: KAIJU_BUILTIN_CONNECTOR_ID,
@@ -72,7 +72,7 @@ describe("the built-in kaiju connector row", () => {
     await expect(
       app.db.transaction((tx) =>
         tx.execute(
-          sql`UPDATE connectors SET url = 'http://kobe-server.internal/internal/v1/mcp/kobe' WHERE builtin = 'git'`,
+          sql`UPDATE connectors SET url = ${KAIJU_BUILTIN_CONNECTOR_URL} WHERE builtin = 'git'`,
         ),
       ),
     ).rejects.toSatisfy((e) => pgCodeOf(e) === "23514");
@@ -106,20 +106,20 @@ describe("the built-in kaiju connector row", () => {
       // A distinct transaction per attempt: the unique id may conflict before the check.
       const code = await app.db
         .insert(connectors)
-        .values({ name: name(), builtin: "kobe", ...values })
+        .values({ name: name(), builtin: "kaiju", ...values })
         .then(() => "inserted")
         .catch((e: unknown) => pgCodeOf(e));
       expect(["23514", "23505"], JSON.stringify(values)).toContain(code);
     }
     await expect(
       app.db.execute(
-        sql`UPDATE connectors SET url = 'https://evil.example.com/mcp' WHERE builtin = 'kobe'`,
+        sql`UPDATE connectors SET url = 'https://evil.example.com/mcp' WHERE builtin = 'kaiju'`,
       ),
     ).rejects.toSatisfy((e) => pgCodeOf(e) === "23514");
   });
 });
 
-describe("the site switch kobe_mcp.mode (KA5)", () => {
+describe("the site switch kaiju_mcp.mode (KA5)", () => {
   it("defaults to docs, reads a known mode, and treats anything else as docs", async () => {
     await app.db.delete(siteSettings).where(eq(siteSettings.key, KAIJU_MCP_MODE_KEY));
     expect(await readKaijuMcpMode(app.db)).toBe("docs");

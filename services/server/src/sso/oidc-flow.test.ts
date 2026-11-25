@@ -9,7 +9,7 @@ import {
 import { FakeIdp, resolver } from "./testing.js";
 
 /** Review finding 9c: a failed discovery is remembered briefly, so a broken IdP isn't hammered. */
-const KC = "https://kc.example.com/realms/kobe";
+const KC = "https://kc.example.com/realms/kaiju";
 const provider: SsoProvider = {
   id: "00000000-0000-4000-8000-000000000001",
   slug: "kc",

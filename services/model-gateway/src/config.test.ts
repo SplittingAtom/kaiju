@@ -14,7 +14,7 @@ import { hmacEraToken } from "./testing/hmac-era.js";
 
 const PAIR = generateSessionKeyPair();
 const env = {
-  KAIJU_DATABASE_URL: "postgres://app@db/kobe",
+  KAIJU_DATABASE_URL: "postgres://app@db/kaiju",
   KAIJU_TRACE_SPAN_KEY: "t".repeat(40),
   KAIJU_SESSION_VERIFY_KEY_MODEL_GATEWAY: PAIR.publicPem,
   KAIJU_MODELS_VIRTUAL_KEY_SECRET: "v".repeat(40),
@@ -161,7 +161,7 @@ describe("old KOBE_* names for one release (KOBE-748)", () => {
     const warn = vi.fn();
     const c = loadConfig(toLegacyEnv(env), warn);
     expect(c.bifrostUrl).toBe("http://kaiju-bifrost:8080");
-    expect(c.databaseUrl).toBe("postgres://app@db/kobe");
+    expect(c.databaseUrl).toBe("postgres://app@db/kaiju");
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[1]).toEqual({
       renamed: [

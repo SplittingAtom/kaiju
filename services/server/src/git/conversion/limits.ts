@@ -46,7 +46,7 @@ export const GIT_CONVERSION_SWEEP_MS = 2 * 60_000;
  * conversion per replica and the size limits above, a replica holds at most about one project's
  * content there (≤ 2 GiB); a run checks for room first (`server_capacity`).
  */
-export const GIT_CONVERSION_DIR_NAME = "kobe-git-conversions";
+export const GIT_CONVERSION_DIR_NAME = "kaiju-git-conversions";
 export const GIT_CONVERSION_WORK_PREFIX = "run-";
 /** Free space a run needs beyond its project's content. */
 export const GIT_CONVERSION_DISK_MARGIN_BYTES = 64 * 1024 * 1024;

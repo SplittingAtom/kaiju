@@ -30,7 +30,7 @@ agent read this guide, so you can ask "How do I…" anywhere. Where a site admin
 turned them on, its admin tools let the agent read or change Kaiju settings as you, within your own
 permissions, and every change asks you first with an **Admin change** card. In the composer,
 **+** → **Connectors** lists it first, with "Docs always on" and which admin tools you have. In
-the agent creator you can name **kobe** among an agent's connectors to give it the admin tools.
+the agent creator you can name **kaiju** among an agent's connectors to give it the admin tools.
 See [Admin from a conversation](admin/admin-from-a-conversation.md).
 
 ## Connect your account or add your own key

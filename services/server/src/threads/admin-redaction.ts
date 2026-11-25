@@ -1,12 +1,7 @@
-import {
-  KAIJU_ADMIN_RESULT_HIDDEN,
-  mcpServerSegment,
-  parseMcpToolName,
-  type KaijuEvent,
-} from "@kaiju/protocol";
+import { KAIJU_ADMIN_RESULT_HIDDEN, parseMcpToolName, type KaijuEvent } from "@kaiju/protocol";
 import { sql, type KaijuTx, type TeamRole } from "@kaiju/db";
 import { siteRoleAllows, teamRoleAllows, type SiteRole } from "../authz/permissions.js";
-import { kaijuBuiltinName } from "../kaiju-mcp/access.js";
+import { kaijuBuiltinSegments } from "../kaiju-mcp/access.js";
 import { isKaijuDocsToolName } from "../kaiju-mcp/docs/index.js";
 import { kaijuToolByName } from "../kaiju-mcp/tools/index.js";
 
@@ -18,9 +13,10 @@ import { kaijuToolByName } from "../kaiju-mcp/tools/index.js";
  * everything. Enforced where the server serves a thread's tool output to a reader: the entry list,
  * the full-output route, the run event stream and a reader's fork.
  *
- * A Kaiju tool is recognised by the built-in connector's Pi server segment (`kobe`, or
- * `kobe-builtin` when the name was taken); a name the catalog does not know (a tool of a newer or
- * older release) is hidden, the docs tools never are.
+ * A Kaiju tool is recognised by the built-in connector's Pi server segment (`kaiju`, or
+ * `kaiju-builtin` when the name was taken), or by the segment it had before the rename (KOBE-826,
+ * `kaijuBuiltinSegments`); a name the catalog does not know (a tool of a newer or older release) is
+ * hidden, the docs tools never are.
  */
 
 export { KAIJU_ADMIN_RESULT_HIDDEN };
@@ -32,7 +28,7 @@ export interface AdminResultGate {
 
 /** What decides a reader's gate: the built-in's segments and the reader's roles now. */
 export interface AdminGateFacts {
-  /** Pi server segments of the built-in connector (its current name, else both seed names). */
+  /** Pi server segments of the built-in connector (current or seed names, and pre-rename ones). */
   readonly segments: readonly string[];
   readonly teamRole: TeamRole | null;
   readonly siteRole: SiteRole;
@@ -65,14 +61,14 @@ export async function loadAdminResultGate(
   ownerUserId: string,
 ): Promise<AdminResultGate | undefined> {
   if (viewer.userId === ownerUserId) return undefined;
-  const name = await kaijuBuiltinName(tx);
+  const segments = await kaijuBuiltinSegments(tx);
   const res = await tx.execute<{ team_role: TeamRole | null; site_role: SiteRole }>(sql`
     SELECT (SELECT m.role FROM public.team_members m
              WHERE m.team_id = ${viewer.teamId} AND m.user_id = ${viewer.userId}) AS team_role,
            (SELECT r.role FROM public.site_roles r WHERE r.user_id = ${viewer.userId}) AS site_role`);
   const row = res.rows[0];
   return adminResultGate({
-    segments: (name === undefined ? ["kobe", "kobe-builtin"] : [name]).map(mcpServerSegment),
+    segments,
     teamRole: row?.team_role ?? null,
     siteRole: row?.site_role ?? null,
   });

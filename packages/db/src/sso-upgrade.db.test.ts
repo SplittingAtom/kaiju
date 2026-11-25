@@ -222,7 +222,7 @@ describe("SSO and SCIM tables on upgrade (KOBE-625)", () => {
       await provider(c, "keycloak", {
         kind: "oidc",
         tenant_id: null,
-        issuer: "https://idp.example.test/realms/kobe",
+        issuer: "https://idp.example.test/realms/kaiju",
         subject_claim: "sub",
         access_claim: "groups",
       });

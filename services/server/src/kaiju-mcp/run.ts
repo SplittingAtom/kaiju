@@ -12,7 +12,7 @@ import { kaijuPinnedTool } from "./pinned.js";
  *
  * - the **docs tools** (KOBE-620) are on every run whatever the agent's connector list: runs
  *   without an agent, scheduled runs, skill evals and test chats included;
- * - the **admin tools** follow the agent's connector list (`kobe` by the row's name, or `all`),
+ * - the **admin tools** follow the agent's connector list (`kaiju` by the row's name, or `all`),
  *   only for a run a person can answer (not scheduled, not a skill eval or test chat), only the
  *   tools the person may use now (switches and permission).
  *

@@ -25,6 +25,18 @@ Skill authors: the skill manifest is now `kaiju.skill.yaml` (its `compatibility.
 now `compatibility.kaiju`). Skills that still have `kobe.skill.yaml` keep working, with no change
 needed; a skill with both files is refused. See [Skills](agents/skills.md).
 
+The built-in connector is now **kaiju** (it was **kobe**) and the git host tools' connector is
+**kaiju-git** (it was **kobe-git**), so their tools are named `mcp__kaiju__…` and
+`mcp__kaiju_git__…`. The upgrade moved every rule, remembered approval, agent tool list and
+connector choice, and the Kaiju switches, to the new names: nothing needs changing. An approval
+that was still waiting for an answer during the upgrade ends; send the message again. The audit
+log keeps the names its events were recorded with and shows today's name next to an old one. An
+agent continuing a conversation from before the upgrade may try an old tool name; it is told the
+new one. For scripts that call the API: the Team console's Kaiju card is
+`/v1/team/connectors/kaiju` and the site settings fields are `kaijuMcpMode`,
+`kaijuReadsPerMinute` and `kaijuWritesPerHour`; the old path and field names still work for this
+release only.
+
 ## v1.4: git organizations
 
 A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub

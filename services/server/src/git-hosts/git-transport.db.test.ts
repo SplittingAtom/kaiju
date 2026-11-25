@@ -402,11 +402,14 @@ describe("git transport decisions (KOBE-763)", () => {
     expect((await ask({ token: egressToken(ids.outsider ?? "", team) })).status).toBe(401);
     expect((await ask({ token: "" })).status).toBe(401);
     // The MCP routes do not accept the egress proxy's key either.
-    const mcp = await internal.request(`/internal/v1/mcp/kobe/list`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${GIT_KEY}` },
-    });
-    expect(mcp.status).toBe(401);
+    // Nor the Kaiju connector's pre-rename path, served for one release (KOBE-826).
+    for (const path of ["kaiju", "kobe"]) {
+      const mcp = await internal.request(`/internal/v1/mcp/${path}/list`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${GIT_KEY}` },
+      });
+      expect(mcp.status, path).toBe(401);
+    }
   });
 
   it("validates the request strictly", async () => {

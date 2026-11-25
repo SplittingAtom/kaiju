@@ -3,6 +3,7 @@ import {
   auditQuerySchema,
   type AuditPage,
   type AuditQuery,
+  readBuiltinRenames,
   type KaijuDb,
   type TeamAuditPage,
 } from "@kaiju/db";
@@ -50,5 +51,12 @@ export async function auditPageBodyFor(
   page: AuditPage | TeamAuditPage,
 ) {
   const body = auditPageBody(page);
-  return { ...body, events: await withViaAgent(db, userId, body.events) };
+  // KOBE-826: rows keep the built-in tools' names from before the rename (append-only); the view
+  // explains them from the segments migration 0260 recorded (`{}` when it renamed nothing).
+  const { segments } = await readBuiltinRenames(db);
+  return {
+    ...body,
+    events: await withViaAgent(db, userId, body.events),
+    renamedToolSegments: segments,
+  };
 }

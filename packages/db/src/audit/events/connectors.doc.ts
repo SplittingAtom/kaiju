@@ -70,7 +70,7 @@ export const CONNECTORS_EVENT_DOCS = {
   },
   "mcp.connector.updated": {
     fields:
-      "`connectorId`, `name`, `changed` (name, url, iconUrl, authKind, status, credentialSource)",
-    when: "A connector was edited; `changed` lists field names only (KOBE-100)",
+      "`connectorId`, `name`, `changed` (name, url, iconUrl, authKind, status, credentialSource), `previousName?`",
+    when: "A connector was edited; `changed` lists field names only (KOBE-100). The upgrade to Kaiju's built-in connector names renamed a registered `kaiju` or `kaiju-git` to `<name>-registered` with the system as actor and the old name in `previousName` (KOBE-826)",
   },
 } satisfies Record<keyof typeof CONNECTORS_EVENTS, AuditEventDoc>;

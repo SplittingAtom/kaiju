@@ -108,6 +108,17 @@ row's stored name, so a SIEM rule keyed on an old name should match the new one 
 values follow since KOBE-256: new `policy.rule.*`, `models.budget.*` and `run.budget_stopped`
 events say `scope: "site"`; rows recorded before say `scope: "install"` and keep it (same meaning).
 
+**Names before the Kaiju rename (KOBE-826).** The built-in connectors were `kobe` and `kobe-git`
+before the upgrade that renamed them (migration `0260_kaiju_builtin_connector`), so rows recorded
+before it name their tools `mcp__kobe__…` and `mcp__kobe_git__…` (or `mcp__kobe_builtin__…`), the
+Kaiju settings `kobe_mcp_mode`, `kobe_reads_per_minute` and `kobe_writes_per_hour`, and the
+Kaiju admin deny codes `kobe_admin_write`, `kobe_admin_not_allowed` and
+`kobe_admin_rate_limited`. Those rows keep their names. The site and team audit views show
+today's name next to each (`mcp__kobe__docs_index (before the rename; now
+mcp__kaiju__docs_index)`), from the API's `renamedToolSegments` (the segments the upgrade renamed;
+empty when it renamed nothing). Exports and forwarding send the stored names. Audit action names
+such as `mcp.kobe.team_level_changed` and `skill.kobe.published` are not renamed.
+
 <!-- audit-events:start: generated from packages/db/src/audit/events/*.doc.ts by `pnpm --filter @kaiju/db audit:doc`; do not edit by hand -->
 <!-- prettier-ignore-start -->
 
@@ -300,7 +311,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `mcp.connector.team_changed` | team | `connectorId`, `name`, `change` (enabled, exposure_changed, disabled), `exposure?` (read_only, all, custom), `tools?` (the custom tick list, Pi tool names) | A team admin enabled a connector for the team, changed its exposure or tick list, or disabled it (KOBE-104); no event when nothing changed; never URLs or credentials |
 | `mcp.connector.template_placement_set` | site | `connectorId`, `name`, `uri`, `previous`, `placement` | A site admin set where a pinned MCP Apps template opens (`chat`, `artifacts` or `rail`, KOBE-531); recorded only on a change |
 | `mcp.connector.templates_skipped` | site | `connectorId`, `name`, `reason` | The refresh began not checking a connector's MCP Apps templates while its tools were checked (KOBE-433): resources/list failed, an outdated proxy, a failed write. Site admins are emailed and see it on the connector page. System actor |
-| `mcp.connector.updated` | site | `connectorId`, `name`, `changed` (name, url, iconUrl, authKind, status, credentialSource) | A connector was edited; `changed` lists field names only (KOBE-100) |
+| `mcp.connector.updated` | site | `connectorId`, `name`, `changed` (name, url, iconUrl, authKind, status, credentialSource), `previousName?` | A connector was edited; `changed` lists field names only (KOBE-100). The upgrade to Kaiju's built-in connector names renamed a registered `kaiju` or `kaiju-git` to `<name>-registered` with the system as actor and the old name in `previousName` (KOBE-826) |
 | `mcp.grant.added` | team | `connectorId`, `name` | A user added their own API key for a connector their team enabled (KOBE-108). The key and its hint are never recorded |
 | `mcp.grant.refresh_failed` | team | `connectorId`, `name`, `reason` (`rejected`, `no_refresh_token`) | An OAuth token refresh failed for good; the grant was dropped and the user must reconnect (KOBE-110). Never records a token |
 | `mcp.grant.refused` | team | `connectorId`, `name`, `reason` | A stored OAuth token was not served because it was issued for a different server than the connector's current URL (KOBE-109), or the user is deactivated or no longer a member (`user_inactive`, KOBE-110). Never records the token |
@@ -461,7 +472,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `schedule.deleted` | team | `scheduleId` | Schedule deleted |
 | `schedule.updated` | team | `scheduleId`, `agentId` | Prompt, recurrence, timezone, agent or email setting changed |
 | `site.branding.updated` | site | `setting` (app_name, show_name, theme, logo, logo_dark, favicon, logo_theme_color), `value` (the name; `true`/`false`; the theme label `theme:<preset>` or `theme:custom #rrggbb`; the file's sha256, or `removed` for a removal or reset; never the bytes) | Site branding changed, one event per changed setting (KOBE-497, theming TH12); a reset records the default label per cleared setting. The chart-seeded defaults are recorded with the system as actor (KOBE-503) |
-| `site.settings.updated` | site | `setting` (require_two_factor, audit_pii_retention_hours, kobe_mcp_mode, kobe_reads_per_minute, kobe_writes_per_hour, git_connections, git_allowed_hosts), `value`, `hosts?`, `previous?`, `previousHosts?` | Site setting changed |
+| `site.settings.updated` | site | `setting` (require_two_factor, audit_pii_retention_hours, kaiju_mcp_mode, kaiju_reads_per_minute, kaiju_writes_per_hour, git_connections, git_allowed_hosts; rows from before the rename say kobe_mcp_mode, kobe_reads_per_minute and kobe_writes_per_hour), `value`, `hosts?`, `previous?`, `previousHosts?` | Site setting changed |
 | `skill.access.changed` | team | `skillId`, `slug`, `access`, `previous` | A team skill's access mode changed: Available, On by default, Required (Team admins only) or Hidden (KOBE-316) |
 | `skill.blocklist.added` | site | `bundleHash` | Bundle hash put on the site skill blocklist (KOBE-81); the reason is stored with the entry, not here |
 | `skill.blocklist.removed` | site | `bundleHash` | Bundle hash taken off the blocklist (KOBE-81) |

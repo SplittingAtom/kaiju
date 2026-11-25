@@ -23,6 +23,7 @@ import {
 import { decisionBodySchema, headersBodySchema } from "../../../routes/team-egress.js";
 import { memberRoleSchema } from "../../../teams/schemas.js";
 import { named, untyped, type CatalogDetail } from "../build.js";
+import { RENAMED_TOOL_SEGMENTS } from "./site-compliance.js";
 import { arr, bool, dateTime, int, nullable, num, obj, oneOfStrings, str, uuid } from "../json.js";
 import { EgressRequestDecision, EgressRequestList } from "./team-shared.js";
 
@@ -218,7 +219,7 @@ const teamConnector = obj({
 const KaijuTeamConnector = untyped(
   "KaijuTeamConnector",
   obj({
-    kobe: obj({
+    kaiju: obj({
       connector_id: nullable(uuid),
       name: nullable(str),
       mode: oneOfStrings(...KAIJU_MCP_MODES),
@@ -322,7 +323,11 @@ export const teamDetails: Readonly<Record<string, CatalogDetail>> = {
     query: auditQuery,
     response: untyped(
       "TeamAuditPage",
-      obj({ events: arr(teamAuditEvent), nextCursor: nullable(str) }),
+      obj({
+        events: arr(teamAuditEvent),
+        nextCursor: nullable(str),
+        renamedToolSegments: RENAMED_TOOL_SEGMENTS,
+      }),
     ),
   },
   "get /v1/team/audit/export": {
@@ -406,8 +411,8 @@ export const teamDetails: Readonly<Record<string, CatalogDetail>> = {
     response: untyped("TeamConnectorEnvelope", obj({ connector: teamConnector })),
     errors: ["404", "409", "422"],
   },
-  "get /v1/team/connectors/kobe": { response: KaijuTeamConnector },
-  "put /v1/team/connectors/kobe": {
+  "get /v1/team/connectors/kaiju": { response: KaijuTeamConnector },
+  "put /v1/team/connectors/kaiju": {
     body: named("SetKaijuTeamLevelBody", kaijuLevelSchema),
     response: KaijuTeamConnector,
     errors: ["409"],

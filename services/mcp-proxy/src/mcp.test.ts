@@ -110,11 +110,11 @@ class FakePolicyServer implements PolicyServer {
   kaijuTools: ServerAnswer<ToolsResponse> = {
     ok: true,
     value: {
-      connector: { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kobe" },
+      connector: { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kaiju" },
       tools: [
         {
           name: "team_members_list",
-          pi_name: "mcp__kobe__team_members_list",
+          pi_name: "mcp__kaiju__team_members_list",
           description: "List team members",
           input_schema: { type: "object" },
           annotations: { readOnlyHint: true },
@@ -134,11 +134,11 @@ class FakePolicyServer implements PolicyServer {
   };
   /** Which built-in server each list and call went to (KOBE-762). */
   readonly builtinAsked: string[] = [];
-  kaijuList(_t?: string, builtin = "kobe") {
+  kaijuList(_t?: string, builtin = "kaiju") {
     this.builtinAsked.push(`list:${builtin}`);
     return Promise.resolve(this.kaijuTools);
   }
-  kaijuCall(t: string, query: Omit<CallQuery, "connectorId">, builtin = "kobe") {
+  kaijuCall(t: string, query: Omit<CallQuery, "connectorId">, builtin = "kaiju") {
     this.builtinAsked.push(`call:${builtin}`);
     this.kaijuAsked.push({ token: t, query });
     return Promise.resolve(this.kaijuAnswer);
@@ -1135,7 +1135,7 @@ describe("the built-in git connector (KOBE-762)", () => {
     expect(server.asked).toEqual([]);
     expect(fake.received).toEqual([]);
     await rpc("tools/list", undefined, { connector: KAIJU_BUILTIN_CONNECTOR_ID });
-    expect(server.builtinAsked.at(-1)).toBe("list:kobe");
+    expect(server.builtinAsked.at(-1)).toBe("list:kaiju");
   });
 });
 
@@ -1193,7 +1193,7 @@ describe("the built-in Kaiju connector (KOBE-619)", () => {
   it("turns a denial or a refused execution into a tool error the model sees", async () => {
     server.kaijuAnswer = {
       ok: true,
-      value: { outcome: "denied", code: "kobe_admin_not_allowed", message: "Not for you." },
+      value: { outcome: "denied", code: "kaiju_admin_not_allowed", message: "Not for you." },
     };
     const denied = await rpc("tools/call", { name: "team_members_set_role", arguments: {} }, kaiju);
     expect(denied.json?.result).toEqual({

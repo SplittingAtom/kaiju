@@ -69,6 +69,11 @@ export interface SiteAuditEvent {
 export interface SiteAuditPage {
   readonly events: readonly SiteAuditEvent[];
   readonly nextCursor: string | null;
+  /**
+   * The built-in connectors' Pi server segments before the rename → since (KOBE-826); events keep
+   * the tool names they were recorded with. Absent from a server of the release before it.
+   */
+  readonly renamedToolSegments?: Readonly<Record<string, string>>;
 }
 
 /** Server-side filters; all optional. Times are ISO date-times. */
@@ -134,9 +139,28 @@ export async function listSiteAudit(
   const res = await apiRequest<SiteAuditPage>(
     `/v1/site/audit${auditQuery(filters, before, limit)}`,
   );
-  return res.ok
-    ? { ...res, data: { events: res.data.events.map(pick), nextCursor: res.data.nextCursor } }
-    : res;
+  if (!res.ok) return res;
+  const renamed = renamedSegmentsOf(res.data.renamedToolSegments);
+  return {
+    ...res,
+    data: {
+      events: res.data.events.map(pick),
+      nextCursor: res.data.nextCursor,
+      ...(renamed === undefined ? {} : { renamedToolSegments: renamed }),
+    },
+  };
+}
+
+/** The server's pre-rename segment map (KOBE-826), kept only with plain segment strings. */
+export function renamedSegmentsOf(v: unknown): Readonly<Record<string, string>> | undefined {
+  if (v === null || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const segment = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
+  return Object.fromEntries(
+    Object.entries(v).filter(
+      (e): e is [string, string] =>
+        segment.test(e[0]) && typeof e[1] === "string" && segment.test(e[1]),
+    ),
+  );
 }
 
 /** Why a chain check failed (packages/db/src/audit/verify.ts). */

@@ -7,6 +7,7 @@ import {
   type PolicyInput,
   type PolicyReason,
   type RiskClass,
+  type ToolDescriptor,
   type ToolRegistry,
 } from "@kaiju/protocol";
 import { evaluatePolicy } from "./evaluate.js";
@@ -40,6 +41,16 @@ export interface PolicyEngineDeps {
   readonly now?: () => Date;
   /** Told about every fail-closed denial caused by an error (never about inputs or secrets). */
   readonly onError?: (error: unknown) => void;
+  /**
+   * The name an unknown tool has had since a rename (KOBE-826: `mcp__kobe__docs_index` →
+   * `mcp__kaiju__docs_index`), for a clearer refusal; the call is still denied as `unknown_tool`.
+   */
+  readonly renamed?: (toolName: string) => Promise<string | undefined>;
+  /**
+   * The names a resolved tool had before a rename (KOBE-826), which deny and ask rules also
+   * match (`EvaluationContext.previousNames`). Permanent: stored globs may keep old forms.
+   */
+  readonly previousNames?: (tool: ToolDescriptor) => Promise<readonly string[]>;
 }
 
 function riskOf(raw: unknown): RiskClass {
@@ -80,21 +91,38 @@ export function createPolicyEngine(deps: PolicyEngineDeps): PolicyEngine {
   async function decideParsed(input: PolicyInput, at: Date): Promise<PolicyDecision> {
     const tool = await registry.resolve(input.team_id, input.tool.name);
     if (tool === undefined) {
-      // Unknown tools count as destructive (D29: unannotated = destructive + open-world).
+      // Unknown tools count as destructive (D29: unannotated = destructive + open-world). A model
+      // resuming a thread from before the rename may call a built-in tool by its old name: it is
+      // refused like any unknown tool, never mapped (an approval is signed over the name), and
+      // told the name to call instead.
+      const now = await deps.renamed?.(input.tool.name);
+      const name = input.tool.name.slice(0, 256);
       return deny("destructive", {
         code: "unknown_tool",
         stage: "site_deny",
-        message: `${input.tool.name.slice(0, 256)} is not a known tool.`,
+        message:
+          now === undefined
+            ? `${name} is not a known tool.`
+            : `${name} was renamed to ${now} in an upgrade; call ${now} instead.`,
       });
     }
-    const [rules, connector, current] = await Promise.all([
+    const [rules, connector, current, previousNames] = await Promise.all([
       deps.rules.load(input.team_id, input.actor.user_id, at),
       tool.source === "mcp" && tool.connector_id !== undefined
         ? connectors.get(input.team_id, tool.connector_id)
         : Promise.resolve(undefined),
       settings.get(),
+      tool.source === "mcp" && deps.previousNames ? deps.previousNames(tool) : [],
     ]);
-    return evaluatePolicy({ input, tool, rules, connector, settings: current, now: at });
+    return evaluatePolicy({
+      input,
+      tool,
+      rules,
+      connector,
+      settings: current,
+      now: at,
+      ...(previousNames.length > 0 ? { previousNames } : {}),
+    });
   }
 
   return {

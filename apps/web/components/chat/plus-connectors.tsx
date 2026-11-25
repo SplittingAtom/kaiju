@@ -102,7 +102,7 @@ function BuiltinKaiju({ connector }: { readonly connector: ChatConnector }) {
     <DropdownMenu.Item
       className={PLUS_ITEM}
       data-kaiju-connector={connector.connectorId}
-      data-kaiju-connector-builtin={connector.builtin?.kind ?? "kobe"}
+      data-kaiju-connector-builtin={connector.builtin?.kind ?? "kaiju"}
       aria-disabled
       aria-describedby={textId}
       onSelect={(e) => e.preventDefault()}

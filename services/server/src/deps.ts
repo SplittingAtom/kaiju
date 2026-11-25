@@ -14,11 +14,14 @@ import {
   type Envelope,
   accounts,
   createDb,
+  previousToolNames,
+  renamedBuiltinToolName,
   siteRoles,
   users,
   type KaijuDatabase,
 } from "@kaiju/db";
 import { ApprovalService, type ApprovalKeyring } from "./approvals/index.js";
+import { createRenamesSource } from "./kaiju-mcp/renames.js";
 import { AuditAnchorLogger } from "./audit/anchor.js";
 import { AuthAttemptAudit } from "./audit/attempts.js";
 import { recordAudit } from "./audit/record.js";
@@ -377,12 +380,18 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   // orchestrator through this late binding.
   const late: { runs?: ServerRunOrchestrator } = {};
   const extraHooks = options.sandboxWire?.hooks;
+  const renames = createRenamesSource(database.db);
   const policySources = {
     rules: createDbRuleSource(database.db),
     settings: createDbSettingsSource(database.db),
     registry: toolRegistry,
     connectors: mcpCatalog,
     onError: (err: unknown) => logger.error({ err }, "policy engine error (denied)"),
+    // KOBE-826: a built-in tool called by its pre-rename name is refused with its new name, and
+    // deny and ask rules also match every tool's pre-rename names (never allow rules).
+    renamed: async (name: string) => renamedBuiltinToolName(await renames.get(), name),
+    previousNames: async (tool: { readonly name: string }) =>
+      previousToolNames(await renames.get(), tool.name),
   };
   const policyEngine = createPolicyEngine(policySources);
   const runContext = options.sandboxWire?.runContext ?? createDbRunContextSource();

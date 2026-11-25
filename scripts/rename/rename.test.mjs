@@ -510,7 +510,8 @@ test("real allowlist: owners of the cases from review round 1", () => {
       "packages/db/src/schema/connectors.ts",
       'export const KOBE_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/kobe";',
       "kobe-server.internal",
-      "permanent",
+      // KOBE-826 moved the marker URLs to kaiju-server.internal (migration 0260): no longer kept.
+      "unowned",
     ],
     [
       "services/server/src/retention/job.ts",

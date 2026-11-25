@@ -51,39 +51,40 @@ export const CONNECTOR_NAME_PATTERN = "^[a-z0-9]+([-_][a-z0-9]+)*$";
 export const CONNECTOR_URL_MAX = 2048;
 
 /**
- * Built-in connectors hosted by Kaiju itself (KOBE-618, spec kobe-admin-mcp §3): `kobe`, the Kaiju
- * MCP server (docs and admin tools). Its row is seeded by the server at start
+ * Built-in connectors hosted by Kaiju itself (KOBE-618, spec kobe-admin-mcp §3): `kaiju`, the Kaiju
+ * MCP server (docs and admin tools; `kobe` until KOBE-826 renamed it with a data migration), and
+ * `git` (below). Its row is seeded by the server at start
  * ({@link seedKaijuBuiltinConnector}); the MCP proxy routes it to the server's internal listener,
  * never to its URL, which only marks the row (a check ties the two together, so no registered
  * connector can carry the internal URL and no built-in can point anywhere else).
  */
-export const BUILTIN_CONNECTORS = ["kobe", "git"] as const;
+export const BUILTIN_CONNECTORS = ["kaiju", "git"] as const;
 export type BuiltinConnector = (typeof BUILTIN_CONNECTORS)[number];
 
 /**
- * The `kobe` row's fixed id, the same on every site ("kobe" in hex, then a v4-shaped tail), so
- * replicas seed one row and the MCP proxy can route it without asking.
+ * The `kaiju` row's fixed id, the same on every site ("kobe" in hex, then a v4-shaped tail, kept
+ * across the rename), so replicas seed one row and the MCP proxy can route it without asking.
  */
 export const KAIJU_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000001";
 
-/** The `kobe` row's URL: a marker in the reserved `.internal` zone, never fetched. */
-export const KAIJU_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/kobe";
+/** The `kaiju` row's URL: a marker in the reserved `.internal` zone, never fetched. */
+export const KAIJU_BUILTIN_CONNECTOR_URL = "http://kaiju-server.internal/internal/v1/mcp/kaiju";
 
 /**
  * The `git` built-in (KOBE-762, owner decision 2026-11-22): the git host tools as their own
  * connector, so the Kaiju MCP switch and the Kaiju connector's thread toggle never reach them; the
  * Site's Git switch and each connection's settings are their ceiling. Fixed id ("kobe" in hex,
- * tail 2) and an internal marker URL, as for `kobe`.
+ * tail 2) and an internal marker URL, as for `kaiju`.
  */
 export const GIT_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000002";
-export const GIT_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/git";
+export const GIT_BUILTIN_CONNECTOR_URL = "http://kaiju-server.internal/internal/v1/mcp/git";
 
 /**
- * Site switch of the Kaiju MCP server (`site_settings`, spec §6, KA5): `off` (no `kobe` connector),
+ * Site switch of the Kaiju MCP server (`site_settings`, spec §6, KA5): `off` (no `kaiju` connector),
  * `docs` (docs tools only; the default, also when unset or unreadable), `admin` (docs plus the
  * admin tools each team turns on).
  */
-export const KAIJU_MCP_MODE_KEY = "kobe_mcp.mode";
+export const KAIJU_MCP_MODE_KEY = "kaiju_mcp.mode";
 export const KAIJU_MCP_MODES = ["off", "docs", "admin"] as const;
 export type KaijuMcpMode = (typeof KAIJU_MCP_MODES)[number];
 export const KAIJU_MCP_MODE_DEFAULT: KaijuMcpMode = "docs";
@@ -92,7 +93,7 @@ export const KAIJU_MCP_MODE_DEFAULT: KaijuMcpMode = "docs";
  * Team switch (`teams.settings`, spec §6, KA5): `docs` (default), `read` (admin reads), or
  * `read_write` (admin reads and writes). Only honoured while the site switch is `admin`.
  */
-export const KAIJU_MCP_TEAM_SETTING = "kobe_mcp.admin";
+export const KAIJU_MCP_TEAM_SETTING = "kaiju_mcp.admin";
 export const KAIJU_MCP_TEAM_LEVELS = ["docs", "read", "read_write"] as const;
 export type KaijuMcpTeamLevel = (typeof KAIJU_MCP_TEAM_LEVELS)[number];
 export const KAIJU_MCP_TEAM_LEVEL_DEFAULT: KaijuMcpTeamLevel = "docs";
@@ -104,15 +105,39 @@ export function parseKaijuMcpMode(value: string | null | undefined): KaijuMcpMod
     : KAIJU_MCP_MODE_DEFAULT;
 }
 
+/**
+ * The Kaiju settings keys before the rename (KOBE-826 review L3), for one release (KOBE-754).
+ * Migration 0260 moved every stored value to the new key, and this release's writers delete the
+ * old key whenever they write the new one, so an old key present was written by a server pod of
+ * the release before the rename during the rolling upgrade, after the migration: it is the newer
+ * value, and readers take it first.
+ */
+export const PRE_RENAME_KAIJU_SETTING_KEYS = {
+  "kaiju_mcp.mode": "kobe_mcp.mode",
+  "kaiju_mcp.reads_per_minute": "kobe_mcp.reads_per_minute",
+  "kaiju_mcp.writes_per_hour": "kobe_mcp.writes_per_hour",
+  "kaiju_mcp.admin": "kobe_mcp.admin",
+} as const;
+export type KaijuSettingKey = keyof typeof PRE_RENAME_KAIJU_SETTING_KEYS;
+
+/** A Kaiju setting key's pre-rename name (read first, deleted on write; one release). */
+export const preRenameKey = (key: KaijuSettingKey): string => PRE_RENAME_KAIJU_SETTING_KEYS[key];
+
+/** The site setting `key` as stored: its pre-rename key's value first (see above), then its own. */
+export const siteSettingValue = (key: KaijuSettingKey) => sql`COALESCE(
+  (SELECT s.value FROM public.site_settings s WHERE s.key = ${preRenameKey(key)}),
+  (SELECT s.value FROM public.site_settings s WHERE s.key = ${key}))`;
+
 /** The team switch from `teams.settings`: anything but a known level is the default. */
 export function parseKaijuMcpTeamLevel(settings: unknown): KaijuMcpTeamLevel {
-  const value =
-    typeof settings === "object" && settings !== null
-      ? (settings as Record<string, unknown>)[KAIJU_MCP_TEAM_SETTING]
-      : undefined;
-  return typeof value === "string" && (KAIJU_MCP_TEAM_LEVELS as readonly string[]).includes(value)
-    ? (value as KaijuMcpTeamLevel)
-    : KAIJU_MCP_TEAM_LEVEL_DEFAULT;
+  const record =
+    typeof settings === "object" && settings !== null ? (settings as Record<string, unknown>) : {};
+  const valid = (v: unknown): v is KaijuMcpTeamLevel =>
+    typeof v === "string" && (KAIJU_MCP_TEAM_LEVELS as readonly string[]).includes(v);
+  const before = record[preRenameKey("kaiju_mcp.admin")];
+  if (valid(before)) return before;
+  const value = record[KAIJU_MCP_TEAM_SETTING];
+  return valid(value) ? value : KAIJU_MCP_TEAM_LEVEL_DEFAULT;
 }
 
 /** Site-wide (†): the connector registry (site admins, D6). */
@@ -162,7 +187,8 @@ export const connectors = pgTable(
      */
     templatesSkipped: text(),
     /**
-     * Built-in connector hosted by Kaiju (KOBE-618): `kobe`, or NULL for a registered remote server.
+     * Built-in connector hosted by Kaiju (KOBE-618): `kaiju` or `git`, or NULL for a registered
+     * remote server.
      * A built-in row has no credential, no pinned snapshot, and is skipped by the probe, pinning,
      * the periodic refresh and drift: its tools come from Kaiju's own catalog.
      */
@@ -214,12 +240,12 @@ export const connectors = pgTable(
       .where(sql`${t.builtin} IS NOT NULL`),
     check(
       "connectors_builtin",
-      sql`${t.builtin} IS NULL OR (((${t.builtin} = 'kobe' AND ${t.id} = '${sql.raw(KAIJU_BUILTIN_CONNECTOR_ID)}'::uuid) OR (${t.builtin} = 'git' AND ${t.id} = '${sql.raw(GIT_BUILTIN_CONNECTOR_ID)}'::uuid)) AND ${t.authKind} = 'none' AND ${t.credentialSource} = 'member' AND ${t.toolsHash} IS NULL AND ${t.toolsSnapshot} = '[]'::jsonb)`,
+      sql`${t.builtin} IS NULL OR (((${t.builtin} = 'kaiju' AND ${t.id} = '${sql.raw(KAIJU_BUILTIN_CONNECTOR_ID)}'::uuid) OR (${t.builtin} = 'git' AND ${t.id} = '${sql.raw(GIT_BUILTIN_CONNECTOR_ID)}'::uuid)) AND ${t.authKind} = 'none' AND ${t.credentialSource} = 'member' AND ${t.toolsHash} IS NULL AND ${t.toolsSnapshot} = '[]'::jsonb)`,
     ),
     // Only a built-in carries an internal URL, each its own, and a built-in carries nothing else.
     check(
       "connectors_builtin_url",
-      sql`CASE WHEN ${t.builtin} IS NULL THEN ${t.url} NOT IN ('${sql.raw(KAIJU_BUILTIN_CONNECTOR_URL)}', '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}') WHEN ${t.builtin} = 'kobe' THEN ${t.url} = '${sql.raw(KAIJU_BUILTIN_CONNECTOR_URL)}' WHEN ${t.builtin} = 'git' THEN ${t.url} = '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}' ELSE false END`,
+      sql`CASE WHEN ${t.builtin} IS NULL THEN ${t.url} NOT IN ('${sql.raw(KAIJU_BUILTIN_CONNECTOR_URL)}', '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}') WHEN ${t.builtin} = 'kaiju' THEN ${t.url} = '${sql.raw(KAIJU_BUILTIN_CONNECTOR_URL)}' WHEN ${t.builtin} = 'git' THEN ${t.url} = '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}' ELSE false END`,
     ),
     check(
       "connectors_oauth_client",

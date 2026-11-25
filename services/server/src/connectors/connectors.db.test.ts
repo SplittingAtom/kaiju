@@ -108,6 +108,27 @@ describe("create and read", () => {
     }
   });
 
+  it("refuses the built-in connectors' names, current and pre-rename (KOBE-826 review L1)", async () => {
+    for (const name of [
+      "kaiju",
+      "kaiju_git",
+      "kaiju-builtin",
+      "kobe",
+      "kobe-git",
+      "kobe_git_builtin",
+    ]) {
+      const res = await create({ name, url: "https://x.example/mcp" });
+      expect(res.status, name).toBe(409);
+      expect(res.json.code).toBe("name_reserved");
+      expect(res.json.message).toMatch(/built-in connectors/);
+    }
+    const mine = await create({ name: "kaiju-docs", url: "https://x.example/mcp" });
+    expect(mine.status, JSON.stringify(mine.json)).toBe(201);
+    const renamed = await root.patch(`${BASE}/${mine.json.connector.id}`, { name: "kobe" });
+    expect(renamed.status).toBe(409);
+    expect(renamed.json.code).toBe("name_reserved");
+  });
+
   it("validates fields", async () => {
     for (const bad of [
       { name: "Bad Name" },

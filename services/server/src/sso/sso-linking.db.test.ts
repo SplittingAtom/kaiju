@@ -18,7 +18,7 @@ import { SoftwareAuthenticator } from "../testing/webauthn.js";
  */
 const TENANT = "21111111-2222-4333-8444-555555555555";
 const ENTRA = `https://login.microsoftonline.com/${TENANT}/v2.0`;
-const KC = "https://kc-link.example.com/realms/kobe";
+const KC = "https://kc-link.example.com/realms/kaiju";
 const CORP_SECRET = "Corp~Secret.Value-0123456789abcdef";
 const KC_SECRET = "Kc~Secret.Value-0123456789abcdefgh";
 const LINK_COOKIE = "kaiju-sso-link";

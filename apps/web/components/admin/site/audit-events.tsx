@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../ui/console";
+import { renamedNote } from "../../../lib/admin/renamed-names";
 import { ErrorNotice } from "../error-notice";
 import { DateTime } from "../parts";
 import { useMutation } from "../use-resource";
@@ -49,16 +50,30 @@ export function plainValue(value: unknown): string {
   return JSON.stringify(value) ?? String(value);
 }
 
-function Details({ target }: { readonly target: Record<string, unknown> }) {
+/**
+ * An event's details. A name recorded before the rename (KOBE-826) is shown as recorded, with the
+ * name it has now.
+ */
+function Details({
+  target,
+  renamed,
+}: {
+  readonly target: Record<string, unknown>;
+  readonly renamed: Readonly<Record<string, string>> | undefined;
+}) {
   const entries = Object.entries(target);
   if (entries.length === 0) return <>{PLACEHOLDER}</>;
   return (
     <ul className="m-0 list-none p-0 text-sm">
-      {entries.map(([key, value]) => (
-        <li key={key} className="break-all">
-          <span className="text-console-muted">{key}:</span> {plainValue(value)}
-        </li>
-      ))}
+      {entries.map(([key, value]) => {
+        const note = renamedNote(value, renamed);
+        return (
+          <li key={key} className="break-all">
+            <span className="text-console-muted">{key}:</span> {plainValue(value)}
+            {note !== undefined && <span className="text-console-muted"> {note}</span>}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -184,7 +199,7 @@ export function AuditEventsTable({
                 <code className="break-all">{e.action}</code>
               </TableCell>
               <TableCell>
-                <Details target={e.target} />
+                <Details target={e.target} renamed={first.renamedToolSegments} />
               </TableCell>
               <TableCell>
                 <Client event={e} visible={clientDetailsVisible(e.at, piiHours, now)} />

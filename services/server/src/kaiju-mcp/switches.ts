@@ -3,7 +3,10 @@ import {
   KAIJU_MCP_TEAM_SETTING,
   parseKaijuMcpMode,
   parseKaijuMcpTeamLevel,
+  eq,
+  preRenameKey,
   siteSettings,
+  siteSettingValue,
   sql,
   withTeam,
   type KaijuDb,
@@ -20,15 +23,15 @@ import { KAIJU_ADMIN_TOOLS } from "./tools/index.js";
 
 /**
  * The Kaiju MCP switches as the consoles change them (KOBE-623, spec kobe-admin-mcp §6, KA5): the
- * site switch `kobe_mcp.mode` (Site console › Settings, `site.settings.manage`) and the team level
- * `teams.settings.kobe_mcp.admin` (Team console › Connectors, `team.connectors.manage`). Each
+ * site switch `kaiju_mcp.mode` (Site console › Settings, `site.settings.manage`) and the team level
+ * `teams.settings.kaiju_mcp.admin` (Team console › Connectors, `team.connectors.manage`). Each
  * change is audited; reads and the run/list/call checks use `access.ts`.
  */
 
-/** The `kobe` connector as the Team console shows it. */
+/** The `kaiju` connector as the Team console shows it. */
 export interface KaijuTeamConnectorView {
   readonly connector_id: string | null;
-  /** The built-in row's name (`kobe`, or `kobe-builtin`); null when it was never seeded. */
+  /** The built-in row's name (`kaiju`, or `kaiju-builtin`); null when it was never seeded. */
   readonly name: string | null;
   readonly mode: KaijuMcpMode;
   readonly level: KaijuMcpTeamLevel;
@@ -53,7 +56,7 @@ export async function readKaijuTeamConnector(
   const name = (await kaijuBuiltinName(tx)) ?? null;
   const switches = await loadKaijuSwitches(tx, teamId);
   const pi = (t: { readonly name: string }) =>
-    `mcp__${mcpServerSegment(name ?? "kobe")}__${t.name}`;
+    `mcp__${mcpServerSegment(name ?? "kaiju")}__${t.name}`;
   return {
     connector_id: name === null ? null : ((await builtinId(tx)) ?? null),
     name,
@@ -71,7 +74,7 @@ export async function readKaijuTeamConnector(
 
 async function builtinId(tx: Pick<KaijuTx, "execute">): Promise<string | undefined> {
   const res = await tx.execute<{ id: string }>(
-    sql`SELECT id FROM public.connectors WHERE builtin = 'kobe'`,
+    sql`SELECT id FROM public.connectors WHERE builtin = 'kaiju'`,
   );
   return res.rows[0]?.id;
 }
@@ -104,8 +107,8 @@ export async function setKaijuTeamLevel(
     if (from === level) return { ok: true, level } as const;
     await tx.execute(sql`
       UPDATE public.teams
-         SET settings = jsonb_set(${SETTINGS_OBJECT}, ${`{${KAIJU_MCP_TEAM_SETTING}}`}::text[],
-                                  to_jsonb(${level}::text))
+         SET settings = jsonb_set(${SETTINGS_OBJECT} - ${preRenameKey(KAIJU_MCP_TEAM_SETTING)},
+                                  ${`{${KAIJU_MCP_TEAM_SETTING}}`}::text[], to_jsonb(${level}::text))
        WHERE id = ${teamId}`);
     await recordAudit(tx, {
       action: "mcp.kobe.team_level_changed",
@@ -119,7 +122,7 @@ export async function setKaijuTeamLevel(
 /** The site switch (default `docs`). */
 export async function readKaijuMode(db: Pick<KaijuTx, "execute">): Promise<KaijuMcpMode> {
   const res = await db.execute<{ value: string }>(
-    sql`SELECT value FROM public.site_settings WHERE key = ${KAIJU_MCP_MODE_KEY}`,
+    sql`SELECT ${siteSettingValue(KAIJU_MCP_MODE_KEY)} AS value`,
   );
   return parseKaijuMcpMode(res.rows[0]?.value);
 }
@@ -131,8 +134,10 @@ export async function storeKaijuMode(tx: KaijuTx, mode: KaijuMcpMode): Promise<v
     .insert(siteSettings)
     .values({ key: KAIJU_MCP_MODE_KEY, value: mode })
     .onConflictDoUpdate({ target: siteSettings.key, set: { value: mode, updatedAt: new Date() } });
+  // The pre-rename key goes with it (one release, KOBE-826 L3): readers take it first.
+  await tx.delete(siteSettings).where(eq(siteSettings.key, preRenameKey(KAIJU_MCP_MODE_KEY)));
   await recordAudit(tx, {
     action: "site.settings.updated",
-    target: { setting: "kobe_mcp_mode", value: mode },
+    target: { setting: "kaiju_mcp_mode", value: mode },
   });
 }

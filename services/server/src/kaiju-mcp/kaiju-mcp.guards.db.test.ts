@@ -98,7 +98,11 @@ describe("no header or route on the public listener accepts a delegation (ac-6)"
       expect(res.status).toBe(401);
       expect(await roleOf(w.team, w.target.id)).toBe("member");
       // The Kaiju endpoints exist on the internal listener only.
-      for (const path of ["/internal/v1/mcp/kobe/calls", "/v1/internal/v1/mcp/kobe/calls"]) {
+      for (const path of [
+        "/internal/v1/mcp/kaiju/calls",
+        "/v1/internal/v1/mcp/kaiju/calls",
+        "/v1/internal/v1/mcp/kobe/calls",
+      ]) {
         const r = await fetch(`http://127.0.0.1:${port}${path}`, { method: "POST" });
         // 403: the CSRF origin check answers first for a POST without the site's origin.
         expect([401, 403, 404], path).toContain(r.status);
@@ -306,7 +310,7 @@ describe("review fixes (KOBE-619)", () => {
   it("L5: concurrent writes cannot both pass the per-person limit", async () => {
     const w = await world();
     const s = await sandboxFor(w.team, w.admin);
-    await setSite("kobe_mcp.writes_per_hour", "1");
+    await setSite("kaiju_mcp.writes_per_hour", "1");
     const a = { user_id: w.target.id, from_role: "member", to_role: "contributor" };
     const b = { user_id: w.member.id, from_role: "member", to_role: "contributor" };
     await approve(s, "team_members_set_role", a);

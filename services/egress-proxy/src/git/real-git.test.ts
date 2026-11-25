@@ -47,7 +47,7 @@ describe.skipIf(backend === undefined)(
     let env: NodeJS.ProcessEnv = {};
 
     beforeAll(async () => {
-      root = mkdtempSync(path.join(process.env.TMPDIR ?? tmpdir(), "kobe-git-e2e-"));
+      root = mkdtempSync(path.join(process.env.TMPDIR ?? tmpdir(), "kaiju-git-e2e-"));
       const repos = path.join(root, "repos");
       mkdirSync(path.join(repos, "acme"), { recursive: true });
       const bare = path.join(repos, "acme", "app.git");

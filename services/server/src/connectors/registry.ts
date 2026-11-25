@@ -10,6 +10,7 @@ import {
   connectors,
   eq,
   isNull,
+  isReservedConnectorName,
   sql,
   type KaijuDb,
   type KaijuTx,
@@ -153,7 +154,7 @@ const columns = {
 } as const;
 
 // The built-in Kaiju connector (KOBE-619) is not a registered server: the registry never lists,
-// edits, probes, pins or removes it (the site switch `kobe_mcp.mode` governs it).
+// edits, probes, pins or removes it (the site switch `kaiju_mcp.mode` governs it).
 const live = and(isNull(connectors.deletedAt), isNull(connectors.builtin));
 
 export async function listConnectors(db: KaijuDb): Promise<ConnectorView[]> {
@@ -168,7 +169,7 @@ export async function getConnector(db: KaijuDb, id: string): Promise<ConnectorVi
   return row;
 }
 
-export type NameConflict = "name_taken" | "name_removed";
+export type NameConflict = "name_taken" | "name_removed" | "name_reserved";
 
 /** The conflicting row's state, for a precise message (a removed connector still holds its name). */
 async function nameConflict(
@@ -176,6 +177,8 @@ async function nameConflict(
   name: string,
   exceptId?: string,
 ): Promise<NameConflict | undefined> {
+  // KOBE-826 review L1/L2: the built-ins' names, current and pre-rename, are theirs alone.
+  if (isReservedConnectorName(name)) return "name_reserved";
   const rows = await tx
     .select({ id: connectors.id, deletedAt: connectors.deletedAt })
     .from(connectors)

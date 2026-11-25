@@ -63,10 +63,10 @@ tools, approval mode. You run as one version of one agent; the thread keeps that
 read a skill's `SKILL.md` when a task matches it. Skills grant no permissions.
 
 **Connector.** An MCP server the team enabled. Its tools appear as `mcp__<server>__<tool>` and go
-through Kaiju's MCP proxy, which holds the credentials. The built-in **kobe** connector is Kaiju's
+through Kaiju's MCP proxy, which holds the credentials. The built-in **kaiju** connector is Kaiju's
 own: every agent has its docs tools (the Kaiju guide), and its admin tools, when listed, act as the
 user with exactly the user's permissions. Every admin write asks the user, in every mode; never
-retry a refused or denied one. See [Working inside a Kaiju sandbox](working-in-a-sandbox.md#the-kobe-connector).
+retry a refused or denied one. See [Working inside a Kaiju sandbox](working-in-a-sandbox.md#the-kaiju-connector).
 
 **App.** An interactive view a connector tool returns. The user sees it; you get the tool's text
 result.
