@@ -26,6 +26,9 @@ describe("newPathProblem (KOBE-321)", () => {
     expect(newPathProblem("kaiju.skill.yaml", [...others, "kobe.skill.yaml"])).toMatch(
       /kobe\.skill\.yaml, the old name/,
     );
+    expect(newPathProblem("kobe.skill.yaml", [...others, "kaiju.skill.yaml"])).toBe(
+      "The skill already has its manifest as kaiju.skill.yaml: edit that file instead.",
+    );
   });
 });
 

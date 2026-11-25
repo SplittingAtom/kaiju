@@ -64,7 +64,14 @@
 - **Edge accepted:** a package stored before this release with an ordinary payload file named
   `kaiju.skill.yaml` (the name meant nothing then) is now read as a manifest; with
   `kobe.skill.yaml` beside it, export refuses it as legacy `two_manifests`. Hash-check rows are
-  written once, so existing rows don't move.
+  written once, so existing rows don't move. Such a version (with or without `kobe.skill.yaml`
+  beside it) also recomputes to a different runtime hash now, so the git mirror skips it (its
+  stored hashes no longer match, `mirror/runner.ts`), and a draft or fork of it drops that file
+  from the runtime. Unlikely in practice and handled without a crash (review LOW-3).
+- **Review fixes (round 1):** the `two_manifests` text names the file the draft actually holds,
+  in both directions, server and web, with tests (LOW-1); the KOBE-310 history in
+  `docs/skill-package.md` names the stored manifest as `kobe.skill.yaml` (LOW-2). Info for RN-20:
+  the Site catalog version panel labels every manifest `kaiju.skill.yaml`, built-ins included.
 
 ## Allowlist
 

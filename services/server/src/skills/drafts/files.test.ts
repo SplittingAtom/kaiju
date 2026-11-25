@@ -44,8 +44,9 @@ describe("the manifest's two names in a draft (KOBE-825)", () => {
   it("refuses adding one name while the draft has the other, saying which to keep", () => {
     const others = ["SKILL.md", "kobe.skill.yaml"];
     expect(draftPathProblem("kaiju.skill.yaml", others)).toMatch(/kobe\.skill\.yaml, the old name/);
-    expect(draftPathProblem("kobe.skill.yaml", ["SKILL.md", "kaiju.skill.yaml"])).toMatch(
-      /old name/,
+    const back = draftPathProblem("kobe.skill.yaml", ["SKILL.md", "kaiju.skill.yaml"]);
+    expect(back).toBe(
+      "the draft already has its manifest as kaiju.skill.yaml: edit that file instead",
     );
     expect(draftPathProblem("kobe.skill.yaml", others)).toBeNull();
     expect(draftPathProblem("kaiju.skill.yaml", ["SKILL.md"])).toBeNull();

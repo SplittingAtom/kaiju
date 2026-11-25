@@ -71,7 +71,7 @@ runtimeHash`. The resolver and the Pi `--skill` directory are unchanged.
 Before KOBE-310 the server hashes the whole upload. For a bundle without the reserved root names
 the stored `content_hash` already is its runtime hash (the server test in
 `services/server/src/skills/package-hash.test.ts` proves the bytes are equal). Two kinds of stored
-bundle are different: one that holds `evals/` or `kaiju.skill.yaml` at its root has a
+bundle are different: one that holds `evals/` or the manifest (`kobe.skill.yaml` then) at its root has a
 `content_hash` that is **not** its runtime hash (its sandboxes receive those files today), and one
 that today's path rules refuse (a root `provenance.json`, invisible or bidi characters, a
 file/folder clash, a case variant such as `Evals/`) has no runtime hash at all. KOBE-310 therefore:
@@ -81,13 +81,13 @@ file/folder clash, a case variant such as `Evals/`) has no runtime hash at all. 
    runtime zips, so `content_hash = runtimeHash` for every new version.
 2. **Recomputes every stored hash once** (on upgrade, in the background), from the stored zip:
    - valid under today's rules and equal: nothing to do;
-   - valid but different (`evals/`, `kaiju.skill.yaml`): an **alias** from the stored hash to the
+   - valid but different (`evals/`, the manifest under either name): an **alias** from the stored hash to the
      runtime hash;
    - refused by today's rules: **legacy**. Its stored hash stays its only identity (no alias);
      it keeps running exactly as before, but is never promotable or exportable until re-saved,
      and the re-save goes through today's rules and gets a runtime hash. (A root
      `provenance.json` is legacy, never hashed with `kaijuProvenance`.)
-   - a stored `kaiju.skill.yaml` (never read before KOBE-310) that is invalid or names another
+   - a stored manifest (`kobe.skill.yaml`, never read before KOBE-310) that is invalid or names another
      skill, or an invalid SKILL.md, also makes it legacy.
 
    Every checked hash is recorded with its outcome, so the recompute is **idempotent and

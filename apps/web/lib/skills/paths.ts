@@ -1,4 +1,9 @@
-import { checkPackagePaths, type PackageProblemCode } from "@kaiju/protocol";
+import {
+  checkPackagePaths,
+  LEGACY_MANIFEST_PATH,
+  MANIFEST_PATH,
+  type PackageProblemCode,
+} from "@kaiju/protocol";
 
 /**
  * A new Workbench file's path, checked in the browser with the package contract's own validator
@@ -20,8 +25,8 @@ const MESSAGES: Readonly<Record<PackageProblemCode, string>> = {
     "Only SKILL.md, evals/ and kaiju.skill.yaml (or kobe.skill.yaml, its old name) are special: spell them exactly so.",
   reserved_directory: "evals is a folder: put files inside it.",
   provenance_not_allowed: "Kaiju writes provenance.json itself.",
-  two_manifests:
-    "The skill already has its manifest as kobe.skill.yaml, the old name: keep that file, or delete it first.",
+  // Replaced by the text naming the file the draft holds (twoManifestsText).
+  two_manifests: "",
   skill_md_missing: "",
 };
 
@@ -33,7 +38,15 @@ export function newPathProblem(path: string, others: readonly string[]): string 
       p.problem !== "skill_md_missing" &&
       (p.path === path || p.problem === "file_and_directory" || p.problem === "two_manifests"),
   );
+  if (problem?.problem === "two_manifests") return twoManifestsText(path);
   return problem ? MESSAGES[problem.problem] : null;
+}
+
+/** Why a draft can't hold both manifest names (KOBE-825), naming the one it already has. */
+function twoManifestsText(written: string): string {
+  return written === LEGACY_MANIFEST_PATH
+    ? `The skill already has its manifest as ${MANIFEST_PATH}: edit that file instead.`
+    : `The skill already has its manifest as ${LEGACY_MANIFEST_PATH}, the old name: keep that file, or delete it first.`;
 }
 
 /** A typed folder name as a path: trimmed, without one trailing / (KOBE-478). */
