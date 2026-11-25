@@ -23,8 +23,9 @@ system setting again.
 Site admins set the look for everyone, in the site console's **Appearance** page (under
 **System**):
 
-- **Site name** (shown in the bar, the browser tab and sign-in), with the option to **Show the name
-  next to the logo**;
+- **Site name** (shown in the bar, the browser tab and sign-in, and in the subject and text of
+  every email the site sends, such as invitations, password resets and notices), with the option
+  to **Show the name next to the logo**. Left unset, it is "Kaiju";
 - **Logo**, **Dark logo** and **Favicon**; a logo can **take the theme colour**;
 - **Style**: one of the presets **Default**, **Slate**, **Forest**, **Plum**, **Ember**, **Tokyo
   Nights** and **Catalyst**, or **Custom** (an accent colour, **Corners** and a **Typeface**).

@@ -3,6 +3,7 @@ import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { Mailer } from "../mail/mailer.js";
+import { readMailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 import { lockSkillInstall } from "./default-target.js";
 
@@ -195,15 +196,16 @@ export async function notifyTeamAdmins(
        WHERE m.team_id = ${teamId} AND m.role = 'team_admin' AND u.deactivated_at IS NULL`);
     return { team: team.rows[0], admins: admins.rows };
   });
-  if (!found.team) return;
+  if (!found.team || found.admins.length === 0) return;
+  const app = await readMailAppName(deps.db);
   const team = oneLine(found.team.name, 64);
   const skill = oneLine(request.skill, 64);
   // The display name is the member's own free text: quoted, with their address (review L5).
   const who = `"${oneLine(found.team.requester, 64).replaceAll('"', "'")}" <${found.team.email}>, a member of the ${team} team,`;
   const text = [
     request.installed
-      ? `${who} asked for a change to the team's install of the catalog skill ${skill} (now ${oneLine(request.installed, 32)}) on Kaiju.`
-      : `${who} asked to install the catalog skill ${skill} for the team on Kaiju.`,
+      ? `${who} asked for a change to the team's install of the catalog skill ${skill} (now ${oneLine(request.installed, 32)}) on ${app}.`
+      : `${who} asked to install the catalog skill ${skill} for the team on ${app}.`,
     "",
     `Install it, or dismiss the request, in your team console: ${deps.publicUrl}${CONSOLE_PATHS.teamSkills}`,
   ].join("\n");

@@ -16,6 +16,7 @@ import { activeSiteAdmins } from "../break-glass/store.js";
 import { reachesTeam, NOTIFY_MAX_ATTEMPTS, type Recipient } from "../break-glass/outbox.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
+import { readMailAppName } from "../mail/app-name.js";
 import { siteGrantMessage } from "./notify.js";
 import { getSiteGrant, type SiteGrantDetail, type SiteGrantRow } from "./store.js";
 
@@ -186,6 +187,8 @@ export async function deliverSiteBreakGlassNotifications(
   let sent = 0;
   try {
     const rows = await claim(db, options.grantId);
+    // Read once per batch, and only when something is due (KOBE-834).
+    const appName = rows.length > 0 ? await readMailAppName(db) : "";
     const details = new Map<string, SiteGrantDetail | undefined>();
     for (const row of rows) {
       if (!details.has(row.grant_id)) {
@@ -203,6 +206,7 @@ export async function deliverSiteBreakGlassNotifications(
       const message = siteGrantMessage(deps, detail, row.event, to, {
         role: row.recipient_role,
         wasActive: row.was_active,
+        appName,
       });
       try {
         await deps.mailer.send(message);

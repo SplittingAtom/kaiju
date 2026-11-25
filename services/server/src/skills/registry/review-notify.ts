@@ -2,6 +2,7 @@ import { eq, users, type KaijuDb } from "@kaiju/db";
 import { logger } from "../../logger.js";
 import { CONSOLE_PATHS } from "../../mail/console-paths.js";
 import type { Mailer } from "../../mail/mailer.js";
+import { readMailAppName } from "../../mail/app-name.js";
 import { oneLine } from "../../mail/messages.js";
 
 /**
@@ -41,7 +42,8 @@ export async function notifySubmitter(deps: ReviewNotifyDeps, change: StateChang
     .from(users)
     .where(eq(users.id, change.submittedBy));
   if (!to || to.deactivatedAt) return;
-  const subject = `Kaiju: ${oneLine(change.name, 64)} ${change.semver} ${words}`;
+  const app = await readMailAppName(deps.db);
+  const subject = `${app}: ${oneLine(change.name, 64)} ${change.semver} ${words}`;
   const text = [
     `Your submission ${oneLine(change.name, 64)} ${change.semver} to the Site Skills Registry ${words}.`,
     ...(change.note ? ["", "The reviewer wrote:", oneLine(change.note, 1000)] : []),

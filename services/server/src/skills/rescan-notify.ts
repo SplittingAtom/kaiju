@@ -19,6 +19,7 @@ import {
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { Mailer, MailMessage } from "../mail/mailer.js";
+import { mailAppName, readMailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 
 /**
@@ -96,7 +97,10 @@ export function suspensionMessage(
   items: readonly SuspendedVersion[],
   teamNames: ReadonlyMap<string, string>,
   to: string,
+  /** The Site's app name, ready for mail (`readMailAppName`, KOBE-834). */
+  appName: string,
 ): MailMessage {
+  const app = mailAppName(appName);
   const lines = items.slice(0, MAX_LINES).map((i) => {
     const where = i.teamId ? ` in ${oneLine(teamNames.get(i.teamId) ?? "a team")}` : "";
     return `  - ${oneLine(i.slug)} (version ${i.version})${where}`;
@@ -104,7 +108,7 @@ export function suspensionMessage(
   const more = items.length - lines.length;
   return {
     to,
-    subject: "Kaiju: skills suspended after a scanner update",
+    subject: `${app}: skills suspended after a scanner update`,
     text: [
       "A scanner rule update rescanned these skill versions and now blocks them, or could not",
       "finish rescanning them. They are suspended: runs leave them out until a reviewer decides",
@@ -139,11 +143,12 @@ export async function notifySuspensions(
           .from(teams)
           .where(inArray(teams.id, teamIds));
   const teamNames = new Map(names.map((t) => [t.id, t.name]));
+  const app = await readMailAppName(deps.db);
   let sent = 0;
   for (const person of people) {
     try {
       const mine = byUser.get(person.id) ?? [];
-      await deps.mailer.send(suspensionMessage(deps.publicUrl, mine, teamNames, person.email));
+      await deps.mailer.send(suspensionMessage(deps.publicUrl, mine, teamNames, person.email, app));
       sent += 1;
     } catch (err) {
       logger.warn({ err, userId: person.id }, "skills: rescan suspension email failed");

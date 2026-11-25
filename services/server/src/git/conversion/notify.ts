@@ -2,6 +2,7 @@ import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { readAppName } from "../../branding/settings.js";
 import type { MailMessage, Mailer } from "../../mail/mailer.js";
+import { mailAppName } from "../../mail/app-name.js";
 import { oneLine } from "../../mail/messages.js";
 import { CONSOLE_PATHS } from "../../mail/console-paths.js";
 import { FAILURE_MESSAGES } from "./refusals.js";
@@ -35,7 +36,7 @@ export function conversionMessage(input: {
   const project = oneLine(input.projectName);
   const repo = oneLine(`${row.organization}/${row.repositoryName}`, 200);
   const host = new URL(row.baseUrl).host;
-  const app = oneLine(input.appName);
+  const app = mailAppName(input.appName);
   if (row.status === "completed") {
     return {
       to: input.to,

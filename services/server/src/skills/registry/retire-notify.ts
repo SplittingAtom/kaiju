@@ -2,6 +2,7 @@ import { scanTeams, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger } from "../../logger.js";
 import { CONSOLE_PATHS } from "../../mail/console-paths.js";
 import type { Mailer } from "../../mail/mailer.js";
+import { readMailAppName } from "../../mail/app-name.js";
 import { oneLine } from "../../mail/messages.js";
 import { pickCatalogVersion, type CatalogVersion } from "../../resolver/catalog-pins.js";
 import type { Retired } from "./retire.js";
@@ -198,7 +199,9 @@ export async function emailRetirement(
   emails: readonly string[],
 ): Promise<void> {
   if (r.act !== "withdraw" && r.act !== "revoke" && r.act !== "unrevoke") return;
+  if (emails.length === 0) return;
   const what = `${oneLine(r.name, 64)} ${r.semver ?? ""}`.trim();
+  const app = await readMailAppName(deps.db);
   const text = [
     `The catalog skill ${what} ${WORDS[r.act]}.`,
     "",
@@ -208,7 +211,7 @@ export async function emailRetirement(
     try {
       await deps.mailer.send({
         to,
-        subject: `Kaiju: ${what} ${SUBJECT[r.act]}`,
+        subject: `${app}: ${what} ${SUBJECT[r.act]}`,
         text,
       });
     } catch (err) {

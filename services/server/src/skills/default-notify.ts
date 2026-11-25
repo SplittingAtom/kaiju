@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, teamMembers, users, withTeam, type KaijuDb } 
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { Mailer, MailMessage } from "../mail/mailer.js";
+import { mailAppName, readMailAppName } from "../mail/app-name.js";
 import { oneLine } from "../mail/messages.js";
 
 /**
@@ -25,7 +26,10 @@ export function defaultNoticeMessage(
   teamName: string,
   notice: DefaultNotice,
   to: string,
+  /** The Site's app name, ready for mail (`readMailAppName`, KOBE-834). */
+  appName: string,
 ): MailMessage {
+  const app = mailAppName(appName);
   const name = oneLine(skill);
   const team = oneLine(teamName);
   const body =
@@ -49,8 +53,8 @@ export function defaultNoticeMessage(
     to,
     subject:
       notice.kind === "removed"
-        ? `Kaiju: ${name} is no longer a default skill`
-        : `Kaiju: ${name} is now a default skill`,
+        ? `${app}: ${name} is no longer a default skill`
+        : `${app}: ${name} is now a default skill`,
     text: [...body, "", `Team skills: ${publicUrl}${CONSOLE_PATHS.teamSkills}`].join("\n"),
   };
 }
@@ -81,11 +85,12 @@ export async function notifyTeamAdmins(
         isNull(users.deactivatedAt),
       ),
     );
+  const app = await readMailAppName(deps.db);
   let sent = 0;
   for (const person of people) {
     try {
       await deps.mailer.send(
-        defaultNoticeMessage(deps.publicUrl, skill, team.name, notice, person.email),
+        defaultNoticeMessage(deps.publicUrl, skill, team.name, notice, person.email, app),
       );
       sent += 1;
     } catch (err) {
