@@ -966,9 +966,7 @@
       "site_attempt": false,
       "outcome": "ok",
       "schema_valid_first": true,
-      "missed": [
-        "Likes a friendly, informal tone for newsletters."
-      ],
+      "missed": ["Likes a friendly, informal tone for newsletters."],
       "predicted": [],
       "dropped": {
         "evidence_not_found": 1
