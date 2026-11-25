@@ -8,7 +8,7 @@ import argparse
 import sys
 from pathlib import Path
 
-import kobe_rules as k
+import kaiju_rules as k
 
 TEMPLATE = """---
 name: {name}

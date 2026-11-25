@@ -1,4 +1,4 @@
-"""Validate a skill folder and pack it into a zip Kobe accepts.
+"""Validate a skill folder and pack it into a zip Kaiju accepts.
 
 python package.py SKILL_DIR [--out /workspace/NAME.zip]
 SKILL.md sits at the zip's root; evals/, caches and hidden files are left out. Refuses to package
@@ -10,7 +10,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-import kobe_rules as k
+import kaiju_rules as k
 from validate import validate
 
 FIXED_TIME = (2026, 1, 1, 0, 0, 0)
@@ -30,7 +30,7 @@ def print_how_to_add(root, files, out):
     print(f"\nwrote {out} ({out.stat().st_size} bytes, {len(files)} files)")
     print(f"  Name:         {fields.get('name', '')}")
     print(f"  Description:  {fields.get('description', '')}")
-    print("\nTo work on it in Kobe, save the folder with the save_skill_draft tool (or Save skill")
+    print("\nTo work on it in Kaiju, save the folder with the save_skill_draft tool (or Save skill")
     print("to Workbench in this conversation); the zip is a copy, or for the Workbench's upload start.")
 
 
@@ -56,7 +56,7 @@ def main():
         return 1
     write_zip(root, files, out)
     if out.stat().st_size > k.MAX_BUNDLE_BYTES:
-        print(f"ERROR: {out} is over {k.MAX_BUNDLE_BYTES} bytes; Kobe will refuse it.")
+        print(f"ERROR: {out} is over {k.MAX_BUNDLE_BYTES} bytes; Kaiju will refuse it.")
         return 1
     print_how_to_add(root, files, out)
     return 0

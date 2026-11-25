@@ -88,7 +88,7 @@ function contextMessage(input: ExtractorPromptInput, nonce: string): string {
 function transcriptMessage(input: ExtractorPromptInput, nonce: string): string {
   return [
     `The conversation, oldest entry first. Each entry starts with a line <<<entry ${nonce} id=... speaker=...>>> and runs to the next such line or to <<<end ${nonce}>>>.`,
-    "Speakers: person (the person teaching Kobe), assistant (Kobe's replies), tool (tool output), summary (a model-written summary of earlier turns).",
+    "Speakers: person (the person teaching Kaiju), assistant (Kaiju's replies), tool (tool output), summary (a model-written summary of earlier turns).",
     ...input.transcript.flatMap((e) => [
       `<<<entry ${nonce} id=${e.entry_id} speaker=${e.speaker}>>>`,
       e.text,
