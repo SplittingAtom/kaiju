@@ -64,6 +64,7 @@ import {
   ScanIcon,
   SearchIcon,
   ServerCogIcon,
+  SettingsIcon,
   Share2Icon,
   ShrinkIcon,
   SlidersHorizontalIcon,
@@ -350,6 +351,9 @@ const LIST = [
   // Under 768 px the rail is a drawer the bar opens (CE8, KOBE-201).
   { id: "open-rail", name: "Show the workspace", icon: PanelLeftOpenIcon, scope: "rail" },
   { id: "refresh-files", name: "Refresh files", icon: RefreshCwIcon, scope: "rail" },
+  // The gear beside the Files panel's Projects heading (KOBE-844): the projects page. Its href is
+  // passed where it renders, so it stays out of the palette (the bar's areas are listed there).
+  { id: "manage-projects", name: "Manage projects", icon: SettingsIcon, scope: "rail" },
   // A thread row's ⋯ menu button (KOBE-292; the call site names the thread: "Actions for Budget").
   { id: "thread-row-actions", name: "Thread actions", icon: EllipsisIcon, scope: "rail" },
   // Trash rows keep their two icons.

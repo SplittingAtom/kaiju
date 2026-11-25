@@ -204,7 +204,7 @@ test("owner: draft in a project, switch, remove, add back, send; title, Files li
     ).toHaveCount(0);
     await expect(rowOf(b.name)).toHaveAccessibleDescription(/Not in this conversation/);
     await expect(rowOf(b.name).locator("span.text-muted-foreground").first()).toHaveText(b.name);
-    await expect(filesSection(page).getByRole("link", { name: "Manage projects →" })).toBeVisible();
+    await expect(filesSection(page).getByRole("link", { name: "Manage projects" })).toBeVisible();
 
     // FP4: the greyed project expands read-only, from its head, without mounting.
     await rowOf(b.name).click();

@@ -7,9 +7,8 @@
  * member's own files: uploads and the free area). Project names, roles and checkouts come from
  * the chat's {@link useWorkspaceProjects}; without it a project shows by its slug, read-only.
  */
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FolderKanbanIcon, GitBranchIcon, RefreshCwIcon, VaultIcon } from "lucide-react";
+import { FolderKanbanIcon, GitBranchIcon, RefreshCwIcon } from "lucide-react";
 import type { FileEntry } from "../../lib/files/api";
 import { isWithin, splitProjectRows, visibleRows } from "../../lib/files/tree";
 import {
@@ -271,7 +270,6 @@ export function WorkspaceHeader({
 }) {
   return (
     <div className="flex h-6.5 items-center gap-1 ps-0.5 text-xs font-medium">
-      <VaultIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
       <h4 className="m-0 min-w-0 flex-1 truncate text-xs font-medium" title={name || undefined}>
         {name ? `Workspace: ${name}` : "Workspace"}
       </h4>
@@ -294,15 +292,23 @@ export function WorkspaceHeader({
   );
 }
 
-/** The Projects row, with the way to the projects page, where they are made and managed (FP1). */
+/**
+ * The Projects row, with the way to the projects page, where they are made and managed (FP1):
+ * since KOBE-844 a gear icon (Manage projects) right of the heading.
+ */
 export function ProjectsHeader() {
   return (
     <div className="flex h-6.5 items-center gap-1 ps-0.5 text-xs font-medium">
       <FolderKanbanIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">Projects</span>
-      <Link href="/me/projects" className="text-muted-foreground shrink-0 font-normal underline">
-        Manage projects →
-      </Link>
+      <span className="min-w-0 truncate">Projects</span>
+      <IconAction
+        command="manage-projects"
+        href="/me/projects"
+        size="sm"
+        side="right"
+        variant="ghost"
+        className="text-muted-foreground shrink-0"
+      />
     </div>
   );
 }
