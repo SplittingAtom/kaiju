@@ -216,6 +216,7 @@ packages/protocol/src/workspace-paths.ts packages/protocol/src/sandbox-wire/fram
 apps/web/lib/chat/entries.ts apps/web/lib/chat/tree-nodes.ts services/server/src/runs/run-prompt-pi.ts services/server/src/runs/run-prompt-pi.test.ts services/sandbox-agent/src/kaiju-models.model-change.real-pi.test.ts docs/install.md /\bkobe\.(?:branch|app_card|skipped_actions)\b/
 docs/guide/whats-new.md /(?<=earlier ones stay in `)kobe-moved\/(?=`)|(?<=provider id `)kobe(?=`)/
 docs/install.md /(?<=provider id `)kobe(?=`)/
+services/sandbox-agent/src/testing/redirect-plants.ts /(?<=sessions from before the rename record `)kobe(?=\/<model>`)/
 services/sandbox-agent/src/kaiju-models/protocol.ts services/sandbox-agent/src/kaiju-models/register.ts services/server/src/runs/run-prompt-pi.ts services/server/src/runs/run-prompt-pi.test.ts services/sandbox-agent/src/kaiju-models.model-change.real-pi.test.ts /(?<=[`"'])kobe(?=[`"'])|\bprovider kobe\b|\bkobe-provider\b/
 
 == permanent: The model-error prefix `kobe.model_error:` of sandboxes still on the image from before the rename, read next to the new one so a run on such a sandbox during an upgrade fails with its real code (KOBE-827); removed with the one-release fallbacks in KOBE-754
