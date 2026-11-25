@@ -19,7 +19,7 @@ import { useSyncExternalStore } from "react";
 import { kindLabel } from "../../lib/apps/app-items";
 import { useChatSession } from "../chat/kaiju-runtime";
 
-/** The icon per `io.kobe/item-kind` (KOBE-490); anything else is generic. */
+/** The icon per `io.kaiju/item-kind` (KOBE-490); anything else is generic. */
 const ICONS: Readonly<Record<string, LucideIcon>> = {
   catalog: LibraryIcon,
   namespace: FolderTreeIcon,

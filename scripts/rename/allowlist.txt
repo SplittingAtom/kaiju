@@ -295,10 +295,6 @@ services/server/src/sandbox/constants.ts /(?<=the `)kobe(?=` user)/
 images/sandbox/Dockerfile /\bkobe:kobe\b|(?<=`)kobe(?=` \(1000\))|(?<=group `)kobe(?=` \(1000\))/
 e2e/run/42-model-gateway-run.sh /(?<=dir=)kobe(?=:kobe-pi-)/
 
-== RN-16 (KOBE-829): MCP Apps names shared with external app servers (the `_meta` key, the bridge's notification methods and host name): new names, the old ones still accepted (owner decision 2026-11-24, was Q6)
-** /\bio\.kobe\/[\w-]*/
-** /\bkobe\/notifications\/[\w${}-]*/
-
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area
 # triages them: narrows the pattern, renames, or moves an entry to another group.

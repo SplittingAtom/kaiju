@@ -59,7 +59,7 @@ function mount(placement: "inline" | "rail" | "expanded" = "rail") {
     act(() => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { jsonrpc: "2.0", method: `kobe/notifications/${method}`, params },
+          data: { jsonrpc: "2.0", method: `kaiju/notifications/${method}`, params },
           source: child,
           origin: "null",
         }),
