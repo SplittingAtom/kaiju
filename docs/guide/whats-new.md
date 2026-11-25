@@ -57,6 +57,16 @@ The sandbox's home folder is now `/home/kaiju` (it was `/home/kobe`) and its Uni
 files in `/workspace` keep their owners. `/home/kobe` still leads to the home folder, so paths
 written before the upgrade, such as a virtual environment's or a tool's settings, keep working.
 
+The built-in agent is now **Kaiju** (it was **Kobe**). The upgrade publishes it as a new version
+under the new name and prompt, with the same agent behind it: conversations, schedules, team
+defaults, links to it and copies members made of it keep working, and earlier versions stay in
+its history. If a site admin had customized it, it keeps the name and instructions they gave it,
+and its page in the Site console says a newer repository version is available, with **Compare**
+and **Reset to repository**. Kaiju's
+own catalog skills now show the publisher `kaiju` in the API and in skill provenance (it was
+`kobe`); the audit log keeps the old value in events from before the upgrade and shows today's
+next to it.
+
 For developers of MCP Apps: Kaiju's own names for apps are now `io.kaiju/item-kind` and
 `kaiju/notifications/drag-*`, and `ui/initialize` names the host `kaiju`. Apps that use the old
 names keep working with no change; they will stop being accepted in a later release. See

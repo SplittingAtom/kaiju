@@ -44,8 +44,8 @@ const wireRepo = (over: Record<string, unknown> = {}) => ({
   connection_id: "c-1",
   provider: "github",
   base_url: "https://github.com",
-  full_name: "acme/kobe-ops",
-  web_url: "https://github.com/acme/kobe-ops",
+  full_name: "acme/kaiju-ops",
+  web_url: "https://github.com/acme/kaiju-ops",
   default_branch: "main",
   host_state: "active",
   read_only: false,
@@ -163,13 +163,15 @@ describe("a Repo among the projects (ac-1, G19)", () => {
   it("has the git icon, host and repository, the branch and ahead/behind", async () => {
     mount();
     const ops = await row("Ops plan");
-    await waitFor(() => expect(ops.getAttribute("title")).toBe("ops · github.com · acme/kobe-ops"));
+    await waitFor(() =>
+      expect(ops.getAttribute("title")).toBe("ops · github.com · acme/kaiju-ops"),
+    );
     expect(ops.querySelector("svg.lucide-git-branch")).not.toBeNull();
     expect(ops.textContent).toContain("fix-totals");
     expect(ops.textContent).toContain("↑2 ↓1");
     const described = document.getElementById(ops.getAttribute("aria-describedby") ?? "");
     expect(described?.textContent).toMatch(
-      /^Repo, Not in this conversation, github\.com · acme\/kobe-ops, .*branch fix-totals, 2 ahead, 1 behind/,
+      /^Repo, Not in this conversation, github\.com · acme\/kaiju-ops, .*branch fix-totals, 2 ahead, 1 behind/,
     );
     // An ordinary project keeps the folder.
     const budget = await row("Budget plan");
@@ -185,7 +187,7 @@ describe("a Repo among the projects (ac-1, G19)", () => {
     const { user, menu } = await openMenu("Ops plan");
     await user.click(within(menu).getByRole("menuitem", { name: "Open on github.com" }));
     expect(open).toHaveBeenCalledWith(
-      "https://github.com/acme/kobe-ops",
+      "https://github.com/acme/kaiju-ops",
       "_blank",
       "noopener,noreferrer",
     );
@@ -194,7 +196,7 @@ describe("a Repo among the projects (ac-1, G19)", () => {
   it("offers no host link when the URL is not on the connection's host", async () => {
     routes["GET /v1/projects/p-ops/repo"] = [
       200,
-      { repo: wireRepo({ web_url: "https://evil.example/acme/kobe-ops" }) },
+      { repo: wireRepo({ web_url: "https://evil.example/acme/kaiju-ops" }) },
     ];
     mount();
     await waitFor(async () =>
@@ -220,7 +222,7 @@ describe("Repo details… (ac-1, G17, G20)", () => {
     const { user, menu } = await openMenu("Ops plan");
     await user.click(within(menu).getByRole("menuitem", { name: "Repo details…" }));
     const dialog = await screen.findByRole("dialog", { name: "Ops plan: Repo" });
-    expect(within(dialog).getByText("github.com · acme/kobe-ops")).toBeTruthy();
+    expect(within(dialog).getByText("github.com · acme/kaiju-ops")).toBeTruthy();
     const link = within(dialog).getByRole("link", { name: "Open on github.com" });
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
     expect(link.getAttribute("target")).toBe("_blank");
@@ -286,14 +288,14 @@ describe("Repo details… (ac-1, G17, G20)", () => {
     await user.click(within(dialog).getByRole("button", { name: "Relink…" }));
     const name = within(dialog).getByLabelText("Repository name");
     await user.clear(name);
-    await user.type(name, "kobe-ops-2");
+    await user.type(name, "kaiju-ops-2");
     await user.click(within(dialog).getByRole("button", { name: "Relink" }));
     expect((await within(dialog).findByRole("alert")).textContent).toBe(
       "That repository is not in the organization.",
     );
     expect(calls.find((c) => c.url.endsWith("/repo/relink"))?.body).toEqual({
       connection_id: "c-1",
-      repository: "kobe-ops-2",
+      repository: "kaiju-ops-2",
     });
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await user.click(within(dialog).getByRole("button", { name: "Detach…" }));

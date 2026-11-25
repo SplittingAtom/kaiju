@@ -248,7 +248,9 @@ export const SKILLS_EVENTS = {
     publishedBy: id,
     verdict: z.enum(["pass", "caution"]),
     runtimeHash: z.string().regex(/^[0-9a-f]{64}$/),
-    previousPublisher: z.enum(["kobe", "maintainer", "site"]).nullable(),
+    // `kobe`: Kaiju's own versions as rows recorded before the rename name them (KOBE-831): kept in
+    // the append-only log, read as they are and explained by the audit view; never written.
+    previousPublisher: z.enum(["kaiju", "maintainer", "site", "kobe"]).nullable(),
     previousSemver: z.string().max(32).nullable(),
   }),
   /**

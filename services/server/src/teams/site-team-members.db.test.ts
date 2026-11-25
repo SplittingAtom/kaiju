@@ -433,7 +433,7 @@ describe("SSO-managed rows (ac-4)", () => {
     const { rows } = await adminPg.query<{ id: string }>(
       `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim,
          access_claim, managed_by, enabled)
-       VALUES ('entra', 'Contoso', 'oidc', 'https://idp.example.test/entra', 'kobe', 'sub', 'roles', 'helm', true)
+       VALUES ('entra', 'Contoso', 'oidc', 'https://idp.example.test/entra', 'kaiju', 'sub', 'roles', 'helm', true)
        RETURNING id`,
     );
     const providerId = rows[0]?.id ?? "";

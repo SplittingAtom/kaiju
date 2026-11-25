@@ -10,7 +10,7 @@ import { panelOf } from "./support/panel.js";
  *
  * - `KAIJU_USER` / `KAIJU_PW`: a site admin who is also team admin of the active team (`KAIJU_TEAM`
  *   pins it). Its default agent must name the `kaiju` connector or `connectors: all` (the gallery
- *   agent Kobe does), else the admin tools are not attached.
+ *   agent Kaiju does), else the admin tools are not attached.
  * - `KAIJU_USER2` / `KAIJU_PW2`: an ordinary member of that team (role `member`).
  *
  * Each test sets the site switch (`kaiju_mcp.mode`) and the team's Kaiju level through the console

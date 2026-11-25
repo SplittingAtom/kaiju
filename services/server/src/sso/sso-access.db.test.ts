@@ -53,7 +53,7 @@ async function insertProvider(slug: string): Promise<string> {
   const { rows } = await adminPg.query<{ id: string }>(
     `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim,
        access_claim, managed_by, enabled)
-     VALUES ($1, $2, 'oidc', 'https://idp.example.test/' || $1, 'kobe', 'sub', 'roles', 'helm', true)
+     VALUES ($1, $2, 'oidc', 'https://idp.example.test/' || $1, 'kaiju', 'sub', 'roles', 'helm', true)
      RETURNING id`,
     [slug, `IdP ${slug}`],
   );

@@ -127,7 +127,7 @@ if [[ "$(field models_a "$fx")" == 200 ]]; then
 else
   fail "no model catalog entry '$MODEL_ALIAS' enabled for team gate4-a: the stories need runs"
 fi
-KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
+KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kaiju"')")
 
 # A user's sandbox (T2 names the user for e2e/gate2/sandbox.sh and scan.sh).
 TNS=kaiju-team-gate4-a
@@ -360,7 +360,7 @@ connect() { # key connector → connects that user (fake: automatically; real: a
     step u7-grant "\"user\":$(user_of "$key"),\"connectorId\":\"$cid\""
   fi
 }
-# On the gallery agent Kobe (`connectors: all`): connectors reach a run only through its agent's
+# On the gallery agent Kaiju (`connectors: all`): connectors reach a run only through its agent's
 # list (resolver: agent list ∩ team-enabled ∩ user-connected); a thread without one gets none.
 mcp_call() { # key connector-name-segment tool args → a turn calling that tool
   turn "$(user_of "$1")" "$(tool_prompt "mcp__$2__$3" "$4")" "\"title\":\"gate4 U7 $1\",\"agentId\":\"$KAIJU_AGENT\""

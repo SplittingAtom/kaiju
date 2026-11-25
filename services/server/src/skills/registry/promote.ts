@@ -121,7 +121,7 @@ function provenanceOf(
     ...originOf(plan.origin),
     scan: {
       scanner: {
-        name: "kobe-skill-scanner",
+        name: "kaiju-skill-scanner",
         version: plan.scan.ruleSetVersion,
         rulesVersion: plan.scan.ruleSetVersion,
       },

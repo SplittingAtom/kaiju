@@ -182,7 +182,7 @@ export class ChatSession {
   #nextProjectId: string | null = null;
   /** Agent for the thread `initialize` creates next (null = plain chat; KOBE-122). */
   #nextAgent: RunnableAgent | null = null;
-  /** The runnable gallery agent Kobe (null when missing, suspended or archived), preselected untouched. */
+  /** The runnable gallery agent Kaiju (null when missing, suspended or archived), preselected untouched. */
   #defaultAgent: RunnableAgent | null = null;
   /** The user picked (or cleared) the agent for this draft: the default no longer applies. */
   #agentTouched = false;
@@ -500,7 +500,7 @@ export class ChatSession {
   }
 
   /**
-   * New chats start with the agent the server marks `default` (gallery Kobe when it is runnable
+   * New chats start with the agent the server marks `default` (gallery Kaiju when it is runnable
    * here; KOBE-458: the same rule a rail launch's new thread follows), else No agent.
    */
   #applyDefaultAgent(agents: readonly RunnableAgent[]): void {

@@ -190,6 +190,10 @@ export const siteAgents = pgTable(
     ),
     check("site_agents_bound_team_scope", sql`${t.boundTeamId} IS NULL OR ${t.scope} = 'personal'`),
     check("site_agents_gallery_key_scope", sql`${t.galleryKey} IS NULL OR ${t.scope} = 'gallery'`),
+    // KOBE-831 (rename step RN-18): the gallery agent's key before the rename is never seeded
+    // again, so a pod of an older release (rolling upgrade, rollback) fails its seed instead of
+    // adding a second gallery agent next to the renamed one.
+    check("site_agents_gallery_key_renamed", sql`${t.galleryKey} <> 'kobe'`),
     check(
       "site_agents_fork_version",
       sql`${t.forkedFromVersion} IS NULL OR (${t.forkedFromAgentId} IS NOT NULL AND ${t.forkedFromVersion} > 0)`,

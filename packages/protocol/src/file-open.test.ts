@@ -21,9 +21,9 @@ describe("open_file contract (KOBE-484)", () => {
   it("is a built-in read on Kaiju's side, checked by path", () => {
     expect(OPEN_FILE_TOOL).toBe("open_file");
     expect(BUILTIN_TOOLS.open_file).toEqual({
-      source: "kobe",
+      source: "kaiju",
       risk: "read",
-      scope: "kobe",
+      scope: "kaiju",
       open_world: false,
       primary_arg: "/path",
     });

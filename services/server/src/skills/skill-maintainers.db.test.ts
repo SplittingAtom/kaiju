@@ -31,7 +31,7 @@ beforeAll(async () => {
   await h.admin.query(`UPDATE users SET name = initcap(split_part(email, '@', 1))`);
   skill.checker = await skillRow("invoice-checker");
   skill.fresh = await skillRow("fresh-skill");
-  skill.kaiju = await skillRow("pdf", "kobe");
+  skill.kaiju = await skillRow("pdf", "kaiju");
   await h.admin.query(`INSERT INTO registry_maintainers (skill_id, user_id) VALUES ($1, $2)`, [
     skill.checker,
     ids.alice,

@@ -4,7 +4,7 @@ import { isBlocked } from "../skills/blocklist.js";
 import type { RunAgentResolver } from "./seams.js";
 
 /**
- * Skill eval executions (KOBE-325, SK16, SK25): a thread marked `skill_eval` runs the Kobe agent
+ * Skill eval executions (KOBE-325, SK16, SK25): a thread marked `skill_eval` runs the Kaiju agent
  * as usual (its version, model, the team's policy, egress and budget) except that (1) its skills
  * are the eval's alone: with the skill, only the eval's stored runtime bundle (scanned at the
  * eval's start); without it, none at all (no Required, agent-named, offered or personal skill);

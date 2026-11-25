@@ -374,7 +374,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
 
   beforeAll(async () => {
     const [seeded] = await seedGalleryAgents(deps.database.db, [
-      { key: KAIJU_GALLERY_KEY, generation: 1, file: "---\nname: Kobe\n---\nYou are Kobe.\n" },
+      { key: KAIJU_GALLERY_KEY, generation: 1, file: "---\nname: Kaiju\n---\nYou are Kaiju.\n" },
     ]);
     kaiju = seeded?.agentId ?? "";
     lent = await personal("bob", "Bob Default");
@@ -401,7 +401,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
     const private_ = await as.alice.put("/v1/team/default-agent", { agentId: mine });
     expect(private_.status).toBe(422);
     expect(private_.json.code).toBe("agent_not_eligible");
-    expect((await as.alice.put("/v1/team/default-agent", { agentId: "kobe" })).status).toBe(400);
+    expect((await as.alice.put("/v1/team/default-agent", { agentId: "kaiju" })).status).toBe(400);
   });
 
   it("new threads in that team use it; other teams and an unset team use the site default", async () => {

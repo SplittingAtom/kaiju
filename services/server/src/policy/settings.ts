@@ -38,7 +38,7 @@ export const PROMPT_EXEMPT_KAIJU_TOOLS: ReadonlySet<string> = new Set([
 
 /**
  * Risk-class prompting in `ask-on-write` (D29), by where the tool's effects land and its risk.
- * `true` = prompt. `sandbox` rows follow {@link PolicySettings.promptSandboxWrites}. `kobe`-scoped
+ * `true` = prompt. `sandbox` rows follow {@link PolicySettings.promptSandboxWrites}. `kaiju`-scoped
  * writes (shared files, memory) prompt — D23/D24 make project writes approval-gated — except:
  * - personal `remember` (D24: "personal writes via remember need no approval"), recognised by
  *   `scope: "user"` in its input (the memory contract, KOBE-153; anything else prompts);
@@ -66,17 +66,17 @@ export function riskClassPrompts(
   ) {
     return false;
   }
-  if (tool.source === "kobe" && tool.name === "remember" && input.scope === "user") {
+  if (tool.source === "kaiju" && tool.name === "remember" && input.scope === "user") {
     return false;
   }
-  if (tool.source === "kobe" && PROMPT_EXEMPT_KAIJU_TOOLS.has(tool.name)) return false;
+  if (tool.source === "kaiju" && PROMPT_EXEMPT_KAIJU_TOOLS.has(tool.name)) return false;
   const table: Readonly<Record<ToolDescriptor["scope"], Readonly<Record<RiskClass, boolean>>>> = {
     sandbox: {
       read: false,
       write: settings.promptSandboxWrites,
       destructive: settings.promptSandboxWrites,
     },
-    kobe: { read: false, write: true, destructive: true },
+    kaiju: { read: false, write: true, destructive: true },
     external: { read: false, write: true, destructive: true },
   };
   return table[tool.scope][tool.risk];

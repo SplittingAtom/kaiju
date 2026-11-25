@@ -39,12 +39,34 @@ export const REGISTRY_TAG_PATTERN = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
  * Who publishes a catalog skill: Kaiju (built-ins, reserved names) or its maintainers (SK24); and,
  * for a version only, the Site (`site`: a Site admin's edit in the Site Console, KOBE-495).
  */
-export const REGISTRY_PUBLISHERS = ["kobe", "maintainer", "site"] as const;
+export const REGISTRY_PUBLISHERS = ["kaiju", "maintainer", "site"] as const;
 export type RegistryPublisher = (typeof REGISTRY_PUBLISHERS)[number];
 
 /**
+ * Values stored before the rename (KOBE-831): Kaiju's publisher was `kobe`, and so were the gallery
+ * agent's key and slug. Migration 0262 renamed them in place, but audit rows are append-only and
+ * keep them, so the audit views explain them, by field (permanent).
+ */
+export const PRE_RENAME_STORED_VALUE = "kobe";
+
+/**
+ * What a value an audit row recorded before the rename is called now (KOBE-831), or undefined:
+ * `publisher` / `previousPublisher` `kobe`, and the `slug` / `key` `kobe` of a gallery agent.
+ */
+export function renamedStoredValue(
+  field: string,
+  value: unknown,
+  target: Readonly<Record<string, unknown>>,
+): string | undefined {
+  if (value !== PRE_RENAME_STORED_VALUE) return undefined;
+  if (field === "publisher" || field === "previousPublisher") return "kaiju";
+  if ((field === "slug" || field === "key") && target["scope"] === "gallery") return "kaiju";
+  return undefined;
+}
+
+/**
  * The skills Kaiju publishes (KOBE-317, SK4): the former built-ins, from the package set the
- * server ships. Their catalog names are reserved for publisher `kobe` (SK24; a database check
+ * server ships. Their catalog names are reserved for publisher `kaiju` (SK24; a database check
  * mirrors this list), and an agent naming one always gets the Kaiju skill, never a team or
  * personal skill of that name.
  */

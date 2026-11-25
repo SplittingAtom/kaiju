@@ -52,7 +52,7 @@ describe("kobe-guide name already taken (KOBE-620)", () => {
          FROM registry_skills s WHERE s.name IN ('kobe-guide', 'charts') ORDER BY s.name`,
     );
     expect(rows.rows).toEqual([
-      { name: "charts", publisher: "kobe", versions: 1 },
+      { name: "charts", publisher: "kaiju", versions: 1 },
       { name: "kobe-guide", publisher: "maintainer", versions: 0 },
     ]);
   });

@@ -13,7 +13,7 @@ describe("team default agent contract (KOBE-571)", () => {
   it("takes an agent id or null (the site default)", () => {
     expect(setTeamDefaultAgentRequestSchema.safeParse({ agentId: ID }).success).toBe(true);
     expect(setTeamDefaultAgentRequestSchema.safeParse({ agentId: null }).success).toBe(true);
-    expect(setTeamDefaultAgentRequestSchema.safeParse({ agentId: "kobe" }).success).toBe(false);
+    expect(setTeamDefaultAgentRequestSchema.safeParse({ agentId: "kaiju" }).success).toBe(false);
     expect(setTeamDefaultAgentRequestSchema.safeParse({}).success).toBe(false);
   });
 
@@ -22,7 +22,7 @@ describe("team default agent contract (KOBE-571)", () => {
       teamDefaultAgentSchema.safeParse({
         agentId: ID,
         unavailable: false,
-        options: [{ agentId: ID, name: "Kobe", slug: "kobe", group: "site", versionInEffect: 1 }],
+        options: [{ agentId: ID, name: "Kaiju", slug: "kaiju", group: "site", versionInEffect: 1 }],
       }).success,
     ).toBe(true);
     expect(

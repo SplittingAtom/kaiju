@@ -35,7 +35,7 @@ export async function testChatStart(
 ): Promise<TestChatStart> {
   if (!(await visibleDraft(tx, who.teamId, draftId, who)))
     return { ok: false, error: "draft_not_found" };
-  const [kobe] = await tx
+  const [kaiju] = await tx
     .select({ id: siteAgents.id })
     .from(siteAgents)
     .where(
@@ -45,9 +45,9 @@ export async function testChatStart(
         isNull(siteAgents.archivedAt),
       ),
     );
-  if (!kobe) return { ok: false, error: "agent_not_found" };
-  if (agentId != null && agentId !== kobe.id) return { ok: false, error: "test_chat_agent" };
-  return { ok: true, agentId: kobe.id };
+  if (!kaiju) return { ok: false, error: "agent_not_found" };
+  if (agentId != null && agentId !== kaiju.id) return { ok: false, error: "test_chat_agent" };
+  return { ok: true, agentId: kaiju.id };
 }
 
 export interface TestChatRefusal {

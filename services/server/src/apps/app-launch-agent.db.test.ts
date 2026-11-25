@@ -14,7 +14,7 @@ import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * KOBE-458: a thread a rail launch starts gets the agent a new conversation would: the one the
- * member chose in the new-conversation view, else the composer's default (gallery Kobe), so its
+ * member chose in the new-conversation view, else the composer's default (gallery Kaiju), so its
  * runs offer the member's connectors, the app's own included. The view's connectors-off go with
  * it (review MEDIUM-1). Both are checked exactly as `POST /v1/threads` checks them.
  */
@@ -70,7 +70,7 @@ describe("an app launch starts the thread with the new-conversation agent (KOBE-
     });
     expect((await threadAgent(f, threadId))?.agent_version).toBeGreaterThanOrEqual(1);
     const read = await w.owner.browser.get(`/v1/threads/${threadId}`);
-    expect(read.json).toMatchObject({ agent_id: kaiju, agent_name: "Kobe" });
+    expect(read.json).toMatchObject({ agent_id: kaiju, agent_name: "Kaiju" });
   });
 
   it("offers the member's connectors, the app's own included, on the first run (ac-2)", async () => {

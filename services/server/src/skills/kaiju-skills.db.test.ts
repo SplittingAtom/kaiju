@@ -129,8 +129,8 @@ describe("the seed (ac-1)", () => {
     expect(rows).toHaveLength(KAIJU_SKILL_NAMES.length);
     for (const r of rows) {
       expect(r, r.name).toMatchObject({
-        sp: "kobe",
-        vp: "kobe",
+        sp: "kaiju",
+        vp: "kaiju",
         // skill-creator 1.2.0 saves Workbench drafts (KOBE-442, after 1.1.0's eval suites of
         // KOBE-328); the others are still 1.0.0.
         semver: r.name === "skill-creator" ? "1.2.0" : "1.0.0",
@@ -139,7 +139,7 @@ describe("the seed (ac-1)", () => {
         reviewed_by: null,
         runtime_hash: hashes[r.name],
         runtime_storage_key: catalogObjectKey("kaiju/", hashes[r.name] as string),
-        prov: "kobe",
+        prov: "kaiju",
         dflt: true,
       });
       expect(["pass", "caution"]).toContain(r.verdict);

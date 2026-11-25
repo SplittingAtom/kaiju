@@ -225,7 +225,7 @@ without Open again: the file tab reads the viewer's own workspace, not the owner
 
 ### 3c. The agent proposes an edit
 
-`propose_file_edit` has risk `read` and scope `kobe`, so `ask-on-write` does not prompt for it. Deny
+`propose_file_edit` has risk `read` and scope `kaiju`, so `ask-on-write` does not prompt for it. Deny
 and ask rules and `ask-all` still apply. The model sends the whole new content, not a patch.
 
 ```mermaid

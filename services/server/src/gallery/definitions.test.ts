@@ -17,19 +17,20 @@ describe("the repo's gallery definitions", () => {
   });
 });
 
-describe("the one gallery agent, Kobe (KOBE-254)", () => {
+describe("the one gallery agent, Kaiju (KOBE-254)", () => {
   const parsed = parseGalleryDefinitions(GALLERY_DEFINITIONS);
   const kaiju = parsed[0]?.definition;
   if (!kaiju) throw new Error("no gallery definition");
   const floor = { scope: "site", site: [], team: [], approvalFloor: "auto" } as const;
   const manifest = computeToolManifest(kaiju.frontmatter, floor, new Date());
 
-  it("ships exactly one gallery agent, Kobe, at generation 4", () => {
+  it("ships exactly one gallery agent, Kaiju, at generation 5", () => {
     // 2: the web-search notice is scoped to requests that need the web (review of #240).
     // 3: no built-in web search any more; research goes through connectors (KOBE-606).
-    expect(parsed.map((p) => [p.key, p.generation])).toEqual([[KAIJU_GALLERY_KEY, 4]]);
-    expect(KAIJU_GALLERY_KEY).toBe("kobe");
-    expect(kaiju.frontmatter.name).toBe("Kobe");
+    // 5: renamed Kaiju (KOBE-831); installs that customized it keep their own name.
+    expect(parsed.map((p) => [p.key, p.generation])).toEqual([[KAIJU_GALLERY_KEY, 5]]);
+    expect(KAIJU_GALLERY_KEY).toBe("kaiju");
+    expect(kaiju.frontmatter.name).toBe("Kaiju");
     expect(kaiju.frontmatter.description).toBeTruthy();
     expect(kaiju.frontmatter.starters?.length).toBeGreaterThan(0);
   });
@@ -54,7 +55,7 @@ describe("the one gallery agent, Kobe (KOBE-254)", () => {
     }
   });
 
-  it("lists every Kobe skill (the former built-ins), and only those", () => {
+  it("lists every Kaiju skill (the former built-ins), and only those", () => {
     expect([...agentSkills(kaiju.frontmatter).names].sort()).toEqual([...KAIJU_SKILL_NAMES].sort());
   });
 

@@ -39,7 +39,7 @@ admin switches the whole connector off.
    follow the team's level too: a site admin gets them only in a team at Read (reads only) or
    Read and write.
 
-The agent must also use Kaiju: the gallery agent Kobe does (it uses every connector), and in the
+The agent must also use Kaiju: the gallery agent Kaiju does (it uses every connector), and in the
 agent creator you can add **kaiju** to an agent's connectors. Neither switch, nor the limits, can be changed from a
 conversation: the agent cannot raise its own access.
 

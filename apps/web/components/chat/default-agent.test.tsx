@@ -8,14 +8,14 @@ import { agentChoices, chatRequests, composer, openApp } from "./testing";
 
 /**
  * KOBE-124, KOBE-254, KOBE-458: new chats preselect the agent the server marks `default` (gallery
- * Kobe when runnable): the server owns the rule, so a rail launch's new thread gets the same agent.
+ * Kaiju when runnable): the server owns the rule, so a rail launch's new thread gets the same agent.
  */
 let fake: FakeKaiju;
 
 const KAIJU = {
   id: "a-kaiju",
   scope: "gallery",
-  galleryKey: "kobe",
+  galleryKey: "kaiju",
   default: true,
   name: "Helper",
   model: null,
@@ -24,7 +24,7 @@ const KAIJU = {
 beforeEach(() => {
   sessionStorage.clear();
   fake = new FakeKaiju();
-  fake.runnableAgents.push({ id: "a-team", scope: "team", name: "Kobe", model: null });
+  fake.runnableAgents.push({ id: "a-team", scope: "team", name: "Kaiju", model: null });
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -49,8 +49,8 @@ describe("default agent", () => {
     expect(must(chatRequests(fake, "POST")[0]).body).toMatchObject({ agent_id: "a-kaiju" });
   });
 
-  it("falls back to No agent when Kobe is not runnable (suspended or missing)", async () => {
-    // A gallery Kobe the server doesn't mark default (say, an older server) is not preselected.
+  it("falls back to No agent when Kaiju is not runnable (suspended or missing)", async () => {
+    // A gallery Kaiju the server doesn't mark default (say, an older server) is not preselected.
     const { default: _default, ...notDefault } = KAIJU;
     fake.runnableAgents.push(notDefault);
     openApp(fake);

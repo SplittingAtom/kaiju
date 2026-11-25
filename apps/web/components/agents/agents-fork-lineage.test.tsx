@@ -42,8 +42,8 @@ const LENT = row({
 const GALLERY = row({
   agentId: "g-1",
   kind: "gallery",
-  name: "Kobe",
-  slug: "kobe",
+  name: "Kaiju",
+  slug: "kaiju",
   ownerUserId: null,
   ownerName: null,
   forkBoundTeamId: null,
@@ -95,8 +95,8 @@ describe("Fork dialog (AR8, §6.7)", () => {
       "POST /v1/agents/g-1/fork": [409, { code: "slug_taken", message: "That slug is taken." }],
     });
     renderTeam(<Page search="tab=site" />, MEMBER);
-    await rowAction("Kobe", "Fork to Personal…");
-    const dialog = await screen.findByRole("dialog", { name: "Fork Kobe" });
+    await rowAction("Kaiju", "Fork to Personal…");
+    const dialog = await screen.findByRole("dialog", { name: "Fork Kaiju" });
     expect(within(dialog).queryByRole("note")).toBeNull();
     expect(within(dialog).queryByText(/Bound to/)).toBeNull();
     await userEvent.click(within(dialog).getByRole("button", { name: "Fork and open" }));

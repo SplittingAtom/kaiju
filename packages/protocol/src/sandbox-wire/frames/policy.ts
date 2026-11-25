@@ -57,7 +57,7 @@ export const policyPendingFrameSchema = frame("policy.pending", {
  * server-side first). `message` becomes Pi's block reason. `approval` (optional, present when the
  * allow came from a human approval) stops at kaiju-sandbox-agent: the agent strips it before the
  * decision reaches kaiju-policy (KOBE-23), so the token never enters Pi or a tool. For Pi built-ins
- * and kobe tools this frame is itself the authorisation; the MCP proxy finds the approval by
+ * and kaiju tools this frame is itself the authorisation; the MCP proxy finds the approval by
  * (run_id, tool_call_id) server-side (KOBE-58), not through the sandbox.
  */
 export const policyResultFrameSchema = z.union([

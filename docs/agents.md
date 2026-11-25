@@ -140,7 +140,7 @@ A team admin chooses the team's default agent for new conversations in the team 
 skills → Default agent**, `/admin/team/default-agent`; `GET`/`PUT /v1/team/default-agent`). The
 options are team-owned agents, active team entries, site entries and gallery agents that are
 published and active here. The choice is stored in `teams.settings`; if it stops being runnable for a
-member, that member's new threads fall back to the site default (Kobe). Audited as
+member, that member's new threads fall back to the site default (Kaiju). Audited as
 `team.default_agent_changed`.
 
 ## Fork and binding

@@ -145,7 +145,7 @@ export async function settleClosedExecutions(
  * active executions first, then the oldest eval: one member's backlog never blocks the others'), if fewer than `cap` of the
  * team's executions are active: under the team's transaction advisory lock (every replica counts
  * and claims in turn), so the cap holds across replicas. The execution gets a new eval thread
- * (the Kobe agent `pin`, the run's model), its wall-clock deadline and state `starting`.
+ * (the Kaiju agent `pin`, the run's model), its wall-clock deadline and state `starting`.
  */
 export async function claimNextExecution(
   db: KaijuDb,
@@ -154,7 +154,7 @@ export async function claimNextExecution(
     readonly cap: number;
     /** Used when the eval run stored no wall clock (it normally keeps the one it started with). */
     readonly wallClockMs: number;
-    /** The Kobe agent's pin for the eval's thread (null: unavailable, the eval run fails). */
+    /** The Kaiju agent's pin for the eval's thread (null: unavailable, the eval run fails). */
     readonly pinFor: (tx: KaijuTx, teamId: string, userId: string) => Promise<AgentPin | null>;
   },
 ): Promise<ClaimedExecution | null> {
@@ -223,7 +223,7 @@ export async function claimNextExecution(
     if (!pin) {
       await failClaimedRun(tx, teamId, row.eval_run_id, {
         code: "agent_unavailable",
-        message: "The Kobe agent is not available.",
+        message: "The Kaiju agent is not available.",
       });
       return null;
     }

@@ -66,7 +66,7 @@ function TestChat({
 }
 
 /**
- * The Workbench test pane (KOBE-323, SK13): a chat with the Kobe agent that loads only this draft
+ * The Workbench test pane (KOBE-323, SK13): a chat with the Kaiju agent that loads only this draft
  * as it is now (pending edits are saved before each message, and the server scans it before the
  * run). It runs in the member's own workspace under the team's policy, egress and budgets, and the
  * Used-skill badge shows when the draft was used. Test chats are ordinary conversations, kept in

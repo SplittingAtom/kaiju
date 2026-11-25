@@ -1835,6 +1835,13 @@
       "when": 1795581996126,
       "tag": "0261_kaiju_local_models",
       "breakpoints": true
+    },
+    {
+      "idx": 262,
+      "version": "7",
+      "when": 1795588729281,
+      "tag": "0262_kaiju_stored_values",
+      "breakpoints": true
     }
   ]
 }

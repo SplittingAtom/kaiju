@@ -551,7 +551,7 @@ describe("kaiju backup → kaiju restore (real Postgres, pg_dump, pg_restore, ps
       await serverStarted(dst.adminUrl);
       await sql(dst.adminUrl, "INSERT INTO users (name, email) VALUES ('Zed', 'zed@example.com')");
       await expect(restore(dst)).rejects.toThrow(/already has data in: users\b/);
-      expect(await sql(dst.adminUrl, "SELECT slug FROM site_agents")).toEqual([{ slug: "kobe" }]);
+      expect(await sql(dst.adminUrl, "SELECT slug FROM site_agents")).toEqual([{ slug: "kaiju" }]);
     });
 
     it("refuses a backup whose audit chain was tampered with, and restores nothing (KOBE-15)", async () => {

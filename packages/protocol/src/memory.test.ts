@@ -346,9 +346,9 @@ describe("recall over items and show_memory_item (KOBE-399)", () => {
     expect(showMemoryItemInputSchema.safeParse({ id: "x" }).success).toBe(false);
     expect(showMemoryItemInputSchema.safeParse({ id: ID, scope: "team" }).success).toBe(false);
     expect(BUILTIN_TOOLS.show_memory_item).toEqual({
-      source: "kobe",
+      source: "kaiju",
       risk: "read",
-      scope: "kobe",
+      scope: "kaiju",
       open_world: false,
     });
   });

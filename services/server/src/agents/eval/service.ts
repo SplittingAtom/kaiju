@@ -10,7 +10,7 @@ import { KubeApiError, type KubeClient, type ObjectRef } from "../../sandbox/kub
 import { teamNamespaceName, type KubeObject, type TeamRef } from "../../sandbox/manifests.js";
 import type { SandboxProvider } from "../../sandbox/provider.js";
 import type { VersionLimits } from "../versions.js";
-import { withSiteNames, type ToolManifest } from "../manifest.js";
+import { withCurrentNames, type ToolManifest } from "../manifest.js";
 import { publishEvaluated, rollbackAgent } from "../versions.js";
 import {
   EVAL_CONTAINER,
@@ -290,7 +290,7 @@ export class EvalRunner {
         ? ({ scope: "team", teamId: passed.teamId } as const)
         : ({ scope: "personal", ownerUserId: passed.requestedBy } as const);
     const expected = passed.toolManifest
-      ? { expectedManifest: withSiteNames(passed.toolManifest) as ToolManifest }
+      ? { expectedManifest: withCurrentNames(passed.toolManifest) as ToolManifest }
       : {};
     const result =
       passed.rollbackFrom === null

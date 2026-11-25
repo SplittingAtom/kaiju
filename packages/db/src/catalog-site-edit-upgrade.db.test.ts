@@ -177,7 +177,7 @@ describe("site-published catalog versions (0180, 0181)", () => {
       await expect(
         version(c, {
           skill: ids.skill,
-          publisher: "kobe",
+          publisher: "kaiju",
           semver: "3.0.0",
           seq: 9,
           submitter: null,

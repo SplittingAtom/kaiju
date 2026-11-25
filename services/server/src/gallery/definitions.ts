@@ -1,5 +1,5 @@
 import { agentSlugSchema, parseAgentFile, type AgentDefinition } from "@kaiju/agent-file";
-import { KAIJU_FILE } from "./agents/kobe.js";
+import { KAIJU_FILE } from "./agents/kaiju.js";
 
 /**
  * One gallery agent as it is kept in the repo (KOBE-87): a stable `key` (also its slug) and the
@@ -18,16 +18,19 @@ export interface GalleryDefinition {
   readonly file: string;
 }
 
-/** Key of the one gallery agent, Kobe (KOBE-254); the web preselects it for new chats. */
-export const KAIJU_GALLERY_KEY = "kobe";
+/** Key of the one gallery agent, Kaiju (KOBE-254); the web preselects it for new chats. */
+export const KAIJU_GALLERY_KEY = "kaiju";
 
 /**
- * The gallery (KOBE-254, user decision 2026-10-11): one general-purpose agent, Kobe. It pins no
+ * The gallery (KOBE-254, user decision 2026-10-11): one general-purpose agent, Kaiju. It pins no
  * model (team default). The five agents it replaced are archived on upgrade by the seed, since
  * their keys are no longer listed here. Raise an entry's generation with every change to its file.
+ * Generation 5 (KOBE-831) renamed it from Kobe: migration 0262 moved the key `kobe` to `kaiju`
+ * (same row, id and versions), and the seed renames it only where a site admin has not customized
+ * it (a customized one keeps its name and is offered the update).
  */
 export const GALLERY_DEFINITIONS: readonly GalleryDefinition[] = [
-  { key: KAIJU_GALLERY_KEY, generation: 4, file: KAIJU_FILE },
+  { key: KAIJU_GALLERY_KEY, generation: 5, file: KAIJU_FILE },
 ];
 
 export interface ParsedGalleryDefinition {

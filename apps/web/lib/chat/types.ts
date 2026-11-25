@@ -117,7 +117,7 @@ export interface ThreadSummary {
 export interface RunnableAgent {
   readonly id: string;
   readonly scope: "team" | "personal" | "gallery";
-  /** Stable key of a gallery agent (e.g. "kobe"); absent for team and personal agents. */
+  /** Stable key of a gallery agent (e.g. "kaiju"); absent for team and personal agents. */
   readonly galleryKey?: string;
   /** The agent a new conversation starts with (the server's rule, KOBE-458); one at most. */
   readonly default?: true;

@@ -101,10 +101,10 @@ U_M2=$(printf '{"key":"m2","email":"gate-apps-m2@gate-apps.test","ip":"198.51.10
 OWNER_JSON=$(printf '{"email":"%s","password":"%s"}' "$OWNER_EMAIL" "$OWNER_PASSWORD")
 step() { client "$(printf '{"mode":"%s","base":"%s","owner":%s,%s}' "$1" "$BASE" "$OWNER_JSON" "$2")"; }
 # Connectors reach a run only through its agent's list (resolver: agent list ∩ team-enabled ∩
-# user-connected; a thread with no agent gets none): the turns use the gallery agent Kobe
+# user-connected; a thread with no agent gets none): the turns use the gallery agent Kaiju
 # (`connectors: all`), as the chat preselects it for a new conversation (KOBE-124).
-KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kobe"')")
-[[ "$KAIJU_AGENT" =~ ^[0-9a-f-]{36}$ ]] || { fail "the gallery agent Kobe exists"; exit 1; }
+KAIJU_AGENT=$(field gallery_agent "$(step gallery-agent '"key":"kaiju"')")
+[[ "$KAIJU_AGENT" =~ ^[0-9a-f-]{36}$ ]] || { fail "the gallery agent Kaiju exists"; exit 1; }
 AGENT_FIELD="\"agentId\":\"$KAIJU_AGENT\""
 
 # ---- the fake MCP Apps server and the proxies' allow-list ---------------------------------------------

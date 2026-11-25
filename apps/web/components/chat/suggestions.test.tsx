@@ -54,9 +54,9 @@ describe("agent starters on the welcome screen (ac-1)", () => {
     fake.runnableAgents.push({
       id: "00000000-0000-4000-8000-0000000000aa",
       scope: "gallery",
-      galleryKey: "kobe",
+      galleryKey: "kaiju",
       default: true,
-      name: "Kobe",
+      name: "Kaiju",
       model: null,
       starters: ["Summarise my workspace", "Chart the CSV in my files"],
     });

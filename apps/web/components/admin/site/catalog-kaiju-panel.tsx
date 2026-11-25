@@ -18,8 +18,8 @@ import { ReviewDiff } from "./skill-review-diff";
  * shipped files against the skill's newest version, and Reset to Kaiju (asks first) re-attaches it
  * when the shipped version is above every Site version (the server says why when it isn't).
  */
-export function DetachedBadge({ kobe }: { readonly kobe: KaijuState | null }) {
-  if (!kobe?.detached) return null;
+export function DetachedBadge({ kaiju }: { readonly kaiju: KaijuState | null }) {
+  if (!kaiju?.detached) return null;
   return (
     <Badge tone="accent" title="Edited by a Site admin: Kaiju releases no longer update it">
       Detached
@@ -30,18 +30,18 @@ export function DetachedBadge({ kobe }: { readonly kobe: KaijuState | null }) {
 export function KaijuPanel({
   skillId,
   name,
-  kobe,
+  kaiju,
   onReset,
 }: {
   readonly skillId: string;
   readonly name: string;
-  readonly kobe: KaijuState | null;
+  readonly kaiju: KaijuState | null;
   readonly onReset: () => void;
 }) {
   const [comparison, setComparison] = useState<KaijuCompare | null>(null);
   const mutation = useMutation();
   const [confirm, confirmDialog] = useConfirm();
-  if (!kobe?.detached) return null;
+  if (!kaiju?.detached) return null;
 
   async function compare(): Promise<void> {
     if (comparison) {
@@ -76,9 +76,9 @@ export function KaijuPanel({
   return (
     <Notice tone="info">
       <p className="m-0">
-        {kobe.updateAvailable
-          ? `A newer Kaiju version of ${name} is available (${kobe.shippedVersion ?? ""}; it was detached from ${kobe.detachedFromVersion ?? ""}).`
-          : `${name} is detached from Kaiju (since ${kobe.detachedFromVersion ?? "its first edit"}): Kaiju releases no longer update it.`}
+        {kaiju.updateAvailable
+          ? `A newer Kaiju version of ${name} is available (${kaiju.shippedVersion ?? ""}; it was detached from ${kaiju.detachedFromVersion ?? ""}).`
+          : `${name} is detached from Kaiju (since ${kaiju.detachedFromVersion ?? "its first edit"}): Kaiju releases no longer update it.`}
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         <Button size="sm" disabled={mutation.pending} onClick={() => void compare()}>

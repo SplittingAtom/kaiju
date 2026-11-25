@@ -8,8 +8,9 @@ import {
   computeToolManifest,
   effectiveApprovalMode,
   manifestAllowsTool,
+  PRE_RENAME_TOOL_ORIGIN,
   toolManifestSchema,
-  withSiteNames,
+  withCurrentNames,
   type PublishFloor,
 } from "./manifest.js";
 
@@ -133,9 +134,27 @@ describe("computeToolManifest (D19 frozen tool manifest)", () => {
         .replaceAll('"site_deny_rule"', '"install_deny_rule"'),
     ) as unknown;
     expect(toolManifestSchema.safeParse(stored).success).toBe(false);
-    expect(toolManifestSchema.parse(withSiteNames(stored))).toEqual(m);
-    expect(withSiteNames(m)).toEqual(m);
-    expect(withSiteNames({ tampered: true })).toEqual({ tampered: true });
+    expect(toolManifestSchema.parse(withCurrentNames(stored))).toEqual(m);
+    expect(withCurrentNames(m)).toEqual(m);
+    expect(withCurrentNames({ tampered: true })).toEqual({ tampered: true });
+  });
+
+  it("reads Kaiju tools frozen as source and scope kobe (before the rename, KOBE-831) as kaiju", () => {
+    const m = computeToolManifest(fm(), floor({ scope: "site" }), NOW);
+    const kaijuTools = m.tools.filter((t) => t.source === "kaiju");
+    expect(kaijuTools.map((t) => t.name)).toContain("remember");
+    expect(m.tools.some((t) => t.scope === "kaiju")).toBe(true);
+    const stored = JSON.parse(
+      JSON.stringify(m)
+        .replaceAll('"source":"kaiju"', `"source":"${PRE_RENAME_TOOL_ORIGIN}"`)
+        .replaceAll('"scope":"kaiju"', `"scope":"${PRE_RENAME_TOOL_ORIGIN}"`),
+    ) as unknown;
+    expect(toolManifestSchema.safeParse(stored).success).toBe(false);
+    expect(toolManifestSchema.parse(withCurrentNames(stored))).toEqual(m);
+    // Pi tools and other values are left as they are.
+    expect(withCurrentNames({ tools: [{ name: "bash", source: "pi" }, 7] })).toEqual({
+      tools: [{ name: "bash", source: "pi" }, 7],
+    });
   });
 
   it("keeps rules that only restrict arguments, expire, ask or allow as live checks", () => {

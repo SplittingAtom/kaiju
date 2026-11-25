@@ -102,7 +102,7 @@ beforeAll(async () => {
   const { rows } = await h.admin.query<{ id: string }>(
     `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim,
        access_claim, managed_by, enabled)
-     VALUES ('dep-idp', 'IdP', 'oidc', 'https://idp.example.test/dep', 'kobe', 'sub', 'roles', 'helm', true)
+     VALUES ('dep-idp', 'IdP', 'oidc', 'https://idp.example.test/dep', 'kaiju', 'sub', 'roles', 'helm', true)
      RETURNING id`,
   );
   provider = rows[0]?.id ?? "";

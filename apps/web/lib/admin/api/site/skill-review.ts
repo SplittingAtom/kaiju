@@ -117,7 +117,7 @@ export interface ReviewFinding {
   readonly category: string | null;
   readonly acknowledged: { readonly by: Person; readonly at: string } | null;
   /** `external`: the optional external scanner's (advisory, KOBE-341). */
-  readonly source?: "kobe" | "external";
+  readonly source?: "kaiju" | "external";
   readonly title?: string;
   readonly externalSeverity?: string;
 }

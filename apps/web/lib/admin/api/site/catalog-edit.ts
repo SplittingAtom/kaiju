@@ -13,7 +13,7 @@ const base = (skillId: string) => `${CATALOG_SKILLS_PATH}/${enc(skillId)}`;
 const filePath = (path: string) => path.split("/").map(enc).join("/");
 const etag = (rev: number) => `"${rev}"`;
 
-export type CatalogPublisher = "kobe" | "maintainer" | "site";
+export type CatalogPublisher = "kaiju" | "maintainer" | "site";
 
 export interface CatalogVersionRow {
   readonly id: string;
@@ -52,11 +52,11 @@ export interface CatalogSkillView {
   readonly id: string;
   readonly name: string;
   readonly summary: string;
-  readonly publisher: "kobe" | "maintainer";
+  readonly publisher: "kaiju" | "maintainer";
   readonly status: string;
   readonly retired: boolean;
   readonly blocklisted: boolean;
-  readonly kobe: KaijuState | null;
+  readonly kaiju: KaijuState | null;
   readonly draft: SiteDraftInfo | null;
   readonly versions: readonly CatalogVersionRow[];
 }

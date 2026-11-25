@@ -24,7 +24,7 @@ const STATUS = {
   not_found: 404,
   user_not_found: 404,
   forbidden: 403,
-  kobe_skill: 403,
+  kaiju_skill: 403,
   last_maintainer: 409,
   too_many: 400,
 } as const;

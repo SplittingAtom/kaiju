@@ -219,7 +219,7 @@ Kaiju's own catalog skills (KOBE-317, SK4: the former built-ins) are published b
 itself from the package set it ships (`services/server/builtin-skills/<name>/`, each with a
 manifest whose `version` is the catalog semver; they keep `kobe.skill.yaml` until their next
 versions, KOBE-833, since renaming the file changes the package hash). Nobody promotes them, so their
-provenance (stored with the version) has `publisher: "kobe"` instead of `source`, `submitter`,
+provenance (stored with the version) has `publisher: "kaiju"` instead of `source`, `submitter`,
 `confirmedBy`, `origin` and `scorecard`; the rest is as above. Their versions only rise: changing a
 skill's files means raising its `version` (`kaiju-packages.test.ts` holds each version's hashes),
 and a Site refuses new bytes under a semver it holds or below its newest.

@@ -69,7 +69,7 @@ export class KaijuMcpHarness {
   private internal: ServerType | undefined;
   private upstream: UpstreamClient | undefined;
   private proxy: ReturnType<typeof createProxyApp> | undefined;
-  private kaijuName = "kobe";
+  private kaijuName = "kaiju";
   private gitName = "kaiju-git";
   /** Which built-in the calls below address (KOBE-762: the git connector is its own). */
   builtin: "kaiju" | "git" = "kaiju";

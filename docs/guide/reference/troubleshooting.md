@@ -138,7 +138,7 @@ add your own key in **Profile → My connectors**.
 **The agent says it has no admin tools.** Kaiju's admin tools need all of these: a site admin chose
 **Docs and admin tools** (Site console → Settings → Kaiju connector), your team admin set the Kaiju
 card on the team console's **Connectors** page to **Read** or **Read and write** (changes need Read
-and write), the agent uses the kaiju connector (the gallery agent Kobe does; others must list
+and write), the agent uses the kaiju connector (the gallery agent Kaiju does; others must list
 **kaiju** among their connectors), and your role allows the action (members get none). Scheduled
 and auto runs never make admin changes. **+** → **Connectors** shows which admin tools you have.
 See [Admin from a conversation](../admin/admin-from-a-conversation.md).

@@ -1,6 +1,6 @@
 import { explicitToolNames } from "@kaiju/agent-file";
 import { sql, type KaijuTx, type TeamRole } from "@kaiju/db";
-import { toolManifestSchema, withSiteNames } from "../agents/manifest.js";
+import { toolManifestSchema, withCurrentNames } from "../agents/manifest.js";
 import type { SiteRole } from "../authz/permissions.js";
 import { MEMORY_TOOLS } from "@kaiju/protocol";
 import { readRunMemoryPlan } from "../agents/run-memory.js";
@@ -80,7 +80,7 @@ async function agentTools(
           SELECT tool_manifest, published_by FROM site_agent_versions
            WHERE agent_id = ${row.agent_id} AND version = ${row.agent_version}`);
   const found = version.rows[0];
-  const parsed = toolManifestSchema.safeParse(withSiteNames(found?.tool_manifest));
+  const parsed = toolManifestSchema.safeParse(withCurrentNames(found?.tool_manifest));
   if (!found || !parsed.success) throw new Error("the run's agent version can't be read");
   const manifest = parsed.data;
   const dangerous =

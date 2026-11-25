@@ -51,7 +51,7 @@ const chatConnector = obj({
   name: str,
   enabled: bool,
   "builtin?": obj({
-    kind: oneOfStrings("kobe", "git"),
+    kind: oneOfStrings("kaiju", "git"),
     admin: oneOfStrings("off", "read", "read_write"),
   }),
   problem: nullable(obj({ code: oneOfStrings(...CONNECTOR_PROBLEMS), message: str, fix: str })),

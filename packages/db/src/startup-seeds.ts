@@ -53,8 +53,16 @@ const HELM_SSO_AUDIT_ACTIONS = [
   "identity.sso.provider.disabled",
 ] as const;
 
-/** Kaiju's own catalog skills (publisher `kobe`, KOBE-317), as a subquery of their ids. */
-const KAIJU_SKILL_IDS = "SELECT id FROM public.registry_skills WHERE publisher = 'kobe'";
+/**
+ * Kaiju's publisher (KOBE-317) as a condition that holds on the schema of any release: the backup
+ * and restore of a database from before the rename (KOBE-831, migration 0262) see the enum value
+ * `kobe`, which `= 'kaiju'` would refuse as invalid input, so the value is compared as text and
+ * both spellings count (permanent: such backups stay restorable).
+ */
+const KAIJU_PUBLISHER = "publisher::text IN ('kaiju', 'kobe')";
+
+/** Kaiju's own catalog skills, as a subquery of their ids. */
+const KAIJU_SKILL_IDS = `SELECT id FROM public.registry_skills WHERE ${KAIJU_PUBLISHER}`;
 
 /** `site_settings` keys only background jobs write: where a pass or a sweep stands. */
 export const JOB_SETTING_KEYS = [
@@ -101,11 +109,11 @@ export const STARTUP_SEEDED_ROWS: Readonly<Record<string, StartupSeed>> = {
   },
   registry_skills: {
     why: "Kaiju's own catalog skills, published at every server start (KOBE-317)",
-    rows: "publisher = 'kobe'",
+    rows: KAIJU_PUBLISHER,
   },
   registry_versions: {
     why: "the versions of Kaiju's catalog skills the seed publishes (no person submits them)",
-    rows: "publisher = 'kobe'",
+    rows: KAIJU_PUBLISHER,
   },
   registry_skill_tags: {
     why: "the Default tags the Kaiju skills seed adds (no person adds them)",

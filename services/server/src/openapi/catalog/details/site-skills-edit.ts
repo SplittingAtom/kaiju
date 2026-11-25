@@ -23,11 +23,11 @@ const siteSkillView = obj({
   id: uuid,
   name: str,
   summary: str,
-  publisher: oneOfStrings("kobe", "maintainer"),
+  publisher: oneOfStrings("kaiju", "maintainer"),
   status: str,
   retired: { type: "boolean", description: "Deprecated or archived: restore it before editing." },
   blocklisted: bool,
-  kobe: nullable(
+  kaiju: nullable(
     obj({
       detached: bool,
       detachedAt: nullable(str),

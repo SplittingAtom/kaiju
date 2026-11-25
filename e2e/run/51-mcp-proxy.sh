@@ -193,11 +193,11 @@ if [[ -n "${KAIJU_SANDBOX_IMAGE:-}" && -n "${sandbox_id:-}" && "${client_ready:-
       INSERT INTO site_agents (id, scope, owner_user_id, slug, frontmatter, prompt)
         SELECT '$SITE_AGENT', 'personal', '$owner_id', 'e2e-site-key',
           (a.frontmatter - 'tools') || '{\"name\":\"E2E site key\",\"connectors\":[\"e2e-site\"]}'::jsonb, a.prompt
-        FROM site_agents a WHERE a.gallery_key = 'kobe' ON CONFLICT DO NOTHING;
+        FROM site_agents a WHERE a.gallery_key = 'kaiju' ON CONFLICT DO NOTHING;
       INSERT INTO site_agent_versions (agent_id, version, frontmatter, prompt, tool_manifest, draft_revision)
         SELECT a.id, 1, a.frontmatter, a.prompt,
           (SELECT v.tool_manifest FROM site_agent_versions v JOIN site_agents g ON g.id = v.agent_id AND v.version = g.current_version
-            WHERE g.gallery_key = 'kobe') || '{\"connectors\":[\"e2e-site\"]}'::jsonb, 1
+            WHERE g.gallery_key = 'kaiju') || '{\"connectors\":[\"e2e-site\"]}'::jsonb, 1
         FROM site_agents a WHERE a.id = '$SITE_AGENT' ON CONFLICT DO NOTHING;
       UPDATE site_agents SET current_version = 1 WHERE id = '$SITE_AGENT';" >/dev/null
     contains "KOBE-449: the Owner holds no key of their own for the site-key connector" '^0$' \

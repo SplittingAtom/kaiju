@@ -19,7 +19,7 @@ export const isDefaultNewThreadAgent = (agent: {
 
 /**
  * The team's default agent for new threads, chosen by a team admin from its roster (agents-roster
- * §7.7; KOBE-567 hook, setting KOBE-571 in `team-default.ts`); null → the site default (Kobe).
+ * §7.7; KOBE-567 hook, setting KOBE-571 in `team-default.ts`); null → the site default (Kaiju).
  * Whatever it names still goes through `resolveAgentPin`, so a team default that is not runnable
  * for the member falls back to the site default.
  */
@@ -37,7 +37,7 @@ export async function defaultNewThreadPin(
     const pin = await resolveAgentPin(tx, viewer, teamDefault);
     if (pin.ok && pin.value !== null) return pin.value;
   }
-  const [kobe] = await tx
+  const [kaiju] = await tx
     .select({ id: siteAgents.id })
     .from(siteAgents)
     .where(
@@ -47,7 +47,7 @@ export async function defaultNewThreadPin(
         isNull(siteAgents.archivedAt),
       ),
     );
-  if (!kobe) return null;
-  const pin = await resolveAgentPin(tx, viewer, kobe.id);
+  if (!kaiju) return null;
+  const pin = await resolveAgentPin(tx, viewer, kaiju.id);
   return pin.ok ? pin.value : null;
 }

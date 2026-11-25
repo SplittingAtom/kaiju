@@ -69,7 +69,7 @@ describe("theme settings (TH2, TH9-TH11)", () => {
 
   it("refuses unknown presets, missing custom fields and extra keys", () => {
     for (const bad of [
-      { preset: "kobe" },
+      { preset: "kaiju" },
       { preset: "Default" },
       {},
       { preset: "custom" },
@@ -178,7 +178,7 @@ describe("public branding (GET /v1/site/branding)", () => {
       favicon: null,
       theme: DEFAULT_THEME,
     };
-    expect(siteBrandingSchema.safeParse({ ...ok, theme: { preset: "kobe" } }).success).toBe(false);
+    expect(siteBrandingSchema.safeParse({ ...ok, theme: { preset: "kaiju" } }).success).toBe(false);
     expect(siteBrandingSchema.safeParse({ ...ok, appName: "" }).success).toBe(false);
     expect(siteBrandingSchema.safeParse({ ...ok, css: "x" }).success).toBe(false);
     expect(siteBrandingSchema.safeParse(ok).success).toBe(true);

@@ -17,7 +17,7 @@ export interface SiteVersionRow {
   readonly id: string;
   readonly semver: string;
   readonly seq: number;
-  readonly publisher: "kobe" | "maintainer" | "site";
+  readonly publisher: "kaiju" | "maintainer" | "site";
   /** The review state, or `suspended` while a rescan's Block holds it. */
   readonly state: string;
   readonly verdict: "pass" | "caution" | "block";
@@ -55,13 +55,13 @@ export interface SiteSkillView {
   readonly id: string;
   readonly name: string;
   readonly summary: string;
-  readonly publisher: "kobe" | "maintainer";
+  readonly publisher: "kaiju" | "maintainer";
   readonly status: string;
   /** Deprecated or archived: Restore first (KOBE-495). */
   readonly retired: boolean;
   /** The newest version's bytes are on the Site's blocklist. */
   readonly blocklisted: boolean;
-  readonly kobe: KaijuState | null;
+  readonly kaiju: KaijuState | null;
   readonly draft: SiteDraftInfo | null;
   readonly versions: readonly SiteVersionRow[];
 }
@@ -126,7 +126,7 @@ type SkillRow = {
   id: string;
   name: string;
   summary: string;
-  publisher: "kobe" | "maintainer";
+  publisher: "kaiju" | "maintainer";
   status: string;
   detached_at: Date | null;
   detached_by: string | null;
@@ -135,7 +135,7 @@ type SkillRow = {
 };
 
 export function kaijuState(r: SkillRow): KaijuState | null {
-  if (r.publisher !== "kobe") return null;
+  if (r.publisher !== "kaiju") return null;
   const from = r.detached_from_version;
   const shipped = r.kobe_shipped_version;
   return {
@@ -206,7 +206,7 @@ export async function siteSkillView(db: KaijuDb, skillId: string): Promise<SiteS
     status: row.status,
     retired: RETIRED_STATUSES.includes(row.status),
     blocklisted: await skillBlocklisted(db, skillId),
-    kobe: kaijuState(row),
+    kaiju: kaijuState(row),
     draft: await draftInfo(db, skillId),
     versions: await versionRows(db, skillId),
   };
