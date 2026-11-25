@@ -8,6 +8,12 @@ audience: member
 
 What changed in the latest release, in short, with a link to the page that explains each part.
 
+## My memory and My schedules moved to the profile menu
+
+**My memory** and **My schedules** are no longer icons in the top bar: open them from the
+**Profile** menu at its right end, where every item now has an icon. Their addresses, `/memory`,
+`/schedules` and the command palette work as before. See [The Kaiju screen](getting-started/layout.md).
+
 ## Kobe is now Kaiju
 
 The product has a new name: the app, its emails, the sign-in page and this guide now say
