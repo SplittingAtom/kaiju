@@ -4,21 +4,25 @@ import { SHELL_TIMEOUT_MS } from "../support/constants.js";
 /**
  * Gate 7, U51 (KOBE-675): "Notes, remember and recall(path) unchanged inside the Notes tab; one bar
  * icon and /memory remain; release notes cover the master-switch widening." remember and
- * recall(path) run in e2e/gate7.sh (API). Here: one My memory icon in the bar opens My memory
+ * recall(path) run in e2e/gate7.sh (API). Here: one My memory entry, in the profile menu since
+ * KOBE-843 (no longer a bar icon), opens My memory
  * with its Memories and Notes tabs (the Notes tab loads without an error), the / menu still offers
  * /memory, and the guide (served at /docs) says that turning memory off now turns memories off too,
  * on the Memory page and on What's new, the user-facing release notes (KOBE-678; the operator notes
  * are docs/releases/v1.3.md). Spends one short model turn.
  */
-test("U51: one bar icon, the Notes tab, /memory and the guide's master-switch note", async ({
+test("U51: one My memory entry, the Notes tab, /memory and the guide's master-switch note", async ({
   chat,
   page,
 }) => {
   await chat.open();
   await chat.ask("No tools. Reply with the single word NOTES.");
-  const icons = page.locator('[data-command="my-memory"]');
-  await expect(icons).toHaveCount(1);
-  await icons.click();
+  // KOBE-843: My memory is one item of the profile menu, no longer a bar icon.
+  await expect(page.locator('header [data-command="my-memory"]')).toHaveCount(0);
+  await page.locator('[data-command="profile"]').click();
+  const entries = page.getByRole("link", { name: "My memory", exact: true });
+  await expect(entries).toHaveCount(1);
+  await entries.click();
   const panel = page.getByRole("dialog", { name: "My memory" });
   await expect(panel).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   await expect(panel.getByRole("tab", { name: "Memories" })).toBeVisible();

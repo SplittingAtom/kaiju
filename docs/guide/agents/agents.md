@@ -131,7 +131,8 @@ is. An agent bound to a team (a fork of that team's content) can only be adopted
 ## Schedule an agent
 
 A schedule sends a prompt to one of your agents at set times; its runs appear as conversations.
-Open **My schedules** (`/me/schedules`) and press **New schedule**: pick the **Agent**, write the
+Open **My schedules** from the profile menu at the right end of the top bar (or `/schedules`;
+`/me/schedules`) and press **New schedule**: pick the **Agent**, write the
 **Prompt**, choose how it **Repeats** (or a cron expression) and the time zone, and optionally
 **Email me when a run ends**. Each schedule can be edited, paused, resumed or deleted; one a team
 admin paused can only be resumed by a team admin. Scheduled runs cannot stop to ask you, so

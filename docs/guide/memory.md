@@ -8,7 +8,7 @@ audience: member
 
 Memory lets the agent keep what it should know beyond one conversation: your preferences, facts
 about your work, decisions a project made. It comes in two forms, side by side on one page, **My
-memory** in the top bar (`/me/memory`):
+memory** in the profile menu at the right end of the top bar, or `/memory` (`/me/memory`):
 
 - **Memories** (the first tab): short statements, one per line, such as "Prefers answers in
   euros". You add and edit them yourself, and the agent is given them at the start of each run.

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 
 /**
@@ -35,7 +36,22 @@ export function InlineLink(props: TextLinkProps) {
   return <TextLink {...props} />;
 }
 
-/** An item of a bar disclosure menu (the profile menu): a menu lists names, which are text. */
-export function MenuLink(props: TextLinkProps) {
-  return <TextLink {...props} />;
+/**
+ * An item of a bar disclosure menu (the profile menu): a menu lists names, which are text, each
+ * after its icon (KOBE-843), which is decoration (`aria-hidden`); the name stays the label.
+ */
+export function MenuLink({ icon: Icon, children, ...props }: TextLinkProps & MenuIconProps) {
+  return (
+    <TextLink {...props}>
+      <Icon aria-hidden data-menu-icon="" className={MENU_ICON} />
+      <span>{children}</span>
+    </TextLink>
+  );
+}
+
+/** Every profile menu item's icon: one size, aligned with its name (KOBE-843). */
+export const MENU_ICON = "size-4 shrink-0";
+
+export interface MenuIconProps {
+  readonly icon: LucideIcon;
 }

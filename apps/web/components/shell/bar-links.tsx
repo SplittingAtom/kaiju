@@ -36,8 +36,8 @@ function Links({
 }
 
 /**
- * The bar's right side: the member's own areas (My memory, My schedules, Agents, Skills), each
- * a panel over the workspace (KOBE-452).
+ * The bar's right side: the member's own areas (Agents, Skills), each a panel over the workspace
+ * (KOBE-452). My memory and My schedules are in the profile menu (KOBE-843).
  */
 export function AreaLinks() {
   return <Links commands={linksOf("areas", { consoles: [] })} label="My area" />;

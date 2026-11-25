@@ -12,8 +12,9 @@ import { expect, test } from "./support/chat.js";
  * Runs against gate1 like the rest of the suite (README.md).
  */
 const PAGES = [
-  { path: "/me/memory", name: "My memory", open: { bar: "my-memory" } },
-  { path: "/me/schedules", name: "My schedules", open: { bar: "my-schedules" } },
+  // In the profile menu since KOBE-843, like the others.
+  { path: "/me/memory", name: "My memory", open: { menu: "My memory" } },
+  { path: "/me/schedules", name: "My schedules", open: { menu: "My schedules" } },
   { path: "/me/approvals", name: "My approvals", open: { menu: "My approvals" } },
   { path: "/me/connectors", name: "My connectors", open: { menu: "My connectors" } },
 ] as const;
@@ -32,13 +33,9 @@ async function shoot(page: Page, name: string, target: Locator): Promise<void> {
 }
 
 async function openFrom(page: Page, opener: Opener): Promise<void> {
-  // On a phone the bar's links sit in its Menu.
+  // On a phone the profile menu sits in the bar's Menu.
   const menu = page.locator('[data-command="thread-menu"]');
   if (await menu.isVisible()) await menu.click();
-  if ("bar" in opener) {
-    await page.locator(`[data-command="${opener.bar}"]`).click();
-    return;
-  }
   await page.locator('[data-command="profile"]').click();
   await page.getByRole("link", { name: opener.menu }).click();
 }
