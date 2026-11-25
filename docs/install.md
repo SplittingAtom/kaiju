@@ -1838,18 +1838,33 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   `sandbox folder .kobe left in place: needs a person (KOBE-827)` (warn, field `state_folder`):
   `conflict` (both folders hold data: both are left as they are and the agent runs on `.kaiju/`;
   an earlier move followed by an older image, or a folder someone made before the upgrade),
-  `failed` (the rename failed, with the errno `code`; `.kobe/` is intact and the next start
-  tries again) or `not_a_folder` (`.kobe` is a link or a file; never followed). The warning repeats
-  at every start until resolved: inspect the volume (`kubectl exec` into the sandbox) and bring
-  unpushed commits over from `.kobe/repos/<slug>` with git before removing anything. Rolling back
-  to an older image after the move gives that sandbox a fresh `.kobe/` (its working copies are
-  re-cloned, `.kaiju/` is untouched) and a `conflict` when it returns to this release. Both
+  `failed` (the rename failed, with the errno `code`, or `.kaiju` is a file beside a `.kobe/`
+  holding data; logged as an error in the sandbox's own log and the agent exits before anything
+  writes `.kaiju`, so the pod restarts with backoff and every restart retries the move on an
+  untouched volume; the member's runs fail to start meanwhile) or `not_a_folder` (`.kobe` is a link
+  or a file; never followed, and the agent carries on with `.kaiju/`). For `conflict` and
+  `not_a_folder` the warning repeats at every start and each run's context tells the in-sandbox
+  agent to tell the member (both folders named, nothing deleted). Resolve it: inspect the volume
+  (`kubectl exec` into the sandbox) and bring unpushed commits over from `.kobe/repos/<slug>` with
+  git before removing anything; for `failed`, fix the cause (permissions, a busy mount, the stray
+  `.kaiju` file) and the next restart moves the folder. **Rollback:** roll back only the sandbox
+  image if you must (the server of this release refuses both folder names from any agent): an
+  older agent then gets a fresh `.kobe/` (its working copies are re-cloned; `.kaiju/` stays on the
+  volume, unsynced) and the sandbox reports `conflict` when it returns to this release. A full
+  rollback of server and image is different: the older agent treats `.kaiju/` as ordinary member
+  files and uploads it (Pi session files with whole conversations and tool output, the agent's
+  sync state, every working copy including `.git`); the older server accepts them, members see
+  them in their files and they count against storage. While still on the older release, delete the uploaded `.kaiju/` folder from each affected
+  member's files (it shows in their Files panel), then roll forward; files left there are hidden
+  again from this release on but stay in object storage and in `workspace_files`. Find them with
+  `SELECT team_id, user_id, count(*) FROM workspace_files WHERE NOT deleted AND (path = '.kaiju' OR
+path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   folder names stay agent-internal for good (never synced, browsed, mentioned or shared). Deny and
   ask rules whose arguments name one folder also match the same path under the other (never allow
   rules), and Pi sessions recorded under the old provider id `kobe` and entry types `kobe.branch`,
-  `kobe.app_card` and `kobe.skipped_actions` keep working. Before the upgrade, check that no
-  member stored files under a top-level `.kaiju/` folder (from then on it is internal): such files
-  stay in object storage but no longer show or restore.
+  `kobe.app_card` and `kobe.skipped_actions` keep working. Before the upgrade, run the same
+  query to check that no member stored files under a top-level `.kaiju/` folder (from then on it
+  is internal): such files stay in object storage but no longer show or restore.
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
   namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces

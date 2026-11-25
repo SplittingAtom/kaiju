@@ -16,7 +16,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { ensureSessionDir } from "../pi/session-files.js";
-import { moveStateFolder, type StateFolderFs } from "./state-folder.js";
+import { memoryRunFileContent } from "../memory/context.js";
+import {
+  StateFolderStartError,
+  moveStateFolder,
+  stateFolderAtStart,
+  stateFolderNotice,
+  type StateFolderFs,
+} from "./state-folder.js";
 
 /**
  * KOBE-827 ac-1/ac-3: `/workspace/.kobe` becomes `.kaiju` at wake in one rename, idempotently,
@@ -190,7 +197,7 @@ describe("moveStateFolder (KOBE-827)", () => {
     expect(await readFile(path.join(other, ".kobe"), "utf8")).toBe("a member's file");
   });
 
-  it("a failed rename leaves .kobe intact and says why; the next start moves it", async () => {
+  it("a failed rename stops the start before anything writes .kaiju; the next start moves all (M1)", async () => {
     const root = await workspace();
     await oldFolder(root);
     const before = await tree(path.join(root, ".kobe"));
@@ -202,14 +209,28 @@ describe("moveStateFolder (KOBE-827)", () => {
       unlink: async () => undefined,
     };
     expect(await moveStateFolder(root, failing)).toEqual({ outcome: "failed", code: "EACCES" });
+    const start = stateFolderAtStart(root, failing);
+    await expect(start).rejects.toBeInstanceOf(StateFolderStartError);
+    await expect(start).rejects.toMatchObject({ report: { outcome: "failed", code: "EACCES" } });
+    // The agent exits here (index.ts), so nothing creates or fills .kaiju in that start.
     expect(await tree(path.join(root, ".kobe"))).toEqual(before);
     expect(await exists(path.join(root, ".kaiju"))).toBe(false);
 
-    expect(await moveStateFolder(root)).toEqual({ outcome: "moved" });
+    // The pod restarts: the move succeeds and one .kaiju holds everything.
+    expect(await stateFolderAtStart(root)).toEqual({ outcome: "moved" });
+    expect((await readdir(root)).sort()).toEqual([".kaiju"]);
     expect(await tree(path.join(root, ".kaiju"))).toEqual(before);
   });
 
-  it("a failure after removing an empty .kaiju loses nothing (the interrupted state moves next time)", async () => {
+  it("had a failed start gone on, .kaiju would fill and strand .kobe: why it must not (M1)", async () => {
+    const root = await workspace();
+    await oldFolder(root);
+    // What sync, Pi and a re-clone would write if the agent carried on after a failure.
+    await put(root, ".kaiju/sessions/new.jsonl", "{}\n");
+    expect(await moveStateFolder(root)).toEqual({ outcome: "conflict" });
+  });
+
+  it("a crash after removing an empty .kaiju loses nothing and the next start moves it", async () => {
     const root = await workspace();
     await oldFolder(root);
     await mkdir(path.join(root, ".kaiju"));
@@ -221,10 +242,47 @@ describe("moveStateFolder (KOBE-827)", () => {
       rmdir: (dir) => import("node:fs/promises").then((fs) => fs.rmdir(dir)),
       unlink: async () => undefined,
     };
-    expect(await moveStateFolder(root, crashes)).toEqual({ outcome: "failed", code: "EINTR" });
+    await expect(stateFolderAtStart(root, crashes)).rejects.toBeInstanceOf(StateFolderStartError);
     expect(await exists(path.join(root, ".kaiju"))).toBe(false);
-    expect(await moveStateFolder(root)).toEqual({ outcome: "moved" });
+    expect(await stateFolderAtStart(root)).toEqual({ outcome: "moved" });
     expect(await tree(path.join(root, ".kaiju"))).toEqual(before);
+  });
+
+  it("a .kaiju file beside a .kobe holding data fails the start (unusable, never a conflict)", async () => {
+    const root = await workspace();
+    await oldFolder(root);
+    await put(root, ".kaiju", "a file a tool left");
+    const before = await tree(path.join(root, ".kobe"));
+    await expect(stateFolderAtStart(root)).rejects.toMatchObject({
+      report: { outcome: "failed", code: "ENOTDIR" },
+    });
+    expect(await tree(path.join(root, ".kobe"))).toEqual(before);
+    expect(await readFile(path.join(root, ".kaiju"), "utf8")).toBe("a file a tool left");
+  });
+
+  it("tells every run about a conflict or an odd .kobe, naming both folders (M2)", () => {
+    for (const outcome of ["conflict", "not_a_folder"] as const) {
+      const notice = stateFolderNotice({ outcome }) ?? "";
+      expect(notice).toContain("/workspace/.kobe");
+      expect(notice).toContain("/workspace/.kaiju/");
+      expect(notice).toContain("deleted nothing");
+      expect(notice).toContain("Tell the user");
+      // It rides the start-of-run block the run's system prompt carries.
+      const content = memoryRunFileContent(
+        undefined,
+        "0".repeat(16),
+        undefined,
+        undefined,
+        [],
+        undefined,
+        notice,
+      );
+      expect(content.conflicts).toBe(notice);
+    }
+    expect(stateFolderNotice({ outcome: "moved" })).toBeUndefined();
+    expect(stateFolderNotice({ outcome: "removed_empty" })).toBeUndefined();
+    expect(stateFolderNotice(undefined)).toBeUndefined();
+    expect(memoryRunFileContent(undefined, "0".repeat(16)).conflicts).toBeUndefined();
   });
 
   it.skipIf(!hasGit())(

@@ -115,9 +115,14 @@ export function memoryRunFileContent(
   viewing?: RunViewingContext,
   conflicts?: readonly SyncConflict[],
   repo?: RunGitRepo,
+  /** KOBE-827 review M2: the sandbox folder notice, carried in the same start-of-run block. */
+  stateFolderNotice?: string,
 ): MemoryFileContent {
   const tools = memory !== undefined && memory.scopes.length > 0;
-  const note = conflictNoteText(conflicts);
+  const notes = [conflictNoteText(conflicts), stateFolderNotice].filter(
+    (n): n is string => n !== undefined && n !== "",
+  );
+  const note = notes.length === 0 ? undefined : notes.join("\n\n");
   const fence = nonce ?? newNonce();
   // What Kaiju knows (KOBE-383): independent of Notes, so Policy reaches agents set to Notes only
   // or Off (Chris 2026-11-12). `recall` is listed only with Notes on.

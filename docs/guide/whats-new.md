@@ -41,7 +41,8 @@ The sandbox's own folder is now `/workspace/.kaiju/` (it was `/workspace/.kobe/`
 moves it the first time it starts after the upgrade, before the agent runs, in one step: the
 agent's working copies of your Repos, with any work it had not pushed yet, come along unchanged,
 and conversations continue where they were. If a sandbox finds both folders already there, it
-moves nothing and keeps both (an admin sees it in the server's log); see
+moves nothing, deletes nothing and keeps both: the agent tells you in its next answer and an
+admin sees it in the server's log; see
 [Working with git](for-agents/working-with-git.md). Files that the sandbox moves out of a
 read-only area now go to `kaiju-moved/` (earlier ones stay in `kobe-moved/`, as ordinary files).
 

@@ -422,6 +422,8 @@ export class Thread {
     viewing?: RunViewingContext,
     conflicts?: readonly SyncConflict[],
     repo?: RunGitRepo,
+    /** KOBE-827: the sandbox folder notice, carried with the start-of-run conflicts note. */
+    stateFolderNotice?: string,
   ): Promise<void> {
     this.#liveConflicts = [];
     // Per-thread fence nonce (KOBE-383): the memory blocks stay byte-stable across runs.
@@ -432,6 +434,7 @@ export class Thread {
       viewing,
       conflicts,
       repo,
+      stateFolderNotice,
     );
     // KOBE-662: what kaiju-tools will put before this run's message, kept for later messages.
     const note =

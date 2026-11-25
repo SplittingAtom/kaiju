@@ -191,6 +191,7 @@ export class ThreadManager {
           this.#options.fileEditTools ? frame.viewing : undefined,
           frame.sync_conflicts,
           this.#options.projectTools ? frame.git?.repo : undefined,
+          this.#options.stateFolderNotice,
         );
         // Git identity and connected organizations (KOBE-764): the tools' git config.
         await thread.attachGit(frame.git);

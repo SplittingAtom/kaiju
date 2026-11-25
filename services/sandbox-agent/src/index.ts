@@ -25,7 +25,11 @@ import { SkillStore } from "./skills/store.js";
 import { piVersion as readPiVersion, readAgentVersion } from "./version.js";
 import { SyncClient } from "./workspace/client.js";
 import { WorkspaceSync } from "./workspace/sync.js";
-import { moveStateFolder, type StateFolderReport } from "./workspace/state-folder.js";
+import {
+  StateFolderStartError,
+  stateFolderAtStart,
+  type StateFolderReport,
+} from "./workspace/state-folder.js";
 
 /**
  * kaiju-sandbox-agent entry point: the sandbox's main process (D13). Dials out to the server; opens
@@ -54,8 +58,13 @@ async function main(): Promise<void> {
   // runtime dirs) gets its mode explicitly.
   process.umask(0o077);
   // KOBE-827: the pre-rename `/workspace/.kobe` becomes `.kaiju` before anything else touches the
-  // volume (sync, Pi, kernels, tools); one rename, never a merge (workspace/state-folder.ts).
-  const stateFolder = await moveStateFolder(checked.workspaceDir);
+  // volume (sync, Pi, kernels, tools); one rename, never a merge (workspace/state-folder.ts). A
+  // failed move stops the start here (StateFolderStartError), so nothing creates `.kaiju` and the
+  // next start retries on a clean volume.
+  const stateFolder = await stateFolderAtStart(checked.workspaceDir).catch((error: unknown) => {
+    if (error instanceof StateFolderStartError) logStateFolder(error.report);
+    throw error;
+  });
   logStateFolder(stateFolder);
   // Pi identities first: they decide how the runtime directories are laid out, and an agent that
   // was asked for them but cannot provide them must not start Pi under the agent's uid instead.

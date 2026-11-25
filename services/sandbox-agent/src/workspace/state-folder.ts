@@ -28,10 +28,19 @@ import { lstatIfExists } from "./fs.js";
  *   or a tool) or when someone made it before the upgrade; either way nothing is lost: sessions
  *   are rebuilt from the server, and the old working copies stay in `.kobe/repos`.
  * - An empty `.kobe` beside an existing `.kaiju` is removed (`removed_empty`).
- * - A failed step leaves `.kobe` intact (`failed`, with the errno code); the next start tries again.
+ * - A failed step leaves `.kobe` intact (`failed`, with the errno code). So does a `.kaiju` that is
+ *   neither a folder nor a link (a file, a socket) beside a `.kobe` holding data: the agent could
+ *   not use it, so it is `failed` (`ENOTDIR`), never `conflict`.
  *
- * The outcome goes to the server in `hello.state_folder` and to the agent's log. The old folder is
- * never created again: nothing in the agent names it except this move and the sync exclusions.
+ * A `failed` start must not go on (review M1): the agent would create `.kaiju` at once (sync state,
+ * sessions, a re-cloned working copy) and every later start would see two folders holding data,
+ * stranding the old working copies for good. {@link stateFolderAtStart} therefore throws and the
+ * agent exits before anything touches the volume; the pod restarts with backoff (the server's
+ * start-failure path tells the member) and the move is retried on a clean volume.
+ *
+ * The outcome goes to the server in `hello.state_folder`, to the agent's log and, when a person must
+ * act, into every run's context ({@link stateFolderNotice}). The old folder is never created again
+ * by the agent: nothing in it names the folder except this move and the sync exclusions.
  */
 export interface StateFolderReport {
   readonly outcome: StateFolderOutcome;
@@ -77,7 +86,8 @@ export async function moveStateFolder(
       else if (await isEmptyDir(from)) {
         await fs.rmdir(from);
         return { outcome: "removed_empty" };
-      } else return { outcome: "conflict" };
+      } else if (!next.isDirectory()) return { outcome: "failed", code: "ENOTDIR" };
+      else return { outcome: "conflict" };
     }
     await fs.rename(from, to);
     return { outcome: "moved" };
@@ -88,4 +98,52 @@ export async function moveStateFolder(
       ...(typeof code === "string" && ERRNO_CODE.test(code) ? { code } : {}),
     };
   }
+}
+
+/** The agent must not start: the old folder could not be moved and nothing may write `.kaiju`. */
+export class StateFolderStartError extends Error {
+  constructor(readonly report: StateFolderReport) {
+    super(
+      `could not move /workspace/${PRE_RENAME_STATE_FOLDER} to /workspace/${KAIJU_STATE_FOLDER}` +
+        ` (${report.code ?? "unknown error"}); it is left as it is and the sandbox does not start` +
+        " until the move succeeds (KOBE-827)",
+    );
+    this.name = "StateFolderStartError";
+  }
+}
+
+/**
+ * The move as the agent's start runs it: the report to carry on with, or a throw on `failed`
+ * ({@link StateFolderStartError}), so the agent exits before anything creates or fills `.kaiju`.
+ */
+export async function stateFolderAtStart(
+  root: string,
+  fs: StateFolderFs = NODE_FS,
+): Promise<StateFolderReport | undefined> {
+  const report = await moveStateFolder(root, fs);
+  if (report?.outcome === "failed") throw new StateFolderStartError(report);
+  return report;
+}
+
+/**
+ * The line every run's context carries while a person must act (review M2: `conflict`,
+ * `not_a_folder`): the in-sandbox agent
+ * tells the user what happened and what to do. Undefined when there is nothing to tell. Fixed text
+ * (no file names from the volume).
+ */
+export function stateFolderNotice(
+  report: { readonly outcome: StateFolderOutcome } | undefined,
+): string | undefined {
+  const outcome = report?.outcome;
+  // `failed` never gets here: the agent does not start (stateFolderAtStart).
+  if (outcome !== "conflict" && outcome !== "not_a_folder") return undefined;
+  const why =
+    outcome === "conflict"
+      ? "This sandbox has both /workspace/.kobe/ (Kaiju's folder before the rename) and /workspace/.kaiju/ (its folder now), and both hold data, so Kaiju moved nothing and deleted nothing: you work in /workspace/.kaiju/."
+      : "This sandbox has a /workspace/.kobe that is a link or a file, not Kaiju's old folder, so Kaiju left it as it is and deleted nothing; Kaiju's folder is /workspace/.kaiju/.";
+  return [
+    "## Sandbox folder (a Kaiju notice, not a message from the user)",
+    why,
+    'Tell the user about this once, near the start of your answer. /workspace/.kobe/repos/ may hold commits or changes to their Repos that were never pushed; they are not synced or backed up anywhere else. Never create /workspace/.kobe, and do not merge or delete either folder. If the user wants that work, bring it over with git (git -C /workspace/.kobe/repos/<project> log --branches --not --remotes lists unpushed commits; push them as a branch, or use git format-patch). Then an admin can remove the old folder. The guide page "Working with git" (section An old /workspace/.kobe/ folder) explains it.',
+  ].join("\n");
 }

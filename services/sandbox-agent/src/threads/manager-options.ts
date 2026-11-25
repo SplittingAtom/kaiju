@@ -34,6 +34,11 @@ export interface ThreadManagerOptions extends ThreadEnv {
    * so Pi's first model call already carries it; absent or null: none.
    */
   readonly traceparentOf?: (runId: string) => string | null;
+  /**
+   * KOBE-827 review M2: the notice every run's context carries while the pre-rename `.kobe` folder
+   * needs a person (`workspace/state-folder.ts` `stateFolderNotice`); absent: none.
+   */
+  readonly stateFolderNotice?: string;
 }
 
 /**

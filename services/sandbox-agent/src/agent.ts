@@ -18,6 +18,7 @@ import { fail, ok, type CommandOutcome } from "./threads/outcome.js";
 import { compactFailure, type CompactReply } from "./threads/compact.js";
 import { branchSummaryFailure, type BranchSummaryReply } from "./threads/branch-summary.js";
 import { sandboxQuiet } from "./workspace/quiet.js";
+import { stateFolderNotice } from "./workspace/state-folder.js";
 import type { ReclaimProof } from "./workspace/sync.js";
 import { WireClient, type FatalReason, type WireLogger } from "./wire/client.js";
 import { encodeOutbound } from "./wire/encode.js";
@@ -131,6 +132,7 @@ export class Agent {
       notebookTools: this.#caps().notebookTools,
       memoryTools: this.#caps().memory,
       traceparentOf: (runId) => this.#traces.modelParentOf(runId),
+      ...stateFolderNoticeOption(deps.stateFolder),
       ...(deps.extensions === undefined ? {} : { extensions: deps.extensions }),
       ...(deps.policyReadyTimeoutMs === undefined
         ? {}
@@ -835,4 +837,10 @@ function logRefusal(
     },
     "command refused",
   );
+}
+
+/** The state folder notice for the thread manager (KOBE-827 review M2), when there is one. */
+function stateFolderNoticeOption(report: AgentDeps["stateFolder"]): { stateFolderNotice?: string } {
+  const notice = stateFolderNotice(report);
+  return notice === undefined ? {} : { stateFolderNotice: notice };
 }
