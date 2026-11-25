@@ -130,6 +130,19 @@ async function populate(db: TestDatabase, shape: Shape): Promise<Site> {
          ('deny', $1, $3), ('ask', 'mcp__jira__*', $3), ('deny', $2, $3)`,
       [`${old}site_*`, "mcp__kobe__team_members_*", ids.user],
     );
+    // Review H1: deny and ask globs with a wildcard inside the old server segment.
+    await c.query(
+      `INSERT INTO site_tool_rules (effect, tool_glob, created_by) VALUES
+         ('deny', 'mcp__kobe*', $1), ('ask', 'mcp__kobe_g*', $1), ('deny', 'mcp__kobe-*', $1),
+         ('deny', 'mcp__k*', $1)`,
+      [ids.user],
+    );
+    if (shape.registered.includes("kaiju"))
+      // A rule of the registered `kaiju` connector: it must follow that connector (review L2).
+      await c.query(
+        `INSERT INTO site_tool_rules (effect, tool_glob, created_by) VALUES ('deny', 'mcp__kaiju__drop', $1)`,
+        [ids.user],
+      );
     await c.query(
       `INSERT INTO tool_rules (team_id, scope, user_id, effect, tool_glob, created_by,
          remember_scope, exact_keys, exact_input) VALUES
@@ -154,7 +167,7 @@ async function populate(db: TestDatabase, shape: Shape): Promise<Site> {
       connectors: [shape.kaijuName, "kobe-git", "jira"],
       tools: {
         allow: [`${old}*`, "read", "mcp__kobe_git__git_create_branch"],
-        deny: [`${old}site_*`],
+        deny: [`${old}site_*`, "mcp__kobe*"],
       },
     });
     await c.query(
@@ -177,7 +190,7 @@ async function populate(db: TestDatabase, shape: Shape): Promise<Site> {
       tools: [{ name: "read", source: "pi", risk: "read", scope: "sandbox", open_world: false }],
       connectors: [shape.kaijuName, "jira"],
       tools_allow: [`${old}*`, "read"],
-      tools_deny: [`${old}site_*`],
+      tools_deny: [`${old}site_*`, "mcp__kobe_*"],
       excluded: [],
       approval_mode: { requested: null, floor: "ask-on-write", effective: "ask-on-write" },
     });
@@ -234,8 +247,15 @@ async function populate(db: TestDatabase, shape: Shape): Promise<Site> {
 
 const SHAPES: readonly Shape[] = [
   { kaijuName: "kobe", registered: [] },
+  // The registered `kaiju` and `kaiju-git` move out of the built-ins' way (review L2).
   { kaijuName: "kobe-builtin", registered: ["kobe", "kaiju", "kaiju-git"] },
 ];
+
+/** Registered connectors' names after the upgrade. */
+const MOVED: Readonly<Record<string, string>> = {
+  kaiju: "kaiju-registered",
+  "kaiju-git": "kaiju-git-registered",
+};
 
 beforeAll(async () => {
   older = migrationsBefore(MARKER);
@@ -269,15 +289,9 @@ const column = async (i: number, query: string, params: unknown[] = []) =>
 
 describe.each([
   { i: 0, kaiju: "kaiju", git: "kaiju-git", old: "mcp__kobe__", now: "mcp__kaiju__" },
-  {
-    i: 1,
-    kaiju: "kaiju-builtin",
-    git: "kaiju-git-builtin",
-    old: "mcp__kobe_builtin__",
-    now: "mcp__kaiju_builtin__",
-  },
-])("upgrading a site whose built-in became $kaiju (KOBE-826)", ({ i, kaiju, git, old, now }) => {
-  it("renames the built-in rows, keeps their ids and leaves registered connectors alone", async () => {
+  { i: 1, kaiju: "kaiju", git: "kaiju-git", old: "mcp__kobe_builtin__", now: "mcp__kaiju__" },
+])("upgrading a site whose built-in was $old (KOBE-826)", ({ i, kaiju, git, old, now }) => {
+  it("renames the built-in rows, keeps their ids, moves a registered kaiju aside", async () => {
     const rows = await column(i, `SELECT id, name, url, builtin FROM connectors ORDER BY name`);
     expect(rows).toEqual(
       expect.arrayContaining([
@@ -291,7 +305,41 @@ describe.each([
       ]),
     );
     for (const [name, id] of site(i).connectors)
-      expect(rows).toContainEqual({ id, name, url: "https://mcp.example.test/mcp", builtin: null });
+      expect(rows).toContainEqual({
+        id,
+        name: MOVED[name] ?? name,
+        url: "https://mcp.example.test/mcp",
+        builtin: null,
+      });
+    // Each move is audited as a system rename.
+    const moves = await column(
+      i,
+      `SELECT actor_kind, target FROM audit_log WHERE action = 'mcp.connector.updated' ORDER BY seq`,
+    );
+    expect(moves).toEqual(
+      i === 0
+        ? []
+        : [
+            {
+              actor_kind: "system",
+              target: {
+                connectorId: site(i).connectors.get("kaiju"),
+                name: "kaiju-registered",
+                changed: ["name"],
+                previousName: "kaiju",
+              },
+            },
+            {
+              actor_kind: "system",
+              target: {
+                connectorId: site(i).connectors.get("kaiju-git"),
+                name: "kaiju-git-registered",
+                changed: ["name"],
+                previousName: "kaiju-git",
+              },
+            },
+          ],
+    );
     // The server's seeds find the renamed rows.
     const app = createDb(site(i).db.appUrl);
     try {
@@ -303,6 +351,7 @@ describe.each([
           [old.slice(5, -2)]: now.slice(5, -2),
           kobe_git: git.replace(/-/g, "_"),
         },
+        registered: i === 0 ? {} : { kaiju: "kaiju_registered", kaiju_git: "kaiju_git_registered" },
       });
     } finally {
       await app.close();
@@ -320,6 +369,14 @@ describe.each([
         "mcp__jira__*",
         // A registered `kobe` connector's tools (site 1) keep their name; site 0's built-in moved.
         i === 0 ? "mcp__kaiju__team_members_*" : "mcp__kobe__team_members_*",
+        // Review H1: partial globs are rewritten only where exact (site 0); `mcp__kobe-*` matched
+        // nothing and `mcp__k*` matches both names, so they stay. The engine covers the rest.
+        i === 0 ? "mcp__kaiju*" : "mcp__kobe*",
+        i === 0 ? "mcp__kaiju_g*" : "mcp__kobe_g*",
+        "mcp__kobe-*",
+        "mcp__k*",
+        // The registered `kaiju` connector's rule follows it (site 1).
+        ...(i === 0 ? [] : ["mcp__kaiju_registered__drop"]),
       ].sort(),
     );
     const team = await column(
@@ -363,7 +420,10 @@ describe.each([
     expect(draft?.frontmatter).toEqual({
       name: "A",
       connectors: [kaiju, git, "jira"],
-      tools: { allow: [`${now}*`, "read", `${gitSeg}git_create_branch`], deny: [`${now}site_*`] },
+      tools: {
+        allow: [`${now}*`, "read", `${gitSeg}git_create_branch`],
+        deny: [`${now}site_*`, i === 0 ? "mcp__kaiju*" : "mcp__kobe*"],
+      },
     });
     const [personal] = await column(i, `SELECT frontmatter FROM site_agents`);
     expect(personal?.frontmatter).toEqual({
@@ -376,7 +436,7 @@ describe.each([
       expect(v?.tool_manifest).toMatchObject({
         connectors: [kaiju, "jira"],
         tools_allow: [`${now}*`, "read"],
-        tools_deny: [`${now}site_*`],
+        tools_deny: [`${now}site_*`, i === 0 ? "mcp__kaiju_*" : "mcp__kobe_*"],
         tools: [{ name: "read", source: "pi", risk: "read", scope: "sandbox", open_world: false }],
       });
     }
@@ -478,7 +538,7 @@ describe("a fresh install (KOBE-826)", () => {
     try {
       const app = createDb(db.appUrl);
       try {
-        expect(await readBuiltinRenames(app.db)).toEqual({ segments: {} });
+        expect(await readBuiltinRenames(app.db)).toEqual({ segments: {}, registered: {} });
         expect(await seedKaijuBuiltinConnector(app.db)).toEqual({
           outcome: "seeded",
           name: "kaiju",

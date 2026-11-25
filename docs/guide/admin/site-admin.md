@@ -109,7 +109,11 @@ read a person's portable preferences either; reading them needs its own break-gl
   on, a **Filter tools** field narrows the list by name or description ("12 of 140 tools") and
   each column scrolls on its own. The details are read-only, apart from **Your account** for an
   OAuth connector (below); **Review**, **Re-probe**, **Enable**/**Disable** and **Site key** stay
-  in the row. Escape or **Close** returns to the list.
+  in the row. Escape or **Close** returns to the list. The names `kaiju` and `kaiju-git` (and
+  their earlier names `kobe` and `kobe-git`, with `-builtin` versions of all four) belong to
+  Kaiju's built-in connectors and cannot be used for a registered connector. The upgrade to these
+  names renamed a registered connector that already had one to `<name>-registered`, with its
+  rules and settings, and recorded that in the audit log.
 - **Adding a connector that uses OAuth.** Kaiju lists an OAuth server's tools with a site admin's
   own connected account, so a new one has **No tools yet: connect an account** in the list until
   someone connects. The server is reached through Kaiju's connector policy like any other.

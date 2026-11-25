@@ -16,6 +16,8 @@ export const CONFLICTS: Record<NameConflict, string> = {
     "A connector with that name is already registered (names that differ only in - and _ count as the same).",
   name_removed:
     "A removed connector that teams still referenced keeps that name (names that differ only in - and _ count as the same). Pick another name.",
+  name_reserved:
+    "That name belongs to Kaiju's built-in connectors (kaiju, kaiju-git and their earlier names). Pick another name.",
 };
 export const nameConflict = (c: Context, error: NameConflict) =>
   c.json({ code: error, message: CONFLICTS[error] }, 409);

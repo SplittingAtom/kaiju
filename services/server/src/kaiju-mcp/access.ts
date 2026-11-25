@@ -6,6 +6,7 @@ import {
   parseKaijuMcpTeamLevel,
   sql,
   KAIJU_MCP_MODE_KEY,
+  siteSettingValue,
   type KaijuMcpMode,
   type KaijuMcpTeamLevel,
   type KaijuTx,
@@ -51,7 +52,7 @@ export interface KaijuAccess {
 export async function loadKaijuBuiltin(db: Reader): Promise<KaijuBuiltinRow | undefined> {
   const res = await db.execute<{ id: string; name: string; mode: string | null }>(sql`
     SELECT c.id, c.name,
-           (SELECT s.value FROM public.site_settings s WHERE s.key = ${KAIJU_MCP_MODE_KEY}) AS mode
+           ${siteSettingValue(KAIJU_MCP_MODE_KEY)} AS mode
       FROM public.connectors c
      WHERE c.builtin = 'kaiju' AND c.id = ${KAIJU_BUILTIN_CONNECTOR_ID}
        AND c.status = 'active' AND c.deleted_at IS NULL`);
@@ -89,7 +90,7 @@ export async function loadKaijuSwitches(
   teamId: string,
 ): Promise<{ mode: KaijuMcpMode; level: KaijuMcpTeamLevel }> {
   const res = await db.execute<{ mode: string | null; settings: unknown }>(sql`
-    SELECT (SELECT s.value FROM public.site_settings s WHERE s.key = ${KAIJU_MCP_MODE_KEY}) AS mode,
+    SELECT ${siteSettingValue(KAIJU_MCP_MODE_KEY)} AS mode,
            (SELECT t.settings FROM public.teams t WHERE t.id = ${teamId}) AS settings`);
   const row = res.rows[0];
   return { mode: parseKaijuMcpMode(row?.mode), level: parseKaijuMcpTeamLevel(row?.settings) };

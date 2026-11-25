@@ -18,6 +18,11 @@ export const CONNECTORS_EVENTS = {
     changed: z
       .array(z.enum(["name", "url", "iconUrl", "authKind", "status", "credentialSource"]))
       .max(6),
+    /**
+     * The name before a rename the system made (KOBE-826: migration 0260 moved a registered
+     * `kaiju` or `kaiju-git` out of the built-ins' way); absent on admins' edits.
+     */
+    previousName: z.string().max(64).optional(),
   }),
   /** A site admin removed a connector; `soft` when teams still used it (kept disabled). */
   "mcp.connector.removed": event("site", {

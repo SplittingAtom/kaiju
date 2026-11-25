@@ -620,3 +620,47 @@ describe("approved 'none yet' before-states under a concurrent insert (review LO
     expect(res.json.code).toBe("changed_since_approval");
   });
 });
+
+describe("settings written under the pre-rename keys by an old pod (KOBE-826 review L3)", () => {
+  it("take effect over the new keys, and the next write here removes them", async () => {
+    const w = await h.world();
+    await makeSiteAdmin(w.admin);
+    await h.setSite(KAIJU_MCP_MODE_KEY, "admin");
+    await h.setSite("kaiju_mcp.writes_per_hour", "30");
+    // An old pod switched the connector off and lowered the limit after the migration.
+    await h.setSite("kobe_mcp.mode", "off");
+    await h.setSite("kobe_mcp.writes_per_hour", "4");
+    await h.fx.admin.query(
+      `UPDATE teams SET settings = settings || '{"kaiju_mcp.admin": "read_write", "kobe_mcp.admin": "read"}' WHERE id = $1`,
+      [w.team],
+    );
+    const seen = await w.admin.browser.get("/v1/site/settings");
+    expect(seen.json).toMatchObject({ kaijuMcpMode: "off", kaijuWritesPerHour: 4 });
+    expect((await w.admin.browser.get("/v1/team/connectors/kaiju")).json.kaiju).toMatchObject({
+      mode: "off",
+      level: "read",
+    });
+    // A change here writes the new key and drops the old one.
+    expect((await w.admin.browser.put("/v1/site/settings", { kaijuMcpMode: "admin" })).status).toBe(
+      200,
+    );
+    const set = await w.admin.browser.put("/v1/site/settings", { kaijuWritesPerHour: 9 });
+    expect(set.json.kaijuWritesPerHour).toBe(9);
+    const level = await w.admin.browser.put("/v1/team/connectors/kaiju", {
+      level: "docs",
+      expected_level: "read",
+    });
+    expect(level.status, JSON.stringify(level.json)).toBe(200);
+    const { rows } = await h.fx.admin.query<{ key: string }>(
+      `SELECT key FROM site_settings WHERE key LIKE 'kobe_mcp.%'`,
+    );
+    expect(rows).toEqual([]);
+    const team = await h.fx.admin.query<{ settings: Record<string, unknown> }>(
+      `SELECT settings FROM teams WHERE id = $1`,
+      [w.team],
+    );
+    expect(team.rows[0]?.settings).toMatchObject({ "kaiju_mcp.admin": "docs" });
+    expect(team.rows[0]?.settings).not.toHaveProperty("kobe_mcp.admin");
+    await h.setSite("kaiju_mcp.writes_per_hour", null);
+  });
+});

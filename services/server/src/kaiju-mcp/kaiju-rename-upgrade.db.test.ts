@@ -7,6 +7,7 @@ import {
   GIT_BUILTIN_CONNECTOR_ID,
   KAIJU_BUILTIN_CONNECTOR_ID,
   readBuiltinRenames,
+  previousToolNames,
   renamedBuiltinToolName,
   runMigrations,
   type KaijuDatabase,
@@ -39,7 +40,7 @@ let db: TestDatabase | undefined;
 let app: KaijuDatabase | undefined;
 let older = "";
 let engine: PolicyEngine;
-const ids = { user: randomUUID(), team: randomUUID() };
+const ids = { user: randomUUID(), team: randomUUID(), teamB: randomUUID() };
 
 async function asAdmin(url: string, fn: (c: pg.Client) => Promise<void>): Promise<void> {
   const c = new pg.Client({ connectionString: url });
@@ -63,9 +64,19 @@ beforeAll(async () => {
       ids.team,
       `t${ids.team.slice(0, 8)}`,
     ]);
+    await c.query(`INSERT INTO teams (id, slug, name) VALUES ($1, $2, 'B')`, [
+      ids.teamB,
+      `b${ids.teamB.slice(0, 8)}`,
+    ]);
     await c.query(
-      `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'team_admin')`,
-      [ids.team, ids.user],
+      `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $3, 'team_admin'), ($2, $3, 'team_admin')`,
+      [ids.team, ids.teamB, ids.user],
+    );
+    // Review H1: team B denies every pre-rename built-in tool with a glob no rewrite can follow.
+    await c.query(
+      `INSERT INTO tool_rules (team_id, scope, effect, tool_glob, created_by)
+       VALUES ($1, 'team', 'deny', 'mcp__ko*', $2)`,
+      [ids.teamB, ids.user],
     );
     await c.query(
       `INSERT INTO connectors (id, name, url, auth_kind, credential_source, builtin) VALUES
@@ -86,6 +97,20 @@ beforeAll(async () => {
     );
   });
   await runMigrations({ databaseUrl: db.ownerUrl, appRole: db.appRole });
+  // Written after the migration by a server pod of the release before it (review L3): an ask
+  // under the old name, and a remembered approval under the old name.
+  await asAdmin(db.adminUrl, async (c) => {
+    await c.query(
+      `INSERT INTO tool_rules (team_id, scope, effect, tool_glob, created_by) VALUES
+         ($1, 'team', 'ask', 'mcp__kobe__docs_page', $2)`,
+      [ids.team, ids.user],
+    );
+    await c.query(
+      `INSERT INTO tool_rules (team_id, scope, user_id, effect, tool_glob, created_by, remember_scope)
+       VALUES ($1, 'user', $2, 'allow', 'mcp__kobe_git__git_create_issue', $2, 'forever')`,
+      [ids.team, ids.user],
+    );
+  });
   app = createDb(db.appUrl);
   const catalog = createDbMcpCatalog(app.db);
   const kaiju = app.db;
@@ -95,6 +120,7 @@ beforeAll(async () => {
     registry: createToolRegistry(catalog),
     connectors: catalog,
     renamed: async (name) => renamedBuiltinToolName(await readBuiltinRenames(kaiju), name),
+    previousNames: async (tool) => previousToolNames(await readBuiltinRenames(kaiju), tool.name),
   });
 }, 180_000);
 
@@ -104,7 +130,12 @@ afterAll(async () => {
   if (older) rmSync(older, { recursive: true, force: true });
 });
 
-const decide = (name: string, connectorId: string, risk: ToolDescriptor["risk"]) => {
+const decide = (
+  name: string,
+  connectorId: string,
+  risk: ToolDescriptor["risk"],
+  teamId = ids.team,
+) => {
   const tool: ToolDescriptor = {
     name,
     source: "mcp",
@@ -116,7 +147,7 @@ const decide = (name: string, connectorId: string, risk: ToolDescriptor["risk"])
   const base = policyInput(tool);
   return engine.decide({
     ...base,
-    team_id: ids.team,
+    team_id: teamId,
     actor: { ...base.actor, user_id: ids.user },
   }) as Promise<PolicyDecision>;
 };
@@ -174,5 +205,28 @@ describe("rules written before the rename (KOBE-826 ac-2)", () => {
     expect(gate.hides("mcp__kobe__team_members_set_role")).toBe(true);
     expect(gate.hides("mcp__kaiju__team_members_set_role")).toBe(true);
     expect(gate.hides("mcp__kobe__docs_index")).toBe(false);
+  });
+
+  it("keeps denying through a glob written for the old names (review H1)", async () => {
+    for (const [name, id] of [
+      ["mcp__kaiju__docs_index", KAIJU_BUILTIN_CONNECTOR_ID],
+      ["mcp__kaiju_git__git_comment", GIT_BUILTIN_CONNECTOR_ID],
+    ] as const) {
+      const decision = await decide(name, id, "read", ids.teamB);
+      expect(decision.effect, name).toBe("deny");
+      expect(decision.reasons[0]?.code).toBe("team_deny_rule");
+    }
+  });
+
+  it("applies an old pod's ask under the old name, never its remembered approval (L3)", async () => {
+    const ask = await decide("mcp__kaiju__docs_page", KAIJU_BUILTIN_CONNECTOR_ID, "read");
+    expect(ask.effect).toBe("require_approval");
+    expect(ask.reasons.map((r) => r.code)).toContain("team_ask_rule");
+    const issue = await decide(
+      "mcp__kaiju_git__git_create_issue",
+      GIT_BUILTIN_CONNECTOR_ID,
+      "write",
+    );
+    expect(issue.effect).toBe("require_approval");
   });
 });

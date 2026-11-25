@@ -49,8 +49,13 @@ export function checkAgentTools(
   agent: PolicyInput["agent"],
   tool: ToolDescriptor,
   input: JsonObject,
+  /** Names the tool had before a rename (KOBE-826): `tools.deny` also matches them, never allow. */
+  previousNames: readonly string[] = [],
 ): PolicyReason[] {
-  const denied = agent.tools_deny.find((e) => matchAgentToolEntry(e, tool, input, "restrict"));
+  const names = [tool, ...previousNames.map((name) => ({ ...tool, name }))];
+  const denied = agent.tools_deny.find((e) =>
+    names.some((t) => matchAgentToolEntry(e, t, input, "restrict")),
+  );
   if (denied !== undefined) {
     return [
       {

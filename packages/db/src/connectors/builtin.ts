@@ -8,6 +8,7 @@ import {
   KAIJU_BUILTIN_CONNECTOR_URL,
   KAIJU_MCP_MODE_KEY,
   parseKaijuMcpMode,
+  siteSettingValue,
   type KaijuMcpMode,
 } from "../schema/connectors.js";
 
@@ -63,7 +64,7 @@ export async function seedKaijuBuiltinConnector(db: KaijuDb): Promise<KaijuBuilt
 /** The site switch `kaiju_mcp.mode` (KA5): `docs` when unset or unreadable as a mode. */
 export async function readKaijuMcpMode(db: Pick<KaijuDb, "execute">): Promise<KaijuMcpMode> {
   const res = await db.execute<{ value: string }>(
-    sql`SELECT value FROM public.site_settings WHERE key = ${KAIJU_MCP_MODE_KEY}`,
+    sql`SELECT ${siteSettingValue(KAIJU_MCP_MODE_KEY)} AS value`,
   );
   return parseKaijuMcpMode(res.rows[0]?.value);
 }
@@ -103,45 +104,86 @@ export async function seedGitBuiltinConnector(db: KaijuDb): Promise<KaijuBuiltin
 }
 
 /**
+ * Connector names only the built-ins may hold (KOBE-826 review L1/L2), current and pre-rename:
+ * registering or renaming a connector to one is refused (as are names equal to one after `-` →
+ * `_`, which Pi treats alike). The pre-rename names stay reserved so a third-party server never
+ * takes over tool names that audit rows, threads and rules give the built-ins' history. Migration
+ * 0260 moved a registered `kaiju` or `kaiju-git` out of the way (`kaiju-registered`).
+ */
+export const RESERVED_CONNECTOR_NAMES: readonly string[] = [
+  ...KAIJU_BUILTIN_NAMES,
+  ...GIT_BUILTIN_NAMES,
+  "kobe",
+  "kobe-builtin",
+  "kobe-git",
+  "kobe-git-builtin",
+];
+
+/** Whether `name` (or a name Pi treats as the same) is reserved for a built-in connector. */
+export function isReservedConnectorName(name: string): boolean {
+  const segment = pgServerSegment(name);
+  return RESERVED_CONNECTOR_NAMES.some((r) => pgServerSegment(r) === segment);
+}
+
+/**
  * What migration 0260 renamed (KOBE-826, spec rename-kaiju §11 A3), kept in `site_settings` under
- * this key: `{"segments": {"<old Pi server segment>": "<new segment>"}}`, only for a built-in whose
- * name it changed (`kobe` → `kaiju`, `kobe-git` → `kaiju-git`, the `-builtin` fallbacks alike; a
- * registered connector holding the new name keeps the built-in on its old one). Readers use it
- * where stored or remembered history names the old tools: the audit view explains them, shared
- * threads keep hiding old admin results, and the policy engine tells a model that calls an old
- * name which name to call instead. Written once by the migration; nothing else writes it.
+ * this key: `{"segments": {"<old>": "<new>"}, "registered": {"<old>": "<new>"}}`, Pi server
+ * segments only where a name changed. `segments`: the built-ins (`kobe` → `kaiju`, `kobe_git` →
+ * `kaiju_git`; `kobe_builtin` where the built-in had fallen back). `registered`: a registered
+ * connector that held a name now reserved for a built-in, moved out of its way (`kaiju` →
+ * `kaiju_registered`). Readers use it where stored history or rules name the old tools: the audit
+ * view explains the built-ins' old names, shared threads keep hiding old admin results, the policy
+ * engine tells a model that calls an old built-in name which name to call, and deny and ask rules
+ * also match every tool under its old name (`previousToolNames`), so a rename never widens a
+ * permission. Written once by the migration; nothing else writes it.
  */
 export const BUILTIN_RENAMES_KEY = "kaiju_mcp.renamed";
 
 export interface BuiltinRenames {
-  /** Old Pi server segment → the segment the built-in has had since the rename. */
+  /** Old Pi server segment of a built-in → the segment it has had since the rename. */
   readonly segments: Readonly<Record<string, string>>;
+  /** Old segment of a registered connector moved out of a built-in's way → its new one. */
+  readonly registered: Readonly<Record<string, string>>;
 }
 
-export const NO_BUILTIN_RENAMES: BuiltinRenames = { segments: {} };
+export const NO_BUILTIN_RENAMES: BuiltinRenames = { segments: {}, registered: {} };
 
 const SEGMENT = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
+
+function segmentMap(value: unknown): Record<string, string> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (e): e is [string, string] =>
+        SEGMENT.test(e[0]) && typeof e[1] === "string" && SEGMENT.test(e[1]) && e[0] !== e[1],
+    ),
+  );
+}
 
 /** The stored marker, or none when absent or unreadable (never throws). */
 export function parseBuiltinRenames(value: string | null | undefined): BuiltinRenames {
   if (typeof value !== "string") return NO_BUILTIN_RENAMES;
   try {
     const parsed: unknown = JSON.parse(value);
-    const segments =
-      typeof parsed === "object" && parsed !== null
-        ? (parsed as Record<string, unknown>).segments
-        : undefined;
-    if (typeof segments !== "object" || segments === null || Array.isArray(segments)) {
-      return NO_BUILTIN_RENAMES;
-    }
-    const entries = Object.entries(segments).filter(
-      (e): e is [string, string] =>
-        SEGMENT.test(e[0]) && typeof e[1] === "string" && SEGMENT.test(e[1]) && e[0] !== e[1],
-    );
-    return { segments: Object.fromEntries(entries) };
+    if (typeof parsed !== "object" || parsed === null) return NO_BUILTIN_RENAMES;
+    const { segments, registered } = parsed as Record<string, unknown>;
+    return { segments: segmentMap(segments), registered: segmentMap(registered) };
   } catch {
     return NO_BUILTIN_RENAMES;
   }
+}
+
+/**
+ * The names a tool had before the rename, built-in or registered (`mcp__kaiju__x` →
+ * `[mcp__kobe__x]`), which deny and ask rules also match (KOBE-826 review H1). Empty for a tool
+ * whose connector was not renamed.
+ */
+export function previousToolNames(renames: BuiltinRenames, piName: string): string[] {
+  const parsed = parseMcpToolName(piName);
+  if (!parsed) return [];
+  return [...Object.entries(renames.segments), ...Object.entries(renames.registered)]
+    .filter(([, now]) => now === parsed.server_segment)
+    .map(([before]) => `mcp__${before}__${parsed.tool_segment}`);
 }
 
 /** The marker as stored (none when the migration renamed nothing or a reset removed it). */

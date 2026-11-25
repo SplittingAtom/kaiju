@@ -7,6 +7,7 @@ import {
   type PolicyInput,
   type PolicyReason,
   type RiskClass,
+  type ToolDescriptor,
   type ToolRegistry,
 } from "@kaiju/protocol";
 import { evaluatePolicy } from "./evaluate.js";
@@ -45,6 +46,11 @@ export interface PolicyEngineDeps {
    * `mcp__kaiju__docs_index`), for a clearer refusal; the call is still denied as `unknown_tool`.
    */
   readonly renamed?: (toolName: string) => Promise<string | undefined>;
+  /**
+   * The names a resolved tool had before a rename (KOBE-826), which deny and ask rules also
+   * match (`EvaluationContext.previousNames`). Permanent: stored globs may keep old forms.
+   */
+  readonly previousNames?: (tool: ToolDescriptor) => Promise<readonly string[]>;
 }
 
 function riskOf(raw: unknown): RiskClass {
@@ -100,14 +106,23 @@ export function createPolicyEngine(deps: PolicyEngineDeps): PolicyEngine {
             : `${name} was renamed to ${now} in an upgrade; call ${now} instead.`,
       });
     }
-    const [rules, connector, current] = await Promise.all([
+    const [rules, connector, current, previousNames] = await Promise.all([
       deps.rules.load(input.team_id, input.actor.user_id, at),
       tool.source === "mcp" && tool.connector_id !== undefined
         ? connectors.get(input.team_id, tool.connector_id)
         : Promise.resolve(undefined),
       settings.get(),
+      tool.source === "mcp" && deps.previousNames ? deps.previousNames(tool) : [],
     ]);
-    return evaluatePolicy({ input, tool, rules, connector, settings: current, now: at });
+    return evaluatePolicy({
+      input,
+      tool,
+      rules,
+      connector,
+      settings: current,
+      now: at,
+      ...(previousNames.length > 0 ? { previousNames } : {}),
+    });
   }
 
   return {

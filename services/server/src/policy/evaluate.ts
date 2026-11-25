@@ -61,6 +61,32 @@ export interface EvaluationContext {
   readonly connector: ConnectorPolicyState | undefined;
   readonly settings: PolicySettings;
   readonly now: Date;
+  /**
+   * The names this tool had before a rename (KOBE-826: `mcp__kobe__x` for `mcp__kaiju__x`). Deny
+   * and ask rules, and the agent's `tools.deny`, also match against them, so a stored glob that
+   * matched the old name (`mcp__kobe*`) keeps denying or asking: a rename never widens a
+   * permission. Allow rules, remembered approvals and `tools.allow` never match them. Permanent:
+   * stored globs may keep their old form forever.
+   */
+  readonly previousNames?: readonly string[];
+}
+
+/** The tool under its current name and every name it had before a rename (deny and ask only). */
+function namesOf(ctx: EvaluationContext): ToolDescriptor[] {
+  return [ctx.tool, ...(ctx.previousNames ?? []).map((name) => ({ ...ctx.tool, name }))];
+}
+
+/** Deny or ask rules matching the tool under any of its names, once each, by id. */
+function matchingAnyName(
+  rules: readonly PolicyRule[],
+  effect: "deny" | "ask",
+  ctx: Prepared,
+): PolicyRule[] {
+  const byId = new Map<string, PolicyRule>();
+  for (const t of namesOf(ctx)) {
+    for (const r of matchingRules(rules, effect, t, ctx.view, ctx.now)) byId.set(r.id, r);
+  }
+  return [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 /** The context plus the prepared (validated, canonical-path) input rules match against. */
@@ -90,27 +116,27 @@ function ruleReason(
 }
 
 function denyReasons(ctx: Prepared): PolicyReason[] {
-  const { tool, rules, now, view } = ctx;
+  const { tool, rules, view } = ctx;
   return [
-    ...matchingRules(rules.site, "deny", tool, view, now).map((r) =>
+    ...matchingAnyName(rules.site, "deny", ctx).map((r) =>
       ruleReason(r, "site_deny_rule", "site_deny", `${tool.name} is blocked by site policy.`),
     ),
-    ...matchingRules(rules.team, "deny", tool, view, now).map((r) =>
+    ...matchingAnyName(rules.team, "deny", ctx).map((r) =>
       ruleReason(r, "team_deny_rule", "team_deny", `${tool.name} is blocked by team policy.`),
     ),
     ...checkAvailable(tool),
-    ...checkAgentTools(ctx.input.agent, tool, view),
+    ...checkAgentTools(ctx.input.agent, tool, view, ctx.previousNames),
     ...checkConnector(ctx.input, tool, ctx.connector),
   ];
 }
 
 function askReasons(ctx: Prepared): PolicyReason[] {
-  const { tool, rules, now, view } = ctx;
+  const { tool, rules } = ctx;
   return [
-    ...matchingRules(rules.site, "ask", tool, view, now).map((r) =>
+    ...matchingAnyName(rules.site, "ask", ctx).map((r) =>
       ruleReason(r, "site_ask_rule", "ask_rule", `Site policy asks before ${tool.name}.`),
     ),
-    ...matchingRules(rules.team, "ask", tool, view, now).map((r) =>
+    ...matchingAnyName(rules.team, "ask", ctx).map((r) =>
       ruleReason(r, "team_ask_rule", "ask_rule", `Team policy asks before ${tool.name}.`),
     ),
   ];

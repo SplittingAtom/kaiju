@@ -81,15 +81,55 @@
   0235/0258); no `kobe.team_id` is set. `team-setters.test.ts` unchanged and green.
 - **Allowlist line-90 group:** its URL entry was removed (the URL moved); `kobe-guide` stays.
 
+## Security review round 1 (review-g131.md, verdict "fix first")
+
+- **H1, widening through partial globs (fixed both ways).** (a) Runtime, **permanent, not
+  one-release**: the policy evaluator's deny and ask stages (site and team rules) and the agent's
+  `tools.deny` also match a tool under its pre-rename names (`previousToolNames` from the
+  `kaiju_mcp.renamed` marker: `mcp__kobe__x` for `mcp__kaiju__x`, `mcp__kobe_git__y` for
+  `mcp__kaiju_git__y`, `mcp__kobe_builtin__x` where the built-in had fallen back, and a moved
+  registered connector's old name). Allow rules, remembered approvals and `tools.allow` never do.
+  Stored globs may keep old forms forever (and old pods may write new ones during the roll), so
+  this stays. The marker is cached 5 s per server (`kaiju-mcp/renames.ts`). Pi names use `_`, so
+  the old git name is `mcp__kobe_git__y` (a glob `mcp__kobe-*` never matched anything and still
+  doesn't). (b) Migration step 3 rewrites deny and ask globs whose literal prefix (up to the first
+  `*`, `?` or `\`) is a shorter prefix of the old names (`mcp__kobe*` → `mcp__kaiju*`,
+  `mcp__kobe_g*` → `mcp__kaiju_g*`, agent `tools.deny` / frozen `tools_deny` too) only where
+  exact: built-ins exactly `kobe`/`kobe-git` → `kaiju`/`kaiju-git`, and no registered connector's
+  segment starting with `kobe` or `kaiju`. Everything else stays as written (`mcp__k*`,
+  `mcp__ko*`, `mcp__kob?__*`); (a) covers it. Tests: `evaluate.previous-names.test.ts` (5), the
+  server upgrade test (`mcp__ko*` deny across the upgrade, an old-name ask written after it, an
+  old-name remembered approval that does not apply), migration test cases `mcp__kobe*`,
+  `mcp__kobe_g*`, `mcp__kobe-*`, `mcp__k*` on both site shapes.
+- **L1/L2, reserved names.** `kaiju`, `kaiju-git`, `kobe`, `kobe-git` and their `-builtin` forms
+  (also with `_`) are refused at registration and rename (`name_reserved`, 409, "That name belongs
+  to Kaiju's built-in connectors…"); an existing registered `kobe` keeps its name until an admin
+  renames it. Migration step 0 renames a registered `kaiju` / `kaiju-git` to `<name>-registered`
+  (`-2`… when taken), audited as `mcp.connector.updated` (system actor, new optional
+  `previousName`), with its references rewritten first by the same exact-prefix rewrite (all
+  effects: it is the same connector, so nothing widens or narrows) and recorded under
+  `registered` in the marker, which (a) also uses. The built-ins therefore always own
+  `mcp__kaiju__*` / `mcp__kaiju_git__*`; the seed's `-builtin` fallback remains as dead
+  insurance. Tested on the upgrade test's second site (moves, audit rows, the moved connector's
+  rule) and in `connectors.db.test.ts`.
+- **L3, writes from old pods during the roll.** Readers take the pre-rename key first for one
+  release (site `kobe_mcp.mode` / limits, team `kobe_mcp.admin`): the migration removed every old
+  key and this release's writers delete the old key when they write the new one, so an old key
+  present can only be newer. Old pods' deny/ask rules under old names apply through (a); their
+  allow rules don't (narrower). Test in `kaiju-mcp-web.db.test.ts`.
+
 ## One-release aliases (add to KOBE-754's removal list)
 
 - `PRE_RENAME_SEGMENT` (`@kaiju/protocol`): server internal route `/internal/v1/mcp/kobe/*`, MCP
   proxy `builtinPath` sending it, `/v1/team/connectors/kobe` (+ `kobe` key), catalog skill
   `/kobe/compare` and `/kobe/reset`; their `undocumented-allowlist.ts` entries, route-inventory lines.
 - Site settings fields `kobeMcpMode`, `kobeReadsPerMinute`, `kobeWritesPerHour` (in and out).
+- Reading the pre-rename settings keys first and deleting them on write
+  (`PRE_RENAME_KAIJU_SETTING_KEYS`, `siteSettingValue`, `parseKaijuMcpTeamLevel`), review L3.
 - Allowlist group "Pre-rename paths and fields of the built-in connector…" and the install note.
 - Not one-release (permanent): historical deny codes, audit setting names, the
-  `kaiju_mcp.renamed` marker and its readers, the migration.
+  `kaiju_mcp.renamed` marker and its readers, the deny/ask matching of pre-rename names (H1a),
+  the reserved names, the migration.
 
 ## Open
 

@@ -31,6 +31,9 @@ export {
   parseBuiltinRenames,
   readBuiltinRenames,
   renamedBuiltinToolName,
+  previousToolNames,
+  RESERVED_CONNECTOR_NAMES,
+  isReservedConnectorName,
   type BuiltinRenames,
   type KaijuBuiltinSeed,
 } from "./builtin.js";

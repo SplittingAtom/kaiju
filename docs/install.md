@@ -1807,9 +1807,10 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
 
 - **The built-in connectors are `kaiju` and `kaiju-git` (Kaiju rename, KOBE-826, migration
   `0260_kaiju_builtin_connector`).** The migration renames the built-in connector `kobe` to
-  `kaiju` and `kobe-git` to `kaiju-git` (`kaiju-builtin` and `kaiju-git-builtin` when a registered
-  connector already holds the name; the Job logs a `KOBE-826` notice either way), keeps their
-  fixed ids, and rewrites what names their tools (`mcp__kobe__*` → `mcp__kaiju__*`): site and team
+  `kaiju` and `kobe-git` to `kaiju-git` (a registered connector already named `kaiju` or
+  `kaiju-git` is first renamed `<name>-registered`, with its rules, and audited; the Job logs a
+  `KOBE-826` notice for each rename; the four names and the old ones are reserved from now on),
+  keeps their fixed ids, and rewrites what names their tools (`mcp__kobe__*` → `mcp__kaiju__*`): site and team
   tool rules, remembered approvals, team custom exposure lists, agent drafts and published
   versions (tool lists and connector names), and the settings `kobe_mcp.*` → `kaiju_mcp.*` (site)
   and each team's `kobe_mcp.admin`. Approvals still waiting for an answer for an old tool name
@@ -1820,7 +1821,11 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   is allowed that should not be. For this release the server also serves the old paths
   (`/v1/team/connectors/kobe`, a catalog skill's `/kobe/compare` and `/kobe/reset`, and the MCP
   proxy's internal `/internal/v1/mcp/kobe/*`, which this release's proxy still calls) and the
-  site settings fields `kobeMcpMode`, `kobeReadsPerMinute` and `kobeWritesPerHour`. The rewrite
+  site settings fields `kobeMcpMode`, `kobeReadsPerMinute` and `kobeWritesPerHour`. A Kaiju setting
+  an admin changes on an old pod during the roll (old keys `kobe_mcp.*`) still applies: this
+  release reads an old key first and removes it on its next write. Deny and ask rules, including
+  ones written under the old tool names, keep applying to the renamed tools: the server matches
+  them against both names (permanently), never allow rules. The rewrite
   cannot be undone by going back a release: restore the `kaiju backup` taken before the upgrade.
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team

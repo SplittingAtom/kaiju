@@ -105,15 +105,39 @@ export function parseKaijuMcpMode(value: string | null | undefined): KaijuMcpMod
     : KAIJU_MCP_MODE_DEFAULT;
 }
 
+/**
+ * The Kaiju settings keys before the rename (KOBE-826 review L3), for one release (KOBE-754).
+ * Migration 0260 moved every stored value to the new key, and this release's writers delete the
+ * old key whenever they write the new one, so an old key present was written by a server pod of
+ * the release before the rename during the rolling upgrade, after the migration: it is the newer
+ * value, and readers take it first.
+ */
+export const PRE_RENAME_KAIJU_SETTING_KEYS = {
+  "kaiju_mcp.mode": "kobe_mcp.mode",
+  "kaiju_mcp.reads_per_minute": "kobe_mcp.reads_per_minute",
+  "kaiju_mcp.writes_per_hour": "kobe_mcp.writes_per_hour",
+  "kaiju_mcp.admin": "kobe_mcp.admin",
+} as const;
+export type KaijuSettingKey = keyof typeof PRE_RENAME_KAIJU_SETTING_KEYS;
+
+/** A Kaiju setting key's pre-rename name (read first, deleted on write; one release). */
+export const preRenameKey = (key: KaijuSettingKey): string => PRE_RENAME_KAIJU_SETTING_KEYS[key];
+
+/** The site setting `key` as stored: its pre-rename key's value first (see above), then its own. */
+export const siteSettingValue = (key: KaijuSettingKey) => sql`COALESCE(
+  (SELECT s.value FROM public.site_settings s WHERE s.key = ${preRenameKey(key)}),
+  (SELECT s.value FROM public.site_settings s WHERE s.key = ${key}))`;
+
 /** The team switch from `teams.settings`: anything but a known level is the default. */
 export function parseKaijuMcpTeamLevel(settings: unknown): KaijuMcpTeamLevel {
-  const value =
-    typeof settings === "object" && settings !== null
-      ? (settings as Record<string, unknown>)[KAIJU_MCP_TEAM_SETTING]
-      : undefined;
-  return typeof value === "string" && (KAIJU_MCP_TEAM_LEVELS as readonly string[]).includes(value)
-    ? (value as KaijuMcpTeamLevel)
-    : KAIJU_MCP_TEAM_LEVEL_DEFAULT;
+  const record =
+    typeof settings === "object" && settings !== null ? (settings as Record<string, unknown>) : {};
+  const valid = (v: unknown): v is KaijuMcpTeamLevel =>
+    typeof v === "string" && (KAIJU_MCP_TEAM_LEVELS as readonly string[]).includes(v);
+  const before = record[preRenameKey("kaiju_mcp.admin")];
+  if (valid(before)) return before;
+  const value = record[KAIJU_MCP_TEAM_SETTING];
+  return valid(value) ? value : KAIJU_MCP_TEAM_LEVEL_DEFAULT;
 }
 
 /** Site-wide (†): the connector registry (site admins, D6). */
