@@ -51,9 +51,26 @@ export const HISTORICAL_POLICY_NAMES = {
   install_deny: "site_deny",
   install_deny_rule: "site_deny_rule",
   install_ask_rule: "site_ask_rule",
+  // KOBE-826 (the built-in connector's rename): the Kaiju admin codes' names before it.
+  kobe_admin_write: "kaiju_admin_write",
+  kobe_admin_not_allowed: "kaiju_admin_not_allowed",
+  kobe_admin_rate_limited: "kaiju_admin_rate_limited",
 } as const;
 const HISTORICAL_STAGES = ["install_deny"] as const;
-const HISTORICAL_REASON_CODES = ["install_deny_rule", "install_ask_rule"] as const;
+const HISTORICAL_REASON_CODES = [
+  "install_deny_rule",
+  "install_ask_rule",
+  "kobe_admin_write",
+  "kobe_admin_not_allowed",
+  "kobe_admin_rate_limited",
+] as const;
+
+/** A stored reason code as today's code (a historical one as its successor). */
+export function currentReasonCode(code: string): string {
+  return Object.hasOwn(HISTORICAL_POLICY_NAMES, code)
+    ? HISTORICAL_POLICY_NAMES[code as keyof typeof HISTORICAL_POLICY_NAMES]
+    : code;
+}
 
 /** The thing being decided. Built by the server from its own state; `tool` from its registry. */
 export const policyInputSchema = z

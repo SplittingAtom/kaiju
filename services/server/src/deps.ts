@@ -14,6 +14,8 @@ import {
   type Envelope,
   accounts,
   createDb,
+  readBuiltinRenames,
+  renamedBuiltinToolName,
   siteRoles,
   users,
   type KaijuDatabase,
@@ -383,6 +385,9 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     registry: toolRegistry,
     connectors: mcpCatalog,
     onError: (err: unknown) => logger.error({ err }, "policy engine error (denied)"),
+    // KOBE-826: a built-in tool called by its pre-rename name is refused with its new name.
+    renamed: async (name: string) =>
+      renamedBuiltinToolName(await readBuiltinRenames(database.db), name),
   };
   const policyEngine = createPolicyEngine(policySources);
   const runContext = options.sandboxWire?.runContext ?? createDbRunContextSource();

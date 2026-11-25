@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { PRE_RENAME_SEGMENT } from "@kaiju/protocol";
 import type { AuthVariables } from "../../auth/session.js";
 import { logger } from "../../logger.js";
 import { hitRateLimit } from "../../rate-limit.js";
@@ -75,53 +76,67 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
     return c.json({ version: published, notified }, 201);
   });
 
-  app.get("/:skillId/kaiju/compare", async (c) => {
-    const id = skillId(c);
-    const k = kaijuDeps();
-    if (!k) return unavailable(c);
-    if (!id) return error(c, 404, "not_found", "No such catalog skill.");
-    const r = await compareWithKaiju(k, id);
-    if (r.ok) return c.json(r.compare);
-    switch (r.code) {
-      case "not_found":
-        return error(c, 404, "not_found", "No such catalog skill.");
-      case "not_kobe":
-        return error(c, 409, "not_kobe", "Only Kaiju's own skills compare with a shipped version.");
-      case "not_shipped":
-        return error(c, 409, "not_shipped", "This release of Kaiju doesn't ship that skill.");
-      case "not_stored":
-        return error(c, 409, "not_stored", "The current version's files are not in the store.");
-    }
-  });
+  // Kaiju's own skills (KOBE-338): `kaiju`, and its pre-rename path for one release (KOBE-826) so
+  // a web pod of the release before the rename keeps working during a rolling upgrade (KOBE-754).
+  for (const segment of ["kaiju", PRE_RENAME_SEGMENT]) {
+    app.get(`/:skillId/${segment}/compare`, async (c) => {
+      const id = skillId(c);
+      const k = kaijuDeps();
+      if (!k) return unavailable(c);
+      if (!id) return error(c, 404, "not_found", "No such catalog skill.");
+      const r = await compareWithKaiju(k, id);
+      if (r.ok) return c.json(r.compare);
+      switch (r.code) {
+        case "not_found":
+          return error(c, 404, "not_found", "No such catalog skill.");
+        case "not_kobe":
+          return error(
+            c,
+            409,
+            "not_kobe",
+            "Only Kaiju's own skills compare with a shipped version.",
+          );
+        case "not_shipped":
+          return error(c, 409, "not_shipped", "This release of Kaiju doesn't ship that skill.");
+        case "not_stored":
+          return error(c, 409, "not_stored", "The current version's files are not in the store.");
+      }
+    });
 
-  app.post("/:skillId/kaiju/reset", async (c) => {
-    const id = skillId(c);
-    const k = kaijuDeps();
-    if (!k) return unavailable(c);
-    if (!id) return error(c, 404, "not_found", "No such catalog skill.");
-    const r = await resetToKaiju(k, id, c.get("user").id);
-    if (r.ok) return c.json({ shippedSemver: r.shippedSemver, seed: r.seed });
-    switch (r.code) {
-      case "forbidden":
-        return error(c, 403, "forbidden", "You don't have permission to do that.");
-      case "not_found":
-        return error(c, 404, "not_found", "No such catalog skill.");
-      case "not_kobe":
-        return error(c, 409, "not_kobe", "Only Kaiju's own skills reset to Kaiju.");
-      case "not_detached":
-        return error(c, 409, "not_detached", "This skill already follows Kaiju's shipped version.");
-      case "not_shipped":
-        return error(c, 409, "not_shipped", "This release of Kaiju doesn't ship that skill.");
-      case "shipped_not_above":
-        return error(
-          c,
-          409,
-          "shipped_not_above",
-          `Kaiju ships ${r.shippedSemver}, which is not above the Site's ${r.siteSemver}: the skill stays detached until Kaiju ships a higher version.`,
-          { shippedSemver: r.shippedSemver, siteSemver: r.siteSemver },
-        );
-    }
-  });
+    app.post(`/:skillId/${segment}/reset`, async (c) => {
+      const id = skillId(c);
+      const k = kaijuDeps();
+      if (!k) return unavailable(c);
+      if (!id) return error(c, 404, "not_found", "No such catalog skill.");
+      const r = await resetToKaiju(k, id, c.get("user").id);
+      if (r.ok) return c.json({ shippedSemver: r.shippedSemver, seed: r.seed });
+      switch (r.code) {
+        case "forbidden":
+          return error(c, 403, "forbidden", "You don't have permission to do that.");
+        case "not_found":
+          return error(c, 404, "not_found", "No such catalog skill.");
+        case "not_kobe":
+          return error(c, 409, "not_kobe", "Only Kaiju's own skills reset to Kaiju.");
+        case "not_detached":
+          return error(
+            c,
+            409,
+            "not_detached",
+            "This skill already follows Kaiju's shipped version.",
+          );
+        case "not_shipped":
+          return error(c, 409, "not_shipped", "This release of Kaiju doesn't ship that skill.");
+        case "shipped_not_above":
+          return error(
+            c,
+            409,
+            "shipped_not_above",
+            `Kaiju ships ${r.shippedSemver}, which is not above the Site's ${r.siteSemver}: the skill stays detached until Kaiju ships a higher version.`,
+            { shippedSemver: r.shippedSemver, siteSemver: r.siteSemver },
+          );
+      }
+    });
+  }
 
   return app;
 }

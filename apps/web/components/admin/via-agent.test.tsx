@@ -65,6 +65,32 @@ describe("audit views: via agent", () => {
     expect(within(must(rows[3])).queryByText(/via agent/)).toBeNull();
   });
 
+  it("team view: explains tool names recorded before the rename (KOBE-826)", async () => {
+    stubApi({
+      "GET /v1/team/break-glass": [200, { active: [], recent: [] }],
+      "GET /v1/team/audit?limit=50": [
+        200,
+        {
+          events: [
+            {
+              ...changed(false),
+              via_agent: undefined,
+              action: "mcp.tool_call",
+              target: { tool: "mcp__kobe_git__git_comment" },
+            },
+          ],
+          next_cursor: null,
+          renamed_tool_segments: { kobe: "kaiju", kobe_git: "kaiju_git" },
+        },
+      ],
+    });
+    renderTeam(<TeamAuditPage />);
+    const rows = within(await screen.findByRole("table")).getAllByRole("row");
+    expect(must(rows[1]).textContent).toContain(
+      "mcp__kobe_git__git_comment (before the rename; now mcp__kaiju_git__git_comment)",
+    );
+  });
+
   it("site view: the same note under the person", async () => {
     stubApi({
       "GET /v1/site/users": [200, { users: [{ ...ME, siteRole: "admin" }] }],

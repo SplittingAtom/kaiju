@@ -52,7 +52,8 @@ export const CONNECTOR_URL_MAX = 2048;
 
 /**
  * Built-in connectors hosted by Kaiju itself (KOBE-618, spec kobe-admin-mcp §3): `kaiju`, the Kaiju
- * MCP server (docs and admin tools). Its row is seeded by the server at start
+ * MCP server (docs and admin tools; `kobe` until KOBE-826 renamed it with a data migration), and
+ * `git` (below). Its row is seeded by the server at start
  * ({@link seedKaijuBuiltinConnector}); the MCP proxy routes it to the server's internal listener,
  * never to its URL, which only marks the row (a check ties the two together, so no registered
  * connector can carry the internal URL and no built-in can point anywhere else).
@@ -61,22 +62,22 @@ export const BUILTIN_CONNECTORS = ["kaiju", "git"] as const;
 export type BuiltinConnector = (typeof BUILTIN_CONNECTORS)[number];
 
 /**
- * The `kaiju` row's fixed id, the same on every site ("kaiju" in hex, then a v4-shaped tail), so
- * replicas seed one row and the MCP proxy can route it without asking.
+ * The `kaiju` row's fixed id, the same on every site ("kobe" in hex, then a v4-shaped tail, kept
+ * across the rename), so replicas seed one row and the MCP proxy can route it without asking.
  */
 export const KAIJU_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000001";
 
 /** The `kaiju` row's URL: a marker in the reserved `.internal` zone, never fetched. */
-export const KAIJU_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/kobe";
+export const KAIJU_BUILTIN_CONNECTOR_URL = "http://kaiju-server.internal/internal/v1/mcp/kaiju";
 
 /**
  * The `git` built-in (KOBE-762, owner decision 2026-11-22): the git host tools as their own
  * connector, so the Kaiju MCP switch and the Kaiju connector's thread toggle never reach them; the
- * Site's Git switch and each connection's settings are their ceiling. Fixed id ("kaiju" in hex,
+ * Site's Git switch and each connection's settings are their ceiling. Fixed id ("kobe" in hex,
  * tail 2) and an internal marker URL, as for `kaiju`.
  */
 export const GIT_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000002";
-export const GIT_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/git";
+export const GIT_BUILTIN_CONNECTOR_URL = "http://kaiju-server.internal/internal/v1/mcp/git";
 
 /**
  * Site switch of the Kaiju MCP server (`site_settings`, spec §6, KA5): `off` (no `kaiju` connector),
@@ -162,7 +163,8 @@ export const connectors = pgTable(
      */
     templatesSkipped: text(),
     /**
-     * Built-in connector hosted by Kaiju (KOBE-618): `kaiju`, or NULL for a registered remote server.
+     * Built-in connector hosted by Kaiju (KOBE-618): `kaiju` or `git`, or NULL for a registered
+     * remote server.
      * A built-in row has no credential, no pinned snapshot, and is skipped by the probe, pinning,
      * the periodic refresh and drift: its tools come from Kaiju's own catalog.
      */

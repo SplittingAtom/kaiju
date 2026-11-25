@@ -223,6 +223,17 @@ const maximumView = {
 };
 const RetentionMaximum = untyped("SiteRetentionMaximum", obj(maximumView));
 
+/** KOBE-826: the built-in connectors' Pi server segments before the rename → since. */
+export const RENAMED_TOOL_SEGMENTS = {
+  type: "object",
+  additionalProperties: str,
+  description:
+    "Pi server segments of the built-in connectors before the rename, each with the segment it " +
+    "has had since (`kobe` → `kaiju`); empty when the upgrade renamed nothing. Events keep the " +
+    "tool names they were recorded with, so `mcp__kobe__docs_index` is today's " +
+    "`mcp__kaiju__docs_index`.",
+};
+
 export const siteComplianceDetails: Readonly<Record<string, CatalogDetail>> = {
   // Audit
   "get /v1/site/audit": {
@@ -235,6 +246,7 @@ export const siteComplianceDetails: Readonly<Record<string, CatalogDetail>> = {
           ...nullable(str),
           description: "Opaque: pass as `before` (or `after`) for the next page.",
         },
+        renamedToolSegments: RENAMED_TOOL_SEGMENTS,
       }),
     ),
   },

@@ -129,16 +129,35 @@ describe("Team console › Connectors: the Kaiju level", () => {
     expect(stale.json.code).toBe("changed_since_approval");
 
     expect((await w.member.browser.get("/v1/team/connectors/kaiju")).status).toBe(200);
-    const refused = await w.member.browser.put("/v1/team/connectors/kaiju", { level: "read_write" });
+    const refused = await w.member.browser.put("/v1/team/connectors/kaiju", {
+      level: "read_write",
+    });
     expect(refused.status).toBe(403);
     const bad = await w.admin.browser.put("/v1/team/connectors/kaiju", { level: "all" });
     expect(bad.status).toBe(400);
+    // The pre-rename path and response key, served for one release (KOBE-826, KOBE-754).
+    const legacy = await w.admin.browser.get("/v1/team/connectors/kobe");
+    expect(legacy.status).toBe(200);
+    expect(Object.keys(legacy.json)).toEqual(["kobe"]);
+    expect(legacy.json.kobe.level).toBe("read");
+    const legacySet = await w.admin.browser.put("/v1/team/connectors/kobe", {
+      level: "docs",
+      expected_level: "read",
+    });
+    expect(legacySet.status, JSON.stringify(legacySet.json)).toBe(200);
+    expect(legacySet.json.kobe.level).toBe("docs");
+    expect((await w.member.browser.put("/v1/team/connectors/kobe", { level: "read" })).status).toBe(
+      403,
+    );
 
     const { rows } = await h.fx.admin.query<{ target: Record<string, unknown> }>(
       `SELECT target FROM audit_log WHERE team_id = $1 AND action = 'mcp.kobe.team_level_changed'`,
       [w.team],
     );
-    expect(rows.map((r) => r.target)).toEqual([{ from: "docs", to: "read" }]);
+    expect(rows.map((r) => r.target)).toEqual([
+      { from: "docs", to: "read" },
+      { from: "read", to: "docs" },
+    ]);
   });
 });
 
@@ -157,9 +176,20 @@ describe("Site console › Settings: the Kaiju MCP switch", () => {
     expect((await w.admin.browser.put("/v1/site/settings", { kaijuMcpMode: "all" })).status).toBe(
       400,
     );
-    expect((await w.member.browser.put("/v1/site/settings", { kaijuMcpMode: "admin" })).status).toBe(
-      403,
-    );
+    // The pre-rename field names, read and accepted for one release (KOBE-826, KOBE-754); the new
+    // name wins when both are sent.
+    expect(off.json.kobeMcpMode).toBe("off");
+    const legacy = await w.admin.browser.put("/v1/site/settings", { kobeMcpMode: "docs" });
+    expect(legacy.status, JSON.stringify(legacy.json)).toBe(200);
+    expect(legacy.json).toMatchObject({ kaijuMcpMode: "docs", kobeMcpMode: "docs" });
+    const both = await w.admin.browser.put("/v1/site/settings", {
+      kaijuMcpMode: "off",
+      kobeMcpMode: "admin",
+    });
+    expect(both.json.kaijuMcpMode).toBe("off");
+    expect(
+      (await w.member.browser.put("/v1/site/settings", { kaijuMcpMode: "admin" })).status,
+    ).toBe(403);
     const { rows } = await h.fx.admin.query<{ target: Record<string, unknown> }>(
       `SELECT target FROM audit_log WHERE action = 'site.settings.updated'
         AND target ->> 'setting' = 'kaiju_mcp_mode' ORDER BY seq`,
@@ -189,9 +219,9 @@ describe("Site console › Settings: the Kaiju admin limits (KOBE-814)", () => {
       const res = await w.admin.browser.put("/v1/site/settings", { kaijuReadsPerMinute: bad });
       expect(res.status, String(bad)).toBe(400);
     }
-    expect((await w.member.browser.put("/v1/site/settings", { kaijuWritesPerHour: 5 })).status).toBe(
-      403,
-    );
+    expect(
+      (await w.member.browser.put("/v1/site/settings", { kaijuWritesPerHour: 5 })).status,
+    ).toBe(403);
     const { rows } = await h.fx.admin.query<{ target: Record<string, unknown> }>(
       `SELECT target FROM audit_log WHERE action = 'site.settings.updated'
         AND target ->> 'setting' IN ('kaiju_reads_per_minute', 'kaiju_writes_per_hour')

@@ -87,6 +87,11 @@ The built-in **kaiju** connector is Kaiju's own MCP server, reached through the 
 other connector (no internet access, no key). Its tools are named `mcp__kaiju__<tool>`
 (`mcp__kaiju_builtin__<tool>` on a site where the name `kaiju` was taken).
 
+- **Old names.** Before the product was renamed these tools were `mcp__kobe__<tool>`, and the git
+  host tools `mcp__kobe_git__<tool>`. Earlier messages in a conversation may still use those
+  names: call the tool by the name in your tool list instead. A call by an old name is refused,
+  and the refusal names the tool to call.
+
 - **Docs tools** (`docs_index`, `docs_page`, `docs_search`, `docs_full`) are always available,
   whatever your agent's connector list, in every run including scheduled ones. Use them for any
   question about using or administering Kaiju; the **kobe-guide** skill says how.

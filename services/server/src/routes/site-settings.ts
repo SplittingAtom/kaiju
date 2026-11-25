@@ -43,14 +43,19 @@ export const settingsSchema = z
     gitConnectionsEnabled: z.boolean().optional(),
     /** Hosts Workspaces may connect to (`github.com`, `*.example.com`); [] = any host. */
     gitAllowedHosts: gitAllowedHostsSchema.optional(),
+    // The three Kaiju fields under their pre-rename names, accepted for one release (KOBE-826) from
+    // a web pod of the release before the rename; the new name wins when both are sent. KOBE-754.
+    kobeMcpMode: z.enum(KAIJU_MCP_MODES).optional(),
+    kobeReadsPerMinute: z.number().int().min(KAIJU_LIMIT_MIN).max(KAIJU_LIMIT_MAX).optional(),
+    kobeWritesPerHour: z.number().int().min(KAIJU_LIMIT_MIN).max(KAIJU_LIMIT_MAX).optional(),
   })
   .refine(
     (v) =>
       v.requireTwoFactor !== undefined ||
       v.auditPiiRetentionHours !== undefined ||
-      v.kaijuMcpMode !== undefined ||
-      v.kaijuReadsPerMinute !== undefined ||
-      v.kaijuWritesPerHour !== undefined ||
+      (v.kaijuMcpMode ?? v.kobeMcpMode) !== undefined ||
+      (v.kaijuReadsPerMinute ?? v.kobeReadsPerMinute) !== undefined ||
+      (v.kaijuWritesPerHour ?? v.kobeWritesPerHour) !== undefined ||
       v.gitConnectionsEnabled !== undefined ||
       v.gitAllowedHosts !== undefined,
     { message: "Change at least one setting." },
@@ -73,14 +78,20 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
   const current = async () => {
     const limits = await readKaijuLimits(db);
     const git = await readGitSiteSettings(db);
+    const kaijuMcpMode = await readKaijuMode(db);
     return {
       requireTwoFactor: await readRequireTwoFactor(deps),
       auditPiiRetentionHours: await readAuditPiiRetentionHours(db),
-      kaijuMcpMode: await readKaijuMode(db),
+      kaijuMcpMode,
       kaijuReadsPerMinute: limits.readsPerMinute,
       kaijuWritesPerHour: limits.writesPerHour,
       gitConnectionsEnabled: git.enabled,
       gitAllowedHosts: git.allowedHosts,
+      // Also under the pre-rename names for one release (KOBE-826), for a web pod of the release
+      // before the rename during a rolling upgrade. KOBE-754 removes them.
+      kobeMcpMode: kaijuMcpMode,
+      kobeReadsPerMinute: limits.readsPerMinute,
+      kobeWritesPerHour: limits.writesPerHour,
     };
   };
 
@@ -101,15 +112,11 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
         400,
       );
     }
-    const {
-      requireTwoFactor,
-      auditPiiRetentionHours,
-      kaijuMcpMode,
-      kaijuReadsPerMinute,
-      kaijuWritesPerHour,
-      gitConnectionsEnabled,
-      gitAllowedHosts,
-    } = parsed.data;
+    const { requireTwoFactor, auditPiiRetentionHours, gitConnectionsEnabled, gitAllowedHosts } =
+      parsed.data;
+    const kaijuMcpMode = parsed.data.kaijuMcpMode ?? parsed.data.kobeMcpMode;
+    const kaijuReadsPerMinute = parsed.data.kaijuReadsPerMinute ?? parsed.data.kobeReadsPerMinute;
+    const kaijuWritesPerHour = parsed.data.kaijuWritesPerHour ?? parsed.data.kobeWritesPerHour;
     // Lowering the requirement weakens every account: Owner only.
     if (requireTwoFactor === false && c.get("siteRole") !== "owner") {
       return c.json(

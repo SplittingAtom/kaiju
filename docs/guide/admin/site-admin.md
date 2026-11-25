@@ -156,7 +156,9 @@ read a person's portable preferences either; reading them needs its own break-gl
   anything that points into its conversations (thread, message, run, learning pass, candidate,
   tool call or approval ids, thread folder names, and the "via agent" line); the workspace's own
   audit log (Team console › **Audit view**) keeps them. The same holds for the export and for
-  audit forwarding. A short note above the events says so.
+  audit forwarding. A short note above the events says so. Events recorded before the rename to
+  Kaiju keep the tool and setting names of that time (`mcp__kobe__docs_index`, `kobe_mcp_mode`);
+  the log shows today's name next to each.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
 - **Retention maximum**: the longest retention any team may choose. What else Kaiju deletes on its

@@ -258,7 +258,9 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
     );
     expect(allowed()).toContain("mcp__kaiju__team_members_list");
     await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
-    await waitFor(() => expect(postedBody(calls).frontmatter.connectors).toEqual(["jira", "kaiju"]));
+    await waitFor(() =>
+      expect(postedBody(calls).frontmatter.connectors).toEqual(["jira", "kaiju"]),
+    );
   });
 
   it("is not offered while the site switch is off, and its absence changes nothing", async () => {

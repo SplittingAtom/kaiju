@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { KAIJU_MCP_TEAM_LEVELS, withTeam } from "@kaiju/db";
+import { PRE_RENAME_SEGMENT } from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import {
@@ -63,26 +64,37 @@ export function teamConnectorsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
    * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp §6, KA5): the site switch and the
    * team's level (`docs` default, `read`, `read_write`). Registered before `/:id`.
    */
-  app.get("/kaiju", requireTeamPermission("team.read"), async (c) => {
-    const teamId = c.get("team").id;
-    return c.json({ kaiju: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)) });
-  });
+  // Served under its pre-rename path and response key too for one release (KOBE-826), so a web
+  // pod of the release before the rename keeps working during a rolling upgrade (KOBE-754).
+  for (const [path, key] of [
+    ["/kaiju", "kaiju"],
+    [`/${PRE_RENAME_SEGMENT}`, PRE_RENAME_SEGMENT],
+  ] as const) {
+    app.get(path, requireTeamPermission("team.read"), async (c) => {
+      const teamId = c.get("team").id;
+      return c.json({
+        [key]: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)),
+      });
+    });
 
-  app.put("/kaiju", requireTeamPermission("team.connectors.manage"), async (c) => {
-    const body = await parseBody(c, kaijuLevelSchema);
-    if (!body) {
-      return invalidRequest(c, 'Send {"level": "docs" | "read" | "read_write"}.');
-    }
-    const teamId = c.get("team").id;
-    const set = await setKaijuTeamLevel(db, teamId, body.level, body.expected_level);
-    if (!set.ok) {
-      return c.json(
-        { code: "changed_since_approval", message: "The team's Kaiju level changed meanwhile." },
-        409,
-      );
-    }
-    return c.json({ kaiju: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)) });
-  });
+    app.put(path, requireTeamPermission("team.connectors.manage"), async (c) => {
+      const body = await parseBody(c, kaijuLevelSchema);
+      if (!body) {
+        return invalidRequest(c, 'Send {"level": "docs" | "read" | "read_write"}.');
+      }
+      const teamId = c.get("team").id;
+      const set = await setKaijuTeamLevel(db, teamId, body.level, body.expected_level);
+      if (!set.ok) {
+        return c.json(
+          { code: "changed_since_approval", message: "The team's Kaiju level changed meanwhile." },
+          409,
+        );
+      }
+      return c.json({
+        [key]: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)),
+      });
+    });
+  }
 
   app.put("/:id", requireTeamPermission("team.connectors.manage"), async (c) => {
     const id = param(c, "id", z.uuid());

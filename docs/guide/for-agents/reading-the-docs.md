@@ -16,7 +16,8 @@ without parsing HTML.
 Every agent in Kaiju has the built-in **kaiju** connector with four docs tools, whatever connectors
 the agent itself lists. They hold no one's data, never ask for approval and work in every run,
 scheduled runs included. Pi names them `mcp__kaiju__<tool>` (on some sites the connector is
-called `kaiju-builtin`).
+called `kaiju-builtin`). Before the rename they were `mcp__kobe__<tool>`; if an earlier message
+uses that name, call the `mcp__kaiju__` one.
 
 | Tool          | What it returns                                                                       |
 | ------------- | ------------------------------------------------------------------------------------- |

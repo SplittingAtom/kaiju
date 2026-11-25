@@ -302,6 +302,37 @@ describe("what the audit page never shows", () => {
     expect(screen.queryByText("203.0.113.7")).toBeNull();
   });
 
+  it("explains names recorded before the rename with the name they have now (KOBE-826)", async () => {
+    stubPage({
+      [LIST]: [
+        200,
+        {
+          events: [
+            event({ action: "mcp.tool_call", target: { tool: "mcp__kobe__docs_index" } }),
+            event({
+              id: "e-3",
+              seq: 8,
+              action: "site.settings.updated",
+              target: { setting: "kobe_mcp_mode", value: "admin" },
+            }),
+            event({ id: "e-4", seq: 7, action: "mcp.tool_call", target: { tool: "mcp__jira__x" } }),
+          ],
+          nextCursor: null,
+          renamedToolSegments: { kobe: "kaiju" },
+        },
+      ],
+    });
+    renderSite(<SiteAuditPage />);
+    const rows = within(await table()).getAllByRole("row");
+    expect(must(rows[1]).textContent).toContain(
+      "tool: mcp__kobe__docs_index (before the rename; now mcp__kaiju__docs_index)",
+    );
+    expect(must(rows[2]).textContent).toContain(
+      "setting: kobe_mcp_mode (before the rename; now kaiju_mcp_mode)",
+    );
+    expect(must(rows[3]).textContent).not.toContain("before the rename");
+  });
+
   it("renders event fields as plain text and leaves out fields it does not show", async () => {
     stubPage({
       [LIST]: [

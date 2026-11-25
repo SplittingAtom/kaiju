@@ -23,6 +23,7 @@ import {
 import { decisionBodySchema, headersBodySchema } from "../../../routes/team-egress.js";
 import { memberRoleSchema } from "../../../teams/schemas.js";
 import { named, untyped, type CatalogDetail } from "../build.js";
+import { RENAMED_TOOL_SEGMENTS } from "./site-compliance.js";
 import { arr, bool, dateTime, int, nullable, num, obj, oneOfStrings, str, uuid } from "../json.js";
 import { EgressRequestDecision, EgressRequestList } from "./team-shared.js";
 
@@ -322,7 +323,11 @@ export const teamDetails: Readonly<Record<string, CatalogDetail>> = {
     query: auditQuery,
     response: untyped(
       "TeamAuditPage",
-      obj({ events: arr(teamAuditEvent), nextCursor: nullable(str) }),
+      obj({
+        events: arr(teamAuditEvent),
+        nextCursor: nullable(str),
+        renamedToolSegments: RENAMED_TOOL_SEGMENTS,
+      }),
     ),
   },
   "get /v1/team/audit/export": {

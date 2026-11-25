@@ -170,7 +170,9 @@ after saving.
 
 ## Governance
 
-- **Audit view**: the team's audit events.
+- **Audit view**: the team's audit events. Events recorded before the rename to Kaiju keep the
+  tool and setting names of that time (`mcp__kobe__docs_index`); the view shows today's name next
+  to each.
 - **Usage**: spend by user, agent and model.
 - **Break-glass access**: when site admins had time-boxed, read-only access to this team, now and
   in the past. A banner tells members while it is active. When a site admin reads the portable

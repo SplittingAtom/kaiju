@@ -1,5 +1,6 @@
 import {
   APPROVAL_TTL_MS,
+  currentReasonCode,
   parseMcpToolName,
   type PolicyDecision,
   type PolicyInput,
@@ -53,9 +54,13 @@ export function kaijuToolName(piName: string): string | undefined {
   return parseMcpToolName(piName)?.tool_segment;
 }
 
-/** The approval was asked by this guard. */
+/**
+ * The approval was asked by this guard: also under the code's pre-rename name (KOBE-826), which an
+ * approval stored before the upgrade, or asked by a server of the release before it during a
+ * rolling upgrade, carries; such an approval stays out of "remember" and "Approve all".
+ */
 export function isKaijuAdminAsk(reasons: readonly { readonly code: string }[]): boolean {
-  return reasons.some((r) => r.code === KAIJU_ADMIN_WRITE_REASON);
+  return reasons.some((r) => currentReasonCode(r.code) === KAIJU_ADMIN_WRITE_REASON);
 }
 
 const ALLOW_CODES: ReadonlySet<string> = new Set([

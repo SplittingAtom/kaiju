@@ -17,7 +17,8 @@ export type AllowlistCategory =
   | "telemetry"
   | "fallback"
   | "sandbox-listener"
-  | "internal-listener";
+  | "internal-listener"
+  | "pre-rename";
 
 export interface AllowlistEntry {
   readonly route: string;
@@ -44,6 +45,19 @@ const SCIM_ROUTES = [
 ] as const;
 
 export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
+  // The pre-rename paths (KOBE-826), served next to the documented `kaiju` ones for one release so
+  // a web pod of the release before the rename keeps working during a rolling upgrade; KOBE-754
+  // removes them.
+  ...[
+    "GET /v1/team/connectors/kobe",
+    "PUT /v1/team/connectors/kobe",
+    "GET /v1/site/skills/catalog-skills/{skillId}/kobe/compare",
+    "POST /v1/site/skills/catalog-skills/{skillId}/kobe/reset",
+  ].map((route): AllowlistEntry => ({
+    route,
+    category: "pre-rename",
+    reason: "Pre-rename alias of the documented `kaiju` route, for one release (KOBE-826).",
+  })),
   {
     route: "GET /healthz",
     category: "probe",

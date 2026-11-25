@@ -1,4 +1,4 @@
-import { withLegacyHeaderNames } from "@kaiju/protocol";
+import { PRE_RENAME_SEGMENT, withLegacyHeaderNames } from "@kaiju/protocol";
 import { injectTraceHeaders } from "@kaiju/telemetry";
 import { z } from "zod";
 import type { GrantAnswer, GrantFetchOptions } from "./credentials.js";
@@ -112,6 +112,14 @@ const grantSchema = z.discriminatedUnion("kind", [
 
 /** The built-in connectors the server hosts itself. */
 export type BuiltinServer = "kaiju" | "git";
+
+/**
+ * The server's internal path of a built-in. The Kaiju connector keeps its pre-rename path for one
+ * release (KOBE-826), which servers of both releases serve during a rolling upgrade; KOBE-754
+ * moves it to `kaiju`.
+ */
+export const builtinPath = (builtin: BuiltinServer): string =>
+  builtin === "kaiju" ? PRE_RENAME_SEGMENT : builtin;
 
 export interface PolicyServer {
   listTools(token: string, connectorId: string): Promise<ServerAnswer<ToolsResponse>>;
@@ -300,9 +308,9 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
     fetchGrant,
     reportResult,
     kaijuList: (token, builtin = "kaiju") =>
-      post(`/${builtin}/list`, token, undefined, toolsResponseSchema),
+      post(`/${builtinPath(builtin)}/list`, token, undefined, toolsResponseSchema),
     kaijuCall: (token, query, builtin = "kaiju") =>
-      post(`/${builtin}/calls`, token, callBody(query), kaijuCallSchema),
+      post(`/${builtinPath(builtin)}/calls`, token, callBody(query), kaijuCallSchema),
     listTools: (token, connectorId) =>
       post(
         `/connectors/${encodeURIComponent(connectorId)}/tools`,

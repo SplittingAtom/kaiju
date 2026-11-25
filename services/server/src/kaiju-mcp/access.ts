@@ -1,5 +1,7 @@
 import {
   KAIJU_BUILTIN_CONNECTOR_ID,
+  KAIJU_BUILTIN_NAMES,
+  readBuiltinRenames,
   parseKaijuMcpMode,
   parseKaijuMcpTeamLevel,
   sql,
@@ -9,7 +11,7 @@ import {
   type KaijuTx,
   type TeamRole,
 } from "@kaiju/db";
-import { SITE_GRANTS, type SiteGrant } from "@kaiju/protocol";
+import { mcpServerSegment, SITE_GRANTS, type SiteGrant } from "@kaiju/protocol";
 import {
   siteMemoryAllows,
   skillReviewAllows,
@@ -64,6 +66,21 @@ export async function kaijuBuiltinName(db: Reader): Promise<string | undefined> 
     sql`SELECT name FROM public.connectors WHERE builtin = 'kaiju'`,
   );
   return res.rows[0]?.name;
+}
+
+/**
+ * The Pi server segments the built-in Kaiju connector's tools have had: its current name's (both
+ * seed names while it is not seeded) plus the pre-rename segments migration 0260 recorded for it
+ * (KOBE-826), since stored threads name its tools as they were called.
+ */
+export async function kaijuBuiltinSegments(db: Reader): Promise<string[]> {
+  const name = await kaijuBuiltinName(db);
+  const current = (name === undefined ? [...KAIJU_BUILTIN_NAMES] : [name]).map(mcpServerSegment);
+  const { segments } = await readBuiltinRenames(db);
+  const old = Object.entries(segments)
+    .filter(([, now]) => current.includes(now))
+    .map(([before]) => before);
+  return [...current, ...old];
 }
 
 /** Switches only (no person): the engine's view of the connector in a team. */

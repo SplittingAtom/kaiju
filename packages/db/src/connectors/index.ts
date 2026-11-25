@@ -26,5 +26,11 @@ export {
   seedKaijuBuiltinConnector,
   seedGitBuiltinConnector,
   GIT_BUILTIN_NAMES,
+  BUILTIN_RENAMES_KEY,
+  NO_BUILTIN_RENAMES,
+  parseBuiltinRenames,
+  readBuiltinRenames,
+  renamedBuiltinToolName,
+  type BuiltinRenames,
   type KaijuBuiltinSeed,
 } from "./builtin.js";

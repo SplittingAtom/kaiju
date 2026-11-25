@@ -1,3 +1,4 @@
+import { parseMcpToolName } from "@kaiju/protocol";
 import { sql } from "drizzle-orm";
 import type { KaijuDb } from "../client.js";
 import {
@@ -28,7 +29,8 @@ const pgServerSegment = (name: string) => name.replace(/-/g, "_");
  * safe across replicas starting together: the row has a fixed id, and the insert does nothing on
  * any unique conflict (id, `builtin`, name or Pi server segment), so exactly one row exists after
  * any number of concurrent calls. Named `kaiju`, or `kaiju-builtin` when a registered connector
- * already uses `kaiju` (or its Pi segment); the caller logs the fallback.
+ * already uses `kaiju` (or its Pi segment); the caller logs the fallback. An install from before
+ * the rename already has the row: migration 0260 renamed it (KOBE-826), so this finds it.
  */
 export async function seedKaijuBuiltinConnector(db: KaijuDb): Promise<KaijuBuiltinSeed> {
   const existing = async () => {
@@ -98,4 +100,70 @@ export async function seedGitBuiltinConnector(db: KaijuDb): Promise<KaijuBuiltin
     if (raced !== undefined) return { outcome: "present", name: raced };
   }
   return { outcome: "names_taken" };
+}
+
+/**
+ * What migration 0260 renamed (KOBE-826, spec rename-kaiju §11 A3), kept in `site_settings` under
+ * this key: `{"segments": {"<old Pi server segment>": "<new segment>"}}`, only for a built-in whose
+ * name it changed (`kobe` → `kaiju`, `kobe-git` → `kaiju-git`, the `-builtin` fallbacks alike; a
+ * registered connector holding the new name keeps the built-in on its old one). Readers use it
+ * where stored or remembered history names the old tools: the audit view explains them, shared
+ * threads keep hiding old admin results, and the policy engine tells a model that calls an old
+ * name which name to call instead. Written once by the migration; nothing else writes it.
+ */
+export const BUILTIN_RENAMES_KEY = "kaiju_mcp.renamed";
+
+export interface BuiltinRenames {
+  /** Old Pi server segment → the segment the built-in has had since the rename. */
+  readonly segments: Readonly<Record<string, string>>;
+}
+
+export const NO_BUILTIN_RENAMES: BuiltinRenames = { segments: {} };
+
+const SEGMENT = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
+
+/** The stored marker, or none when absent or unreadable (never throws). */
+export function parseBuiltinRenames(value: string | null | undefined): BuiltinRenames {
+  if (typeof value !== "string") return NO_BUILTIN_RENAMES;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    const segments =
+      typeof parsed === "object" && parsed !== null
+        ? (parsed as Record<string, unknown>).segments
+        : undefined;
+    if (typeof segments !== "object" || segments === null || Array.isArray(segments)) {
+      return NO_BUILTIN_RENAMES;
+    }
+    const entries = Object.entries(segments).filter(
+      (e): e is [string, string] =>
+        SEGMENT.test(e[0]) && typeof e[1] === "string" && SEGMENT.test(e[1]) && e[0] !== e[1],
+    );
+    return { segments: Object.fromEntries(entries) };
+  } catch {
+    return NO_BUILTIN_RENAMES;
+  }
+}
+
+/** The marker as stored (none when the migration renamed nothing or a reset removed it). */
+export async function readBuiltinRenames(db: Pick<KaijuDb, "execute">): Promise<BuiltinRenames> {
+  const res = await db.execute<{ value: string }>(
+    sql`SELECT value FROM public.site_settings WHERE key = ${BUILTIN_RENAMES_KEY}`,
+  );
+  return parseBuiltinRenames(res.rows[0]?.value);
+}
+
+/**
+ * The name a pre-rename built-in tool has now (`mcp__kobe__docs_index` → `mcp__kaiju__docs_index`),
+ * or undefined when `piName` does not start with a renamed segment.
+ */
+export function renamedBuiltinToolName(
+  renames: BuiltinRenames,
+  piName: string,
+): string | undefined {
+  const parsed = parseMcpToolName(piName);
+  if (!parsed) return undefined;
+  const now = Object.hasOwn(renames.segments, parsed.server_segment)
+    ? renames.segments[parsed.server_segment]
+    : undefined;
+  return now === undefined ? undefined : `mcp__${now}__${parsed.tool_segment}`;
 }

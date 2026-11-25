@@ -4,7 +4,7 @@ import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { and, connectors, eq, isNull } from "@kaiju/db";
-import { idSchema, uuidSchema } from "@kaiju/protocol";
+import { idSchema, PRE_RENAME_SEGMENT, uuidSchema } from "@kaiju/protocol";
 import { logger } from "../logger.js";
 import { reportCapturedResult, resultReportSchema, type AppResultsDeps } from "../apps/results.js";
 import { authenticateSandbox, sandboxTokenOf, type McpAuthDeps } from "../mcp/principal.js";
@@ -219,6 +219,9 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
   const builtins: [string, Pick<KaijuMcpService, "list" | "call"> | undefined][] = [
     ["kaiju", deps.kaiju],
     ["git", deps.gitMcp],
+    // The pre-rename path for one release (KOBE-826): MCP proxy pods of the release before the
+    // rename, and this release's proxy until KOBE-754, still call it.
+    [PRE_RENAME_SEGMENT, deps.kaiju],
   ];
   for (const [path, service] of builtins) {
     mcp.post(`/${path}/list`, async (c) => {

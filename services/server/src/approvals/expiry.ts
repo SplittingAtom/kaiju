@@ -1,5 +1,5 @@
 import { isActiveRunStatus } from "@kaiju/protocol";
-import { scanTeams, sql, withTeam } from "@kaiju/db";
+import { readBuiltinRenames, renamedBuiltinToolName, scanTeams, sql, withTeam } from "@kaiju/db";
 import { withAppendTx } from "../event-stream/append.js";
 import {
   applyTransition,
@@ -22,6 +22,18 @@ import { loadApproval, otherPendingCount } from "./store.js";
 export const APPROVAL_EXPIRED_MESSAGE =
   "The approval request expired after 1 hour without an answer, so the tool call was denied " +
   "and the run ended.";
+
+/**
+ * What it says instead when the approval was for a built-in tool renamed by an upgrade (KOBE-826):
+ * migration 0260 makes such pending approvals due at once, since they are signed over the old
+ * name and are never re-signed.
+ */
+export function renamedApprovalMessage(before: string, now: string): string {
+  return (
+    `The approval request was for ${before}, which an upgrade renamed to ${now}, so the tool ` +
+    "call was not run and the run ended. Send the message again to continue."
+  );
+}
 
 interface EndedRun {
   readonly teamId: string;
@@ -52,6 +64,7 @@ export async function expireByTtl(
       return undefined;
     }
     const expired = await expireRunApprovalsInTx(tx, teamId, run.id, "ttl", approvalId);
+    const renamed = renamedBuiltinToolName(await readBuiltinRenames(tx), row.tool);
     let ended: EndedRun | undefined;
     if (isActiveRunStatus(run.status)) {
       // applyTransition expires the run's other pending approvals (cause ttl) and audits them.
@@ -60,7 +73,15 @@ export async function expireByTtl(
       const cause = run.status === "waiting_approval" ? "approval_expired" : "error";
       await applyTransition(tx, thread, run, "failed", cause, {
         type: "run.failed",
-        payload: { error: { code: "approval_expired", message: APPROVAL_EXPIRED_MESSAGE } },
+        payload: {
+          error: {
+            code: "approval_expired",
+            message:
+              renamed === undefined
+                ? APPROVAL_EXPIRED_MESSAGE
+                : renamedApprovalMessage(row.tool, renamed),
+          },
+        },
       });
       await requestStop(tx, teamId, run.id, "abort");
       ended = { teamId, runId: run.id, threadId: thread.id, ownerUserId: thread.ownerUserId };

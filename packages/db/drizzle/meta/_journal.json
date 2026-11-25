@@ -1821,6 +1821,13 @@
       "when": 1795468686881,
       "tag": "0259_git_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 260,
+      "version": "7",
+      "when": 1795566026440,
+      "tag": "0260_kaiju_builtin_connector",
+      "breakpoints": true
     }
   ]
 }

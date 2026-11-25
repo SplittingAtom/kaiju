@@ -98,7 +98,11 @@ describe("no header or route on the public listener accepts a delegation (ac-6)"
       expect(res.status).toBe(401);
       expect(await roleOf(w.team, w.target.id)).toBe("member");
       // The Kaiju endpoints exist on the internal listener only.
-      for (const path of ["/internal/v1/mcp/kaiju/calls", "/v1/internal/v1/mcp/kaiju/calls"]) {
+      for (const path of [
+        "/internal/v1/mcp/kaiju/calls",
+        "/v1/internal/v1/mcp/kaiju/calls",
+        "/v1/internal/v1/mcp/kobe/calls",
+      ]) {
         const r = await fetch(`http://127.0.0.1:${port}${path}`, { method: "POST" });
         // 403: the CSRF origin check answers first for a POST without the site's origin.
         expect([401, 403, 404], path).toContain(r.status);

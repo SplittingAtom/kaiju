@@ -76,6 +76,12 @@ describe("guardKaijuAdmin", () => {
     }
   });
 
+  it("recognises its ask under the code's pre-rename name (KOBE-826)", () => {
+    const old = [{ code: "kobe_admin_write", stage: "ask_rule", message: "m" }];
+    expect(isKaijuAdminAsk(old)).toBe(true);
+    expect(isKaijuAdminAsk([{ code: "team_ask_rule" }])).toBe(false);
+  });
+
   it.each(["ask-on-write", "ask-all"] as const)("asks in %s", (mode) => {
     expect(guardKaijuAdmin(allow("dangerous_mode"), g({ input: input(mode) })).effect).toBe(
       "require_approval",

@@ -30,6 +30,11 @@ export const PLATFORM_EVENTS = {
       "kaiju_writes_per_hour",
       "git_connections",
       "git_allowed_hosts",
+      // The three Kaiju settings as rows recorded before the rename name them (KOBE-826): kept in
+      // the append-only log, read as they are and explained by the audit view; never written.
+      "kobe_mcp_mode",
+      "kobe_reads_per_minute",
+      "kobe_writes_per_hour",
     ]),
     value: z.union([z.boolean(), z.number().int().nonnegative(), label]),
     hosts: z.array(egressDomain).max(GIT_ALLOWED_HOSTS_MAX).optional(),

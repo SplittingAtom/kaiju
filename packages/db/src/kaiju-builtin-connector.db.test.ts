@@ -72,7 +72,7 @@ describe("the built-in kaiju connector row", () => {
     await expect(
       app.db.transaction((tx) =>
         tx.execute(
-          sql`UPDATE connectors SET url = 'http://kobe-server.internal/internal/v1/mcp/kobe' WHERE builtin = 'git'`,
+          sql`UPDATE connectors SET url = ${KAIJU_BUILTIN_CONNECTOR_URL} WHERE builtin = 'git'`,
         ),
       ),
     ).rejects.toSatisfy((e) => pgCodeOf(e) === "23514");

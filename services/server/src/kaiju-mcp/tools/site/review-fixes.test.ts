@@ -34,8 +34,8 @@ describe("site_connectors_list returns URLs without credentials", () => {
     ["https://user:pw@api.example.com/mcp?api_key=s3cret&x=1#f", "https://api.example.com/mcp"],
     ["https://api.example.com/v1/mcp/?token=abc", "https://api.example.com/v1/mcp/"],
     [
-      "http://kobe-server.internal/internal/v1/mcp/kobe",
-      "http://kobe-server.internal/internal/v1/mcp/kobe",
+      "http://kaiju-server.internal/internal/v1/mcp/kaiju",
+      "http://kaiju-server.internal/internal/v1/mcp/kaiju",
     ],
     ["not a url", "(not shown)"],
   ])("%s → %s", (url, shown) => {
