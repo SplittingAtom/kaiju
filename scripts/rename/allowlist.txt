@@ -231,7 +231,7 @@ packages/protocol/src/item-references.ts packages/protocol/src/item-references.t
 apps/web/lib/apps/bridge-schema.ts apps/web/components/chat/frame-drop-equivalence.test.ts /\bkobe\/notifications\/(?:drag-(?:start|move|end|cancel)\b)?/
 apps/web/lib/apps/host-bridge.ts /(?<=their old `)kobe\/notifications\/(?=`)|(?<=was `)kobe(?=`; informational)/
 apps/web/lib/apps/host-bridge-drag.test.ts /\bkobe\/notifications\//i
-docs/guide/building-mcp-apps.md /`(?:io\.kobe\/item-kind|kobe\/notifications\/drag-(?:start|move|end|cancel|\*)|kobe)`/
+docs/guide/building-mcp-apps.md /`(?:io\.kobe\/item-kind|kobe\/notifications\/drag-(?:start|move|end|cancel)|kobe)`|(?<=was called )Kobe(?= before)/
 
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/

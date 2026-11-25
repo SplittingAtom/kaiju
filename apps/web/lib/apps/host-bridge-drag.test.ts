@@ -266,7 +266,14 @@ describe("both name sets at once (KOBE-829)", () => {
       t.send(note(`${prefix}drag-end`, { x: 9, y: 9 }));
     }
     // The second start replaces the first (same item); the second end finds no live drag.
-    expect(t.events.map((e) => e.phase)).toEqual(["start", "cancel", "start", "move", "move", "end"]);
+    expect(t.events.map((e) => e.phase)).toEqual([
+      "start",
+      "cancel",
+      "start",
+      "move",
+      "move",
+      "end",
+    ]);
   });
 
   it("one live drag whichever name a message uses", () => {
