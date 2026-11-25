@@ -61,7 +61,10 @@ and the guide updated in the same change.
    the member types, presses or leaves, so a file editor that opens with the page
    (`code-editor.tsx` `typingElsewhere`) may still take it (KOBE-802's "opens with the cursor").
    New conversation and thread switches on a phone do focus (the brief limits the touch exception
-   to page load).
+   to page load). Review fix: a request whose message box is not mounted yet (a slow thread)
+   stays pending, also across a composer remount, for up to 3 s (`PENDING_REQUEST_MS`); it is
+   dropped once used, when the member moves the focus or presses a key, or opens a dialog or menu
+   (a layer already open at the request is still waited for, up to 1.5 s).
 
 ## Docs evaluation
 
@@ -98,6 +101,6 @@ in-sandbox agent sees or can do changed.
   approval needs a model turn to raise the approval, so it is unit-tested instead (above).
   `memory-quality-nudge.spec.ts` now reads the context meter: below 30% it expects no dot or pulse.
 - Checks (one at a time, `TMPDIR=~/tmp`): build, typecheck (incl. `e2e/browser` tsc), lint,
-  format:check, web unit suite 480 files / 4424 tests passed (theme guard `app/theme-css.test.ts`
+  format:check, web unit suite 480 files / 4430 tests passed (theme guard `app/theme-css.test.ts`
   and `app/edge-glow.test.ts` among them), `@kaiju/guide` tests 33 passed, public hygiene, site
   wording and rename guard ok.

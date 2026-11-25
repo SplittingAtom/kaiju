@@ -49,13 +49,22 @@ export function coarsePointer(win: Window): boolean {
   }
 }
 
-export type FocusVerdict = "focus" | "wait" | "skip";
+/** `missing`: the composer (its message box) is not mounted yet, e.g. a thread still loading. */
+export type FocusVerdict = "focus" | "wait" | "missing" | "skip";
+
+/**
+ * How long a focus request stays pending while the composer is not mounted yet (a slow thread):
+ * it is used once the message box mounts within this, else dropped.
+ */
+export const PENDING_REQUEST_MS = 3_000;
 
 /** Where the focus was when the request was made (the New button, a row in the Threads panel). */
 export interface FocusRequest {
   readonly before: Element | null;
   /** `before` was inside an open layer, which closes onto the thread and puts the focus back. */
   readonly fromLayer: boolean;
+  /** A dialog or menu was open when the request was made (one opened later ends it). */
+  readonly layerOpen: boolean;
 }
 
 /**
@@ -63,9 +72,10 @@ export interface FocusRequest {
  * (an editor that opened with the page, say) is left alone.
  */
 export function focusRequest(doc: Document, atLoad = false): FocusRequest {
-  if (atLoad) return { before: null, fromLayer: false };
+  const layerOpen = hasOpenLayer(doc, null);
+  if (atLoad) return { before: null, fromLayer: false, layerOpen };
   const before = doc.activeElement;
-  return { before, fromLayer: before?.closest(OPEN_LAYER) != null };
+  return { before, fromLayer: before?.closest(OPEN_LAYER) != null, layerOpen };
 }
 
 /** The member moved the focus since the request: it is theirs, not ours to take. */
@@ -76,22 +86,27 @@ function movedSince(doc: Document, request: FocusRequest): boolean {
   return !(request.fromLayer && request.before !== null && !request.before.isConnected);
 }
 
+const NO_REQUEST: FocusRequest = { before: null, fromLayer: false, layerOpen: false };
+
 /**
  * What to do now about focusing `composer`: focus it, wait for an open layer to close (the Threads
- * panel closing onto the chosen thread), or leave the focus where it is (on another field, or
- * wherever the member has moved it since the request).
+ * panel closing onto the chosen thread), wait for the composer to mount (`missing`), or leave the
+ * focus where it is (on another field, wherever the member has moved it since the request, or a
+ * dialog or menu the member opened since).
  */
 export function focusVerdict(
   doc: Document,
   composer: HTMLElement | null,
-  request: FocusRequest = { before: null, fromLayer: false },
+  request: FocusRequest = NO_REQUEST,
 ): FocusVerdict {
-  if (composer === null || !composer.isConnected) return "skip";
+  const mounted = composer !== null && composer.isConnected;
   const at = doc.activeElement;
-  if (at === composer) return "skip";
-  if (isTypingField(at, composer)) return "skip";
-  if (hasOpenLayer(doc, composer) || composer.closest("[inert], [hidden]") !== null) return "wait";
-  return movedSince(doc, request) ? "skip" : "focus";
+  if (mounted && at === composer) return "skip";
+  if (isTypingField(at, mounted ? composer : null)) return "skip";
+  if (hasOpenLayer(doc, mounted ? composer : null)) return request.layerOpen ? "wait" : "skip";
+  if (movedSince(doc, request)) return "skip";
+  if (!mounted) return "missing";
+  return composer.closest("[inert], [hidden]") !== null ? "wait" : "focus";
 }
 
 /**

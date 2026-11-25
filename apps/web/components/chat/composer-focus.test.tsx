@@ -1,17 +1,19 @@
 // @vitest-environment happy-dom
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { useEffect, useRef, useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AUTO_FOCUS_ATTR,
   autoFocusComposer,
+  PENDING_REQUEST_MS,
   focusRequest,
   focusVerdict,
   isTypingField,
 } from "../../lib/chat/composer-focus";
 import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { openApp, threadGroup } from "./testing";
-import { resetComposerFocusForTests } from "./use-composer-focus";
+import { resetComposerFocusForTests, useComposerAutoFocus } from "./use-composer-focus";
 
 /**
  * KOBE-840 ac-4: the composer takes the focus on page load, on New chat and when a thread is
@@ -140,6 +142,15 @@ describe("the focus rules (KOBE-840)", () => {
     expect(focusVerdict(document, composer, request)).toBe("skip");
   });
 
+  it("a missing composer keeps the request pending; a layer opened since ends it", () => {
+    const request = focusRequest(document);
+    expect(focusVerdict(document, null, request)).toBe("missing");
+    const menu = document.createElement("div");
+    menu.setAttribute("role", "menu");
+    document.body.append(menu);
+    expect(focusVerdict(document, null, request)).toBe("skip");
+  });
+
   it("waits while a dialog or menu is open, then focuses once the chosen-in layer closed", () => {
     const { composer, button } = setUp();
     const dialog = document.createElement("div");
@@ -175,7 +186,7 @@ describe("the focus rules (KOBE-840)", () => {
     expect(isTypingField(composer, composer)).toBe(false);
     composer.focus();
     expect(focusVerdict(document, composer)).toBe("skip");
-    expect(focusVerdict(document, null)).toBe("skip");
+    expect(focusVerdict(document, null)).toBe("skip"); // another field has the focus
   });
 
   it("at page load only the page itself may hand over the focus", () => {
@@ -195,3 +206,78 @@ describe("the focus rules (KOBE-840)", () => {
     expect(composer.hasAttribute(AUTO_FOCUS_ATTR)).toBe(false);
   });
 });
+
+/** A composer whose message box mounts only when `ready` (a thread that loads slowly). */
+function SlowComposer({ ready, threadKey = "t1" }: { ready: boolean; threadKey?: string }) {
+  const input = useRef<HTMLTextAreaElement>(null);
+  useComposerAutoFocus(input, threadKey);
+  return ready ? <textarea ref={input} aria-label="Slow message" /> : <p>Loading…</p>;
+}
+
+/** Mounts the message box `after` ms later. */
+function Delayed({ after }: { after: number }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setReady(true), after);
+    return () => clearTimeout(timer);
+  }, [after]);
+  return <SlowComposer ready={ready} />;
+}
+
+describe(
+  "a request waits for a composer that mounts late (KOBE-840 review)",
+  { timeout: 10_000 },
+  () => {
+    const box = () => screen.queryByLabelText("Slow message");
+
+    it("focuses the message box once it mounts, well after two frames", async () => {
+      render(<Delayed after={400} />);
+      await waitFor(() => expect(box()).not.toBeNull());
+      await waitFor(() => expect(document.activeElement).toBe(box()));
+    });
+
+    it("keeps the request across a remount of the composer", async () => {
+      const { unmount } = render(<SlowComposer ready={false} />);
+      await frames();
+      unmount();
+      render(<SlowComposer ready />);
+      await waitFor(() => expect(document.activeElement).toBe(box()));
+    });
+
+    it("drops the request when the member opens a dialog meanwhile", async () => {
+      const view = render(<SlowComposer ready={false} />);
+      await frames();
+      const dialog = document.createElement("div");
+      dialog.setAttribute("role", "dialog");
+      document.body.append(dialog);
+      await frames();
+      dialog.remove();
+      view.rerender(<SlowComposer ready />);
+      await frames();
+      expect(document.activeElement).not.toBe(box());
+    });
+
+    it("drops the request when the member presses a key meanwhile", async () => {
+      const view = render(<SlowComposer ready={false} />);
+      await frames();
+      act(() => {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+      });
+      view.rerender(<SlowComposer ready />);
+      await frames();
+      expect(document.activeElement).not.toBe(box());
+    });
+
+    it("drops the request after PENDING_REQUEST_MS", async () => {
+      const start = performance.now();
+      const now = vi.spyOn(performance, "now").mockReturnValue(start);
+      const view = render(<SlowComposer ready={false} />);
+      await frames();
+      now.mockReturnValue(start + PENDING_REQUEST_MS + 1);
+      await frames();
+      view.rerender(<SlowComposer ready />);
+      await frames();
+      expect(document.activeElement).not.toBe(box());
+    });
+  },
+);
