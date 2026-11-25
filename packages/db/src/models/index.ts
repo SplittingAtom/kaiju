@@ -11,7 +11,6 @@ export {
   PROVIDER_KEY_PURPOSE,
   VIRTUAL_KEY_PURPOSE,
   bumpModelsConfig,
-  gatewayProviderName,
   isActiveRunLeasedTo,
   loadGatewayPrincipal,
   notifyModels,
@@ -28,6 +27,7 @@ export {
   type ServerCallPassClaim,
   type ServerCallRunClaim,
 } from "./store.js";
+export { GATEWAY_MODEL_SQL, currentModelSql, gatewayProviderName } from "./gateway-names.js";
 export { recordModelUsage, type ModelUsageRecord } from "./usage.js";
 export {
   exhaustedLine,

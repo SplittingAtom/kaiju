@@ -62,6 +62,7 @@ export * from "./agent-ownership.js";
 export * from "./team-default-agent.js";
 export * from "./theme/index.js";
 export * from "./kaiju-mcp.js";
+export * from "./local-models.js";
 export * from "./git-connections.js";
 export * from "./git-tools.js";
 export * from "./git-conversions.js";

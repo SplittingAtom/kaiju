@@ -58,7 +58,7 @@ spec:
           port: {{ int . }}
         {{- end }}
     {{- if (include "kaiju.embeddingsValues" . | fromJson).enabled }}
-    # The in-cluster embedding service (KOBE-659), provider kobe-local.
+    # The in-cluster embedding service (KOBE-659), provider kaiju-local.
     - to:
         - podSelector:
             matchLabels:

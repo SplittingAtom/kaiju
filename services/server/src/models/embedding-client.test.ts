@@ -9,7 +9,7 @@ const TEAM = "11111111-1111-4111-8111-111111111111";
 const USER = "22222222-2222-4222-8222-222222222222";
 const RUN = "33333333-3333-4333-8333-333333333333";
 const THREAD = "44444444-4444-4444-8444-444444444444";
-const MODEL = "kobe-local/nomic-embed-text";
+const MODEL = "kaiju-local/nomic-embed-text";
 
 interface Seen {
   readonly url: string;

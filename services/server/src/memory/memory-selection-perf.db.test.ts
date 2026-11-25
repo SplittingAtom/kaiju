@@ -184,7 +184,7 @@ const MESSAGES = [
  */
 const P95_MAX_MS = process.env.KAIJU_PERF_STRICT === "1" ? 50 : 200;
 
-const VECTOR_MODEL = "kobe-local/nomic-embed-text";
+const VECTOR_MODEL = "kaiju-local/nomic-embed-text";
 /** The keyword-only p95 of the run above (the hybrid bound is relative to it). */
 let keywordP95 = 0;
 const DIMS = 768;

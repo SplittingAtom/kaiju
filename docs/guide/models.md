@@ -62,6 +62,11 @@ in the site console). Team admins enable models from that catalog for the team a
 default (**Models** in the team console). Model calls go through Kaiju's model gateway; the
 sandbox never holds a provider key.
 
+The gateway names each model `provider/model`, as **Usage and spend** and a run's details show
+it: a vendor's models under the vendor (`openai/…`), an OpenAI-compatible provider's under a
+name made from its id, and the models of the chart's in-cluster service under `kaiju-local`
+(it was `kobe-local` before the rename to Kaiju; usage from then counts under the new name).
+
 ## Related
 
 - [Team admin overview](admin/team-admin.md)

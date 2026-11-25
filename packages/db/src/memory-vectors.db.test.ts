@@ -124,7 +124,7 @@ describe.skipIf(!pgvector)("with pgvector", () => {
     await query(
       db.appUrl,
       `UPDATE site_memory_item_versions
-       SET embedding = '[0.1,0.2,0.3]', embedding_model = 'kobe-local/nomic', embedding_dims = 3
+       SET embedding = '[0.1,0.2,0.3]', embedding_model = 'kaiju-local/nomic', embedding_dims = 3
        WHERE item_id = $1 AND version = 1`,
       [siteItem],
     );

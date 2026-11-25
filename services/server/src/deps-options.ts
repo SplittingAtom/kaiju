@@ -157,7 +157,7 @@ export interface ServerDepsOptions {
   };
   /**
    * Memory embeddings (KOBE-409): the chart's in-cluster embedding model as the gateway names it
-   * (`kobe-local/<model>`, KOBE-659), offered in the Site console; unset: none runs. Tests may
+   * (`kaiju-local/<model>`, KOBE-659), offered in the Site console; unset: none runs. Tests may
    * shorten the selector's query-embedding deadline.
    */
   readonly embeddings?: {

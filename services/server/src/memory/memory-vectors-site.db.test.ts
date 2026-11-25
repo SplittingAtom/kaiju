@@ -17,7 +17,7 @@ import { MEMORY_VECTOR_BUILD_LOCK } from "./embeddings/backfill.js";
  * Workspace. A Workspace at 100 % is skipped, the others still build.
  */
 const PAIR = generateSessionKeyPair();
-const MODEL = "kobe-local/test-embed";
+const MODEL = "kaiju-local/test-embed";
 const fx = new EventStreamFixture();
 
 interface Call {
@@ -121,7 +121,7 @@ beforeAll(async () => {
   await fx.setup([{}], () => ({
     blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
-    embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
+    embeddings: { localModel: "kaiju-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));
   const email = `vec-site-${randomUUID().slice(0, 6)}@events.test`;
   const { id } = await fx

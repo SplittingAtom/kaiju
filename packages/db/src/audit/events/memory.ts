@@ -73,7 +73,7 @@ export const MEMORY_EVENTS = {
     learningModel: z
       .strictObject({ from: modelAlias.nullable(), to: modelAlias.nullable() })
       .optional(),
-    /** Since KOBE-409 a gateway model id (`kobe-local/nomic-embed-text`); an alias before. */
+    /** Since KOBE-409 a gateway model id (`kaiju-local/nomic-embed-text`); an alias before. */
     embeddingModel: z
       .strictObject({ from: embeddingModel.nullable(), to: embeddingModel.nullable() })
       .optional(),

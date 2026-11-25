@@ -370,11 +370,11 @@ const VECTORS = "/v1/memory/vectors";
 const VEC_READY = {
   pgvector: "enabled",
   columns: true,
-  model: "kobe-local/nomic-embed-text",
+  model: "kaiju-local/nomic-embed-text",
   model_state: "ok",
   server_calls: true,
-  local_model: "kobe-local/nomic-embed-text",
-  providers: ["kobe-local", "kobe-mac-mini"],
+  local_model: "kaiju-local/nomic-embed-text",
+  providers: ["kaiju-local", "kobe-mac-mini"],
   coverage: { embedded: 3, total: 10 },
   job: null,
 };
@@ -449,7 +449,7 @@ describe("Site console › Settings › Memory: search by meaning (KOBE-409)", (
     renderSite(<MemorySwitchesSection />);
     await screen.findByText("No embedding model is set");
     const field = screen.getByRole("combobox", { name: /Embedding model \(gateway model\)/ });
-    expect(field.getAttribute("placeholder")).toBe("kobe-local/nomic-embed-text");
+    expect(field.getAttribute("placeholder")).toBe("kaiju-local/nomic-embed-text");
     // Review M2: the field says plainly what goes to the embedding provider.
     expect(
       screen.getByText(/every run message \(up to 4,000 characters\) and every saved memory/),

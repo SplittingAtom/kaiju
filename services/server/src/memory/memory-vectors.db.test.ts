@@ -22,7 +22,7 @@ import type { Logger } from "pino";
  * build by the Site admin in their active Workspace. A refusal never fails the save.
  */
 const PAIR = generateSessionKeyPair();
-const MODEL = "kobe-local/test-embed";
+const MODEL = "kaiju-local/test-embed";
 const fx = new EventStreamFixture();
 
 interface Call {
@@ -54,7 +54,7 @@ let admin: Person & { readonly id: string };
 let member: Person;
 let team: string;
 
-/** Bifrost's model listing (KOBE-409 L3): `openai` lists its models; `kobe-local` none. */
+/** Bifrost's model listing (KOBE-409 L3): `openai` lists its models; `kaiju-local` none. */
 const discovery = {
   listKeys: async () => [],
   listModelInfo: async (provider: string) =>
@@ -72,7 +72,7 @@ beforeAll(async () => {
     models: { providerKeySecrets: ["p".repeat(40)], discovery },
     blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
-    embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
+    embeddings: { localModel: "kaiju-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));
   const email = `vec-adm-${randomUUID().slice(0, 6)}@events.test`;
   const { id } = await fx
@@ -136,10 +136,10 @@ describe("memory vectors (KOBE-409)", () => {
       columns: true,
       model: MODEL,
       model_state: "ok",
-      local_model: "kobe-local/nomic-embed-text",
+      local_model: "kaiju-local/nomic-embed-text",
       server_calls: true,
     });
-    expect((state.json as { providers: string[] }).providers).toContain("kobe-local");
+    expect((state.json as { providers: string[] }).providers).toContain("kaiju-local");
   });
 
   it("the embedding model is no chat catalog model and is one its provider lists (review L3)", async () => {
@@ -307,7 +307,7 @@ describe("memory vectors (KOBE-409)", () => {
     expect(started).toBe(false);
     // A vector of another model (or dimension count) finds nothing extra.
     const mismatch = await withTeam(db, team, (tx) =>
-      buildRunSemantic(tx, { ...base, vectorLeg: () => leg("kobe-local/other") }),
+      buildRunSemantic(tx, { ...base, vectorLeg: () => leg("kaiju-local/other") }),
     );
     expect(mismatch?.semantic.items.map((i) => i.id) ?? []).not.toContain(id);
     // The service's query vector: paid by the run's member, naming the run.

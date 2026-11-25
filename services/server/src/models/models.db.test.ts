@@ -715,7 +715,7 @@ describe("gateway sync", () => {
     expect(status.json.gateway).toMatchObject({ in_sync: true, last_error: null });
   });
 
-  it("registers the chart's local embedding service as kobe-local; removes it when off (KOBE-659)", async () => {
+  it("registers the chart's local embedding service as kaiju-local; removes it when off (KOBE-659)", async () => {
     const bifrost = new FakeBifrost();
     const withLocal = new ModelGatewaySync({
       db: h.deps.database.db,
@@ -729,7 +729,7 @@ describe("gateway sync", () => {
       localEmbedding: { url: "http://kaiju-embeddings:8080", model: "nomic-embed-text" },
     });
     expect((await withLocal.runOnce()).errors).toEqual([]);
-    expect(bifrost.providers.get("kobe-local")).toMatchObject({
+    expect(bifrost.providers.get("kaiju-local")).toMatchObject({
       custom: true,
       keyless: true,
       baseUrl: "http://kaiju-embeddings:8080",
@@ -738,7 +738,7 @@ describe("gateway sync", () => {
     // The Site console's providers are pushed as before.
     expect(bifrost.providers.has("ollama")).toBe(true);
     expect((await newSync(bifrost).runOnce()).errors).toEqual([]);
-    expect(bifrost.providers.has("kobe-local")).toBe(false);
+    expect(bifrost.providers.has("kaiju-local")).toBe(false);
   });
 
   it("propagates an admin change through LISTEN/NOTIFY within 10 s (leader only)", async () => {

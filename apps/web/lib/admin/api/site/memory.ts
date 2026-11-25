@@ -9,7 +9,7 @@ export interface SiteMemorySettingsDoc {
   readonly learningModelAlias: string | null;
   /**
    * The embedding model for search by meaning (KOBE-409): a gateway model id
-   * (`<gateway provider>/<model>`, e.g. `kobe-local/nomic-embed-text`), not a catalog alias.
+   * (`<gateway provider>/<model>`, e.g. `kaiju-local/nomic-embed-text`), not a catalog alias.
    */
   readonly embeddingModel: string | null;
   /** 4 to 16 KiB. */

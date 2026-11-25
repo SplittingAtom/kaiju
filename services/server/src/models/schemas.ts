@@ -72,7 +72,7 @@ export const addProviderSchema = z
   .superRefine((v, ctx) => {
     if (v.kind === "openai_compatible") {
       if (!v.id) ctx.addIssue({ code: "custom", message: "id is required for this kind" });
-      // KOBE-659: the chart's in-cluster embedding service is the gateway provider `kobe-local`.
+      // KOBE-659: the chart's in-cluster embedding service is the gateway provider `kaiju-local`.
       if (v.id === LOCAL_EMBEDDING_PROVIDER_ID) {
         ctx.addIssue({
           code: "custom",

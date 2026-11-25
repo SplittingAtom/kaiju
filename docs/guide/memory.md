@@ -615,7 +615,9 @@ answer), search uses word matching alone and nothing else changes.
 
 - **Choosing the model.** Type the model as the gateway names it, `provider/model`. A standard
   install runs a small one inside your cluster, on CPU: **nomic-embed-text**, offered as
-  `kobe-local/nomic-embed-text`. You can name an embedding model of any provider under
+  `kaiju-local/nomic-embed-text` (it was `kobe-local/nomic-embed-text` before the rename to
+  Kaiju: the upgrade changed the setting and kept the vectors, so nothing is embedded again).
+  You can name an embedding model of any provider under
   **Models and providers** instead, such as an Ollama server on your network
   (`kobe-mac-mini/qwen3-embedding:0.6b`, for example) or a hosted provider with a site key. The
   embedding model is not added to the models list, so it never shows in a model picker (nor in
@@ -635,7 +637,7 @@ answer), search uses word matching alone and nothing else changes.
   how Kaiju prepares memories for a model, which makes its old vectors out of date: the count then
   drops (to "0 of 840", say) and word matching carries on alone until you press **Re-embed**. The
   release that tuned search by meaning did this for **nomic-embed-text** (including the in-cluster
-  `kobe-local/nomic-embed-text`).
+  `kaiju-local/nomic-embed-text`).
 - **How results are ranked.** A memory's closeness to the message counts relative to the closest
   memory for that message, not as a fixed score, so models with different scales rank the same
   way. Only the eight closest memories can be picked on meaning alone, and only when they are

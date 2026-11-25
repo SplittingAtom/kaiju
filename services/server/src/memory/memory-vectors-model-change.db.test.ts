@@ -14,8 +14,8 @@ import { STATE_TTL_MS } from "./embeddings/service.js";
  * only the replica that saved it.
  */
 const PAIR = generateSessionKeyPair();
-const MODEL_A = "kobe-local/test-embed-a";
-const MODEL_B = "kobe-local/test-embed-b";
+const MODEL_A = "kaiju-local/test-embed-a";
+const MODEL_B = "kaiju-local/test-embed-b";
 const fx = new EventStreamFixture();
 
 let hold: Promise<void> | undefined;
@@ -34,7 +34,7 @@ beforeAll(async () => {
     models: { providerKeySecrets: ["p".repeat(40)] },
     blobs: { objects: new MemoryObjects(), prefix: "kaiju/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
-    embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
+    embeddings: { localModel: "kaiju-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));
   const email = `vmc-adm-${randomUUID().slice(0, 6)}@events.test`;
   const { id } = await fx

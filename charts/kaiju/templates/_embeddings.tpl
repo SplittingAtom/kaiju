@@ -35,7 +35,7 @@ these keys still renders. Keep in sync with values.yaml.
 
 {{/*
 Server env: the local service's URL and model, for the gateway sync to register it in Bifrost as
-the keyless provider `kobe-local` (services/server/src/models/local-embedding.ts). Nothing when off.
+the keyless provider `kaiju-local` (services/server/src/models/local-embedding.ts). Nothing when off.
 */}}
 {{- define "kaiju.embeddingsServerEnv" -}}
 {{- $e := include "kaiju.embeddingsValues" . | fromJson -}}

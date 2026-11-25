@@ -819,8 +819,8 @@ like every other model. By default the chart runs a small one in the cluster
   tag and digest; never `latest`) serving **nomic-embed-text v1.5** (Apache-2.0, 768 dimensions,
   the f16 GGUF, about 270 MB) on CPU: one replica, non-root, read-only root filesystem, requests
   1 CPU / 1 GiB and limits 2 CPUs / 1 GiB (`embeddings.local.resources`, `threads: 2`). No GPU.
-- **In the gateway.** The server registers it in Bifrost as the keyless provider `kobe-local`, so
-  the model is `kobe-local/nomic-embed-text`. It is the chart's, not a Site console provider:
+- **In the gateway.** The server registers it in Bifrost as the keyless provider `kaiju-local`, so
+  the model is `kaiju-local/nomic-embed-text`. It is the chart's, not a Site console provider:
   turning it off removes it from Bifrost on the next sync. The provider id `local` is reserved.
 - **Network.** Only Bifrost's pods may connect (port 8080); sandboxes, the shim and the server
   cannot. Bifrost's egress policy gets a rule to it.
@@ -843,7 +843,7 @@ like every other model. By default the chart runs a small one in the cluster
 - **Check it** (after a deploy): from the Bifrost pod, the only one allowed to connect,
   `kubectl -n <ns> exec deploy/<release>-bifrost -- wget -qO- --header 'Content-Type: application/json' --post-data '{"model":"nomic-embed-text","input":"hello"}' http://<release>-embeddings:8080/v1/embeddings`
   returns a 768-number vector; the same from any other pod times out. Bifrost lists the model:
-  from the server pod, `GET $KAIJU_BIFROST_URL/api/models?provider=kobe-local` with
+  from the server pod, `GET $KAIJU_BIFROST_URL/api/models?provider=kaiju-local` with
   `Authorization: Bearer base64(kobe:$KAIJU_BIFROST_ADMIN_PASSWORD)` shows `nomic-embed-text`.
 
 ## MCP connectors
@@ -1869,6 +1869,23 @@ path LIKE '.kaiju/%') GROUP BY 1, 2` (as the database owner). Both
   `kobe.app_card` and `kobe.skipped_actions` keep working. Before the upgrade, run the same
   query to check that no member stored files under a top-level `.kaiju/` folder (from then on it
   is internal): such files stay in object storage but no longer show or restore.
+- **The in-cluster models are `kaiju-local/...` (Kaiju rename, KOBE-828, migration
+  `0261_kaiju_local_models`).** The gateway provider of the chart's in-cluster model service (and
+  of a Site console provider with the id `local`) is `kaiju-local` (it was `kobe-local`), so the
+  embedding model is `kaiju-local/nomic-embed-text`. The migration rewrites the stored ids: the
+  Site embedding model, the `embedding_model` of every memory vector (the vectors are kept, so
+  nothing is embedded again and **Search by meaning** keeps its count) and Orbit evals that have
+  not run yet. Catalog entries, team defaults, agents and budgets name aliases and provider ids,
+  so they need nothing. The usage ledger is append-only and keeps the ids it was written with;
+  usage reports, run details and the eval estimate count both ids as one model, and budgets never
+  depended on the model. During the rolling `helm upgrade`, pods and sandboxes of the previous
+  release still send the old id: the model gateway checks, prices and records it as the new one,
+  and the gateway sync keeps the old provider name in Bifrost next to the new one, with the same
+  models, for this release only. Do not change the Site memory settings until every server pod
+  runs the new release: saved through an old pod, they would embed every memory again. A Site
+  provider with the id `local` and an API key may fail its first gateway sync after the upgrade;
+  the next sync succeeds. The rewrite cannot be undone by going back a release: restore the
+  `kaiju backup` taken before the upgrade.
 - **Team namespaces keep `kobe-team-` (Kaiju rename, KOBE-751).** New chart value
   `sandbox.teamNamespacePrefix`: new installs use `kaiju-team-` and `kaiju-*` object names in team
   namespaces; on an existing install `helm upgrade` detects `kobe-team-` from its team namespaces

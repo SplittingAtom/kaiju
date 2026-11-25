@@ -24,7 +24,7 @@ export interface ModelsConfig {
   readonly syncIntervalMs: number;
   /**
    * The chart's in-cluster embedding service (KOBE-659, Helm `embeddings.local`): the sync
-   * registers it in Bifrost as the keyless provider `kobe-local`. Unset: no local service.
+   * registers it in Bifrost as the keyless provider `kaiju-local`. Unset: no local service.
    */
   readonly localEmbedding?: LocalEmbeddingConfig;
 }

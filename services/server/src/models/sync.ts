@@ -60,7 +60,7 @@ export interface ModelGatewaySyncOptions {
   readonly intervalMs: number;
   /** Budgets/rate limits per level (KOBE-42). */
   readonly limits?: GovernanceLimitsSource;
-  /** The chart's in-cluster embedding service, pushed as provider `kobe-local` (KOBE-659). */
+  /** The chart's in-cluster embedding service, pushed as provider `kaiju-local` (KOBE-659). */
   readonly localEmbedding?: LocalEmbeddingConfig;
   readonly leaderRetryMs?: number;
   readonly debounceMs?: number;

@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import { gatewayProviderName, type ModelProviderKind } from "@kaiju/db";
 import type { GatewayLimits, KeySpec, ProviderSpec } from "./bifrost-admin.js";
+import { withPreRenameLocal, withPreRenameLocalKey } from "./pre-rename-local.js";
 
 /**
  * What Bifrost should hold, derived from Kaiju's rows (KOBE-40, spec D30). Kaiju is the source of
@@ -176,10 +177,11 @@ export function buildDesiredState(
       });
     }
   }
+  // KOBE-828: the in-cluster provider's pre-rename name, for one release (pre-rename-local.ts).
   return {
-    providers,
+    providers: withPreRenameLocal(providers),
     customer: { name: SITE_CUSTOMER, limits: limits.customer?.() },
     teams,
-    virtualKeys,
+    virtualKeys: virtualKeys.map(withPreRenameLocalKey),
   };
 }
