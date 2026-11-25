@@ -17,17 +17,17 @@ import {
 export const PLATFORM_EVENTS = {
   // ── site: site-wide settings ──
   "site.settings.updated": event("site", {
-    /** `kobe_mcp_mode` (KOBE-623): the Kaiju MCP site switch, value `off`, `docs` or `admin`.
-     * `kobe_reads_per_minute` / `kobe_writes_per_hour` (KOBE-814): the per-person Kaiju admin limits, value 1-10000.
+    /** `kaiju_mcp_mode` (KOBE-623): the Kaiju MCP site switch, value `off`, `docs` or `admin`.
+     * `kaiju_reads_per_minute` / `kaiju_writes_per_hour` (KOBE-814): the per-person Kaiju admin limits, value 1-10000.
      * `git_connections` (KOBE-757, Workspace git G3): the Site switch, value true or false.
      * `git_allowed_hosts` (KOBE-757): the host limit, value the number of patterns (0 = any host),
      * `hosts` the patterns themselves; `previous` / `previousHosts` the values before. */
     setting: z.enum([
       "require_two_factor",
       "audit_pii_retention_hours",
-      "kobe_mcp_mode",
-      "kobe_reads_per_minute",
-      "kobe_writes_per_hour",
+      "kaiju_mcp_mode",
+      "kaiju_reads_per_minute",
+      "kaiju_writes_per_hour",
       "git_connections",
       "git_allowed_hosts",
     ]),

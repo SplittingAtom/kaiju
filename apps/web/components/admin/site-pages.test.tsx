@@ -523,10 +523,10 @@ describe("Settings: the Kaiju connector switch (KOBE-623)", () => {
   it("shows off / docs / admin with docs chosen, and round-trips a change", async () => {
     const calls = stubApi({
       "GET /v1/site/settings": [
-        [200, { requireTwoFactor: false, kobeMcpMode: "docs" }],
-        [200, { requireTwoFactor: false, kobeMcpMode: "admin" }],
+        [200, { requireTwoFactor: false, kaijuMcpMode: "docs" }],
+        [200, { requireTwoFactor: false, kaijuMcpMode: "admin" }],
       ],
-      "PUT /v1/site/settings": [200, { requireTwoFactor: false, kobeMcpMode: "admin" }],
+      "PUT /v1/site/settings": [200, { requireTwoFactor: false, kaijuMcpMode: "admin" }],
     });
     renderSite(<SettingsPage />, "admin");
     const form = within(await screen.findByRole("form", { name: "Kaiju connector" }));
@@ -536,7 +536,7 @@ describe("Settings: the Kaiju connector switch (KOBE-623)", () => {
     await userEvent.click(form.getByRole("button", { name: "Save Kaiju connector" }));
     await screen.findByText("Kaiju connector: Docs and admin tools.");
     const put = must(calls.find((c) => c.method === "PUT"));
-    expect(JSON.parse(String(put.body))).toEqual({ kobeMcpMode: "admin" });
+    expect(JSON.parse(String(put.body))).toEqual({ kaijuMcpMode: "admin" });
     expect(
       (
         within(screen.getByRole("form", { name: "Kaiju connector" })).getByRole("radio", {
@@ -553,18 +553,18 @@ describe("Settings: the Kaiju connector switch (KOBE-623)", () => {
           200,
           {
             requireTwoFactor: false,
-            kobeMcpMode: "admin",
-            kobeReadsPerMinute: 60,
-            kobeWritesPerHour: 30,
+            kaijuMcpMode: "admin",
+            kaijuReadsPerMinute: 60,
+            kaijuWritesPerHour: 30,
           },
         ],
         [
           200,
           {
             requireTwoFactor: false,
-            kobeMcpMode: "admin",
-            kobeReadsPerMinute: 90,
-            kobeWritesPerHour: 30,
+            kaijuMcpMode: "admin",
+            kaijuReadsPerMinute: 90,
+            kaijuWritesPerHour: 30,
           },
         ],
       ],
@@ -572,9 +572,9 @@ describe("Settings: the Kaiju connector switch (KOBE-623)", () => {
         200,
         {
           requireTwoFactor: false,
-          kobeMcpMode: "admin",
-          kobeReadsPerMinute: 90,
-          kobeWritesPerHour: 30,
+          kaijuMcpMode: "admin",
+          kaijuReadsPerMinute: 90,
+          kaijuWritesPerHour: 30,
         },
       ],
     });
@@ -589,7 +589,7 @@ describe("Settings: the Kaiju connector switch (KOBE-623)", () => {
     await userEvent.click(form.getByRole("button", { name: "Save Kaiju limits" }));
     await screen.findByText(/Kaiju admin limits now 90 reads per minute and 30 writes per hour/);
     const put = must(calls.find((c) => c.method === "PUT"));
-    expect(JSON.parse(String(put.body))).toEqual({ kobeReadsPerMinute: 90, kobeWritesPerHour: 30 });
+    expect(JSON.parse(String(put.body))).toEqual({ kaijuReadsPerMinute: 90, kaijuWritesPerHour: 30 });
   });
 
   it("is absent on a server that predates the switch", async () => {

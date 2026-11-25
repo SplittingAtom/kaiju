@@ -123,14 +123,14 @@ const setSite = async (key: string, value: string | null) => {
 };
 const setLevel = (team: string, level: string) =>
   fx.admin.query(
-    `UPDATE teams SET settings = settings || jsonb_build_object('kobe_mcp.admin', $2::text) WHERE id = $1`,
+    `UPDATE teams SET settings = settings || jsonb_build_object('kaiju_mcp.admin', $2::text) WHERE id = $1`,
     [team, level],
   );
 
 beforeEach(async () => {
   await setSite(KAIJU_MCP_MODE_KEY, "admin");
-  await setSite("kobe_mcp.reads_per_minute", "10000");
-  await setSite("kobe_mcp.writes_per_hour", "10000");
+  await setSite("kaiju_mcp.reads_per_minute", "10000");
+  await setSite("kaiju_mcp.writes_per_hour", "10000");
 });
 
 interface World {

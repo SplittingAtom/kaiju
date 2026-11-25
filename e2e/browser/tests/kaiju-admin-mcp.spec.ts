@@ -9,18 +9,18 @@ import { panelOf } from "./support/panel.js";
  * the built-in Kaiju connector.
  *
  * - `KAIJU_USER` / `KAIJU_PW`: a site admin who is also team admin of the active team (`KAIJU_TEAM`
- *   pins it). Its default agent must name the `kobe` connector or `connectors: all` (the gallery
+ *   pins it). Its default agent must name the `kaiju` connector or `connectors: all` (the gallery
  *   agent Kobe does), else the admin tools are not attached.
  * - `KAIJU_USER2` / `KAIJU_PW2`: an ordinary member of that team (role `member`).
  *
- * Each test sets the site switch (`kobe_mcp.mode`) and the team's Kaiju level through the console
+ * Each test sets the site switch (`kaiju_mcp.mode`) and the team's Kaiju level through the console
  * API, and puts both back as it found them in `finally`.
  *
  * (a) the owner asks the agent to make member2 a contributor: an "Admin change" card (scope the
  * team, a summary naming member2, role member → contributor, no remember controls, no "Approve
  * all"); allowed, the role is changed, and the team audit shows the event "via agent" with a link
  * to the thread; member2 is put back to member. (b) member2 asks the same: no admin tool is offered
- * (no `mcp__kobe__` admin call in the thread). (c) a how-to question is answered with the docs
+ * (no `mcp__kaiju__` admin call in the thread). (c) a how-to question is answered with the docs
  * tools and cites a `/docs/` page, with no network fetch of the guide. (d) with the team at "docs
  * only", the owner's role change gets no admin tool either.
  */
@@ -43,8 +43,8 @@ interface ToolCall {
   readonly args: string;
 }
 
-/** A Kaiju connector tool's Pi name: `mcp__kobe__<tool>` (or the fallback name `kobe-builtin`). */
-const KAIJU_TOOL = /^mcp__kobe(?:[-_]builtin)?__(.+)$/;
+/** A Kaiju connector tool's Pi name: `mcp__kaiju__<tool>` (or the fallback name `kaiju-builtin`). */
+const KAIJU_TOOL = /^mcp__kaiju(?:[-_]builtin)?__(.+)$/;
 const isKaijuAdminCall = (c: ToolCall): boolean => {
   const tool = KAIJU_TOOL.exec(c.name)?.[1];
   return tool !== undefined && !tool.startsWith("docs_");
@@ -53,25 +53,25 @@ const isKaijuDocsCall = (c: ToolCall): boolean =>
   /^docs_(index|page|search|full)$/.test(KAIJU_TOOL.exec(c.name)?.[1] ?? "");
 
 async function siteMode(page: Page): Promise<Mode> {
-  const res = await pageApi<{ kobeMcpMode?: Mode }>(page, "GET", "/v1/site/settings");
+  const res = await pageApi<{ kaijuMcpMode?: Mode }>(page, "GET", "/v1/site/settings");
   expect(res.status, JSON.stringify(res.json)).toBe(200);
-  expect(res.json.kobeMcpMode, "the server predates the Kaiju site switch").toBeDefined();
-  return res.json.kobeMcpMode as Mode;
+  expect(res.json.kaijuMcpMode, "the server predates the Kaiju site switch").toBeDefined();
+  return res.json.kaijuMcpMode as Mode;
 }
 
 async function setSiteMode(page: Page, mode: Mode): Promise<void> {
-  const res = await pageApi(page, "PUT", "/v1/site/settings", { kobeMcpMode: mode });
+  const res = await pageApi(page, "PUT", "/v1/site/settings", { kaijuMcpMode: mode });
   expect(res.status, JSON.stringify(res.json)).toBe(200);
 }
 
 async function teamLevel(page: Page): Promise<Level> {
-  const res = await pageApi<{ kobe?: { level: Level } }>(page, "GET", "/v1/team/connectors/kobe");
+  const res = await pageApi<{ kaiju?: { level: Level } }>(page, "GET", "/v1/team/connectors/kaiju");
   expect(res.status, JSON.stringify(res.json)).toBe(200);
-  return res.json.kobe?.level ?? "docs";
+  return res.json.kaiju?.level ?? "docs";
 }
 
 async function setTeamLevel(page: Page, level: Level): Promise<void> {
-  const res = await pageApi(page, "PUT", "/v1/team/connectors/kobe", { level });
+  const res = await pageApi(page, "PUT", "/v1/team/connectors/kaiju", { level });
   expect(res.status, JSON.stringify(res.json)).toBe(200);
 }
 

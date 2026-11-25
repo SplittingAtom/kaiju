@@ -218,7 +218,7 @@ const teamConnector = obj({
 const KaijuTeamConnector = untyped(
   "KaijuTeamConnector",
   obj({
-    kobe: obj({
+    kaiju: obj({
       connector_id: nullable(uuid),
       name: nullable(str),
       mode: oneOfStrings(...KAIJU_MCP_MODES),
@@ -406,8 +406,8 @@ export const teamDetails: Readonly<Record<string, CatalogDetail>> = {
     response: untyped("TeamConnectorEnvelope", obj({ connector: teamConnector })),
     errors: ["404", "409", "422"],
   },
-  "get /v1/team/connectors/kobe": { response: KaijuTeamConnector },
-  "put /v1/team/connectors/kobe": {
+  "get /v1/team/connectors/kaiju": { response: KaijuTeamConnector },
+  "put /v1/team/connectors/kaiju": {
     body: named("SetKaijuTeamLevelBody", kaijuLevelSchema),
     response: KaijuTeamConnector,
     errors: ["409"],

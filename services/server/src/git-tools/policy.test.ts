@@ -23,7 +23,7 @@ import { GIT_TOOLS, gitToolByName } from "./catalog.js";
  */
 const CONN = "55555555-0000-4000-8000-000000000005";
 
-const pinned = gitPinnedTools("kobe");
+const pinned = gitPinnedTools("kaiju");
 function descriptor(name: string): ToolDescriptor {
   const tool = pinned.find((t) => t.name === name);
   if (!tool) throw new Error(name);
@@ -52,7 +52,7 @@ function decide(
 }
 
 const rule = (scope: "team" | "user", effect: "allow" | "ask" | "deny", tool: string) =>
-  makeRule(scope, effect, `mcp__kobe__${tool}`);
+  makeRule(scope, effect, `mcp__kaiju__${tool}`);
 
 const PR = {
   connection: CONN,

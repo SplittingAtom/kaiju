@@ -48,7 +48,7 @@ describe("listing follows the person's permission and both switches (ac-1, KA5)"
     expect(await roleOf(w.team, w.target.id)).toBe("member");
     expect((await decisions(w.team)).at(-1)).toMatchObject({
       decision: "denied",
-      reason: "kobe_admin_not_allowed",
+      reason: "kaiju_admin_not_allowed",
       connectorId: KAIJU_BUILTIN_CONNECTOR_ID,
     });
     // Even with an approval in hand (the member approved their own forged call).
@@ -119,7 +119,7 @@ describe("reads run freely, as the person", () => {
     await fx.admin.query(`UPDATE runs SET trigger = 'schedule' WHERE id = $1`, [s.runId]);
     const out = await call(s, "team_members_list", {});
     expect(out.isError).toBe(true);
-    expect((await decisions(w.team)).at(-1)).toMatchObject({ reason: "kobe_admin_not_allowed" });
+    expect((await decisions(w.team)).at(-1)).toMatchObject({ reason: "kaiju_admin_not_allowed" });
   });
 });
 
@@ -187,7 +187,7 @@ describe("the docs tools (KOBE-620, KA-3; spec §4, KA4, KA7)", () => {
   it("need no permission and never count against the admin read limit", async () => {
     const w = await world("read");
     const s = await sandboxFor(w.team, w.admin);
-    await setSite("kobe_mcp.reads_per_minute", "1");
+    await setSite("kaiju_mcp.reads_per_minute", "1");
     for (let i = 0; i < 3; i++) expect((await call(s, "docs_index", {})).isError).toBeUndefined();
     expect((await call(s, "team_members_list", {})).isError).toBeUndefined();
     expect((await call(s, "team_members_list", {})).isError).toBe(true);
@@ -273,7 +273,7 @@ describe("writes ask in every mode (ac-2, ac-3) and run exactly what was approve
     await approve(s, "team_members_set_role", input);
     const auto = await call(s, "team_members_set_role", input);
     expect(auto.isError).toBe(true);
-    expect((await decisions(w.team)).at(-1)).toMatchObject({ reason: "kobe_admin_write" });
+    expect((await decisions(w.team)).at(-1)).toMatchObject({ reason: "kaiju_admin_write" });
     expect(await roleOf(w.team, w.target.id)).toBe("member");
   });
 
@@ -292,7 +292,7 @@ describe("writes ask in every mode (ac-2, ac-3) and run exactly what was approve
   it("caps writes per person per hour (site setting)", async () => {
     const w = await world();
     const s = await sandboxFor(w.team, w.admin);
-    await setSite("kobe_mcp.writes_per_hour", "1");
+    await setSite("kaiju_mcp.writes_per_hour", "1");
     const first = { user_id: w.target.id, from_role: "member", to_role: "contributor" };
     await approve(s, "team_members_set_role", first);
     expect((await call(s, "team_members_set_role", first)).isError).toBeUndefined();
@@ -300,7 +300,7 @@ describe("writes ask in every mode (ac-2, ac-3) and run exactly what was approve
     await approve(s, "team_members_set_role", second);
     const limited = await call(s, "team_members_set_role", second);
     expect(limited.isError).toBe(true);
-    expect((await decisions(w.team)).at(-1)).toMatchObject({ reason: "kobe_admin_rate_limited" });
+    expect((await decisions(w.team)).at(-1)).toMatchObject({ reason: "kaiju_admin_rate_limited" });
     expect(await roleOf(w.team, w.target.id)).toBe("contributor");
   });
 });

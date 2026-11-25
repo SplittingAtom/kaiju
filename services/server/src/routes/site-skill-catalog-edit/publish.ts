@@ -75,7 +75,7 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
     return c.json({ version: published, notified }, 201);
   });
 
-  app.get("/:skillId/kobe/compare", async (c) => {
+  app.get("/:skillId/kaiju/compare", async (c) => {
     const id = skillId(c);
     const k = kaijuDeps();
     if (!k) return unavailable(c);
@@ -94,7 +94,7 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
     }
   });
 
-  app.post("/:skillId/kobe/reset", async (c) => {
+  app.post("/:skillId/kaiju/reset", async (c) => {
     const id = skillId(c);
     const k = kaijuDeps();
     if (!k) return unavailable(c);

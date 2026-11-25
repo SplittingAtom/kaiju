@@ -29,9 +29,9 @@ describe("Entra issuers are tenant-pinned (KOBE-626 ac-1)", () => {
 
 describe("generic issuers", () => {
   it("accepts an https issuer exactly as given", () => {
-    expect(checkGenericIssuer("https://idp.example.com/realms/kobe")).toEqual({
+    expect(checkGenericIssuer("https://idp.example.com/realms/kaiju")).toEqual({
       ok: true,
-      issuer: "https://idp.example.com/realms/kobe",
+      issuer: "https://idp.example.com/realms/kaiju",
     });
   });
 

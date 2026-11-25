@@ -45,7 +45,7 @@ describe("the sandbox's policy.check refuses before anyone is asked", () => {
     const s = await h.sandboxFor(w.team, w.contributor);
     const tool = describePinnedTool(
       GIT_BUILTIN_CONNECTOR_ID,
-      must(gitPinnedTools("kobe-git").find((t) => t.name === "git_create_issue")),
+      must(gitPinnedTools("kaiju-git").find((t) => t.name === "git_create_issue")),
     );
     const ask = {
       effect: "require_approval" as const,

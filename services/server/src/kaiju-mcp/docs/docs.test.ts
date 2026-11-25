@@ -37,8 +37,8 @@ describe("the docs tools", () => {
     for (const tool of KAIJU_DOCS_TOOLS) {
       expect(isKaijuDocsToolName(tool.name)).toBe(true);
       expect(tool.input.safeParse({ unexpected: 1 }).success).toBe(false);
-      const pinned = kaijuPinnedTool("kobe", tool);
-      expect(pinned.pi_name).toBe(`mcp__kobe__${tool.name}`);
+      const pinned = kaijuPinnedTool("kaiju", tool);
+      expect(pinned.pi_name).toBe(`mcp__kaiju__${tool.name}`);
       expect(pinned.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });
     }
     expect(isKaijuDocsToolName("team_members_list")).toBe(false);

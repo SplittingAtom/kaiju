@@ -123,7 +123,7 @@ under the Workspace's policy:
   card that names the host, organization and repository and shows exactly what will be posted.
   In scheduled runs and auto mode only reads run: creating a branch and the other changes are
   refused there unless a Workspace allow rule lists them. Change the defaults with policy rules,
-  as for any tool: an ask or deny rule on `mcp__kobe_git__git_create_branch`, for example. A
+  as for any tool: an ask or deny rule on `mcp__kaiju_git__git_create_branch`, for example. A
   Workspace allow rule does not remove the member's approval in a conversation (only the member's
   own remembered approval does), so "always allow pull requests in `acme/docs`" is the member's
   choice, not the admin's.

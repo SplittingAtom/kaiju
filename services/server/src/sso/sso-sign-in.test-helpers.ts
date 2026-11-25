@@ -16,7 +16,7 @@ import { MockOidcProvider, routeMockOidc } from "../testing/mock-oidc.js";
  */
 export const TENANT = "11111111-2222-4333-8444-555555555555";
 export const ENTRA = `https://login.microsoftonline.com/${TENANT}/v2.0`;
-export const KC = "https://kc.example.com/realms/kobe";
+export const KC = "https://kc.example.com/realms/kaiju";
 export const CORP_SECRET = "Corp~Secret.Value-0123456789abcdef";
 export const KC_SECRET = "Kc~Secret.Value-0123456789abcdefgh";
 

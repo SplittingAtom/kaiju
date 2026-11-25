@@ -153,7 +153,7 @@ const columns = {
 } as const;
 
 // The built-in Kaiju connector (KOBE-619) is not a registered server: the registry never lists,
-// edits, probes, pins or removes it (the site switch `kobe_mcp.mode` governs it).
+// edits, probes, pins or removes it (the site switch `kaiju_mcp.mode` governs it).
 const live = and(isNull(connectors.deletedAt), isNull(connectors.builtin));
 
 export async function listConnectors(db: KaijuDb): Promise<ConnectorView[]> {

@@ -121,7 +121,7 @@ export const GIT_REPO_COMMIT_ATTEMPT_RATE: RateLimitRule = { windowMs: 60 * 60_0
 export const GIT_REPO_COMMIT_MAX_REQUEST_BYTES = 2 * 1024 * 1024 * 1024;
 /** One commit's deadline for all its exchanges with the host. */
 export const GIT_REPO_COMMIT_DEADLINE_MS = 10 * 60_000;
-export const GIT_REPO_COMMIT_DIR_NAME = "kobe-git-repo-commits";
+export const GIT_REPO_COMMIT_DIR_NAME = "kaiju-git-repo-commits";
 
 type Refused = Extract<CommitResult, { status: "refused" }>;
 const refused = (

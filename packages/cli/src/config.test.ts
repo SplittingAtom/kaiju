@@ -10,8 +10,8 @@ const S3 = {
 };
 const KEY = randomBytes(32);
 const KEY_ENV = { KAIJU_BACKUP_KEY: KEY.toString("base64") };
-const BACKUP_URL = "postgres://kobe_backup:pw@db/kobe";
-const OWNER_URL = "postgres://kobe_owner:pw@db/kobe";
+const BACKUP_URL = "postgres://kobe_backup:pw@db/kaiju";
+const OWNER_URL = "postgres://kobe_owner:pw@db/kaiju";
 
 describe("parseCommand", () => {
   it("parses backup with object storage", () => {
@@ -162,13 +162,13 @@ describe("readBackupKey", () => {
 
 describe("tlsWarning", () => {
   it("is quiet for local connections and TLS-required remote ones", () => {
-    expect(tlsWarning("postgres://u:p@localhost:5432/kobe")).toBeNull();
-    expect(tlsWarning("postgres://u:p@127.0.0.1/kobe")).toBeNull();
+    expect(tlsWarning("postgres://u:p@localhost:5432/kaiju")).toBeNull();
+    expect(tlsWarning("postgres://u:p@127.0.0.1/kaiju")).toBeNull();
     expect(tlsWarning("postgres://u:p@db.example/kaiju?sslmode=verify-full")).toBeNull();
   });
 
   it("warns for a remote host without required TLS", () => {
-    expect(tlsWarning("postgres://u:p@db.example/kobe")).toMatch(/db.example.*sslmode=require/);
+    expect(tlsWarning("postgres://u:p@db.example/kaiju")).toMatch(/db.example.*sslmode=require/);
     expect(tlsWarning("postgres://u:p@db.example/kaiju?sslmode=prefer")).toMatch(/WARNING/);
   });
 });

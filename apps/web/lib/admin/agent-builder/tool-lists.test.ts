@@ -47,7 +47,7 @@ describe("connector tools: Allowed and Denied (KOBE-476 AC4)", () => {
 });
 
 describe("Kaiju's docs tools stay on (KOBE-623)", () => {
-  const DOCS = ["mcp__kobe__docs_index", "mcp__kobe__docs_page"];
+  const DOCS = ["mcp__kaiju__docs_index", "mcp__kaiju__docs_page"];
 
   it("are named once the allow list narrows to anything else", () => {
     const f = withKaijuDocs(form({ toolsAllow: "mcp__jira__get_issue" }), DOCS);
@@ -61,8 +61,8 @@ describe("Kaiju's docs tools stay on (KOBE-623)", () => {
   });
 
   it("respect a denied docs tool, and do nothing without docs tools", () => {
-    const f = withKaijuDocs(form({ toolsAllow: "bash", toolsDeny: "mcp__kobe__docs_page" }), DOCS);
-    expect(f.toolsAllow.split("\n")).toEqual(["bash", "mcp__kobe__docs_index"]);
+    const f = withKaijuDocs(form({ toolsAllow: "bash", toolsDeny: "mcp__kaiju__docs_page" }), DOCS);
+    expect(f.toolsAllow.split("\n")).toEqual(["bash", "mcp__kaiju__docs_index"]);
     const g = form({ toolsAllow: "bash" });
     expect(withKaijuDocs(g, [])).toBe(g);
   });

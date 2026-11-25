@@ -402,7 +402,7 @@ describe("git transport decisions (KOBE-763)", () => {
     expect((await ask({ token: egressToken(ids.outsider ?? "", team) })).status).toBe(401);
     expect((await ask({ token: "" })).status).toBe(401);
     // The MCP routes do not accept the egress proxy's key either.
-    const mcp = await internal.request(`/internal/v1/mcp/kobe/list`, {
+    const mcp = await internal.request(`/internal/v1/mcp/kaiju/list`, {
       method: "POST",
       headers: { authorization: `Bearer ${GIT_KEY}` },
     });

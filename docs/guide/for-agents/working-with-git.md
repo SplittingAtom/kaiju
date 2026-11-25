@@ -45,7 +45,7 @@ below. `git` in the sandbox cannot do that.
 ## Git host tools
 
 When the Workspace has a connection you may use, your tool list has these tools, from Kaiju's
-built-in **git** connector (their full names start with `mcp__kobe_git__`; it is separate from
+built-in **git** connector (their full names start with `mcp__kaiju_git__`; it is separate from
 the Kaiju connector, so they are there even where the Kaiju docs and admin tools are not). Kaiju
 runs them on its server with the Workspace's credential and decides every call first.
 

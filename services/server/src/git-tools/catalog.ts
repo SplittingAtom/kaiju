@@ -31,7 +31,7 @@ export const GIT_PATH_MAX = 1000;
 export type GitToolAccess = "read" | "write";
 
 export interface GitToolDef<I = unknown> {
-  /** `git_<verb>`; Pi sees `mcp__<kobe>__<name>`. */
+  /** `git_<verb>`; Pi sees `mcp__<kaiju>__<name>`. */
   readonly name: string;
   readonly title: string;
   readonly description: string;

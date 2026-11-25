@@ -24,11 +24,11 @@ import { isKaijuDocsToolName } from "../kaiju-mcp/docs/index.js";
  *   every run (scheduled runs and evals included).
  *
  * Such an approval is never remembered (`approvals/remember-options.ts`, `approvals/decide.ts`)
- * nor approved in bulk (`approvals/approve-all.ts`). Reason codes `kobe_admin_write` and
- * `kobe_admin_not_allowed`.
+ * nor approved in bulk (`approvals/approve-all.ts`). Reason codes `kaiju_admin_write` and
+ * `kaiju_admin_not_allowed`.
  */
-export const KAIJU_ADMIN_WRITE_REASON = "kobe_admin_write";
-export const KAIJU_ADMIN_NOT_ALLOWED_REASON = "kobe_admin_not_allowed";
+export const KAIJU_ADMIN_WRITE_REASON = "kaiju_admin_write";
+export const KAIJU_ADMIN_NOT_ALLOWED_REASON = "kaiju_admin_not_allowed";
 
 /** Why a Kaiju admin approval offers no "remember" (and refuses one). */
 export const KAIJU_ADMIN_NOT_REMEMBERED =

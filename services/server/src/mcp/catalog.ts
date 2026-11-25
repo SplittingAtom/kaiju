@@ -163,7 +163,7 @@ export function createDbMcpCatalog(db: KaijuDb): McpToolCatalog & ConnectorState
       // The built-in Kaiju connector (KOBE-619): its tools come from Kaiju's own catalog.
       // KOBE-762: the built-in git connector's from the git tools' catalog.
       const tools =
-        row.builtin === "kobe"
+        row.builtin === "kaiju"
           ? kaijuPinnedTools(row.name)
           : row.builtin === "git"
             ? gitPinnedTools(row.name)

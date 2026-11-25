@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { loadConfig } from "../config.js";
 
 const REQUIRED = {
-  KAIJU_DATABASE_URL: "postgres://kobe_app:pw@db:5432/kobe",
+  KAIJU_DATABASE_URL: "postgres://kobe_app:pw@db:5432/kaiju",
   KAIJU_PUBLIC_URL: "https://kaiju.example.com",
   KAIJU_AUTH_SECRET: "x".repeat(32),
   KAIJU_SETUP_TOKEN: "t".repeat(24),

@@ -12,10 +12,10 @@ import { recordAudit } from "../audit/record.js";
  * hour, site settings with defaults 60 and 30. Counted from the person's allowed `mcp.tool_call`
  * rows for the built-in connector in the audit log, so the limit holds across server replicas and
  * restarts; the window is found by `at` (indexed) and the person's rows by `(actor_id, seq)`.
- * Calls of the docs tools (`mcp__<kobe>__docs_*`, KOBE-620) are not admin calls and never count.
+ * Calls of the docs tools (`mcp__<kaiju>__docs_*`, KOBE-620) are not admin calls and never count.
  */
-export const KAIJU_READS_PER_MINUTE_KEY = "kobe_mcp.reads_per_minute";
-export const KAIJU_WRITES_PER_HOUR_KEY = "kobe_mcp.writes_per_hour";
+export const KAIJU_READS_PER_MINUTE_KEY = "kaiju_mcp.reads_per_minute";
+export const KAIJU_WRITES_PER_HOUR_KEY = "kaiju_mcp.writes_per_hour";
 export const KAIJU_READS_PER_MINUTE_DEFAULT = 60;
 export const KAIJU_WRITES_PER_HOUR_DEFAULT = 30;
 /** Bounds of both limits (the Site settings API validates against them). */
@@ -64,7 +64,7 @@ export async function storeKaijuLimit(
   await recordAudit(tx, {
     action: "site.settings.updated",
     target: {
-      setting: kind === "read" ? "kobe_reads_per_minute" : "kobe_writes_per_hour",
+      setting: kind === "read" ? "kaiju_reads_per_minute" : "kaiju_writes_per_hour",
       value,
     },
   });

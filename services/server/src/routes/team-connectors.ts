@@ -63,12 +63,12 @@ export function teamConnectorsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
    * The built-in Kaiju connector (KOBE-623, spec kobe-admin-mcp §6, KA5): the site switch and the
    * team's level (`docs` default, `read`, `read_write`). Registered before `/:id`.
    */
-  app.get("/kobe", requireTeamPermission("team.read"), async (c) => {
+  app.get("/kaiju", requireTeamPermission("team.read"), async (c) => {
     const teamId = c.get("team").id;
-    return c.json({ kobe: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)) });
+    return c.json({ kaiju: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)) });
   });
 
-  app.put("/kobe", requireTeamPermission("team.connectors.manage"), async (c) => {
+  app.put("/kaiju", requireTeamPermission("team.connectors.manage"), async (c) => {
     const body = await parseBody(c, kaijuLevelSchema);
     if (!body) {
       return invalidRequest(c, 'Send {"level": "docs" | "read" | "read_write"}.');
@@ -81,7 +81,7 @@ export function teamConnectorsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
         409,
       );
     }
-    return c.json({ kobe: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)) });
+    return c.json({ kaiju: await withTeam(db, teamId, (tx) => readKaijuTeamConnector(tx, teamId)) });
   });
 
   app.put("/:id", requireTeamPermission("team.connectors.manage"), async (c) => {

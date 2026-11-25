@@ -99,7 +99,7 @@ export const KAIJU_LEVEL_LABELS: Readonly<Record<KaijuLevel, string>> = {
 
 export interface KaijuTeamConnector {
   readonly connectorId: string | null;
-  /** `kobe`, or `kobe-builtin` when a registered connector took the name; null if never seeded. */
+  /** `kaiju`, or `kaiju-builtin` when a registered connector took the name; null if never seeded. */
   readonly name: string | null;
   readonly mode: KaijuMode;
   readonly level: KaijuLevel;
@@ -113,22 +113,22 @@ export interface KaijuTeamConnector {
   }[];
 }
 
-/** `GET /v1/team/connectors/kobe` (team.read). */
+/** `GET /v1/team/connectors/kaiju` (team.read). */
 export async function getTeamKaiju(teamId: string): Promise<ApiResult<KaijuTeamConnector>> {
-  const res = await apiRequest<{ kobe: KaijuTeamConnector }>(`${BASE}/kobe`, { teamId });
-  return res.ok ? { ...res, data: res.data.kobe } : res;
+  const res = await apiRequest<{ kaiju: KaijuTeamConnector }>(`${BASE}/kaiju`, { teamId });
+  return res.ok ? { ...res, data: res.data.kaiju } : res;
 }
 
-/** `PUT /v1/team/connectors/kobe` (team.connectors.manage), with the level the admin saw. */
+/** `PUT /v1/team/connectors/kaiju` (team.connectors.manage), with the level the admin saw. */
 export async function setTeamKaijuLevel(
   teamId: string,
   level: KaijuLevel,
   expected: KaijuLevel,
 ): Promise<ApiResult<KaijuTeamConnector>> {
-  const res = await apiRequest<{ kobe: KaijuTeamConnector }>(`${BASE}/kobe`, {
+  const res = await apiRequest<{ kaiju: KaijuTeamConnector }>(`${BASE}/kaiju`, {
     method: "PUT",
     json: { level, expected_level: expected },
     teamId,
   });
-  return res.ok ? { ...res, data: res.data.kobe } : res;
+  return res.ok ? { ...res, data: res.data.kaiju } : res;
 }

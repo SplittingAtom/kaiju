@@ -94,7 +94,7 @@ export const GIT_MIRROR_REFRESH_RATE: RateLimitRule = { windowMs: 10 * 60_000, m
 export const GIT_MIRROR_MANAGE_RATE: RateLimitRule = { windowMs: 60 * 60_000, max: 20 };
 
 /** Where refreshes fetch: a dedicated folder under the server's temp dir, one subfolder per run. */
-export const GIT_MIRROR_DIR_NAME = "kobe-git-mirror";
+export const GIT_MIRROR_DIR_NAME = "kaiju-git-mirror";
 export const GIT_MIRROR_WORK_PREFIX = "run-";
 
 /** The back-off after `failures` failures in a row (1 = the first failure). */

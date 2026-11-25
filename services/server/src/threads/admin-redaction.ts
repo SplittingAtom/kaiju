@@ -18,8 +18,8 @@ import { kaijuToolByName } from "../kaiju-mcp/tools/index.js";
  * everything. Enforced where the server serves a thread's tool output to a reader: the entry list,
  * the full-output route, the run event stream and a reader's fork.
  *
- * A Kaiju tool is recognised by the built-in connector's Pi server segment (`kobe`, or
- * `kobe-builtin` when the name was taken); a name the catalog does not know (a tool of a newer or
+ * A Kaiju tool is recognised by the built-in connector's Pi server segment (`kaiju`, or
+ * `kaiju-builtin` when the name was taken); a name the catalog does not know (a tool of a newer or
  * older release) is hidden, the docs tools never are.
  */
 
@@ -72,7 +72,7 @@ export async function loadAdminResultGate(
            (SELECT r.role FROM public.site_roles r WHERE r.user_id = ${viewer.userId}) AS site_role`);
   const row = res.rows[0];
   return adminResultGate({
-    segments: (name === undefined ? ["kobe", "kobe-builtin"] : [name]).map(mcpServerSegment),
+    segments: (name === undefined ? ["kaiju", "kaiju-builtin"] : [name]).map(mcpServerSegment),
     teamRole: row?.team_role ?? null,
     siteRole: row?.site_role ?? null,
   });

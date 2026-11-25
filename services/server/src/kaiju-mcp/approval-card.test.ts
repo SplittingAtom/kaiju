@@ -26,7 +26,7 @@ function fakeDb(names: Record<string, string>) {
 describe("Kaiju admin approval card (KOBE-623)", () => {
   it("builds the team card with the person's and the team's names", async () => {
     const db = fakeDb({ [ANA]: "Ana Lee", [TEAM]: "Research" });
-    const card = await kaijuAdminApprovalCard(db, TEAM, "mcp__kobe__team_members_set_role", {
+    const card = await kaijuAdminApprovalCard(db, TEAM, "mcp__kaiju__team_members_set_role", {
       user_id: ANA,
       from_role: "member",
       to_role: "team_admin",
@@ -43,7 +43,7 @@ describe("Kaiju admin approval card (KOBE-623)", () => {
     const card = await kaijuAdminApprovalCard(
       db,
       TEAM,
-      "mcp__kobe_builtin__team_connectors_disable",
+      "mcp__kaiju_builtin__team_connectors_disable",
       { connector_id: CONN, from_exposure: "all" },
     );
     expect(card?.summary).toBe(`Connector ${CONN}: exposure all → off`);
@@ -52,9 +52,9 @@ describe("Kaiju admin approval card (KOBE-623)", () => {
   it("gives no card for reads, docs tools and unknown tools", async () => {
     const db = fakeDb({});
     for (const tool of [
-      "mcp__kobe__team_members_list",
-      "mcp__kobe__docs_index",
-      "mcp__kobe__team_ownership_transfer",
+      "mcp__kaiju__team_members_list",
+      "mcp__kaiju__docs_index",
+      "mcp__kaiju__team_ownership_transfer",
       "bash",
     ]) {
       expect(await kaijuAdminApprovalCard(db, TEAM, tool, {})).toBeUndefined();
@@ -64,7 +64,7 @@ describe("Kaiju admin approval card (KOBE-623)", () => {
 
   it("names the tool only when the input does not fit its schema", async () => {
     const db = fakeDb({ [TEAM]: "Research" });
-    const card = await kaijuAdminApprovalCard(db, TEAM, "mcp__kobe__team_members_set_role", {
+    const card = await kaijuAdminApprovalCard(db, TEAM, "mcp__kaiju__team_members_set_role", {
       user_id: ANA,
       to_role: "owner",
     });

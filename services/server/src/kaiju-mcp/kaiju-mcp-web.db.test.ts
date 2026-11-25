@@ -102,36 +102,36 @@ describe("the Admin change approval card", () => {
 describe("Team console › Connectors: the Kaiju level", () => {
   it("round-trips for a team admin, audited; members read it but cannot change it", async () => {
     const w = await h.world(null);
-    const got = await w.admin.browser.get("/v1/team/connectors/kobe");
+    const got = await w.admin.browser.get("/v1/team/connectors/kaiju");
     expect(got.status).toBe(200);
-    expect(got.json.kobe).toMatchObject({ name: "kobe", mode: "admin", level: "docs" });
-    expect(got.json.kobe.docs_tools).toContain(h.pi("docs_index"));
-    expect(got.json.kobe.admin_tools).toContainEqual({
+    expect(got.json.kaiju).toMatchObject({ name: "kaiju", mode: "admin", level: "docs" });
+    expect(got.json.kaiju.docs_tools).toContain(h.pi("docs_index"));
+    expect(got.json.kaiju.admin_tools).toContainEqual({
       pi_name: h.pi("team_members_set_role"),
       title: expect.any(String),
       scope: "team",
       read_only: false,
     });
 
-    const set = await w.admin.browser.put("/v1/team/connectors/kobe", {
+    const set = await w.admin.browser.put("/v1/team/connectors/kaiju", {
       level: "read",
       expected_level: "docs",
     });
     expect(set.status, JSON.stringify(set.json)).toBe(200);
-    expect(set.json.kobe.level).toBe("read");
-    expect((await w.admin.browser.get("/v1/team/connectors/kobe")).json.kobe.level).toBe("read");
+    expect(set.json.kaiju.level).toBe("read");
+    expect((await w.admin.browser.get("/v1/team/connectors/kaiju")).json.kaiju.level).toBe("read");
     // The member's listing now has the admin reads the switches allow (none for a member's role).
-    const stale = await w.admin.browser.put("/v1/team/connectors/kobe", {
+    const stale = await w.admin.browser.put("/v1/team/connectors/kaiju", {
       level: "read_write",
       expected_level: "docs",
     });
     expect(stale.status).toBe(409);
     expect(stale.json.code).toBe("changed_since_approval");
 
-    expect((await w.member.browser.get("/v1/team/connectors/kobe")).status).toBe(200);
-    const refused = await w.member.browser.put("/v1/team/connectors/kobe", { level: "read_write" });
+    expect((await w.member.browser.get("/v1/team/connectors/kaiju")).status).toBe(200);
+    const refused = await w.member.browser.put("/v1/team/connectors/kaiju", { level: "read_write" });
     expect(refused.status).toBe(403);
-    const bad = await w.admin.browser.put("/v1/team/connectors/kobe", { level: "all" });
+    const bad = await w.admin.browser.put("/v1/team/connectors/kaiju", { level: "all" });
     expect(bad.status).toBe(400);
 
     const { rows } = await h.fx.admin.query<{ target: Record<string, unknown> }>(
@@ -149,62 +149,62 @@ describe("Site console › Settings: the Kaiju MCP switch", () => {
     await makeSiteAdmin(w.admin);
     const before = await w.admin.browser.get("/v1/site/settings");
     expect(before.status).toBe(200);
-    expect(before.json.kobeMcpMode).toBe("docs");
-    const off = await w.admin.browser.put("/v1/site/settings", { kobeMcpMode: "off" });
+    expect(before.json.kaijuMcpMode).toBe("docs");
+    const off = await w.admin.browser.put("/v1/site/settings", { kaijuMcpMode: "off" });
     expect(off.status, JSON.stringify(off.json)).toBe(200);
-    expect(off.json.kobeMcpMode).toBe("off");
-    expect((await w.admin.browser.get("/v1/team/connectors/kobe")).json.kobe.mode).toBe("off");
-    expect((await w.admin.browser.put("/v1/site/settings", { kobeMcpMode: "all" })).status).toBe(
+    expect(off.json.kaijuMcpMode).toBe("off");
+    expect((await w.admin.browser.get("/v1/team/connectors/kaiju")).json.kaiju.mode).toBe("off");
+    expect((await w.admin.browser.put("/v1/site/settings", { kaijuMcpMode: "all" })).status).toBe(
       400,
     );
-    expect((await w.member.browser.put("/v1/site/settings", { kobeMcpMode: "admin" })).status).toBe(
+    expect((await w.member.browser.put("/v1/site/settings", { kaijuMcpMode: "admin" })).status).toBe(
       403,
     );
     const { rows } = await h.fx.admin.query<{ target: Record<string, unknown> }>(
       `SELECT target FROM audit_log WHERE action = 'site.settings.updated'
-        AND target ->> 'setting' = 'kobe_mcp_mode' ORDER BY seq`,
+        AND target ->> 'setting' = 'kaiju_mcp_mode' ORDER BY seq`,
     );
-    expect(rows.at(-1)?.target).toEqual({ setting: "kobe_mcp_mode", value: "off" });
+    expect(rows.at(-1)?.target).toEqual({ setting: "kaiju_mcp_mode", value: "off" });
   });
 });
 
 describe("Site console › Settings: the Kaiju admin limits (KOBE-814)", () => {
   it("shows the defaults, validates bounds, audits, and applies without a restart", async () => {
     const w = await h.world();
-    await h.setSite("kobe_mcp.reads_per_minute", null);
-    await h.setSite("kobe_mcp.writes_per_hour", null);
+    await h.setSite("kaiju_mcp.reads_per_minute", null);
+    await h.setSite("kaiju_mcp.writes_per_hour", null);
     await makeSiteAdmin(w.admin);
     const before = await w.admin.browser.get("/v1/site/settings");
-    expect(before.json.kobeReadsPerMinute).toBe(60);
-    expect(before.json.kobeWritesPerHour).toBe(30);
+    expect(before.json.kaijuReadsPerMinute).toBe(60);
+    expect(before.json.kaijuWritesPerHour).toBe(30);
     const put = await w.admin.browser.put("/v1/site/settings", {
-      kobeReadsPerMinute: 120,
-      kobeWritesPerHour: 5,
+      kaijuReadsPerMinute: 120,
+      kaijuWritesPerHour: 5,
     });
     expect(put.status, JSON.stringify(put.json)).toBe(200);
-    expect(put.json.kobeReadsPerMinute).toBe(120);
-    expect(put.json.kobeWritesPerHour).toBe(5);
-    expect((await w.admin.browser.get("/v1/site/settings")).json.kobeWritesPerHour).toBe(5);
+    expect(put.json.kaijuReadsPerMinute).toBe(120);
+    expect(put.json.kaijuWritesPerHour).toBe(5);
+    expect((await w.admin.browser.get("/v1/site/settings")).json.kaijuWritesPerHour).toBe(5);
     for (const bad of [0, -1, 10001, 1.5, "7"]) {
-      const res = await w.admin.browser.put("/v1/site/settings", { kobeReadsPerMinute: bad });
+      const res = await w.admin.browser.put("/v1/site/settings", { kaijuReadsPerMinute: bad });
       expect(res.status, String(bad)).toBe(400);
     }
-    expect((await w.member.browser.put("/v1/site/settings", { kobeWritesPerHour: 5 })).status).toBe(
+    expect((await w.member.browser.put("/v1/site/settings", { kaijuWritesPerHour: 5 })).status).toBe(
       403,
     );
     const { rows } = await h.fx.admin.query<{ target: Record<string, unknown> }>(
       `SELECT target FROM audit_log WHERE action = 'site.settings.updated'
-        AND target ->> 'setting' IN ('kobe_reads_per_minute', 'kobe_writes_per_hour')
+        AND target ->> 'setting' IN ('kaiju_reads_per_minute', 'kaiju_writes_per_hour')
         ORDER BY seq`,
     );
     expect(rows.map((r) => r.target)).toEqual([
-      { setting: "kobe_reads_per_minute", value: 120 },
-      { setting: "kobe_writes_per_hour", value: 5 },
+      { setting: "kaiju_reads_per_minute", value: 120 },
+      { setting: "kaiju_writes_per_hour", value: 5 },
     ]);
     // An unchanged value writes no second event.
-    await w.admin.browser.put("/v1/site/settings", { kobeReadsPerMinute: 120 });
+    await w.admin.browser.put("/v1/site/settings", { kaijuReadsPerMinute: 120 });
     const again = await h.fx.admin.query(
-      `SELECT 1 FROM audit_log WHERE target ->> 'setting' = 'kobe_reads_per_minute'`,
+      `SELECT 1 FROM audit_log WHERE target ->> 'setting' = 'kaiju_reads_per_minute'`,
     );
     expect(again.rows.length).toBe(1);
   });
@@ -427,14 +427,14 @@ describe("the composer's Connectors list the built-in Kaiju connector", () => {
         (await p.browser.get("/v1/threads/connectors")).json.connectors as Record<string, unknown>[]
       ).find((c) => c.builtin !== undefined);
     expect(await kaijuRow(w.admin)).toMatchObject({
-      name: "kobe",
+      name: "kaiju",
       enabled: true,
       problem: null,
-      builtin: { kind: "kobe", admin: "read" },
+      builtin: { kind: "kaiju", admin: "read" },
     });
-    expect(await kaijuRow(w.member)).toMatchObject({ builtin: { kind: "kobe", admin: "off" } });
+    expect(await kaijuRow(w.member)).toMatchObject({ builtin: { kind: "kaiju", admin: "off" } });
     await h.setLevel(w.team, "read_write");
-    expect((await kaijuRow(w.admin))?.builtin).toEqual({ kind: "kobe", admin: "read_write" });
+    expect((await kaijuRow(w.admin))?.builtin).toEqual({ kind: "kaiju", admin: "read_write" });
 
     const s = await h.sandboxFor(w.team, w.admin);
     const id = (await kaijuRow(w.admin))?.connector_id as string;

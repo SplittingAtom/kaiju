@@ -218,11 +218,11 @@ export function publishSiteDraft(
 }
 
 export function compareWithKaiju(skillId: string): Promise<ApiResult<KaijuCompare>> {
-  return apiRequest(`${base(skillId)}/kobe/compare`);
+  return apiRequest(`${base(skillId)}/kaiju/compare`);
 }
 
 export function resetToKaiju(
   skillId: string,
 ): Promise<ApiResult<{ shippedSemver: string; seed: { action: string } | null }>> {
-  return apiRequest(`${base(skillId)}/kobe/reset`, { method: "POST", json: {} });
+  return apiRequest(`${base(skillId)}/kaiju/reset`, { method: "POST", json: {} });
 }

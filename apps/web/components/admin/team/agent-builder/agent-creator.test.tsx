@@ -217,14 +217,14 @@ describe("connector tools: Allowed and Denied (ac-2)", () => {
 
 describe("the built-in Kaiju connector (KOBE-623)", () => {
   const KAIJU = {
-    kobe: {
+    kaiju: {
       connector_id: "6b6f6265-0000-4000-8000-000000000001",
-      name: "kobe",
+      name: "kaiju",
       mode: "admin",
       level: "read",
-      docs_tools: ["mcp__kobe__docs_index", "mcp__kobe__docs_page"],
+      docs_tools: ["mcp__kaiju__docs_index", "mcp__kaiju__docs_page"],
       admin_tools: [
-        { pi_name: "mcp__kobe__team_members_list", title: "List", scope: "team", read_only: true },
+        { pi_name: "mcp__kaiju__team_members_list", title: "List", scope: "team", read_only: true },
       ],
     },
   };
@@ -232,14 +232,14 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
   it("is offered by name; choosing it adds its admin tools and keeps the docs tools named", async () => {
     const calls = stubApi({
       ...READ,
-      "GET /v1/team/connectors/kobe": [200, KAIJU],
+      "GET /v1/team/connectors/kaiju": [200, KAIJU],
       "POST /v1/agents": [201, { agent: CREATED }],
     });
     renderTeam(<AgentBuilderPage scope="personal" />, { role: "member", permissions: [] });
     await fillIdentity();
     await userEvent.click(tab("Behaviour"));
     const add = await screen.findByRole("combobox", { name: "Add a connector" });
-    await within(add).findByRole("option", { name: "kobe (Kaiju's admin tools)" });
+    await within(add).findByRole("option", { name: "kaiju (Kaiju's admin tools)" });
     await userEvent.selectOptions(add, "jira");
     // Narrowing to jira's tools keeps Kaiju's docs tools on.
     const allowed = () =>
@@ -249,27 +249,27 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
     expect(allowed()).toEqual([
       "mcp__jira__search",
       "mcp__jira__create_issue",
-      "mcp__kobe__docs_index",
-      "mcp__kobe__docs_page",
+      "mcp__kaiju__docs_index",
+      "mcp__kaiju__docs_page",
     ]);
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "Add a connector" }),
-      "kobe",
+      "kaiju",
     );
-    expect(allowed()).toContain("mcp__kobe__team_members_list");
+    expect(allowed()).toContain("mcp__kaiju__team_members_list");
     await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
-    await waitFor(() => expect(postedBody(calls).frontmatter.connectors).toEqual(["jira", "kobe"]));
+    await waitFor(() => expect(postedBody(calls).frontmatter.connectors).toEqual(["jira", "kaiju"]));
   });
 
   it("is not offered while the site switch is off, and its absence changes nothing", async () => {
     stubApi({
       ...READ,
-      "GET /v1/team/connectors/kobe": [200, { kobe: { ...KAIJU.kobe, mode: "off" } }],
+      "GET /v1/team/connectors/kaiju": [200, { kaiju: { ...KAIJU.kaiju, mode: "off" } }],
     });
     renderTeam(<AgentBuilderPage scope="personal" />, { role: "member", permissions: [] });
     await userEvent.click(tab("Behaviour"));
     const add = await screen.findByRole("combobox", { name: "Add a connector" });
-    expect(within(add).queryByRole("option", { name: /kobe/ })).toBeNull();
+    expect(within(add).queryByRole("option", { name: /kaiju/ })).toBeNull();
   });
 });
 

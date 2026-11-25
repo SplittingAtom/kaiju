@@ -12,8 +12,8 @@ import type { ServerDeps } from "../deps.js";
  * `/v1/site/skills/catalog-skills/:skillId`: `GET /` the skill (versions, Kaiju state, draft),
  * `GET /versions/:id` and `/versions/:id/files/<path>` one version; the site draft at `/draft`
  * (`POST` starts it from a version, `GET`, `DELETE`, `/files/<path>` read, `PUT`, `DELETE` under
- * `If-Match: <rev>`, `/scan`, `/bump`, `POST /publish`); a Kaiju skill's `/kobe/compare` and
- * `POST /kobe/reset`. Site Owner and Admins only: the session's role per request, and the
+ * `If-Match: <rev>`, `/scan`, `/bump`, `POST /publish`); a Kaiju skill's `/kaiju/compare` and
+ * `POST /kaiju/reset`. Site Owner and Admins only: the session's role per request, and the
  * services re-check it in the transaction that writes.
  */
 export function siteSkillCatalogEditRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {

@@ -40,7 +40,7 @@ describe("migration Job and wait initContainer env (KOBE-748)", () => {
   it("the new name wins when both are set, and the warning names the conflict", () => {
     const warn = vi.fn();
     const env = parseWaitEnv(
-      { KAIJU_DATABASE_URL: APP_URL, KOBE_DATABASE_URL: "postgres://old@db/kobe" },
+      { KAIJU_DATABASE_URL: APP_URL, KOBE_DATABASE_URL: "postgres://old@db/kaiju" },
       warn,
     );
     expect(env.KAIJU_DATABASE_URL).toBe(APP_URL);

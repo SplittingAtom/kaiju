@@ -42,14 +42,14 @@ export function SettingsPage() {
           <>
             <SettingsForm settings={settings} onSaved={reload} />
             <AuditPrivacyForm settings={settings} onSaved={reload} />
-            {settings.kobeMcpMode !== undefined && (
-              <KaijuMcpForm mode={settings.kobeMcpMode} onSaved={reload} />
+            {settings.kaijuMcpMode !== undefined && (
+              <KaijuMcpForm mode={settings.kaijuMcpMode} onSaved={reload} />
             )}
-            {settings.kobeReadsPerMinute !== undefined &&
-              settings.kobeWritesPerHour !== undefined && (
+            {settings.kaijuReadsPerMinute !== undefined &&
+              settings.kaijuWritesPerHour !== undefined && (
                 <KaijuLimitsForm
-                  reads={settings.kobeReadsPerMinute}
-                  writes={settings.kobeWritesPerHour}
+                  reads={settings.kaijuReadsPerMinute}
+                  writes={settings.kaijuWritesPerHour}
                   onSaved={reload}
                 />
               )}
@@ -180,7 +180,7 @@ const KAIJU_MCP_HINTS: Readonly<Record<KaijuMcpMode, string>> = {
 };
 
 /**
- * The Kaiju MCP switch (`kobeMcpMode`, KOBE-623, spec kobe-admin-mcp §6, KA5): off, docs only (the
+ * The Kaiju MCP switch (`kaijuMcpMode`, KOBE-623, spec kobe-admin-mcp §6, KA5): off, docs only (the
  * default) or docs and admin tools. A team still chooses its own level in Team console ›
  * Connectors; this caps it for the whole site. Audited by the server.
  */
@@ -197,8 +197,8 @@ function KaijuMcpForm({
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const done = await mutation.run(
-      () => putSiteSettings({ kobeMcpMode: choice }),
-      (saved) => `Kaiju connector: ${KAIJU_MCP_MODE_LABELS[saved.kobeMcpMode ?? choice]}.`,
+      () => putSiteSettings({ kaijuMcpMode: choice }),
+      (saved) => `Kaiju connector: ${KAIJU_MCP_MODE_LABELS[saved.kaijuMcpMode ?? choice]}.`,
     );
     if (done) onSaved();
   }
@@ -252,11 +252,11 @@ function KaijuLimitsForm({
     const done = await mutation.run(
       () =>
         putSiteSettings({
-          kobeReadsPerMinute: Number(readsText),
-          kobeWritesPerHour: Number(writesText),
+          kaijuReadsPerMinute: Number(readsText),
+          kaijuWritesPerHour: Number(writesText),
         }),
       (saved) =>
-        `Kaiju admin limits now ${saved.kobeReadsPerMinute ?? readsText} reads per minute and ${saved.kobeWritesPerHour ?? writesText} writes per hour.`,
+        `Kaiju admin limits now ${saved.kaijuReadsPerMinute ?? readsText} reads per minute and ${saved.kaijuWritesPerHour ?? writesText} writes per hour.`,
     );
     if (done) onSaved();
   }

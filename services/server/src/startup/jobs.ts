@@ -115,11 +115,11 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
       if (seeded.outcome === "seeded" && seeded.fallback) {
         logger.warn(
           { name: seeded.name },
-          "a connector named kobe exists: the built-in Kaiju connector is kobe-builtin",
+          "a connector named kaiju exists: the built-in Kaiju connector is kaiju-builtin",
         );
       } else if (seeded.outcome === "names_taken") {
         logger.error(
-          "connectors named kobe and kobe-builtin exist: the built-in Kaiju connector is not available",
+          "connectors named kaiju and kaiju-builtin exist: the built-in Kaiju connector is not available",
         );
       }
     })
@@ -132,11 +132,11 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
       if (seeded.outcome === "seeded" && seeded.fallback) {
         logger.warn(
           { name: seeded.name },
-          "a connector named kobe-git exists: the built-in git connector is kobe-git-builtin",
+          "a connector named kaiju-git exists: the built-in git connector is kaiju-git-builtin",
         );
       } else if (seeded.outcome === "names_taken") {
         logger.error(
-          "connectors named kobe-git and kobe-git-builtin exist: the git host tools are not available",
+          "connectors named kaiju-git and kaiju-git-builtin exist: the git host tools are not available",
         );
       }
     })

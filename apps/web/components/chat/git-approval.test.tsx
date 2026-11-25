@@ -100,7 +100,7 @@ describe("in the approval card", () => {
     const requested: KaijuEventPayload<"approval.requested"> = {
       approval_id: "00000000-0000-4000-8000-000900000001",
       tool_call_id: "tc1",
-      tool: "mcp__kobe__git_open_pull_request",
+      tool: "mcp__kaiju__git_open_pull_request",
       input: { connection: "c", repository: "docs" },
       risk: "write",
       reasons: [{ code: "risk_write", stage: "risk_class", message: "changes data" }],

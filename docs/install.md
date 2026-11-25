@@ -619,9 +619,9 @@ an `egress.git_push` row with the refs it named.
 Convert to repo (KOBE-765) pushes a project's history from the **server** itself, not through
 the egress proxy: the server reaches the host directly under the connector address policy (so a
 private host needs its range in the connectors' internal CIDRs as for any server-side git host
-call). It builds the git objects in `/tmp/kobe-git-conversions` (one conversion per server replica,
+call). It builds the git objects in `/tmp/kaiju-git-conversions` (one conversion per server replica,
 at most 2 GiB of content, up to about twice that on disk while a push is written) and streams each
-push from there. The Repo mirror (KOBE-766) fetches into `/tmp/kobe-git-mirror`: at most 816 MiB
+push from there. The Repo mirror (KOBE-766) fetches into `/tmp/kaiju-git-mirror`: at most 816 MiB
 per refresh, two at once. `server.tmpSizeLimit` (default `8Gi`: a conversion's 4 GiB, the mirror's
 1.7 GiB and room for other temporary files) caps the server's `/tmp` emptyDir; the kubelet evicts
 a pod that passes it, so keep it at least `7Gi` and count it in the node's ephemeral storage.

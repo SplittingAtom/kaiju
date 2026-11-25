@@ -21,7 +21,7 @@ import { KAIJU_ADMIN_TOOLS } from "./tools/index.js";
 
 /**
  * Who may use which Kaiju MCP tool right now (KOBE-619, spec kobe-admin-mcp §3, §6, §8): the site
- * switch (`kobe_mcp.mode`), the team's level (`teams.settings.kobe_mcp.admin`) and the person's
+ * switch (`kaiju_mcp.mode`), the team's level (`teams.settings.kaiju_mcp.admin`) and the person's
  * own permission (team role, site role), all re-read from the database for every list and call.
  */
 
@@ -45,23 +45,23 @@ export interface KaijuAccess {
   readonly grants: readonly SiteGrant[];
 }
 
-/** The seeded `kobe` row while it is active and the site switch is not `off`. */
+/** The seeded `kaiju` row while it is active and the site switch is not `off`. */
 export async function loadKaijuBuiltin(db: Reader): Promise<KaijuBuiltinRow | undefined> {
   const res = await db.execute<{ id: string; name: string; mode: string | null }>(sql`
     SELECT c.id, c.name,
            (SELECT s.value FROM public.site_settings s WHERE s.key = ${KAIJU_MCP_MODE_KEY}) AS mode
       FROM public.connectors c
-     WHERE c.builtin = 'kobe' AND c.id = ${KAIJU_BUILTIN_CONNECTOR_ID}
+     WHERE c.builtin = 'kaiju' AND c.id = ${KAIJU_BUILTIN_CONNECTOR_ID}
        AND c.status = 'active' AND c.deleted_at IS NULL`);
   const row = res.rows[0];
   if (row === undefined || parseKaijuMcpMode(row.mode) === "off") return undefined;
   return { id: row.id, name: row.name };
 }
 
-/** The built-in row's name whatever the switches say (`kobe`, or `kobe-builtin`), if seeded. */
+/** The built-in row's name whatever the switches say (`kaiju`, or `kaiju-builtin`), if seeded. */
 export async function kaijuBuiltinName(db: Reader): Promise<string | undefined> {
   const res = await db.execute<{ name: string }>(
-    sql`SELECT name FROM public.connectors WHERE builtin = 'kobe'`,
+    sql`SELECT name FROM public.connectors WHERE builtin = 'kaiju'`,
   );
   return res.rows[0]?.name;
 }

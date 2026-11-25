@@ -147,7 +147,7 @@ describe("catalog skill view (ac-1)", () => {
       [`GET ${BASE}/s-1`]: [200, detached],
       [`GET ${BASE}/s-1/versions/v-1`]: [200, VIEW],
       [`GET ${BASE}/s-1/versions/v-1/files/SKILL.md`]: [200, RAW],
-      [`GET ${BASE}/s-1/kobe/compare`]: [
+      [`GET ${BASE}/s-1/kaiju/compare`]: [
         200,
         {
           current: { id: "v-1", semver: "1.0.0", publisher: "kobe" },
@@ -169,7 +169,7 @@ describe("catalog skill view (ac-1)", () => {
           },
         },
       ],
-      [`POST ${BASE}/s-1/kobe/reset`]: [
+      [`POST ${BASE}/s-1/kaiju/reset`]: [
         409,
         {
           code: "shipped_not_above",

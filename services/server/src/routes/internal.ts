@@ -35,9 +35,9 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  * POST /internal/v1/mcp/connectors/{id}/results `{ticket, input, result}` (KOBE-438) → 201
  *      `{storage}`; 403 `ticket_invalid`, 409 `run_not_active`, 429 `too_many_unclaimed` (the allow's `app_capture.ticket`, MCP Apps)
  * POST /internal/v1/mcp/git/list, /git/calls → the same for the built-in git connector (KOBE-762).
- * POST /internal/v1/mcp/kobe/list → 200 `{connector, tools}` (KOBE-619: the built-in Kaiju connector's
+ * POST /internal/v1/mcp/kaiju/list → 200 `{connector, tools}` (KOBE-619: the built-in Kaiju connector's
  *      tools for this person now) | 404 `connector_not_available`
- * POST /internal/v1/mcp/kobe/calls `{tool, arguments, thread_id?, tool_call_id?}` → 200
+ * POST /internal/v1/mcp/kaiju/calls `{tool, arguments, thread_id?, tool_call_id?}` → 200
  *      `{outcome: "result", result}` | `{outcome: "denied" | "error", code, message}`: decided and
  *      executed in this one request (spec kobe-admin-mcp §3) | 404 `connector_not_available`
  * 429 `rate_limited` (per sandbox, `DECIDE_RATE`),
@@ -217,7 +217,7 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
   const notAvailable = (c: Context) => notFound(c, "connector_not_available", "Not available.");
   // The built-in git connector (KOBE-762) is served the same way, on its own paths.
   const builtins: [string, Pick<KaijuMcpService, "list" | "call"> | undefined][] = [
-    ["kobe", deps.kaiju],
+    ["kaiju", deps.kaiju],
     ["git", deps.gitMcp],
   ];
   for (const [path, service] of builtins) {

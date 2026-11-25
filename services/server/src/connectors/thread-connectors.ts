@@ -83,7 +83,7 @@ export interface ChatConnector {
    */
   readonly builtin?: {
     /** `git`: the built-in git connector (KOBE-762); `admin` then says read or read and write. */
-    readonly kind: "kobe" | "git";
+    readonly kind: "kaiju" | "git";
     readonly admin: "off" | "read" | "read_write";
   };
 }
@@ -185,7 +185,7 @@ async function kaijuChatConnector(
     name: row.name,
     enabled: true,
     problem: null,
-    builtin: { kind: "kobe", admin },
+    builtin: { kind: "kaiju", admin },
   };
 }
 

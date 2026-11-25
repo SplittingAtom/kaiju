@@ -5,7 +5,7 @@ import { loadConfig } from "./config.js";
 
 const PAIR = generateSessionKeyPair();
 const base = {
-  KAIJU_DATABASE_URL: "postgres://app@db/kobe",
+  KAIJU_DATABASE_URL: "postgres://app@db/kaiju",
   KAIJU_SESSION_VERIFY_KEY_EGRESS_PROXY: PAIR.publicPem,
 };
 
@@ -126,7 +126,7 @@ describe("old KOBE_* names for one release (KOBE-748)", () => {
   it("starts with only the old names and warns once, naming them without values", () => {
     const warn = vi.fn();
     const c = loadConfig(toLegacyEnv({ ...base, KAIJU_DB_POOL_MAX: "25" }), warn);
-    expect(c.databaseUrl).toBe("postgres://app@db/kobe");
+    expect(c.databaseUrl).toBe("postgres://app@db/kaiju");
     expect(c.dbPoolMax).toBe(25);
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[1]).toEqual({

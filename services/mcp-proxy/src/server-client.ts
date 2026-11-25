@@ -111,7 +111,7 @@ const grantSchema = z.discriminatedUnion("kind", [
 ]);
 
 /** The built-in connectors the server hosts itself. */
-export type BuiltinServer = "kobe" | "git";
+export type BuiltinServer = "kaiju" | "git";
 
 export interface PolicyServer {
   listTools(token: string, connectorId: string): Promise<ServerAnswer<ToolsResponse>>;
@@ -299,9 +299,9 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
   return {
     fetchGrant,
     reportResult,
-    kaijuList: (token, builtin = "kobe") =>
+    kaijuList: (token, builtin = "kaiju") =>
       post(`/${builtin}/list`, token, undefined, toolsResponseSchema),
-    kaijuCall: (token, query, builtin = "kobe") =>
+    kaijuCall: (token, query, builtin = "kaiju") =>
       post(`/${builtin}/calls`, token, callBody(query), kaijuCallSchema),
     listTools: (token, connectorId) =>
       post(

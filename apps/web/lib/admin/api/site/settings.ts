@@ -10,11 +10,11 @@ export interface SiteSettings {
    * `docs` (docs tools only; the default) or `admin` (docs plus the admin tools each team turns
    * on). Absent from servers that predate it.
    */
-  readonly kobeMcpMode?: KaijuMcpMode;
+  readonly kaijuMcpMode?: KaijuMcpMode;
   /** Per-person Kaiju admin reads per minute (KOBE-814): 1-10000, default 60. Absent on older servers. */
-  readonly kobeReadsPerMinute?: number;
+  readonly kaijuReadsPerMinute?: number;
   /** Per-person Kaiju admin writes per hour (KOBE-814): 1-10000, default 30. Absent on older servers. */
-  readonly kobeWritesPerHour?: number;
+  readonly kaijuWritesPerHour?: number;
   /** Workspace git (KOBE-757, spec G3): Git connections allowed on this Site (default true). */
   readonly gitConnectionsEnabled?: boolean;
   /** Hosts Workspaces may connect to (`github.com`, `*.example.com`); empty = any host. */

@@ -145,9 +145,9 @@ const SiteSettings = untyped(
   obj({
     requireTwoFactor: bool,
     auditPiiRetentionHours: int,
-    kobeMcpMode: oneOfStrings(...KAIJU_MCP_MODES),
-    kobeReadsPerMinute: int,
-    kobeWritesPerHour: int,
+    kaijuMcpMode: oneOfStrings(...KAIJU_MCP_MODES),
+    kaijuReadsPerMinute: int,
+    kaijuWritesPerHour: int,
     gitConnectionsEnabled: bool,
     gitAllowedHosts: arr(str),
   }),

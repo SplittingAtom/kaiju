@@ -16,9 +16,9 @@ import {
 
 /**
  * KOBE-618's migration as an upgrade runs it (the owner role) on a site shaped like gate1: a
- * registered connector already named `kobe`, enabled for a team, and a populated audit chain.
+ * registered connector already named `kaiju`, enabled for a team, and a populated audit chain.
  * Registered rows keep `builtin` NULL and pass the new checks; the seed then falls back to
- * `kobe-builtin`; the chain still verifies with `via` rows appended after the upgrade.
+ * `kaiju-builtin`; the chain still verifies with `via` rows appended after the upgrade.
  */
 const MARKER = 'ADD COLUMN "builtin"';
 
@@ -52,7 +52,7 @@ beforeAll(async () => {
       ids.team,
     ]);
     for (const [id, name] of [
-      [ids.kaiju, "kobe"],
+      [ids.kaiju, "kaiju"],
       [ids.other, "jira"],
     ] as const) {
       await c.query(
@@ -80,7 +80,7 @@ afterAll(async () => {
 });
 
 describe("the built-in connector on upgrade (KOBE-618)", () => {
-  it("leaves registered connectors alone, seeds kobe-builtin, and the chain verifies", async () => {
+  it("leaves registered connectors alone, seeds kaiju-builtin, and the chain verifies", async () => {
     const { ownerUrl, appRole, appUrl, adminUrl } = database();
     await runMigrations({ databaseUrl: ownerUrl, appRole });
     // Running the migrations again is a no-op (the migrate job of every release does this).
@@ -89,12 +89,12 @@ describe("the built-in connector on upgrade (KOBE-618)", () => {
     try {
       expect(await seedKaijuBuiltinConnector(app.db)).toEqual({
         outcome: "seeded",
-        name: "kobe-builtin",
+        name: "kaiju-builtin",
         fallback: true,
       });
       expect(await seedKaijuBuiltinConnector(app.db)).toEqual({
         outcome: "present",
-        name: "kobe-builtin",
+        name: "kaiju-builtin",
       });
       await app.db.transaction((tx) =>
         audit(tx, {
@@ -114,8 +114,8 @@ describe("the built-in connector on upgrade (KOBE-618)", () => {
       );
       expect(res.rows).toEqual([
         { id: ids.other, name: "jira", builtin: null },
-        { id: ids.kaiju, name: "kobe", builtin: null },
-        { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kobe-builtin", builtin: "kobe" },
+        { id: ids.kaiju, name: "kaiju", builtin: null },
+        { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kaiju-builtin", builtin: "kaiju" },
       ]);
       // The built-in needs no team row: teams keep exactly their own enablements.
       const enabled = await c.query(`SELECT count(*)::int AS n FROM team_connectors`);

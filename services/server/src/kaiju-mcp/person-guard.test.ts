@@ -5,7 +5,7 @@ import { guardKaijuAdminCall } from "./person-guard.js";
 
 /** Review L4: a malformed admin write is refused at policy.check, before any approval card. */
 const tool: ToolDescriptor = {
-  name: "mcp__kobe__team_members_set_role",
+  name: "mcp__kaiju__team_members_set_role",
   source: "mcp",
   connector_id: KAIJU_BUILTIN_CONNECTOR_ID,
   risk: "write",
@@ -15,7 +15,7 @@ const tool: ToolDescriptor = {
 const ASK: PolicyDecision = {
   effect: "require_approval",
   risk: "write",
-  reasons: [{ code: "kobe_admin_write", stage: "ask_rule", message: "m" }],
+  reasons: [{ code: "kaiju_admin_write", stage: "ask_rule", message: "m" }],
   expires_at: new Date().toISOString(),
 };
 const noDb = {} as KaijuDb;

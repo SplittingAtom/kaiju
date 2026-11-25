@@ -164,12 +164,12 @@ export const POLICY_REASON_CODES = [
   // KOBE-619 (Kaiju MCP, spec kobe-admin-mcp §6): a Kaiju admin write asks in every mode (stage
   // ask_rule), Dangerous and remembered approvals included; never remembered or approved in bulk;
   // denied where nobody can be asked (auto, scheduled, skill eval; stage approval_mode).
-  "kobe_admin_write",
+  "kaiju_admin_write",
   // KOBE-619: a Kaiju admin tool the person may not use now (permission, team or site switch, or a
   // run that gets docs tools only) → deny (stage team_deny).
-  "kobe_admin_not_allowed",
+  "kaiju_admin_not_allowed",
   // KOBE-619: the person's admin reads per minute or writes per hour are used up → deny.
-  "kobe_admin_rate_limited",
+  "kaiju_admin_rate_limited",
   // KOBE-762 (spec workspace-git G9, G12): a git host tool the connection (level, agents), the
   // member's role or the Site refuses now → deny (stage team_deny), before anyone is asked.
   "git_not_allowed",
