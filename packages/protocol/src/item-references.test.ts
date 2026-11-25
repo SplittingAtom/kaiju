@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  ITEM_KIND_META_KEY,
   ITEM_REFERENCES_MAX,
+  LEGACY_ITEM_KIND_META_KEY,
   itemKindOf,
+  itemKindOfMeta,
   itemReferencesFieldSchema,
   splitItemReferences,
   withItemReferences,
@@ -90,5 +93,32 @@ describe("item references (KOBE-490)", () => {
       kind: "table" as const,
     }));
     expect(splitItemReferences(withItemReferences(refs, "q")).references).toEqual(refs);
+  });
+});
+
+describe("the item-kind _meta key, new and old name (KOBE-829)", () => {
+  it("names the new key and keeps the old one", () => {
+    expect(ITEM_KIND_META_KEY).toBe("io.kaiju/item-kind");
+    expect(LEGACY_ITEM_KIND_META_KEY).toBe("io.kobe/item-kind");
+  });
+
+  it("reads either name, the new one first", () => {
+    expect(itemKindOfMeta({ "io.kaiju/item-kind": "table" })).toBe("table");
+    expect(itemKindOfMeta({ "io.kobe/item-kind": "view" })).toBe("view");
+    expect(itemKindOfMeta({ "io.kaiju/item-kind": "table", "io.kobe/item-kind": "view" })).toBe(
+      "table",
+    );
+    // A new key that is not a string leaves the old one to answer.
+    expect(itemKindOfMeta({ "io.kaiju/item-kind": 7, "io.kobe/item-kind": "view" })).toBe("view");
+  });
+
+  it("is generic without a key, for unknown kinds and for other names", () => {
+    expect(itemKindOfMeta(undefined)).toBe("item");
+    expect(itemKindOfMeta({})).toBe("item");
+    expect(itemKindOfMeta({ "io.kaiju/item-kind": "spaceship" })).toBe("item");
+    expect(itemKindOfMeta({ "io.other/item-kind": "table", "kaiju/item-kind": "table" })).toBe(
+      "item",
+    );
+    expect(itemKindOfMeta(Object.create({ "io.kaiju/item-kind": "table" }))).toBe("item");
   });
 });

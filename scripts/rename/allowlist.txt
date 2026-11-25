@@ -226,6 +226,13 @@ packages/protocol/src/local-models.ts **/*local-models*.test.ts **/*pre-rename-l
 ** /\bkobe-local(?=\/<model>|` before the rename)/
 docs/guide/** docs/install.md /(?<=was `)kobe-local(?=[`\/])/
 
+== permanent: MCP Apps names shared with external app servers before the rename (owner decision 2026-11-24, spec §11 A6, KOBE-829): the bridge still accepts the pointer-drag notifications `kobe/notifications/drag-*` and reads the `_meta` key `io.kobe/item-kind`, exactly like their `kaiju/` and `io.kaiju/` names, so app servers built against them (Catalyst's pickers, which send the old names today) keep working unchanged; the protocol constant, the bridge's method table, the comments that say what was renamed, the tests that send the old names, the e2e fake app that sends one link under the old key and the app developers' guide page keep them; removed in a later release once Catalyst has switched (a follow-up ticket, not KOBE-754)
+packages/protocol/src/item-references.ts packages/protocol/src/item-references.test.ts apps/web/lib/apps/app-items.test.ts apps/web/lib/apps/host-bridge.test.ts e2e/lib/fake-mcp.js /\bio\.kobe\/item-kind\b/
+apps/web/lib/apps/bridge-schema.ts apps/web/components/chat/frame-drop-equivalence.test.ts /\bkobe\/notifications\/(?:drag-(?:start|move|end|cancel)\b)?/
+apps/web/lib/apps/host-bridge.ts /(?<=their old `)kobe\/notifications\/(?=`)|(?<=was `)kobe(?=`; informational)/
+apps/web/lib/apps/host-bridge-drag.test.ts /\bkobe\/notifications\//i
+docs/guide/building-mcp-apps.md /`(?:io\.kobe\/item-kind|kobe\/notifications\/drag-(?:start|move|end|cancel)|kobe)`|(?<=was called )Kobe(?= before)/
+
 == RN-9: Test install names, replaced by the fresh install under the new name
 ** /\bkobe-gate1(?:-deps)?\b/
 
@@ -287,12 +294,6 @@ images/** /\b(?:groupadd|useradd)\b[^\n]*\bkobe\b/
 services/server/src/sandbox/constants.ts /(?<=the `)kobe(?=` user)/
 images/sandbox/Dockerfile /\bkobe:kobe\b|(?<=`)kobe(?=` \(1000\))|(?<=group `)kobe(?=` \(1000\))/
 e2e/run/42-model-gateway-run.sh /(?<=dir=)kobe(?=:kobe-pi-)/
-
-== RN-16 (KOBE-829): MCP Apps names shared with external app servers (the `_meta` key, the bridge's notification methods and host name): new names, the old ones still accepted (owner decision 2026-11-24, was Q6)
-** /\bio\.kobe\/[\w-]*/
-** /\bkobe\/notifications\/[\w${}-]*/
-** /\bname: "kobe", version\b/
-** /\bkobe-reference:|\bnot_allowed_in_kobe\b/
 
 # ---------------------------------------------------------------------------------------------
 # Remaining forms, by area, not yet sorted into a narrower pattern. The step that owns the area

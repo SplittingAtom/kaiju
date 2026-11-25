@@ -121,7 +121,7 @@ async function openWithPicker(threadId: string) {
       window.dispatchEvent(new MessageEvent("message", { data, source: child, origin: "null" }));
     });
   const drag = (method: string, params: unknown) =>
-    send({ jsonrpc: "2.0", method: `kobe/notifications/${method}`, params });
+    send({ jsonrpc: "2.0", method: `kaiju/notifications/${method}`, params });
   return { frame, send, drag };
 }
 
@@ -271,7 +271,7 @@ describe("a pointer drag from the picker frame onto the composer (KOBE-553)", ()
       type: "resource_link",
       uri: `catalyst://lakehouse/mlb/lahman/t${i}`,
       name: `mlb.lahman.t${i}`,
-      _meta: { "io.kobe/item-kind": "table" },
+      _meta: { "io.kaiju/item-kind": "table" },
     }));
     picker.send({
       jsonrpc: "2.0",

@@ -179,6 +179,7 @@ describe("the §7 method table (ac-3)", () => {
       });
     }
     expect(t.handlers.callTool).not.toHaveBeenCalled();
+    expect(NOT_ALLOWED).toBe("not_allowed_in_kaiju");
   });
 
   it("answers ui/initialize without user or team identifiers, and no denied capability", async () => {
@@ -187,7 +188,7 @@ describe("the §7 method table (ac-3)", () => {
     t.send(rpc(1, "ui/initialize", { protocolVersion: "2026-01-26", appInfo: { name: "a" } }));
     await t.flush();
     const result = t.reply(1)?.result as Record<string, Record<string, unknown>>;
-    expect(result.hostInfo).toEqual({ name: "kobe", version: expect.any(String) });
+    expect(result.hostInfo).toEqual({ name: "kaiju", version: expect.any(String) });
     expect(result.hostCapabilities).toEqual({
       serverTools: {},
       logging: {},
@@ -274,7 +275,7 @@ describe("the §7 method table (ac-3)", () => {
       type: "resource_link",
       uri: "catalyst://lakehouse/cat/ns/orders",
       name: "cat.ns.orders",
-      _meta: { "io.kobe/item-kind": "table" },
+      _meta: { "io.kaiju/item-kind": "table" },
     };
     t.send(
       rpc(1, "ui/message", {
@@ -318,6 +319,32 @@ describe("the §7 method table (ac-3)", () => {
     expect(t.reply(1)?.result).toEqual({});
     expect(t.reply(2)?.result).toEqual({});
     expect(t.reply(3)?.error).toMatchObject({ code: -32602 });
+  });
+
+  it("takes the item kind under the old _meta key too, as Catalyst's picker sends it (KOBE-829)", async () => {
+    const t = setup();
+    detach = t.bridge.detach;
+    const link = (path: string, meta: Record<string, unknown>) => ({
+      type: "resource_link",
+      uri: `catalyst://lakehouse/${path.replaceAll(".", "/")}`,
+      name: path,
+      title: path.split(".").at(-1),
+      _meta: meta,
+    });
+    t.send(
+      rpc(1, "ui/message", {
+        role: "user",
+        content: [
+          { type: "text", text: "`mlb.lahman.batting`" },
+          link("mlb.lahman.batting", { "io.kobe/item-kind": "table" }),
+          link("mlb.lahman", { "io.kaiju/item-kind": "namespace" }),
+        ],
+      }),
+    );
+    await t.flush();
+    const [first] = (t.handlers.message as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+    expect(first.items.map((i: { kind: string }) => i.kind)).toEqual(["table", "namespace"]);
+    expect(t.reply(1)?.result).toEqual({});
   });
 
   it("stores model context up to 8 KiB and refuses more", async () => {

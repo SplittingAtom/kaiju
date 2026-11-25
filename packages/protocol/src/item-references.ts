@@ -11,8 +11,14 @@ import { z } from "zod";
 export const ITEM_REFERENCES_MAX = 20;
 /** A dotted name, not prose: the line is model-visible and unfenced (KOBE-490 review MEDIUM-1). */
 export const ITEM_REFERENCE_NAME_MAX = 200;
-/** `_meta["io.kobe/item-kind"]`; anything outside {@link ITEM_KINDS} is {@link GENERIC_ITEM_KIND}. */
-export const ITEM_KIND_META_KEY = "io.kobe/item-kind";
+/** `_meta["io.kaiju/item-kind"]`; anything outside {@link ITEM_KINDS} is {@link GENERIC_ITEM_KIND}. */
+export const ITEM_KIND_META_KEY = "io.kaiju/item-kind";
+/**
+ * The key's name before the rename (KOBE-829, spec rename-kaiju §11 A6), still read so app
+ * servers built against it (Catalyst's pickers) keep their chip icons; removed in a later release
+ * once they have switched. Never written.
+ */
+export const LEGACY_ITEM_KIND_META_KEY = "io.kobe/item-kind";
 export const GENERIC_ITEM_KIND = "item";
 /** The kinds Kaiju knows (an icon each); `item` is the generic one. */
 export const ITEM_KINDS = [
@@ -36,6 +42,17 @@ export function itemKindOf(value: unknown): ItemKind {
   return typeof value === "string" && (ITEM_KINDS as readonly string[]).includes(value)
     ? (value as ItemKind)
     : GENERIC_ITEM_KIND;
+}
+
+/**
+ * The kind a resource_link's `_meta` names: the new key when it holds a string, else the old one
+ * (KOBE-829), as {@link itemKindOf}. Own properties only, so a prototype never answers.
+ */
+export function itemKindOfMeta(meta: Readonly<Record<string, unknown>> | undefined): ItemKind {
+  if (meta === undefined) return GENERIC_ITEM_KIND;
+  const own = (key: string): unknown => (Object.hasOwn(meta, key) ? meta[key] : undefined);
+  const current = own(ITEM_KIND_META_KEY);
+  return itemKindOf(typeof current === "string" ? current : own(LEGACY_ITEM_KIND_META_KEY));
 }
 
 /**

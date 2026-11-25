@@ -17,7 +17,8 @@ import { insertLakehouseItem } from "./composer-mention-drop";
 
 /**
  * KOBE-553 ac-5: a bridge drag-end on the composer and a `ui/message` carrying the same
- * resource_link (the click's content) leave the same chip store snapshot.
+ * resource_link (the click's content) leave the same chip store snapshot; KOBE-829: under the drag
+ * notifications' new names and the old ones Catalyst's picker sends.
  */
 const TABLE = {
   kind: "table",
@@ -66,40 +67,44 @@ function harness(handlersOf: (session: ChatSession) => Partial<HostBridgeHandler
 }
 
 describe("drag-end and ui/message are equivalent (KOBE-553 ac-5)", () => {
-  it("produce the same chip store snapshot", async () => {
-    const click = harness((session) => ({
-      message: (m) => applyAppMessage(session, NEW_DRAFT, m, FROM),
-    }));
-    click.send({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "ui/message",
-      params: { role: "user", content: lakehouseItemContent(JSON.stringify(TABLE)) },
-    });
-    await new Promise((r) => setTimeout(r, 0));
+  it.each(["kaiju/notifications/", "kobe/notifications/"])(
+    "produce the same chip store snapshot (drag over %s*)",
+    async (prefix) => {
+      const click = harness((session) => ({
+        message: (m) => applyAppMessage(session, NEW_DRAFT, m, FROM),
+      }));
+      click.send({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "ui/message",
+        params: { role: "user", content: lakehouseItemContent(JSON.stringify(TABLE)) },
+      });
+      await new Promise((r) => setTimeout(r, 0));
 
-    const notices: string[] = [];
-    const drag = harness((session) => {
-      const relay = frameDragRelay(session.frameDrag);
-      cleanups.push(
-        watchFrameDrop(session.frameDrag, {
-          inside: () => true,
-          over: () => undefined,
-          drop: (d) => notices.push(insertLakehouseItem(session, NEW_DRAFT, d.item, d.from) ?? ""),
-        }),
-      );
-      return { drag: (e) => relay(e, FROM) };
-    });
-    drag.send({
-      jsonrpc: "2.0",
-      method: "kobe/notifications/drag-start",
-      params: { item: TABLE, x: 1, y: 1 },
-    });
-    drag.send({ jsonrpc: "2.0", method: "kobe/notifications/drag-end", params: { x: 2, y: 2 } });
+      const notices: string[] = [];
+      const drag = harness((session) => {
+        const relay = frameDragRelay(session.frameDrag);
+        cleanups.push(
+          watchFrameDrop(session.frameDrag, {
+            inside: () => true,
+            over: () => undefined,
+            drop: (d) =>
+              notices.push(insertLakehouseItem(session, NEW_DRAFT, d.item, d.from) ?? ""),
+          }),
+        );
+        return { drag: (e) => relay(e, FROM) };
+      });
+      drag.send({
+        jsonrpc: "2.0",
+        method: `${prefix}drag-start`,
+        params: { item: TABLE, x: 1, y: 1 },
+      });
+      drag.send({ jsonrpc: "2.0", method: `${prefix}drag-end`, params: { x: 2, y: 2 } });
 
-    expect(notices).toEqual([""]);
-    const clicked = click.session.appItems.snapshot(NEW_DRAFT);
-    expect(clicked.items).toHaveLength(1);
-    expect(drag.session.appItems.snapshot(NEW_DRAFT)).toEqual(clicked);
-  });
+      expect(notices).toEqual([""]);
+      const clicked = click.session.appItems.snapshot(NEW_DRAFT);
+      expect(clicked.items).toHaveLength(1);
+      expect(drag.session.appItems.snapshot(NEW_DRAFT)).toEqual(clicked);
+    },
+  );
 });

@@ -1,7 +1,6 @@
 import {
-  ITEM_KIND_META_KEY,
   ITEM_REFERENCES_MAX,
-  itemKindOf,
+  itemKindOfMeta,
   itemReferenceNameSchema,
   type ItemKind,
   type ItemReference,
@@ -72,7 +71,7 @@ export function appItemsOf(content: readonly Record<string, unknown>[]): {
     items.push({
       uri: parsed.data.uri,
       name: parsed.data.name,
-      kind: itemKindOf(parsed.data._meta?.[ITEM_KIND_META_KEY]),
+      kind: itemKindOfMeta(parsed.data._meta),
     });
   }
   return { items, dropped: links.length - items.length };
@@ -84,7 +83,7 @@ export function appItemsOf(content: readonly Record<string, unknown>[]): {
  */
 export function itemsOfReferences(refs: readonly ItemReference[]): AppItem[] {
   return refs.map((r) => ({
-    uri: `kobe-reference:${r.kind}:${encodeURIComponent(r.name)}`,
+    uri: `kaiju-reference:${r.kind}:${encodeURIComponent(r.name)}`,
     name: r.name,
     kind: r.kind,
     from: "",

@@ -145,7 +145,10 @@ checks every call they make like any other tool call.
   720 px. In the artifact column an app always fills the column's height and scrolls inside
   itself, following the column when you resize it.
 
+Building an app for Kaiju? See [Building MCP Apps for Kaiju](building-mcp-apps.md).
+
 ## Related
 
+- [Building MCP Apps for Kaiju](building-mcp-apps.md)
 - [Approvals](internet-and-approvals/approvals.md)
 - [Team admin overview](admin/team-admin.md)

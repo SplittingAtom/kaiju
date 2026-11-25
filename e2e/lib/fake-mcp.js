@@ -153,7 +153,9 @@ document.getElementById("use-item").addEventListener("click", async () => {
     uri: "e2e://explorer/" + path.map(encodeURIComponent).join("/"),
     name: path.join("."),
     title: kind + " " + path.join("."),
-    _meta: { "io.kobe/item-kind": kind },
+    // KOBE-829: the namespace under the _meta key's old name, the table under the new one; Kaiju
+    // reads both.
+    _meta: { [kind === "namespace" ? "io.kobe/item-kind" : "io.kaiju/item-kind"]: kind },
   });
   const answer = await request("ui/message", {
     role: "user",

@@ -33,7 +33,7 @@ const clickContent = (kind: string, segments: string[]) => [
     uri: `catalyst://lakehouse/${segments.join("/")}`,
     name: segments.join("."),
     title: segments.at(-1),
-    _meta: { "io.kobe/item-kind": kind },
+    _meta: { "io.kaiju/item-kind": kind },
   },
 ];
 

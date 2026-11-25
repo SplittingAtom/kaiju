@@ -52,6 +52,11 @@ upgrade changed the Site's embedding model setting and kept every memory's vecto
 embedded again, search by meaning works as before and nothing needs changing. **Usage and spend**
 shows calls from before the upgrade under the new name, together with the newer ones.
 
+For developers of MCP Apps: Kaiju's own names for apps are now `io.kaiju/item-kind` and
+`kaiju/notifications/drag-*`, and `ui/initialize` names the host `kaiju`. Apps that use the old
+names keep working with no change; they will stop being accepted in a later release. See
+[Building MCP Apps for Kaiju](building-mcp-apps.md).
+
 ## v1.4: git organizations
 
 A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub

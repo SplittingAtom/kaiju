@@ -103,7 +103,7 @@ const link = (cat: string, ns: string, name: string, kind?: string) => ({
   uri: `catalyst://lakehouse/${cat}/${ns}/${name}`,
   name: `${cat}.${ns}.${name}`,
   title: `${name} in ${ns}`,
-  ...(kind === undefined ? {} : { _meta: { "io.kobe/item-kind": kind } }),
+  ...(kind === undefined ? {} : { _meta: { "io.kaiju/item-kind": kind } }),
 });
 
 function message(
