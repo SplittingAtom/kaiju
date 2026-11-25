@@ -1,6 +1,6 @@
 ---
 title: Models and thinking levels
-summary: How to choose the model and thinking level for a conversation, what the team default is, and what budgets and context limits mean for you.
+summary: How to choose the model and thinking level for a conversation, how the team default model shows as selected, and what budgets and context limits mean for you.
 section: Models
 order: 1
 audience: member
@@ -12,10 +12,11 @@ thinks before it answers, and the limits you may run into.
 
 ## Pick a model
 
-The model pill in the composer's toolbar (**Model for this conversation**) lists:
-
-- **Team default (_model_)**: the model your team admins chose as the default;
-- every other model your team enables.
+The model pill in the composer's toolbar (**Model for this conversation**) lists every model your
+team enables, by name. A new conversation shows your team's default model as selected: your team
+admins chose it, and the conversation follows it until you pick another. Picking the default model
+again goes back to following the team default. (If the team's default isn't enabled, the list
+starts with **Default model**.)
 
 The choice applies to this conversation and can be changed between messages; `/model <name>` does
 the same from the keyboard. If the list says "No models are enabled for your team yet.", ask a team

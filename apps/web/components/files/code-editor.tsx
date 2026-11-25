@@ -35,6 +35,7 @@ import {
 import type { EditorLanguage } from "../../lib/files/editor";
 import { minimalChange } from "../../lib/files/outside-change";
 import { documentCspNonce } from "../../lib/security/csp-nonce";
+import { AUTO_FOCUS_ATTR } from "../../lib/chat/composer-focus";
 import { languageExtension } from "./editor-languages";
 import { builtInCompletion, completionTheme, kernelCompletion } from "./editor-completion";
 import {
@@ -336,6 +337,8 @@ const noState = (): KernelCompletionState | null => null;
 function typingElsewhere(editor: HTMLElement): boolean {
   const el = document.activeElement;
   if (!(el instanceof HTMLElement) || el === document.body || editor.contains(el)) return false;
+  // The composer's own focus on load or a thread switch, not used yet (KOBE-840): not typing.
+  if (el.hasAttribute(AUTO_FOCUS_ATTR)) return false;
   return el.matches("input, textarea, select") || el.isContentEditable;
 }
 

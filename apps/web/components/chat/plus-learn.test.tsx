@@ -9,6 +9,7 @@ import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import { chatRequests, composer, openApp } from "./testing";
 import { LEARN_SPIN_MAX_MS, LEARN_TIMEOUT_MESSAGE } from "../../lib/chat/learn-watch";
+import { MEMORY_DOT_MIN_CONTEXT_PERCENT } from "../../lib/chat/learn-api";
 import { LEARN_HINT_KEY } from "./plus-learn";
 
 /**
@@ -24,7 +25,13 @@ beforeEach(() => {
   localStorage.clear();
   resizeWindow(DESKTOP_WIDTH);
   fake = new FakeKaiju();
-  fake.teamModels.push({ alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true });
+  fake.teamModels.push({
+    alias: "kimi",
+    label: "Kimi K2.7 Code",
+    enabled: true,
+    is_default: true,
+    context_window: CONTEXT_WINDOW,
+  });
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -45,8 +52,26 @@ function answered() {
   return t;
 }
 
-const learnable = (t: string, over: Record<string, unknown> = {}) =>
+/** The model's context window in these tests: 1% is 1,000 tokens. */
+const CONTEXT_WINDOW = 100_000;
+
+/** The thread's newest call read `percent` of the window (the context gauge's figure). */
+function filled(t: string, percent: number) {
+  fake.threadLatestCall.set(t, {
+    run_id: "00000000-0000-4000-8000-0000000000aa",
+    at: "2026-11-25T10:00:00.000Z",
+    model: "ollama/kimi",
+    input_tokens: (CONTEXT_WINDOW * percent) / 100,
+    cache_read_tokens: 0,
+    cache_write_tokens: 0,
+  });
+}
+
+/** New messages to learn from, in a context 40% full (the dot shows above 30%, KOBE-840). */
+const learnable = (t: string, over: Record<string, unknown> = {}, percent = 40) => {
+  filled(t, percent);
   fake.learnState.set(t, { new_messages: true, ...over });
+};
 
 const plus = () => screen.findByRole("button", { name: "Add to your message" }, WAIT);
 /** The + button once its accessible description (the Learn state) reads `text`. */
@@ -105,6 +130,54 @@ describe("the + button's Learn state (ac-1)", { timeout: 30_000 }, () => {
     openApp(fake, t);
     const button = await plusSaying("New messages to learn from (Memory)");
     expect(mark(button)).toBe("dot");
+  });
+
+  it("KOBE-840: no dot at 29% context use, the dot at 31%; Learn stays in the menu", async () => {
+    expect(MEMORY_DOT_MIN_CONTEXT_PERCENT).toBe(30);
+    const t = answered();
+    learnable(t, { nudge: { reason: "messages", key: "start:kobe-840" } }, 29);
+    openApp(fake, t);
+    await waitFor(
+      () => expect(fake.requests.some((r) => r.path === `/v1/threads/${t}/usage`)).toBe(true),
+      WAIT,
+    );
+    await screen.findByRole("meter", { name: "Context used" }, WAIT);
+    const below = await plus();
+    expect(mark(below)).toBeNull();
+    expect(pulse(below)).toBeNull();
+    expect(below.getAttribute("aria-describedby")).toBeNull();
+    // The suggestions stay reachable from the menu either way.
+    const { sub } = await openMemory();
+    const item = await within(sub).findByRole("menuitem", { name: /^Learn from this chat/ });
+    expect(item.getAttribute("aria-disabled")).not.toBe("true");
+    cleanup();
+    learnable(t, {}, 31);
+    openApp(fake, t);
+    const above = await plusSaying("New messages to learn from (Memory)");
+    expect(mark(above)).toBe("dot");
+  });
+
+  it("KOBE-840: unknown context use (no model call read yet) shows no dot", async () => {
+    const t = answered();
+    fake.learnState.set(t, { new_messages: true });
+    openApp(fake, t);
+    await composer();
+    await waitFor(
+      () => expect(fake.requests.some((r) => r.path === `/v1/threads/${t}/learn`)).toBe(true),
+      WAIT,
+    );
+    expect(screen.queryByRole("meter", { name: "Context used" })).toBeNull();
+    const button = await plus();
+    expect(mark(button)).toBeNull();
+    expect(button.getAttribute("aria-describedby")).toBeNull();
+  });
+
+  it("KOBE-840: suggestions to review keep their count whatever the context use", async () => {
+    const t = answered();
+    learnable(t, { candidates: 2 }, 5);
+    openApp(fake, t);
+    const button = await plusSaying(/2 memory suggestions to review/);
+    expect(mark(button)).toBe("count");
   });
 
   it("the nudge pulses the dot once per crossing and never starts a pass (KOBE-410)", async () => {

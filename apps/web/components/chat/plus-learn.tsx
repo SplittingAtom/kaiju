@@ -15,6 +15,7 @@ import {
   TO_REVIEW_HREF,
   learnBlocker,
   learnIndicator,
+  memoryDotAllowed,
   tokensLabel,
   type LearnState,
 } from "../../lib/chat/learn-api";
@@ -51,9 +52,14 @@ function markHintSeen() {
 
 /**
  * The + button's face for the Learn state: what it says (its tooltip's second line and accessible
- * description; the name stays "Add to your message") and which mark it shows.
+ * description; the name stays "Add to your message") and which mark it shows. The red dot for new
+ * messages waits until the context is more than 30% full (`contextPercent`, the gauge's figure,
+ * KOBE-840); the spinner and the count of suggestions to review are not held back.
  */
-export function plusIndicator(state: LearnState | null): {
+export function plusIndicator(
+  state: LearnState | null,
+  contextPercent: number | null,
+): {
   readonly description?: string;
   readonly mark: "spinner" | "count" | "dot" | null;
   readonly count?: number;
@@ -67,7 +73,7 @@ export function plusIndicator(state: LearnState | null): {
       mark: "count",
       count: ind.count,
     };
-  if (ind.kind === "new")
+  if (ind.kind === "new" && memoryDotAllowed(contextPercent))
     return { description: "New messages to learn from (Memory)", mark: "dot" };
   return { mark: null };
 }
@@ -79,14 +85,18 @@ export const LEARN_NUDGE_PULSE_MS = 2_400;
  * The Learn nudge (KOBE-410): true while the dot pulses, once per crossing the server names
  * (`state.nudge.key`) per thread, only while the dot shows. A hint: it never starts a pass.
  */
-export function useLearnNudge(threadId: string | null, state: LearnState | null): boolean {
+export function useLearnNudge(
+  threadId: string | null,
+  state: LearnState | null,
+  contextPercent: number | null,
+): boolean {
   const [pulse, setPulse] = useState(false);
   // The crossing this + claimed (a re-run of the effect before the pulse ends keeps it), and the
   // one it finished pulsing.
   const claimed = useRef<string | null>(null);
   const done = useRef<string | null>(null);
   const key = state?.nudge?.key ?? null;
-  const dot = plusIndicator(state).mark === "dot";
+  const dot = plusIndicator(state, contextPercent).mark === "dot";
   useEffect(() => {
     if (threadId === null || key === null || !dot) return undefined;
     const crossing = `${threadId} ${key}`;

@@ -91,6 +91,17 @@ For developers of MCP Apps: Kaiju's own names for apps are now `io.kaiju/item-ki
 names keep working with no change; they will stop being accepted in a later release. See
 [Building MCP Apps for Kaiju](building-mcp-apps.md).
 
+## The composer
+
+- The model picker shows your team's default model by name, selected, instead of "Team default".
+  See [Models](models.md).
+- The cursor is in the message box when the page opens, on **New conversation** and when you open
+  a conversation from **Threads**. The edge of the conversation glows gold while the agent waits
+  for you (an approval, an interrupted answer) and red after a run fails. See
+  [Writing messages](chat/composer.md#when-the-conversation-waits-for-you).
+- The red dot on **+** for new messages to learn from appears only once the conversation uses more
+  than 30% of its context window. See [Memory](memory.md#learn-from-this-chat).
+
 ## v1.4: git organizations
 
 A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub

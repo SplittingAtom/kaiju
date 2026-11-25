@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { listChatConnectors } from "../../lib/chat/composer-plus-api";
 import { MY_CONNECTOR_KEYS } from "../../lib/apps/app-cards";
 import { useAppLaunch } from "../apps/use-app-launch";
+import { useThreadContextPercent } from "../shell/context-gauge";
 import { IconAction } from "../shell/icon-action";
 import { useBoundCommands } from "../shell/command-bindings";
 import { hasRailApps, useRailApps, type RailAppsState } from "../shell/rail-apps";
@@ -221,8 +222,9 @@ function LearnNotice({ learn }: { readonly learn: Learn }) {
  * checks), Apps (an app card) and Browse apps (the rail's Apps view, KOBE-844). Radix's menu button: Enter, Space or the
  * arrows open it, arrows move and open submenus, Escape closes and returns the focus. The button
  * carries the Learn state (KOBE-395): a spinner while a pass runs, the count of candidates from
- * this chat waiting in To review, or a dot for new messages since the last pass, which pulses
- * once when the server nudges (KOBE-410: enough new messages or a correction). The composer
+ * this chat waiting in To review, or a dot for new messages since the last pass once the context
+ * is more than 30% full (KOBE-840), which pulses once when the server nudges (KOBE-410: enough
+ * new messages or a correction). The composer
  * renders it only for the thread's owner (a shared reader gets the banner instead).
  */
 export function PlusMenu({
@@ -241,8 +243,10 @@ export function PlusMenu({
   const [open, setOpen] = useState(false);
   const learn = useLearn(threadId, threadRunning);
   useLearnBindings(learn, threadId);
-  const face = plusIndicator(learn.state);
-  const pulse = useLearnNudge(threadId, learn.state);
+  // KOBE-840: the red dot waits for the context gauge's figure to pass 30%.
+  const contextPercent = useThreadContextPercent();
+  const face = plusIndicator(learn.state, contextPercent);
+  const pulse = useLearnNudge(threadId, learn.state, contextPercent);
   // Browse apps moves the focus to the rail's Apps view; the menu must not take it back.
   const focusMoved = useRef(false);
   return (

@@ -1,6 +1,11 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CLOSED_NOTICES_MAX, closeNotice, isNoticeClosed } from "./closed-notices";
+import {
+  CLOSED_NOTICES_MAX,
+  closeNotice,
+  isNoticeClosed,
+  subscribeClosedNotices,
+} from "./closed-notices";
 
 /** KOBE-468 ac-2: a closed notice stays closed in this browser; blocked storage never throws. */
 afterEach(() => {
@@ -34,5 +39,16 @@ describe("closed notices", () => {
     });
     expect(isNoticeClosed("x")).toBe(false);
     expect(() => closeNotice("x")).not.toThrow();
+  });
+});
+
+describe("closing tells the page (KOBE-840)", () => {
+  it("calls each subscriber with the closed notice's id until it unsubscribes", () => {
+    const seen: string[] = [];
+    const stop = subscribeClosedNotices((id) => seen.push(id));
+    closeNotice("run-9:3");
+    stop();
+    closeNotice("run-9:4");
+    expect(seen).toEqual(["run-9:3"]);
   });
 });

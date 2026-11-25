@@ -1,6 +1,6 @@
 ---
 title: Writing messages
-summary: How to send messages, attach files, mention files, use slash commands, ask Kaiju to learn from the conversation, stop or steer a run, and rate an answer.
+summary: How to send messages, where the cursor starts, attach files, mention files, use slash commands, ask Kaiju to learn from the conversation, stop or steer a run, what the gold and red glow around the conversation mean, and rate an answer.
 section: Chat and threads
 order: 1
 audience: member
@@ -23,13 +23,28 @@ during a run:
 In an empty box, the Up arrow edits your last message. Ctrl+/ (Cmd+/) puts the cursor in the
 message box from anywhere.
 
+The cursor is already in the message box when the page opens, when you start a **New
+conversation** and when you open a conversation from the **Threads** panel, so you can type
+straight away. It stays where it is while a dialog or menu is open or when you are typing in
+another field, and on a phone or tablet the keyboard doesn't open by itself when the page loads.
+
+## When the conversation waits for you
+
+The edge of the conversation glows gold while the agent is stopped waiting for you: an approval
+to decide ("Waiting for your approval", see [Approvals](../internet-and-approvals/approvals.md)),
+an interrupted answer to **Retry** or **Continue** ("Interrupted"), or a paused queue to resume
+("Queue paused."). The glow stays until you respond. After a run fails, the edge glows red until
+you send your next message or close the "The run failed" notice. The words always stay on screen
+too; with reduced motion turned on in your system settings the glow doesn't pulse.
+
 ## The composer toolbar
 
 - **+** opens **Attach files**, your **Connectors** for this conversation, **Memory** (**Learn
   from this chat**, see [Memory](../memory.md#learn-from-this-chat)), **Skills**, **Apps** (adds an
   app card to this conversation) and, if a site admin placed a picker app in the rail for you,
   **Browse apps** (opens the rail's Apps view, where that picker runs). A
-  dot, spinner or number on **+** shows where Learn is for this conversation.
+  dot, spinner or number on **+** shows where Learn is for this conversation; the red dot appears
+  only once the conversation uses more than 30% of its context window.
 - The agent picker chooses which agent answers. See [Agents](../agents/agents.md).
 - **Model for this conversation** and the thinking level. See [Models](../models.md).
 - The project control ("Add to a project", or the project's name) on a conversation not started

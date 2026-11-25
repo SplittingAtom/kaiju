@@ -8,7 +8,7 @@ import type { UsageTotals } from "../../lib/admin/api/usage";
 import { formatTokens, formatUsd } from "../../lib/admin/usage-format";
 import { apiTextFile } from "../../lib/api/client";
 import { threadExportOneUrl } from "../../lib/chat/api";
-import { aliasName, modelChoices, teamDefaultLabel } from "../../lib/chat/model-choices";
+import { modelChoices, shownModelName } from "../../lib/chat/model-choices";
 import { NO_THREAD } from "../../lib/chat/thread-commands";
 import type { ThreadState } from "../../lib/chat/thread-state";
 import { useBindCommands } from "../shell/command-bindings";
@@ -51,7 +51,7 @@ function modelLines(
 ): { readonly model: string; readonly thinking: string } {
   const choices = modelChoices(models, state.summary?.model ?? null, state.agentModel ?? null);
   const alias = choices.pinned ?? choices.chosen;
-  const model = alias === null ? teamDefaultLabel(choices) : aliasName(models, alias);
+  const model = shownModelName(models, choices);
   const { levels, default: fallback } = thinkingChoices(models, alias);
   const level = shownThinking(state.summary?.thinkingLevel ?? null, levels);
   const thinking =

@@ -29,6 +29,7 @@ import { cn } from "../../lib/utils";
 import { ComposerSelectors, useComposerPicker, useFoldedSelectors } from "./composer-selectors";
 import { ModelWarning } from "./model-picker";
 import { useReloadDraft } from "./use-reload-draft";
+import { useComposerAutoFocus } from "./use-composer-focus";
 import { SkillPickChip } from "./plus-skills";
 import { SlashMenu } from "./slash-menu";
 import { useAppInserts } from "./composer-app-inserts";
@@ -64,8 +65,11 @@ export { INSERT_SETTLE_MS, settlesInsert } from "./composer-app-inserts";
 export function Composer({
   extras,
   footer,
+  autoFocus = false,
 }: {
   readonly extras: KaijuThreadExtras;
+  /** The chat shell's composer takes the focus on load and thread switches (KOBE-840). */
+  readonly autoFocus?: boolean;
   /** The end of the row under the box (the context gauge, KOBE-418); shown under a banner too. */
   readonly footer?: ReactNode;
 }) {
@@ -73,6 +77,8 @@ export function Composer({
   const session = useChatSession();
   const text = useAuiState((s) => s.composer.text);
   const remoteId = useAuiState((s) => s.threadListItem.remoteId);
+  // KOBE-840: the focus comes here on load, New chat and another thread on screen.
+  const threadKey = useAuiState((s) => s.threadListItem.id);
   const { controller, state } = extras;
   const running = isThreadRunning(state);
   const inTrash = state.summary?.deletedAt != null;
@@ -98,6 +104,7 @@ export function Composer({
     if (prefill !== undefined) aui.composer.setText(prefill);
   }, [remoteId, session, aui]);
   useReloadDraft(draft);
+  useComposerAutoFocus(input, threadKey, autoFocus);
 
   const attach = (list: FileList | null) => {
     if (list && list.length > 0) session.attachments.add(draft, [...list], remoteId);
