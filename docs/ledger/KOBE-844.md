@@ -51,3 +51,7 @@ Updated: `getting-started/layout.md` (no tabs; Files, the Manage projects gear, 
 the way back), `chat/composer.md` (+ menu: Apps vs Browse apps), `connectors-and-apps.md` (the
 rail's Apps view and how to open it), `reference/keyboard-shortcuts.md` (Mod+Shift+X),
 `files/workspaces-and-projects.md` (the gear). No "For agents" page covers the rail.
+
+## Review (review-g146, merge)
+
+Mod+Shift+X is free in Kaiju's shortcut registry and in Chrome, Edge and Safari; Firefox on Windows uses Ctrl+Shift+X to switch text direction in text fields, so in a text field there Firefox may act first; the + menu's Browse apps and the palette entry work everywhere.
