@@ -101,8 +101,15 @@ const pulses = (page: Page) => page.evaluate(() => window.__kaijuNudgePulses ?? 
 
 /** The memory dot shows above this share of the context window (KOBE-840). */
 const MEMORY_DOT_MIN_CONTEXT_PERCENT = 30;
-/** The context window every team model gets in this spec (the routes below). */
-const CONTEXT_WINDOW = 100_000;
+/**
+ * The context window every team model gets in this spec (the routes below). Far larger than any
+ * real prompt (KOBE-845): a run streams its own context figure (the real model's prompt: about 62k
+ * tokens on gate1 from the first turn, with its system prompt, tools and memories, so 62% of the
+ * 100k window this spec used to answer with), and that figure is scaled by this window too. At 10M
+ * tokens a real run stays under 1%, so only the stored figures the spec answers with decide
+ * whether the dot shows.
+ */
+const CONTEXT_WINDOW = 10_000_000;
 const TEAM_MODELS_PATH = /\/v1\/team\/models(\?|$)/;
 const USAGE_PATH = /\/v1\/threads\/[^/]+\/usage(\?|$)/;
 
@@ -216,6 +223,14 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
   for (let i = 1; i <= NUDGE_MESSAGES; i += 1) {
     // ask() returns once the reply finished and the chat is idle.
     const threadId = await chat.ask(`No tools. Reply with the single word OK. (${i})`);
+    // The figure the + button reads now (the run's own streamed one, else the stored one): at or
+    // below 30%, so no dot may show yet. Checked, not assumed (KOBE-845).
+    const shown = await meterPercent(page);
+    const tokens = Math.round((shown * CONTEXT_WINDOW) / 100);
+    console.log(`KOBE-845 run ${i}: context figure ${shown.toFixed(3)}% (${tokens} tokens)`);
+    expect(shown, `run ${i}'s context figure is at or below 30%`).toBeLessThanOrEqual(
+      MEMORY_DOT_MIN_CONTEXT_PERCENT,
+    );
     const state = await settledState(page, threadId);
     expect(state.blocker, "Learn could start (else no dot and no nudge)").toBeNull();
     expect(state.running).toBeNull();
@@ -227,8 +242,8 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
     }
   }
 
-  // No pulse so far: a run's own streamed figure stayed at or below 30% (else the nudge would be
-  // claimed already and the 31% step below could not pulse).
+  // No pulse so far: every figure shown stayed at or below 30% (checked after each run above), so
+  // the nudge is still unclaimed and the 31% step below can pulse.
   expect(await pulses(page), "no dot while the run's own context figure is low").toBe(0);
 
   // Exactly 30% (the stored call decides after a reload): the nudge is there, the dot is not.
