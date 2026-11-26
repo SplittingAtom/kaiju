@@ -68,7 +68,7 @@ async function openWithPicker(chat: Chat, page: Page): Promise<App> {
   return picker as App;
 }
 
-const appsPanel = (page: Page) => page.getByRole("tabpanel", { name: "Apps", exact: true });
+const appsPanel = (page: Page) => page.getByRole("region", { name: "Apps", exact: true });
 const pickerSelect = (page: Page) => appsPanel(page).getByRole("combobox", { name: "Picker" });
 const frameOf = (page: Page, app: App): FrameLocator =>
   appsPanel(page).frameLocator(`iframe[title="${app.title} (app from ${app.connectorName})"]`);
@@ -182,8 +182,11 @@ test("a phone: the picker runs in the drawer and fills the draft; no page scroll
   await page.getByRole("button", { name: "Show the workspace" }).click();
   const drawer: Locator = page.getByRole("dialog", { name: "Workspace" });
   await expect(drawer).toBeVisible();
-  const tab = drawer.getByRole("tab", { name: "Apps", exact: true });
-  if ((await tab.getAttribute("aria-selected")) !== "true") await tab.click();
+  // KOBE-844: no Apps tab; the stored view is Apps (openWithPicker chose it), else Browse apps.
+  if (!(await drawer.locator("#kaiju-rail-apps").isVisible())) {
+    await page.locator("body").press("ControlOrMeta+Shift+X");
+  }
+  await expect(drawer.locator("#kaiju-rail-apps")).toBeVisible();
   const frame = await choose(page, app);
   const box = await drawer.boundingBox();
   expect(box?.width ?? 0).toBeLessThanOrEqual(PHONE.width);

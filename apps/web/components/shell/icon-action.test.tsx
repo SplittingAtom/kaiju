@@ -175,6 +175,8 @@ describe("command registry", () => {
       "focus-composer": "Mod+/",
       // KOBE-395: Learn from this chat, listed in the sheet's Memory section.
       learn: "Mod+Shift+L",
+      // KOBE-844: Browse apps, the rail's Apps view since its tab went.
+      "browse-apps": "Mod+Shift+X",
       // The sheet's own key; not one of the twelve.
       "keyboard-shortcuts": "?",
     });

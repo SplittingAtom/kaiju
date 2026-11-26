@@ -342,6 +342,10 @@ describe("the ? sheet and tooltips list them (ac-2)", { timeout: 30_000 }, () =>
     const memory = within(sheet).getByRole("list", { name: "Memory shortcuts" });
     expect(memory.textContent).toContain("Learn from this chat");
     expect(memory.querySelector("kbd")?.textContent).toBe(mac ? "⌘⇧L" : "Ctrl+Shift+L");
+    // KOBE-844: Browse apps in its own Apps section.
+    const apps = within(sheet).getByRole("list", { name: "Apps shortcuts" });
+    expect(apps.textContent).toContain("Browse apps");
+    expect(apps.querySelector("kbd")?.textContent).toBe(mac ? "⌘⇧X" : "Ctrl+Shift+X");
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(before));

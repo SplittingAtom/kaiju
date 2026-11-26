@@ -3,8 +3,7 @@
 /**
  * A `.py` file's run pane under the code (KOBE-804): three tabs, Run Output (the shown run's
  * outputs), Log (this file's runs in this conversation) and Variables (the kernel's variables, live
- * from the sandbox). The tabs follow the app's tablist pattern (`shell/rail-tabs.tsx`): Left and
- * Right move (wrapping), Home and End go to the ends, only the chosen tab is in the Tab order, and
+ * from the sandbox). The tabs follow the app's tablist pattern: Left and Right move (wrapping), Home and End go to the ends, only the chosen tab is in the Tab order, and
  * the panels stay mounted. The chosen tab is remembered per member in this browser, like the
  * split's height (`split-pane.tsx`); the run shown, the Log choice and the Variables filter, sort
  * and open rows are kept per file while the editor is open. A dot on a tab says it has something

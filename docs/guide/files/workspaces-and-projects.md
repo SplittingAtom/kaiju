@@ -36,7 +36,7 @@ Your files are kept while your sandbox sleeps and come back when it wakes.
 
 A project gathers instructions, a versioned file tree, project memory and shared conversations for
 people working on something together. Find them under **Profile → Projects** (`/me/projects`) or
-**Manage projects →** in the Files panel. **New project** creates one; team admins and contributors
+with the gear icon (**Manage projects**) beside the **Projects** heading in the Files panel. **New project** creates one; team admins and contributors
 can create projects, and the creator becomes the owner.
 
 Every member of the workspace can read every project. Keep confidential work in My files or in a

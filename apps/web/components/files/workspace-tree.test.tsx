@@ -110,8 +110,16 @@ describe("the Workspace tree (FP1)", () => {
     // A team admin who is not listed acts as owner.
     expect(within(await project("Ops plan")).getByText("owner")).toBeTruthy();
     // Every readable, live project counts; archived ones do not.
-    const all = screen.getByRole("link", { name: "Manage projects →" });
+    // KOBE-844: a gear icon on the Projects heading's line, no icon beside "Workspace:".
+    const all = screen.getByRole("link", { name: "Manage projects" });
     expect(all.getAttribute("href")).toBe("/me/projects");
+    expect(all.querySelector("svg.lucide-settings")).not.toBeNull();
+    expect(all.textContent).toBe("");
+    expect(all.parentElement?.textContent).toBe("Projects");
+    const workspaceRow = screen.getByRole("heading", {
+      name: "Workspace: Marketing",
+    }).parentElement;
+    expect(workspaceRow?.querySelector("svg.lucide-vault")).toBeNull();
     const mine = screen.getByRole("tree", { name: "My files" });
     expect(
       within(mine)
@@ -216,7 +224,7 @@ describe("the Workspace tree (FP1)", () => {
     delete routes["GET /v1/workspace/files?path=projects"];
     mount();
     expect(await screen.findByText(/No projects yet/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Manage projects →" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Manage projects" })).toBeTruthy();
   });
 
   it("a checked-out project's own row keeps Upload and is not called read-only", async () => {

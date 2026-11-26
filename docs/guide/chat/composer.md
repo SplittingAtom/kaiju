@@ -40,7 +40,9 @@ too; with reduced motion turned on in your system settings the glow doesn't puls
 ## The composer toolbar
 
 - **+** opens **Attach files**, your **Connectors** for this conversation, **Memory** (**Learn
-  from this chat**, see [Memory](../memory.md#learn-from-this-chat)), **Skills** and **Apps**. A
+  from this chat**, see [Memory](../memory.md#learn-from-this-chat)), **Skills**, **Apps** (adds an
+  app card to this conversation) and, if a site admin placed a picker app in the rail for you,
+  **Browse apps** (opens the rail's Apps view, where that picker runs). A
   dot, spinner or number on **+** shows where Learn is for this conversation; the red dot appears
   only once the conversation uses more than 30% of its context window.
 - The agent picker chooses which agent answers. See [Agents](../agents/agents.md).
