@@ -101,3 +101,12 @@ or this route.
   after unsharing; 400 bad id); `stats.test.ts` (null rules, caps, rounding). No new tables, so
   the RLS probe suite is untouched.
 - ac-3: the tests above, fake contract test, guide page.
+
+## Owner decisions (Chris, 2026-11-25)
+
+- Do not store failure code, time to first token or refusal counts per run: stats for turns older than 7 days stay partial, with the panel's note.
+- The Context panel stays owner-only; shared members do not get a stats-only view.
+
+## Review (review-g144, merge)
+
+Five Low findings accepted for follow-up: entries scanned twice, refusal count can double-count or merge refusals, tests skip project share/Trash/429, skills not filtered to turns, hint may be read twice and the stats box is not keyboard-scrollable.
