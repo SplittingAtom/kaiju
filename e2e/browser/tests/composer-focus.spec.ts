@@ -53,13 +53,24 @@ test("the composer takes the focus on load, New conversation and a thread from T
   await expect.poll(() => new URL(page.url()).searchParams.get("thread")).toBeNull();
   await expect(chat.composer).toBeFocused();
 
-  // Not over a dialog left open: the command palette keeps its own field.
-  await page.keyboard.press("ControlOrMeta+k");
-  const palette = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
-  if ((await palette.count()) > 0) {
-    await expect(chat.composer).not.toBeFocused();
-    await page.keyboard.press("Escape");
-  }
+  // Not over a dialog left open: the command palette keeps its own field. While the modal is open
+  // the page behind it is hidden from the accessibility tree, so `chat.composer` (a role query)
+  // finds nothing there; the check reads `document.activeElement` instead.
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  await page.locator("body").press("ControlOrMeta+k");
+  await expect(palette).toBeVisible();
+  await expect(palette.getByRole("combobox")).toBeFocused();
+  // Longer than the composer's two-frame request: the palette's field still has the focus.
+  await page.waitForTimeout(500);
+  await expect(palette.getByRole("combobox")).toBeFocused();
+  expect(
+    await page.evaluate(() => document.activeElement?.closest("[data-kaiju-composer]") != null),
+    "the composer does not take the focus from the open palette",
+  ).toBe(false);
+  // Escape closes it and the focus goes back to where it was: the composer.
+  await page.keyboard.press("Escape");
+  await expect(palette).toBeHidden();
+  await expect(chat.composer).toBeFocused();
 });
 
 test("a touch screen's page load does not open the keyboard", async ({ browser }) => {
