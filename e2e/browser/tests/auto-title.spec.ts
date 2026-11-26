@@ -48,12 +48,8 @@ test("a new thread gets its title after the first answer, in the rail and the he
     .getByRole("button", { name: title, exact: true });
   await expect(row).toBeVisible();
 
-  // The row's hover card: the first message and the counts, read when it opens.
+  // No hover card or tooltip opens on the row (KOBE-847).
   await row.hover();
-  const card = page.getByTestId("thread-card");
-  await expect(card).toBeVisible({ timeout: 10_000 });
-  await expect(card).toContainText(PROMPT);
-  await expect(card).toContainText("Agent");
-  await expect(card).toContainText("Last activity");
-  await expect(card).toContainText(/Messages\s*2/);
+  await expect(page.getByTestId("thread-card")).toHaveCount(0);
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
 });

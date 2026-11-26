@@ -70,14 +70,6 @@ export function sourceName(origin: ForkOrigin): string {
   return origin.kind === "source" ? (origin.title ?? UNTITLED_THREAD) : HIDDEN_SOURCE;
 }
 
-/** The rail's hover text for a thread's list item (assistant-ui `custom.fork`). */
-export function forkHint(origin: ForkOrigin | null): string | undefined {
-  if (origin === null) return undefined;
-  return origin.kind === "source"
-    ? `Forked from “${sourceName(origin)}”`
-    : `Forked from ${HIDDEN_SOURCE}`;
-}
-
 /**
  * The text of the fork's own message holding entry `at`, shortened to `max` characters; null when
  * not loaded.

@@ -113,24 +113,6 @@ describe("thread list (RemoteThreadListAdapter)", () => {
     expect(chatRequests(fake, "PATCH")).toEqual([]);
   });
 
-  it("shows a thread's card on hover: first message, agent, last activity, message count (KOBE-219 ac-3)", async () => {
-    const t = fake.addThread("Budget review");
-    const u = fake.addEntry(t, null, { role: "user", content: "Where did the Q3 budget go?" });
-    fake.addEntry(t, u, { role: "assistant", content: [{ type: "text", text: "Mostly travel." }] });
-    openApp(fake);
-    const user = userEvent.setup();
-    const row = await within(await list()).findByRole("button", { name: "Budget review" });
-    await user.hover(row);
-    const card = await screen.findByTestId("thread-card", {}, { timeout: 3_000 });
-    await waitFor(() => expect(card.textContent).toContain("Where did the Q3 budget go?"));
-    expect(card.textContent).toContain("No agent");
-    expect(card.textContent).toMatch(/Messages\s*2/);
-    expect(card.querySelector("time")?.getAttribute("datetime")).toBe(
-      fake.threads.get(t)?.last_activity_at,
-    );
-    expect(chatRequests(fake, "GET").some((r) => r.path === `/v1/threads/${t}/card`)).toBe(true);
-  });
-
   it("moves to Trash from the row's menu and restores (D18)", async () => {
     const t = fake.addThread("Budget");
     vi.stubGlobal(

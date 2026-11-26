@@ -465,51 +465,6 @@ button.teamIcon {
   padding: 0 0.5rem;
 }
 
-/* A thread row's hover card (CE18, KOBE-219): first message, agent, last activity, count.
-   Above the drawer (z-index 40), so it shows from the narrow-screen rail too. */
-.card {
-  z-index: 50;
-  width: min(20rem, calc(100vw - 2rem));
-  padding: 0.75rem;
-  color: var(--admin-fg);
-  background: var(--admin-bg);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--kaiju-radius-lg);
-  box-shadow: var(--kaiju-shadow-pop);
-  font-size: 0.85rem;
-}
-
-.cardMessage {
-  display: -webkit-box;
-  margin: 0 0 0.5rem;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-}
-
-.cardMuted {
-  margin: 0;
-  color: var(--admin-muted);
-}
-
-.cardFacts {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.125rem 0.75rem;
-  margin: 0;
-}
-
-.cardFacts dt {
-  color: var(--admin-muted);
-}
-
-.cardFacts dd {
-  min-width: 0;
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
 /* Icon-action links in the rail (Team console, Export my conversations; KOBE-421) keep the
    buttons' text colour. `.app a` (chat.module.css) is unlayered, so it beats Tailwind's
    `text-foreground` utility; this rule is more specific and wins. */

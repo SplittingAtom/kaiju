@@ -6,7 +6,6 @@ import { SHARED_THREAD_DRAG_TYPE, THREAD_DRAG_TYPE } from "../../lib/chat/organi
 import { useHitNote } from "./hit-note";
 import { placementOf } from "../../lib/chat/thread-groups";
 import { IconAction } from "../shell/icon-action";
-import { RailThreadCard } from "../shell/rail-thread-card";
 import { ThreadFileMap, useThreadFiles } from "../shell/thread-file-row";
 import styles from "./chat.module.css";
 import { ThreadActivityDot, useRowActivity, useRowUnread } from "./thread-activity";
@@ -16,7 +15,7 @@ import { ThreadRowMenu } from "./thread-row-menu";
  * One thread in the rail (D16): open it; its ⋯ menu copies, regenerates, pins, moves, archives or
  * moves it to Trash (KOBE-292, KOBE-220; rename is the conversation header's pencil), and a trash
  * icon on hover or focus moves it there too (KOBE-466). In Trash:
- * restore or delete forever. Hovering or focusing the row shows its card (CE18, KOBE-219). The
+ * restore or delete forever. No hover card or tooltip (KOBE-847). The
  * member's own rows can be dragged onto a project header to move there (CE19), and any row onto a
  * folder in the Threads panel's tree to file it there (KOBE-536, TF8). In the Threads panel
  * (KOBE-614) the row hugs its title, with the pin, trash and ⋯ right after it, and shows a pill
@@ -25,8 +24,6 @@ import { ThreadRowMenu } from "./thread-row-menu";
 function ThreadItem({ archived }: { readonly archived: boolean }) {
   const aui = useAui();
   const title = useAuiState((s) => s.threadListItem.title) || "Untitled conversation";
-  // "Forked from …" on hover (CE16), from the list answer (`metadataOf`).
-  const forkHint = useAuiState((s) => s.threadListItem.custom?.["forkHint"]);
   const remoteId = useAuiState((s) => s.threadListItem.remoteId);
   const shared = useAuiState((s) => placementOf(s.threadListItem.custom).shared);
   // Own rows drag onto a project header or a folder; shared ones onto a folder only (TF8).
@@ -60,15 +57,12 @@ function ThreadItem({ archived }: { readonly archived: boolean }) {
         data-kaiju-activity={activity}
       >
         <ThreadActivityDot activity={activity} id={activityId} unread={unread} />
-        <RailThreadCard>
-          <ThreadListItemPrimitive.Trigger
-            className={styles.threadTrigger}
-            title={typeof forkHint === "string" ? forkHint : undefined}
-            aria-describedby={described ? activityId : undefined}
-          >
-            <ThreadListItemPrimitive.Title fallback="Untitled conversation" />
-          </ThreadListItemPrimitive.Trigger>
-        </RailThreadCard>
+        <ThreadListItemPrimitive.Trigger
+          className={styles.threadTrigger}
+          aria-describedby={described ? activityId : undefined}
+        >
+          <ThreadListItemPrimitive.Title fallback="Untitled conversation" />
+        </ThreadListItemPrimitive.Trigger>
         <span className={styles.itemActions}>
           {files.pin}
           {archived ? (

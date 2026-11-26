@@ -39,7 +39,6 @@ describe("thread list adapter", () => {
       pinned: false,
       archived: false,
       folderId: null,
-      forkHint: null,
       // The rail's dot (KOBE-301).
       activity: "idle",
     });
