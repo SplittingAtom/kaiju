@@ -11,6 +11,7 @@ import { PageHeader, Section } from "../../ui/console";
 import { useTeamAccess } from "../console-context";
 import { ResourceView } from "../parts";
 import { RememberLimitsForm } from "../remember-limits-form";
+import { TeamAgentVariableValuesForm } from "../agent-variable-values-form";
 import { RememberedRules } from "../remembered-rules";
 import { RulesEditor } from "../policy-rules";
 import { useResource } from "../use-resource";
@@ -55,6 +56,12 @@ export function TeamPolicyPage() {
         description="What members may choose when they remember an approval. The site floor's limits always apply; a team can only tighten them."
       >
         <TeamLimits teamId={teamId} />
+      </Section>
+      <Section
+        title="Agent and kernel variables"
+        description="Whether the agent sees the values in a conversation's Python kernel when it reads the Variables tab of an open file."
+      >
+        <TeamAgentVariableValuesForm teamId={teamId} />
       </Section>
     </>
   );

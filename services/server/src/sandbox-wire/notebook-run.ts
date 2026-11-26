@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { SYSTEM_ACTOR, withTeam, type KaijuDb } from "@kaiju/db";
+import type { KaijuDb } from "@kaiju/db";
 import {
   CAPABILITY_NOTEBOOKS,
   EDITOR_RUN_TOOL,
@@ -13,7 +13,7 @@ import {
   type ServerToSandboxFrame,
 } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
-import { recordAudit } from "../audit/record.js";
+import { editorToolTarget } from "../policy/editor-file-guard.js";
 import {
   finishExecution,
   recordStarted,
@@ -24,6 +24,7 @@ import {
 import type { NotebookFiles } from "../notebooks/files.js";
 import { toolText } from "../notebooks/summary.js";
 import { NOTEBOOK_COMMAND_MARGIN_MS } from "./constants.js";
+import type { AuditEditor } from "./editor-audit.js";
 import type { ToolFrameSpec } from "./gated-frame.js";
 import type { CommandOutcome, SandboxTarget } from "./types.js";
 
@@ -42,6 +43,8 @@ export interface NotebookRunConnection {
   readonly target: SandboxTarget;
   readonly files: NotebookFiles | undefined;
   readonly log: Pick<Logger, "error" | "warn">;
+  /** Records `run.editor_run` (KOBE-848). */
+  readonly auditEditor: AuditEditor;
   /** Sends the `notebook.execute` on this connection and resolves with its answer. */
   readonly execute: (frame: NotebookExecuteFrame, timeoutMs: number) => Promise<CommandOutcome>;
   send(frame: ServerToSandboxFrame): boolean;
@@ -74,7 +77,11 @@ export function notebookRunSpec(
     alsoRequires: () => c.files !== undefined,
     allowance: "consume",
     refuse(frame, refusal) {
-      const answer = answerer(frame);
+      const send = answerer(frame);
+      const answer = (out: Answer) => {
+        if (frame.tool === EDITOR_RUN_TOOL) auditEditorRun(c, frame, "refused");
+        send(out);
+      };
       switch (refusal.stage) {
         case "capability":
           answer(refused("not_allowed", "This sandbox did not announce notebooks."));
@@ -109,7 +116,11 @@ export function notebookRunSpec(
           c.log.error({ err, run_id: frame.run_id }, "notebook.run failed");
           return refused("storage_failed", "The code could not be run. Try again.");
         })
-        .then(answerer(frame));
+        .then((out) => {
+          // KOBE-848: every editor_run outcome is audited, refusals and failures included.
+          if (frame.tool === EDITOR_RUN_TOOL) auditEditorRun(c, frame, statusOf(out));
+          answerer(frame)(out);
+        });
     },
   };
 }
@@ -122,7 +133,12 @@ function inputOf(frame: NotebookRunFrame): {
   readonly timeout_s?: number | undefined;
 } {
   if (frame.tool === EDITOR_RUN_TOOL) {
-    return { path: frame.input.path, timeout_s: frame.input.timeout_s };
+    // The same normalisation as the policy check's editor-file guard (`/workspace/./a.py`).
+    const path = editorToolTarget(frame.input);
+    return {
+      path: path === undefined ? frame.input.path : `/workspace/${path}`,
+      timeout_s: frame.input.timeout_s,
+    };
   }
   return frame.input;
 }
@@ -173,14 +189,14 @@ async function runForAgent(
       exec_id: execution.execId,
       code: resolved.source.code,
       timeout_ms: timeoutMs,
-      // KOBE-803: timing only (dropped on the wire for older agents). No variables snapshot for
-      // the agent's run: snapshots go only to the thread's owner, never to the model.
+      // KOBE-803: timing only (dropped on the wire for older agents). No variables snapshot is
+      // kept after the agent's run; the agent reads variables only through editor_read
+      // (KOBE-848: values beyond numbers, bools and None only with the team's setting).
       with_timing: true,
     },
     timeoutMs + NOTEBOOK_COMMAND_MARGIN_MS,
   );
   const summary = await finishExecution({ db: c.db, files, log: c.log }, execution, outcome);
-  if (frame.tool === EDITOR_RUN_TOOL) await auditEditorRun(c, frame, summary.status);
   if (!outcome.ok) {
     c.log.warn(
       {
@@ -209,29 +225,25 @@ async function runForAgent(
   };
 }
 
+type EditorRunStatus = Awaited<ReturnType<typeof finishExecution>>["status"] | "refused";
+
+/** How an answer is audited: the execution's status, else `failed` (it could not) or `refused`. */
+function statusOf(out: Answer): EditorRunStatus {
+  if (out.ok) return out.status;
+  return out.code === "storage_failed" || out.code === "kernel_unavailable" ? "failed" : "refused";
+}
+
 /** `run.editor_run` (KOBE-848): ids and how it ended; never the path, code or output. */
-async function auditEditorRun(
+function auditEditorRun(
   c: NotebookRunConnection,
   frame: NotebookRunFrame,
-  status: Awaited<ReturnType<typeof finishExecution>>["status"],
-): Promise<void> {
-  const { teamId, userId } = c.target;
-  try {
-    await withTeam(c.db, teamId, (tx) =>
-      recordAudit(tx, {
-        action: "run.editor_run",
-        actor: SYSTEM_ACTOR,
-        teamId,
-        target: {
-          userId,
-          threadId: frame.thread_id,
-          runId: frame.run_id,
-          toolCallId: frame.tool_call_id,
-          status,
-        },
-      }),
-    );
-  } catch (err) {
-    c.log.error({ err, run_id: frame.run_id }, "could not audit run.editor_run");
-  }
+  status: EditorRunStatus,
+) {
+  c.auditEditor(c.target, {
+    action: "run.editor_run",
+    threadId: frame.thread_id,
+    runId: frame.run_id,
+    toolCallId: frame.tool_call_id,
+    status,
+  });
 }

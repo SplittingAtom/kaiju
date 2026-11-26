@@ -105,7 +105,8 @@ export const RUNS_EVENTS = {
     threadId: id,
     runId: id,
     toolCallId,
-    status: z.enum(["ok", "error", "interrupted", "timeout", "restarted", "failed"]),
+    /** `refused`: the server ran nothing (gate, missing file, not allowed); `failed`: it could not. */
+    status: z.enum(["ok", "error", "interrupted", "timeout", "restarted", "failed", "refused"]),
   }),
   /** The agent read the open file's run pane (`editor_read`): which tab, never its content (system). */
   "run.editor_read": event("team", {
@@ -114,5 +115,7 @@ export const RUNS_EVENTS = {
     runId: id,
     toolCallId,
     what: z.enum(["output", "log", "variables"]),
+    /** `refused`: nothing was read (gate, rate limit, older agent); `failed`: it could not be. */
+    outcome: z.enum(["ok", "refused", "failed"]),
   }),
 } as const satisfies Record<string, AuditEventDef>;

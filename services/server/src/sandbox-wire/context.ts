@@ -1,3 +1,4 @@
+import type { EditorAudit } from "./editor-audit.js";
 import type { SessionSigningKey } from "@kaiju/session-token";
 import type { QueryEmbedder } from "../memory/embeddings/service.js";
 import type { ServerCallPurpose, ToolRegistry } from "@kaiju/protocol";
@@ -190,6 +191,8 @@ export interface WireContext {
   ): void;
   /** Records `sandbox.limit_exceeded` (throttled per sandbox and limit). */
   auditLimit(target: SandboxTarget, sandboxId: string, limit: SandboxLimit, runId?: string): void;
+  /** Records a `run.editor_*` row (KOBE-848), every outcome; never throttled, never content. */
+  auditEditor(target: SandboxTarget, event: EditorAudit): void;
   /** A command requested on this replica has a result (skip waiting for the NOTIFY round trip). */
   localResult(commandId: string): void;
   /** Tells KOBE-30 (hooks) that the wire ended a run; never throws. */

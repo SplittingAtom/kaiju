@@ -26,6 +26,7 @@ const silent = { error: () => {}, warn: () => {}, info: () => {} };
 const LIMITS = { maxFileBytes: 4 * 1024 * 1024, maxWorkspaceBytes: 16 * 1024 * 1024, maxFiles: 50 };
 const sandboxes: FakeSandbox[] = [];
 let listener: Awaited<ReturnType<typeof sandboxListener>>;
+let siteAdmin: Person;
 let sync: ReturnType<typeof createWorkspaceSync>;
 
 /** The engine allows everything: these tests are about the guard and the frames after it. */
@@ -50,6 +51,10 @@ beforeAll(async () => {
   sync = createWorkspaceSync({ db: fx.db, objects, prefix: "", limits: LIMITS, log: silent });
   fx.replica(0).deps.notebookFiles.use(sync);
   listener = await sandboxListener(fx.replica(0).deps, auth);
+  siteAdmin = await fx.person("edsiteadmin");
+  await fx.admin.query(`INSERT INTO site_roles (user_id, role) VALUES ($1, 'admin')`, [
+    siteAdmin.id,
+  ]);
 });
 
 afterAll(async () => {
@@ -91,6 +96,8 @@ const SNAPSHOT = {
   variables: [
     { name: "total", type: "int", repr: "42" },
     { name: "api_key", type: "str", repr: "", hidden: "name", len: 32 },
+    // A token under a name the sandbox's heuristic misses (review M1).
+    { name: "x", type: "str", repr: "'sk-proj-TOKEN1234'", len: 17 },
   ],
   other: [],
   truncated: false,
@@ -271,6 +278,12 @@ async function editorRead(sb: FakeSandbox, w: World, runId: string, callId: stri
   );
 }
 
+/** Audit rows are written off the frame path: wait until `count` rows are there. */
+async function auditsN(team: string, action: string, count: number) {
+  await expect.poll(async () => (await audits(team, action)).length).toBe(count);
+  return audits(team, action);
+}
+
 async function audits(team: string, action: string) {
   const { rows } = await fx.admin.query<{ target: Record<string, unknown> }>(
     `SELECT target FROM audit_log WHERE team_id = $1 AND action = $2 ORDER BY seq`,
@@ -285,7 +298,8 @@ describe("editor_run (KOBE-848)", { timeout: 60_000 }, () => {
     const sb = await connected(w);
     await seed(w, "analysis.py", "print(6 * 7)\n");
     const runId = await agentRun(w, "analysis.py");
-    const input = { path: "/workspace/analysis.py" };
+    // Normalised like the guard: a `.` segment neither refuses nor wastes the approval.
+    const input = { path: "/workspace/./analysis.py" };
     expect(await check(sb, w, runId, "call-1", "editor_run", input)).toMatchObject({
       decision: "allow",
     });
@@ -313,7 +327,7 @@ describe("editor_run (KOBE-848)", { timeout: 60_000 }, () => {
       tool_call_id: "call-1",
       path: "analysis.py",
     });
-    expect(await audits(w.team, "run.editor_run")).toEqual([
+    expect(await auditsN(w.team, "run.editor_run", 1)).toEqual([
       { userId: w.owner.id, threadId: w.threadId, runId, toolCallId: "call-1", status: "ok" },
     ]);
   });
@@ -329,6 +343,10 @@ describe("editor_run (KOBE-848)", { timeout: 60_000 }, () => {
     // A frame without the allowed check runs nothing.
     const direct = await editorRun(sb, w, runId, "call-o", { path: "other.py" });
     expect((direct as { error?: { code: string } }).error?.code).toBe("not_allowed");
+    // Refusals are audited too.
+    await expect
+      .poll(async () => (await audits(w.team, "run.editor_run")).map((t) => t.status))
+      .toEqual(["refused"]);
     const w2 = await world();
     const sb2 = await connected(w2);
     const run2 = await agentRun(w2, null);
@@ -362,7 +380,12 @@ describe("editor_read (KOBE-848)", { timeout: 60_000 }, () => {
     const log = await editorRead(sb, w, runId, "r2", "log");
     expect((log as { text: string }).text).toContain("Runs of analysis.py, newest first:\n- ");
     const vars = await editorRead(sb, w, runId, "r3", "variables");
-    expect((vars as { text: string }).text).toContain("- total: int = 42");
+    const varsText = (vars as { text: string }).text;
+    expect(varsText).toContain("- total: int = 42");
+    // Default off: the token in `x` is withheld, and the result says values were withheld.
+    expect(varsText).toContain("- x: str (len 17) (value not shown to the agent)");
+    expect(varsText).not.toContain("sk-proj");
+    expect(varsText).toContain("Values of strings, bytes and containers are withheld");
     expect((vars as { text: string }).text).toContain(
       "- api_key: str (len 32) = (value hidden: credential-like name)",
     );
@@ -370,7 +393,7 @@ describe("editor_read (KOBE-848)", { timeout: 60_000 }, () => {
     expect(sb.frames("notebook.inspect")).toEqual([
       expect.not.objectContaining({ show: expect.anything(), refresh: expect.anything() }),
     ]);
-    expect((await audits(w.team, "run.editor_read")).map((t) => t.what)).toEqual([
+    expect((await auditsN(w.team, "run.editor_read", 4)).map((t) => t.what)).toEqual([
       "output",
       "output",
       "log",
@@ -381,12 +404,75 @@ describe("editor_read (KOBE-848)", { timeout: 60_000 }, () => {
     // Ids and the tab only: no path, value or output field (a random id may contain "42").
     for (const target of await audits(w.team, "run.editor_read")) {
       expect(Object.keys(target).sort()).toEqual([
+        "outcome",
         "runId",
         "threadId",
         "toolCallId",
         "userId",
         "what",
       ]);
+    }
+    expect((await audits(w.team, "run.editor_read")).map((t) => t.outcome)).toEqual([
+      "ok",
+      "ok",
+      "ok",
+      "ok",
+    ]);
+  });
+
+  it("shows string and container values only when the team's setting turns them on", async () => {
+    const w = await world();
+    const sb = await connected(w);
+    const runId = await agentRun(w, "analysis.py");
+    const read = async (id: string) =>
+      ((await editorRead(sb, w, runId, id, "variables")) as { text: string }).text;
+    expect(await w.owner.browser.get("/v1/team/policy/agent-variable-values")).toMatchObject({
+      status: 200,
+      json: { site: false, team: null, effective: false },
+    });
+    const on = await w.owner.browser.put("/v1/team/policy/agent-variable-values", {
+      enabled: true,
+    });
+    expect(on).toMatchObject({ status: 200, json: { site: false, team: true, effective: true } });
+    const shown = await read("v1");
+    expect(shown).toContain("- x: str (len 17) = 'sk-proj-TOKEN1234'");
+    expect(shown).not.toContain("are withheld");
+    // Credential-like names stay hidden even then.
+    expect(shown).toContain("- api_key: str (len 32) = (value hidden: credential-like name)");
+    const follow = await w.owner.browser.put("/v1/team/policy/agent-variable-values", {
+      enabled: null,
+    });
+    expect(follow.json).toMatchObject({ team: null, effective: false });
+    expect(await read("v2")).toContain("(value not shown to the agent)");
+    expect(
+      (await w.owner.browser.put("/v1/team/policy/agent-variable-values", { enabled: "yes" }))
+        .status,
+    ).toBe(400);
+    expect(await audits(w.team, "policy.agent_variable_values.updated")).toEqual([
+      { scope: "team", enabled: true },
+      { scope: "team", enabled: null },
+    ]);
+  });
+
+  it("the Site sets the default a team follows; only Site admins change it", async () => {
+    const w = await world();
+    expect(
+      (await w.owner.browser.put("/v1/site/policy/agent-variable-values", { enabled: true }))
+        .status,
+    ).toBe(403);
+    try {
+      expect(
+        await siteAdmin.browser.put("/v1/site/policy/agent-variable-values", { enabled: true }),
+      ).toMatchObject({ status: 200, json: { enabled: true } });
+      expect(
+        (await w.owner.browser.get("/v1/team/policy/agent-variable-values")).json,
+      ).toMatchObject({ site: true, team: null, effective: true });
+      await w.owner.browser.put("/v1/team/policy/agent-variable-values", { enabled: false });
+      expect(
+        (await w.owner.browser.get("/v1/team/policy/agent-variable-values")).json,
+      ).toMatchObject({ site: true, team: false, effective: false });
+    } finally {
+      await siteAdmin.browser.put("/v1/site/policy/agent-variable-values", { enabled: false });
     }
   });
 
@@ -421,7 +507,9 @@ describe("concurrency with the member's Run (KOBE-848)", { timeout: 60_000 }, ()
     expect(sb.frames("notebook.interrupt")).toHaveLength(1);
     release();
     expect(await pending).toMatchObject({ ok: true, status: "interrupted" });
-    expect((await audits(w.team, "run.editor_run")).map((t) => t.status)).toEqual(["interrupted"]);
+    expect((await auditsN(w.team, "run.editor_run", 1)).map((t) => t.status)).toEqual([
+      "interrupted",
+    ]);
     must(sb.frames("notebook.execute")[0], "execute");
   });
 });

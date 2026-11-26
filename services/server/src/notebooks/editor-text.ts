@@ -108,7 +108,27 @@ export function preview(value: string): string {
   return `${chars.slice(0, EDITOR_PREVIEW_MAX_CHARS - 1).join("")}…`;
 }
 
-function variableLine(v: NotebookVariable): string {
+/**
+ * Built-in scalar types whose value the agent always gets (KOBE-848 review M1, Chris
+ * 2026-11-26): numbers, bools and None. Any other value (strings, bytes, containers, library
+ * objects) only when the team's setting turns values on.
+ */
+const ALWAYS_SHOWN_TYPES: ReadonlySet<string> = new Set([
+  "int",
+  "float",
+  "complex",
+  "bool",
+  "NoneType",
+]);
+
+export const VALUE_WITHHELD = "(value not shown to the agent)";
+export const VALUES_WITHHELD_NOTE =
+  "Values of strings, bytes and containers are withheld from you (a team setting turns them on); only numbers, booleans and None show their values. Do not try to read the withheld values another way unless the user asks you to.";
+
+const alwaysShown = (v: NotebookVariable): boolean =>
+  v.module === undefined && ALWAYS_SHOWN_TYPES.has(v.type);
+
+function variableLine(v: NotebookVariable, values: boolean): { line: string; withheld: boolean } {
   const type = v.module === undefined ? v.type : `${v.module}.${v.type}`;
   const facts: string[] = [];
   if (v.shape !== undefined) facts.push(`shape ${JSON.stringify(v.shape)}`);
@@ -117,10 +137,16 @@ function variableLine(v: NotebookVariable): string {
   if (v.columns_total !== undefined) facts.push(`${v.columns_total} columns`);
   const head = `- ${v.name.slice(0, 100)}: ${type.slice(0, 100)}${facts.length > 0 ? ` (${facts.join(", ")})` : ""}`;
   if (v.hidden === "name" || (v.hidden !== undefined && v.hidden !== "keys")) {
-    return `${head} = (value hidden: credential-like name)`;
+    return { line: `${head} = (value hidden: credential-like name)`, withheld: false };
   }
-  if (v.repr === "") return v.repr_error === undefined ? head : `${head} (value not shown)`;
-  return `${head} = ${preview(v.repr)}`;
+  if (v.repr === "") {
+    return {
+      line: v.repr_error === undefined ? head : `${head} (value not shown)`,
+      withheld: false,
+    };
+  }
+  if (!values && !alwaysShown(v)) return { line: `${head} ${VALUE_WITHHELD}`, withheld: true };
+  return { line: `${head} = ${preview(v.repr)}`, withheld: false };
 }
 
 const MISSING: Readonly<Record<"no_kernel" | "busy" | "unavailable", string>> = {
@@ -129,14 +155,20 @@ const MISSING: Readonly<Record<"no_kernel" | "busy" | "unavailable", string>> = 
   unavailable: "The kernel did not answer in time; the variables are not available now.",
 };
 
-export function variablesText(result: NotebookVariablesResult): EditorText {
+/**
+ * `values`: the team's setting (default off): string, bytes and container values only when on.
+ * The text says when values were withheld, so the model knows.
+ */
+export function variablesText(result: NotebookVariablesResult, values = false): EditorText {
   if (result.status !== "ok") return { text: MISSING[result.status], truncated: false };
   const shown = result.variables.slice(0, EDITOR_VARIABLES_MAX);
   const lines = [
     `Variables in the kernel (execution count ${result.execution_count ?? "none"}${result.stale === true ? `, taken at ${result.taken_at} before the latest code ran` : ""}):`,
   ];
   if (shown.length === 0) lines.push("(none)");
-  lines.push(...shown.map(variableLine));
+  const described = shown.map((v) => variableLine(v, values));
+  if (described.some((d) => d.withheld)) lines.push(VALUES_WITHHELD_NOTE);
+  lines.push(...described.map((d) => d.line));
   const rest = result.variables.length - shown.length;
   if (rest > 0) lines.push(`(${rest} more not shown)`);
   const others = result.other.slice(0, EDITOR_VARIABLES_MAX);

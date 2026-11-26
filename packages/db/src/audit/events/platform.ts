@@ -126,6 +126,14 @@ export const PLATFORM_EVENTS = {
   }),
   /** The site floor's or a team's limits on remembered approvals were saved (KOBE-289). */
   "policy.remember_limits.updated": event("any", rememberLimits),
+  /**
+   * The Site default or a team's choice of whether `editor_read` shows the agent the values of
+   * strings, bytes and containers (KOBE-848); `enabled: null` = the team follows the Site.
+   */
+  "policy.agent_variable_values.updated": event("any", {
+    scope: z.enum(["site", "team"]),
+    enabled: z.boolean().nullable(),
+  }),
   "policy.settings.updated": event("site", {
     setting: z.enum(["prompt_sandbox_writes"]),
     value: z.boolean(),

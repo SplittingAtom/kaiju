@@ -1,17 +1,20 @@
-import { SYSTEM_ACTOR, withTeam, type KaijuDb } from "@kaiju/db";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import {
   CAPABILITY_NOTEBOOKS,
   EDITOR_LOG_MAX_ENTRIES,
   NOTEBOOK_INSPECT_TIMEOUT_MS,
   notebookInspectResultSchema,
-  workspaceToolPath,
 } from "@kaiju/protocol";
 import { type EditorReadFrame, type ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
-import { recordAudit } from "../audit/record.js";
+import { readTeamAgentVariableValues } from "../notebooks/agent-variable-values.js";
+import { VARIABLES_RATE_LIMIT } from "../notebooks/variables.js";
+import { editorToolTarget } from "../policy/editor-file-guard.js";
+import { hitRateLimit } from "../rate-limit.js";
 import { logText, outputText, variablesText, type EditorText } from "../notebooks/editor-text.js";
 import { readOutputs } from "../notebooks/execution.js";
 import { fileExecutions } from "../notebooks/history.js";
+import type { AuditEditor } from "./editor-audit.js";
 import type { ToolFrameSpec } from "./gated-frame.js";
 import { COMMAND_FAILURES, type CommandOutcome, type SandboxTarget } from "./types.js";
 
@@ -27,12 +30,16 @@ import { COMMAND_FAILURES, type CommandOutcome, type SandboxTarget } from "./typ
  *   (KOBE-816: no member code; credential-like names withheld in the sandbox; never `show`,
  *   never `refresh`, nothing stored). Never starts a kernel.
  *
- * Audited as `run.editor_read` (which tab, never content). Never in a skill eval's sandbox.
+ * Audited as `run.editor_read` (which tab and its outcome, refusals included; never content).
+ * Never in a skill eval's sandbox. Variable values beyond numbers, bools and None only when the
+ * team's `agent_variable_values` setting is on; variable reads are rate limited.
  */
 export interface EditorReadConnection {
   readonly db: KaijuDb;
   readonly target: SandboxTarget;
   readonly log: Pick<Logger, "error" | "warn">;
+  /** Records `run.editor_read`. */
+  readonly auditEditor: AuditEditor;
   /** A variables snapshot of the thread's kernel on this connection. */
   readonly inspect: (
     threadId: string,
@@ -78,11 +85,16 @@ export function editorReadSpec(c: EditorReadConnection): ToolFrameSpec<EditorRea
     allowance: "consume",
     beforeRun(frame) {
       if (c.target.evalThreadId === undefined) return false;
+      auditRead(c, frame, "refused");
       answerer(frame)(refused("not_allowed", "Skill evals never read the member's editor."));
       return true;
     },
     refuse(frame, refusal) {
-      const answer = answerer(frame);
+      const send = answerer(frame);
+      const answer = (out: Answer) => {
+        auditRead(c, frame, "refused");
+        send(out);
+      };
       switch (refusal.stage) {
         case "capability":
           answer(refused("not_allowed", "This sandbox did not announce notebooks."));
@@ -115,13 +127,17 @@ export function editorReadSpec(c: EditorReadConnection): ToolFrameSpec<EditorRea
           c.log.error({ err, run_id: frame.run_id }, "editor.read failed");
           return refused("storage_failed", "The run pane could not be read. Try again.");
         })
-        .then(answerer(frame));
+        .then((out) => {
+          auditRead(c, frame, out.ok ? "ok" : out.code === "storage_failed" ? "failed" : "refused");
+          answerer(frame)(out);
+        });
     },
   };
 }
 
 export async function readEditor(c: EditorReadConnection, frame: EditorReadFrame): Promise<Answer> {
-  const path = workspaceToolPath(frame.input.path);
+  // The same normalisation as the policy check's editor-file guard (`/workspace/./a.py` is a.py).
+  const path = editorToolTarget(frame.input);
   if (path === undefined) return refused("invalid_path", "Name a file under /workspace.");
   const { teamId } = c.target;
   const what = frame.input.what;
@@ -143,11 +159,20 @@ export async function readEditor(c: EditorReadConnection, frame: EditorReadFrame
       answer = { ok: true, ...outputText(path, newest, outputs) };
     }
   }
-  if (answer.ok) await auditRead(c, frame);
   return answer;
 }
 
+/**
+ * KOBE-848 review: at most {@link VARIABLES_RATE_LIMIT} snapshots per member per minute (each runs
+ * introspection in their kernel), counted apart from the owner's own Variables tab; values of
+ * strings, bytes and containers only when the team's setting allows them (default off).
+ */
 async function readVariables(c: EditorReadConnection, threadId: string): Promise<Answer> {
+  const { teamId, userId } = c.target;
+  if (!(await hitRateLimit(c.db, `editor-read-variables:${userId}`, VARIABLES_RATE_LIMIT))) {
+    return refused("rate_limited", "Too many variable reads; wait a minute, then read them again.");
+  }
+  const values = (await readTeamAgentVariableValues(c.db, teamId)).effective;
   const outcome = await c.inspect(
     threadId,
     NOTEBOOK_INSPECT_TIMEOUT_MS,
@@ -172,28 +197,21 @@ async function readVariables(c: EditorReadConnection, threadId: string): Promise
     c.log.warn({ thread_id: threadId }, "the sandbox sent a malformed variables snapshot");
     return { ok: true, ...variablesText({ status: "unavailable" }) };
   }
-  return { ok: true, ...variablesText(parsed.data) };
+  return { ok: true, ...variablesText(parsed.data, values) };
 }
 
-/** `run.editor_read`: which tab, never content; a failed audit is logged, the read stands. */
-async function auditRead(c: EditorReadConnection, frame: EditorReadFrame): Promise<void> {
-  const { teamId, userId } = c.target;
-  try {
-    await withTeam(c.db, teamId, (tx) =>
-      recordAudit(tx, {
-        action: "run.editor_read",
-        actor: SYSTEM_ACTOR,
-        teamId,
-        target: {
-          userId,
-          threadId: frame.thread_id,
-          runId: frame.run_id,
-          toolCallId: frame.tool_call_id,
-          what: frame.input.what,
-        },
-      }),
-    );
-  } catch (err) {
-    c.log.error({ err, run_id: frame.run_id }, "could not audit run.editor_read");
-  }
+/** `run.editor_read`: which tab and how it went, never content. */
+function auditRead(
+  c: EditorReadConnection,
+  frame: EditorReadFrame,
+  outcome: "ok" | "refused" | "failed",
+): void {
+  c.auditEditor(c.target, {
+    action: "run.editor_read",
+    threadId: frame.thread_id,
+    runId: frame.run_id,
+    toolCallId: frame.tool_call_id,
+    what: frame.input.what,
+    outcome,
+  });
 }

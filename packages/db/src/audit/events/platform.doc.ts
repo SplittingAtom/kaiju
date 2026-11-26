@@ -15,6 +15,10 @@ export const PLATFORM_EVENT_DOCS = {
       "`backupCreatedAt`, `tables`, `rows`, `operator`, `auditHeadSeq?`, `auditHeadHash?`, `replacedAuditHeadSeq?`, `replacedAuditHeadHash?`, `replacedAuditRows?`",
     when: "`kaiju restore` loaded and verified a backup (system, same transaction)",
   },
+  "policy.agent_variable_values.updated": {
+    fields: "`scope` (site, team), `enabled` (null: the team follows the Site default)",
+    when: "The Site default or a team's choice of whether the agent's `editor_read` shows string, bytes and container values was saved (KOBE-848)",
+  },
   "policy.dangerous_mode.applied": {
     fields:
       "`runId`, `toolCallId`, `tool`, `agentId?`, `agentVersion?`, `enforcementPoint` (sandbox, mcp_proxy)",

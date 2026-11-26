@@ -288,7 +288,12 @@ exports[`tool frame gate: editor.read > refuses a call the policy check did not 
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_read",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [],
   "executed": false,
@@ -309,7 +314,12 @@ exports[`tool frame gate: editor.read > refuses a call the policy check did not 
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_read",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [],
   "executed": false,
@@ -330,7 +340,12 @@ exports[`tool frame gate: editor.read > refuses for a compaction run (KOBE-213) 
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_read",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [
     "run_not_active",
@@ -353,7 +368,12 @@ exports[`tool frame gate: editor.read > refuses for a run that has ended 1`] = `
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_read",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [
     "run_not_active",
@@ -376,7 +396,12 @@ exports[`tool frame gate: editor.read > refuses without the notebooks capability
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_read",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [],
   "executed": false,
@@ -1426,7 +1451,12 @@ exports[`tool frame gate: notebook.run > refuses a call the policy check did not
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_run",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [],
   "executed": false,
@@ -1468,7 +1498,12 @@ exports[`tool frame gate: notebook.run > refuses a call the policy check did not
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_run",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [],
   "executed": false,
@@ -1512,7 +1547,12 @@ exports[`tool frame gate: notebook.run > refuses for a compaction run (KOBE-213)
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_run",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [
     "run_not_active",
@@ -1558,7 +1598,12 @@ exports[`tool frame gate: notebook.run > refuses for a run that has ended 2`] = 
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_run",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [
     "run_not_active",
@@ -1602,7 +1647,12 @@ exports[`tool frame gate: notebook.run > refuses without the notebooks capabilit
       "v": 1,
     },
   ],
-  "audits": [],
+  "audits": [
+    {
+      "kind": "run.editor_run",
+      "reason": "refused",
+    },
+  ],
   "closed": undefined,
   "errors": [],
   "executed": false,

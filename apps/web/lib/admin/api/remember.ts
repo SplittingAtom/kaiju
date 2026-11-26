@@ -122,3 +122,43 @@ export async function putTimeZone(timeZone: string | null): Promise<ApiResult<st
   });
   return res.ok ? { ...res, data: res.data.timeZone } : res;
 }
+
+/**
+ * KOBE-848: whether the agent's `editor_read` shows variable values (strings, bytes, containers)
+ * in a team. Off by default; the Site sets the default, a team chooses on, off or `null` (follow).
+ */
+export interface TeamAgentVariableValues {
+  readonly site: boolean;
+  readonly team: boolean | null;
+  readonly effective: boolean;
+}
+
+export function getTeamAgentVariableValues(
+  teamId: string,
+): Promise<ApiResult<TeamAgentVariableValues>> {
+  return apiRequest("/v1/team/policy/agent-variable-values", { teamId });
+}
+
+export function putTeamAgentVariableValues(
+  teamId: string,
+  enabled: boolean | null,
+): Promise<ApiResult<TeamAgentVariableValues>> {
+  return apiRequest("/v1/team/policy/agent-variable-values", {
+    method: "PUT",
+    json: { enabled },
+    teamId,
+  });
+}
+
+export function getSiteAgentVariableValues(): Promise<ApiResult<{ readonly enabled: boolean }>> {
+  return apiRequest("/v1/site/policy/agent-variable-values");
+}
+
+export function putSiteAgentVariableValues(
+  enabled: boolean,
+): Promise<ApiResult<{ readonly enabled: boolean }>> {
+  return apiRequest("/v1/site/policy/agent-variable-values", {
+    method: "PUT",
+    json: { enabled },
+  });
+}

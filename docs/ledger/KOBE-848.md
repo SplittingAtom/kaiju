@@ -38,8 +38,8 @@ started this run" with a Stop button while it runs.
 
 **Authorization.** `editor_run`: `source kaiju, risk write, scope kaiju`. Kaiju-scoped writes
 prompt in `ask-on-write` (the default) and are a floor Dangerous mode does not lift; the member
-can approve once or remember; `auto` and scheduled runs deny it unless a team allow rule lists
-it; deny/ask rules and `tools.deny` apply as usual. `editor_read`: `risk read, scope kaiju`, no
+can approve once or remember; `auto` runs deny it unless a team allow rule lists it, scheduled
+runs always (no viewed file, so the guard refuses); deny/ask rules and `tools.deny` apply as usual. `editor_read`: `risk read, scope kaiju`, no
 prompt. Both are denied in skill-eval runs (`eval_run_isolated`): they target the member's files
 and kernel. `run_python` stays as it was (sandbox scope, no default prompt): see question 1.
 
@@ -83,8 +83,20 @@ the tool answers "not available on this sandbox yet". No migration.
   category would have needed the web audit filter list too. `what` is classified as a Site-view
   key (which tab, no content). Audits are written after the action in their own transaction; a
   failed audit is logged and the answer stands (the execution already happened in the sandbox).
-- **Variables to the model** (brief overrides KOBE-803's "never to the model"): only the
-  KOBE-816 snapshot (no member code ran), previews cut to 80 characters, hidden names say so.
+- **Variables to the model** (security review M1; Chris, 2026-11-26): by default only names,
+  types, `len`, `shape`, `dtype` and the values of exact `int`/`float`/`complex`/`bool`/`None`;
+  every other value reads "(value not shown to the agent)" and the result says values were
+  withheld. A team setting **Agent and kernel variables** (`teams.settings.agent_variable_values`,
+  `null` = follow the Site default in `site_settings` `notebooks.agent_variable_values`, default
+  off; stored and audited like the remember limits, `policy.agent_variable_values.updated`; routes
+  `/v1/{site,team}/policy/agent-variable-values`; console forms on both Policy pages) turns string,
+  bytes and container previews on, 80-character cap and credential-name hiding kept.
+- **Review lows fixed:** the actions normalise the path like the guard (`/workspace/./a.py` runs
+  and uses its one approval); agent variable reads are rate limited (60/min/member, the owner
+  route's limit, own key); `run.editor_run` adds `status: refused` and `run.editor_read` an
+  `outcome` (ok, refused, failed), written for gate refusals and failures too.
+- **Accepted (review L1):** the approval binds the path and timeout, not the file's content when
+  it runs, as for other path-based tool approvals (`run_python {path}`, `open_file`).
 - **File links:** `editor_run` / `editor_read` link the thread to the file as `read` (they change
   no file), unlike `run_python` (`write`, it can save notebook outputs).
 - **Web:** no new store or route: agent executions of the file were already in the run pane;
@@ -96,16 +108,16 @@ the tool answers "not available on this sandbox yet". No migration.
 ## Open questions (for Chris or the coordinator)
 
 1. `run_python {path}` can already run any workspace `.py` (including the open one) without a
-   default prompt (sandbox scope, decided 2026-10-03). `editor_run` asks by default as the brief
-   says. Should `run_python {path}` on the viewed file ask too, for consistency?
-2. KOBE-803 decided variables never reach the model; this ticket asks for names, types and short
-   previews. Built as asked, with KOBE-816's withholding of credential-like names kept.
+   default prompt (sandbox scope, decided 2026-10-03), while `editor_run` asks. Left unchanged on
+   the coordinator's default, following the security reviewer's recommendation (a prompt there is
+   trivially sidestepped with `code` or bash); still open for Chris.
 
 ## Docs
 
 Member guide `files/notebooks.md` (new "The agent and the file you have open"), `file-editor.md`
 (pointer); for agents `working-in-a-sandbox.md` (tool table, a paragraph on the open script) and
-`concepts.md` (Kernel); `docs/approvals.md`; `docs/audit-log.md` regenerated. The model-facing
+`concepts.md` (Kernel); admin `site-admin.md` and `team-admin.md` (the variables setting);
+`docs/approvals.md`; `docs/audit-log.md` regenerated. The model-facing
 tool descriptions and guidelines are in `kaiju-tools/editor-tools.ts`.
 
 ## Evidence (acceptance criteria → test or command output)
@@ -128,3 +140,9 @@ tool descriptions and guidelines are in `kaiju-tools/editor-tools.ts`.
   web 4498, sandbox-agent 1464 (real-Pi suites ran), guide 33; server DB suite 3795 (one
   failure was this ticket's own test needle, a "42" inside a random id; fixed, 9/9 three times);
   hygiene, wording, rename guard ok. No migration, so no db:check.
+- Review fixes (2026-11-26): unit protocol 1410, db 1119, server 4705, web 4500, sandbox-agent
+  1464, guide 33; server DB suite 3797; lint, typecheck, format, hygiene, wording, rename guard
+  ok. New tests: `editor-text.test.ts` (values withheld by default, a token in `x` withheld, on
+  shows previews), DB "shows string and container values only when the team's setting turns them
+  on", "the Site sets the default...", `/workspace/./analysis.py` runs, refused runs audited;
+  `policy-pages.test.tsx` (both forms); `tool-frame-gate` snapshots (refusals audited).

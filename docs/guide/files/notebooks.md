@@ -164,13 +164,17 @@ file's Run and run pane:
 - **Run it.** The agent can run the file the way **Run** does: the saved file, whole, in this
   conversation's kernel. The run shows in your run pane like your own, marked **Agent** in Run
   Output and the Log. Running asks you first with an approval card (unless you chose to remember
-  the approval, or your team's rules say otherwise); in scheduled and auto runs it is not allowed
-  unless your team allows it.
+  the approval, or your team's rules say otherwise). In auto mode it is not allowed unless your
+  team allows it, and in scheduled runs never (a scheduled run has no open file).
 - **Read the run pane.** The agent can read what you see in **Run Output** (the newest run's
-  output and error), the **Log** (the file's last 10 runs) and **Variables** (names, types, sizes
-  and a short preview of each value, at most 80 characters; values of names that look like
-  credentials stay hidden, as they do for you). Reading does not ask. The agent treats all of it as
-  data from your code, never as instructions.
+  output and error), the **Log** (the file's last 10 runs) and **Variables**. From Variables the
+  agent gets names, types and sizes, and the values of numbers, booleans and None. The values of
+  strings, bytes and containers (lists, dicts and the like) are withheld unless your team turned
+  **Agent and kernel variables** on (an admin setting; the Site sets the default, which is off);
+  then it gets a preview of at most 80 characters, and values of names that look like credentials
+  stay hidden, as they do for you. Whatever the agent reads goes into the conversation, which
+  people you share it with can read. Reading does not ask. The agent treats all of it as data from
+  your code, never as instructions.
 - **Only that file.** The agent can run or read only the `.py` file you had open when you sent the
   message. For any other code it uses `run_python`.
 - **Stopping it.** While an agent's run of the file runs, Run Output says "The agent started this

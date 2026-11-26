@@ -109,5 +109,35 @@ export const EDITOR_READ_ERROR_CODES = [
   "not_allowed",
   "invalid_path",
   "variables_unsupported", // the agent takes no variable snapshots (no `notebook_inspect`)
+  "rate_limited", // too many variable reads (the owner route's limit, counted apart)
   "storage_failed",
 ] as const;
+
+// ----------------------------------------------------------------- variable values (KOBE-848 M1)
+
+/**
+ * Whether `editor_read {what: "variables"}` shows the agent the values of strings, bytes and
+ * containers (Chris, 2026-11-26). Off by default: the agent then gets names, types, lengths,
+ * shapes and dtypes, and only the values of numbers, bools and None; the result says when values
+ * were withheld. On: an 80-character preview of each value, credential-like names still hidden.
+ * The Site sets the default; a team turns it on or off, or follows the Site (`null`).
+ */
+export const DEFAULT_AGENT_VARIABLE_VALUES = false;
+
+/** `GET`/`PUT /v1/site/policy/agent-variable-values`: the Site default. */
+export const siteAgentVariableValuesSchema = z.strictObject({ enabled: z.boolean() });
+export type SiteAgentVariableValues = z.infer<typeof siteAgentVariableValuesSchema>;
+
+/** `PUT /v1/team/policy/agent-variable-values`: on, off, or `null` to follow the Site default. */
+export const teamAgentVariableValuesBodySchema = z.strictObject({
+  enabled: z.boolean().nullable(),
+});
+export type TeamAgentVariableValuesBody = z.infer<typeof teamAgentVariableValuesBodySchema>;
+
+/** `GET /v1/team/policy/agent-variable-values` (and the `PUT` answer). */
+export const teamAgentVariableValuesSchema = z.strictObject({
+  site: z.boolean(),
+  team: z.boolean().nullable(),
+  effective: z.boolean(),
+});
+export type TeamAgentVariableValues = z.infer<typeof teamAgentVariableValuesSchema>;

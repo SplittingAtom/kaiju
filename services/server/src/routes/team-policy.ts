@@ -2,7 +2,11 @@ import { Hono } from "hono";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { parseRuleBody, ruleIdParam, ruleLimitReached, ruleNotFound } from "../policy/http.js";
-import { rememberLimitsSchema } from "@kaiju/protocol";
+import { rememberLimitsSchema, teamAgentVariableValuesBodySchema } from "@kaiju/protocol";
+import {
+  readTeamAgentVariableValues,
+  writeTeamAgentVariableValues,
+} from "../notebooks/agent-variable-values.js";
 import {
   readTeamRememberLimits,
   writeTeamRememberLimits,
@@ -31,6 +35,9 @@ import { invalidRequest, parseBody } from "../http/request.js";
  * (`/member-rules`, under the team's RLS: never another team's), and set the team's remember
  * limits (`/remember-limits`), which can only tighten the site floor's. Every member can read the
  * limits (the card offers only what they allow).
+ *
+ * KOBE-848: whether the agent's `editor_read` shows variable values in this team
+ * (`/agent-variable-values`: on, off, or `null` to follow the Site default). Members read it.
  */
 export function teamPolicyRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
@@ -112,6 +119,16 @@ export function teamPolicyRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariab
       );
     }
     return c.json(result.limits);
+  });
+
+  app.get("/agent-variable-values", requireTeamPermission("team.read"), async (c) =>
+    c.json(await readTeamAgentVariableValues(db, c.get("team").id)),
+  );
+
+  app.put("/agent-variable-values", requireTeamPermission("team.policy.manage"), async (c) => {
+    const body = await parseBody(c, teamAgentVariableValuesBodySchema);
+    if (!body) return invalidRequest(c, "Send { enabled: true, false or null }.");
+    return c.json(await writeTeamAgentVariableValues(db, c.get("team").id, body.enabled));
   });
 
   return app;

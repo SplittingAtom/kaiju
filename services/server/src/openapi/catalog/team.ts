@@ -334,6 +334,18 @@ export const teamAreas: readonly CatalogArea[] = [
       ],
       [
         "get",
+        "/v1/team/policy/agent-variable-values",
+        "Whether editor_read shows the agent variable values in this team",
+        "Team members (`team.read`).",
+      ],
+      [
+        "put",
+        "/v1/team/policy/agent-variable-values",
+        "Turn variable values for the agent on or off, or follow the Site default",
+        "Team admins (`team.policy.manage`).",
+      ],
+      [
+        "get",
         "/v1/team/policy/remember-limits",
         "Get the limits on remembered approvals",
         "Team members (`team.read`).",

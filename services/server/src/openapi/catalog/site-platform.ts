@@ -118,6 +118,18 @@ export const sitePlatformAreas: readonly CatalogArea[] = [
       ],
       ["get", "/v1/site/policy/remember-limits", "Read the site's memory remember limits", POLICY],
       ["put", "/v1/site/policy/remember-limits", "Set the site's memory remember limits", POLICY],
+      [
+        "get",
+        "/v1/site/policy/agent-variable-values",
+        "Read the default for showing variable values to the agent (editor_read)",
+        POLICY,
+      ],
+      [
+        "put",
+        "/v1/site/policy/agent-variable-values",
+        "Set the default for showing variable values to the agent (editor_read)",
+        POLICY,
+      ],
       ["get", "/v1/site/policy/rules", "List site policy rules", POLICY],
       ["post", "/v1/site/policy/rules", "Add a site policy rule", POLICY],
       [

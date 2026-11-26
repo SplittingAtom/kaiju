@@ -21,7 +21,9 @@ import { NotebookRunError, type NotebookRunHost } from "./user-run.js";
  * The agent keeps the snapshot it took after the member's last run and answers from it while code
  * runs (`stale`) or when nothing ran since; `refresh` asks for a fresh one when the kernel is idle.
  * KOBE-816: the sandbox withholds values of credential-like names (`hidden`); `show` (the owner's
- * Show) asks for that one variable, not withheld, through the same owner-only path.
+ * Show) asks for that one variable, not withheld, through the same owner-only path. KOBE-848:
+ * the agent's `editor_read` takes its own snapshot (never `show`), rate limited apart, and shows
+ * values beyond numbers, bools and None only with the team's `agent_variable_values` setting.
  */
 /** Snapshots per member per minute: each runs code in their kernel. */
 export const VARIABLES_RATE_LIMIT = { windowMs: 60_000, max: 60 };

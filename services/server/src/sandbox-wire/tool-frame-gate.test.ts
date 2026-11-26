@@ -289,6 +289,8 @@ function harness(opts: HarnessOptions = {}) {
     auditFileShareRefused: audit("file.share"),
     auditSkillDraftRefused: audit("skill.draft"),
     auditMemoryRefused: audit("memory"),
+    auditEditor: (_t: unknown, e: { action: string; status?: string; outcome?: string }) =>
+      audits.push({ kind: e.action, reason: e.status ?? e.outcome }),
     auditTokenRejected: () => undefined,
     auditLimit: () => undefined,
     localResult: () => undefined,
