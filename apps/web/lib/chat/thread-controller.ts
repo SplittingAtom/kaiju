@@ -180,6 +180,9 @@ export class ThreadController {
   readonly threadContextMemories = () =>
     this.#ofThread((id) => this.#api.threadContextMemories(id));
 
+  /** This thread's conversation stats (KOBE-842); null for a draft. */
+  readonly threadStats = () => this.#ofThread((id) => this.#api.threadStats(id));
+
   /** How this thread's runs ended and its approvals were decided (KOBE-209); null for a draft. */
   readonly threadMarkers = () => this.#ofThread((id) => this.#api.threadMarkers(id));
 

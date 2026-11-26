@@ -1,6 +1,6 @@
 "use client";
 
-import type { ThreadContext, ThreadContextMemories } from "@kaiju/protocol";
+import type { ThreadContext, ThreadContextMemories, ThreadStats } from "@kaiju/protocol";
 import {
   createContext,
   useCallback,
@@ -30,6 +30,7 @@ import type { Panel } from "../../lib/shell/panels";
 import { useKaijuExtras } from "../chat/kaiju-runtime";
 import { ContextBoundary } from "./context-boundary";
 import { ContextStack } from "./context-stack";
+import { ContextStats, useStatsRead } from "./context-stats";
 import { ContextText } from "./context-text";
 import { IconAction } from "./icon-action";
 import { WorkspacePanel } from "./workspace-panel";
@@ -239,23 +240,29 @@ function PhaseLine({ phase, onRetry }: { readonly phase: Phase; readonly onRetry
  * `ContextViewerHost` beside the workspace grid as the Threads panel is, so it covers the window. The text takes two thirds of the width; the stacked gauge
  * and its legend the rest (stacked above the text at phone width). A legend row filters the text
  * to its kind; Download saves what the panel holds as text (KOBE-841). Owner only: the gauge offers it
- * only on the member's own thread (the route answers 403 to anyone else).
+ * only on the member's own thread (the route answers 403 to anyone else). Conversation stats
+ * (KOBE-842) sit under the gauge and its legend, read from the database (no sandbox), so they
+ * show even while the sandbox wakes or the context cannot be read; Refresh reads them again.
  */
 export function ContextViewer({
   read,
   readMemories,
+  readStats,
   fallbackWindow,
   onClose,
 }: {
   readonly read: () => Promise<ContextRead> | null;
   /** The latest run's memories (KOBE-382); absent: not shown. */
   readonly readMemories?: () => Promise<ThreadContextMemories | null> | null;
+  /** The conversation's stats (KOBE-842); absent: not shown. */
+  readonly readStats?: () => Promise<ThreadStats | null> | null;
   /** The gauge's window (the thread's next model), used when the answer has none. */
   readonly fallbackWindow: number | null;
   readonly onClose: () => void;
 }) {
   const { phase, context, again, attempt } = useContextRead(read);
   const memories = useMemoriesRead(readMemories, attempt);
+  const stats = useStatsRead(readStats, attempt);
   const [filter, setFilter] = useState<{ context: ThreadContext; kind: GaugeKind } | null>(null);
   // A Refresh's new answer starts unfiltered.
   const shownFilter = filter !== null && filter.context === context ? filter.kind : null;
@@ -304,14 +311,20 @@ export function ContextViewer({
                 filter={shownFilter}
                 onClearFilter={() => setFilter(null)}
               />
-              <ContextStack
-                model={model}
-                selected={shownFilter}
-                memoryUnknown={context.missing.includes("memory")}
-                onPick={pick}
-              />
+              <div className={styles.side}>
+                <ContextStack
+                  model={model}
+                  selected={shownFilter}
+                  memoryUnknown={context.missing.includes("memory")}
+                  onPick={pick}
+                />
+                {readStats !== undefined && <ContextStats stats={stats} />}
+              </div>
             </div>
           </ContextBoundary>
+        )}
+        {(context === null || model === null) && readStats !== undefined && (
+          <ContextStats stats={stats} />
         )}
       </div>
     </WorkspacePanel>
@@ -354,6 +367,7 @@ export function ContextViewerHost({ children }: { readonly children: ReactNode }
         <ContextViewer
           read={controller.threadContext}
           readMemories={controller.threadContextMemories}
+          readStats={controller.threadStats}
           fallbackWindow={open.window}
           onClose={close}
         />

@@ -1,6 +1,6 @@
 ---
 title: The Context panel
-summary: How to see exactly what the model was sent in a conversation, read it formatted or raw, filter it by kind, collapse sections, check how many tokens memories use, and download it.
+summary: How to see exactly what the model was sent in a conversation, read it formatted or raw, filter it by kind, collapse sections, check how many tokens memories use, download it, and read the conversation's stats (turns, tool calls, tokens, reasoning, timing).
 section: Chat and threads
 order: 4
 audience: member
@@ -22,6 +22,8 @@ asleep) and keeps nothing. **Refresh the context** reads it again after another 
   marks matches; Enter and Shift+Enter step through them.
 - **The gauge**, on the right: the model's context window as a bar, filled by kind, with a list
   of the kinds below it, each with its tokens and its share of the window, and the free space.
+- **Conversation stats**, under the gauge's list (below the text on a phone): figures for the
+  whole conversation; see [Conversation stats](#conversation-stats).
 
 ## Formatted or Raw
 
@@ -69,6 +71,32 @@ the time of the call, the token total, and every section's heading and exact tok
 by its raw text: exactly what the panel shows you, shortened sections included, and nothing more.
 A filter or collapsed sections do not change what is saved. The file can hold your memories, files
 and tool output, so treat it like them.
+
+## Conversation stats
+
+Under the gauge's list, **Conversation stats** sums up the whole conversation, every branch
+included, to help you see where time, tokens and tool calls go. Hover over a figure's name to see
+what it means (screen readers read it after the value). The stats come from what Kaiju already
+records, not from your sandbox, so they show even while the sandbox wakes; **Refresh the context**
+reads them again. A figure Kaiju does not have reads **Not recorded**, never 0.
+
+| Group              | Figures                                                                                                                                                                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Conversation       | **Turns** (messages Kaiju answered, retries included), **Outcomes** (completed, failed, interrupted, stopped, budget stopped, in progress), **Failures by code**, **Retries**, **Compactions** (automatic or **Compact now**), **Branch summaries**, **Models** (model calls by model)             |
+| Tools              | **Tool calls**, **Failed** (calls that returned an error, refused and denied ones included), **Refused by policy** (refused without asking), **Approvals** (asked, allowed, denied, expired, waiting), **Skills used** (by skill), **Connector calls** (by connector)                              |
+| Tokens & reasoning | **Input**, **Cached input** (read from and written to the provider's prompt cache), **Output**, **Reasoning** (output tokens spent thinking; ≈ means estimated), **Thinking on** (turns with thinking on, by level), **Cost** (at the catalog's prices; **Not recorded** when no call had a price) |
+| Performance        | **First token** and **Turn duration**: the median and the 95th percentile (p95: 19 turns in 20 were faster)                                                                                                                                                                                        |
+
+Some details of a turn are kept for 7 days after it ends: **Failures by code**, **Refused by
+policy** and **First token** count only the turns still within those 7 days, and the panel says
+so when older turns are left out (or shows **Not recorded** when none are left). Token counts are
+the turns' own model calls; the title and follow-up suggestions Kaiju writes after a turn are not
+counted. Cost is the same figure the answers' footers and `/session` show.
+
+People the conversation is shared with cannot open the panel, but anyone who can read the
+conversation can read the same figures through the API (`GET /v1/threads/{id}/stats`): they are
+counts and names they can already see in the conversation, its answers' footers and its approval
+cards, never its content.
 
 ## Related
 

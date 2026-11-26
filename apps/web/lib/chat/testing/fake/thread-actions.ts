@@ -21,6 +21,7 @@ import {
   learnRoute,
   memoriesAnswer,
   organize,
+  statsAnswer,
   switchAgent,
 } from "./thread-settings";
 import { branchSummary, card, compact, lineage, setLabel } from "./thread-tree";
@@ -76,6 +77,7 @@ export function threadAction(
     return memoriesAnswer(k, thread);
   }
   if (action === "context" && method === "GET") return contextAnswer(k, thread);
+  if (action === "stats" && method === "GET") return statsAnswer(k, thread);
   if (action === "usage" && method === "GET") {
     const runs = k.threadUsage.get(thread.thread_id) ?? [];
     const latest = k.threadLatestCall.get(thread.thread_id) ?? null;

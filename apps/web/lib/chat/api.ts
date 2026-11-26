@@ -15,6 +15,7 @@ import { proposalExtras, type ProposalView } from "../files/editor-state";
 import { apiDownload, apiRequest, apiTextFile, type ApiResult, type TextFile } from "../api/client";
 import { readThreadContext, type ContextRead } from "./context-viewer";
 import { readThreadContextMemories } from "./context-memories";
+import { readThreadStats } from "./context-stats";
 import { readThreadLineage } from "./lineage";
 import { readThreadBranches, writeThreadLabel } from "./branches";
 import { readThreadEgressBlocked } from "./egress-blocked";
@@ -23,6 +24,7 @@ import type {
   ThreadContextMemories,
   ThreadEgressBlockedResponse,
   ThreadLineageResponse,
+  ThreadStats,
 } from "@kaiju/protocol";
 import type { ArtifactDetailView, ArtifactSummaryView } from "./artifacts";
 import type { BudgetStatus } from "../admin/api/budgets";
@@ -270,6 +272,8 @@ export interface ChatApi extends FileLinksApi {
   threadContext(threadId: string): Promise<ContextRead>;
   /** The memories the thread's latest run was given (KOBE-382); owner only, null on failure. */
   threadContextMemories(threadId: string): Promise<ThreadContextMemories | null>;
+  /** The conversation's stats (KOBE-842); whoever may read the thread, null on failure. */
+  threadStats(threadId: string): Promise<ThreadStats | null>;
   /** The thread's family for the lineage strip (TL1, KOBE-535); null when the read failed. */
   threadLineage(threadId: string): Promise<ThreadLineageResponse | null>;
   /** Labels and remembered-rule runs for the Conversation tree (CT2, KOBE-545); null on failure. */
@@ -525,6 +529,7 @@ export function createChatApi(teamId: string, fetchFn?: typeof fetch): ChatApi {
     threadUsage: (id) => get(`/v1/threads/${enc(id)}/usage`),
     threadContext: (id) => readThreadContext(id, teamId, fetchFn),
     threadContextMemories: (id) => readThreadContextMemories(id, teamId, fetchFn),
+    threadStats: (id) => readThreadStats(id, teamId, fetchFn),
     threadLineage: (id) => readThreadLineage(id, teamId, fetchFn),
     getThreadBranches: (id) => readThreadBranches(id, teamId, fetchFn),
     threadEgressBlocked: (id) => readThreadEgressBlocked(id, teamId, fetchFn),

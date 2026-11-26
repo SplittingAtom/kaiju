@@ -1,7 +1,7 @@
 /** A thread's agent, organization, folder, Learn, context and connectors (KOBE-717 area). */
 import { THREAD_CONTEXT_ERROR_MESSAGES } from "@kaiju/protocol";
 import type { FakeCore } from "./core";
-import { error, json, type FakeThread, type Json } from "./state";
+import { NOW, error, json, type FakeThread, type Json } from "./state";
 
 /**
  * Like the server (KOBE-46): the owner's idle thread with an agent moves to `version`, or to the
@@ -181,4 +181,55 @@ export function connectorsAnswer(k: FakeCore, threadId: string | null): Response
       enabled: !off.has(String(c.connector_id)),
     })),
   });
+}
+
+/** Empty stats (KOBE-842) for a thread, wire casing. */
+export function emptyStats(threadId: string): Json {
+  return {
+    thread_id: threadId,
+    as_of: NOW,
+    conversation: {
+      turns: 0,
+      outcomes: {
+        completed: 0,
+        failed: 0,
+        interrupted: 0,
+        cancelled: 0,
+        budget_stopped: 0,
+        in_progress: 0,
+      },
+      retries: 0,
+      compactions: 0,
+      branch_summaries: 0,
+      failures_by_code: [],
+      models: [],
+    },
+    tools: {
+      calls: 0,
+      failed: 0,
+      refused: 0,
+      approvals: { asked: 0, allowed: 0, denied: 0, expired: 0, pending: 0 },
+      skills: { uses: 0, names: [] },
+      mcp: [],
+    },
+    tokens: {
+      calls: 0,
+      input: 0,
+      output: 0,
+      cache_read: 0,
+      cache_write: 0,
+      reasoning: null,
+      reasoning_estimated: false,
+      runs_with_reasoning: 0,
+      thinking_levels: [],
+      cost_usd: 0,
+      unpriced_calls: 0,
+    },
+    performance: { first_token: null, duration: null },
+    events: { kept: 0, folded: 0 },
+  };
+}
+
+export function statsAnswer(k: FakeCore, thread: FakeThread): Response {
+  return json(200, { ...emptyStats(thread.thread_id), ...k.threadStats.get(thread.thread_id) });
 }
