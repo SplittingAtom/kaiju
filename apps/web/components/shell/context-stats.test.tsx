@@ -11,7 +11,7 @@ import { openApp } from "../chat/testing";
 import { ContextStats } from "./context-stats";
 
 /**
- * KOBE-842: the Context panel's conversation stats, under the gauge and its legend: grouped
+ * KOBE-842: the Context panel's conversation stats, in the right rail under the totals: grouped
  * definition lists, a tooltip per figure, "Not recorded" for what the server does not have, and a
  * new read with every Refresh.
  */
@@ -178,7 +178,7 @@ describe("stats in the Context panel", () => {
     return t;
   }
 
-  it("sits under the gauge's legend and reads again with Refresh", async () => {
+  it("sits in the right rail under the totals and reads again with Refresh", async () => {
     const t = thread();
     fake.threadContext.set(t, [
       { status: 200, body: contextOf([section("user_message", 100, "Hi")], { thread_id: t }) },
@@ -188,10 +188,12 @@ describe("stats in the Context panel", () => {
     const region = await within(dialog).findByRole("region", { name: "Conversation stats" });
     await waitFor(() => expect(value("turns")).toBe("7"));
     const legend = within(dialog).getByRole("list", { name: "Context by kind" });
-    // Same column as the legend, after it.
+    // The rail holds the totals then the stats (KOBE-846).
+    const rail = within(dialog).getByRole("region", { name: "Totals and stats" });
     expect(legend.closest("[data-context-stats]")).toBeNull();
     expect(legend.compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(region.parentElement).toBe(must(legend.parentElement).parentElement);
+    expect(legend.parentElement).toBe(rail);
+    expect(region.parentElement).toBe(rail);
     expect(statsReads(t)).toHaveLength(1);
     await user.click(within(dialog).getByRole("button", { name: "Refresh the context" }));
     await waitFor(() => expect(statsReads(t)).toHaveLength(2));

@@ -37,9 +37,9 @@ export function useStatsRead(read: StatsRead, attempt: number): ThreadStats | nu
 }
 
 /**
- * Conversation stats (KOBE-842) under the Context panel's gauge and legend: four groups of
- * figures, each a definition list; every figure carries a tooltip saying what it means (also
- * read out after the value). A figure Kaiju does not have reads "Not recorded", never 0.
+ * Conversation stats (KOBE-842) in the Context panel's right rail, under the totals (KOBE-846):
+ * four groups of figures, each a definition list; every figure carries a tooltip saying what it
+ * means (also read out after the value). A figure Kaiju does not have reads "Not recorded", never 0.
  */
 export function ContextStats({ stats }: { readonly stats: ThreadStats | null | undefined }) {
   if (stats === undefined) {

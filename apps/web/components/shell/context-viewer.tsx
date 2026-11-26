@@ -29,7 +29,7 @@ import { saveBytes } from "../../lib/files/save";
 import type { Panel } from "../../lib/shell/panels";
 import { useKaijuExtras } from "../chat/kaiju-runtime";
 import { ContextBoundary } from "./context-boundary";
-import { ContextStack } from "./context-stack";
+import { ContextBar, ContextTotals } from "./context-stack";
 import { ContextStats, useStatsRead } from "./context-stats";
 import { ContextText } from "./context-text";
 import { IconAction } from "./icon-action";
@@ -208,6 +208,24 @@ function ContextMemoriesList({ memories }: { readonly memories: ThreadContextMem
   );
 }
 
+/**
+ * The right rail (KOBE-846): the category totals then the conversation stats, scrolling on its own
+ * (focusable, so the keyboard can scroll it too). In the page flow at phone width.
+ */
+function Rail({ children }: { readonly children: ReactNode }) {
+  return (
+    <div
+      className={styles.rail}
+      role="region"
+      aria-label="Totals and stats"
+      tabIndex={0}
+      data-context-rail
+    >
+      {children}
+    </div>
+  );
+}
+
 function PhaseLine({ phase, onRetry }: { readonly phase: Phase; readonly onRetry: () => void }) {
   if (phase.status === "loading") {
     return (
@@ -237,12 +255,15 @@ function PhaseLine({ phase, onRetry }: { readonly phase: Phase; readonly onRetry
  * The context viewer (KOBE-471, docs/specs/context-viewer.md): what the thread's latest model call
  * sent the model, read live from the owner's sandbox. A panel over the workspace like the
  * consoles (`WorkspacePanel`: modal, Escape and Close return focus to the gauge), rendered by
- * `ContextViewerHost` beside the workspace grid as the Threads panel is, so it covers the window. The text takes two thirds of the width; the stacked gauge
- * and its legend the rest (stacked above the text at phone width). A legend row filters the text
- * to its kind; Download saves what the panel holds as text (KOBE-841). Owner only: the gauge offers it
- * only on the member's own thread (the route answers 403 to anyone else). Conversation stats
- * (KOBE-842) sit under the gauge and its legend, read from the database (no sandbox), so they
- * show even while the sandbox wakes or the context cannot be read; Refresh reads them again.
+ * `ContextViewerHost` beside the workspace grid as the Threads panel is, so it covers the window.
+ * Three columns (KOBE-846): the text on the left, the gauge as a full-height vertical bar in the
+ * middle, and a right rail with the category totals then the conversation stats; the text and the
+ * rail scroll on their own. At phone width they stack: the gauge (horizontal), the totals, the
+ * stats, then the text. A totals row filters the text to its kind; Download saves what the panel
+ * holds as text (KOBE-841). Owner only: the gauge offers it only on the member's own thread (the
+ * route answers 403 to anyone else). Conversation stats (KOBE-842) are read from the database (no
+ * sandbox), so they show even while the sandbox wakes or the context cannot be read; Refresh
+ * reads them again.
  */
 export function ContextViewer({
   read,
@@ -305,26 +326,29 @@ export function ContextViewer({
         {memories !== null && <ContextMemoriesList memories={memories} />}
         {context !== null && model !== null && (
           <ContextBoundary>
-            <div className={styles.columns}>
+            <div className={styles.columns} data-context-columns>
               <ContextText
                 sections={context.sections}
                 filter={shownFilter}
                 onClearFilter={() => setFilter(null)}
               />
-              <div className={styles.side}>
-                <ContextStack
+              <ContextBar model={model} selected={shownFilter} onPick={pick} />
+              <Rail>
+                <ContextTotals
                   model={model}
                   selected={shownFilter}
                   memoryUnknown={context.missing.includes("memory")}
                   onPick={pick}
                 />
                 {readStats !== undefined && <ContextStats stats={stats} />}
-              </div>
+              </Rail>
             </div>
           </ContextBoundary>
         )}
         {(context === null || model === null) && readStats !== undefined && (
-          <ContextStats stats={stats} />
+          <Rail>
+            <ContextStats stats={stats} />
+          </Rail>
         )}
       </div>
     </WorkspacePanel>

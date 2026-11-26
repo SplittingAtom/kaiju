@@ -1,6 +1,7 @@
 /* The context viewer (KOBE-471) inside its WorkspacePanel. Chat CSS has no preflight: sizes are
-   set here. The text column takes two thirds, the gauge the rest; under 640 px the gauge is a
-   horizontal bar above the text. Kind colours are the --kaiju-ctx-* tokens (app/theme.css); each
+   set here. Three columns (KOBE-846): the text, the gauge as a full-height bar dividing it from
+   the right rail (totals, then stats); under 720 px they stack: gauge (horizontal), totals, stats,
+   text. Kind colours are the --kaiju-ctx-* tokens (app/theme.css); each
    kind also has a pattern, so colour never tells two kinds apart alone. */
 
 .viewer {
@@ -93,15 +94,17 @@
 }
 
 .columns {
-  display: flex;
+  display: grid;
   flex: 1;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 2fr) 1.75rem minmax(16rem, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
   min-height: 0;
 }
 
 .textColumn {
   display: flex;
-  flex: 0 0 66%;
   flex-direction: column;
   gap: 0.375rem;
   min-width: 0;
@@ -227,32 +230,39 @@
   outline: 1px solid var(--kaiju-status-attention);
 }
 
-/* The right column: the gauge and its legend, the conversation stats under them (KOBE-842). */
-.side {
+/* The right rail (KOBE-846): the totals then the conversation stats, scrolling on its own. */
+.rail {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.75rem;
+  overflow-y: auto;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.rail:focus-visible {
+  outline: 2px solid var(--kaiju-composer-focus);
+  outline-offset: 1px;
+}
+
+/* The middle column: the gauge, the panel's full height, dividing the text from the rail. */
+.gauge {
+  display: flex;
   min-width: 0;
   min-height: 0;
 }
 
-.stack {
-  display: flex;
-  flex: 1 1 auto;
-  gap: 1rem;
-  min-width: 0;
-  min-height: 12rem;
-}
-
-/* Filled from the bottom: the first kind the model saw lies lowest, free space on top. */
+/* Top to bottom in the totals' order, free space the bottom segment; heights are shares. */
 .bar {
   display: flex;
-  flex: 0 0 2.5rem;
-  flex-direction: column-reverse;
+  flex: 1 1 auto;
+  flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  min-height: 12rem;
+  min-height: 8rem;
   border: 1px solid var(--kaiju-console-control-border);
   border-radius: var(--kaiju-radius-md);
   background: var(--background);
@@ -260,12 +270,12 @@
 
 .segment {
   display: block;
-  flex: 0 0 var(--share);
+  flex: 0 1 var(--share);
   min-height: 2px;
   margin: 0;
   padding: 0;
   border: 0;
-  border-top: 1px solid var(--background);
+  border-bottom: 1px solid var(--background);
   cursor: pointer;
 }
 
@@ -347,7 +357,7 @@
 
 .legend {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 0.125rem;
   min-width: 0;
@@ -403,40 +413,43 @@ button.legendRow:hover {
   white-space: nowrap;
 }
 
-@media (width < 640px) {
+/* Phone and narrow panels: one column that scrolls as a whole, in the order gauge (horizontal,
+   free space at the end), totals, stats, then the text with a height of its own. */
+@media (width < 720px) {
   .columns {
+    display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    overflow-y: auto;
   }
 
-  .textColumn {
-    flex: 1 1 auto;
-    min-height: 16rem;
-  }
-
-  /* The gauge stays above the text, the stats go below it. */
-  .side {
-    display: contents;
-  }
-
-  .stack {
+  .columns .gauge {
     flex: 0 0 auto;
-    flex-direction: column;
+    order: -2;
+  }
+
+  .columns .rail {
+    flex: 0 0 auto;
     order: -1;
-    gap: 0.5rem;
-    min-height: 0;
+    overflow: visible;
+  }
+
+  .columns .textColumn {
+    flex: 0 0 auto;
+    height: max(16rem, 70dvh);
   }
 
   .bar {
-    flex: 0 0 1.25rem;
+    flex: 1 1 auto;
     flex-direction: row;
+    height: 1.25rem;
     min-height: 0;
   }
 
   .segment {
     min-width: 2px;
     min-height: 0;
-    border-top: 0;
+    border-bottom: 0;
     border-right: 1px solid var(--background);
   }
 }
@@ -564,11 +577,11 @@ button.legendRow[data-selected] {
   box-shadow: inset 3px 0 0 var(--kind, var(--foreground));
 }
 
-.stack[data-filtered] .segment {
+.gauge[data-filtered] .segment {
   opacity: 0.3;
 }
 
-.stack[data-filtered] .segment[data-selected] {
+.gauge[data-filtered] .segment[data-selected] {
   opacity: 1;
   outline: 2px solid var(--foreground);
   outline-offset: -2px;
@@ -602,12 +615,10 @@ button.legendRow[data-selected] {
   color: var(--kaiju-ctx-syntax-meta);
 }
 
-/* Conversation stats (KOBE-842): compact groups of term/value rows under the gauge. */
+/* Conversation stats (KOBE-842): compact groups of term/value rows under the totals. */
 .stats {
-  overflow-y: auto;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   box-sizing: border-box;
-  max-height: 55%;
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: var(--kaiju-radius-md);
@@ -664,12 +675,4 @@ button.legendRow[data-selected] {
   margin: 0.25rem 0 0;
   color: var(--muted-foreground);
   font-size: 0.75rem;
-}
-
-@media (width < 640px) {
-  .stats {
-    flex: 0 0 auto;
-    max-height: none;
-    order: 1;
-  }
 }

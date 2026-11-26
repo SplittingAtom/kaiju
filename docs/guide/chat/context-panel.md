@@ -15,15 +15,23 @@ conversation is shared with cannot.
 The panel reads the context live from your sandbox when it opens (waking it first if it was
 asleep) and keeps nothing. **Refresh the context** reads it again after another message.
 
-## The two sides
+## The layout
 
-- **The text**, on the left (below the gauge on a phone): every section under a heading such as
+The panel has three columns:
+
+- **The text**, on the left: every section under a heading such as
   "System prompt · rules · 1.2k tokens", in the order the model saw them. **Search the context**
   marks matches; Enter and Shift+Enter step through them.
-- **The gauge**, on the right: the model's context window as a bar, filled by kind, with a list
-  of the kinds below it, each with its tokens and its share of the window, and the free space.
-- **Conversation stats**, under the gauge's list (below the text on a phone): figures for the
-  whole conversation; see [Conversation stats](#conversation-stats).
+- **The gauge**, in the middle: the model's context window as a bar running the panel's full
+  height, between the text and the right column. The kinds the call used are stacked from the top
+  in the same order as the totals list, each as tall as its share of the window, and the free
+  space is the bottom part. Hover over a part to see its kind and tokens.
+- **The right column**: the totals by kind (each kind with its tokens and its share of the window,
+  then the free space), followed by the **Conversation stats** for the whole conversation (see
+  [Conversation stats](#conversation-stats)). It scrolls on its own, separately from the text.
+
+On a phone or a narrow window the columns stack: the gauge as a horizontal bar on top (free space
+at its right end), then the totals, the stats, and the text last.
 
 ## Formatted or Raw
 
@@ -43,9 +51,9 @@ fast. If the panel ever cannot show a context formatted, it says so and offers *
 
 ## Filter by kind
 
-Click a kind in the gauge's list (or its part of the bar) to show only that kind in the text: its
+Click a kind in the totals list (or its part of the gauge) to show only that kind in the text: its
 part of the bar is outlined, the rest fade, and the text says "Only Memory (2 sections)" with
-**Clear filter**. Click the same kind again, or **Clear filter**, to see everything. The list's
+**Clear filter**. Click the same kind again, or **Clear filter**, to see everything. The totals'
 rows are buttons, so Tab, Enter and Space work too, and screen readers announce the change.
 
 ## Collapse sections
@@ -56,7 +64,7 @@ scan by size.
 
 ## How many tokens memories use
 
-**Memory** is always in the gauge's list with its tokens, even when the call had none (it then
+**Memory** is always in the totals list with its tokens, even when the call had none (it then
 shows 0 tokens). It adds up every memory section the model got: your saved memory, What Kaiju
 knows and the memories picked for the message. The memory tools' own definitions count under
 **Tool definitions**. After your sandbox restarted, the panel may only be able to rebuild the
@@ -74,7 +82,7 @@ and tool output, so treat it like them.
 
 ## Conversation stats
 
-Under the gauge's list, **Conversation stats** sums up the whole conversation, every branch
+Under the totals in the right column, **Conversation stats** sums up the whole conversation, every branch
 included, to help you see where time, tokens and tool calls go. Hover over a figure's name to see
 what it means (screen readers read it after the value). The stats come from what Kaiju already
 records, not from your sandbox, so they show even while the sandbox wakes; **Refresh the context**
