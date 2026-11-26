@@ -52,15 +52,17 @@ describe("thread row trash icon (KOBE-466)", () => {
     expect(cls).toContain("pointer-fine:inline-flex");
   });
 
-  it("names the action in a tooltip (ac-3)", async () => {
+  it("keeps its accessible name and shows no tooltip (ac-3, KOBE-847)", async () => {
     fake.addThread("Budget");
     openApp(fake);
     const button = await trashButton(await list(), "Budget");
-    await userEvent.setup().hover(button);
-    const tip = await waitFor(() =>
-      must(document.querySelector<HTMLElement>('[data-slot="tooltip-content"]')),
-    );
-    expect(tip.textContent).toContain("Move Budget to Trash");
+    expect(button.getAttribute("aria-label")).toBe("Move Budget to Trash");
+    const user = userEvent.setup();
+    await user.hover(button);
+    button.focus();
+    await new Promise((r) => setTimeout(r, 500));
+    expect(document.querySelector('[data-slot="tooltip-content"]')).toBeNull();
+    expect(button.getAttribute("title")).toBeNull();
   });
 
   it("moves the thread to Trash at once, without opening it (ac-2)", async () => {

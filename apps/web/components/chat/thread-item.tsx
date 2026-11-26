@@ -68,12 +68,18 @@ function ThreadItem({ archived }: { readonly archived: boolean }) {
           {archived ? (
             <>
               <ThreadListItemPrimitive.Unarchive asChild>
-                <IconAction command="restore-thread" label={`Restore ${title}`} size="sm" />
+                <IconAction
+                  command="restore-thread"
+                  label={`Restore ${title}`}
+                  size="sm"
+                  tooltip={false}
+                />
               </ThreadListItemPrimitive.Unarchive>
               <IconAction
                 command="delete-thread"
                 label={`Delete ${title} forever`}
                 size="sm"
+                tooltip={false}
                 onClick={() => {
                   if (
                     window.confirm(

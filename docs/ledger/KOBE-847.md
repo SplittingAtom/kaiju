@@ -17,10 +17,18 @@
   `thread-list-adapter.test.ts` updated; browser spec `auto-title.spec.ts` now asserts that no card
   or tooltip opens when hovering the row.
 
+## Row icon buttons (Chris: "no text box or tool tips on these items")
+
+- `IconAction` and `ActionMenu` gain `tooltip` (default `true`); the conversation rows pass
+  `tooltip={false}` for Trash, Restore, Delete forever and the ⋯ menu button, so every other
+  IconAction in the app keeps its tooltip. `aria-label`, `aria-keyshortcuts`, focus order and
+  click/keyboard behaviour are unchanged. The line-pin button lost its native `title`
+  (`aria-label` and `aria-pressed` stay).
+- Tests: trash-icon tooltip test now asserts the name and no tooltip; new `icon-action` test for
+  `tooltip={false}`.
+
 ## Kept on purpose
 
-- The icon-only action buttons at the end of a row (pin, trash, restore, ⋯, line pin) keep their
-  tooltips: they name icon-only controls, not the conversation row.
 - The server route `GET /v1/threads/{id}/card`, its protocol schema and OpenAPI entry are now
   unused by the web app; left in place (API surface, out of scope). Candidate follow-up.
 
@@ -35,4 +43,4 @@ tree. No test or guide relied on any of these.
 ## Docs evaluation
 
 Checked `docs/guide` (threads-panel.md, sharing-and-branches.md, files pages) for the hover card,
-row tooltips and "Forked from" hover: none described them. No guide change needed.
+row tooltips (icon button tooltips are not described either) and "Forked from" hover: none described them. No guide change needed.

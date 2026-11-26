@@ -125,6 +125,7 @@ export function ActionMenu({
   size = "sm",
   tabIndex,
   openSignal = 0,
+  tooltip = true,
 }: {
   /** The registry's button command (its icon); `label` names the row's object. */
   readonly trigger: CommandId;
@@ -139,6 +140,8 @@ export function ActionMenu({
   readonly tabIndex?: number | undefined;
   /** Each new value above 0 opens the menu (the tree's Shift+F10 / Menu key, KOBE-304). */
   readonly openSignal?: number | undefined;
+  /** `false` shows no tooltip on the button; its accessible name stays (KOBE-847). */
+  readonly tooltip?: boolean | undefined;
 }) {
   const items = menuItems(scope, bindings);
   // Controlled, so opening renders this again and the portal finds the chat root even when the
@@ -159,6 +162,7 @@ export function ActionMenu({
           command={trigger}
           label={label}
           size={size}
+          tooltip={tooltip}
           className={className}
           {...(tabIndex === undefined ? {} : { tabIndex })}
         />

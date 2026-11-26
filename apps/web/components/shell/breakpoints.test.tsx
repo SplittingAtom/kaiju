@@ -324,9 +324,7 @@ describe("review round 1", () => {
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
     expect(screen.getByRole("dialog", { name: "Threads" })).toBeTruthy();
     expect(document.activeElement).toBe(button);
-    // The button's tooltip (shown on focus) takes the next Escape; then the panel's.
-    await user.keyboard("{Escape}");
-    expect(screen.getByRole("dialog", { name: "Threads" })).toBeTruthy();
+    // The row button has no tooltip (KOBE-847), so the next Escape is the panel's.
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Threads" })).toBeNull());
   });

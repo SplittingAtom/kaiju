@@ -33,6 +33,17 @@ describe("IconAction", () => {
     expect(button.textContent).toBe("");
   });
 
+  it("shows no tooltip with tooltip={false} and keeps the accessible name (KOBE-847)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<IconAction command="new-thread" tooltip={false} />);
+    const button = screen.getByRole("button", { name: "New conversation" });
+    await user.hover(button);
+    act(() => button.focus());
+    act(() => vi.advanceTimersByTime(TOOLTIP_DELAY_MS * 3));
+    expect(tooltip()).toBeNull();
+  });
+
   it("opens the tooltip after 300 ms with the same name and the shortcut", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
