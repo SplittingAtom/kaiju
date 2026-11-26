@@ -69,8 +69,6 @@ describe("utility bar", () => {
     expect(
       area.getAllByRole("link").map((a) => [a.getAttribute("aria-label"), a.getAttribute("href")]),
     ).toEqual([
-      ["My memory", "/me/memory"],
-      ["My schedules", "/me/schedules"],
       ["Agents", "/agents"],
       ["Skills", "/me/skills"],
     ]);
@@ -79,6 +77,14 @@ describe("utility bar", () => {
     // Skills moved to the bar (KOBE-321).
     expect(menu.queryByRole("link", { name: /skills/i })).toBeNull();
     expect(menu.getByRole("link", { name: "Projects" }).getAttribute("href")).toBe("/me/projects");
+    // KOBE-843: My memory and My schedules moved from the bar into this menu.
+    expect(menu.getByRole("link", { name: "My memory" }).getAttribute("href")).toBe("/me/memory");
+    expect(menu.getByRole("link", { name: "My schedules" }).getAttribute("href")).toBe(
+      "/me/schedules",
+    );
+    expect(row(1).querySelector('[data-command="my-memory"], [data-command="my-schedules"]')).toBe(
+      null,
+    );
     expect(menu.getByRole("link", { name: "My approvals" }).getAttribute("href")).toBe(
       "/me/approvals",
     );

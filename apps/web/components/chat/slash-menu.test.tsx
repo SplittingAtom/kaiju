@@ -151,6 +151,19 @@ describe("the / menu lists the bound actions (ac-1)", { timeout: 30_000 }, () =>
     expect(input.value).toBe("");
   });
 
+  it("/model offers the picker's own choices: the team default by name, no 'Team default' (KOBE-840)", async () => {
+    const { t } = conversation();
+    const input = await opened(t);
+    const user = userEvent.setup();
+    await user.type(input, "/model ");
+    const choices = await screen.findByRole("listbox", { name: "model for /model" });
+    expect(
+      within(choices)
+        .getAllByRole("option")
+        .map((o) => o.getAttribute("aria-label")),
+    ).toEqual(["Kimi K2.7 Code, current", "GLM 5.3"]);
+  });
+
   it("Tab completes an argument; picking a choice runs the menu's own handler (ac-3)", async () => {
     const { t, root } = conversation();
     const input = await opened(t);

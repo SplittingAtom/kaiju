@@ -114,6 +114,11 @@ export type CommandScope =
   | "file-menu"
   /** A folder node's ⋯ menu in the Threads panel's tree (KOBE-536, TF7). */
   | "folder-menu"
+  /**
+   * An item of the bar's profile (avatar) menu (KOBE-843): a text link with the command's icon,
+   * rendered by `ProfileMenu`, not an icon of its own in the bar.
+   */
+  | "profile-menu"
   /** Keyboard and palette only (CE23, KOBE-225): no icon of its own on screen. */
   | "app";
 
@@ -164,27 +169,26 @@ export interface Command {
 export const SHORTCUTS_BOUND = true;
 
 const LIST = [
-  // Bar: the member's areas, the consoles, notifications, profile.
+  // The profile menu (KOBE-843): My memory and My schedules moved there from the bar.
   {
     id: "my-memory",
-    group: "areas",
     name: "My memory",
     icon: BrainIcon,
-    scope: "bar",
+    scope: "profile-menu",
     href: "/me/memory",
     slash: "memory",
     readOnlySafe: true,
   },
   {
     id: "my-schedules",
-    group: "areas",
     name: "My schedules",
     icon: CalendarClockIcon,
-    scope: "bar",
+    scope: "profile-menu",
     href: "/me/schedules",
     slash: "schedules",
     readOnlySafe: true,
   },
+  // Bar: the member's areas, the consoles, notifications, profile.
   {
     id: "my-agents",
     group: "areas",

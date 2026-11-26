@@ -296,9 +296,9 @@ describe(
       await waitFor(() => expect(fake.threads.get(t)?.thinking_level).toBe("off"));
       await user.selectOptions(
         within(below).getByRole("combobox", { name: "Model for this conversation" }),
-        "kimi",
+        "glm",
       );
-      await waitFor(() => expect(fake.threads.get(t)?.model).toBe("kimi"));
+      await waitFor(() => expect(fake.threads.get(t)?.model).toBe("glm"));
     });
 
     it("ac-1: on a phone they stay inline below (no fold menu), every control reachable", async () => {

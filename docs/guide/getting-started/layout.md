@@ -17,8 +17,7 @@ From left to right:
 
 - **The site name or logo.**
 - **Thread search**: type to find a conversation by its title or content.
-- **My area**: **My memory** (its **Memories** and **Notes** tabs), **My schedules**, **Agents**
-  and **Skills**.
+- **My area**: **Agents** and **Skills**.
 - **Site console**, shown only to site admins. See [Site admin overview](../admin/site-admin.md).
 - **Notifications**: scheduled runs, catalog skill and team changes, memory reviews that need
   you (see [Memory](../memory.md#memory-in-your-notifications)), Repo conversions you started (see
@@ -28,9 +27,11 @@ From left to right:
   page from its contents; **Close** or Escape takes you back to the conversation as you left it.
   Each page has its own address (`/docs/<page>`), so you can share a link to it.
 - **Dark theme**: switches between light and dark. See [Appearance](../appearance.md).
-- **Profile**: **Projects**, **My connectors**, **My approvals**, **My shared cases**,
+- **Profile** (the person icon at the right end): **Projects**, **My memory** (its **Memories** and
+  **Notes** tabs), **My schedules**, **My connectors**, **My approvals**, **My shared cases**,
   **Sign-in methods** (your organization's sign-ins linked to your account, with **Unlink**; shown
-  when your site uses single sign-on) and **Sign out**.
+  when your site uses single sign-on) and **Sign out**, each with its icon. `/memory` and
+  `/schedules` in the message box, and the command palette, open My memory and My schedules too.
 
 ## The rail
 

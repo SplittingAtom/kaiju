@@ -8,7 +8,7 @@ audience: member
 
 Memory lets the agent keep what it should know beyond one conversation: your preferences, facts
 about your work, decisions a project made. It comes in two forms, side by side on one page, **My
-memory** in the top bar (`/me/memory`):
+memory** in the profile menu at the right end of the top bar, or `/memory` (`/me/memory`):
 
 - **Memories** (the first tab): short statements, one per line, such as "Prefers answers in
   euros". You add and edit them yourself, and the agent is given them at the start of each run.
@@ -181,11 +181,14 @@ suggestion in **To review** on My memory.
 
 The **+** button shows where Learn is:
 
-| On the + button | Meaning                                                                     |
-| --------------- | --------------------------------------------------------------------------- |
-| A dot           | New messages since Kaiju last learned from this conversation                |
-| A spinner       | Kaiju is learning from it now; you can keep chatting                        |
-| A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
+| On the + button | Meaning                                                                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A red dot       | New messages since Kaiju last learned from this conversation, once the conversation uses more than 30% of its context window (the gauge under the composer) |
+| A spinner       | Kaiju is learning from it now; you can keep chatting                                                                                                        |
+| A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review                                                                                 |
+
+At 30% or below, or while the context use isn't known yet (before the first answer, or right
+after Kaiju compacted the conversation), the dot stays away, but **+** › **Memory** › **Learn from this chat** works the same.
 
 **The nudge.** The dot pulses once, as a reminder, after about 10 of your messages since Kaiju last
 learned from this conversation (or since it started), or after you correct the agent: a thumbs

@@ -8,6 +8,12 @@ audience: member
 
 What changed in the latest release, in short, with a link to the page that explains each part.
 
+## My memory and My schedules moved to the profile menu
+
+**My memory** and **My schedules** are no longer icons in the top bar: open them from the
+**Profile** menu at its right end, where every item now has an icon. Their addresses, `/memory`,
+`/schedules` and the command palette work as before. See [The Kaiju screen](getting-started/layout.md).
+
 ## Kobe is now Kaiju
 
 The product has a new name: the app, its emails, the sign-in page and this guide now say
@@ -90,6 +96,17 @@ For developers of MCP Apps: Kaiju's own names for apps are now `io.kaiju/item-ki
 `kaiju/notifications/drag-*`, and `ui/initialize` names the host `kaiju`. Apps that use the old
 names keep working with no change; they will stop being accepted in a later release. See
 [Building MCP Apps for Kaiju](building-mcp-apps.md).
+
+## The composer
+
+- The model picker shows your team's default model by name, selected, instead of "Team default".
+  See [Models](models.md).
+- The cursor is in the message box when the page opens, on **New conversation** and when you open
+  a conversation from **Threads**. The edge of the conversation glows gold while the agent waits
+  for you (an approval, an interrupted answer) and red after a run fails. See
+  [Writing messages](chat/composer.md#when-the-conversation-waits-for-you).
+- The red dot on **+** for new messages to learn from appears only once the conversation uses more
+  than 30% of its context window. See [Memory](memory.md#learn-from-this-chat).
 
 ## v1.4: git organizations
 

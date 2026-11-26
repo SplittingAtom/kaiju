@@ -58,7 +58,9 @@ test("U18: memory and the member's settings open over the thread and return to i
   await chat.open();
   await chat.ask("No tools. Reply with the single word MEMORY.");
   const thread = await chat.threadId();
-  await page.locator('[data-command="my-memory"]').click();
+  // In the profile menu since KOBE-843.
+  await page.locator('[data-command="profile"]').click();
+  await page.getByRole("link", { name: "My memory", exact: true }).click();
   const memory = page.getByRole("dialog", { name: "My memory" });
   await expect(memory).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   expect(new URL(page.url()).pathname).toBe("/me/memory");
