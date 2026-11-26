@@ -178,6 +178,9 @@ export const POLICY_REASON_CODES = [
   // KOBE-493: Pi write/edit to the run's viewed file: deny (stage site_deny) when the agent can
   // propose_file_edit, else ask (stage ask_rule); in every mode. Never remembered.
   "viewed_file",
+  // KOBE-848: editor_run / editor_read on anything but the run's viewed .py file → deny (stage
+  // site_deny), in every mode.
+  "editor_file",
   // KOBE-619 (Kaiju MCP, spec kobe-admin-mcp §6): a Kaiju admin write asks in every mode (stage
   // ask_rule), Dangerous and remembered approvals included; never remembered or approved in bulk;
   // denied where nobody can be asked (auto, scheduled, skill eval; stage approval_mode).

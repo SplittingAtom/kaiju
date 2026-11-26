@@ -39,6 +39,8 @@ export const OP_SKILL_DRAFT_SAVE = "skill.draft_save";
 export const OP_FILE_EDIT_PROPOSE = "file.edit_propose";
 export const OP_FILE_OPEN = "file.open";
 export const OP_NOTEBOOK_RUN = "notebook.run";
+/** KOBE-848: `editor_read` (`editor_run` rides {@link OP_NOTEBOOK_RUN}). */
+export const OP_EDITOR_READ = "editor.read";
 export const OPS = [
   OP_ARTIFACT_PUT,
   OP_FILE_SHARE,
@@ -50,6 +52,7 @@ export const OPS = [
   OP_FILE_EDIT_PROPOSE,
   OP_FILE_OPEN,
   OP_NOTEBOOK_RUN,
+  OP_EDITOR_READ,
 ] as const;
 
 /** Env var set to `1` by an agent that announced the `memory` capability. Read once, removed. */
@@ -123,6 +126,18 @@ export const NOTEBOOK_TIMEOUT_DEFAULT_S = 600;
 export const NOTEBOOK_TIMEOUT_MAX_S = 3600;
 /** How long past the cell's own timeout the tool waits for the server (delivery, saving). */
 export const NOTEBOOK_ANSWER_MARGIN_MS = 120_000;
+
+/**
+ * KOBE-848: `editor_run` and `editor_read`, registered with `run_python` (same capability and env
+ * var). They work only on the `.py` file the user has open in the code editor (server-checked).
+ */
+export const TOOL_EDITOR_RUN = "editor_run";
+export const TOOL_EDITOR_READ = "editor_read";
+/** Mirror packages/protocol `editor-tools.ts` (pinned by a test). */
+export const EDITOR_READ_WHATS = ["output", "log", "variables"] as const;
+export const EDITOR_READ_TEXT_MAX_BYTES = 16 * 1024;
+/** `editor_read` waits for a variables snapshot (5 s) and the trip; reads of stored runs are fast. */
+export const EDITOR_READ_TIMEOUT_MS = 30_000;
 
 export const TOOL_CREATE_ARTIFACT = "create_artifact";
 export const TOOL_UPDATE_ARTIFACT = "update_artifact";
@@ -224,6 +239,15 @@ export interface NotebookRunAnswer {
   readonly saved: { readonly path: string; readonly sha256: string } | null;
 }
 
+/** `editor_read` answer (KOBE-848): the run pane's text, unfenced (the tool fences it). */
+export interface EditorReadAnswer {
+  readonly ok: true;
+  readonly op: "editor_read";
+  readonly what: (typeof EDITOR_READ_WHATS)[number];
+  readonly text: string;
+  readonly truncated: boolean;
+}
+
 export interface MemoryPutAnswer {
   readonly ok: true;
   readonly op: "put";
@@ -278,6 +302,7 @@ export type ToolsResponse =
   | ({ readonly id: string } & FileEditAnswer)
   | ({ readonly id: string } & FileOpenAnswer)
   | ({ readonly id: string } & NotebookRunAnswer)
+  | ({ readonly id: string } & EditorReadAnswer)
   | {
       readonly id: string;
       readonly ok: true;

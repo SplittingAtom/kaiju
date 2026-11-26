@@ -19,6 +19,12 @@ import {
   notebookDocFields,
 } from "../notebook-completion.js";
 import { codePointLength } from "../semantic-memory/fields.js";
+import {
+  editorReadCallShape,
+  editorReadFailFields,
+  editorReadOkFields,
+  editorRunCallShape,
+} from "../editor-tools.js";
 import { SANDBOX_WIRE_VERSION } from "./connection.js";
 
 /**
@@ -136,17 +142,34 @@ export const notebookOutputFrameSchema = frame("notebook.output", {
   output: notebookOutputSchema,
 });
 
-/**
- * Sandbox -> server: the `run_python` call kaiju-policy let through (a path was pushed first).
- * Answered by `notebook.run_result` for the same `request_id` once the execution ended.
- */
-export const notebookRunFrameSchema = frame("notebook.run", {
+const runIds = {
   request_id: idSchema,
   run_id: uuidSchema,
   thread_id: uuidSchema,
   tool_call_id: idSchema,
-  ...notebookCallShape,
-});
+} as const;
+
+/**
+ * Sandbox -> server: the `run_python` call kaiju-policy let through (a path was pushed first), or
+ * KOBE-848's `editor_run` (the member's open `.py` file, pushed first). Answered by
+ * `notebook.run_result` for the same `request_id` once the execution ended.
+ */
+export const notebookRunFrameSchema = z.union([
+  frame("notebook.run", { ...runIds, ...notebookCallShape }),
+  frame("notebook.run", { ...runIds, ...editorRunCallShape }),
+]);
+
+/**
+ * Sandbox -> server (KOBE-848, behind `notebooks`): the `editor_read` call kaiju-policy let
+ * through. Answered by `editor.read_result` for the same `request_id`.
+ */
+export const editorReadFrameSchema = frame("editor.read", { ...runIds, ...editorReadCallShape });
+
+/** Server -> sandbox; `error.code` is open (known: `EDITOR_READ_ERROR_CODES`). */
+export const editorReadResultFrameSchema = z.union([
+  frame("editor.read_result", { request_id: idSchema, ...editorReadOkFields }),
+  frame("editor.read_result", { request_id: idSchema, ...editorReadFailFields }),
+]);
 
 /** Server -> sandbox; `error.code` is open (known: `NOTEBOOK_RUN_ERROR_CODES`). */
 export const notebookRunResultFrameSchema = z.union([
@@ -163,3 +186,5 @@ export type NotebookCompletionFrame =
 export type NotebookOutputFrame = z.infer<typeof notebookOutputFrameSchema>;
 export type NotebookRunFrame = z.infer<typeof notebookRunFrameSchema>;
 export type NotebookRunResultFrame = z.infer<typeof notebookRunResultFrameSchema>;
+export type EditorReadFrame = z.infer<typeof editorReadFrameSchema>;
+export type EditorReadResultFrame = z.infer<typeof editorReadResultFrameSchema>;

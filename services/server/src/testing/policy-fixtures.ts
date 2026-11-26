@@ -138,6 +138,8 @@ export const SAMPLE_INPUTS: Readonly<Record<string, JsonObject>> = {
   propose_file_edit: { path: "notes.md", content: "# Notes\n", summary: "Tidy the notes" },
   open_file: { path: "notes.md" },
   run_python: { code: "print(1 + 1)" },
+  editor_run: { path: "analysis.py" },
+  editor_read: { path: "analysis.py", what: "output" },
 };
 
 export function sampleInput(tool: ToolDescriptor): JsonObject {

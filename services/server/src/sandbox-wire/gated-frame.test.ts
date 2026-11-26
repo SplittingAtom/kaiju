@@ -223,6 +223,7 @@ describe("tool frame types (KOBE-706)", () => {
       | "file.edit_propose"
       | "file.open"
       | "notebook.run"
+      | "editor.read"
       | "skill.draft_save"
     >();
   });

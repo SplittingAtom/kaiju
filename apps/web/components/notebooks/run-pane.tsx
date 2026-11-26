@@ -169,6 +169,7 @@ export function useRunPane({
   execs,
   busy,
   onGoTo,
+  stop,
 }: {
   readonly path: string;
   readonly wiring: KernelWiring | undefined;
@@ -176,6 +177,8 @@ export function useRunPane({
   /** Code runs in the thread's kernel. */
   readonly busy: boolean;
   onGoTo(line: number): void;
+  /** KOBE-848: the owner's Stop, shown in Run Output while an agent-started run runs. */
+  readonly stop?: { readonly onStop: () => void; readonly stopping: boolean };
 }) {
   const threadId = wiring?.threadId ?? null;
   const runs = threadId === null ? [] : fileRuns(execs, threadId, path);
@@ -288,6 +291,7 @@ export function useRunPane({
           teamId={wiring?.teamId ?? ""}
           onClear={() => remember({ cleared: shown?.execId ?? null })}
           onLatest={() => remember({ pick: null })}
+          {...(stop === undefined || wiring?.readOnly === true ? {} : { stop })}
         />
       </div>
       <div {...panel("log")}>

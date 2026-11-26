@@ -191,6 +191,25 @@ const KINDS: readonly Kind[] = [
     tool: "run_python",
   },
   {
+    // KOBE-848: editor_run rides notebook.run (same gate, its own allowance tool).
+    type: "notebook.run",
+    result: "notebook.run_result",
+    capabilities: [CAPABILITY_NOTEBOOKS],
+    fields: { tool: "editor_run", input: { path: "/workspace/a.py" } },
+    capped: false,
+    allowance: "consume",
+    tool: "editor_run",
+  },
+  {
+    type: "editor.read",
+    result: "editor.read_result",
+    capabilities: [CAPABILITY_NOTEBOOKS],
+    fields: { tool: "editor_read", input: { path: "/workspace/a.py", what: "log" } },
+    capped: false,
+    allowance: "consume",
+    tool: "editor_read",
+  },
+  {
     type: "skill.draft_save",
     result: "skill.draft_save_result",
     capabilities: [CAPABILITY_SKILL_DRAFTS],
@@ -491,6 +510,7 @@ describe("tool frame specs (KOBE-706 review)", () => {
       pendingCommits: new Set(),
       signal: new AbortController().signal,
       notebookExecute: () => hang(),
+      notebookInspect: () => hang(),
     });
     const pinned = Object.fromEntries(
       Object.entries(specs).map(([type, spec]) => [
@@ -508,6 +528,7 @@ describe("tool frame specs (KOBE-706 review)", () => {
       "file.edit_propose": { allowance: "consume", tool: "(frame.tool)" },
       "file.open": { allowance: "consume", tool: "(frame.tool)" },
       "notebook.run": { allowance: "consume", tool: "(frame.tool)" },
+      "editor.read": { allowance: "consume", tool: "(frame.tool)" },
       "skill.draft_save": { allowance: "consume", tool: "(frame.tool)" },
     });
   });

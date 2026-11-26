@@ -37,6 +37,15 @@ export const RUNS_EVENT_DOCS = {
     fields: "`runId`, `threadId`, `wasActive`, `queuePaused?`, `reason?`",
     when: "The owner stopped a run or deleted a queued message (D17); `queuePaused: true` when the Stop paused the messages queued behind it (KOBE-26); `reason` (owner_deactivated, member_removed; system): a scheduled run cancelled because its owner was deactivated or left the team (KOBE-180)",
   },
+  "run.editor_read": {
+    fields: "`userId`, `threadId`, `runId`, `toolCallId`, `what` (output, log, variables)",
+    when: "The agent read the run pane of the `.py` file the user has open in the editor (`editor_read`, KOBE-848); never its content (system)",
+  },
+  "run.editor_run": {
+    fields:
+      "`userId`, `threadId`, `runId`, `toolCallId`, `status` (ok, error, interrupted, timeout, restarted, failed)",
+    when: "The agent ran the `.py` file the user has open in the editor (`editor_run`, KOBE-848, after its policy decision); never paths, code or output (system)",
+  },
   "run.interrupted": {
     fields: "`runId`, `threadId`, `cause` (sandbox_gone, not_resumed, pi_exited)",
     when: "The sandbox wire interrupted an active run (D14; system)",

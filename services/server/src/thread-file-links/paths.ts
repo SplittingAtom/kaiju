@@ -19,6 +19,9 @@ export const LINK_TOOLS: Readonly<Record<string, ThreadFileAccess>> = {
   write: "write",
   edit: "write",
   run_python: "write",
+  // KOBE-848: runs or reads the run pane of the member's open `.py` file; changes no file.
+  editor_run: "read",
+  editor_read: "read",
 };
 
 /** A tool's path argument as a workspace path (relative to `/workspace`), or undefined. */

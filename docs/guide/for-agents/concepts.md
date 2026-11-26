@@ -90,8 +90,8 @@ frame opens only inside Kaiju; the user downloads a copy to keep it elsewhere.
 **Proposal.** A file change offered with `propose_file_edit`. Nothing is written until the user
 commits it.
 
-**Kernel.** The live Python process of this thread, used by `run_python` and by the user's notebook
-runs. State is shared with the user and lost on restart, after 30 idle minutes, or when the sandbox
+**Kernel.** The live Python process of this thread, used by `run_python`, `editor_run` and by the
+user's notebook and editor runs. State is shared with the user and lost on restart, after 30 idle minutes, or when the sandbox
 sleeps.
 
 **Schedule, auto mode.** Runs nobody watches. Calls that would need approval are denied, not held.

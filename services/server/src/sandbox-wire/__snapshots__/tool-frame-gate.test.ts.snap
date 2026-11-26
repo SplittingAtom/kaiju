@@ -257,6 +257,133 @@ exports[`tool frame gate: each kind's own stages (KOBE-706 review) > refuses ski
 }
 `;
 
+exports[`tool frame gate: editor.read > closes the connection for a run never leased here 1`] = `
+{
+  "answers": [],
+  "audits": [
+    {
+      "kind": "violation",
+      "reason": "unknown_run",
+    },
+  ],
+  "closed": 4007,
+  "errors": [
+    "unknown_run",
+  ],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: editor.read > refuses a call the policy check did not allow (input_mismatch) 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "The request differs from the call that was allowed.",
+      },
+      "ok": false,
+      "type": "editor.read_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: editor.read > refuses a call the policy check did not allow (not_allowed) 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "This tool call was not allowed for this tool.",
+      },
+      "ok": false,
+      "type": "editor.read_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: editor.read > refuses for a compaction run (KOBE-213) 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "The run has ended, so nothing was read.",
+      },
+      "ok": false,
+      "type": "editor.read_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [
+    "run_not_active",
+  ],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: editor.read > refuses for a run that has ended 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "The run has ended, so nothing was read.",
+      },
+      "ok": false,
+      "type": "editor.read_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [
+    "run_not_active",
+  ],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: editor.read > refuses without the notebooks capability 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "This sandbox did not announce notebooks.",
+      },
+      "ok": false,
+      "type": "editor.read_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
 exports[`tool frame gate: file.edit_propose > closes the connection for a run never leased here 1`] = `
 {
   "answers": [],
@@ -1247,7 +1374,46 @@ exports[`tool frame gate: notebook.run > closes the connection for a run never l
 }
 `;
 
+exports[`tool frame gate: notebook.run > closes the connection for a run never leased here 2`] = `
+{
+  "answers": [],
+  "audits": [
+    {
+      "kind": "violation",
+      "reason": "unknown_run",
+    },
+  ],
+  "closed": 4007,
+  "errors": [
+    "unknown_run",
+  ],
+  "executed": false,
+  "reached": [],
+}
+`;
+
 exports[`tool frame gate: notebook.run > refuses a call the policy check did not allow (input_mismatch) 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "The code differs from the call that was allowed.",
+      },
+      "ok": false,
+      "type": "notebook.run_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: notebook.run > refuses a call the policy check did not allow (input_mismatch) 2`] = `
 {
   "answers": [
     {
@@ -1289,7 +1455,51 @@ exports[`tool frame gate: notebook.run > refuses a call the policy check did not
 }
 `;
 
+exports[`tool frame gate: notebook.run > refuses a call the policy check did not allow (not_allowed) 2`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "This tool call was not allowed for this tool.",
+      },
+      "ok": false,
+      "type": "notebook.run_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
 exports[`tool frame gate: notebook.run > refuses for a compaction run (KOBE-213) 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "The run has ended, so the code was not run.",
+      },
+      "ok": false,
+      "type": "notebook.run_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [
+    "run_not_active",
+  ],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: notebook.run > refuses for a compaction run (KOBE-213) 2`] = `
 {
   "answers": [
     {
@@ -1335,7 +1545,51 @@ exports[`tool frame gate: notebook.run > refuses for a run that has ended 1`] = 
 }
 `;
 
+exports[`tool frame gate: notebook.run > refuses for a run that has ended 2`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "The run has ended, so the code was not run.",
+      },
+      "ok": false,
+      "type": "notebook.run_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [
+    "run_not_active",
+  ],
+  "executed": false,
+  "reached": [],
+}
+`;
+
 exports[`tool frame gate: notebook.run > refuses without the notebooks capability 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "This sandbox did not announce notebooks.",
+      },
+      "ok": false,
+      "type": "notebook.run_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: notebook.run > refuses without the notebooks capability 2`] = `
 {
   "answers": [
     {

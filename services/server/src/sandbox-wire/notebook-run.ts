@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import type { KaijuDb } from "@kaiju/db";
+import { SYSTEM_ACTOR, withTeam, type KaijuDb } from "@kaiju/db";
 import {
   CAPABILITY_NOTEBOOKS,
+  EDITOR_RUN_TOOL,
   NOTEBOOK_CODE_MAX_BYTES,
   NOTEBOOK_TIMEOUT_DEFAULT_S,
   workspaceToolPath,
@@ -12,6 +13,7 @@ import {
   type ServerToSandboxFrame,
 } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
+import { recordAudit } from "../audit/record.js";
 import {
   finishExecution,
   recordStarted,
@@ -31,7 +33,9 @@ import type { CommandOutcome, SandboxTarget } from "./types.js";
  * allowed here with the same canonical input, taken once. The code (as given, or read from the
  * run owner's synced copy) runs in the thread's kernel through a `notebook.execute` on this same
  * connection; the outputs become the run's events, a notebook cell's are saved into the notebook,
- * and the model gets a text summary.
+ * and the model gets a text summary. KOBE-848: `editor_run` takes the same path with only a `.py`
+ * `path` (the policy check's editor-file guard already limited it to the run's viewed file), and
+ * its outcome is audited (`run.editor_run`).
  */
 export interface NotebookRunConnection {
   readonly db: KaijuDb;
@@ -110,12 +114,25 @@ export function notebookRunSpec(
   };
 }
 
+/** The call as `run_python` would make it: `editor_run` is a `.py` path and a timeout only. */
+function inputOf(frame: NotebookRunFrame): {
+  readonly code?: string | undefined;
+  readonly path?: string | undefined;
+  readonly cell_id?: string | undefined;
+  readonly timeout_s?: number | undefined;
+} {
+  if (frame.tool === EDITOR_RUN_TOOL) {
+    return { path: frame.input.path, timeout_s: frame.input.timeout_s };
+  }
+  return frame.input;
+}
+
 async function runForAgent(
   c: NotebookRunConnection,
   files: NotebookFiles,
   frame: NotebookRunFrame,
 ): Promise<Answer> {
-  const input = frame.input;
+  const input = inputOf(frame);
   // A skill eval's sandbox (KOBE-325) never reaches the member's synced workspace (also denied
   // by policy): only code runs there, in the eval sandbox's own kernel.
   if (input.path !== undefined && c.target.evalThreadId !== undefined) {
@@ -163,6 +180,7 @@ async function runForAgent(
     timeoutMs + NOTEBOOK_COMMAND_MARGIN_MS,
   );
   const summary = await finishExecution({ db: c.db, files, log: c.log }, execution, outcome);
+  if (frame.tool === EDITOR_RUN_TOOL) await auditEditorRun(c, frame, summary.status);
   if (!outcome.ok) {
     c.log.warn(
       {
@@ -189,4 +207,31 @@ async function runForAgent(
     truncated: summary.truncated,
     saved: summary.saved,
   };
+}
+
+/** `run.editor_run` (KOBE-848): ids and how it ended; never the path, code or output. */
+async function auditEditorRun(
+  c: NotebookRunConnection,
+  frame: NotebookRunFrame,
+  status: Awaited<ReturnType<typeof finishExecution>>["status"],
+): Promise<void> {
+  const { teamId, userId } = c.target;
+  try {
+    await withTeam(c.db, teamId, (tx) =>
+      recordAudit(tx, {
+        action: "run.editor_run",
+        actor: SYSTEM_ACTOR,
+        teamId,
+        target: {
+          userId,
+          threadId: frame.thread_id,
+          runId: frame.run_id,
+          toolCallId: frame.tool_call_id,
+          status,
+        },
+      }),
+    );
+  } catch (err) {
+    c.log.error({ err, run_id: frame.run_id }, "could not audit run.editor_run");
+  }
 }

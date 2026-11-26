@@ -6,7 +6,7 @@
  * chose another in the Log. Clear empties the tab until the next run; a cut or timed-out run says
  * so (`ExecutionNote`).
  */
-import { EraserIcon } from "lucide-react";
+import { EraserIcon, SquareIcon } from "lucide-react";
 import type { Execution } from "../../lib/notebooks/executions";
 import {
   formatDuration,
@@ -24,6 +24,8 @@ export const OUTPUT_EMPTY =
 export const OUTPUTS_FAILED =
   "Could not load this run's output. It is tried again when you come back to it.";
 export const CLEARED_NOTE = "Output cleared. The next run shows here, or choose a run in the Log.";
+/** KOBE-848: the agent ran the open file with `editor_run` (or `run_python` on it). */
+export const AGENT_RUNNING_NOTE = "The agent started this run. Stop ends it.";
 
 function summary(exec: Execution): string {
   const count = exec.finished?.executionCount;
@@ -48,6 +50,7 @@ export function RunOutputPanel({
   teamId,
   onClear,
   onLatest,
+  stop,
 }: {
   /** The run shown; undefined before any run. */
   readonly exec: Execution | undefined;
@@ -60,6 +63,11 @@ export function RunOutputPanel({
   readonly teamId: string;
   onClear(): void;
   onLatest(): void;
+  /**
+   * KOBE-848: the conversation owner's Stop, offered here while an agent-started run of this
+   * file runs (undefined for a shared reader, who cannot stop it).
+   */
+  readonly stop?: { readonly onStop: () => void; readonly stopping: boolean };
 }) {
   if (exec === undefined) return <p className="text-muted-foreground text-xs">{OUTPUT_EMPTY}</p>;
   if (cleared) return <p className="text-muted-foreground text-xs">{CLEARED_NOTE}</p>;
@@ -84,6 +92,29 @@ export function RunOutputPanel({
           Clear
         </button>
       </div>
+      {exec.origin === "agent" && exec.finished === undefined && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-1 text-xs"
+          data-kaiju-agent-run=""
+        >
+          <span className="text-muted-foreground me-auto">
+            {stop === undefined ? "The agent started this run." : AGENT_RUNNING_NOTE}
+          </span>
+          {stop !== undefined && (
+            <button
+              type="button"
+              className={TOOL_BUTTON}
+              disabled={stop.stopping}
+              aria-busy={stop.stopping}
+              onClick={stop.onStop}
+            >
+              <SquareIcon aria-hidden className="size-3.5" />
+              {stop.stopping ? "Stopping…" : "Stop"}
+            </button>
+          )}
+        </div>
+      )}
       <ExecutionNote exec={exec} notebook={false} />
       {exec.outputsPending === true && (
         <p role="status" className="text-muted-foreground text-xs">

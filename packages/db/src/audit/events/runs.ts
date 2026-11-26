@@ -94,4 +94,25 @@ export const RUNS_EVENTS = {
     approvalId: id.optional(),
     suppressed: count.optional(),
   }),
+
+  // ── run.editor_*: the agent and the member's open code editor (KOBE-848); never paths, code or output ──
+  /**
+   * The agent ran the `.py` file the run's user has open in the editor (`editor_run`, after its
+   * policy decision): how the execution ended (system; `userId` owns the run and the kernel).
+   */
+  "run.editor_run": event("team", {
+    userId: id,
+    threadId: id,
+    runId: id,
+    toolCallId,
+    status: z.enum(["ok", "error", "interrupted", "timeout", "restarted", "failed"]),
+  }),
+  /** The agent read the open file's run pane (`editor_read`): which tab, never its content (system). */
+  "run.editor_read": event("team", {
+    userId: id,
+    threadId: id,
+    runId: id,
+    toolCallId,
+    what: z.enum(["output", "log", "variables"]),
+  }),
 } as const satisfies Record<string, AuditEventDef>;

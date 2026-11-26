@@ -168,6 +168,27 @@ export const BUILTIN_TOOLS: Readonly<Record<string, BuiltinTool>> = {
     open_world: false,
     primary_arg: "/code",
   },
+  /**
+   * KOBE-848: runs the `.py` file the member has open in the editor, in the conversation's kernel,
+   * shown in the member's run pane. A Kaiju-scoped write on purpose: it asks in `ask-on-write`
+   * (the default), Dangerous mode never lifts that prompt, and auto/scheduled runs deny it unless
+   * a team allow rule lists it. The server's editor-file guard limits it to the viewed file.
+   */
+  editor_run: {
+    source: "kaiju",
+    risk: "write",
+    scope: "kaiju",
+    open_world: false,
+    primary_arg: "/path",
+  },
+  /** KOBE-848: reads the open file's run pane (Run Output, Log, Variables); writes nothing. */
+  editor_read: {
+    source: "kaiju",
+    risk: "read",
+    scope: "kaiju",
+    open_world: false,
+    primary_arg: "/path",
+  },
   remember: { source: "kaiju", risk: "write", scope: "kaiju", open_world: false },
   recall: { source: "kaiju", risk: "read", scope: "kaiju", open_world: false },
   /** KOBE-399: shows one saved memory the run was given or recalled; writes nothing. */

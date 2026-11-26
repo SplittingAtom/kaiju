@@ -93,6 +93,11 @@ export function routeToolsRequest(
     else reply(toolsError(request.id, "not_allowed", "notebooks are not available"));
     return;
   }
+  if (request.op === "editor.read") {
+    if (caps.notebookTools) tools.notebooks.read(threadId, runId, request, reply);
+    else reply(toolsError(request.id, "not_allowed", "notebooks are not available"));
+    return;
+  }
   if (request.op === "file.edit_propose") {
     if (caps.fileEdits) tools.fileEdits.propose(threadId, runId, request, reply);
     else reply(toolsError(request.id, "not_allowed", "file edits are not available"));
@@ -139,6 +144,9 @@ export function routeToolResult(tools: ToolBrokers, frame: ServerToSandboxFrame)
       return true;
     case "notebook.run_result":
       tools.notebooks.onResult(frame);
+      return true;
+    case "editor.read_result":
+      tools.notebooks.onReadResult(frame);
       return true;
     case "memory.result":
       tools.memory.onResult(frame);

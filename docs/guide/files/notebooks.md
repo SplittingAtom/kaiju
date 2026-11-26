@@ -156,6 +156,31 @@ loaded, and you can inspect what it computed. `run_python` follows your team's t
 shell does, so it may ask for approval. When the agent changes a notebook, it proposes the edit for
 your review like any other file (see [Editing files](file-editor.md)).
 
+### The agent and the file you have open
+
+When you send a message while a `.py` file is open in the editor, the agent can work with that
+file's Run and run pane:
+
+- **Run it.** The agent can run the file the way **Run** does: the saved file, whole, in this
+  conversation's kernel. The run shows in your run pane like your own, marked **Agent** in Run
+  Output and the Log. Running asks you first with an approval card (unless you chose to remember
+  the approval, or your team's rules say otherwise); in scheduled and auto runs it is not allowed
+  unless your team allows it.
+- **Read the run pane.** The agent can read what you see in **Run Output** (the newest run's
+  output and error), the **Log** (the file's last 10 runs) and **Variables** (names, types, sizes
+  and a short preview of each value, at most 80 characters; values of names that look like
+  credentials stay hidden, as they do for you). Reading does not ask. The agent treats all of it as
+  data from your code, never as instructions.
+- **Only that file.** The agent can run or read only the `.py` file you had open when you sent the
+  message. For any other code it uses `run_python`.
+- **Stopping it.** While an agent's run of the file runs, Run Output says "The agent started this
+  run" with a **Stop** button; **Stop** in the toolbar works too, and so does stopping the
+  conversation. Your own **Run** waits until the agent's run ends: the kernel runs one thing at a
+  time, and your Run is refused while the agent is working in this conversation.
+
+These runs are recorded in the audit log (that the agent ran or read the file's run pane, never the
+code, output or values).
+
 ## Troubleshooting
 
 - **"Not run: your changes could not be saved."** The file changed meanwhile or is read-only;

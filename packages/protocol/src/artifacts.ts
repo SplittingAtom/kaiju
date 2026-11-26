@@ -16,6 +16,11 @@ import { skillDraftSaveOkFields, skillDraftToolsRequestSchema } from "./skill-dr
 import { fileEditProposeOkFields, fileEditToolsRequestSchema } from "./file-editor.js";
 import { fileOpenOkFields, fileOpenToolsRequestSchema } from "./file-open.js";
 import { notebookRunOkFields, notebookToolsRequestSchema } from "./notebooks.js";
+import {
+  editorReadOkFields,
+  editorReadToolsRequestSchema,
+  editorRunToolsRequestSchema,
+} from "./editor-tools.js";
 
 /**
  * Artifacts contract (KOBE-127 = 55a of KOBE-55, spec D25; binding design in docs/ledger/KOBE-55.md).
@@ -143,6 +148,8 @@ export const kaijuToolsRequestSchema = z.union([
   fileEditToolsRequestSchema, // KOBE-462 (file-editor.ts)
   fileOpenToolsRequestSchema, // KOBE-484 (file-open.ts)
   notebookToolsRequestSchema, // KOBE-464 (notebooks.ts)
+  editorRunToolsRequestSchema, // KOBE-848 (editor-tools.ts)
+  editorReadToolsRequestSchema, // KOBE-848
 ]);
 export type KaijuToolsRequest = z.infer<typeof kaijuToolsRequestSchema>;
 
@@ -158,6 +165,7 @@ export const kaijuToolsResponseSchema = z.union([
   z.strictObject({ id: idSchema, ...fileEditProposeOkFields }), // KOBE-462 (file-editor.ts)
   z.strictObject({ id: idSchema, ...fileOpenOkFields }), // KOBE-484 (file-open.ts)
   z.strictObject({ id: idSchema, ...notebookRunOkFields }), // KOBE-464 (notebooks.ts)
+  z.strictObject({ id: idSchema, ...editorReadOkFields }), // KOBE-848 (editor-tools.ts)
   z.strictObject({ id: idSchema, ...artifactFailFields }),
 ]);
 export type KaijuToolsResponse = z.infer<typeof kaijuToolsResponseSchema>;

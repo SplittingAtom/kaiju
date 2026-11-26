@@ -4,6 +4,7 @@ import {
   type RunStartFrame,
 } from "@kaiju/protocol/sandbox-wire";
 import { randomUUID } from "node:crypto";
+import { CAPABILITY_NOTEBOOK_INSPECT, CAPABILITY_NOTEBOOKS } from "@kaiju/protocol";
 
 import { withTeam, type SandboxCommandKind } from "@kaiju/db";
 import type { Logger } from "pino";
@@ -176,6 +177,32 @@ export class CommandDelivery {
         threadId: frame.thread_id,
         execId: frame.exec_id,
       },
+    );
+  }
+
+  /**
+   * KOBE-848: a variables snapshot of a thread kernel for the agent's `editor_read` (never `show`,
+   * never `refresh`): sent on this connection only, no command row, and only to an agent with
+   * `notebooks` and `notebook_inspect` (else `inspect_unsupported`).
+   */
+  notebookInspect(threadId: string, timeoutMs: number, waitMs: number): Promise<CommandOutcome> {
+    if (
+      !this.#host.hasCapability(CAPABILITY_NOTEBOOKS) ||
+      !this.#host.hasCapability(CAPABILITY_NOTEBOOK_INSPECT)
+    ) {
+      return Promise.resolve(
+        failure(COMMAND_FAILURES.inspectUnsupported, "this sandbox takes no variable snapshots"),
+      );
+    }
+    return this.#internal(
+      {
+        v: 1,
+        type: "notebook.inspect",
+        command_id: randomUUID(),
+        thread_id: threadId,
+        timeout_ms: timeoutMs,
+      },
+      waitMs,
     );
   }
 

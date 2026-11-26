@@ -226,6 +226,8 @@ export class SandboxConnection implements RegisteredConnection {
       signal: this.#memoryAbort.signal,
       hasCapability: (name) => this.hasCapability(name),
       notebookExecute: (execute, timeoutMs) => this.#delivery.notebookExecute(execute, timeoutMs),
+      notebookInspect: (threadId, timeoutMs, waitMs) =>
+        this.#delivery.notebookInspect(threadId, timeoutMs, waitMs),
     });
   }
 
