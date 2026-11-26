@@ -140,11 +140,18 @@ shows what the files hold; so can they when the tools run as Pi's own uid (no to
 the executor (KOBE-167) the capture is out of the tools' reach; the session file is on the
 workspace volume, which the tools can write (as for every session).
 
-**Conversation stats (KOBE-842).** Under the gauge's legend the panel shows the conversation's
-stats from `GET /v1/threads/{id}/stats` (`@kaiju/protocol` thread-stats.ts): counts aggregated in
-Postgres inside `withTeam()` from runs, entries, approvals, `run_usage` and kept `run_events`,
-never from the sandbox. Unlike the context itself (CV2), the route answers whoever may read the
-thread, like `GET /v1/threads/{id}/usage`. Figures not stored are null ("Not recorded").
+**Conversation stats (KOBE-842).** Under the gauge's legend (the rail's totals since KOBE-846)
+the panel shows the conversation's stats from `GET /v1/threads/{id}/stats` (`@kaiju/protocol`
+thread-stats.ts): counts aggregated in Postgres inside `withTeam()` from runs, entries,
+approvals, `run_usage` and kept `run_events`, never from the sandbox. Unlike the context itself
+(CV2), the route answers whoever may read the thread, like `GET /v1/threads/{id}/usage`. Figures
+not stored are null ("Not recorded").
+
+**Layout (KOBE-846).** Three columns: the text; the gauge as a full-height vertical bar (used
+kinds from the top in the totals' order, free space the bottom segment; an `img` with a text
+equivalent, the totals list carries the figures); a right rail with the totals then the stats,
+scrolling on its own. Under 720 px they stack: gauge (horizontal, free space at the end), totals,
+stats, text.
 
 ## 3. Known gaps
 
