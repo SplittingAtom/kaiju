@@ -54,7 +54,6 @@ export function LinePin({
       type="button"
       aria-pressed={pinned}
       aria-label={`Keep lines shown for ${name}`}
-      title={pinned ? "Lines kept shown" : "Keep lines shown"}
       data-kaiju-line-pin={pinned ? "on" : "off"}
       className={cn(
         "text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex size-5 shrink-0 items-center justify-center rounded-sm border-0 bg-transparent p-0 outline-none focus-visible:ring-2",

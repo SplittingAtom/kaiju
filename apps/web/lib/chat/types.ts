@@ -16,22 +16,6 @@ import type {
   ThreadStatus,
 } from "@kaiju/protocol";
 
-/** `GET /v1/threads/{id}/card` (CE18, KOBE-219), camelized: the rail's hover card. */
-export interface ThreadCard {
-  readonly threadId: string;
-  /** The first user message, whitespace collapsed, cut to 280 characters; null: none yet. */
-  readonly firstMessage: string | null;
-  readonly firstMessageTruncated: boolean;
-  readonly agentId: string | null;
-  /** Null for the default agent, or an agent no longer available. */
-  readonly agentName: string | null;
-  readonly lastActivityAt: string;
-  /** The member's messages and the agent's answers (tool-only turns not counted). */
-  readonly messageCount: number;
-  /** The server stopped counting: the thread holds more ("1000+"); absent on older servers. */
-  readonly messageCountCapped?: boolean;
-}
-
 /** `GET /v1/threads/activity` (KOBE-301), camelized: threads not listed are idle. */
 export interface ThreadActivityList {
   readonly threads: readonly {

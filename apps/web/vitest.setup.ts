@@ -17,8 +17,8 @@ vi.mock("next/font/local", () => ({
 }));
 
 // KOBE-744: no browser timer outlives its test. A component's timer still pending when a file's
-// DOM is torn down fires into a missing `window` (a Radix HoverCard open/close timer from the
-// rail's thread card, `components/shell/rail-thread-card.tsx`, failed a CI run that way). After
+// DOM is torn down fires into a missing `window` (a Radix HoverCard open/close timer once failed a
+// CI run that way). After
 // each test the tree is unmounted and every `window.setTimeout` the test left pending is cleared.
 // Errors are not hidden: a timer that throws during its test still fails it.
 if (typeof window !== "undefined") {

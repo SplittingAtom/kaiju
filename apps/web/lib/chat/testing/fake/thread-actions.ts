@@ -24,7 +24,7 @@ import {
   statsAnswer,
   switchAgent,
 } from "./thread-settings";
-import { branchSummary, card, compact, lineage, setLabel } from "./thread-tree";
+import { branchSummary, compact, lineage, setLabel } from "./thread-tree";
 
 /** `/v1/threads/{id}/<action>[/<sub>]` of a thread the caller may read. */
 export function threadAction(
@@ -181,7 +181,6 @@ export function threadAction(
     k.threads.delete(thread.thread_id);
     return new Response(null, { status: 204 });
   }
-  if (action === "card" && method === "GET") return json(200, card(k, thread));
   if (action === "lineage" && method === "GET") return json(200, lineage(k, thread));
   if (action === "branches" && method === "GET") {
     k.branchesReads += 1;

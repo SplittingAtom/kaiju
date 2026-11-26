@@ -59,7 +59,6 @@ import type {
   RunSnapshot,
   SubmitResult,
   ThreadActivityList,
-  ThreadCard,
   ThreadDetail,
   ThreadPage,
   ThreadRuns,
@@ -202,7 +201,6 @@ export interface ChatApi extends FileLinksApi {
   /** The thread without its entries (the thread list's `fetch`). */
   threadSummary(threadId: string): Promise<ApiResult<ThreadSummary>>;
   /** The rail's hover card (CE18, KOBE-219): first message, agent, last activity, count. */
-  threadCard(threadId: string): Promise<ApiResult<ThreadCard>>;
   /** The caller's own threads with a run going or an approval waiting (KOBE-301, the rail). */
   threadActivity(): Promise<ApiResult<ThreadActivityList>>;
   listEntries(threadId: string, after: number): Promise<ApiResult<EntryPage>>;
@@ -468,7 +466,6 @@ export function createChatApi(teamId: string, fetchFn?: typeof fetch): ChatApi {
     getThread: (id, after = 0) =>
       get(`/v1/threads/${enc(id)}${query({ after: after > 0 ? after : undefined, limit: 500 })}`),
     threadSummary: (id) => get(`/v1/threads/${enc(id)}${query({ limit: 1 })}`),
-    threadCard: (id) => get(`/v1/threads/${enc(id)}/card`),
     threadActivity: () => get("/v1/threads/activity"),
     listEntries: (id, after) =>
       get(`/v1/threads/${enc(id)}/entries${query({ after, limit: 500 })}`),

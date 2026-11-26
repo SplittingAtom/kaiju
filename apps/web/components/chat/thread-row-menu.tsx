@@ -94,6 +94,7 @@ export function ThreadRowMenu({ extra }: { readonly extra?: MenuBindings | undef
           label={`Move ${title} to Trash`}
           size="sm"
           shortcut={null}
+          tooltip={false}
           className={HOVER_REVEAL}
           onClick={trash}
         />
@@ -104,6 +105,7 @@ export function ThreadRowMenu({ extra }: { readonly extra?: MenuBindings | undef
         scope="thread-menu"
         bindings={bindings}
         onOpenChange={setOpen}
+        tooltip={false}
         className={ROW_REVEAL}
       />
     </>

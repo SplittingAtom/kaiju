@@ -54,6 +54,8 @@ interface OwnProps {
   readonly as?: "summary" | undefined;
   readonly size?: keyof typeof SIZES | undefined;
   readonly variant?: "ghost" | "outline" | "default" | "destructive" | undefined;
+  /** `false` shows no tooltip (hover or focus); the accessible name is unchanged (KOBE-847). */
+  readonly tooltip?: boolean | undefined;
   readonly side?: "top" | "bottom" | "left" | "right" | undefined;
   /** Replaces the command's icon (the copy action's check mark). */
   readonly children?: ReactNode;
@@ -99,6 +101,7 @@ export function IconAction({
   size = "md",
   variant = "ghost",
   side = "bottom",
+  tooltip = true,
   className,
   children,
   disabled,
@@ -166,29 +169,35 @@ export function IconAction({
       </button>
     );
 
+  const button = (
+    <Button
+      asChild
+      variant={variant}
+      size="icon"
+      className={cn(styles.action, SIZES[size], INERT, className)}
+    >
+      {element}
+    </Button>
+  );
+
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            asChild
-            variant={variant}
-            size="icon"
-            className={cn(styles.action, SIZES[size], INERT, className)}
-          >
-            {element}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side={side}>
-          {name}
-          {keys.map((k) => (
-            <kbd key={k} className={styles.keys}>
-              {formatShortcut(k, isMacPlatform())}
-            </kbd>
-          ))}
-          {description && <span className={styles.description}>{description}</span>}
-        </TooltipContent>
-      </Tooltip>
+      {!tooltip ? (
+        button
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipContent side={side}>
+            {name}
+            {keys.map((k) => (
+              <kbd key={k} className={styles.keys}>
+                {formatShortcut(k, isMacPlatform())}
+              </kbd>
+            ))}
+            {description && <span className={styles.description}>{description}</span>}
+          </TooltipContent>
+        </Tooltip>
+      )}
       {description && (
         <span id={descriptionId} className="sr-only">
           {description}

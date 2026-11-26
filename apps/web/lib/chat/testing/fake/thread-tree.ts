@@ -90,33 +90,6 @@ export function setLabel(
   return json(200, k.branches.get(thread.thread_id) as unknown as Json);
 }
 
-/** `GET /v1/threads/{id}/card` (KOBE-219), like the server: first message, agent, count. */
-export function card(k: FakeCore, thread: FakeThread): Json {
-  const messages = thread.entries.filter((e) => e.type === "message");
-  const role = (e: (typeof messages)[number]) =>
-    (e.payload as { message?: { role?: string } }).message?.role;
-  const first = messages.find((e) => role(e) === "user");
-  const content = (first?.payload as { message?: { content?: unknown } } | undefined)?.message
-    ?.content;
-  const text =
-    typeof content === "string"
-      ? content
-      : Array.isArray(content)
-        ? content.map((p: { text?: string }) => p.text ?? "").join("")
-        : "";
-  const flat = text.replace(/\s+/g, " ").trim();
-  return {
-    thread_id: thread.thread_id,
-    first_message: flat === "" ? null : flat.slice(0, 280),
-    first_message_truncated: flat.length > 280,
-    agent_id: thread.agent_id ?? null,
-    agent_name: thread.agent_name ?? null,
-    last_activity_at: thread.last_activity_at,
-    message_count: messages.filter((e) => role(e) === "user" || role(e) === "assistant").length,
-    message_count_capped: false,
-  };
-}
-
 /** Like the server (KOBE-213): idle threads only; Pi's `compaction` entry becomes the leaf. */
 export function compact(k: FakeCore, thread: FakeThread, body: Json | undefined): Response {
   if (thread.read_only) return error(403, "read_only", "This thread is shared with you read-only.");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { forkHint, forkOrigin, forkPointOf } from "./fork";
+import { forkOrigin, forkPointOf } from "./fork";
 import type { ThreadSummary } from "./types";
 
 const summary = (over: Partial<ThreadSummary>): ThreadSummary => ({
@@ -50,20 +50,17 @@ describe("forkPointOf (KOBE-216)", () => {
   });
 });
 
-describe("forkOrigin and forkHint (KOBE-216 ac-3, ac-6)", () => {
+describe("forkOrigin (KOBE-216 ac-3, ac-6)", () => {
   it("names a source the viewer may open", () => {
     const origin = forkOrigin(
       summary({ forkedFromThreadId: "s", forkedFromTitle: null, forkedAtEntryId: "a1" }),
     );
     expect(origin).toEqual({ kind: "source", threadId: "s", title: null, at: "a1" });
-    expect(forkHint(origin)).toBe("Forked from “Untitled conversation”");
   });
 
   it("stays neutral without a source, and is null for a thread that is not a fork", () => {
     const hidden = forkOrigin(summary({ forkedFromThreadId: null, forkedAtEntryId: "a1" }));
     expect(hidden).toEqual({ kind: "hidden", at: "a1" });
-    expect(forkHint(hidden)).toBe("Forked from a thread you can't open");
     expect(forkOrigin(summary({}))).toBeNull();
-    expect(forkHint(null)).toBeUndefined();
   });
 });

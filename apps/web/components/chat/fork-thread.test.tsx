@@ -180,16 +180,16 @@ describe("the fork's origin (ac-1, ac-3, ac-6; the lineage chip since KOBE-535)"
     expect(screen.queryByRole("navigation", { name: "Thread lineage" })).toBeNull();
   });
 
-  it("shows the provenance when hovering the fork in the rail", async () => {
+  it("puts no tooltip on a fork row in the rail (KOBE-847)", async () => {
     const src = source();
     const named = forkOf(src, src.a1, true);
     must(fake.threads.get(forkOf(src, src.u1, false))).title = "Hidden source";
     openApp(fake, named);
     const list = within(await threadGroup("Your threads"));
     const item = await list.findByRole("button", { name: "Renewals deep dive" });
-    expect(item.getAttribute("title")).toBe("Forked from “Quarterly plan”");
+    expect(item.getAttribute("title")).toBeNull();
     const hidden = await list.findByRole("button", { name: "Hidden source" });
-    expect(hidden.getAttribute("title")).toBe("Forked from a thread you can't open");
+    expect(hidden.getAttribute("title")).toBeNull();
     expect(
       (await list.findByRole("button", { name: "Quarterly plan" })).getAttribute("title"),
     ).toBeNull();
