@@ -146,3 +146,7 @@ tool descriptions and guidelines are in `kaiju-tools/editor-tools.ts`.
   shows previews), DB "shows string and container values only when the team's setting turns them
   on", "the Site sets the default...", `/workspace/./analysis.py` runs, refused runs audited;
   `policy-pages.test.tsx` (both forms); `tool-frame-gate` snapshots (refusals audited).
+
+## Review round 2 (review-g150, merge)
+
+Accepted for follow-up: a str subclass renaming its type to `int` shows its value with values off (crafted code only; the agent can print values by running code anyway); refusal audit rows are not throttled.
