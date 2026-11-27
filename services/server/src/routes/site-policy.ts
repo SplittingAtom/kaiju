@@ -11,7 +11,11 @@ import {
   updateSiteRule,
   writePromptSandboxWrites,
 } from "../policy/rule-store.js";
-import { rememberLimitsSchema } from "@kaiju/protocol";
+import { rememberLimitsSchema, siteAgentVariableValuesSchema } from "@kaiju/protocol";
+import {
+  readSiteAgentVariableValues,
+  writeSiteAgentVariableValues,
+} from "../notebooks/agent-variable-values.js";
 import {
   readSiteRememberLimits,
   writeSiteRememberLimits,
@@ -23,6 +27,8 @@ import { invalidRequest, parseBody } from "../http/request.js";
  * The site policy floor (`/v1/site/policy`, spec D6, D8, D29): deny and ask rules that bind
  * every team, and the site's policy switches. Site Owner/Admins only. KOBE-289: the floor's limits
  * on remembered approvals (`/remember-limits`), which bind every team (teams can only tighten).
+ * KOBE-848: the default for whether the agent's `editor_read` shows variable values
+ * (`/agent-variable-values`); a team may choose otherwise.
  */
 export function sitePolicyRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
@@ -76,6 +82,17 @@ export function sitePolicyRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariab
     }
     await writeSiteRememberLimits(db, body);
     return c.json({ limits: body });
+  });
+
+  app.get("/agent-variable-values", async (c) =>
+    c.json({ enabled: await readSiteAgentVariableValues(db) }),
+  );
+
+  app.put("/agent-variable-values", async (c) => {
+    const body = await parseBody(c, siteAgentVariableValuesSchema);
+    if (!body) return invalidRequest(c, "Send { enabled: boolean }.");
+    await writeSiteAgentVariableValues(db, body.enabled);
+    return c.json({ enabled: body.enabled });
   });
 
   return app;

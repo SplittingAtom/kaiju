@@ -14,6 +14,7 @@ import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";
 import { RulesEditor } from "../policy-rules";
 import { RememberLimitsForm } from "../remember-limits-form";
+import { SiteAgentVariableValuesForm } from "../agent-variable-values-form";
 import { useMutation, useResource } from "../use-resource";
 import { Button, Checkbox, PageHeader, Section } from "../../ui/console";
 
@@ -42,6 +43,12 @@ export function PolicyFloorPage() {
         description="What members of every team may choose when they remember an approval (KOBE-289). Teams can tighten these limits, never loosen them."
       >
         <SiteLimits />
+      </Section>
+      <Section
+        title="Agent and kernel variables"
+        description="The default for every team that does not choose for itself."
+      >
+        <SiteAgentVariableValuesForm />
       </Section>
     </>
   );

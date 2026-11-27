@@ -64,6 +64,7 @@ describe("Site policy floor", () => {
     ],
     "GET /v1/site/policy/settings": [200, { promptSandboxWrites: false }],
     "GET /v1/site/policy/remember-limits": [200, { limits: LIMITS }],
+    "GET /v1/site/policy/agent-variable-values": [200, { enabled: false }],
   } as const;
 
   it("lists rules with their argument patterns and offers only deny and ask", async () => {
@@ -134,10 +135,33 @@ describe("Site policy floor", () => {
     await userEvent.click(
       await screen.findByRole("checkbox", { name: /Ask before shell and file writes/ }),
     );
-    await userEvent.click(screen.getByRole("button", { name: "Save setting" }));
+    await userEvent.click(
+      within(screen.getByRole("form", { name: "Approval defaults" })).getByRole("button", {
+        name: "Save setting",
+      }),
+    );
     await screen.findByText(/now ask/);
     const put = must(calls.find((c) => c.method === "PUT"));
     expect(JSON.parse(String(put.body))).toEqual({ promptSandboxWrites: true });
+  });
+
+  it("saves the Site default for showing the agent variable values (KOBE-848)", async () => {
+    const calls = stubApi({
+      ...routes,
+      "PUT /v1/site/policy/agent-variable-values": [200, { enabled: true }],
+    });
+    renderSite(<PolicyFloorPage />);
+    const box = await screen.findByRole("checkbox", {
+      name: /Show the agent variable values by default/,
+    });
+    expect((box as HTMLInputElement).checked).toBe(false);
+    await userEvent.click(box);
+    const form = screen.getByRole("form", { name: "Agent variable values" });
+    await userEvent.click(within(form).getByRole("button", { name: "Save setting" }));
+    await screen.findByText(/now show the agent variable values/);
+    const put = must(calls.find((c) => c.method === "PUT"));
+    expect(put.url).toBe("/v1/site/policy/agent-variable-values");
+    expect(JSON.parse(String(put.body))).toEqual({ enabled: true });
   });
 
   it("renders a 403", async () => {
@@ -163,9 +187,32 @@ describe("Site policy floor", () => {
 const TEAM_REMEMBER = {
   "GET /v1/team/policy/member-rules": [200, { rules: [] }],
   "GET /v1/team/policy/remember-limits": [200, { site: LIMITS, team: LIMITS, effective: LIMITS }],
+  "GET /v1/team/policy/agent-variable-values": [200, { site: false, team: null, effective: false }],
 } as const;
 
 describe("Team policy", () => {
+  it("lets the team follow the Site default, or show or withhold variable values (KOBE-848)", async () => {
+    const calls = stubApi({
+      "GET /v1/team/policy/rules": [200, { rules: [] }],
+      ...TEAM_REMEMBER,
+      "PUT /v1/team/policy/agent-variable-values": [
+        200,
+        { site: false, team: true, effective: true },
+      ],
+    });
+    renderTeam(<TeamPolicyPage />);
+    const select = await screen.findByRole("combobox", { name: /Variable values for the agent/ });
+    expect((select as HTMLSelectElement).value).toBe("site");
+    expect(select.textContent).toMatch(/Use the Site default \(withheld\)/);
+    await userEvent.selectOptions(select, "on");
+    const form = screen.getByRole("form", { name: "Agent variable values" });
+    await userEvent.click(within(form).getByRole("button", { name: "Save setting" }));
+    await screen.findByText(/now sees variable values/);
+    const put = must(calls.find((c) => c.method === "PUT"));
+    expect(put.url).toBe("/v1/team/policy/agent-variable-values");
+    expect(JSON.parse(String(put.body))).toEqual({ enabled: true });
+  });
+
   it("offers deny, ask and allow, names the team, and shows the server's allow-scope refusal", async () => {
     const calls = stubApi({
       "GET /v1/team/policy/rules": [
@@ -278,6 +325,10 @@ describe("Members' remembered approvals and remember limits (KOBE-289)", () => {
       "GET /v1/team/policy/rules": [200, { rules: [] }],
       "GET /v1/team/policy/member-rules": [200, { rules: [] }],
       "GET /v1/team/policy/remember-limits": [200, { site: floor, team: LIMITS, effective: floor }],
+      "GET /v1/team/policy/agent-variable-values": [
+        200,
+        { site: false, team: null, effective: false },
+      ],
       "PUT /v1/team/policy/remember-limits": [200, { site: floor, team: floor, effective: floor }],
     });
     renderTeam(<TeamPolicyPage />);
@@ -311,6 +362,7 @@ describe("Members' remembered approvals and remember limits (KOBE-289)", () => {
       "GET /v1/site/policy/rules": [200, { rules: [] }],
       "GET /v1/site/policy/settings": [200, { promptSandboxWrites: false }],
       "GET /v1/site/policy/remember-limits": [200, { limits: LIMITS }],
+      "GET /v1/site/policy/agent-variable-values": [200, { enabled: false }],
       "PUT /v1/site/policy/remember-limits": [200, { limits: { ...LIMITS, exact_only: true } }],
     });
     renderSite(<PolicyFloorPage />);

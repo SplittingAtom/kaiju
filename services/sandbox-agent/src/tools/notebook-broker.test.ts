@@ -2,7 +2,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
-import type { NotebookRunResultFrame } from "@kaiju/protocol/sandbox-wire";
+import type { EditorReadResultFrame, NotebookRunResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_PENDING_RUNS_PER_THREAD, NotebookBroker } from "./notebook-broker.js";
 
@@ -22,6 +22,7 @@ const request = (input: Req["input"], id = "kt_1"): Req => ({
 async function setup(options: { sendOk?: boolean; sync?: boolean } = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "nb-broker-"));
   await writeFile(path.join(root, "a.ipynb"), "{}");
+  await writeFile(path.join(root, "a.py"), "print(1)\n");
   const sent: Record<string, unknown>[] = [];
   const pushed: string[] = [];
   const replies: KaijuToolsResponse[] = [];
@@ -130,5 +131,74 @@ describe("NotebookBroker (KOBE-464)", { timeout: SETTLE_MS + 5_000 }, () => {
     expect(replies.map((r) => !r.ok && r.error.code)).toEqual(["unavailable"]);
     broker.failRun(RUN, "run ended");
     expect(replies).toHaveLength(MAX_PENDING_RUNS_PER_THREAD + 1);
+  });
+
+  it("KOBE-848: editor_run pushes the open file and names it with tool editor_run", async () => {
+    const { broker, sent, pushed, reply, settle } = await setup();
+    const req: Req = {
+      id: "kt_e",
+      op: "notebook.run",
+      tool_call_id: "call_e",
+      tool: "editor_run",
+      input: { path: "a.py" },
+    };
+    broker.run(THREAD, RUN, req, reply);
+    await settle(1);
+    expect(pushed).toEqual(["a.py"]);
+    expect(sent[0]).toMatchObject({
+      type: "notebook.run",
+      tool: "editor_run",
+      tool_call_id: "call_e",
+      input: { path: "a.py" },
+    });
+  });
+
+  it("KOBE-848: editor_read sends editor.read at once and relays the answer exactly once", async () => {
+    const { broker, sent, pushed, replies, reply } = await setup();
+    const req: Extract<KaijuToolsRequest, { op: "editor.read" }> = {
+      id: "kt_r",
+      op: "editor.read",
+      tool_call_id: "call_r",
+      tool: "editor_read",
+      input: { path: "a.py", what: "variables" },
+    };
+    broker.read(THREAD, RUN, req, reply);
+    expect(pushed).toEqual([]);
+    expect(sent[0]).toMatchObject({
+      type: "editor.read",
+      run_id: RUN,
+      thread_id: THREAD,
+      tool: "editor_read",
+      input: { path: "a.py", what: "variables" },
+    });
+    const result: EditorReadResultFrame = {
+      v: 1,
+      type: "editor.read_result",
+      request_id: sent[0]?.request_id as string,
+      ok: true,
+      op: "editor_read",
+      what: "variables",
+      text: "- n: int = 1",
+      truncated: false,
+    };
+    expect(broker.onReadResult(result)).toBe(true);
+    expect(broker.onReadResult(result)).toBe(false);
+    expect(replies).toEqual([
+      {
+        id: "kt_r",
+        ok: true,
+        op: "editor_read",
+        what: "variables",
+        text: "- n: int = 1",
+        truncated: false,
+      },
+    ]);
+    broker.read(THREAD, undefined, { ...req, id: "kt_s" }, reply);
+    broker.read(THREAD, RUN, { ...req, id: "kt_t" }, reply);
+    broker.failRun(RUN, "run ended");
+    expect(replies.slice(1).map((r) => !r.ok && r.error.code)).toEqual([
+      "not_allowed",
+      "unavailable",
+    ]);
   });
 });

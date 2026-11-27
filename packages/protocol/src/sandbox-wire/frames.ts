@@ -37,6 +37,8 @@ import {
 } from "./sync-conflict-frames.js";
 import { fileOpenFrameSchema, fileOpenResultFrameSchema } from "./file-open-frames.js";
 import {
+  editorReadFrameSchema,
+  editorReadResultFrameSchema,
   notebookExecuteFrameSchema,
   notebookInspectFrameSchema,
   notebookInterruptFrameSchema,
@@ -115,6 +117,7 @@ export const sandboxToServerFrameSchema = z.union([
   repoStatusFrameSchema,
   notebookOutputFrameSchema,
   notebookRunFrameSchema,
+  editorReadFrameSchema,
   legacyWebSearchQueryFrameSchema, // retired (KOBE-606): answered unavailable
   traceSpansFrameSchema,
   sessionRenewFrameSchema,
@@ -149,6 +152,7 @@ export const serverToSandboxFrameSchema = z.union([
   fileOpenResultFrameSchema,
   workspaceConflictNoteFrameSchema,
   notebookRunResultFrameSchema,
+  editorReadResultFrameSchema,
   notebookExecuteFrameSchema,
   notebookInterruptFrameSchema,
   notebookRestartFrameSchema,

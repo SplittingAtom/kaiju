@@ -10,6 +10,8 @@ setup:
         - commit_project
         - create_artifact
         - edit
+        - editor_read
+        - editor_run
         - find
         - grep
         - ls

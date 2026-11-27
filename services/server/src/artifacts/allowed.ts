@@ -24,6 +24,8 @@ export const BOUND_TOOLS = [
   "propose_file_edit",
   "open_file",
   "run_python",
+  "editor_run",
+  "editor_read",
 ] as const;
 export type BoundToolName = (typeof BOUND_TOOLS)[number];
 

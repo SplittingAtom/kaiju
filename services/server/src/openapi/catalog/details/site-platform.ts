@@ -14,6 +14,7 @@ import {
   THINKING_LEVELS,
   THINKING_LOWEST,
   rememberLimitsSchema,
+  siteAgentVariableValuesSchema,
 } from "@kaiju/protocol";
 import { approveSchema } from "../../../connectors/reapproval.js";
 import { AUTH_KINDS, STATUSES, createSchema, updateSchema } from "../../../connectors/registry.js";
@@ -449,7 +450,14 @@ const RuleBody = named("SitePolicyRuleBody", siteRuleBodySchema);
 const PolicySettings = untyped("SitePolicySettings", obj({ promptSandboxWrites: bool }));
 const RememberLimits = named("SiteRememberLimits", z.object({ limits: rememberLimitsSchema }));
 
+const AgentVariableValues = named("SiteAgentVariableValues", siteAgentVariableValuesSchema);
+
 const policyDetails: Readonly<Record<string, CatalogDetail>> = {
+  "get /v1/site/policy/agent-variable-values": { response: AgentVariableValues },
+  "put /v1/site/policy/agent-variable-values": {
+    body: AgentVariableValues,
+    response: AgentVariableValues,
+  },
   "get /v1/site/policy/remember-limits": { response: RememberLimits },
   "put /v1/site/policy/remember-limits": {
     body: named("SiteRememberLimitsBody", rememberLimitsSchema),

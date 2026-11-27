@@ -383,6 +383,33 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
         target: { sandboxId, userId: target.userId, limit, ...(runId ? { runId } : {}) },
       });
     },
+    auditEditor(target, event) {
+      const ids = {
+        userId: target.userId,
+        threadId: event.threadId,
+        runId: event.runId,
+        toolCallId: event.toolCallId,
+      };
+      const row: ServerAuditEvent =
+        event.action === "run.editor_run"
+          ? {
+              action: event.action,
+              actor: SYSTEM_ACTOR,
+              teamId: target.teamId,
+              target: { ...ids, status: event.status },
+            }
+          : {
+              action: event.action,
+              actor: SYSTEM_ACTOR,
+              teamId: target.teamId,
+              target: { ...ids, what: event.what, outcome: event.outcome },
+            };
+      background.run(
+        `could not record ${event.action}`,
+        () => withTeam(db, target.teamId, (tx) => recordAudit(tx, row)),
+        { component: "sandbox-wire", action: event.action },
+      );
+    },
     auditArtifactRefused(target, sandboxId, refusal) {
       throttledAudit(
         `${target.teamId}:${target.userId}:artifact:${refusal.reason}`,

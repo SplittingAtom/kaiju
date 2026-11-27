@@ -6,6 +6,7 @@ import { parseSkillDraftReply } from "./skill-draft-tool.js";
 import { parseFileEditReply } from "./file-edit-tool.js";
 import { parseFileOpenReply } from "./open-file-tool.js";
 import { parseNotebookReply } from "./notebook-tool.js";
+import { parseEditorReadReply } from "./editor-tools.js";
 import {
   MAX_PENDING_REQUESTS,
   MAX_REPLY_LINE_BYTES,
@@ -22,6 +23,7 @@ import {
   type FileEditAnswer,
   type FileOpenAnswer,
   type NotebookRunAnswer,
+  type EditorReadAnswer,
 } from "./protocol.js";
 
 export type ToolsOutcome =
@@ -31,6 +33,7 @@ export type ToolsOutcome =
   | ProjectCommitAnswer
   | SkillDraftAnswer
   | NotebookRunAnswer
+  | EditorReadAnswer
   | FileEditAnswer
   | FileOpenAnswer
   | { readonly ok: true; readonly artifact_id: string; readonly version: number }
@@ -148,6 +151,7 @@ function parseResponse(line: string): ToolsResponse | undefined {
   if (value.ok === true && value.op === "file_edit_propose") return parseFileEditReply(value);
   if (value.ok === true && value.op === "file_open") return parseFileOpenReply(value);
   if (value.ok === true && value.op === "notebook_run") return parseNotebookReply(value);
+  if (value.ok === true && value.op === "editor_read") return parseEditorReadReply(value);
   if (value.ok === true && "op" in value) return parseMemoryReply(value);
   if (value.ok === true) {
     if (typeof value.artifact_id !== "string" || !Number.isSafeInteger(value.version))

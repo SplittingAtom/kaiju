@@ -145,6 +145,8 @@ describe("server-side tool registry", () => {
         "codemode",
         "create_artifact",
         "edit",
+        "editor_read",
+        "editor_run",
         "find",
         "grep",
         "list_mcp_resource_templates",

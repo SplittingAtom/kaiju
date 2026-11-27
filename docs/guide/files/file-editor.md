@@ -126,7 +126,9 @@ in its tooltip.
 ## Review the agent's proposed edit
 
 When you have a file open, the composer shows "Viewing _file_" and the agent is told to propose
-changes to it instead of writing it. A proposal writes nothing until you commit it.
+changes to it instead of writing it. A proposal writes nothing until you commit it. For a `.py`
+file the agent can also run it (after asking you) and read its run pane: see
+[The agent and the file you have open](notebooks.md#the-agent-and-the-file-you-have-open).
 
 1. The conversation shows a "Proposed edit to _file_" card with **Review**. Turn on **Open edits
    automatically** on the card to open every new proposal for review as it arrives.

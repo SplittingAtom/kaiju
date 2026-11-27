@@ -151,7 +151,11 @@ read a person's portable preferences either; reading them needs its own break-gl
 - **Egress ceiling**: the domains any team may enable, with presets; site-scope access requests;
   marking a domain internal (same cluster). See [Internet access](../internet-and-approvals/internet-access.md).
 - **Policy floor**: site-wide deny and ask rules, the minimum approval mode every team inherits,
-  and remember limits.
+  and remember limits. **Agent and kernel variables** sets the default for whether an agent that
+  reads the Variables tab of an open Python file sees the values of strings, bytes and containers
+  (off by default: it gets names, types and sizes, and only the values of numbers, booleans and
+  None). A team can choose otherwise. See
+  [The agent and the file you have open](../files/notebooks.md#the-agent-and-the-file-you-have-open).
 - **Skill blocklist**: skill content that never loads anywhere on the site.
 
 ## Governance

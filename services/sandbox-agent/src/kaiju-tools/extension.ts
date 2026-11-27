@@ -19,6 +19,7 @@ import { saveSkillDraftTool } from "./skill-draft-tool.js";
 import { proposeFileEditTool } from "./file-edit-tool.js";
 import { openFileTool } from "./open-file-tool.js";
 import { runPythonTool } from "./notebook-tool.js";
+import { editorReadTool, editorRunTool } from "./editor-tools.js";
 import {
   artifactTools,
   shareFileTool,
@@ -144,7 +145,12 @@ export function registerKaijuTools(
     pi.registerTool(proposeFileEditTool(transport));
     pi.registerTool(openFileTool(transport)); // KOBE-484
   }
-  if (options.notebooks === true) pi.registerTool(runPythonTool(transport));
+  if (options.notebooks === true) {
+    pi.registerTool(runPythonTool(transport));
+    // KOBE-848: the open .py file in the code editor (the server limits them to that file).
+    pi.registerTool(editorRunTool(transport));
+    pi.registerTool(editorReadTool(transport));
+  }
   if (options.memory === true) {
     pi.registerTool(rememberTool(transport));
     pi.registerTool(recallTool(transport));

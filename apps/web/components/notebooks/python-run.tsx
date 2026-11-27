@@ -5,7 +5,8 @@
  * toolbar gains Run, Run selection, Stop and Start or Restart with the kernel's state and the
  * newest run's clock, and a run splits the editor, code on top and the run pane below (KOBE-804:
  * Run Output, Log and Variables tabs); the split stays after the run and closes back to the full
- * height. The agent's `run_python {path}` runs of the same file show there too. KOBE-805: Run
+ * height. The agent's runs of the same file (`editor_run`, KOBE-848, or `run_python {path}`) show
+ * there too, with a Stop in Run Output while one runs. KOBE-805: Run
  * saves unsaved changes first and then runs the saved file (the server reads the saved file);
  * Run selection runs only the selected lines of it; Shift+Enter and Mod+Enter run from the
  * editor. Loaded lazily by the file tab with the kernel.
@@ -40,6 +41,8 @@ export default function PythonFile({ kernel, ...editor }: PythonFileProps) {
     execs: k.execs,
     busy: k.busy,
     onGoTo: (line) => setReveal((r) => ({ line, seq: (r?.seq ?? 0) + 1 })),
+    // KOBE-848: the agent's run of this file can be stopped from the pane too.
+    stop: { onStop: () => void k.kernel("interrupt"), stopping: k.note.kind === "working" },
   });
   // KOBE-808: completion from the conversation's kernel, for the owner (who can run code) only.
   const threadId = k.threadId;

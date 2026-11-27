@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ApiResult } from "../../lib/api/client";
 import type { VariablesResult } from "../../lib/notebooks/variables";
 import { LOG_EMPTY } from "./run-log-panel";
-import { CLEARED_NOTE, OUTPUT_EMPTY, OUTPUTS_FAILED } from "./run-output-panel";
+import { AGENT_RUNNING_NOTE, CLEARED_NOTE, OUTPUT_EMPTY, OUTPUTS_FAILED } from "./run-output-panel";
 import { RUN_TAB_KEY } from "./run-pane";
 import { ev, execId, Kernel, renderPython, runId, THREAD } from "./testing";
 import {
@@ -470,5 +470,36 @@ describe("Variables (ac-3, ac-4)", () => {
     await userEvent.setup().click(tab(/^Variables/u));
     expect(within(panel("variables")).getByText(READER_NOTE)).toBeTruthy();
     expect(reader.kernel.variableCalls).toEqual([]);
+  });
+});
+
+describe("agent-started runs (KOBE-848)", () => {
+  it("open the pane, say the agent started them, and the owner can stop one from the pane", async () => {
+    const { kernel } = await renderPython();
+    started(kernel, 1, "agent");
+    // The pane opens on a new run of the file, whoever started it.
+    const output = await waitFor(() => panel("output"));
+    const note = await within(output).findByText(AGENT_RUNNING_NOTE);
+    expect(note.closest("[data-kaiju-agent-run]")?.getAttribute("role")).toBe("status");
+    expect(output.querySelector("[data-kaiju-run-summary]")?.textContent?.includes("Agent")).toBe(
+      true,
+    );
+    const user = userEvent.setup();
+    await user.click(within(output).getByRole("button", { name: "Stop" }));
+    await waitFor(() => expect(kernel.ops).toEqual(["interrupt"]));
+    // The member's own Run waits: the kernel is busy with the agent's run.
+    const run = within(toolbar()).getByRole("button", { name: "Run" });
+    expect(run.hasAttribute("disabled") || run.getAttribute("aria-disabled") === "true").toBe(true);
+    finished(kernel, 1, "ok", "done");
+    expect(within(panel("output")).queryByText(AGENT_RUNNING_NOTE)).toBeNull();
+    expect(within(panel("output")).getByText("done")).toBeTruthy();
+  });
+
+  it("a shared reader sees the note but no Stop", async () => {
+    const { kernel } = await renderPython({ readOnly: true });
+    started(kernel, 1, "agent");
+    const output = await waitFor(() => panel("output"));
+    await within(output).findByText("The agent started this run.");
+    expect(within(output).queryByRole("button", { name: "Stop" })).toBeNull();
   });
 });

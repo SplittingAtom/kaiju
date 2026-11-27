@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { KaijuDb } from "@kaiju/db";
 import {
   CAPABILITY_NOTEBOOKS,
+  EDITOR_RUN_TOOL,
   NOTEBOOK_CODE_MAX_BYTES,
   NOTEBOOK_TIMEOUT_DEFAULT_S,
   workspaceToolPath,
@@ -12,6 +13,7 @@ import {
   type ServerToSandboxFrame,
 } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
+import { editorToolTarget } from "../policy/editor-file-guard.js";
 import {
   finishExecution,
   recordStarted,
@@ -22,6 +24,7 @@ import {
 import type { NotebookFiles } from "../notebooks/files.js";
 import { toolText } from "../notebooks/summary.js";
 import { NOTEBOOK_COMMAND_MARGIN_MS } from "./constants.js";
+import type { AuditEditor } from "./editor-audit.js";
 import type { ToolFrameSpec } from "./gated-frame.js";
 import type { CommandOutcome, SandboxTarget } from "./types.js";
 
@@ -31,13 +34,17 @@ import type { CommandOutcome, SandboxTarget } from "./types.js";
  * allowed here with the same canonical input, taken once. The code (as given, or read from the
  * run owner's synced copy) runs in the thread's kernel through a `notebook.execute` on this same
  * connection; the outputs become the run's events, a notebook cell's are saved into the notebook,
- * and the model gets a text summary.
+ * and the model gets a text summary. KOBE-848: `editor_run` takes the same path with only a `.py`
+ * `path` (the policy check's editor-file guard already limited it to the run's viewed file), and
+ * its outcome is audited (`run.editor_run`).
  */
 export interface NotebookRunConnection {
   readonly db: KaijuDb;
   readonly target: SandboxTarget;
   readonly files: NotebookFiles | undefined;
   readonly log: Pick<Logger, "error" | "warn">;
+  /** Records `run.editor_run` (KOBE-848). */
+  readonly auditEditor: AuditEditor;
   /** Sends the `notebook.execute` on this connection and resolves with its answer. */
   readonly execute: (frame: NotebookExecuteFrame, timeoutMs: number) => Promise<CommandOutcome>;
   send(frame: ServerToSandboxFrame): boolean;
@@ -70,7 +77,11 @@ export function notebookRunSpec(
     alsoRequires: () => c.files !== undefined,
     allowance: "consume",
     refuse(frame, refusal) {
-      const answer = answerer(frame);
+      const send = answerer(frame);
+      const answer = (out: Answer) => {
+        if (frame.tool === EDITOR_RUN_TOOL) auditEditorRun(c, frame, "refused");
+        send(out);
+      };
       switch (refusal.stage) {
         case "capability":
           answer(refused("not_allowed", "This sandbox did not announce notebooks."));
@@ -105,9 +116,31 @@ export function notebookRunSpec(
           c.log.error({ err, run_id: frame.run_id }, "notebook.run failed");
           return refused("storage_failed", "The code could not be run. Try again.");
         })
-        .then(answerer(frame));
+        .then((out) => {
+          // KOBE-848: every editor_run outcome is audited, refusals and failures included.
+          if (frame.tool === EDITOR_RUN_TOOL) auditEditorRun(c, frame, statusOf(out));
+          answerer(frame)(out);
+        });
     },
   };
+}
+
+/** The call as `run_python` would make it: `editor_run` is a `.py` path and a timeout only. */
+function inputOf(frame: NotebookRunFrame): {
+  readonly code?: string | undefined;
+  readonly path?: string | undefined;
+  readonly cell_id?: string | undefined;
+  readonly timeout_s?: number | undefined;
+} {
+  if (frame.tool === EDITOR_RUN_TOOL) {
+    // The same normalisation as the policy check's editor-file guard (`/workspace/./a.py`).
+    const path = editorToolTarget(frame.input);
+    return {
+      path: path === undefined ? frame.input.path : `/workspace/${path}`,
+      timeout_s: frame.input.timeout_s,
+    };
+  }
+  return frame.input;
 }
 
 async function runForAgent(
@@ -115,7 +148,7 @@ async function runForAgent(
   files: NotebookFiles,
   frame: NotebookRunFrame,
 ): Promise<Answer> {
-  const input = frame.input;
+  const input = inputOf(frame);
   // A skill eval's sandbox (KOBE-325) never reaches the member's synced workspace (also denied
   // by policy): only code runs there, in the eval sandbox's own kernel.
   if (input.path !== undefined && c.target.evalThreadId !== undefined) {
@@ -156,8 +189,9 @@ async function runForAgent(
       exec_id: execution.execId,
       code: resolved.source.code,
       timeout_ms: timeoutMs,
-      // KOBE-803: timing only (dropped on the wire for older agents). No variables snapshot for
-      // the agent's run: snapshots go only to the thread's owner, never to the model.
+      // KOBE-803: timing only (dropped on the wire for older agents). No variables snapshot is
+      // kept after the agent's run; the agent reads variables only through editor_read
+      // (KOBE-848: values beyond numbers, bools and None only with the team's setting).
       with_timing: true,
     },
     timeoutMs + NOTEBOOK_COMMAND_MARGIN_MS,
@@ -189,4 +223,27 @@ async function runForAgent(
     truncated: summary.truncated,
     saved: summary.saved,
   };
+}
+
+type EditorRunStatus = Awaited<ReturnType<typeof finishExecution>>["status"] | "refused";
+
+/** How an answer is audited: the execution's status, else `failed` (it could not) or `refused`. */
+function statusOf(out: Answer): EditorRunStatus {
+  if (out.ok) return out.status;
+  return out.code === "storage_failed" || out.code === "kernel_unavailable" ? "failed" : "refused";
+}
+
+/** `run.editor_run` (KOBE-848): ids and how it ended; never the path, code or output. */
+function auditEditorRun(
+  c: NotebookRunConnection,
+  frame: NotebookRunFrame,
+  status: EditorRunStatus,
+) {
+  c.auditEditor(c.target, {
+    action: "run.editor_run",
+    threadId: frame.thread_id,
+    runId: frame.run_id,
+    toolCallId: frame.tool_call_id,
+    status,
+  });
 }

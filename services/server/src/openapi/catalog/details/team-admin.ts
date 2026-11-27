@@ -1,5 +1,10 @@
 import { RETENTION_PERIODS, TEAM_ROLES, USAGE_KINDS } from "@kaiju/db";
-import { REMEMBER_SCOPES, rememberLimitsSchema } from "@kaiju/protocol";
+import {
+  REMEMBER_SCOPES,
+  rememberLimitsSchema,
+  teamAgentVariableValuesBodySchema,
+  teamAgentVariableValuesSchema,
+} from "@kaiju/protocol";
 import { z } from "zod";
 import { teamRuleBodySchema } from "../../../policy/schemas.js";
 import { bodySchema as evalSettingsBodySchema } from "../../../routes/team-eval-settings.js";
@@ -182,6 +187,13 @@ export const teamAdminDetails: Readonly<Record<string, CatalogDetail>> = {
   "delete /v1/team/policy/member-rules/{id}": { status: 204, errors: ruleId },
   "get /v1/team/policy/my-rules": { response: RememberedRules },
   "delete /v1/team/policy/my-rules/{id}": { status: 204, errors: ruleId },
+  "get /v1/team/policy/agent-variable-values": {
+    response: named("TeamAgentVariableValues", teamAgentVariableValuesSchema),
+  },
+  "put /v1/team/policy/agent-variable-values": {
+    body: named("TeamAgentVariableValuesBody", teamAgentVariableValuesBodySchema),
+    response: named("TeamAgentVariableValues", teamAgentVariableValuesSchema),
+  },
   "get /v1/team/policy/remember-limits": { response: TeamRememberLimits },
   "put /v1/team/policy/remember-limits": {
     body: named("TeamRememberLimitsBody", rememberLimitsSchema),

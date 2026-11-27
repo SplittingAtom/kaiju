@@ -27,6 +27,7 @@ export * from "./thread-file-links.js";
 export * from "./notebooks.js";
 export * from "./notebook-variables.js";
 export * from "./notebook-completion.js";
+export * from "./editor-tools.js";
 export * from "./mentions.js";
 export * from "./schedules.js";
 export * from "./notifications.js";

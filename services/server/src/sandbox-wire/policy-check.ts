@@ -27,6 +27,7 @@ import {
 } from "../policy/dangerous-mode.js";
 import { loadRunAgentTools } from "../policy/run-agent-tools.js";
 import { guardViewedFile, proposeAvailable } from "../policy/viewed-file-guard.js";
+import { EDITOR_TOOLS, guardEditorFile } from "../policy/editor-file-guard.js";
 import { guardKaijuAdmin } from "../policy/kaiju-admin-guard.js";
 import { guardKaijuAdminCall } from "../kaiju-mcp/person-guard.js";
 import { guardGitToolCall } from "../git-tools/guard.js";
@@ -242,14 +243,16 @@ const EVAL_ISOLATED: PolicyReason = {
     "Skill evals never use your memory, projects or synced workspace files; this call was denied.",
 };
 /**
- * Never in an eval run: memory, projects, `propose_file_edit` (KOBE-462) and `open_file`
- * (KOBE-484), which read and target the member's synced workspace, not the eval sandbox's files.
+ * Never in an eval run: memory, projects, `propose_file_edit` (KOBE-462), `open_file` (KOBE-484)
+ * and the editor tools (KOBE-848), which read and target the member's synced workspace and
+ * editor, not the eval sandbox's files.
  */
 const EVAL_ISOLATED_TOOLS: ReadonlySet<string> = new Set([
   ...MEMORY_TOOLS,
   ...PROJECT_TOOLS,
   "propose_file_edit",
   "open_file",
+  ...EDITOR_TOOLS,
 ]);
 
 /**
@@ -598,11 +601,17 @@ async function guardedDecision(d: Deciding, evaluated: Decided): Promise<PolicyD
       proposeAvailable(evaluated.input.agent, target.fileEdits === true, viewedPath),
     now: new Date(),
   });
+  // KOBE-848: editor_run / editor_read only on the member's open .py file, in any mode.
+  const editorGuarded = guardEditorFile(viewedGuarded, {
+    tool: evaluated.input.tool,
+    input: frame.input,
+    viewedPath,
+  });
   // KOBE-619: Kaiju admin tools only for a person who may use them now; writes ask in every mode.
   const guarded = await guardKaijuAdminCall(
     deps.db,
     target,
-    guardKaijuAdmin(viewedGuarded, {
+    guardKaijuAdmin(editorGuarded, {
       tool: evaluated.input.tool,
       input: evaluated.input,
       evalRun: d.evalRun,

@@ -327,6 +327,7 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "wasActive",
   "wasInterrupted",
   "watermarks",
+  "what", // KOBE-848: which run-pane tab the agent read (output, log, variables)
   "workingCopies",
   "workspaceMemoriesEnabled",
   "workspaces",

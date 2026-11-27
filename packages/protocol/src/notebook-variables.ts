@@ -11,7 +11,10 @@ import { timestampSchema, utf8ByteLength } from "./common.js";
  *
  * Variables are never stored: no run event, no audit of values. A repr can hold a secret the
  * member typed into a variable and never printed, so a snapshot only ever goes to the thread's
- * owner, through `POST /v1/threads/{id}/notebook/variables`, and never into the model's context.
+ * owner, through `POST /v1/threads/{id}/notebook/variables`. KOBE-848: the agent's `editor_read`
+ * builds text from a snapshot for the model: names, types and summaries, values of numbers, bools
+ * and None, and other values only when the team's `agent_variable_values` setting is on (default
+ * off; editor-tools.ts). `show` never goes that way.
  */
 
 /** `hello.capabilities`: the agent measures executions and snapshots the kernel's variables. */

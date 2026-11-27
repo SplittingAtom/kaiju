@@ -2,6 +2,7 @@ import { type NotebookExecuteFrame } from "@kaiju/protocol/sandbox-wire";
 import type { AllowedArtifactCalls } from "../../artifacts/allowed.js";
 import type { RecalledItems } from "../../memory/recalled.js";
 import { fileEditProposeSpec } from "../file-edit-propose.js";
+import { editorReadSpec } from "../editor-read.js";
 import { fileOpenSpec } from "../file-open.js";
 import type { InFlight, ToolFrameSpecs } from "../gated-frame.js";
 import { notebookRunSpec } from "../notebook-run.js";
@@ -32,6 +33,8 @@ export interface ToolFrameDeps {
   hasCapability?(name: string): boolean;
   /** Sends a `notebook.execute` on this connection and resolves with its answer. */
   notebookExecute(frame: NotebookExecuteFrame, timeoutMs: number): Promise<CommandOutcome>;
+  /** KOBE-848: a variables snapshot of the thread's kernel on this connection (`editor_read`). */
+  notebookInspect(threadId: string, timeoutMs: number, waitMs: number): Promise<CommandOutcome>;
 }
 
 /** Every tool frame kind's spec for one connection; dispatched only through the gate. */
@@ -74,7 +77,16 @@ export function toolFrameSpecs(d: ToolFrameDeps): ToolFrameSpecs {
       target,
       files: ctx.notebooks,
       log: port.log,
+      auditEditor: (t, e) => ctx.auditEditor(t, e),
       execute: (frame, timeoutMs) => d.notebookExecute(frame, timeoutMs),
+      send: (out) => port.send(out),
+    }),
+    "editor.read": editorReadSpec({
+      db: ctx.db,
+      target,
+      log: port.log,
+      auditEditor: (t, e) => ctx.auditEditor(t, e),
+      inspect: (threadId, timeoutMs, waitMs) => d.notebookInspect(threadId, timeoutMs, waitMs),
       send: (out) => port.send(out),
     }),
     "skill.draft_save": skillDraftSaveSpec({

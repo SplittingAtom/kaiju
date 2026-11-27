@@ -44,6 +44,17 @@ waiting"; where nobody can be asked (`auto`, scheduled, skill eval) it is denied
 compared as normalised strings (Pi's path resolved against `/workspace`: absolute or relative,
 `./`, `../`, `//`, trailing slash; case-sensitive).
 
+**The open script** (KOBE-848). `editor_run` (run the run's viewed `.py` file in the kernel, as the
+editor's Run does) is a Kaiju-scoped write: it asks in `ask-on-write`, Dangerous mode never lifts
+that prompt, a remembered approval does, and `auto` runs deny it unless a team allow rule lists
+it. Scheduled runs always deny it: they carry no viewed file, so the editor-file guard refuses. `editor_read` (the file's Run Output, Log or Variables) is a read. Both work only on
+the run's viewed `.py` file: `policy/editor-file-guard.ts` denies any other path, or a run without
+a viewed file, after the engine in every mode (reason code `editor_file`). The approval binds the
+path (and timeout), not the file's content at run time, as for other path-based tools.
+`editor_read {what: "variables"}` shows values beyond numbers, bools and None only when the
+team's **Agent and kernel variables** setting is on (`/v1/team/policy/agent-variable-values`,
+default from `/v1/site/policy/agent-variable-values`, off).
+
 Not covered: `bash`, `powershell` and `run_python` (which can also write a viewed `.ipynb` or
 `.py`), any other tool that writes files, and other names for the same file: symlinks and hard
 links are not followed. `propose_file_edit`, `open_file` and other files are unaffected.

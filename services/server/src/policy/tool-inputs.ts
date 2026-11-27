@@ -5,6 +5,7 @@ import {
   fileEditToolInputSchema,
   fileOpenToolInputSchema,
   notebookToolInputSchema,
+  editorToolInputSchema,
   projectToolInputSchema,
   skillDraftToolInputSchema,
   type JsonObject,
@@ -67,6 +68,8 @@ export const BUILTIN_INPUT_SCHEMAS: Readonly<Record<string, z.ZodType<unknown>>>
   propose_file_edit: fileEditToolInputSchema.propose_file_edit,
   open_file: fileOpenToolInputSchema.open_file,
   run_python: notebookToolInputSchema.run_python,
+  editor_run: editorToolInputSchema.editor_run,
+  editor_read: editorToolInputSchema.editor_read,
 };
 
 /** Built-ins whose `path` is a filesystem path, and whether an omitted path means the cwd. */
@@ -81,6 +84,8 @@ const PATH_TOOLS: Readonly<Record<string, { readonly defaultsToCwd: boolean }>> 
   propose_file_edit: { defaultsToCwd: false },
   open_file: { defaultsToCwd: false },
   run_python: { defaultsToCwd: false },
+  editor_run: { defaultsToCwd: false },
+  editor_read: { defaultsToCwd: false },
 };
 
 // Characters Pi rewrites in paths (utils/paths.js UNICODE_SPACES).
