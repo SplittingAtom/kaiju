@@ -94,8 +94,8 @@ export function pressModShift(key: string, target: Element = document.body): boo
 }
 
 /**
- * The rail's Apps view opened as a member opens it since its tab went (KOBE-844): Mod+Shift+X
- * (Browse apps), pressed again until the rail has read the member's apps and bound it.
+ * The rail's Apps tab chosen with Browse apps (KOBE-844; it selects the tab since KOBE-849):
+ * Mod+Shift+X, pressed again until the rail has read the member's apps and bound it.
  */
 export async function browseApps(): Promise<HTMLElement> {
   await waitFor(
@@ -106,14 +106,7 @@ export async function browseApps(): Promise<HTMLElement> {
     },
     { timeout: 4_000 },
   );
-  return screen.findByRole("region", { name: "Apps" });
-}
-
-/** Back to Files from the rail's Apps view (KOBE-844: its own Show files, no tabs). */
-export function showFilesFromApps(): void {
-  const apps = document.getElementById("kaiju-rail-apps");
-  if (apps === null) throw new Error("no Apps view");
-  fireEvent.click(within(apps).getByRole("button", { name: "Show files" }));
+  return screen.findByRole("tabpanel", { name: "Apps" });
 }
 
 /** The agent radios (KOBE-122), in the composer's popover since KOBE-418: opened when closed. */

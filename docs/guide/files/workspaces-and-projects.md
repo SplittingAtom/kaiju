@@ -8,7 +8,8 @@ audience: member
 
 Kaiju organises files in three layers. The **workspace** is your team's place. **My files** is your
 own private space inside it. **Projects** are shared, versioned folders the workspace works on
-together. The Files tab of the rail shows all three as one tree.
+together. The rail's **Files** tab shows all three as one tree (beside it, the **Apps** tab appears when a
+site admin has placed a picker app in the rail for you).
 
 ## The workspace
 

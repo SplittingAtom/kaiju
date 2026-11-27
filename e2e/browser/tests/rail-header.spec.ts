@@ -1,14 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { SHELL_TIMEOUT_MS } from "./support/constants.js";
-import {
-  appsSection,
-  browseApps,
-  expect,
-  FILES_TOGGLE,
-  test,
-  filesSection,
-  showFilesFromApps,
-} from "./support/chat.js";
+import { expect, FILES_TOGGLE, test, filesSection } from "./support/chat.js";
 
 /**
  * KOBE-419: the rail's top line. The team selector (moved from the bar), the Threads and Files
@@ -245,29 +237,43 @@ test("a phone: the drawer is headed by the team selector (ac-2)", async ({ chat,
   await shoot(page, "rail-header-phone", drawer);
 });
 
-test("Files or Apps: no tabs; Browse apps opens Apps, the view is kept (KOBE-448, KOBE-844)", async ({
+test("Files | Apps: one tabbed section, arrow keys, the last tab kept (KOBE-448, KOBE-849)", async ({
   chat,
   page,
 }) => {
   await chat.open();
-  await expect(page.getByRole("tablist")).toHaveCount(0);
-  await expect(page.locator("#kaiju-rail-tab-files, #kaiju-rail-tab-apps")).toHaveCount(0);
-  await expect(page.getByText("Loading apps…")).toHaveCount(0, { timeout: SHELL_TIMEOUT_MS });
-  if ((await appsSection(page).count()) === 0) {
-    // No apps and no key to add on this deployment: Files alone.
+  const tabs = page.getByRole("tablist", { name: "Files and apps" });
+  if (!(await tabs.isVisible())) {
+    // No apps and no key to add on this deployment: Files alone, without a tablist.
     await expect(filesSection(page)).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Apps" })).toHaveCount(0);
     return;
   }
+  const files = tabs.getByRole("tab", { name: "Files", exact: true });
+  const apps = tabs.getByRole("tab", { name: "Apps", exact: true });
   try {
-    await browseApps(page);
+    await expect(files).toHaveAttribute("aria-selected", "true");
+    await files.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(apps).toBeFocused();
+    await expect(apps).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tabpanel", { name: "Apps" })).toBeVisible();
     await expect(filesSection(page)).toBeHidden();
-    await shoot(page, "rail-apps-view", page.locator('[data-shell-region="rail"]'));
+    await shoot(page, "rail-tabs-apps", page.locator('[data-shell-region="rail"]'));
     // Kept per member: a reload opens on Apps.
     await page.reload();
-    await expect(appsSection(page)).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
-    await showFilesFromApps(page);
+    await expect(apps).toHaveAttribute("aria-selected", "true", { timeout: SHELL_TIMEOUT_MS });
+    // KOBE-849: the tabs are the way back to Files (no Show files in the Apps panel), and Browse
+    // apps (Mod+Shift+X, KOBE-844) selects the Apps tab.
+    const panel = page.getByRole("tabpanel", { name: "Apps" });
+    await expect(panel.getByRole("button", { name: "Show files", exact: true })).toHaveCount(0);
+    await files.click();
+    await expect(filesSection(page)).toBeVisible();
+    await page.locator("body").press("ControlOrMeta+Shift+X");
+    await expect(apps).toHaveAttribute("aria-selected", "true");
+    await expect(panel).toBeVisible();
   } finally {
     await chat.showBothPanels();
-    await expect(filesSection(page)).toBeVisible();
+    await expect(files).toHaveAttribute("aria-selected", "true");
   }
 });

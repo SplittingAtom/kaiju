@@ -68,7 +68,7 @@ function useDescribed({ name, line }: { readonly name: string; readonly line: st
 }
 
 /**
- * Browse apps (KOBE-844, Chris 2026-11-25): opens the rail's Apps view, the pickers a site admin
+ * Browse apps (KOBE-844, Chris 2026-11-25): selects the rail's Apps tab (KOBE-849), the pickers a site admin
  * placed there, through the rail's own binding (Mod+Shift+X and the palette run the same).
  * Only when the member has apps, as the rail's view.
  */

@@ -72,6 +72,8 @@ const toggle = (name: "Threads panel" | "Files panel") =>
   within(rail()).getByRole("button", { name });
 const threadsButton = () => toggle("Threads panel");
 const section = (id: string) => must(document.getElementById(id));
+const rows = () =>
+  must(document.getElementById("kaiju-rail-sections")).style.gridTemplateRows.replace(/\s+/g, " ");
 const puts = () => fake.requests.filter((r) => r.method === "PUT" && r.path === PREFERENCES_PATH);
 const names = (root: HTMLElement) =>
   [...root.querySelectorAll<HTMLElement>("a, button, summary, h2")].map(
@@ -348,9 +350,7 @@ describe("Threads and the Files toggle (ac-3, KOBE-453)", { timeout: 30_000 }, (
     expect(threadsButton().hasAttribute("aria-pressed")).toBe(false);
     expect(threadsButton().getAttribute("aria-haspopup")).toBe("dialog");
     expect(toggle("Files panel").getAttribute("aria-pressed")).toBe("true");
-    // KOBE-844: no Files | Apps tabs over it.
-    expect(within(rail()).queryByRole("tablist")).toBeNull();
-    expect(section("kaiju-rail-files").hidden).toBe(false);
+    expect(rows()).toBe("minmax(0, 1fr)");
     await userEvent.setup().click(threadsButton());
     expect(await screen.findByRole("dialog", { name: "Threads" })).toBeTruthy();
     expect(window.location.pathname).toBe("/threads");

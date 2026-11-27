@@ -18,7 +18,7 @@ interface App {
   readonly title: string;
 }
 
-const appsPanel = (page: Page) => page.getByRole("region", { name: "Apps", exact: true });
+const appsPanel = (page: Page) => page.getByRole("tabpanel", { name: "Apps", exact: true });
 
 /** The section's scroll height equals its visible height once the frame has settled. */
 async function expectNoScroll(scroll: Locator, iframe: Locator) {

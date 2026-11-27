@@ -4,22 +4,20 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { MY_CONNECTOR_KEYS, listRailApps, type RailApps } from "../../lib/apps/app-cards";
 import { ChatSessionContext } from "../chat/kaiju-runtime";
 import type { RailApi } from "./rail-state";
-import { IconAction } from "./icon-action";
-import { RAIL_ACTION, RAIL_HEADER_VARIANT } from "./rail-action";
+import { RAIL_TAB_IDS } from "./rail-tabs";
 import { RailPickers } from "./rail-pickers";
 import { InlineLink } from "./text-links";
 import styles from "./rail.module.css";
 
 /**
- * The rail's Apps view (KOBE-440, spec MA3, MA8, MA11; a tab beside Files from KOBE-448 until
- * KOBE-844, when Chris moved its way in to the + menu's Browse apps, Mod+Shift+X and the palette): the
+ * The rail's Apps tab (KOBE-440, spec MA3, MA8, MA11; a tab beside Files since KOBE-448, gone in
+ * KOBE-844 and back in KOBE-849, Chris 2026-11-27; Browse apps also selects it): the
  * Pickers section (KOBE-460, `rail-pickers.tsx`), which runs one picker app live, and nothing
  * else since KOBE-559 (Chris, 2026-11-07): the list of every app that stood under it is gone; apps
  * are launched from the composer's + menu (KOBE-451). No tab when the member has no app. An app
  * missing only the member's own key still shows "Add your key", linking to My connectors.
  */
-export const APPS_SECTION_ID = "kaiju-rail-apps";
-const APPS_TITLE_ID = "kaiju-rail-apps-title";
+export const APPS_SECTION_ID = RAIL_TAB_IDS.apps.panel;
 
 /** The member's apps as read, and whether that read failed (it then shows none). */
 export interface RailAppsState extends RailApps {
@@ -74,32 +72,19 @@ export function RailApps({
 }: {
   readonly rail: RailApi;
   readonly apps: RailAppsState;
-  /** Files is the view on screen: kept mounted (its launch state, the picker), not shown. */
+  /** Files is the tab on screen: kept mounted (its launch state, the picker), not shown. */
   readonly hidden: boolean;
 }) {
   return (
     <section
       id={APPS_SECTION_ID}
-      aria-labelledby={APPS_TITLE_ID}
+      role="tabpanel"
+      aria-labelledby={RAIL_TAB_IDS.apps.tab}
       tabIndex={-1}
       className={styles.appsSection}
       hidden={hidden}
       {...(rail.pickerShown ? { "data-picker-live": "" } : {})}
     >
-      {/* With the tabs gone (KOBE-844), the way back to Files from here. */}
-      <div className={styles.sectionHeader}>
-        <h3 id={APPS_TITLE_ID} className={styles.sectionTitle}>
-          Apps
-        </h3>
-        <IconAction
-          command="show-files"
-          size="sm"
-          side="bottom"
-          variant={RAIL_HEADER_VARIANT}
-          className={`size-7 ${RAIL_ACTION}`}
-          onClick={() => rail.reveal("files")}
-        />
-      </div>
       <RailPickers
         rail={rail}
         apps={apps.apps}
