@@ -191,7 +191,7 @@ describe("Connectors (ac-2, ac-3, ac-6)", { timeout: 30_000 }, () => {
 });
 
 describe("Browse apps (KOBE-844, Chris 2026-11-25)", { timeout: 30_000 }, () => {
-  it("opens the rail's Apps view, with a line saying how it differs from Apps", async () => {
+  it("selects the rail's Apps tab, with a line saying how it differs from Apps (KOBE-849)", async () => {
     fake.teamApps = [APP];
     openApp(fake, answered());
     await composer();
@@ -202,9 +202,10 @@ describe("Browse apps (KOBE-844, Chris 2026-11-25)", { timeout: 30_000 }, () => 
     expect(line?.textContent).toBe("Open your app pickers in the side rail");
     expect(browse.querySelector("svg.lucide-app-window")).not.toBeNull();
     await user.click(browse);
-    const apps = await screen.findByRole("region", { name: "Apps" }, WAIT);
+    const apps = await screen.findByRole("tabpanel", { name: "Apps" }, WAIT);
     expect(apps.id).toBe("kaiju-rail-apps");
     await waitFor(() => expect(apps.hidden).toBe(false));
+    expect(screen.getByRole("tab", { name: "Apps" }).getAttribute("aria-selected")).toBe("true");
     // The rail's view takes the focus; the closing menu does not take it back.
     await waitFor(() => expect(document.activeElement).toBe(apps));
     expect(must(document.getElementById("kaiju-rail-files")).hidden).toBe(true);

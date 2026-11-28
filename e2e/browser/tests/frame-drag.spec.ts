@@ -31,7 +31,7 @@ interface App {
   readonly placement?: string;
 }
 
-const appsPanel = (page: Page) => page.getByRole("region", { name: "Apps", exact: true });
+const appsPanel = (page: Page) => page.getByRole("tabpanel", { name: "Apps", exact: true });
 const panel = (page: Page) => page.locator("[data-kaiju-composer-panel]");
 const hint = (page: Page) => page.locator("#kaiju-composer-hint");
 const ghost = (page: Page) => page.locator("[data-kaiju-frame-drag-ghost]");

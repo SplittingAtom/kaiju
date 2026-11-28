@@ -108,18 +108,17 @@ test("U17: rail state (width, tab, section) and artifact width persist across tw
     await page.keyboard.press("Home");
     await expect.poll(() => widthOf(artifact)).toBeLessThanOrEqual(360 + SLACK_PX);
     // The rail (CE7's "rail state and divider" since KOBE-453/448: the threads are a panel and
-    // the rail is one section, Files or Apps): its width, its tab where the team has apps, then
+    // the rail is one Files | Apps section): its width, its tab where the team has apps, then
     // collapsed (Mod+B).
     const railHandle = page.getByRole("separator", { name: "Resize the workspace rail" });
     await railHandle.focus();
     await page.keyboard.press("Home");
     await expect.poll(() => widthOf(rail)).toBeLessThanOrEqual(200 + SLACK_PX);
-    // KOBE-844: no tabs; Browse apps (Mod+Shift+X) opens the Apps view where the team has apps.
-    const tabs = (await page.locator("#kaiju-rail-apps").count()) > 0;
-    if (tabs) {
-      await page.locator("body").press("ControlOrMeta+Shift+X");
-      await expect(page.locator("#kaiju-rail-apps")).toBeVisible();
-    }
+    const appsTab = page
+      .getByRole("tablist", { name: "Files and apps" })
+      .getByRole("tab", { name: "Apps", exact: true });
+    const tabs = await appsTab.isVisible();
+    if (tabs) await appsTab.click();
     await page.locator("body").press("ControlOrMeta+b");
     await expect.poll(() => widthOf(rail)).toBeLessThanOrEqual(48 + SLACK_PX);
 
@@ -142,11 +141,14 @@ test("U17: rail state (width, tab, section) and artifact width persist across tw
     await second.locator("body").press("ControlOrMeta+b");
     await expect.poll(() => widthOf(r2.rail)).toBeGreaterThan(200 - SLACK_PX);
     if (tabs) {
-      const apps2 = second.locator("#kaiju-rail-apps");
-      await expect(apps2).toBeVisible();
-      // A live picker in the Apps view widens the shown rail to 400 px, unsaved (KOBE-460/461):
-      // the member's own 200 px shows on Files (the view is restored below).
-      await apps2.getByRole("button", { name: "Show files", exact: true }).click();
+      const tabs2 = second.getByRole("tablist", { name: "Files and apps" });
+      await expect(tabs2.getByRole("tab", { name: "Apps", exact: true })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      // A live picker on the Apps tab widens the shown rail to 400 px, unsaved (KOBE-460/461):
+      // the member's own 200 px shows on Files (the tab is restored below).
+      await tabs2.getByRole("tab", { name: "Files", exact: true }).click();
     }
     await expect.poll(() => widthOf(r2.rail)).toBeLessThanOrEqual(200 + SLACK_PX);
 

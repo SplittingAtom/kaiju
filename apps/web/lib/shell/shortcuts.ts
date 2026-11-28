@@ -26,7 +26,7 @@ export const CE23_SHORTCUTS = [
 /** Keyed commands added after CE23, listed in the sheet's own section (KOBE-395: Learn). */
 export const MORE_SHORTCUTS = ["learn"] as const satisfies readonly CommandId[];
 
-/** The sheet's Apps section (KOBE-844): Browse apps, the rail's Apps view. */
+/** The sheet's Apps section (KOBE-844): Browse apps, the rail's Apps tab (KOBE-849). */
 export const APP_SHORTCUTS = ["browse-apps"] as const satisfies readonly CommandId[];
 
 /** What the sheet adds to a row. */

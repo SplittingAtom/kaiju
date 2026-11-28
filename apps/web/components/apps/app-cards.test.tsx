@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 // @vitest-environment-options {"settings":{"disableIframePageLoading":true,"handleDisabledFileLoadingAsSuccess":true},"width":1280,"height":800}
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
-import { browseApps, chatRequests, composer, openApp, streaming } from "../chat/testing";
+import { chatRequests, composer, openApp, streaming } from "../chat/testing";
 
 /**
  * KOBE-440 (MA-6, spec MA3, MA8, MA11): the rail's Apps section lists the member's apps and
@@ -59,8 +59,11 @@ function answered() {
   return t;
 }
 
-/** The rail's Apps view, opened with Browse apps (KOBE-844: no tabs). */
-const appsSection = browseApps;
+/** The rail's Apps tab (KOBE-448: beside Files), chosen. */
+async function appsSection(): Promise<HTMLElement> {
+  fireEvent.click(await screen.findByRole("tab", { name: "Apps" }));
+  return screen.findByRole("tabpanel", { name: "Apps" });
+}
 
 /**
  * Launches Lakehouse Explorer from the composer's + menu (KOBE-451), the one launcher since the
@@ -186,8 +189,8 @@ describe("the rail's Apps section (KOBE-440; no app list since KOBE-559)", () =>
   it("is absent without apps, and says 'Add your key' when only the member's key is missing (ac-1)", async () => {
     openApp(fake, answered());
     await screen.findByLabelText("Message");
-    // No Apps view; the section is Files alone (KOBE-448, KOBE-844: no tabs at all).
-    expect(document.getElementById("kaiju-rail-apps")).toBeNull();
+    // KOBE-448: no Apps tab and no tablist; the section is Files alone.
+    expect(screen.queryByRole("tab", { name: "Apps" })).toBeNull();
     expect(screen.queryByRole("tablist")).toBeNull();
     cleanup();
     fake.teamAppsNeedKey = [

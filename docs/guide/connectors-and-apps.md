@@ -139,8 +139,9 @@ checks every call they make like any other tool call.
 - **Launch an app yourself** from the composer's **+** menu; the card says "You opened _app_ from
   _connector_".
 - **Where it opens.** A site admin decides whether an app opens in the conversation, in the
-  artifact column ("Opened in the side column", with **Show app**) or in the rail's **Apps** view
-  as a picker (open it with **+** › **Browse apps**, **Mod+Shift+X** or the command palette). A
+  artifact column ("Opened in the side column", with **Show app**) or in the rail's **Apps** tab
+  as a picker (select the tab, or use **+** › **Browse apps**, **Mod+Shift+X** or the command
+  palette). A
   picker in the rail fills in your message draft but never sends it for you.
 - **Size.** In the conversation an app card starts 360 px tall and grows with its content up to
   720 px. In the artifact column an app always fills the column's height and scrolls inside
